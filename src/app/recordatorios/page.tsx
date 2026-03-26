@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils';
 import { Recordatorio } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 import {
   Bell, Check, Trash2, AlertCircle, Clock, User, Filter, RefreshCw, Calendar,
 } from 'lucide-react';
@@ -15,6 +16,7 @@ type TabType = 'pendientes' | 'completados';
 
 export default function RecordatoriosPage() {
   const { user } = useAuth();
+  const { setPendingReminders } = useData();
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabType>('pendientes');
@@ -44,26 +46,29 @@ export default function RecordatoriosPage() {
     setToast({ message, type });
 
   const handleMarcarCompletado = async (id: string) => {
-    const { error } = await supabase
-      .from('recordatorios')
-      .update({ mostrado: true })
-      .eq('id', id);
+    setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: true } : r));
+    setPendingReminders(n => Math.max(0, n - 1));
+    showToast('Marcado como completado', 'success');
+    const { error } = await supabase.from('recordatorios').update({ mostrado: true }).eq('id', id);
     if (error) {
+      setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: false } : r));
+      setPendingReminders(n => n + 1);
       showToast('Error al actualizar', 'error');
-    } else {
-      showToast('Marcado como completado', 'success');
-      fetchRecordatorios();
     }
   };
 
   const handleEliminar = async (id: string, nombre: string) => {
     if (!confirm(`¿Eliminar recordatorio de ${nombre}?`)) return;
+    const backup = recordatorios.find(r => r.id === id);
+    const wasPending = backup && !backup.mostrado;
+    setRecordatorios(prev => prev.filter(r => r.id !== id));
+    if (wasPending) setPendingReminders(n => Math.max(0, n - 1));
+    showToast('Eliminado', 'success');
     const { error } = await supabase.from('recordatorios').delete().eq('id', id);
-    if (error) {
+    if (error && backup) {
+      setRecordatorios(prev => [...prev, backup].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora)));
+      if (wasPending) setPendingReminders(n => n + 1);
       showToast('Error al eliminar', 'error');
-    } else {
-      showToast('Recordatorio eliminado', 'success');
-      fetchRecordatorios();
     }
   };
 
@@ -117,18 +122,6 @@ export default function RecordatoriosPage() {
       <header className="dashboard-header">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Recordatorios</h1>
-          <p style={{ color: '#888', fontSize: '14px' }}>
-            {loading ? 'Cargando...' : (
-              <>
-                {pendientesCount} pendiente{pendientesCount !== 1 ? 's' : ''}
-                {vencidosCount > 0 && (
-                  <span style={{ color: 'var(--rojo)', marginLeft: '8px' }}>
-                    · {vencidosCount} vencido{vencidosCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-              </>
-            )}
-          </p>
         </div>
         <button
           className="btn-secondary"

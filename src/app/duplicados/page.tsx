@@ -17,6 +17,8 @@ export default function DuplicadosPage() {
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [tipoBusqueda, setTipoBusqueda] = useState<'cuil' | 'nombre' | 'ambos'>('ambos');
+  const [selectedEstados, setSelectedEstados] = useState<string[]>([]);
+  const [selectedAnalistas, setSelectedAnalistas] = useState<string[]>([]);
 
   useEffect(() => {
     supabase
@@ -29,12 +31,37 @@ export default function DuplicadosPage() {
       });
   }, []);
 
+  const allEstados = useMemo(() => 
+    Array.from(new Set(registros.map(r => r.estado?.toLowerCase()).filter(Boolean)))
+      .filter(e => !e?.toLowerCase().includes('column') && !e?.toLowerCase().includes('estado'))
+      .sort() as string[], 
+    [registros]
+  );
+  const allAnalistas = useMemo(() => 
+    Array.from(new Set(registros.map(r => r.analista?.trim()).filter(Boolean)))
+      .filter(a => !a?.toLowerCase().includes('column') && !a?.toLowerCase().includes('analista'))
+      .sort() as string[], 
+    [registros]
+  );
+
+  const toggleFilter = (list: string[], set: React.Dispatch<React.SetStateAction<string[]>>, val: string) => {
+    if (list.includes(val)) set(list.filter(v => v !== val));
+    else set([...list, val]);
+  };
+
   const duplicados = useMemo((): GrupoDuplicado[] => {
     const grupos: GrupoDuplicado[] = [];
 
+    // Filtramos los registros BASE antes de buscar duplicados
+    const pool = registros.filter(r => {
+      const matchEstado = selectedEstados.length === 0 || selectedEstados.includes(r.estado?.toLowerCase() || '');
+      const matchAnalista = selectedAnalistas.length === 0 || selectedAnalistas.includes(r.analista || '');
+      return matchEstado && matchAnalista;
+    });
+
     if (tipoBusqueda === 'cuil' || tipoBusqueda === 'ambos') {
       const byCuil = new Map<string, Registro[]>();
-      for (const r of registros) {
+      for (const r of pool) {
         const cuil = r.cuil?.trim();
         if (!cuil || cuil.length < 11) continue;
         if (!byCuil.has(cuil)) byCuil.set(cuil, []);
@@ -51,7 +78,7 @@ export default function DuplicadosPage() {
 
     if (tipoBusqueda === 'nombre' || tipoBusqueda === 'ambos') {
       const byNombre = new Map<string, Registro[]>();
-      for (const r of registros) {
+      for (const r of pool) {
         const nombre = r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
         if (!nombre || nombre.length < 3) continue;
         if (!byNombre.has(nombre)) byNombre.set(nombre, []);
@@ -70,7 +97,7 @@ export default function DuplicadosPage() {
     }
 
     return grupos.sort((a, b) => b.registros.length - a.registros.length);
-  }, [registros, tipoBusqueda, busqueda]);
+  }, [registros, tipoBusqueda, busqueda, selectedEstados, selectedAnalistas]);
 
   const totalDuplicados = duplicados.reduce((s, g) => s + g.registros.length, 0);
 
@@ -85,26 +112,77 @@ export default function DuplicadosPage() {
       <header className="dashboard-header">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Detectar Duplicados</h1>
-          <p style={{ color: '#888', fontSize: '14px' }}>
-            {loading ? 'Analizando...' : `${duplicados.length} grupos duplicados — ${totalDuplicados} registros afectados`}
-          </p>
         </div>
       </header>
 
       {/* Filtros */}
       <div className="data-card" style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Buscar</label>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          
+          <div style={{ flex: '1 1 300px' }}>
+            <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Buscar por Texto</label>
             <input style={{ ...inputStyle, width: '100%' }} placeholder="CUIL o nombre..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
           </div>
-          <div>
-            <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '6px' }}>Detectar por</label>
-            <select style={inputStyle} value={tipoBusqueda} onChange={e => setTipoBusqueda(e.target.value as typeof tipoBusqueda)}>
+
+          <div style={{ flex: '0 0 180px' }}>
+            <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Método de Detección</label>
+            <select style={{ ...inputStyle, width: '100%' }} value={tipoBusqueda} onChange={e => setTipoBusqueda(e.target.value as typeof tipoBusqueda)}>
               <option value="ambos">CUIL y Nombre</option>
               <option value="cuil">Solo CUIL</option>
               <option value="nombre">Solo Nombre</option>
             </select>
+          </div>
+
+          <div style={{ flex: '1 1 100%' }}>
+            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+              
+              <div style={{ flex: 1, minWidth: '200px', overflow: 'hidden' }}>
+                <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Estados (Filtrar pool)</label>
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }} className="flex-no-wrap-scroll">
+                  {allEstados.map(e => (
+                    <button
+                      key={e}
+                      onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)}
+                      style={{
+                        padding: '4px 10px', borderRadius: '6px', fontSize: '11px', border: '1px solid',
+                        whiteSpace: 'nowrap',
+                        background: selectedEstados.includes(e) ? 'rgba(247,228,121,0.15)' : 'transparent',
+                        borderColor: selectedEstados.includes(e) ? '#f7e479' : 'rgba(255,255,255,0.1)',
+                        color: selectedEstados.includes(e) ? '#f7e479' : '#555',
+                        cursor: 'pointer', transition: 'all 0.2s',
+                      }}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                  {allEstados.length === 0 && <span style={{ color: '#333', fontSize: '11px' }}>Cargando estados...</span>}
+                </div>
+              </div>
+
+              <div style={{ flex: 1, minWidth: '200px', overflow: 'hidden' }}>
+                <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Analistas (Filtrar pool)</label>
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }} className="flex-no-wrap-scroll">
+                  {allAnalistas.map(a => (
+                    <button
+                      key={a}
+                      onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)}
+                      style={{
+                        padding: '4px 10px', borderRadius: '6px', fontSize: '11px', border: '1px solid',
+                        whiteSpace: 'nowrap',
+                        background: selectedAnalistas.includes(a) ? 'rgba(74,222,128,0.1)' : 'transparent',
+                        borderColor: selectedAnalistas.includes(a) ? '#4ade80' : 'rgba(255,255,255,0.1)',
+                        color: selectedAnalistas.includes(a) ? '#4ade80' : '#555',
+                        cursor: 'pointer', transition: 'all 0.2s',
+                      }}
+                    >
+                      {displayAnalista(a)}
+                    </button>
+                  ))}
+                  {allAnalistas.length === 0 && <span style={{ color: '#333', fontSize: '11px' }}>Cargando analistas...</span>}
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       </div>

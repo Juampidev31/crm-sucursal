@@ -16,9 +16,6 @@ export default async function AuditoriaPage() {
       <header className="dashboard-header">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Log de Auditoría</h1>
-          <p style={{ color: '#888', fontSize: '14px' }}>
-            {error ? 'Error cargando datos' : `${registros?.length || 0} registros de auditoría`}
-          </p>
         </div>
       </header>
 

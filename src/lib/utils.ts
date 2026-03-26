@@ -41,15 +41,7 @@ export const formatDateTime = (date: string | Date | null): string => {
 };
 
 export const getStatusColor = (status: string): string => {
-  const s = status?.toLowerCase();
-  if (s === 'venta') return 'var(--verde)';
-  if (s === 'proyeccion') return 'var(--main-color)';
-  if (s === 'en seguimiento') return 'var(--azul)';
-  if (s === 'score bajo') return 'var(--rojo)';
-  if (s === 'afectaciones') return 'var(--naranja)';
-  if (s === 'derivado / aprobado cc') return '#9B59B6';
-  if (s === 'derivado / rechazado cc') return '#E67E22';
-  return 'var(--gris)';
+  return '#aaaaaa';
 };
 
 export const getStatusLabel = (status: string): string => {

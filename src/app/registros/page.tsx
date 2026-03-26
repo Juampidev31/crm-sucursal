@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatDate, getStatusColor, getStatusLabel, capitalizarNombre, sanitizarCuil } from '@/lib/utils';
+import { formatCurrency, formatDate, getStatusColor, getStatusLabel, capitalizarNombre, sanitizarCuil, displayAnalista } from '@/lib/utils';
 import { Registro } from '@/types';
-import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ShieldCheck } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ShieldCheck, ChevronLeft, ChevronRight, Filter, Download, ChevronUp, ChevronDown, FileText } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useData } from '@/context/DataContext';
 
 const ESTADOS = [
   'proyeccion', 'venta', 'en seguimiento', 'score bajo',
@@ -16,488 +17,232 @@ const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
 const initialForm: Partial<Registro> = {
   cuil: '', nombre: '', puntaje: 0, es_re: false,
-  analista: '', fecha: '', fecha_score: '', monto: 0,
+  analista: ANALISTAS[0], fecha: '', fecha_score: '', monto: 0,
   estado: 'proyeccion', comentarios: ''
 };
 
-// Regex para nombres: solo letras (incluyendo acentos y ñ), espacios, comas y guiones
+// Regex para nombres
 const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
 
-// ── Validación — isAdmin bypasea todas las reglas ──
+// ── Validación ──
 function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, string> {
-  if (isAdmin) return {}; // admin no tiene restricciones
+  if (isAdmin) return {}; 
   const errs: Record<string, string> = {};
-
   if (!form.nombre?.trim()) {
     errs.nombre = 'Nombre es requerido';
   } else if (form.nombre.trim().length < 2) {
     errs.nombre = 'Mínimo 2 caracteres';
   } else if (!REGEX_NOMBRE.test(form.nombre.trim())) {
-    errs.nombre = 'Solo letras — sin números ni símbolos';
+    errs.nombre = 'Solo letras';
   }
-
-  if (form.cuil?.trim()) {
-    if (form.cuil.length !== 11) errs.cuil = 'CUIL debe tener exactamente 11 dígitos';
-  }
-
-  if (!form.analista) errs.analista = 'Seleccioná un analista';
-  if (!form.fecha) errs.fecha = 'Fecha es requerida';
-  if (!form.monto || Number(form.monto) <= 0) errs.monto = 'Monto debe ser mayor a 0';
-  if (form.puntaje !== undefined && form.puntaje !== null) {
-    if (Number(form.puntaje) < 0 || Number(form.puntaje) > 999) errs.puntaje = 'Puntaje: 0 - 999';
-  }
+  if (form.cuil?.trim() && form.cuil.length !== 11) errs.cuil = 'CUIL: 11 dígitos';
+  if (!form.analista) errs.analista = 'Analista requerido';
+  if (!form.fecha) errs.fecha = 'Fecha requerida';
+  if (!form.monto || Number(form.monto) <= 0) errs.monto = 'Monto > 0';
   return errs;
 }
 
-// ── Componente de campo con error ──
-const Field = ({
-  label, error, children
-}: { label: string; error?: string; children: React.ReactNode }) => (
+const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
   <div className="form-group">
-    <label className="form-label">{label} {error && <span style={{ color: 'var(--rojo)', fontWeight: 400 }}>— {error}</span>}</label>
+    <label className="form-label">{label} {error && <span style={{ color: 'var(--rojo)' }}>— {error}</span>}</label>
     {children}
-    {error && <div style={{ fontSize: '11px', color: 'var(--rojo)', marginTop: '4px' }}>{error}</div>}
   </div>
 );
 
-// ── Modal de Registro (componente aislado con estado propio) ──
+// ── Modal de Registro ──
 const RegistroModal = memo(function RegistroModal({
-  isOpen, editingId, initialData, onClose, onSaved, isAdmin
+  isOpen, editingId, initialData, onClose, onSaved, onSavedWithRecordatorio, isAdmin
 }: {
-  isOpen: boolean;
-  editingId: string | null;
-  initialData: Partial<Registro>;
-  onClose: () => void;
-  onSaved: () => void;
-  isAdmin: boolean;
+  isOpen: boolean; editingId: string | null; initialData: Partial<Registro>; onClose: () => void; onSaved: (reg: Registro) => void; onSavedWithRecordatorio?: (registro: Registro) => void; isAdmin: boolean;
 }) {
   const [form, setForm] = useState<Partial<Registro>>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [duplicado, setDuplicado] = useState<Registro | null>(null);
   const [showDupModal, setShowDupModal] = useState(false);
+  const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
 
-  // Sincroniza form cuando cambian los datos iniciales (al abrir)
   useEffect(() => {
-    if (isOpen) {
-      setForm(initialData);
-      setErrors({});
-      setDuplicado(null);
-      setShowDupModal(false);
-    }
+    if (isOpen) { setForm(initialData); setErrors({}); setDuplicado(null); setShowDupModal(false); setAgendarRecordatorio(false); }
   }, [isOpen, initialData]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showDupModal) { setShowDupModal(false); e.stopImmediatePropagation(); }
+        else if (isOpen) { onClose(); e.stopImmediatePropagation(); }
+      }
+    };
+    if (isOpen || showDupModal) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, showDupModal, onClose]);
 
   const set = (field: keyof Registro, value: unknown) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => { const e = { ...prev }; delete e[field]; return e; });
   };
 
-  // Verifica duplicado con UNA sola query (OR entre cuil y nombre)
-  const verificarDuplicado = async (): Promise<Registro | null> => {
-    const cuil = form.cuil?.trim() || '';
-    const nombre = form.nombre?.trim() || '';
-    if (!cuil && !nombre) return null;
-
-    const conditions: string[] = [];
-    if (cuil.replace(/\D/g, '').length === 11) conditions.push(`cuil.eq.${cuil}`);
-    if (nombre.length >= 2) conditions.push(`nombre.ilike.${nombre}`);
-    if (conditions.length === 0) return null;
-
-    const { data } = await supabase
-      .from('registros')
-      .select('*')
-      .or(conditions.join(','))
-      .limit(5);
-
-    if (!data) return null;
-    for (const reg of data) {
-      if (reg.id === editingId) continue;
-      if (!ESTADOS_PERMITIDOS_DUPLICADO.includes(reg.estado?.toLowerCase())) return reg;
-    }
-    return null;
-  };
-
   const guardar = async (forzar = false) => {
     const errs = validarForm(form, isAdmin);
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-
-    // Solo verifica duplicados al crear
-    if (!editingId && !forzar) {
-      const dup = await verificarDuplicado();
-      if (dup) {
-        setDuplicado(dup);
-        setShowDupModal(true);
-        return;
-      }
-    }
-
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setSaving(true);
-    try {
-      const payload = {
-        cuil: form.cuil?.trim() || '',
-        nombre: form.nombre?.trim() || '',
-        puntaje: Number(form.puntaje) || 0,
-        es_re: !!form.es_re,
-        analista: form.analista || '',
-        fecha: form.fecha || null,
-        fecha_score: form.fecha_score || null,
-        monto: Number(form.monto) || 0,
-        estado: (form.estado || 'proyeccion').toLowerCase(),
-        comentarios: form.comentarios?.trim() || '',
-      };
-
-      if (editingId) {
-        const { error } = await supabase.from('registros').update(payload).eq('id', editingId);
-        if (error) throw error;
-        await supabase.from('auditoria').insert({
-          id_registro: payload.cuil || editingId, analista: payload.analista,
-          accion: 'Modificación', campo_modificado: 'Actualización', valor_anterior: '',
-          valor_nuevo: `Estado: ${payload.estado} | Monto: ${formatCurrency(payload.monto)}`,
-          id_analista: payload.analista,
-        });
-      } else {
-        const { error } = await supabase.from('registros').insert(payload);
-        if (error) throw error;
-        await supabase.from('auditoria').insert({
-          id_registro: payload.cuil || '', analista: payload.analista,
-          accion: 'Creación', campo_modificado: 'Nuevo Registro', valor_anterior: '',
-          valor_nuevo: `Monto: ${formatCurrency(payload.monto)} | Estado: ${payload.estado}`,
-          id_analista: payload.analista,
-        });
-      }
-      onSaved();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id, created_at, updated_at, ...cleanForm } = form as Registro & { created_at?: string; updated_at?: string };
+    const payload = {
+      ...cleanForm,
+      monto: Number(form.monto),
+      puntaje: Number(form.puntaje),
+      fecha: cleanForm.fecha || null,
+      fecha_score: cleanForm.fecha_score || null,
+    };
+    if (editingId) {
+      const { error } = await supabase.from('registros').update(payload).eq('id', editingId);
+      if (error) { setErrors({ _: error.message }); setSaving(false); return; }
+      const savedReg: Registro = { ...form as Registro, ...payload, id: editingId };
       onClose();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error desconocido';
-      setErrors({ _global: msg });
+      if (agendarRecordatorio && onSavedWithRecordatorio) {
+        onSavedWithRecordatorio(savedReg);
+      } else {
+        onSaved(savedReg);
+      }
+    } else {
+      const { data: newReg, error } = await supabase.from('registros').insert(payload).select().single();
+      if (error) { setErrors({ _: error.message }); setSaving(false); return; }
+      onClose();
+      if (agendarRecordatorio && onSavedWithRecordatorio && newReg) {
+        onSavedWithRecordatorio(newReg as Registro);
+      } else {
+        onSaved(newReg as Registro);
+      }
     }
     setSaving(false);
   };
 
   if (!isOpen) return null;
 
-  const inputBorder = (field: string) =>
-    errors[field] ? '1px solid var(--rojo)' : undefined;
-
   return (
-    <>
-      {/* Modal principal */}
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h3 className="modal-title">{editingId ? 'Editar Registro' : 'Nuevo Registro'}</h3>
-              {isAdmin && (
-                <span style={{
-                  fontSize: '10px', fontWeight: 700, color: '#f7e479',
-                  background: 'rgba(247,228,121,0.1)', border: '1px solid rgba(247,228,121,0.2)',
-                  borderRadius: '6px', padding: '2px 8px', textTransform: 'uppercase', letterSpacing: '0.5px',
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                }}>
-                  <ShieldCheck size={10} /> Admin
-                </span>
-              )}
-            </div>
-            <button className="btn-icon" onClick={onClose}><X size={20} style={{ color: '#888' }} /></button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">{editingId ? 'Editar' : 'Nuevo'} Registro</h3>
+          <button className="btn-icon" onClick={onClose}><X size={20} /></button>
+        </div>
+        <div className="modal-body">
+          <div className="form-row">
+            <Field label="CUIL" error={errors.cuil}><input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" /></Field>
+            <Field label="Nombre *" error={errors.nombre}><input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} autoFocus /></Field>
           </div>
-
-          <div className="modal-body">
-            {errors._global && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                background: 'rgba(220,53,69,0.08)', border: '1px solid rgba(220,53,69,0.2)',
-                borderRadius: '10px', padding: '10px 14px', marginBottom: '16px',
-                fontSize: '13px', color: 'var(--rojo)',
-              }}>
-                <AlertCircle size={14} /> {errors._global}
-              </div>
-            )}
-
-            <div className="form-row">
-              <Field label="CUIL" error={errors.cuil}>
-                <input
-                  className="form-input"
-                  placeholder="Solo números — 11 dígitos"
-                  inputMode="numeric"
-                  maxLength={11}
-                  style={{ borderColor: errors.cuil ? 'var(--rojo)' : undefined, letterSpacing: '2px' }}
-                  value={form.cuil || ''}
-                  onKeyDown={e => {
-                    // Bloquea letras, guiones y cualquier caracter no numérico
-                    // Permite: dígitos, Backspace, Delete, Tab, Enter, flechas, Ctrl/Cmd combos
-                    const allowed = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
-                    if (!allowed.includes(e.key) && !/^\d$/.test(e.key) && !e.ctrlKey && !e.metaKey) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onChange={e => set('cuil', sanitizarCuil(e.target.value))}
-                />
-              </Field>
-              <Field label="Nombre *" error={errors.nombre}>
-                <input
-                  className="form-input"
-                  placeholder="Nombre del cliente"
-                  style={{ border: inputBorder('nombre') }}
-                  value={form.nombre || ''}
-                  onChange={e => set('nombre', capitalizarNombre(e.target.value))}
-                  autoFocus
-                />
-              </Field>
-            </div>
-
-            <div className="form-row">
-              <Field label="Analista *" error={errors.analista}>
-                <select
-                  className="form-select"
-                  style={{ border: inputBorder('analista') }}
-                  value={form.analista || ''}
-                  onChange={e => set('analista', e.target.value)}
-                >
-                  <option value="">Seleccionar...</option>
-                  {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </Field>
-              <div className="form-group">
-                <label className="form-label">Estado</label>
-                <select
-                  className="form-select"
-                  value={form.estado || 'proyeccion'}
-                  onChange={e => set('estado', e.target.value)}
-                >
-                  {ESTADOS.map(e => <option key={e} value={e}>{getStatusLabel(e)}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <Field label="Monto *" error={errors.monto}>
-                <input
-                  className="form-input"
-                  type="number"
-                  placeholder="0"
-                  min="1"
-                  style={{ border: inputBorder('monto') }}
-                  value={form.monto || ''}
-                  onChange={e => set('monto', Number(e.target.value))}
-                />
-              </Field>
-              <Field label="Puntaje" error={errors.puntaje}>
-                <input
-                  className="form-input"
-                  type="number"
-                  placeholder="0"
-                  min="0"
-                  max="999"
-                  style={{ border: inputBorder('puntaje') }}
-                  value={form.puntaje || ''}
-                  onChange={e => set('puntaje', Number(e.target.value))}
-                />
-              </Field>
-            </div>
-
-            <div className="form-row">
-              <Field label="Fecha *" error={errors.fecha}>
-                <input
-                  className="form-input"
-                  type="date"
-                  style={{ border: inputBorder('fecha') }}
-                  value={form.fecha || ''}
-                  onChange={e => set('fecha', e.target.value)}
-                />
-              </Field>
-              <div className="form-group">
-                <label className="form-label">Fecha Score</label>
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.fecha_score || ''}
-                  onChange={e => set('fecha_score', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Comentarios</label>
-              <textarea
-                className="form-textarea"
-                placeholder="Observaciones..."
-                value={form.comentarios || ''}
-                onChange={e => set('comentarios', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-checkbox">
-                <input
-                  type="checkbox"
-                  checked={!!form.es_re}
-                  onChange={e => set('es_re', e.target.checked)}
-                />
-                <span style={{ fontSize: '14px' }}>Es RE (Refinanciamiento)</span>
-              </label>
-            </div>
+          <div className="form-row">
+            <Field label="Analista *"><select className="form-select" value={form.analista || ANALISTAS[0]} onChange={e => set('analista', e.target.value)}>{ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}</select></Field>
+            <Field label="Estado"><select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>{ESTADOS.map(e => <option key={e} value={e}>{getStatusLabel(e)}</option>)}</select></Field>
           </div>
-
-          <div className="modal-footer">
-            <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-            <button className="btn-primary" onClick={() => guardar(false)} disabled={saving}>
-              {saving
-                ? <div className="spinner" style={{ width: 16, height: 16 }} />
-                : <Save size={16} />
-              }
-              {editingId ? 'Guardar Cambios' : 'Crear Registro'}
-            </button>
+          <div className="form-row">
+            <Field label="Monto *"><input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} /></Field>
+            <Field label="Fecha *"><input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} /></Field>
           </div>
+          <div className="form-row">
+            <Field label="Fecha Score"><input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} /></Field>
+            <Field label="Score"><input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" /></Field>
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <label className="toggle-card">
+              <span className="toggle-switch">
+                <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} />
+                <span className="toggle-slider" />
+              </span>
+              <span className="toggle-label">
+                <FileText size={14} />
+                Resumen Ejecutivo (RE)
+              </span>
+            </label>
+            <label className="toggle-card">
+              <span className="toggle-switch">
+                <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} />
+                <span className="toggle-slider" />
+              </span>
+              <span className="toggle-label">
+                <AlertTriangle size={14} />
+                Agendar Recordatorio
+              </span>
+            </label>
+          </div>
+          <p className="modal-required-legend">Los campos marcados con * son obligatorios</p>
+        </div>
+        <div className="modal-footer">
+          {errors._ && <span style={{ color: 'var(--rojo)', fontSize: '13px', flex: 1 }}>{errors._}</span>}
+          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={() => guardar(false)} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
         </div>
       </div>
-
-      {/* Modal duplicado */}
-      {showDupModal && duplicado && (
-        <div className="modal-overlay" onClick={() => setShowDupModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header" style={{ borderBottom: '1px solid rgba(220,53,69,0.2)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <AlertTriangle size={20} style={{ color: 'var(--naranja)' }} />
-                <h3 className="modal-title" style={{ color: 'var(--naranja)' }}>Duplicado Detectado</h3>
-              </div>
-              <button className="btn-icon" onClick={() => setShowDupModal(false)}>
-                <X size={20} style={{ color: '#888' }} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.6' }}>
-                Ya existe un registro con estos datos. ¿Querés crear uno nuevo de todas formas?
-              </p>
-              <div style={{ background: 'rgba(255,193,7,0.05)', border: '1px solid rgba(255,193,7,0.15)', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>Registro existente:</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: '#888' }}>
-                  <div><strong style={{ color: '#fff' }}>Nombre:</strong> {duplicado.nombre}</div>
-                  <div><strong style={{ color: '#fff' }}>CUIL:</strong> {duplicado.cuil}</div>
-                  <div><strong style={{ color: '#fff' }}>Estado:</strong> <span style={{ color: getStatusColor(duplicado.estado) }}>{getStatusLabel(duplicado.estado)}</span></div>
-                  <div><strong style={{ color: '#fff' }}>Monto:</strong> {formatCurrency(Number(duplicado.monto))}</div>
-                  <div><strong style={{ color: '#fff' }}>Analista:</strong> {duplicado.analista}</div>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setShowDupModal(false)}>
-                Cancelar
-              </button>
-              <button
-                className="btn-primary"
-                style={{ background: 'var(--naranja)', color: '#000' }}
-                onClick={() => { setShowDupModal(false); guardar(true); }}
-              >
-                Crear de Todas Formas
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 });
 
-// ── Modal de Recordatorio (componente aislado) ──
-const RecordatorioModal = memo(function RecordatorioModal({
-  registro, onClose
-}: {
-  registro: Registro | null;
-  onClose: (saved: boolean) => void;
-}) {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const [recForm, setRecForm] = useState({
-    nota: '',
-    fecha: tomorrow.toISOString().split('T')[0],
-    hora: '09:00',
-  });
+// ── Modal de Recordatorio ──
+const RecordatorioModal = memo(function RecordatorioModal({ registro, onClose }: { registro: Registro | null; onClose: (saved: boolean) => void; }) {
+  const [recForm, setRecForm] = useState({ nota: '', fecha: '', hora: '09:00' });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const { setPendingReminders } = useData();
 
   useEffect(() => {
     if (registro) {
-      const t = new Date();
-      t.setDate(t.getDate() + 1);
-      setRecForm({ nota: '', fecha: t.toISOString().split('T')[0], hora: '09:00' });
-      setError('');
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      setRecForm({ nota: '', fecha: tomorrow.toISOString().split('T')[0], hora: '09:00' });
     }
   }, [registro]);
 
   if (!registro) return null;
 
   const save = async () => {
-    if (!recForm.fecha) { setError('Fecha es requerida'); return; }
     setSaving(true);
-    const fechaHora = `${recForm.fecha}T${recForm.hora || '09:00'}:00`;
-    const { error: err } = await supabase.from('recordatorios').insert({
-      registro_id: registro.id,
-      nombre: registro.nombre,
-      cuil: registro.cuil,
-      analista: registro.analista,
-      estado: registro.estado,
-      nota: recForm.nota,
-      fecha_hora: fechaHora,
-      creado_por: registro.analista || 'Sistema',
-      mostrado: false,
+    await supabase.from('recordatorios').insert({
+      registro_id: registro.id, nombre: registro.nombre, cuil: registro.cuil, analista: registro.analista,
+      estado: registro.estado, nota: recForm.nota, fecha_hora: `${recForm.fecha}T${recForm.hora}:00`,
+      creado_por: registro.analista || 'Sistema', mostrado: false,
     });
-    setSaving(false);
-    if (err) { setError(err.message); return; }
-    onClose(true);
+    setPendingReminders(n => n + 1);
+    setSaving(false); onClose(true);
   };
 
   return (
     <div className="modal-overlay" onClick={() => onClose(false)}>
       <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Bell size={20} style={{ color: 'var(--azul)' }} />
-            <h3 className="modal-title">Agendar Recordatorio</h3>
-          </div>
-          <button className="btn-icon" onClick={() => onClose(false)}>
-            <X size={20} style={{ color: '#888' }} />
-          </button>
-        </div>
+        <div className="modal-header"><h3 className="modal-title">Recordatorio</h3><button className="btn-icon" onClick={() => onClose(false)}><X size={20} /></button></div>
         <div className="modal-body">
-          <div style={{ background: 'rgba(23,162,184,0.05)', border: '1px solid rgba(23,162,184,0.15)', borderRadius: '12px', padding: '12px', fontSize: '13px', color: '#888', marginBottom: '16px' }}>
-            <strong style={{ color: '#fff' }}>{registro.nombre}</strong>
-            {registro.cuil && <span style={{ marginLeft: '8px' }}>— {registro.cuil}</span>}
-          </div>
-          {error && (
-            <div style={{ fontSize: '13px', color: 'var(--rojo)', marginBottom: '12px' }}>{error}</div>
-          )}
           <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Fecha *</label>
-              <input className="form-input" type="date"
-                value={recForm.fecha}
-                onChange={e => setRecForm(p => ({ ...p, fecha: e.target.value }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Hora</label>
-              <input className="form-input" type="time"
-                value={recForm.hora}
-                onChange={e => setRecForm(p => ({ ...p, hora: e.target.value }))} />
-            </div>
+            <Field label="Fecha"><input className="form-input" type="date" value={recForm.fecha} onChange={e => setRecForm(p => ({ ...p, fecha: e.target.value }))} /></Field>
+            <Field label="Hora"><input className="form-input" type="time" value={recForm.hora} onChange={e => setRecForm(p => ({ ...p, hora: e.target.value }))} /></Field>
           </div>
-          <div className="form-group">
-            <label className="form-label">Nota</label>
-            <textarea className="form-textarea" placeholder="Descripción del recordatorio..."
-              value={recForm.nota}
-              onChange={e => setRecForm(p => ({ ...p, nota: e.target.value }))} />
-          </div>
+          <Field label="Nota"><textarea className="form-textarea" value={recForm.nota} onChange={e => setRecForm(p => ({ ...p, nota: e.target.value }))} /></Field>
+        </div>
+        <div className="modal-footer"><button className="btn-secondary" onClick={() => onClose(false)}>Cancelar</button><button className="btn-primary" onClick={save} disabled={saving}>Agendar</button></div>
+      </div>
+    </div>
+  );
+});
+
+// ── Modal de confirmación de borrado ──
+const DeleteModal = memo(function DeleteModal({ registro, onConfirm, onCancel }: {
+  registro: Registro | null; onConfirm: () => void; onCancel: () => void;
+}) {
+  if (!registro) return null;
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-content" style={{ maxWidth: '420px' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title" style={{ color: '#ef4444' }}>Eliminar registro</h3>
+          <button className="btn-icon" onClick={onCancel}><X size={20} /></button>
+        </div>
+        <div className="modal-body" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+          <p style={{ color: '#aaa', fontSize: '14px', lineHeight: 1.6 }}>
+            ¿Eliminar a <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?
+            Esta acción no se puede deshacer.
+          </p>
         </div>
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={() => onClose(false)}>Cancelar</button>
-          <button className="btn-primary" onClick={save} disabled={saving}>
-            {saving
-              ? <div className="spinner" style={{ width: 16, height: 16 }} />
-              : <Bell size={16} />
-            }
-            Agendar
+          <button className="btn-secondary" onClick={onCancel}>Cancelar</button>
+          <button className="btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={onConfirm}>
+            <Trash2 size={14} /> Eliminar
           </button>
         </div>
       </div>
@@ -508,153 +253,203 @@ const RecordatorioModal = memo(function RecordatorioModal({
 // ── Página principal ──
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
-  const [registros, setRegistros] = useState<Registro[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { registros, setRegistros, loading, refresh } = useData();
   const [search, setSearch] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroAnalista, setFiltroAnalista] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
-
-  // Modal registro
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
-
-  // Modal recordatorio
   const [recordatorioTarget, setRecordatorioTarget] = useState<Registro | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
 
-  const fetchRegistros = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('registros')
-      .select('*')
-      .order('fecha', { ascending: false })
-      .limit(2000);
-    if (!error && data) setRegistros(data);
-    setLoading(false);
-  }, []);
+  // Filtros Avanzados
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
+  const [filtroMontoMin, setFiltroMontoMin] = useState('');
+  const [filtroMontoMax, setFiltroMontoMax] = useState('');
+  const [filtroScoreMin, setFiltroScoreMin] = useState('');
+  const [filtroScoreMax, setFiltroScoreMax] = useState('');
+  const [filtroEsRe, setFiltroEsRe] = useState('');
 
-  useEffect(() => { fetchRegistros(); }, [fetchRegistros]);
+  const fetchRegistros = useCallback((silent = false) => { refresh(silent); }, [refresh]);
 
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 4000);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
+  useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); } }, [toast]);
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => {
-    setToast({ message, type });
-  }, []);
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => setToast({ message, type }), []);
 
-  // Filtrado memoizado — no recalcula en cada render
-  const filteredRegistros = useMemo(() => registros.filter(r => {
-    const matchSearch = !search ||
-      r.nombre?.toLowerCase().includes(search.toLowerCase()) ||
-      r.cuil?.toLowerCase().includes(search.toLowerCase()) ||
-      r.analista?.toLowerCase().includes(search.toLowerCase());
-    const matchEstado = !filtroEstado || r.estado === filtroEstado;
-    const matchAnalista = !filtroAnalista || r.analista === filtroAnalista;
-    return matchSearch && matchEstado && matchAnalista;
-  }), [registros, search, filtroEstado, filtroAnalista]);
+  const filteredRegistros = useMemo(() => {
+    const list = registros.filter(r => {
+      const s = search.toLowerCase();
+      const mSearch = !search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s);
+      const mEstado = !filtroEstado || r.estado === filtroEstado;
+      const mAnalista = !filtroAnalista || r.analista === filtroAnalista;
+      const mDesde = !filtroFechaDesde || (r.fecha && r.fecha >= filtroFechaDesde);
+      const mHasta = !filtroFechaHasta || (r.fecha && r.fecha <= filtroFechaHasta);
+      const mMin = !filtroMontoMin || (Number(r.monto) >= Number(filtroMontoMin));
+      const mMax = !filtroMontoMax || (Number(r.monto) <= Number(filtroMontoMax));
+      const mScoreMin = !filtroScoreMin || (r.puntaje !== null && r.puntaje !== undefined && Number(r.puntaje) >= Number(filtroScoreMin));
+      const mScoreMax = !filtroScoreMax || (r.puntaje !== null && r.puntaje !== undefined && Number(r.puntaje) <= Number(filtroScoreMax));
+      const mRe = !filtroEsRe || (filtroEsRe === 'si' ? r.es_re : !r.es_re);
+      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe;
+    });
 
-  const openNew = useCallback(() => {
-    setEditingId(null);
-    setModalInitialData({ ...initialForm });
-    setModalOpen(true);
-  }, []);
+    return [...list].sort((a, b) => {
+      const dA = a.fecha || '';
+      const dB = b.fecha || '';
+      if (dA > dB) return -1;
+      if (dA < dB) return 1;
 
+      const isPriA = a.estado === 'venta' || a.estado === 'derivado / aprobado cc';
+      const isPriB = b.estado === 'venta' || b.estado === 'derivado / aprobado cc';
+      if (isPriA && !isPriB) return -1;
+      if (!isPriA && isPriB) return 1;
+
+      return 0;
+    });
+  }, [registros, search, filtroEstado, filtroAnalista, filtroFechaDesde, filtroFechaHasta, filtroMontoMin, filtroMontoMax, filtroScoreMin, filtroScoreMax, filtroEsRe]);
+
+  const totalPages = Math.ceil(filteredRegistros.length / pageSize) || 1;
+  const paginatedRegistros = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRegistros.slice(start, start + pageSize);
+  }, [filteredRegistros, currentPage, pageSize]);
+
+  useEffect(() => { setCurrentPage(1); }, [search, filtroEstado, filtroAnalista, pageSize, filtroFechaDesde, filtroFechaHasta, filtroMontoMin, filtroMontoMax, filtroEsRe, filtroScoreMin, filtroScoreMax]);
+
+  const openNew = useCallback(() => { setEditingId(null); setModalInitialData({ ...initialForm }); setModalOpen(true); }, []);
   const openEdit = useCallback((reg: Registro) => {
     setEditingId(reg.id);
-    setModalInitialData({
-      cuil: reg.cuil, nombre: reg.nombre, puntaje: reg.puntaje,
-      es_re: reg.es_re, analista: reg.analista,
-      fecha: reg.fecha || '', fecha_score: reg.fecha_score || '',
-      monto: reg.monto, estado: reg.estado, comentarios: reg.comentarios,
-    });
+    setModalInitialData({ ...reg, fecha: reg.fecha || '', fecha_score: reg.fecha_score || '' });
     setModalOpen(true);
   }, []);
 
-  const handleDelete = useCallback(async (reg: Registro) => {
-    if (!confirm(`¿Eliminar registro de ${reg.nombre}?`)) return;
-    const { error } = await supabase.from('registros').delete().eq('id', reg.id);
-    if (error) { showToast('Error al eliminar', 'error'); return; }
-    await supabase.from('auditoria').insert({
-      id_registro: reg.cuil || reg.id, analista: reg.analista || '',
-      accion: 'Eliminación', campo_modificado: 'Registro Eliminado',
-      valor_anterior: `${reg.nombre} | ${formatCurrency(reg.monto)}`,
-      valor_nuevo: '', id_analista: reg.analista || '',
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
+    setDeleteTarget(null);
+    setRegistros(prev => prev.filter(r => r.id !== id));
+    showToast('Eliminado', 'success');
+    supabase.from('registros').delete().eq('id', id);
+  }, [deleteTarget, showToast]);
+
+  const applyOptimistic = useCallback((reg: Registro) => {
+    setRegistros(prev => {
+      const idx = prev.findIndex(r => r.id === reg.id);
+      if (idx >= 0) { const next = [...prev]; next[idx] = reg; return next; }
+      return [reg, ...prev];
     });
-    showToast('Registro eliminado', 'success');
-    fetchRegistros();
-  }, [fetchRegistros, showToast]);
+  }, []);
 
-  const handleSaved = useCallback(() => {
-    showToast(editingId ? 'Registro actualizado' : 'Registro creado', 'success');
-    fetchRegistros();
-  }, [editingId, fetchRegistros, showToast]);
+  const handleSaved = useCallback((reg: Registro) => {
+    applyOptimistic(reg);
+    showToast(reg.id && registros.some(r => r.id === reg.id) ? 'Actualizado' : 'Creado', 'success');
+    fetchRegistros(true);
+  }, [applyOptimistic, registros, fetchRegistros, showToast]);
 
-  const handleRecordatorioClose = useCallback((saved: boolean) => {
-    setRecordatorioTarget(null);
-    if (saved) showToast('Recordatorio agendado', 'success');
-  }, [showToast]);
+  const handleSavedWithRecordatorio = useCallback((reg: Registro) => {
+    applyOptimistic(reg);
+    showToast('Guardado', 'success');
+    fetchRegistros(true);
+    setRecordatorioTarget(reg);
+  }, [applyOptimistic, fetchRegistros, showToast]);
+  const handleRecordatorioClose = useCallback((saved: boolean) => { setRecordatorioTarget(null); if (saved) showToast('Agendado', 'success'); }, [showToast]);
+
+  const limpiarFiltros = useCallback(() => {
+    setSearch('');
+    setFiltroEstado('');
+    setFiltroAnalista('');
+    setFiltroFechaDesde('');
+    setFiltroFechaHasta('');
+    setFiltroMontoMin('');
+    setFiltroMontoMax('');
+    setFiltroScoreMin('');
+    setFiltroScoreMax('');
+    setFiltroEsRe('');
+    setCurrentPage(1);
+  }, []);
+
+  const exportarCSV = useCallback(() => {
+    const headers = ['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Puntaje', 'Es RE'];
+    const rows = filteredRegistros.map(r => [r.nombre, r.cuil, r.analista, r.estado, r.monto, r.fecha || '', r.puntaje || '', r.es_re ? 'Sí' : 'No']);
+    const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `registros.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }, [filteredRegistros]);
+
+  const hayFiltros = search || filtroEstado || filtroAnalista || filtroFechaDesde || filtroFechaHasta || filtroMontoMin || filtroMontoMax || filtroScoreMin || filtroScoreMax || filtroEsRe;
 
   return (
     <div className="dashboard-container">
-      {toast && (
-        <div className="toast-container">
-          <div className={`toast ${toast.type}`}>
-            <AlertCircle size={18} />
-            <span style={{ fontSize: '14px' }}>{toast.message}</span>
-          </div>
-        </div>
-      )}
+      {toast && <div className="toast-container"><div className={`toast ${toast.type}`}><AlertCircle size={18} /><span>{toast.message}</span></div></div>}
 
       <header className="dashboard-header">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Gestión de Clientes</h1>
-          <p style={{ color: '#888', fontSize: '14px' }}>
-            {loading ? 'Cargando...' : `${filteredRegistros.length} registros`}
-          </p>
+        <div /> 
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className="page-size-selector">
+            <span className="selector-label">MOSTRAR</span>
+            {[25, 50, 100, 200].map(sz => (
+              <button key={sz} onClick={() => setPageSize(sz)} className={`sz-btn ${pageSize === sz ? 'active' : ''}`}>{sz}</button>
+            ))}
+          </div>
+          <button className="btn-secondary" onClick={exportarCSV} disabled={filteredRegistros.length === 0}><Download size={16} /> Exportar</button>
+          <button className="btn-primary" onClick={openNew}><Plus size={18} /> Nuevo Registro</button>
         </div>
-        <button className="btn-primary" onClick={openNew}>
-          <Plus size={18} /> Nuevo Registro
-        </button>
       </header>
 
-      <div className="toolbar">
-        <div className="search-wrapper">
-          <Search size={16} className="search-icon" />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Buscar por CUIL, Nombre..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+      <div className="toolbar-container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
+            <div className="search-wrapper" style={{ width: '320px' }}>
+              <Search className="search-icon" size={16} />
+              <input type="text" className="search-input" placeholder="Busqueda general..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <select className="form-select" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}><option value="">Estados</option>{ESTADOS.map(st => <option key={st} value={st}>{getStatusLabel(st)}</option>)}</select>
+              <select className="form-select" value={filtroAnalista} onChange={e => setFiltroAnalista(e.target.value)}><option value="">Analistas</option>{ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}</select>
+              <button onClick={() => setShowAdvanced(!showAdvanced)} className="btn-secondary" style={{ border: showAdvanced ? '1px solid #fff' : undefined }}>
+                <Filter size={14} /> Filtros {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+              {hayFiltros && (
+                <button onClick={limpiarFiltros} className="btn-clear">
+                  <X size={14} /> Limpiar filtros
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="pagination-controls">
+            <span className="page-info">{filteredRegistros.length === 0 ? '0-0' : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredRegistros.length)}`} / {filteredRegistros.length}</span>
+            <div className="page-btns">
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-btn"><ChevronLeft size={16} /></button>
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages} className="p-btn"><ChevronRight size={16} /></button>
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <select className="form-select" style={{ minWidth: '150px' }}
-            value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
-            <option value="">Todos los estados</option>
-            {ESTADOS.map(e => <option key={e} value={e}>{getStatusLabel(e)}</option>)}
-          </select>
-          <select className="form-select" style={{ minWidth: '140px' }}
-            value={filtroAnalista} onChange={e => setFiltroAnalista(e.target.value)}>
-            <option value="">Todos los analistas</option>
-            {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-        </div>
+
+        {showAdvanced && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+            <div className="form-group"><label className="form-label">Desde</label><input type="date" className="form-input" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Hasta</label><input type="date" className="form-input" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Monto Min</label><input type="number" className="form-input" placeholder="$" value={filtroMontoMin} onChange={e => setFiltroMontoMin(e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Monto Max</label><input type="number" className="form-input" placeholder="$" value={filtroMontoMax} onChange={e => setFiltroMontoMax(e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Score Min</label><input type="number" className="form-input" placeholder="0" value={filtroScoreMin} onChange={e => setFiltroScoreMin(e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Score Max</label><input type="number" className="form-input" placeholder="999" value={filtroScoreMax} onChange={e => setFiltroScoreMax(e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Tipo</label><select className="form-select" value={filtroEsRe} onChange={e => setFiltroEsRe(e.target.value)}><option value="">Todos</option><option value="si">Solo RE</option><option value="no">Sin RE</option></select></div>
+          </div>
+        )}
       </div>
 
-      <div className="data-card">
+      <div className="data-card" style={{ marginTop: '0' }}>
         {loading ? (
-          <div className="loading-container"><div className="spinner" /><span>Cargando registros...</span></div>
+          <div className="loading-container"><div className="spinner" /><span>Cargando...</span></div>
         ) : filteredRegistros.length === 0 ? (
-          <div className="empty-state">
-            <p>No hay datos para mostrar</p>
-            <p>Creá un nuevo registro o ajustá los filtros.</p>
-          </div>
+          <div className="empty-state"><p>No hay datos</p></div>
         ) : (
           <table className="data-table">
             <thead>
@@ -662,55 +457,54 @@ export default function RegistrosPage() {
                 <th style={{ textAlign: 'center' }}>Cliente / CUIL</th>
                 <th style={{ textAlign: 'center' }}>Analista</th>
                 <th style={{ textAlign: 'center' }}>Fecha</th>
-                <th style={{ textAlign: 'center' }}>Fecha Score</th>
-                <th style={{ textAlign: 'center' }}>Monto</th>
                 <th style={{ textAlign: 'center' }}>Score</th>
+                <th style={{ textAlign: 'center' }}>Monto</th>
                 <th style={{ textAlign: 'center' }}>Estado</th>
                 <th style={{ textAlign: 'center' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredRegistros.map(reg => (
+              {paginatedRegistros.map(reg => (
                 <tr key={reg.id}>
                   <td style={{ textAlign: 'center' }}>
-                    <div style={{ fontWeight: 600, fontSize: '14px' }}>{reg.nombre}</div>
-                    {reg.cuil && <div style={{ fontSize: '11px', color: '#555' }}>CUIL: {reg.cuil}</div>}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '14px' }}>{reg.nombre}</span>
+                      {reg.es_re && (
+                        <span style={{ fontSize: '10px', fontWeight: 800, background: 'rgba(247,228,121,0.15)', color: 'var(--main-color)', border: '1px solid rgba(247,228,121,0.3)', borderRadius: '4px', padding: '1px 5px', letterSpacing: '0.05em' }}>RE</span>
+                      )}
+                    </div>
+                    {reg.cuil && <div style={{ fontSize: '11px', color: '#555' }}>{reg.cuil}</div>}
                   </td>
-                  <td style={{ textAlign: 'center' }}>{reg.analista || '-'}</td>
+                  <td style={{ textAlign: 'center' }}>{displayAnalista(reg.analista)}</td>
                   <td style={{ textAlign: 'center' }}>{formatDate(reg.fecha)}</td>
-                  <td style={{ textAlign: 'center', color: '#888' }}>{reg.fecha_score ? formatDate(reg.fecha_score) : <span style={{ color: '#333' }}>—</span>}</td>
-                  <td style={{ fontWeight: 700, fontSize: '15px', color: '#fff', textAlign: 'center' }}>{formatCurrency(Number(reg.monto))}</td>
                   <td style={{ textAlign: 'center' }}>
                     {reg.puntaje ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                        <div style={{ 
-                          width: 6, height: 6, borderRadius: '50%', 
-                          background: reg.puntaje >= 700 ? '#3b82f6' : reg.puntaje >= 600 ? '#4ade80' : reg.puntaje >= 500 ? '#fbbf24' : '#ef4444' 
-                        }} />
-                        <span style={{ fontSize: '13px', color: '#ccc' }}>{reg.puntaje}</span>
+                      <div className="score-cell">
+                        <div className="score-dot" style={(() => {
+                          const c = reg.puntaje >= 700 ? '#3b82f6' : reg.puntaje >= 600 ? '#4ade80' : reg.puntaje >= 500 ? '#fbbf24' : '#ef4444';
+                          return { background: c, color: c };
+                        })()} />
+                        <span>{reg.puntaje}</span>
                       </div>
-                    ) : (
-                      <span style={{ color: '#444' }}>—</span>
-                    )}
+                    ) : '—'}
                   </td>
+                  <td style={{ fontWeight: 700, textAlign: 'center' }}>{formatCurrency(Number(reg.monto))}</td>
                   <td style={{ textAlign: 'center' }}>
-                    <span className="status-badge" style={{ color: getStatusColor(reg.estado) }}>
+                    <span className="status-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
                       {getStatusLabel(reg.estado)}
                     </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                      <button className="btn-icon" onClick={() => openEdit(reg)} title="Editar">
-                        <Edit2 size={16} style={{ color: '#555' }} />
+                      <button className="btn-icon" style={{ color: '#fff' }} onClick={() => setRecordatorioTarget(reg)}>
+                        <Bell size={16} />
                       </button>
-                      <button className="btn-icon" onClick={() => setRecordatorioTarget(reg)} title="Recordatorio">
-                        <Bell size={16} style={{ color: '#555' }} />
+                      <button className="btn-icon" style={{ color: '#fff' }} onClick={() => openEdit(reg)}>
+                        <Edit2 size={16} />
                       </button>
-                      {isAdmin && (
-                        <button className="btn-icon btn-danger" onClick={() => handleDelete(reg)} title="Eliminar">
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                      <button className="btn-icon btn-danger" onClick={() => setDeleteTarget(reg)}>
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -720,20 +514,9 @@ export default function RegistrosPage() {
         )}
       </div>
 
-      {/* Modales aislados — no re-renderizan la tabla */}
-      <RegistroModal
-        isOpen={modalOpen}
-        editingId={editingId}
-        initialData={modalInitialData}
-        onClose={() => setModalOpen(false)}
-        onSaved={handleSaved}
-        isAdmin={isAdmin}
-      />
-
-      <RecordatorioModal
-        registro={recordatorioTarget}
-        onClose={handleRecordatorioClose}
-      />
+      <RegistroModal isOpen={modalOpen} editingId={editingId} initialData={modalInitialData} isAdmin={isAdmin} onClose={() => setModalOpen(false)} onSaved={handleSaved} onSavedWithRecordatorio={handleSavedWithRecordatorio} />
+      <RecordatorioModal registro={recordatorioTarget} onClose={handleRecordatorioClose} />
+      <DeleteModal registro={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} />
     </div>
   );
 }

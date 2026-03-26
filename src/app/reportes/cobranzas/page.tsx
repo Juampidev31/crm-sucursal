@@ -15,6 +15,8 @@ export default function ReporteCobranzasPage() {
   const [loading, setLoading] = useState(true);
   const [filtroAnalista, setFiltroAnalista] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const POR_PAGINA = 50;
 
   useEffect(() => {
     supabase
@@ -32,12 +34,17 @@ export default function ReporteCobranzasPage() {
   }, []);
 
   const filtered = useMemo(() => {
+    setPagina(1);
     return registros.filter(r => {
       if (filtroAnalista && r.analista !== filtroAnalista) return false;
       if (filtroEstado && r.estado !== filtroEstado) return false;
       return true;
     });
   }, [registros, filtroAnalista, filtroEstado]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtered.length / POR_PAGINA));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const filteredPagina = filtered.slice((paginaActual - 1) * POR_PAGINA, paginaActual * POR_PAGINA);
 
   const totales = useMemo(() => ({
     count: filtered.length,
@@ -180,7 +187,7 @@ export default function ReporteCobranzasPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r, i) => {
+                {filteredPagina.map((r, i) => {
                   const isVencido = r.fecha && new Date(r.fecha) < new Date();
                   return (
                     <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: isVencido ? 'rgba(248,113,113,0.04)' : (i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)') }}>
@@ -205,6 +212,24 @@ export default function ReporteCobranzasPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+        {!loading && filtered.length > POR_PAGINA && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: '12px', color: '#444' }}>
+              {(paginaActual - 1) * POR_PAGINA + 1}–{Math.min(paginaActual * POR_PAGINA, filtered.length)} de {filtered.length}
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
+                style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: paginaActual === 1 ? '#333' : '#aaa', cursor: paginaActual === 1 ? 'default' : 'pointer', fontSize: '13px' }}>
+                ‹
+              </button>
+              <span style={{ padding: '5px 10px', fontSize: '12px', color: '#666' }}>{paginaActual} / {totalPaginas}</span>
+              <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={paginaActual === totalPaginas}
+                style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: paginaActual === totalPaginas ? '#333' : '#aaa', cursor: paginaActual === totalPaginas ? 'default' : 'pointer', fontSize: '13px' }}>
+                ›
+              </button>
+            </div>
           </div>
         )}
       </div>

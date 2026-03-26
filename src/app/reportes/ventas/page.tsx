@@ -11,6 +11,8 @@ export default function ReporteVentasPage() {
   const [analistas, setAnalistas] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroAnalista, setFiltroAnalista] = useState('');
+  const [pagina, setPagina] = useState(1);
+  const POR_PAGINA = 50;
   const [filtroMes, setFiltroMes] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -45,6 +47,7 @@ export default function ReporteVentasPage() {
   }, []);
 
   const filtered = useMemo(() => {
+    setPagina(1);
     return registros.filter(r => {
       if (filtroAnalista && r.analista !== filtroAnalista) return false;
       if (filtroMes && r.fecha) {
@@ -53,6 +56,10 @@ export default function ReporteVentasPage() {
       return true;
     });
   }, [registros, filtroAnalista, filtroMes]);
+
+  const totalPaginas = Math.max(1, Math.ceil(filtered.length / POR_PAGINA));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const filteredPagina = filtered.slice((paginaActual - 1) * POR_PAGINA, paginaActual * POR_PAGINA);
 
   const totales = useMemo(() => ({
     operaciones: filtered.length,
@@ -214,7 +221,7 @@ export default function ReporteVentasPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r, i) => (
+                {filteredPagina.map((r, i) => (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
                     <td style={{ padding: '10px 16px', color: '#e0e0e0', fontWeight: 500, textAlign: 'center' }}>{r.nombre}</td>
                     <td style={{ padding: '10px 16px', color: '#444', fontFamily: 'monospace', fontSize: '12px', textAlign: 'center' }}>{r.cuil}</td>
@@ -233,9 +240,9 @@ export default function ReporteVentasPage() {
                     <td style={{ padding: '10px 16px', color: '#e0e0e0', textAlign: 'center' }}>
                       {r.puntaje ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                          <div style={{ 
-                            width: 6, height: 6, borderRadius: '50%', 
-                            background: r.puntaje >= 700 ? '#3b82f6' : r.puntaje >= 600 ? '#4ade80' : r.puntaje >= 500 ? '#fbbf24' : '#ef4444' 
+                          <div style={{
+                            width: 6, height: 6, borderRadius: '50%',
+                            background: r.puntaje >= 700 ? '#3b82f6' : r.puntaje >= 600 ? '#4ade80' : r.puntaje >= 500 ? '#fbbf24' : '#ef4444'
                           }} />
                           {r.puntaje}
                         </div>
@@ -245,6 +252,24 @@ export default function ReporteVentasPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {!loading && filtered.length > POR_PAGINA && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: '12px', color: '#444' }}>
+              {(paginaActual - 1) * POR_PAGINA + 1}–{Math.min(paginaActual * POR_PAGINA, filtered.length)} de {filtered.length}
+            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
+                style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: paginaActual === 1 ? '#333' : '#aaa', cursor: paginaActual === 1 ? 'default' : 'pointer', fontSize: '13px' }}>
+                ‹
+              </button>
+              <span style={{ padding: '5px 10px', fontSize: '12px', color: '#666' }}>{paginaActual} / {totalPaginas}</span>
+              <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={paginaActual === totalPaginas}
+                style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: paginaActual === totalPaginas ? '#333' : '#aaa', cursor: paginaActual === totalPaginas ? 'default' : 'pointer', fontSize: '13px' }}>
+                ›
+              </button>
+            </div>
           </div>
         )}
       </div>

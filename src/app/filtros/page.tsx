@@ -94,9 +94,6 @@ export default function FiltrosPage() {
       <header className="dashboard-header">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Filtros Avanzados</h1>
-          <p style={{ color: '#888', fontSize: '14px' }}>
-            {loading ? 'Cargando...' : `${filtered.length} de ${registros.length} registros`}
-          </p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {hayFiltros && (

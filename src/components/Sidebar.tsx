@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Plus,
   AlignJustify,
   PieChart,
   Users,
-  Filter,
   FileText,
   DollarSign,
   Activity,
@@ -21,7 +19,7 @@ import {
   Bell,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { useData } from '@/context/DataContext';
 
 interface SidebarItemProps {
   href: string;
@@ -32,69 +30,35 @@ interface SidebarItemProps {
 }
 
 const SidebarItem = ({ href, icon, label, active, badge }: SidebarItemProps) => (
-  <Link href={href} className={`sidebar-item ${active ? 'active' : ''}`}>
+  <Link href={href} className={`sidebar-item ${active ? 'active' : ''} ${badge && badge > 0 ? 'has-badge' : ''}`}>
     <span>{icon}</span>
     <span style={{ flex: 1 }}>{label}</span>
     {badge && badge > 0 ? (
-      <span style={{
-        background: 'var(--rojo)', color: '#fff', fontSize: '10px', fontWeight: 700,
-        borderRadius: '10px', padding: '1px 6px', minWidth: '18px', textAlign: 'center',
-      }}>
+      <span className="sidebar-badge">
         {badge > 99 ? '99+' : badge}
       </span>
     ) : null}
   </Link>
 );
 
-export default function Sidebar() {
+export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const pathname = usePathname();
   const { isAdmin } = useAuth();
-  const [pendingReminders, setPendingReminders] = useState(0);
-
-  const fetchPendingCount = useCallback(async () => {
-    const { count } = await supabase
-      .from('recordatorios')
-      .select('*', { count: 'exact', head: true })
-      .eq('mostrado', false);
-    setPendingReminders(count || 0);
-  }, []);
-
-  useEffect(() => {
-    fetchPendingCount();
-    const interval = setInterval(fetchPendingCount, 60000);
-    return () => clearInterval(interval);
-  }, [fetchPendingCount]);
+  const { pendingReminders } = useData();
 
   return (
-    <aside className="main-sidebar">
+    <aside className={`main-sidebar${hidden ? ' sidebar-hidden' : ''}`}>
       <div className="sidebar-header">
         <div className="brand-wrapper">
           <div className="brand-box">
             <LayoutDashboard size={18} />
           </div>
-          <span className="brand-text">PROYECCIONES</span>
+          <span className="brand-text">Gestión de Clientes</span>
         </div>
       </div>
 
       <div className="sidebar-content">
 
-        {/* Botón de acción principal */}
-        <div style={{ padding: '8px 12px 4px' }}>
-          <Link
-            href="/registros?nuevo=1"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '10px 14px', borderRadius: '10px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              fontSize: '14px', fontWeight: 600, color: '#fff',
-              transition: 'all 0.2s',
-            }}
-          >
-            <Plus size={16} />
-            Nuevo Registro
-          </Link>
-        </div>
 
         {/* Menú principal */}
         <div className="nav-group" style={{ marginTop: '8px' }}>
@@ -105,16 +69,16 @@ export default function Sidebar() {
             active={pathname === '/registros'}
           />
           <SidebarItem
+            href="/analistas"
+            icon={<Users size={18} />}
+            label="Reportes"
+            active={pathname === '/analistas'}
+          />
+          <SidebarItem
             href="/"
             icon={<PieChart size={18} />}
             label="Métricas y estados"
             active={pathname === '/'}
-          />
-          <SidebarItem
-            href="/analistas"
-            icon={<Users size={18} />}
-            label="Analistas"
-            active={pathname === '/analistas'}
           />
           <SidebarItem
             href="/recordatorios"
@@ -122,12 +86,6 @@ export default function Sidebar() {
             label="Recordatorios"
             active={pathname === '/recordatorios'}
             badge={pendingReminders}
-          />
-          <SidebarItem
-            href="/filtros"
-            icon={<Filter size={18} />}
-            label="Filtros Avanzados"
-            active={pathname === '/filtros'}
           />
         </div>
 
