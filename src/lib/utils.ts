@@ -1,0 +1,175 @@
+/**
+ * Formatters cacheados — se crean una sola vez al cargar el módulo
+ * (en lugar de crear nuevas instancias en cada llamada)
+ */
+const currencyFmt = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+const dateFmt = new Intl.DateTimeFormat('es-AR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
+const dateTimeFmt = new Intl.DateTimeFormat('es-AR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+export const formatCurrency = (value: number): string =>
+  currencyFmt.format(value);
+
+export const formatDate = (date: string | Date | null): string => {
+  if (!date) return '-';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '-';
+  return dateFmt.format(d);
+};
+
+export const formatDateTime = (date: string | Date | null): string => {
+  if (!date) return '-';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '-';
+  return dateTimeFmt.format(d);
+};
+
+export const getStatusColor = (status: string): string => {
+  const s = status?.toLowerCase();
+  if (s === 'venta') return 'var(--verde)';
+  if (s === 'proyeccion') return 'var(--main-color)';
+  if (s === 'en seguimiento') return 'var(--azul)';
+  if (s === 'score bajo') return 'var(--rojo)';
+  if (s === 'afectaciones') return 'var(--naranja)';
+  if (s === 'derivado / aprobado cc') return '#9B59B6';
+  if (s === 'derivado / rechazado cc') return '#E67E22';
+  return 'var(--gris)';
+};
+
+export const getStatusLabel = (status: string): string => {
+  const map: Record<string, string> = {
+    'venta': 'Venta',
+    'proyeccion': 'Proyección',
+    'en seguimiento': 'En Seguimiento',
+    'score bajo': 'Score Bajo',
+    'afectaciones': 'Afectaciones',
+    'derivado / aprobado cc': 'Aprobado CC',
+    'derivado / rechazado cc': 'Rechazado CC',
+  };
+  return map[status?.toLowerCase()] || status;
+};
+
+export const calcularDiasHabilesEntreFechas = (fechaInicio: Date, fechaFin: Date): number => {
+  if (!fechaInicio || !fechaFin) return 0;
+  let inicio = new Date(fechaInicio);
+  let fin = new Date(fechaFin);
+  if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) return 0;
+  if (inicio > fin) [inicio, fin] = [fin, inicio];
+  let diasHabiles = 0;
+  const diaActual = new Date(inicio);
+  while (diaActual <= fin) {
+    const ds = diaActual.getDay();
+    if (ds >= 1 && ds <= 5) diasHabiles++;
+    diaActual.setDate(diaActual.getDate() + 1);
+  }
+  return diasHabiles;
+};
+
+export const calcularDiasHabilesAutomaticos = (mes?: number, anio?: number) => {
+  const hoy = new Date();
+  const targetAnio = anio ?? hoy.getFullYear();
+  const targetMes = mes ?? hoy.getMonth();
+  const ultimoDia = new Date(targetAnio, targetMes + 1, 0);
+  let diasHabiles = 0, diasTranscurridos = 0;
+  const esPasado = (targetAnio < hoy.getFullYear()) ||
+    (targetAnio === hoy.getFullYear() && targetMes < hoy.getMonth());
+  const esActual = (targetAnio === hoy.getFullYear() && targetMes === hoy.getMonth());
+  for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+    const ds = new Date(targetAnio, targetMes, dia).getDay();
+    if (ds >= 1 && ds <= 5) {
+      diasHabiles++;
+      if (esPasado || (esActual && dia <= hoy.getDate())) diasTranscurridos++;
+    }
+  }
+  return { diasHabiles, diasTranscurridos, diasRestantes: Math.max(0, diasHabiles - diasTranscurridos), sonManuales: false };
+};
+
+export const calcularComisiones = (
+  ventasMensuales: number,
+  cantidadVentas: number,
+  objetivoVentas: number,
+  objetivoOperaciones: number
+) => {
+  const pctV = ventasMensuales / (objetivoVentas || 1);
+  const pctO = cantidadVentas / (objetivoOperaciones || 1);
+
+  let comisionCapital = 0;
+  if (pctV >= 0.75) {
+    let coeficiente = 0;
+    if (pctV >= 1.20) coeficiente = 0.0045;
+    else if (pctV >= 1.10) coeficiente = 0.0037;
+    else if (pctV >= 0.90) coeficiente = 0.0030;
+    else if (pctV >= 0.75) coeficiente = 0.0020;
+    comisionCapital = ventasMensuales * coeficiente;
+  }
+
+  let porcentajeAdicional = 0;
+  if (pctO >= 1.00) porcentajeAdicional = 0.30;
+  else if (pctO >= 0.80) porcentajeAdicional = 0.20;
+  const comisionOperaciones = comisionCapital * porcentajeAdicional;
+
+  return {
+    comisionCapital,
+    comisionOperaciones,
+    comisionTotal: comisionCapital + comisionOperaciones,
+  };
+};
+
+/**
+ * Capitaliza la primera letra de cada palabra y agrega coma después del primer nombre.
+ * Ej: "garcia juan pablo" → "Garcia, Juan Pablo"
+ * Ej: "garcia"            → "Garcia"  (una sola palabra, sin coma)
+ * Preserva el espacio final para que el cursor no se pegue al escribir.
+ */
+export const capitalizarNombre = (value: string): string => {
+  const trailingSpace = value.endsWith(' ') ? ' ' : '';
+  const sinComas = value.replace(/,/g, '').replace(/\s+/g, ' ').trim();
+  const partes = sinComas.split(' ').filter(Boolean);
+  if (partes.length === 0) return '';
+  const cap = partes.map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+  if (cap.length === 1) return cap[0] + trailingSpace;
+  return cap[0] + ', ' + cap.slice(1).join(' ') + trailingSpace;
+};
+
+/**
+ * Sanitiza un CUIL: elimina todo lo que no sea dígito y limita a 11 caracteres
+ * Ej: "20-12345678-9" → "20123456789"
+ * Ej: "abc123" → "123"
+ */
+export const sanitizarCuil = (value: string): string => {
+  return value.replace(/\D/g, '').slice(0, 11);
+};
+
+/**
+ * Mapeo de valores internos de analista → nombre de display
+ * "Column5" es el nombre interno en la BD para PDV (Punto de Venta)
+ */
+const ANALISTA_ALIAS: Record<string, string> = {
+  'Column 5': 'PDV',
+  'Column5': 'PDV',  // fallback sin espacio
+};
+
+export const displayAnalista = (raw: string): string => ANALISTA_ALIAS[raw] ?? raw;
+
+export const hexToRgba = (hex: string, alpha: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
