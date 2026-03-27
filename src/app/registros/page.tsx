@@ -149,7 +149,7 @@ const RegistroModal = memo(function RegistroModal({
             </Field>
             <Field label="Estado">
               <select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>
-                {ESTADOS.map(e => <option key={e} value={e}>{STATUS_CONFIG[e]?.label ?? e}</option>)}
+                {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
               </select>
             </Field>
           </div>
@@ -520,7 +520,7 @@ export default function RegistrosPage() {
             style={{ width: 150, height: 34, fontSize: 12 }}
           >
             <option value="">Todos los estados</option>
-            {ESTADOS.map(st => <option key={st} value={st}>{STATUS_CONFIG[st]?.label ?? st}</option>)}
+            {ESTADOS.map(st => <option key={st} value={st}>{STATUS_LABEL[st] ?? st}</option>)}
           </select>
 
           {/* Analista */}
