@@ -127,34 +127,8 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
       style={{ background: '#070708' }}
     >
 
-      {/* Brand */}
-      <div style={{
-        padding: '20px 20px 16px',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-          {/* Logo box — same style as icon boxes */}
-          <div style={{
-            width: 34, height: 34,
-            background: '#fff', borderRadius: 9,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <AlignJustify size={14} color="#000" strokeWidth={2.5} />
-          </div>
-          <div style={{ lineHeight: 1.3 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>
-              Proyección
-            </div>
-            <div style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1px' }}>
-              y Ventas
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Nav */}
-      <div className="sidebar-content" style={{ padding: '10px 0 12px' }}>
+      <div className="sidebar-content" style={{ padding: '40px 0 12px' }}>
 
         {/* Principal */}
         {NAV_MAIN.map(item => (
