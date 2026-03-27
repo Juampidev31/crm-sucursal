@@ -686,9 +686,12 @@ export default function RegistrosPage() {
                     {/* Score */}
                     <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                       {reg.puntaje ? (
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>
-                          {reg.puntaje}
-                        </span>
+                        <div className="score-cell" style={{ justifyContent: 'flex-end' }}>
+                          <div className="score-dot" style={{
+                            background: reg.puntaje >= 700 ? '#2563eb' : reg.puntaje >= 600 ? '#059669' : reg.puntaje >= 500 ? '#d97706' : '#dc2626',
+                          }} />
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>{reg.puntaje}</span>
+                        </div>
                       ) : (
                         <span style={{ color: '#222', fontSize: 13 }}>—</span>
                       )}
