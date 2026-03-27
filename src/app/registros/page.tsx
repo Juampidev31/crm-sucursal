@@ -21,19 +21,16 @@ const initialForm: Partial<Registro> = {
 
 const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
 
-// Status badge config
-const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string; label: string }> = {
-  'venta':                   { bg: 'rgba(16,185,129,0.10)',  color: '#34d399', border: 'rgba(16,185,129,0.25)', label: 'Venta'          },
-  'proyeccion':              { bg: 'rgba(96,165,250,0.10)',  color: '#93c5fd', border: 'rgba(96,165,250,0.25)', label: 'Proyección'     },
-  'en seguimiento':          { bg: 'rgba(251,191,36,0.10)',  color: '#fcd34d', border: 'rgba(251,191,36,0.25)', label: 'En seguimiento' },
-  'score bajo':              { bg: 'rgba(248,113,113,0.10)', color: '#fca5a5', border: 'rgba(248,113,113,0.2)', label: 'Score bajo'     },
-  'afectaciones':            { bg: 'rgba(239,68,68,0.12)',   color: '#f87171', border: 'rgba(239,68,68,0.3)',   label: 'Afectaciones'   },
-  'derivado / aprobado cc':  { bg: 'rgba(34,211,238,0.10)', color: '#67e8f9', border: 'rgba(34,211,238,0.25)', label: 'Aprob. CC'      },
-  'derivado / rechazado cc': { bg: 'rgba(156,163,175,0.08)',color: '#9ca3af', border: 'rgba(156,163,175,0.2)', label: 'Rechaz. CC'     },
+// Status label map (monochromatic — no per-state colors)
+const STATUS_LABEL: Record<string, string> = {
+  'venta':                   'Venta',
+  'proyeccion':              'Proyección',
+  'en seguimiento':          'En seguimiento',
+  'score bajo':              'Score bajo',
+  'afectaciones':            'Afectaciones',
+  'derivado / aprobado cc':  'Aprob. CC',
+  'derivado / rechazado cc': 'Rechaz. CC',
 };
-
-const SCORE_COLOR = (s: number) =>
-  s >= 700 ? '#60a5fa' : s >= 600 ? '#34d399' : s >= 500 ? '#fbbf24' : '#f87171';
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -306,21 +303,21 @@ const DeleteModal = memo(function DeleteModal({
 // ── StatusBadge ───────────────────────────────────────────────────────────────
 
 const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
-  const cfg = STATUS_CONFIG[estado?.toLowerCase()] ?? { bg: 'rgba(255,255,255,0.05)', color: '#888', border: 'rgba(255,255,255,0.08)', label: estado };
+  const label = STATUS_LABEL[estado?.toLowerCase()] ?? estado;
   return (
     <span style={{
       display: 'inline-block',
       padding: '3px 10px',
-      borderRadius: 6,
+      borderRadius: 4,
       fontSize: 11,
-      fontWeight: 700,
+      fontWeight: 600,
       letterSpacing: '0.2px',
-      background: cfg.bg,
-      color: cfg.color,
-      border: `1px solid ${cfg.border}`,
+      background: 'rgba(255,255,255,0.04)',
+      color: 'rgba(255,255,255,0.55)',
+      border: '1px solid rgba(255,255,255,0.07)',
       whiteSpace: 'nowrap',
     }}>
-      {cfg.label}
+      {label}
     </span>
   );
 });
@@ -654,8 +651,7 @@ export default function RegistrosPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedRegistros.map((reg, idx) => {
-                const isVenta = reg.estado === 'venta' || reg.estado === 'derivado / aprobado cc';
+              {paginatedRegistros.map((reg) => {
                 return (
                   <tr
                     key={reg.id}
@@ -670,7 +666,6 @@ export default function RegistrosPage() {
                     {/* Cliente */}
                     <td style={{ padding: '12px 16px', minWidth: 180 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {isVenta && <div style={{ width: 2, height: 32, background: STATUS_CONFIG[reg.estado]?.color ?? '#fff', borderRadius: 2, flexShrink: 0 }} />}
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{reg.nombre}</span>
@@ -696,7 +691,7 @@ export default function RegistrosPage() {
                     {/* Score */}
                     <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                       {reg.puntaje ? (
-                        <span style={{ fontSize: 13, fontWeight: 700, color: SCORE_COLOR(reg.puntaje) }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>
                           {reg.puntaje}
                         </span>
                       ) : (

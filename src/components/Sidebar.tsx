@@ -1,186 +1,164 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  AlignJustify,
-  PieChart,
-  Users,
-  FileText,
-  DollarSign,
-  Activity,
-  Settings,
-  Calendar,
-  Target,
-  Copy,
-  BarChart2,
-  Bell,
-  Plus,
-  Download,
-  X,
+  AlignJustify, BarChart2, PieChart, FileText,
+  DollarSign, Activity, Settings, Target, Copy, Bell, Plus,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter } from '@/context/FilterContext';
 
-interface SidebarItemProps {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-  active?: boolean;
-  badge?: number;
+// ── Nav structure ─────────────────────────────────────────────────────────────
+
+const NAV_MAIN = [
+  { href: '/registros', icon: AlignJustify, label: 'Registros'  },
+  { href: '/analistas', icon: BarChart2,    label: 'Reportes'   },
+  { href: '/',          icon: PieChart,     label: 'Métricas'   },
+];
+
+const NAV_INFORMES = [
+  { href: '/reportes/ventas',    icon: FileText,   label: 'Ventas'    },
+  { href: '/reportes/cobranzas', icon: DollarSign, label: 'Cobranzas' },
+];
+
+const NAV_ADMIN = [
+  { href: '/analisis-temporal', icon: Activity,    label: 'Análisis Temporal' },
+  { href: '/objetivos',         icon: Target,      label: 'Objetivos'         },
+  { href: '/duplicados',        icon: Copy,        label: 'Duplicados'        },
+  { href: '/auditoria',         icon: BarChart2,   label: 'Auditoría'         },
+  { href: '/ajustes',           icon: Settings,    label: 'Ajustes'           },
+];
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function NavItem({
+  href, icon: Icon, label, active, badge,
+}: {
+  href: string; icon: React.ElementType; label: string; active?: boolean; badge?: number;
+}) {
+  return (
+    <Link href={href} className={`sidebar-item${active ? ' active' : ''}`}>
+      <Icon size={15} strokeWidth={active ? 2.5 : 1.8} />
+      <span style={{ flex: 1 }}>{label}</span>
+      {badge && badge > 0 ? (
+        <span style={{
+          fontSize: 10, fontWeight: 700,
+          background: 'rgba(255,255,255,0.07)',
+          color: 'rgba(255,255,255,0.5)',
+          padding: '1px 6px', borderRadius: 10,
+          minWidth: 18, textAlign: 'center',
+        }}>
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : null}
+    </Link>
+  );
 }
 
-const SidebarItem = ({ href, icon, label, active, badge }: SidebarItemProps) => (
-  <Link href={href} className={`sidebar-item ${active ? 'active' : ''} ${badge && badge > 0 ? 'has-badge' : ''}`}>
-    <span>{icon}</span>
-    <span style={{ flex: 1 }}>{label}</span>
-    {badge && badge > 0 ? (
-      <span className="sidebar-badge">
-        {badge > 99 ? '99+' : badge}
-      </span>
-    ) : null}
-  </Link>
-);
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      padding: '0 16px 6px',
+      fontSize: 10, fontWeight: 700,
+      textTransform: 'uppercase', letterSpacing: '1px',
+      color: '#2a2a2a',
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const pathname = usePathname();
-  const { isAdmin } = useAuth();
+  const { isAdmin }          = useAuth();
   const { pendingReminders } = useData();
-  const {
-    filters, setFilter, limpiarFiltros, hayFiltros,
-    setIsCreationModalOpen, triggerExport, totalResults
-  } = useFilter();
+  const { setIsCreationModalOpen } = useFilter();
 
   return (
     <aside className={`main-sidebar${hidden ? ' sidebar-hidden' : ''}`}>
-      <div className="sidebar-header">
-        <div className="brand-wrapper">
-          <div className="brand-box">
-            <LayoutDashboard size={18} />
+
+      {/* Brand */}
+      <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 28, height: 28,
+            background: '#fff', borderRadius: 5,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <AlignJustify size={13} color="#000" strokeWidth={2.5} />
           </div>
-          <span className="brand-text">Proyección y Ventas</span>
+          <div style={{ lineHeight: 1.2 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Proyección</div>
+            <div style={{ fontSize: 10, color: '#333', fontWeight: 600 }}>y Ventas</div>
+          </div>
         </div>
       </div>
 
+      {/* Navigation */}
       <div className="sidebar-content">
-        {/* Acciones principales */}
-        <div style={{ padding: '0 12px 16px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              className="btn-primary"
-              onClick={() => setIsCreationModalOpen(true)}
-              style={{ flex: 1, justifyContent: 'center' }}
-            >
-              <Plus size={14} /> Nuevo
-            </button>
-            <button
-              className="btn-secondary"
-              onClick={triggerExport}
-              style={{ }}
-            >
-              <Download size={14} />
-            </button>
-          </div>
-        </div>
 
-        {/* Menú principal */}
+        {/* Main */}
         <div className="nav-group">
-          <SidebarItem
-            href="/registros"
-            icon={<AlignJustify size={18} />}
-            label="Registros"
-            active={pathname === '/registros'}
-          />
-          <SidebarItem
-            href="/analistas"
-            icon={<BarChart2 size={18} />}
-            label="Reportes"
-            active={pathname === '/analistas'}
-          />
-          <SidebarItem
-            href="/"
-            icon={<PieChart size={18} />}
-            label="Métricas"
-            active={pathname === '/'}
-          />
-          <SidebarItem
-            href="/recordatorios"
-            icon={<Bell size={18} />}
-            label="Recordatorios"
-            active={pathname === '/recordatorios'}
-            badge={pendingReminders}
-          />
+          {NAV_MAIN.map(item => (
+            <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={pathname === item.href} />
+          ))}
+          <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
         </div>
 
         {/* Informes */}
         <div className="nav-group">
-          <h4 className="group-label">INFORMES</h4>
-          <SidebarItem
-            href="/reportes/ventas"
-            icon={<FileText size={18} />}
-            label="Ventas"
-            active={pathname === '/reportes/ventas'}
-          />
-          <SidebarItem
-            href="/reportes/cobranzas"
-            icon={<DollarSign size={18} />}
-            label="Cobranzas"
-            active={pathname === '/reportes/cobranzas'}
-          />
+          <SectionLabel>Informes</SectionLabel>
+          {NAV_INFORMES.map(item => (
+            <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={pathname === item.href} />
+          ))}
         </div>
 
-        {/* Sección admin */}
+        {/* Admin */}
         {isAdmin && (
           <div className="nav-group">
-            <h4 className="group-label">ADMIN</h4>
-            <SidebarItem
-              href="/analisis-temporal"
-              icon={<Activity size={18} />}
-              label="Análisis Temporal"
-              active={pathname === '/analisis-temporal'}
-            />
-            <SidebarItem
-              href="/objetivos"
-              icon={<Target size={18} />}
-              label="Objetivos"
-              active={pathname === '/objetivos'}
-            />
-            <SidebarItem
-              href="/duplicados"
-              icon={<Copy size={18} />}
-              label="Duplicados"
-              active={pathname === '/duplicados'}
-            />
-            <SidebarItem
-              href="/auditoria"
-              icon={<BarChart2 size={18} />}
-              label="Auditoría"
-              active={pathname === '/auditoria'}
-            />
-            <SidebarItem
-              href="/ajustes"
-              icon={<Settings size={18} />}
-              label="Ajustes"
-              active={pathname === '/ajustes'}
-            />
+            <SectionLabel>Admin</SectionLabel>
+            {NAV_ADMIN.map(item => (
+              <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={pathname === item.href} />
+            ))}
           </div>
         )}
       </div>
 
-      {hayFiltros && (
-        <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-          <button
-            onClick={limpiarFiltros}
-            className="btn-clear"
-            style={{ width: '100%', fontSize: '12px', justifyContent: 'center' }}
-          >
-            <X size={14} /> Limpiar Filtros
-          </button>
-        </div>
-      )}
+      {/* Footer action */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <button
+          onClick={() => setIsCreationModalOpen(true)}
+          style={{
+            width: '100%', height: 32,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 6,
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: 12, fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+          }}
+        >
+          <Plus size={13} /> Nuevo registro
+        </button>
+      </div>
     </aside>
   );
 }
