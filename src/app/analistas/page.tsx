@@ -76,12 +76,12 @@ const ESTADOS_RESUMEN = [
 
 interface MesData { mes: string; obj: string; real: string; cumpl: string; cumplPct: number | null; varIM: string; ops: string; alcance: string; cumplOps: string; cumplOpsPct: number | null; varIMOps: string; }
 interface SeccionData { anio: number; meses: MesData[]; }
-interface LucianaData { trimestrales: { q1: string; q2: string; q3: string; q4: string }; secciones: SeccionData[]; }
+interface HistoricoData { secciones: SeccionData[]; }
 
 function pctColor(v: number | null) { if (v === null) return '#333'; if (v >= 100) return '#34d399'; if (v >= 75) return '#fbbf24'; return '#f87171'; }
 function varColor(v: string) { if (!v || v === '-') return '#555'; return v.startsWith('-') ? '#f87171' : '#34d399'; }
 
-function LucianaHistorico({ data }: { data: LucianaData }) {
+function AnalistaHistorico({ data }: { data: HistoricoData }) {
   const [anioSel, setAnioSel] = useState<number>(() =>
     data.secciones.length ? data.secciones[data.secciones.length - 1].anio : new Date().getFullYear()
   );
@@ -171,10 +171,12 @@ export default function AnalistasPage() {
   const [analista, setAnalista] = useState<string>(PDV);
   const [mes, setMes] = useState(now.getMonth());
   const [anio, setAnio] = useState(now.getFullYear());
-  const [lucianaData, setLucianaData] = useState<LucianaData | null>(null);
+  const [lucianaData, setLucianaData] = useState<HistoricoData | null>(null);
+  const [victoriaData, setVictoriaData] = useState<HistoricoData | null>(null);
 
   useEffect(() => {
-    fetch('/api/luciana').then(r => r.json()).then(setLucianaData);
+    fetch('/api/historico?gid=862186907').then(r => r.json()).then(setLucianaData);
+    fetch('/api/historico?gid=486046521').then(r => r.json()).then(setVictoriaData);
   }, []);
 
   const { registros: rawRegs, objetivos: todosObjs, diasConfig: diasCfg, loading } = useData();
@@ -996,10 +998,15 @@ export default function AnalistasPage() {
         </div>
       </div>
 
-      {/* ── Histórico anual Luciana (Google Sheets) ── */}
+      {/* ── Histórico anual (Google Sheets) ── */}
       {analista === 'Luciana' && lucianaData && (
         <div style={{ ...card, marginBottom: '16px' }}>
-          <LucianaHistorico data={lucianaData} />
+          <AnalistaHistorico data={lucianaData} />
+        </div>
+      )}
+      {analista === 'Victoria' && victoriaData && (
+        <div style={{ ...card, marginBottom: '16px' }}>
+          <AnalistaHistorico data={victoriaData} />
         </div>
       )}
 
