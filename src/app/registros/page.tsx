@@ -7,12 +7,8 @@ import { Registro } from '@/types';
 import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ShieldCheck, ChevronLeft, ChevronRight, Filter, Download, ChevronUp, ChevronDown, FileText } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
+import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 
-const ESTADOS = [
-  'proyeccion', 'venta', 'en seguimiento', 'score bajo',
-  'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc'
-];
-const ANALISTAS = ['Luciana', 'Victoria'];
 const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
 const initialForm: Partial<Registro> = {
@@ -58,12 +54,11 @@ const RegistroModal = memo(function RegistroModal({
   const [form, setForm] = useState<Partial<Registro>>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [duplicado, setDuplicado] = useState<Registro | null>(null);
   const [showDupModal, setShowDupModal] = useState(false);
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
 
   useEffect(() => {
-    if (isOpen) { setForm(initialData); setErrors({}); setDuplicado(null); setShowDupModal(false); setAgendarRecordatorio(false); }
+    if (isOpen) { setForm(initialData); setErrors({}); setShowDupModal(false); setAgendarRecordatorio(false); }
   }, [isOpen, initialData]);
 
   useEffect(() => {
@@ -144,6 +139,23 @@ const RegistroModal = memo(function RegistroModal({
             <Field label="Fecha Score"><input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} /></Field>
             <Field label="Score"><input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" /></Field>
           </div>
+          <div className="form-row">
+            <Field label="Tipo de cliente">
+              <select className="form-select" value={form.tipo_cliente || ''} onChange={e => set('tipo_cliente', e.target.value)}>
+                <option value="">— Sin especificar —</option>
+                <option value="Apertura">Apertura</option>
+                <option value="Renovacion">Renovación</option>
+              </select>
+            </Field>
+            <Field label="Acuerdo de precios">
+              <select className="form-select" value={form.acuerdo_precios || ''} onChange={e => set('acuerdo_precios', e.target.value)}>
+                <option value="">— Sin especificar —</option>
+                <option value="Riesgo Bajo">Riesgo Bajo</option>
+                <option value="Riesgo Medio">Riesgo Medio</option>
+                <option value="Premium">Premium</option>
+              </select>
+            </Field>
+          </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <label className="toggle-card">
               <span className="toggle-switch">
@@ -197,7 +209,7 @@ const RecordatorioModal = memo(function RecordatorioModal({ registro, onClose }:
     setSaving(true);
     await supabase.from('recordatorios').insert({
       registro_id: registro.id, nombre: registro.nombre, cuil: registro.cuil, analista: registro.analista,
-      estado: registro.estado, nota: recForm.nota, fecha_hora: `${recForm.fecha}T${recForm.hora}:00`,
+      estado: registro.estado, nota: recForm.nota, fecha_hora: `${recForm.fecha}T${recForm.hora}:00-03:00`,
       creado_por: registro.analista || 'Sistema', mostrado: false,
     });
     setPendingReminders(n => n + 1);
@@ -228,7 +240,7 @@ const DeleteModal = memo(function DeleteModal({ registro, onConfirm, onCancel }:
   if (!registro) return null;
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-content" style={{ maxWidth: '420px' }} onClick={e => e.stopPropagation()}>
+      <div className="modal-content modal-delete" style={{ maxWidth: '420px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title" style={{ color: '#ef4444' }}>Eliminar registro</h3>
           <button className="btn-icon" onClick={onCancel}><X size={20} /></button>
@@ -254,27 +266,20 @@ const DeleteModal = memo(function DeleteModal({ registro, onConfirm, onCancel }:
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
   const { registros, setRegistros, loading, refresh } = useData();
-  const [search, setSearch] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroAnalista, setFiltroAnalista] = useState('');
+  const { 
+    filters, setFilter, limpiarFiltros, hayFiltros, 
+    isCreationModalOpen, setIsCreationModalOpen, 
+    pageSize, triggerExport, exportTick,
+    currentPage, setCurrentPage, setTotalResults
+  } = useFilter();
+
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
   const [recordatorioTarget, setRecordatorioTarget] = useState<Registro | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
-
-  // Filtros Avanzados
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [filtroFechaDesde, setFiltroFechaDesde] = useState('');
-  const [filtroFechaHasta, setFiltroFechaHasta] = useState('');
-  const [filtroMontoMin, setFiltroMontoMin] = useState('');
-  const [filtroMontoMax, setFiltroMontoMax] = useState('');
-  const [filtroScoreMin, setFiltroScoreMin] = useState('');
-  const [filtroScoreMax, setFiltroScoreMax] = useState('');
-  const [filtroEsRe, setFiltroEsRe] = useState('');
 
   const fetchRegistros = useCallback((silent = false) => { refresh(silent); }, [refresh]);
 
@@ -282,19 +287,29 @@ export default function RegistrosPage() {
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => setToast({ message, type }), []);
 
+  // Escuchar trigger de creación desde el Sidebar
+  useEffect(() => {
+    if (isCreationModalOpen) {
+      setEditingId(null);
+      setModalInitialData({ ...initialForm });
+      setModalOpen(true);
+      setIsCreationModalOpen(false);
+    }
+  }, [isCreationModalOpen, setIsCreationModalOpen]);
+
   const filteredRegistros = useMemo(() => {
     const list = registros.filter(r => {
-      const s = search.toLowerCase();
-      const mSearch = !search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s);
-      const mEstado = !filtroEstado || r.estado === filtroEstado;
-      const mAnalista = !filtroAnalista || r.analista === filtroAnalista;
-      const mDesde = !filtroFechaDesde || (r.fecha && r.fecha >= filtroFechaDesde);
-      const mHasta = !filtroFechaHasta || (r.fecha && r.fecha <= filtroFechaHasta);
-      const mMin = !filtroMontoMin || (Number(r.monto) >= Number(filtroMontoMin));
-      const mMax = !filtroMontoMax || (Number(r.monto) <= Number(filtroMontoMax));
-      const mScoreMin = !filtroScoreMin || (r.puntaje !== null && r.puntaje !== undefined && Number(r.puntaje) >= Number(filtroScoreMin));
-      const mScoreMax = !filtroScoreMax || (r.puntaje !== null && r.puntaje !== undefined && Number(r.puntaje) <= Number(filtroScoreMax));
-      const mRe = !filtroEsRe || (filtroEsRe === 'si' ? r.es_re : !r.es_re);
+      const s = filters.search.toLowerCase();
+      const mSearch = !filters.search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s);
+      const mEstado = !filters.estado || r.estado === filters.estado;
+      const mAnalista = !filters.analista || r.analista === filters.analista;
+      const mDesde = !filters.fechaDesde || (r.fecha && r.fecha >= filters.fechaDesde);
+      const mHasta = !filters.fechaHasta || (r.fecha && r.fecha <= filters.fechaHasta);
+      const mMin = !filters.montoMin || (Number(r.monto) >= Number(filters.montoMin));
+      const mMax = !filters.montoMax || (Number(r.monto) <= Number(filters.montoMax));
+      const mScoreMin = !filters.scoreMin || (r.puntaje !== null && r.puntaje !== undefined && Number(r.puntaje) >= Number(filters.scoreMin));
+      const mScoreMax = !filters.scoreMax || (r.puntaje !== null && r.puntaje !== undefined && Number(r.puntaje) <= Number(filters.scoreMax));
+      const mRe = !filters.esRe || (filters.esRe === 'si' ? r.es_re : !r.es_re);
       return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe;
     });
 
@@ -311,15 +326,36 @@ export default function RegistrosPage() {
 
       return 0;
     });
-  }, [registros, search, filtroEstado, filtroAnalista, filtroFechaDesde, filtroFechaHasta, filtroMontoMin, filtroMontoMax, filtroScoreMin, filtroScoreMax, filtroEsRe]);
+  }, [registros, filters]);
+
+  // Actualizar total de resultados en el Sidebar
+  useEffect(() => {
+    setTotalResults(filteredRegistros.length);
+  }, [filteredRegistros.length, setTotalResults]);
+
+  // Exportar CSV
+  const exportarCSV = useCallback(() => {
+    const headers = ['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Puntaje', 'Es RE'];
+    const rows = filteredRegistros.map(r => [r.nombre, r.cuil, r.analista, r.estado, r.monto, r.fecha || '', r.puntaje || '', r.es_re ? 'Sí' : 'No']);
+    const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `registros.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }, [filteredRegistros]);
+
+  // Escuchar trigger de exportación desde el Sidebar
+  useEffect(() => {
+    if (exportTick > 0) {
+      exportarCSV();
+    }
+  }, [exportTick, exportarCSV]);
 
   const totalPages = Math.ceil(filteredRegistros.length / pageSize) || 1;
   const paginatedRegistros = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredRegistros.slice(start, start + pageSize);
   }, [filteredRegistros, currentPage, pageSize]);
-
-  useEffect(() => { setCurrentPage(1); }, [search, filtroEstado, filtroAnalista, pageSize, filtroFechaDesde, filtroFechaHasta, filtroMontoMin, filtroMontoMax, filtroEsRe, filtroScoreMin, filtroScoreMax]);
 
   const openNew = useCallback(() => { setEditingId(null); setModalInitialData({ ...initialForm }); setModalOpen(true); }, []);
   const openEdit = useCallback((reg: Registro) => {
@@ -332,10 +368,10 @@ export default function RegistrosPage() {
     if (!deleteTarget) return;
     const id = deleteTarget.id;
     setDeleteTarget(null);
+    await supabase.from('registros').delete().eq('id', id);
     setRegistros(prev => prev.filter(r => r.id !== id));
     showToast('Eliminado', 'success');
-    supabase.from('registros').delete().eq('id', id);
-  }, [deleteTarget, showToast]);
+  }, [deleteTarget, showToast, setRegistros]);
 
   const applyOptimistic = useCallback((reg: Registro) => {
     setRegistros(prev => {
@@ -343,7 +379,7 @@ export default function RegistrosPage() {
       if (idx >= 0) { const next = [...prev]; next[idx] = reg; return next; }
       return [reg, ...prev];
     });
-  }, []);
+  }, [setRegistros]);
 
   const handleSaved = useCallback((reg: Registro) => {
     applyOptimistic(reg);
@@ -359,88 +395,67 @@ export default function RegistrosPage() {
   }, [applyOptimistic, fetchRegistros, showToast]);
   const handleRecordatorioClose = useCallback((saved: boolean) => { setRecordatorioTarget(null); if (saved) showToast('Agendado', 'success'); }, [showToast]);
 
-  const limpiarFiltros = useCallback(() => {
-    setSearch('');
-    setFiltroEstado('');
-    setFiltroAnalista('');
-    setFiltroFechaDesde('');
-    setFiltroFechaHasta('');
-    setFiltroMontoMin('');
-    setFiltroMontoMax('');
-    setFiltroScoreMin('');
-    setFiltroScoreMax('');
-    setFiltroEsRe('');
-    setCurrentPage(1);
-  }, []);
-
-  const exportarCSV = useCallback(() => {
-    const headers = ['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Puntaje', 'Es RE'];
-    const rows = filteredRegistros.map(r => [r.nombre, r.cuil, r.analista, r.estado, r.monto, r.fecha || '', r.puntaje || '', r.es_re ? 'Sí' : 'No']);
-    const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `registros.csv`; a.click();
-    URL.revokeObjectURL(url);
-  }, [filteredRegistros]);
-
-  const hayFiltros = search || filtroEstado || filtroAnalista || filtroFechaDesde || filtroFechaHasta || filtroMontoMin || filtroMontoMax || filtroScoreMin || filtroScoreMax || filtroEsRe;
-
   return (
     <div className="dashboard-container">
       {toast && <div className="toast-container"><div className={`toast ${toast.type}`}><AlertCircle size={18} /><span>{toast.message}</span></div></div>}
 
-      <header className="dashboard-header">
-        <div /> 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div className="page-size-selector">
-            <span className="selector-label">MOSTRAR</span>
-            {[25, 50, 100, 200].map(sz => (
-              <button key={sz} onClick={() => setPageSize(sz)} className={`sz-btn ${pageSize === sz ? 'active' : ''}`}>{sz}</button>
-            ))}
-          </div>
-          <button className="btn-secondary" onClick={exportarCSV} disabled={filteredRegistros.length === 0}><Download size={16} /> Exportar</button>
-          <button className="btn-primary" onClick={openNew}><Plus size={18} /> Nuevo Registro</button>
-        </div>
-      </header>
-
-      <div className="toolbar-container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '16px' }}>
+      <div className="toolbar-container" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
-            <div className="search-wrapper" style={{ width: '320px' }}>
+            <div className="search-wrapper" style={{ flex: 1, maxWidth: '320px' }}>
               <Search className="search-icon" size={16} />
-              <input type="text" className="search-input" placeholder="Busqueda general..." value={search} onChange={e => setSearch(e.target.value)} />
+              <input type="text" className="search-input" placeholder="Búsqueda..." value={filters.search} onChange={e => setFilter('search', e.target.value)} />
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <select className="form-select" value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}><option value="">Estados</option>{ESTADOS.map(st => <option key={st} value={st}>{getStatusLabel(st)}</option>)}</select>
-              <select className="form-select" value={filtroAnalista} onChange={e => setFiltroAnalista(e.target.value)}><option value="">Analistas</option>{ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}</select>
-              <button onClick={() => setShowAdvanced(!showAdvanced)} className="btn-secondary" style={{ border: showAdvanced ? '1px solid #fff' : undefined }}>
+              <select className="form-select" value={filters.estado} onChange={e => setFilter('estado', e.target.value)} style={{ width: '160px' }}>
+                <option value="">Estados</option>
+                {ESTADOS.map(st => <option key={st} value={st}>{getStatusLabel(st)}</option>)}
+              </select>
+              <select className="form-select" value={filters.analista} onChange={e => setFilter('analista', e.target.value)} style={{ width: '140px' }}>
+                <option value="">Analistas</option>
+                {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
+              </select>
+              <button 
+                onClick={() => setShowAdvanced(!showAdvanced)} 
+                className="btn-secondary" 
+                style={{ border: showAdvanced ? '1px solid #fff' : undefined }}
+              >
                 <Filter size={14} /> Filtros {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
               {hayFiltros && (
-                <button onClick={limpiarFiltros} className="btn-clear">
-                  <X size={14} /> Limpiar filtros
+                <button onClick={limpiarFiltros} className="btn-icon" style={{ color: '#ef4444' }} title="Limpiar filtros">
+                  <X size={18} />
                 </button>
               )}
             </div>
           </div>
-          <div className="pagination-controls">
-            <span className="page-info">{filteredRegistros.length === 0 ? '0-0' : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredRegistros.length)}`} / {filteredRegistros.length}</span>
-            <div className="page-btns">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-btn"><ChevronLeft size={16} /></button>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages} className="p-btn"><ChevronRight size={16} /></button>
+          <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+             <span style={{ fontSize: '13px', color: 'var(--gris)', fontWeight: 600 }}>
+              {filteredRegistros.length === 0 ? '0' : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredRegistros.length)}`} de {filteredRegistros.length}
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="btn-icon"><ChevronLeft size={18} /></button>
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages} className="btn-icon"><ChevronRight size={18} /></button>
             </div>
           </div>
         </div>
 
         {showAdvanced && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-            <div className="form-group"><label className="form-label">Desde</label><input type="date" className="form-input" value={filtroFechaDesde} onChange={e => setFiltroFechaDesde(e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Hasta</label><input type="date" className="form-input" value={filtroFechaHasta} onChange={e => setFiltroFechaHasta(e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Monto Min</label><input type="number" className="form-input" placeholder="$" value={filtroMontoMin} onChange={e => setFiltroMontoMin(e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Monto Max</label><input type="number" className="form-input" placeholder="$" value={filtroMontoMax} onChange={e => setFiltroMontoMax(e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Score Min</label><input type="number" className="form-input" placeholder="0" value={filtroScoreMin} onChange={e => setFiltroScoreMin(e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Score Max</label><input type="number" className="form-input" placeholder="999" value={filtroScoreMax} onChange={e => setFiltroScoreMax(e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Tipo</label><select className="form-select" value={filtroEsRe} onChange={e => setFiltroEsRe(e.target.value)}><option value="">Todos</option><option value="si">Solo RE</option><option value="no">Sin RE</option></select></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="form-group"><label className="form-label">Desde</label><input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Hasta</label><input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Monto Min</label><input type="number" className="form-input" placeholder="$" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Monto Max</label><input type="number" className="form-input" placeholder="$" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Score Min</label><input type="number" className="form-input" placeholder="0" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Score Max</label><input type="number" className="form-input" placeholder="999" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} /></div>
+            <div className="form-group">
+              <label className="form-label">Tipo</label>
+              <select className="form-select" value={filters.esRe} onChange={e => setFilter('esRe', e.target.value)}>
+                <option value="">Todos</option>
+                <option value="si">Solo RE</option>
+                <option value="no">Sin RE</option>
+              </select>
+            </div>
           </div>
         )}
       </div>
@@ -449,7 +464,7 @@ export default function RegistrosPage() {
         {loading ? (
           <div className="loading-container"><div className="spinner" /><span>Cargando...</span></div>
         ) : filteredRegistros.length === 0 ? (
-          <div className="empty-state"><p>No hay datos</p></div>
+          <div className="empty-state"><p>No hay registros que coincidan con la búsqueda</p></div>
         ) : (
           <table className="data-table">
             <thead>
@@ -460,6 +475,8 @@ export default function RegistrosPage() {
                 <th style={{ textAlign: 'center' }}>Score</th>
                 <th style={{ textAlign: 'center' }}>Monto</th>
                 <th style={{ textAlign: 'center' }}>Estado</th>
+                <th style={{ textAlign: 'center' }}>Tipo</th>
+                <th style={{ textAlign: 'center' }}>Acuerdo</th>
                 <th style={{ textAlign: 'center' }}>Acciones</th>
               </tr>
             </thead>
@@ -470,7 +487,7 @@ export default function RegistrosPage() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                       <span style={{ fontWeight: 600, fontSize: '14px' }}>{reg.nombre}</span>
                       {reg.es_re && (
-                        <span style={{ fontSize: '10px', fontWeight: 800, background: 'rgba(247,228,121,0.15)', color: 'var(--main-color)', border: '1px solid rgba(247,228,121,0.3)', borderRadius: '4px', padding: '1px 5px', letterSpacing: '0.05em' }}>RE</span>
+                        <span style={{ fontSize: '10px', fontWeight: 800, background: 'rgba(0,120,212,0.15)', color: 'var(--azul)', border: '1px solid rgba(0,120,212,0.3)', borderRadius: '4px', padding: '1px 5px', letterSpacing: '0.05em' }}>RE</span>
                       )}
                     </div>
                     {reg.cuil && <div style={{ fontSize: '11px', color: '#555' }}>{reg.cuil}</div>}
@@ -481,7 +498,7 @@ export default function RegistrosPage() {
                     {reg.puntaje ? (
                       <div className="score-cell">
                         <div className="score-dot" style={(() => {
-                          const c = reg.puntaje >= 700 ? '#3b82f6' : reg.puntaje >= 600 ? '#4ade80' : reg.puntaje >= 500 ? '#fbbf24' : '#ef4444';
+                          const c = reg.puntaje >= 700 ? '#2563eb' : reg.puntaje >= 600 ? '#059669' : reg.puntaje >= 500 ? '#d97706' : '#dc2626';
                           return { background: c, color: c };
                         })()} />
                         <span>{reg.puntaje}</span>
@@ -490,20 +507,48 @@ export default function RegistrosPage() {
                   </td>
                   <td style={{ fontWeight: 700, textAlign: 'center' }}>{formatCurrency(Number(reg.monto))}</td>
                   <td style={{ textAlign: 'center' }}>
-                    <span className="status-badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <span className="status-badge" style={{ background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       {getStatusLabel(reg.estado)}
                     </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>
+                    {reg.tipo_cliente ? (
+                      <span style={{
+                        fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
+                        background: 'rgba(255,255,255,0.06)',
+                        color: '#fff',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {reg.tipo_cliente}
+                      </span>
+                    ) : <span style={{ color: '#333', fontSize: '12px' }}>—</span>}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    {reg.acuerdo_precios ? (
+                      <span style={{
+                        fontSize: '11px', fontWeight: 800, padding: '3px 10px', borderRadius: '6px',
+                        background: 'rgba(255,255,255,0.03)',
+                        color: 'rgba(255,255,255,0.6)',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        whiteSpace: 'nowrap',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {reg.acuerdo_precios}
+                      </span>
+                    ) : <span style={{ color: '#222', fontSize: '12px' }}>—</span>}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                      <button className="btn-icon" style={{ color: '#fff' }} onClick={() => setRecordatorioTarget(reg)}>
-                        <Bell size={16} />
+                      <button className="btn-icon" style={{ color: 'rgba(255,255,255,0.5)' }} onClick={() => setRecordatorioTarget(reg)}>
+                        <Bell size={15} />
                       </button>
-                      <button className="btn-icon" style={{ color: '#fff' }} onClick={() => openEdit(reg)}>
-                        <Edit2 size={16} />
+                      <button className="btn-icon" style={{ color: 'rgba(255,255,255,0.5)' }} onClick={() => openEdit(reg)}>
+                        <Edit2 size={15} />
                       </button>
-                      <button className="btn-icon btn-danger" onClick={() => setDeleteTarget(reg)}>
-                        <Trash2 size={16} />
+                      <button className="btn-icon" style={{ color: 'rgba(239,68,68,0.6)' }} onClick={() => setDeleteTarget(reg)}>
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </td>

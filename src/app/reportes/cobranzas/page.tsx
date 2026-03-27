@@ -15,8 +15,6 @@ export default function ReporteCobranzasPage() {
   const [loading, setLoading] = useState(true);
   const [filtroAnalista, setFiltroAnalista] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
-  const [pagina, setPagina] = useState(1);
-  const POR_PAGINA = 50;
 
   useEffect(() => {
     supabase
@@ -34,17 +32,12 @@ export default function ReporteCobranzasPage() {
   }, []);
 
   const filtered = useMemo(() => {
-    setPagina(1);
     return registros.filter(r => {
       if (filtroAnalista && r.analista !== filtroAnalista) return false;
       if (filtroEstado && r.estado !== filtroEstado) return false;
       return true;
     });
   }, [registros, filtroAnalista, filtroEstado]);
-
-  const totalPaginas = Math.max(1, Math.ceil(filtered.length / POR_PAGINA));
-  const paginaActual = Math.min(pagina, totalPaginas);
-  const filteredPagina = filtered.slice((paginaActual - 1) * POR_PAGINA, paginaActual * POR_PAGINA);
 
   const totales = useMemo(() => ({
     count: filtered.length,
@@ -79,8 +72,8 @@ export default function ReporteCobranzasPage() {
   }, [filtered]);
 
   const inputStyle: React.CSSProperties = {
-    background: '#111', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '8px', color: '#fff', fontSize: '13px', padding: '8px 12px',
+    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)',
+    borderRadius: '10px', color: '#fff', fontSize: '13px', padding: '10px 14px',
     outline: 'none', fontFamily: "'Outfit', sans-serif",
   };
 
@@ -131,39 +124,37 @@ export default function ReporteCobranzasPage() {
       </div>
 
       {/* KPIs */}
-      <div className="kpi-grid" style={{ marginBottom: '20px' }}>
-        <div className="kpi-card">
-          <div className="kpi-title"><span><DollarSign size={14} style={{ display: 'inline', marginRight: 6 }} />Total en cartera</span></div>
-          <div className="kpi-val">{formatCurrency(totales.monto)}</div>
-          <div className="kpi-sub">{totales.count} registros</div>
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
+          <div className="kpi-title" style={{ color: '#444' }}><span><DollarSign size={13} style={{ display: 'inline', marginRight: 6 }} />En cartera</span></div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900 }}>{formatCurrency(totales.monto)}</div>
+          <div className="kpi-sub" style={{ color: '#222', fontWeight: 700 }}>{totales.count} OPERACIONES</div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-title"><span><AlertCircle size={14} style={{ display: 'inline', marginRight: 6 }} />Con fecha vencida</span></div>
-          <div className="kpi-val" style={{ color: totales.vencidos > 0 ? '#f87171' : '#fff' }}>{totales.vencidos}</div>
-          <div className="kpi-sub">requieren atención</div>
+        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,115,22,0.1)' }}>
+          <div className="kpi-title" style={{ color: '#444' }}><span><AlertCircle size={13} style={{ display: 'inline', marginRight: 6 }} />Vencidos</span></div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: '#f87171' }}>{totales.vencidos}</div>
+          <div className="kpi-sub" style={{ color: '#444', fontWeight: 700 }}>REQUERIDAS</div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-title"><span><Clock size={14} style={{ display: 'inline', marginRight: 6 }} />Sin fecha</span></div>
-          <div className="kpi-val">{filtered.filter(r => !r.fecha).length}</div>
-          <div className="kpi-sub">sin fecha asignada</div>
+        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
+          <div className="kpi-title" style={{ color: '#444' }}><span><Clock size={13} style={{ display: 'inline', marginRight: 6 }} />Sin fecha</span></div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900 }}>{filtered.filter(r => !r.fecha).length}</div>
+          <div className="kpi-sub" style={{ color: '#222', fontWeight: 700 }}>PENDIENTES</div>
         </div>
       </div>
 
       {/* Resumen por estado */}
-      {porEstado.length > 0 && (
-        <div className="data-card" style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '13px', fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>Por Estado</h3>
+        <div className="data-card" style={{ marginBottom: '20px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
+          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#333', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>Resumen por Estado</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {porEstado.map(e => (
-              <div key={e.estado} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '12px 16px', minWidth: '140px' }}>
-                <div style={{ fontWeight: 600, color: estadoColor[e.estado] || '#aaa', fontSize: '12px', marginBottom: '4px' }}>{e.estado}</div>
-                <div style={{ color: '#fff', fontSize: '16px', fontWeight: 800 }}>{formatCurrency(e.monto)}</div>
-                <div style={{ color: '#555', fontSize: '12px' }}>{e.count} regs.</div>
+              <div key={e.estado} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '10px', padding: '12px 16px', minWidth: '160px' }}>
+                <div style={{ fontWeight: 800, color: '#444', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>{e.estado}</div>
+                <div style={{ color: '#fff', fontSize: '18px', fontWeight: 900 }}>{formatCurrency(e.monto)}</div>
+                <div style={{ color: '#222', fontSize: '11px', fontWeight: 700, marginTop: '4px' }}>{e.count} OPERACIONES</div>
               </div>
             ))}
           </div>
         </div>
-      )}
 
       {/* Tabla */}
       <div className="data-card">
@@ -187,7 +178,7 @@ export default function ReporteCobranzasPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPagina.map((r, i) => {
+                {filtered.map((r, i) => {
                   const isVencido = r.fecha && new Date(r.fecha) < new Date();
                   return (
                     <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: isVencido ? 'rgba(248,113,113,0.04)' : (i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)') }}>
@@ -212,24 +203,6 @@ export default function ReporteCobranzasPage() {
                 })}
               </tbody>
             </table>
-          </div>
-        )}
-        {!loading && filtered.length > POR_PAGINA && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <span style={{ fontSize: '12px', color: '#444' }}>
-              {(paginaActual - 1) * POR_PAGINA + 1}–{Math.min(paginaActual * POR_PAGINA, filtered.length)} de {filtered.length}
-            </span>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
-                style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: paginaActual === 1 ? '#333' : '#aaa', cursor: paginaActual === 1 ? 'default' : 'pointer', fontSize: '13px' }}>
-                ‹
-              </button>
-              <span style={{ padding: '5px 10px', fontSize: '12px', color: '#666' }}>{paginaActual} / {totalPaginas}</span>
-              <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={paginaActual === totalPaginas}
-                style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: paginaActual === totalPaginas ? '#333' : '#aaa', cursor: paginaActual === totalPaginas ? 'default' : 'pointer', fontSize: '13px' }}>
-                ›
-              </button>
-            </div>
           </div>
         )}
       </div>

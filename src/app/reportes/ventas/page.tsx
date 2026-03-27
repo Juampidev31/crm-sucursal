@@ -11,8 +11,6 @@ export default function ReporteVentasPage() {
   const [analistas, setAnalistas] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroAnalista, setFiltroAnalista] = useState('');
-  const [pagina, setPagina] = useState(1);
-  const POR_PAGINA = 50;
   const [filtroMes, setFiltroMes] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -47,7 +45,6 @@ export default function ReporteVentasPage() {
   }, []);
 
   const filtered = useMemo(() => {
-    setPagina(1);
     return registros.filter(r => {
       if (filtroAnalista && r.analista !== filtroAnalista) return false;
       if (filtroMes && r.fecha) {
@@ -56,10 +53,6 @@ export default function ReporteVentasPage() {
       return true;
     });
   }, [registros, filtroAnalista, filtroMes]);
-
-  const totalPaginas = Math.max(1, Math.ceil(filtered.length / POR_PAGINA));
-  const paginaActual = Math.min(pagina, totalPaginas);
-  const filteredPagina = filtered.slice((paginaActual - 1) * POR_PAGINA, paginaActual * POR_PAGINA);
 
   const totales = useMemo(() => ({
     operaciones: filtered.length,
@@ -97,12 +90,12 @@ export default function ReporteVentasPage() {
   const maxMonto = porAnalista[0]?.monto || 1;
 
   const sel: React.CSSProperties = {
-    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '8px', color: '#fff', fontSize: '13px',
-    padding: '8px 32px 8px 12px', outline: 'none',
+    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)',
+    borderRadius: '10px', color: '#fff', fontSize: '13px',
+    padding: '10px 32px 10px 14px', outline: 'none',
     fontFamily: "'Outfit', sans-serif", cursor: 'pointer',
     WebkitAppearance: 'none', appearance: 'none',
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
   };
 
@@ -164,12 +157,12 @@ export default function ReporteVentasPage() {
             { icon: <DollarSign size={14} />, label: 'TOTAL VENDIDO', value: formatCurrency(totales.monto), sub: 'monto acumulado' },
             { icon: <TrendingUp size={14} />, label: 'TICKET PROMEDIO', value: totales.ticketProm > 0 ? formatCurrency(totales.ticketProm) : '—', sub: 'por operation' },
           ].map(k => (
-            <div key={k.label} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '12px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#444', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+            <div key={k.label} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#444', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
                 {k.icon}{k.label}
               </div>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{k.value}</div>
-              <div style={{ fontSize: '11px', color: '#333', marginTop: '6px' }}>{k.sub}</div>
+              <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{k.value}</div>
+              <div style={{ fontSize: '10px', color: '#222', marginTop: '8px', fontWeight: 700 }}>{k.sub}</div>
             </div>
           ))}
         </div>
@@ -184,15 +177,15 @@ export default function ReporteVentasPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {porAnalista.map(a => (
               <div key={a.nombre}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#ccc' }}>{displayAnalista(a.nombre)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>{displayAnalista(a.nombre)}</span>
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '11px', color: '#444' }}>{a.ops} ops</span>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#4ade80' }}>{formatCurrency(a.monto)}</span>
+                    <span style={{ fontSize: '10px', color: '#333', fontWeight: 800 }}>{a.ops} OPS</span>
+                    <span style={{ fontSize: '15px', fontWeight: 900, color: '#fff' }}>{formatCurrency(a.monto)}</span>
                   </div>
                 </div>
-                <div style={{ height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(a.monto / maxMonto) * 100}%`, background: 'rgba(74,222,128,0.5)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                <div style={{ height: '3px', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(a.monto / maxMonto) * 100}%`, background: 'rgba(255,255,255,0.1)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
                 </div>
               </div>
             ))}
@@ -221,7 +214,7 @@ export default function ReporteVentasPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPagina.map((r, i) => (
+                {filtered.map((r, i) => (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
                     <td style={{ padding: '10px 16px', color: '#e0e0e0', fontWeight: 500, textAlign: 'center' }}>{r.nombre}</td>
                     <td style={{ padding: '10px 16px', color: '#444', fontFamily: 'monospace', fontSize: '12px', textAlign: 'center' }}>{r.cuil}</td>
@@ -240,9 +233,9 @@ export default function ReporteVentasPage() {
                     <td style={{ padding: '10px 16px', color: '#e0e0e0', textAlign: 'center' }}>
                       {r.puntaje ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                          <div style={{
-                            width: 6, height: 6, borderRadius: '50%',
-                            background: r.puntaje >= 700 ? '#3b82f6' : r.puntaje >= 600 ? '#4ade80' : r.puntaje >= 500 ? '#fbbf24' : '#ef4444'
+                          <div style={{ 
+                            width: 6, height: 6, borderRadius: '50%', 
+                            background: r.puntaje >= 700 ? '#3b82f6' : r.puntaje >= 600 ? '#4ade80' : r.puntaje >= 500 ? '#fbbf24' : '#ef4444' 
                           }} />
                           {r.puntaje}
                         </div>
@@ -252,24 +245,6 @@ export default function ReporteVentasPage() {
                 ))}
               </tbody>
             </table>
-          </div>
-        )}
-        {!loading && filtered.length > POR_PAGINA && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <span style={{ fontSize: '12px', color: '#444' }}>
-              {(paginaActual - 1) * POR_PAGINA + 1}–{Math.min(paginaActual * POR_PAGINA, filtered.length)} de {filtered.length}
-            </span>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
-                style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: paginaActual === 1 ? '#333' : '#aaa', cursor: paginaActual === 1 ? 'default' : 'pointer', fontSize: '13px' }}>
-                ‹
-              </button>
-              <span style={{ padding: '5px 10px', fontSize: '12px', color: '#666' }}>{paginaActual} / {totalPaginas}</span>
-              <button onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={paginaActual === totalPaginas}
-                style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', color: paginaActual === totalPaginas ? '#333' : '#aaa', cursor: paginaActual === totalPaginas ? 'default' : 'pointer', fontSize: '13px' }}>
-                ›
-              </button>
-            </div>
           </div>
         )}
       </div>

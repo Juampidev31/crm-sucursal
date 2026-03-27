@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, displayAnalista } from '@/lib/utils';
+import { formatCurrency, displayAnalista, formatDate } from '@/lib/utils';
+import { ChevronDown } from 'lucide-react';
+import CustomSelect from '@/components/CustomSelect';
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, BarElement, LineElement,
@@ -221,20 +223,9 @@ export default function AnalisisTemporalPage() {
     },
   };
 
-  const selectStyle: React.CSSProperties = {
-    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '8px', color: '#fff', fontSize: '13px',
-    padding: '8px 36px 8px 12px', outline: 'none',
-    fontFamily: "'Outfit', sans-serif", cursor: 'pointer',
-    WebkitAppearance: 'none', appearance: 'none',
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
-    minWidth: '160px',
-  };
-
   const sectionStyle: React.CSSProperties = {
-    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: '12px', padding: '20px', marginBottom: '16px',
+    background: '#000000', border: '1px solid var(--border-color)',
+    borderRadius: '6px', padding: '20px', marginBottom: '16px',
   };
 
   const sectionTitle = (text: string, sub?: string) => (
@@ -251,42 +242,47 @@ export default function AnalisisTemporalPage() {
   const heatColor = (val: number, max: number) => {
     if (val === 0) return 'rgba(255,255,255,0.03)';
     const intensity = Math.min(val / max, 1);
-    const g = Math.round(80 + intensity * 142);
-    return `rgba(0, ${g}, 60, ${0.3 + intensity * 0.7})`;
+    const b = Math.round(180 + intensity * 75);
+    return `rgba(0, ${100 + intensity * 20}, ${b}, ${0.3 + intensity * 0.7})`;
   };
 
   return (
     <div className="dashboard-container">
       {/* Filtros */}
       <div style={{
-        background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: '12px', padding: '16px 20px',
+        background: '#000000', border: '1px solid var(--border-color)',
+        borderRadius: '6px', padding: '16px 20px',
         display: 'flex', gap: '16px', alignItems: 'flex-end', marginBottom: '20px', flexWrap: 'wrap',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '4px' }}>
-          <div style={{ width: 3, height: 14, borderRadius: 2, background: '#4ade80' }} />
+          <div style={{ width: 3, height: 14, borderRadius: 2, background: 'var(--azul)' }} />
           <span style={{ fontSize: '14px', fontWeight: 700 }}>Análisis Temporal</span>
         </div>
         {[
           { label: 'PERÍODO', node: (
-            <select style={selectStyle} value={periodo} onChange={e => setPeriodo(Number(e.target.value))}>
-              {PERIODOS.map(p => <option key={p.dias} value={p.dias}>{p.label}</option>)}
-            </select>
+            <CustomSelect 
+              options={PERIODOS.map(p => ({ label: p.label, value: p.dias }))}
+              value={periodo} 
+              onChange={setPeriodo}
+            />
           )},
           { label: 'ANALISTA', node: (
-            <select style={selectStyle} value={analistaFil} onChange={e => setAnalistaFil(e.target.value)}>
-              <option value="todos">Todos</option>
-              {analistas.map(a => <option key={a} value={a}>{displayAnalista(a)}</option>)}
-            </select>
+            <CustomSelect 
+              options={[{ label: 'Todos', value: 'todos' }, ...analistas.map(a => ({ label: displayAnalista(a), value: a }))]}
+              value={analistaFil} 
+              onChange={setAnalistaFil}
+            />
           )},
           { label: 'MÉTRICA', node: (
-            <select style={selectStyle} value={metrica} onChange={e => setMetrica(e.target.value)}>
-              {METRICAS.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
-            </select>
+            <CustomSelect 
+              options={METRICAS.map(m => ({ label: m.label, value: m.key }))}
+              value={metrica} 
+              onChange={setMetrica}
+            />
           )},
         ].map(f => (
           <div key={f.label}>
-            <div style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px' }}>{f.label}</div>
+            <div style={{ fontSize: '10px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>{f.label}</div>
             {f.node}
           </div>
         ))}

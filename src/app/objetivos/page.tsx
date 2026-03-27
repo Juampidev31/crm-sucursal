@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 
 import { CONFIG } from '@/types';
 import { Save, AlertCircle } from 'lucide-react';
+import CustomSelect from '@/components/CustomSelect';
 
 interface ObjetivoRow {
   analista: string;
@@ -99,18 +100,21 @@ export default function ObjetivosPage() {
         </div>
       )}
 
-      <header className="dashboard-header">
+      <header className="dashboard-header" style={{ alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Metas y Objetivos</h1>
-          <p style={{ color: '#888', fontSize: '14px' }}>Configurá los objetivos mensuales por analista</p>
+          <p style={{ color: 'var(--gris)', fontSize: '13px', fontWeight: 500 }}>Configurá los objetivos mensuales por analista</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <select className="form-select" value={anio} onChange={e => setAnio(Number(e.target.value))}>
-            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <CustomSelect 
+            options={[2024, 2025, 2026, 2027].map(y => ({ label: String(y), value: y }))}
+            value={anio} 
+            onChange={setAnio}
+            width="110px"
+          />
+          <button className="btn-primary" style={{ height: '38px', padding: '0 20px' }} onClick={handleSave} disabled={saving}>
             {saving ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <Save size={16} />}
-            Guardar Todo
+            <span style={{ marginLeft: '8px' }}>Guardar Todo</span>
           </button>
         </div>
       </header>
@@ -121,9 +125,9 @@ export default function ObjetivosPage() {
         <>
           {ANALISTAS.map(analista => (
             <div key={analista} className="data-card">
-              <div className="data-card-header">
+              <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h3 className="data-card-title">{analista}</h3>
-                <button className="btn-secondary" style={{ fontSize: '12px', padding: '4px 10px' }} onClick={() => resetAnalista(analista)}>
+                <button className="btn-secondary" style={{ fontSize: '11px', padding: '6px 14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }} onClick={() => resetAnalista(analista)}>
                   Resetear a 0
                 </button>
               </div>

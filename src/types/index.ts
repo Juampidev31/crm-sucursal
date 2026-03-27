@@ -10,6 +10,8 @@ export interface Registro {
   monto: number;
   estado: string;
   comentarios: string;
+  tipo_cliente?: string;
+  acuerdo_precios?: string;
   created_at?: string;
   updated_at?: string;
 }

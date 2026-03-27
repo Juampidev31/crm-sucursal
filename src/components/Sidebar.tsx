@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -17,9 +17,13 @@ import {
   Copy,
   BarChart2,
   Bell,
+  Plus,
+  Download,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
+import { useFilter } from '@/context/FilterContext';
 
 interface SidebarItemProps {
   href: string;
@@ -45,6 +49,10 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const pathname = usePathname();
   const { isAdmin } = useAuth();
   const { pendingReminders } = useData();
+  const { 
+    filters, setFilter, limpiarFiltros, hayFiltros, 
+    setIsCreationModalOpen, triggerExport, totalResults 
+  } = useFilter();
 
   return (
     <aside className={`main-sidebar${hidden ? ' sidebar-hidden' : ''}`}>
@@ -53,15 +61,33 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           <div className="brand-box">
             <LayoutDashboard size={18} />
           </div>
-          <span className="brand-text">Gestión de Clientes</span>
+          <span className="brand-text">Proyección y Ventas</span>
         </div>
       </div>
 
       <div className="sidebar-content">
-
+        {/* Acciones principales */}
+        <div style={{ padding: '0 12px 16px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              className="btn-primary" 
+              onClick={() => setIsCreationModalOpen(true)}
+              style={{ flex: 1, padding: '7px 10px', fontSize: '12px', justifyContent: 'center' }}
+            >
+              <Plus size={14} /> Nuevo
+            </button>
+            <button 
+              className="btn-secondary" 
+              onClick={triggerExport}
+              style={{ padding: '7px 10px', fontSize: '12px' }}
+            >
+              <Download size={14} />
+            </button>
+          </div>
+        </div>
 
         {/* Menú principal */}
-        <div className="nav-group" style={{ marginTop: '8px' }}>
+        <div className="nav-group">
           <SidebarItem
             href="/registros"
             icon={<AlignJustify size={18} />}
@@ -70,14 +96,14 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           />
           <SidebarItem
             href="/analistas"
-            icon={<Users size={18} />}
+            icon={<BarChart2 size={18} />}
             label="Reportes"
             active={pathname === '/analistas'}
           />
           <SidebarItem
             href="/"
             icon={<PieChart size={18} />}
-            label="Métricas y estados"
+            label="Métricas"
             active={pathname === '/'}
           />
           <SidebarItem
@@ -89,44 +115,32 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           />
         </div>
 
-        {/* Reportes externos */}
+        {/* Informes */}
         <div className="nav-group">
-          <h4 className="group-label">REPORTES EXTERNOS</h4>
+          <h4 className="group-label">INFORMES</h4>
           <SidebarItem
             href="/reportes/ventas"
             icon={<FileText size={18} />}
-            label="Reporte de Ventas"
+            label="Ventas"
             active={pathname === '/reportes/ventas'}
           />
           <SidebarItem
             href="/reportes/cobranzas"
             icon={<DollarSign size={18} />}
-            label="Reporte de Cobranzas"
+            label="Cobranzas"
             active={pathname === '/reportes/cobranzas'}
           />
         </div>
 
-        {/* Sección admin — solo visible para el administrador */}
+        {/* Sección admin */}
         {isAdmin && (
           <div className="nav-group">
-            <h4 className="group-label">ADMINISTRATION</h4>
+            <h4 className="group-label">ADMIN</h4>
             <SidebarItem
               href="/analisis-temporal"
               icon={<Activity size={18} />}
               label="Análisis Temporal"
               active={pathname === '/analisis-temporal'}
-            />
-            <SidebarItem
-              href="/ajustes"
-              icon={<Settings size={18} />}
-              label="Configuración"
-              active={pathname === '/ajustes'}
-            />
-            <SidebarItem
-              href="/ajustes#dias"
-              icon={<Calendar size={18} />}
-              label="Configurar Días Hábiles"
-              active={false}
             />
             <SidebarItem
               href="/objetivos"
@@ -137,19 +151,36 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
             <SidebarItem
               href="/duplicados"
               icon={<Copy size={18} />}
-              label="Detectar Duplicados"
+              label="Duplicados"
               active={pathname === '/duplicados'}
             />
             <SidebarItem
               href="/auditoria"
               icon={<BarChart2 size={18} />}
-              label="Reportes"
+              label="Auditoría"
               active={pathname === '/auditoria'}
+            />
+            <SidebarItem
+              href="/ajustes"
+              icon={<Settings size={18} />}
+              label="Ajustes"
+              active={pathname === '/ajustes'}
             />
           </div>
         )}
       </div>
 
+      {hayFiltros && (
+        <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+          <button 
+            onClick={limpiarFiltros} 
+            className="btn-clear" 
+            style={{ width: '100%', fontSize: '12px', justifyContent: 'center' }}
+          >
+            <X size={14} /> Limpiar Filtros
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

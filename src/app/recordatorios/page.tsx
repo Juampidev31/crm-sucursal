@@ -92,9 +92,7 @@ export default function RecordatoriosPage() {
   };
 
   const getUrgencyColor = (fechaHora: string, mostrado: boolean) => {
-    if (mostrado) return 'rgba(255,255,255,0.05)';
-    if (isVencido(fechaHora)) return 'rgba(220,53,69,0.06)';
-    if (isHoy(fechaHora)) return 'rgba(255,193,7,0.06)';
+    if (mostrado) return 'rgba(255,255,255,0.01)';
     return 'rgba(255,255,255,0.02)';
   };
 
@@ -133,22 +131,22 @@ export default function RecordatoriosPage() {
       </header>
 
       {/* Stats rápidas */}
-      <div className="cards-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-        <div className="kpi-card">
-          <div className="kpi-title"><Bell size={13} /> Total</div>
-          <div className="kpi-val" style={{ fontSize: '28px' }}>{recordatorios.length}</div>
+      <div className="cards-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
+          <div className="kpi-title" style={{ color: '#444' }}><Bell size={13} /> Total</div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900 }}>{recordatorios.length}</div>
         </div>
-        <div className="kpi-card" style={{ borderLeft: '3px solid var(--naranja)' }}>
-          <div className="kpi-title"><Clock size={13} /> Pendientes</div>
-          <div className="kpi-val" style={{ fontSize: '28px', color: 'var(--naranja)' }}>{pendientesCount}</div>
+        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
+          <div className="kpi-title" style={{ color: '#444' }}><Clock size={13} /> Pendientes</div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: '#fff' }}>{pendientesCount}</div>
         </div>
-        <div className="kpi-card" style={{ borderLeft: '3px solid var(--rojo)' }}>
-          <div className="kpi-title"><AlertCircle size={13} /> Vencidos</div>
-          <div className="kpi-val" style={{ fontSize: '28px', color: 'var(--rojo)' }}>{vencidosCount}</div>
+        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="kpi-title" style={{ color: '#444' }}><AlertCircle size={13} /> Vencidos</div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: '#f87171' }}>{vencidosCount}</div>
         </div>
-        <div className="kpi-card" style={{ borderLeft: '3px solid var(--verde)' }}>
-          <div className="kpi-title"><Check size={13} /> Completados</div>
-          <div className="kpi-val" style={{ fontSize: '28px', color: 'var(--verde)' }}>
+        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
+          <div className="kpi-title" style={{ color: '#444' }}><Check size={13} /> Completados</div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: 'rgba(255,255,255,0.4)' }}>
             {recordatorios.filter(r => r.mostrado).length}
           </div>
         </div>

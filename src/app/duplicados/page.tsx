@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, displayAnalista } from '@/lib/utils';
 import { Registro } from '@/types';
-import { Copy, AlertTriangle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ShieldCheck, User } from 'lucide-react';
 
 interface GrupoDuplicado {
   key: string;
@@ -15,8 +15,7 @@ interface GrupoDuplicado {
 export default function DuplicadosPage() {
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busqueda, setBusqueda] = useState('');
-  const [tipoBusqueda, setTipoBusqueda] = useState<'cuil' | 'nombre' | 'ambos'>('ambos');
+  
   const [selectedEstados, setSelectedEstados] = useState<string[]>([]);
   const [selectedAnalistas, setSelectedAnalistas] = useState<string[]>([]);
 
@@ -51,196 +50,147 @@ export default function DuplicadosPage() {
 
   const duplicados = useMemo((): GrupoDuplicado[] => {
     const grupos: GrupoDuplicado[] = [];
-
-    // Filtramos los registros BASE antes de buscar duplicados
     const pool = registros.filter(r => {
       const matchEstado = selectedEstados.length === 0 || selectedEstados.includes(r.estado?.toLowerCase() || '');
       const matchAnalista = selectedAnalistas.length === 0 || selectedAnalistas.includes(r.analista || '');
       return matchEstado && matchAnalista;
     });
 
-    if (tipoBusqueda === 'cuil' || tipoBusqueda === 'ambos') {
-      const byCuil = new Map<string, Registro[]>();
-      for (const r of pool) {
-        const cuil = r.cuil?.trim();
-        if (!cuil || cuil.length < 11) continue;
-        if (!byCuil.has(cuil)) byCuil.set(cuil, []);
-        byCuil.get(cuil)!.push(r);
-      }
-      for (const [cuil, regs] of byCuil) {
-        if (regs.length > 1) {
-          if (!busqueda || cuil.includes(busqueda)) {
-            grupos.push({ key: cuil, tipo: 'cuil', registros: regs });
-          }
-        }
-      }
+    const byCuil = new Map<string, Registro[]>();
+    for (const r of pool) {
+      const cuil = r.cuil?.trim();
+      if (!cuil || cuil.length < 11) continue;
+      if (!byCuil.has(cuil)) byCuil.set(cuil, []);
+      byCuil.get(cuil)!.push(r);
+    }
+    for (const [cuil, regs] of byCuil) {
+      if (regs.length > 1) grupos.push({ key: cuil, tipo: 'cuil', registros: regs });
     }
 
-    if (tipoBusqueda === 'nombre' || tipoBusqueda === 'ambos') {
-      const byNombre = new Map<string, Registro[]>();
-      for (const r of pool) {
-        const nombre = r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
-        if (!nombre || nombre.length < 3) continue;
-        if (!byNombre.has(nombre)) byNombre.set(nombre, []);
-        byNombre.get(nombre)!.push(r);
-      }
-      for (const [nombre, regs] of byNombre) {
-        if (regs.length > 1) {
-          const existsInCuil = grupos.some(g => g.tipo === 'cuil' && g.registros.some(r => r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ') === nombre));
-          if (!existsInCuil) {
-            if (!busqueda || nombre.includes(busqueda.toLowerCase())) {
-              grupos.push({ key: nombre, tipo: 'nombre', registros: regs });
-            }
-          }
-        }
+    const byNombre = new Map<string, Registro[]>();
+    for (const r of pool) {
+      const nombre = r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
+      if (!nombre || nombre.length < 3) continue;
+      if (!byNombre.has(nombre)) byNombre.set(nombre, []);
+      byNombre.get(nombre)!.push(r);
+    }
+    for (const [nombre, regs] of byNombre) {
+      if (regs.length > 1) {
+        const existsInCuil = grupos.some(g => g.tipo === 'cuil' && g.registros.some(r => r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ') === nombre));
+        if (!existsInCuil) grupos.push({ key: nombre, tipo: 'nombre', registros: regs });
       }
     }
 
     return grupos.sort((a, b) => b.registros.length - a.registros.length);
-  }, [registros, tipoBusqueda, busqueda, selectedEstados, selectedAnalistas]);
+  }, [registros, selectedEstados, selectedAnalistas]);
 
-  const totalDuplicados = duplicados.reduce((s, g) => s + g.registros.length, 0);
-
-  const inputStyle: React.CSSProperties = {
-    background: '#111', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: '8px', color: '#fff', fontSize: '13px', padding: '8px 12px',
-    outline: 'none', fontFamily: "'Outfit', sans-serif",
-  };
+  const chipStyle = (isActive: boolean) => ({
+    padding: '6px 12px', borderRadius: '4px', fontSize: '10px', border: '1px solid',
+    whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.1s',
+    background: isActive ? 'rgba(0,120,212,0.1)' : 'rgba(255,255,255,0.02)',
+    borderColor: isActive ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
+    color: isActive ? 'var(--azul)' : '#444',
+    textTransform: 'uppercase' as const, letterSpacing: '0.8px'
+  });
 
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Detectar Duplicados</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: 4, height: 18, borderRadius: 2, background: 'var(--azul)' }} />
+          <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Detección de Duplicados</h2>
         </div>
+        {duplicados.length > 0 && (
+          <div style={{ fontSize: '12px', color: '#999', fontWeight: 700 }}>
+             {duplicados.length} duplicados potenciales encontrados
+          </div>
+        )}
       </header>
 
-      {/* Filtros */}
-      <div className="data-card" style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+      {/* Toolbar - TODO EN UNA SOLA LINEA */}
+      <div className="toolbar-container" style={{ marginBottom: '24px', padding: '16px 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '40px' }}>
           
-          <div style={{ flex: '1 1 300px' }}>
-            <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Buscar por Texto</label>
-            <input style={{ ...inputStyle, width: '100%' }} placeholder="CUIL o nombre..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-          </div>
-
-          <div style={{ flex: '0 0 180px' }}>
-            <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Método de Detección</label>
-            <select style={{ ...inputStyle, width: '100%' }} value={tipoBusqueda} onChange={e => setTipoBusqueda(e.target.value as typeof tipoBusqueda)}>
-              <option value="ambos">CUIL y Nombre</option>
-              <option value="cuil">Solo CUIL</option>
-              <option value="nombre">Solo Nombre</option>
-            </select>
-          </div>
-
-          <div style={{ flex: '1 1 100%' }}>
-            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-              
-              <div style={{ flex: 1, minWidth: '200px', overflow: 'hidden' }}>
-                <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Estados (Filtrar pool)</label>
-                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }} className="flex-no-wrap-scroll">
-                  {allEstados.map(e => (
-                    <button
-                      key={e}
-                      onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)}
-                      style={{
-                        padding: '4px 10px', borderRadius: '6px', fontSize: '11px', border: '1px solid',
-                        whiteSpace: 'nowrap',
-                        background: selectedEstados.includes(e) ? 'rgba(247,228,121,0.15)' : 'transparent',
-                        borderColor: selectedEstados.includes(e) ? '#f7e479' : 'rgba(255,255,255,0.1)',
-                        color: selectedEstados.includes(e) ? '#f7e479' : '#555',
-                        cursor: 'pointer', transition: 'all 0.2s',
-                      }}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                  {allEstados.length === 0 && <span style={{ color: '#333', fontSize: '11px' }}>Cargando estados...</span>}
-                </div>
-              </div>
-
-              <div style={{ flex: 1, minWidth: '200px', overflow: 'hidden' }}>
-                <label style={{ fontSize: '10px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>Analistas (Filtrar pool)</label>
-                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }} className="flex-no-wrap-scroll">
-                  {allAnalistas.map(a => (
-                    <button
-                      key={a}
-                      onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)}
-                      style={{
-                        padding: '4px 10px', borderRadius: '6px', fontSize: '11px', border: '1px solid',
-                        whiteSpace: 'nowrap',
-                        background: selectedAnalistas.includes(a) ? 'rgba(74,222,128,0.1)' : 'transparent',
-                        borderColor: selectedAnalistas.includes(a) ? '#4ade80' : 'rgba(255,255,255,0.1)',
-                        color: selectedAnalistas.includes(a) ? '#4ade80' : '#555',
-                        cursor: 'pointer', transition: 'all 0.2s',
-                      }}
-                    >
-                      {displayAnalista(a)}
-                    </button>
-                  ))}
-                  {allAnalistas.length === 0 && <span style={{ color: '#333', fontSize: '11px' }}>Cargando analistas...</span>}
-                </div>
-              </div>
-
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <ShieldCheck size={13} color="var(--azul)" />
+              <span style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase' }}>Estados</span>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '4px 0', scrollbarWidth: 'none', flex: 1 }}>
+              {allEstados.map(e => (
+                <button key={e} onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)} style={chipStyle(selectedEstados.includes(e))}>
+                  {e}
+                </button>
+              ))}
             </div>
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <User size={13} color="var(--azul)" />
+              <span style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase' }}>Analistas</span>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {allAnalistas.map(a => (
+                <button key={a} onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)} style={chipStyle(selectedAnalistas.includes(a))}>
+                  {displayAnalista(a)}
+                </button>
+              ))}
+            </div>
+          </div>
+
         </div>
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '40vh' }}>
-          <div className="spinner" style={{ width: 40, height: 40 }} />
-        </div>
+        <div className="loading-container"><div className="spinner" /><span>Procesando...</span></div>
       ) : duplicados.length === 0 ? (
-        <div className="data-card">
-          <div className="empty-state">
-            <CheckCircle size={48} color="#4ade80" style={{ margin: '0 auto 16px' }} />
-            <p style={{ color: '#4ade80' }}>Sin duplicados detectados</p>
-            <p>No se encontraron registros duplicados con los criterios seleccionados.</p>
-          </div>
+        <div className="empty-state">
+          <CheckCircle size={40} color="var(--verde)" style={{ opacity: 0.3, marginBottom: '12px' }} />
+          <p style={{ color: 'var(--verde)', fontWeight: 800, fontSize: '14px' }}>POOL LIMPIO</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {duplicados.map(grupo => (
-            <div key={grupo.key} className="data-card">
-              {/* Header del grupo */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(248,113,113,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <AlertTriangle size={16} color="#f87171" />
+            <div key={grupo.key} className="data-card" style={{ borderLeft: 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={15} color="#444" />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, color: '#fff', fontSize: '14px' }}>
-                    {grupo.tipo === 'cuil' ? `CUIL: ${grupo.key}` : `Nombre: ${grupo.registros[0].nombre}`}
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
+                    {grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre.toUpperCase()}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#f87171' }}>
-                    {grupo.registros.length} registros duplicados
-                    <span style={{ marginLeft: '8px', padding: '1px 6px', background: 'rgba(248,113,113,0.12)', borderRadius: '4px', fontSize: '10px', fontWeight: 700 }}>
-                      {grupo.tipo === 'cuil' ? 'CUIL DUPLICADO' : 'NOMBRE DUPLICADO'}
-                    </span>
+                  <div style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {grupo.registros.length} duplicados • filtrado por {grupo.tipo}
                   </div>
                 </div>
               </div>
 
-              {/* Registros del grupo */}
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                <table className="data-table">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      {['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Creado'].map(h => (
-                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: '#555', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
-                      ))}
+                    <tr>
+                      <th style={{ textAlign: 'left' }}>Cliente / Identificación</th>
+                      <th style={{ textAlign: 'left' }}>Analista</th>
+                      <th style={{ textAlign: 'left' }}>Estado</th>
+                      <th style={{ textAlign: 'right' }}>Monto</th>
+                      <th style={{ textAlign: 'center' }}>Fecha</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {grupo.registros.map((r, i) => (
-                      <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: i === 0 ? 'rgba(248,113,113,0.04)' : 'transparent' }}>
-                        <td style={{ padding: '8px 12px', color: '#fff', fontWeight: 500 }}>{r.nombre}</td>
-                        <td style={{ padding: '8px 12px', color: '#666', fontFamily: 'monospace' }}>{r.cuil}</td>
-                        <td style={{ padding: '8px 12px', color: '#888' }}>{displayAnalista(r.analista)}</td>
-                        <td style={{ padding: '8px 12px', color: '#aaa' }}>{r.estado}</td>
-                        <td style={{ padding: '8px 12px', color: '#f7e479', fontWeight: 600 }}>{formatCurrency(r.monto)}</td>
-                        <td style={{ padding: '8px 12px', color: '#888' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
-                        <td style={{ padding: '8px 12px', color: '#555', fontSize: '11px' }}>{r.created_at ? formatDate(r.created_at) : '—'}</td>
+                    {grupo.registros.map((r) => (
+                      <tr key={r.id}>
+                        <td style={{ padding: '8px 16px' }}>
+                          <div style={{ fontWeight: 700, color: '#fff' }}>{r.nombre}</div>
+                          <div style={{ fontSize: '10px', color: '#333', fontFamily: 'monospace' }}>{r.cuil}</div>
+                        </td>
+                        <td style={{ color: '#555', fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
+                        <td>
+                          <span className="status-badge" style={{ fontSize: '9px', padding: '2px 8px' }}>{r.estado}</span>
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--dorado)' }}>{formatCurrency(r.monto)}</td>
+                        <td style={{ textAlign: 'center', color: '#333', fontSize: '11px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
                       </tr>
                     ))}
                   </tbody>

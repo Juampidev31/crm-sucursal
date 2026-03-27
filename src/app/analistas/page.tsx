@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { formatCurrency, calcularComisiones, calcularDiasHabilesAutomaticos } from '@/lib/utils';
+import { formatCurrency, calcularComisiones, calcularDiasHabilesAutomaticos, getStatusLabel } from '@/lib/utils';
 import { useData } from '@/context/DataContext';
 import { CONFIG } from '@/types';
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, BarElement, LineElement,
-  PointElement, Tooltip, Legend, Filler,
+  PointElement, Tooltip, Legend, Filler, ArcElement,
 } from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
+import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import {
   Activity,
   TrendingUp,
+  TrendingDown,
   Zap,
   Target,
   AlertTriangle,
@@ -20,9 +21,14 @@ import {
   ShieldAlert,
   Users,
   ChevronDown,
+  FileText,
+  ShieldCheck,
+  RotateCcw,
+  Plus,
+  PieChart,
 } from 'lucide-react';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler, ArcElement);
 
 // PDV = vista combinada de TODOS los analistas (no es un analista real en la DB)
 const PDV = '__pdv__';
@@ -33,8 +39,31 @@ const mesStr = (anio: number, mes: number) => `${anio}-${String(mes + 1).padStar
 const esVenta = (estado: string) =>
   estado.toLowerCase() === 'venta' || estado.toLowerCase().includes('aprobado cc');
 
-interface Reg { analista: string; estado: string; monto: number; fecha: string | null; }
+interface Reg { 
+  analista: string; 
+  estado: string; 
+  monto: number; 
+  fecha: string | null; 
+  tipo_cliente?: string;
+  es_re?: boolean;
+  acuerdo_precios?: string;
+}
 interface DiasConfig { analista: string; dias_habiles: number; dias_transcurridos: number; }
+
+const CHART_COLORS: Record<string, string> = {
+  venta: '#4CAF50',
+  proyeccion: '#17a2b8',
+  'en seguimiento': '#ffc107',
+  'score bajo': '#dc3545',
+  afectaciones: '#c0392b',
+  'derivado / aprobado cc': '#27ae60',
+  'derivado / rechazado cc': '#e74c3c',
+};
+
+const ESTADOS_METRICAS = [
+  'venta', 'proyeccion', 'en seguimiento', 'score bajo',
+  'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc',
+];
 
 const ESTADOS_RESUMEN = [
   { key: 'proyeccion', label: 'PROYECCIONES' },
@@ -136,8 +165,16 @@ export default function AnalistasPage() {
 
     const tendPct  = alcancePrev > 0 ? ((alcanceCapital - alcancePrev) / alcancePrev) * 100 : 0;
     const tendPctOps = prevOpsPrev > 0 ? ((alcanceOps - prevOpsPrev) / prevOpsPrev) * 100 : 0;
-
     const comisiones = calcularComisiones(alcanceCapital, alcanceOps, obj.meta_ventas, obj.meta_operaciones);
+
+    const aperturas = regs.filter(r => r.fecha?.slice(0, 7) === key && r.tipo_cliente === 'Apertura').length;
+    const renovaciones = regs.filter(r => r.fecha?.slice(0, 7) === key && (r.tipo_cliente === 'Renovacion' || r.es_re)).length;
+    
+    // Desglose de acuerdos
+    const acuerdosBajo = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Riesgo Bajo').length;
+    const acuerdosMedio = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Riesgo Medio').length;
+    const acuerdosPremium = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Premium').length;
+    const acuerdos = acuerdosBajo + acuerdosMedio + acuerdosPremium;
 
     return {
       obj, alcanceCapital, alcanceOps,
@@ -145,6 +182,8 @@ export default function AnalistasPage() {
       proyCapital, proyOps,
       cumplReal, cumplProy, cumplRealOps, cumplProyOps,
       dh, dt, comisiones, pMes, pAnio,
+      aperturas, renovaciones, acuerdos,
+      acuerdosBajo, acuerdosMedio, acuerdosPremium
     };
   }, [regs, objMap, diasInfo, mes, anio]);
 
@@ -155,26 +194,29 @@ export default function AnalistasPage() {
     const ventasMes = regs.filter(r => r.fecha?.slice(0, 7) === key && esVenta(r.estado || ''));
     let acum = 0;
     let lastAcum = 0;
-    const stats = Array.from({ length: lastDay }, (_, i) => {
-      const d = String(i + 1).padStart(2, '0');
-      const v = ventasMes.filter(r => r.fecha?.slice(8, 10) === d)
-        .reduce((s, r) => s + (Number(r.monto) || 0), 0);
-      acum += v;
-      const hasSale = v > 0;
-      const data = { acum, hasSale, day: i + 1 };
-      lastAcum = acum;
-      return data;
-    });
+    const stats = [
+      { acum: 0, hasSale: false, day: 0 },
+      ...Array.from({ length: lastDay }, (_, i) => {
+        const d = String(i + 1).padStart(2, '0');
+        const v = ventasMes.filter(r => r.fecha?.slice(8, 10) === d)
+          .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+        acum += v;
+        const hasSale = v > 0;
+        const data = { acum, hasSale, day: i + 1 };
+        lastAcum = acum;
+        return data;
+      })
+    ];
 
     const hoyStr = mesStr(now.getFullYear(), now.getMonth());
     const diaHoy = key === hoyStr ? now.getDate() : lastDay;
     const objetivo = kpis.obj.meta_ventas;
-    const referencias = Array.from({ length: lastDay }, (_, i) =>
+    const referencias = [0, ...Array.from({ length: lastDay }, (_, i) =>
       Math.round((objetivo / lastDay) * (i + 1))
-    );
+    )];
 
     return { 
-      dias: Array.from({ length: lastDay }, (_, i) => i + 1), 
+      dias: [0, ...Array.from({ length: lastDay }, (_, i) => i + 1)], 
       stats, 
       referencias, 
       diaHoy,
@@ -214,6 +256,21 @@ export default function AnalistasPage() {
     [regs]
   );
 
+  const metricasEstados = useMemo(() => {
+    const key = mesStr(anio, mes);
+    const filtrados = regs.filter(r => r.fecha?.slice(0, 7) === key);
+    return ESTADOS_METRICAS.map(st => {
+      const match = filtrados.filter(r => r.estado?.toLowerCase() === st);
+      return {
+        key: st,
+        label: getStatusLabel(st),
+        monto: match.reduce((s, r) => s + (Number(r.monto) || 0), 0),
+        ops: match.length,
+        color: CHART_COLORS[st] || '#888',
+      };
+    });
+  }, [regs, mes, anio]);
+
   // ── Chart data ────────────────────────────────────────────────────
   const curvaChart = {
     labels: curva.dias.map(String),
@@ -227,17 +284,19 @@ export default function AnalistasPage() {
           const { ctx, chartArea } = chart;
           if (!chartArea) return null;
           const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(255,255,255,0.15)');
-          gradient.addColorStop(1, 'rgba(255,255,255,0.01)');
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)'); 
+          gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.15)');
+          gradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
           return gradient;
         },
         fill: true, 
-        tension: 0.3, 
-        borderWidth: 3,
-        pointRadius: curva.dias.map(d => d <= curva.diaHoy ? 4 : 0),
-        pointBackgroundColor: curva.stats.map(s => s.hasSale ? '#4ade80' : '#f87171'),
-        pointBorderColor: '#fff',
-        pointBorderWidth: 1,
+        tension: 0.4, 
+        borderWidth: 2, 
+        pointRadius: curva.dias.map(d => d <= curva.diaHoy ? 4 : 0), 
+        pointBackgroundColor: '#fff', 
+        pointBorderColor: '#000', 
+        pointBorderWidth: 1.5,
+        pointHoverRadius: 6,
       },
       {
         label: 'Venta Ideal',
@@ -306,9 +365,25 @@ export default function AnalistasPage() {
       {
         type: 'line' as const, label: 'Cumpl. %',
         data: historico.map(h => h.cumplimiento),
-        borderColor: '#fff', backgroundColor: 'transparent',
-        pointRadius: 4, borderWidth: 1.5, tension: 0.4, yAxisID: 'y2',
+        borderColor: '#fff', 
+        backgroundColor: (context: any) => {
+          const chart = context.chart;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return 'transparent';
+          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          return gradient;
+        },
+        fill: true,
+        pointRadius: 6, 
+        borderWidth: 2, 
+        tension: 0.4, 
+        yAxisID: 'y2', 
         pointBackgroundColor: historico.map(h => h.cumplimiento >= 100 ? '#4ade80' : h.cumplimiento >= 75 ? '#fbbf24' : '#f87171'),
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointHoverRadius: 8,
       },
     ],
   };
@@ -339,12 +414,12 @@ export default function AnalistasPage() {
 
   const box: React.CSSProperties = {
     flex: 1, 
-    background: 'linear-gradient(145deg, #0d0d0d, #050505)', 
-    border: '1px solid rgba(255,255,255,0.05)',
+    background: '#0a0a0a', 
+    border: '1px solid rgba(255,255,255,0.02)',
     borderRadius: '16px', 
     padding: '20px', 
     minWidth: '220px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+    boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)', 
     position: 'relative',
     overflow: 'hidden',
   };
@@ -381,9 +456,10 @@ export default function AnalistasPage() {
 
   const card: React.CSSProperties = {
     background: '#070707', 
-    border: '1px solid rgba(255,255,255,0.04)', 
-    borderRadius: '20px', 
+    border: '1px solid rgba(255,255,255,0.02)', 
+    borderRadius: '24px', 
     padding: '24px',
+    boxShadow: '0 10px 50px rgba(0,0,0,0.5)', // Eliminado brillo excesivo
   };
 
   const prevMesLabel = CONFIG.MESES_NOMBRES[kpis.pMes].substring(0, 3).toUpperCase();
@@ -438,6 +514,23 @@ export default function AnalistasPage() {
           </div>
         </div>
 
+        {/* COMISIÓN TOTAL - DESTACADA */}
+        {analista !== PDV && (
+          <div style={{ 
+            background: 'rgba(74, 222, 128, 0.1)', 
+            border: '1px solid rgba(74, 222, 128, 0.3)',
+            borderRadius: '16px',
+            padding: '8px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            boxShadow: '0 0 20px rgba(74, 222, 128, 0.1)'
+          }}>
+            <div style={{ fontSize: '9px', fontWeight: 900, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '2px' }}>COMISIÓN TOTAL</div>
+            <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{formatCurrency(kpis.comisiones.comisionTotal)}</div>
+          </div>
+        )}
+
         {/* Selector analista */}
         <select style={sel} value={analista} onChange={e => setAnalista(e.target.value)}>
           <option value={PDV}>PDV</option>
@@ -469,9 +562,14 @@ export default function AnalistasPage() {
 
       {/* ── KPI Capital ── */}
       <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', marginLeft: '4px' }}>
-          <div style={{ width: 4, height: 16, background: '#fff', borderRadius: 2 }} />
-          <div style={{ fontSize: '11px', color: '#fff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>KPI CAPITAL TRANSACCIONAL</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ ...lbl, fontSize: '14px', borderLeft: '4px solid #fff', paddingLeft: '12px', marginBottom: 0, color: '#fff' }}>CAPITAL</div>
+          {analista !== PDV && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', padding: '6px 14px', borderRadius: '10px' }}>
+              <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 800, letterSpacing: '0.5px' }}>COMISIÓN CAPITAL</span>
+              <span style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>{formatCurrency(kpis.comisiones.comisionCapital)}</span>
+            </div>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={box}>
@@ -480,33 +578,84 @@ export default function AnalistasPage() {
           </div>
           <div style={box}>
             <div style={lbl}><TrendingUp size={14} color="#fff" /> ALCANCE ACTUAL</div>
-            <div style={val}>{formatCurrency(kpis.alcanceCapital)}</div>
-            <div style={{ ...sub, color: kpis.tendPct >= 0 ? '#4ade80' : '#f87171' }}>
-               {kpis.tendPct >= 0 ? '↑' : '↓'} {Math.abs(kpis.tendPct).toFixed(1)}% vs {prevMesLabel}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
+              <div>
+                <div style={val}>{formatCurrency(kpis.alcanceCapital)}</div>
+                <div style={{ ...sub, color: kpis.tendPct >= 0 ? '#4ade80' : '#f87171' }}>
+                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: kpis.tendPct >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {kpis.tendPct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {Math.abs(kpis.tendPct).toFixed(1)}% vs {prevMesLabel}
+                  </div>
+                </div>
+              </div>
+              {/* Sparkline (Mini Gráfico) */}
+              <div style={{ width: '100px', height: '50px' }}>
+                <Line 
+                  data={{
+                    labels: curva.stats.map(s => s.day),
+                    datasets: [{
+                      data: curva.stats.map(s => s.acum),
+                      borderColor: kpis.tendPct >= 0 ? '#4ade80' : '#f87171',
+                      backgroundColor: (context: any) => {
+                        const canvas = context.chart.ctx;
+                        const gradient = canvas.createLinearGradient(0, 0, 0, 50);
+                        gradient.addColorStop(0, kpis.tendPct >= 0 ? 'rgba(74, 222, 128, 0.5)' : 'rgba(248, 113, 113, 0.5)');
+                        gradient.addColorStop(0.7, kpis.tendPct >= 0 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(248, 113, 113, 0.2)');
+                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Difuminado total al final
+                        return gradient;
+                      },
+                      borderWidth: 2,
+                      pointRadius: 0,
+                      tension: 0.4,
+                      fill: true,
+                    }]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                  }}
+                />
+              </div>
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><Zap size={14} color={kpis.cumplReal >= 100 ? '#4ade80' : '#fbbf24'} /> CUMPLIMIENTO</div>
-            <div style={{ ...val, color: kpis.cumplReal >= 100 ? '#4ade80' : kpis.cumplReal >= 75 ? '#fbbf24' : '#f87171' }}>
+            <div style={lbl}><Zap size={14} color={kpis.cumplReal >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
+            <div style={{ ...val, color: kpis.cumplReal >= 100 ? '#4ade80' : '#f87171' }}>
               {pct(kpis.cumplReal)}
             </div>
             <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplReal)}%`, height: '100%', background: kpis.cumplReal >= 100 ? '#4ade80' : kpis.cumplReal >= 75 ? '#fbbf24' : '#f87171' }} />
+              <div style={{ width: `${Math.min(100, kpis.cumplReal)}%`, height: '100%', background: kpis.cumplReal >= 100 ? '#4ade80' : '#f87171' }} />
             </div>
           </div>
           <div style={box}>
             <div style={lbl}><TrendingUp size={14} color="#666" /> PROYECTADO FIN MES</div>
             <div style={val}>{formatCurrency(kpis.proyCapital)}</div>
-            <div style={sub}>Días: {kpis.dt}/{kpis.dh} ({pct((kpis.dt/kpis.dh)*100)} del mes)</div>
+            <div style={sub}>Tendencia actual ({pct(kpis.cumplProy)})</div>
+          </div>
+          <div style={box}>
+            <div style={lbl}><Zap size={14} color={kpis.cumplProy >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
+            <div style={{ ...val, color: kpis.cumplProy >= 100 ? '#4ade80' : '#f87171' }}>
+              {pct(kpis.cumplProy)}
+            </div>
+            <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, kpis.cumplProy)}%`, height: '100%', background: kpis.cumplProy >= 100 ? '#4ade80' : '#f87171' }} />
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── KPI Operaciones ── */}
       <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', marginLeft: '4px' }}>
-          <div style={{ width: 4, height: 16, background: '#4ade80', borderRadius: 2 }} />
-          <div style={{ fontSize: '11px', color: '#fff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>KPI OPERACIONES LOGRADAS</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ ...lbl, fontSize: '14px', borderLeft: '4px solid #4ade80', paddingLeft: '12px', marginBottom: 0, color: '#fff' }}>OPERACIONES</div>
+          {analista !== PDV && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', padding: '6px 14px', borderRadius: '10px' }}>
+              <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 800, letterSpacing: '0.5px' }}>COMISIÓN OPS</span>
+              <span style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>{formatCurrency(kpis.comisiones.comisionOperaciones)}</span>
+            </div>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={box}>
@@ -515,31 +664,77 @@ export default function AnalistasPage() {
           </div>
           <div style={box}>
             <div style={lbl}><TrendingUp size={14} color="#fff" /> ALCANCE ACTUAL</div>
-            <div style={val}>{kpis.alcanceOps} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
-            <div style={{ ...sub, color: kpis.tendPctOps >= 0 ? '#4ade80' : '#f87171' }}>
-               {kpis.tendPctOps >= 0 ? '↑' : '↓'} {Math.abs(kpis.tendPctOps).toFixed(1)}% vs {prevMesLabel}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
+              <div>
+                <div style={val}>{kpis.alcanceOps} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
+                <div style={{ ...sub, color: kpis.tendPctOps >= 0 ? '#4ade80' : '#f87171' }}>
+                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: kpis.tendPctOps >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {kpis.tendPctOps >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {Math.abs(kpis.tendPctOps).toFixed(1)}% vs {prevMesLabel}
+                  </div>
+                </div>
+              </div>
+              {/* Sparkline Operaciones */}
+              <div style={{ width: '100px', height: '50px' }}>
+                <Line 
+                  data={{
+                    labels: curva.dias,
+                    datasets: [{
+                      data: curva.stats.map(s => s.acum > 0 ? (s.acum / 100000) : 0), // Simplificado para ops
+                      borderColor: kpis.tendPctOps >= 0 ? '#4ade80' : '#f87171',
+                      backgroundColor: (context: any) => {
+                        const canvas = context.chart.ctx;
+                        const gradient = canvas.createLinearGradient(0, 0, 0, 50);
+                        gradient.addColorStop(0, kpis.tendPctOps >= 0 ? 'rgba(74, 222, 128, 0.5)' : 'rgba(248, 113, 113, 0.5)');
+                        gradient.addColorStop(0.7, kpis.tendPctOps >= 0 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(248, 113, 113, 0.2)');
+                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Difuminado total al final
+                        return gradient;
+                      },
+                      borderWidth: 2,
+                      pointRadius: 0,
+                      tension: 0.4,
+                      fill: true,
+                    }]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                  }}
+                />
+              </div>
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><Zap size={14} color={kpis.cumplRealOps >= 100 ? '#4ade80' : '#fbbf24'} /> CUMPLIMIENTO</div>
-            <div style={{ ...val, color: kpis.cumplRealOps >= 100 ? '#4ade80' : kpis.cumplRealOps >= 75 ? '#fbbf24' : '#f87171' }}>
+            <div style={lbl}><Zap size={14} color={kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
+            <div style={{ ...val, color: kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171' }}>
               {pct(kpis.cumplRealOps)}
             </div>
             <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplRealOps)}%`, height: '100%', background: kpis.cumplRealOps >= 100 ? '#4ade80' : kpis.cumplRealOps >= 75 ? '#fbbf24' : '#f87171' }} />
+              <div style={{ width: `${Math.min(100, kpis.cumplRealOps)}%`, height: '100%', background: kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171' }} />
             </div>
           </div>
           <div style={box}>
             <div style={lbl}><TrendingUp size={14} color="#666" /> PROYECTADO FIN MES</div>
             <div style={val}>{kpis.proyOps} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
-            <div style={sub}>Misma tendencia ({pct(kpis.cumplProyOps)})</div>
+            <div style={sub}>Tendencia actual ({pct(kpis.cumplProyOps)})</div>
+          </div>
+          <div style={box}>
+            <div style={lbl}><Zap size={14} color={kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
+            <div style={{ ...val, color: kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171' }}>
+              {pct(kpis.cumplProyOps)}
+            </div>
+            <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, kpis.cumplProyOps)}%`, height: '100%', background: kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171' }} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Alertas + Curva ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', marginBottom: '24px', alignItems: 'start' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* ── Alertas + Curva + Composición ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 280px', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
           
           {/* Alertas Premium */}
           <div style={card}>
@@ -583,7 +778,7 @@ export default function AnalistasPage() {
           </div>
 
           {/* Reportes Anuales Refinado */}
-          <div style={card}>
+          <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ ...lbl, marginBottom: '16px' }}><Users size={14} /> EQUIPO DE TRABAJO</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {[{ key: PDV, label: 'VISTA GLOBAL (PDV)' }, ...analistasSel.map(a => ({ key: a, label: a }))].map(a => (
@@ -622,8 +817,8 @@ export default function AnalistasPage() {
         <div style={{ ...card, height: '100%', minHeight: '620px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
-                <Activity size={20} style={{ color: '#fff' }} />
+              <div style={{ padding: '10px', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.2)' }}>
+                <Activity size={20} style={{ color: '#4ade80' }} />
               </div>
               <div>
                 <div style={{ fontSize: '15px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px' }}>DINÁMICA DE CRECIMIENTO</div>
@@ -632,19 +827,73 @@ export default function AnalistasPage() {
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '20px', fontSize: '10px', fontWeight: 900, letterSpacing: '1px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px rgba(74,222,128,0.3)' }} />
-                <span style={{ color: '#888' }}>VENTA REAL</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f87171', boxShadow: '0 0 8px rgba(248,113,113,0.3)' }} />
-                <span style={{ color: '#888' }}>SIN VENTAS</span>
-              </div>
-            </div>
           </div>
           <div style={{ flex: 1, minHeight: '450px' }}>
             <Line data={curvaChart} options={curvaOpts} />
+          </div>
+        </div>
+
+        {/* Composición de Cartera Circular */}
+        <div style={card}>
+          <div style={{ ...lbl, marginBottom: '20px' }}><PieChart size={14} color="#3b82f6" /> COMPOSICIÓN</div>
+          <div style={{ height: '140px', position: 'relative', marginBottom: '20px' }}>
+            <Doughnut 
+              data={{
+                labels: ['Aperturas', 'Renovaciones'],
+                datasets: [{
+                  data: [kpis.aperturas, kpis.renovaciones],
+                  backgroundColor: ['rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0.1)'],
+                  borderWidth: 0,
+                }]
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '80%',
+                plugins: { legend: { display: false } }
+              }}
+            />
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+              <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>{kpis.aperturas + kpis.renovaciones}</div>
+              <div style={{ fontSize: '8px', color: '#666', fontWeight: 800 }}>TOTAL</div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+              <span style={{ color: '#888', fontWeight: 600 }}>APERTURAS</span>
+              <span style={{ color: '#fff', fontWeight: 800 }}>{kpis.aperturas}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '10px' }}>
+              <span style={{ color: '#888', fontWeight: 600 }}>RENOVACIONES</span>
+              <span style={{ color: '#fff', fontWeight: 800 }}>{kpis.renovaciones}</span>
+            </div>
+            
+            {/* Resumen de Gestión Integrado */}
+            <div style={{ ...lbl, marginBottom: '12px' }}><Activity size={14} /> ESTADOS DE CARTERA</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
+              {resumenGestion.map(r => (
+                <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', padding: '2px 0' }}>
+                  <span style={{ color: '#888', fontWeight: 600 }}>{r.label.split(' ')[0]} {r.label.split(' ')[1] || ''}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: '#fff', fontWeight: 900, fontSize: '11px' }}>{formatCurrency(r.monto)}</div>
+                    <div style={{ color: '#444', fontSize: '8px', fontWeight: 800 }}>{r.ops} CASOS</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ ...lbl, marginBottom: '12px', marginTop: '12px' }}><ShieldCheck size={14} color="#f59e0b" /> ACUERDOS DE PRECIO</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+                <span style={{ color: '#666' }}>Bajo / Medio</span>
+                <span style={{ color: '#fff' }}>{kpis.acuerdosBajo + kpis.acuerdosMedio}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
+                <span style={{ color: '#f59e0b' }}>Premium</span>
+                <span style={{ color: '#fff' }}>{kpis.acuerdosPremium}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -660,42 +909,6 @@ export default function AnalistasPage() {
         </div>
       </div>
 
-      {/* ── Comisiones + Resumen ── */}
-      {analista !== PDV && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-        <div style={card}>
-          <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>$ COMISIONES</div>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <div style={{ ...box, flex: 1 }}>
-              <div style={lbl}>CAPITAL</div>
-              <div style={{ ...val, fontSize: '16px' }}>{formatCurrency(kpis.comisiones.comisionCapital)}</div>
-            </div>
-            <div style={{ ...box, flex: 1 }}>
-              <div style={lbl}>OPERACIONES</div>
-              <div style={{ ...val, fontSize: '16px' }}>{formatCurrency(kpis.comisiones.comisionOperaciones)}</div>
-            </div>
-          </div>
-          <div style={{ background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.15)', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#555', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>TOTAL COMISIÓN</div>
-            <div style={{ fontSize: '24px', fontWeight: 900, color: '#4ade80' }}>{formatCurrency(kpis.comisiones.comisionTotal)}</div>
-          </div>
-        </div>
-
-        <div style={card}>
-          <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>≡ RESUMEN DE GESTIÓN</div>
-          {resumenGestion.length === 0
-            ? <div style={{ color: '#555', fontSize: '13px' }}>Sin registros activos</div>
-            : resumenGestion.map(r => (
-              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: '11px', color: '#555', fontWeight: 700 }}>{r.label}</div>
-                <div>
-                  <span style={{ fontSize: '12px', color: '#888' }}>{r.ops} | </span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>{formatCurrency(r.monto)}</span>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      </div>}
     </div>
   );
 }
