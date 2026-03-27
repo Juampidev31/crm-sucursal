@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/1ehrJ32n1j1sbrqH3cBzZL9ZaVu9EC79k-6czhp0Ee6k/export?format=csv&gid=1482735050';
+const SHEET_ID = '1ehrJ32n1j1sbrqH3cBzZL9ZaVu9EC79k-6czhp0Ee6k';
+const SHEETS = [
+  { gid: '138257072', years: [2023, 2022, 2021] }, // sección1 left=2023, right=2022 / sección2 left=2021
+  { gid: '407412851', years: [2024] },              // sección1 left=2024 / sección2 left=ops2024
+  { gid: '1482735050', years: [2025, 2026] },       // sección1 left=2025 right=2026 / sección2 left=ops2025 right=ops2026
+];
 
 function parseCSV(text: string): string[][] {
   return text.split('\n').map(line => {
@@ -23,40 +28,72 @@ function parsePct(v: string): number | null {
   return isNaN(n) ? null : n;
 }
 
-function parseSectionRows(rows: string[][], startIdx: number) {
-  const left: object[] = [], right: object[] = [];
-  for (let i = startIdx + 2; i < rows.length; i++) {
-    const r = rows[i];
-    const mes = clean(r[0]);
-    if (!mes || mes === 'Mes') break;
-    left.push({ mes, obj: clean(r[1]) || '-', real: clean(r[2]) || '-', cumpl: clean(r[3]) || '-', cumplPct: parsePct(r[3]), var: clean(r[4]) || '-' });
-    const mes2 = clean(r[6]);
-    if (mes2) right.push({ mes: mes2, obj: clean(r[7]) || '-', real: clean(r[8]) || '-', cumpl: clean(r[9]) || '-', cumplPct: parsePct(r[9]), var: clean(r[10]) || '-' });
+function parseCol(r: string[], offset: number) {
+  const mes = clean(r[offset]);
+  if (!mes || mes === 'Mes') return null;
+  const obj = clean(r[offset + 1]);
+  const real = clean(r[offset + 2]);
+  const cumpl = clean(r[offset + 3]);
+  const cumplPct = parsePct(cumpl);
+  const varVal = clean(r[offset + 4]);
+  // Si no tiene ningún dato real, ignorar la fila
+  if (!obj && !real) return null;
+  return { mes, obj: obj || '-', real: real || '-', cumpl: cumpl || '-', cumplPct, var: varVal || '-' };
+}
+
+function parseSections(rows: string[][]): { left: ReturnType<typeof parseCol>[]; right: ReturnType<typeof parseCol>[] }[] {
+  const headersIdx: number[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    if (clean(rows[i][0]) === 'Mes' && clean(rows[i][1]) === 'Obj.') headersIdx.push(i);
   }
-  return { left, right };
+  return headersIdx.map(startIdx => {
+    const left: ReturnType<typeof parseCol>[] = [];
+    const right: ReturnType<typeof parseCol>[] = [];
+    for (let i = startIdx + 2; i < rows.length; i++) {
+      const r = rows[i];
+      if (clean(r[0]) === 'Mes') break;
+      const l = parseCol(r, 0);
+      const ri = parseCol(r, 6);
+      if (l) left.push(l); else if (right.length === 0 && !clean(r[0])) continue;
+      if (ri) right.push(ri);
+    }
+    return { left, right };
+  });
 }
 
 export async function GET() {
-  const res = await fetch(CSV_URL, { cache: 'no-store' });
-  const text = await res.text();
-  const rows = parseCSV(text);
+  const yearData: Record<number, { capital: object[]; operaciones: object[] | null }> = {};
 
-  // Trimestrales del header
-  const trimestrales = { q1: clean(rows[1]?.[1]), q2: clean(rows[1]?.[2]), q3: clean(rows[1]?.[3]), q4: clean(rows[1]?.[4]) };
+  for (const sheet of SHEETS) {
+    const res = await fetch(
+      `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${sheet.gid}`,
+      { cache: 'no-store' }
+    );
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const sections = parseSections(rows);
 
-  // Encontrar las dos secciones (Mes, Obj., Real, Cumpl., Var)
-  const seccionesIdx: number[] = [];
-  for (let i = 0; i < rows.length; i++) {
-    if (clean(rows[i][0]) === 'Mes' && clean(rows[i][1]) === 'Obj.') seccionesIdx.push(i);
+    if (sheet.years.length === 1) {
+      // 2024: section[0]=capital, section[1]=ops
+      const [y] = sheet.years;
+      yearData[y] = {
+        capital: sections[0]?.left ?? [],
+        operaciones: sections[1]?.left ?? null,
+      };
+    } else if (sheet.years.length === 2) {
+      // 2025/2026: section[0] left=2025 right=2026, section[1] left=ops2025 right=ops2026
+      const [y1, y2] = sheet.years;
+      yearData[y1] = { capital: sections[0]?.left ?? [], operaciones: sections[1]?.left ?? null };
+      yearData[y2] = { capital: sections[0]?.right ?? [], operaciones: sections[1]?.right ?? null };
+    } else {
+      // 2023/2022/2021: section[0] left=2023 right=2022, section[1] left=2021
+      const [y1, y2, y3] = sheet.years;
+      yearData[y1] = { capital: sections[0]?.left ?? [], operaciones: null };
+      yearData[y2] = { capital: sections[0]?.right ?? [], operaciones: null };
+      yearData[y3] = { capital: sections[1]?.left ?? [], operaciones: null };
+    }
   }
 
-  const capital = seccionesIdx[0] !== undefined ? parseSectionRows(rows, seccionesIdx[0]) : { left: [], right: [] };
-  const operaciones = seccionesIdx[1] !== undefined ? parseSectionRows(rows, seccionesIdx[1]) : { left: [], right: [] };
-
-  // Detectar años: el header dice "Alcances Trimestrales XXXX"
-  const headerAnio = parseInt(clean(rows[0]?.[0]).replace(/\D/g, '').slice(-4));
-  const anioLeft = isNaN(headerAnio) ? new Date().getFullYear() - 1 : headerAnio;
-  const anioRight = anioLeft + 1;
-
-  return NextResponse.json({ trimestrales, capital, operaciones, anioLeft, anioRight });
+  const years = Object.keys(yearData).map(Number).sort((a, b) => a - b);
+  return NextResponse.json({ years, yearData });
 }

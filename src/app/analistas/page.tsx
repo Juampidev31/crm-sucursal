@@ -78,18 +78,19 @@ interface MesData { mes: string; obj: string; real: string; cumpl: string; cumpl
 interface SeccionData { anio: number; meses: MesData[]; }
 interface HistoricoData { secciones: SeccionData[]; }
 interface PDVMes { mes: string; obj: string; real: string; cumpl: string; cumplPct: number | null; var: string; }
-interface PDVData { trimestrales: { q1: string; q2: string; q3: string; q4: string }; capital: { left: PDVMes[]; right: PDVMes[] }; operaciones: { left: PDVMes[]; right: PDVMes[] }; anioLeft: number; anioRight: number; }
+interface PDVData { years: number[]; yearData: Record<number, { capital: PDVMes[]; operaciones: PDVMes[] | null }>; }
 
 function pctColor(v: number | null) { if (v === null) return '#333'; if (v >= 100) return '#34d399'; if (v >= 75) return '#fbbf24'; return '#f87171'; }
 function varColor(v: string) { if (!v || v === '-') return '#555'; return v.startsWith('-') ? '#f87171' : '#34d399'; }
 
 function PDVHistorico({ data }: { data: PDVData }) {
-  const [anioSel, setAnioSel] = useState<number>(data.anioRight);
-  const rows = anioSel === data.anioLeft ? data.capital.left : data.capital.right;
-  const opsRows = anioSel === data.anioLeft ? data.operaciones.left : data.operaciones.right;
+  const [anioSel, setAnioSel] = useState<number>(() => data.years[data.years.length - 1]);
+  const yd = data.yearData[anioSel];
+  const capitalRows: PDVMes[] = (yd?.capital ?? []) as PDVMes[];
+  const opsRows: PDVMes[] | null = (yd?.operaciones ?? null) as PDVMes[] | null;
 
   const trimestres = [0,1,2,3].map(q => {
-    const meses = rows.slice(q * 3, q * 3 + 3).filter(m => m.cumplPct !== null);
+    const meses = capitalRows.slice(q * 3, q * 3 + 3).filter(m => m.cumplPct !== null);
     if (!meses.length) return null;
     return meses.reduce((s, m) => s + (m.cumplPct ?? 0), 0) / meses.length;
   });
@@ -124,9 +125,9 @@ function PDVHistorico({ data }: { data: PDVData }) {
 
   return (
     <div style={{ marginTop: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ fontSize: '11px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Histórico Anual — PDV</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           {['Q1','Q2','Q3','Q4'].map((q, i) => (
             <div key={q} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '4px 10px', textAlign: 'center' }}>
               <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
@@ -134,15 +135,15 @@ function PDVHistorico({ data }: { data: PDVData }) {
             </div>
           ))}
           <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px 3px', display: 'flex' }}>
-            {[data.anioLeft, data.anioRight].map(a => (
+            {data.years.map(a => (
               <button key={a} onClick={() => setAnioSel(a)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === a ? '#f7e479' : 'transparent', color: anioSel === a ? '#000' : '#555' }}>{a}</button>
             ))}
           </div>
         </div>
       </div>
       <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-        <MiniTable titulo="Capital" filas={rows} />
-        <MiniTable titulo="Operaciones" filas={opsRows} />
+        <MiniTable titulo="Capital" filas={capitalRows} />
+        {opsRows && opsRows.length > 0 && <MiniTable titulo="Operaciones" filas={opsRows} />}
       </div>
     </div>
   );
