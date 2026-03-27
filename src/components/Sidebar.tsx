@@ -15,7 +15,7 @@ import { useData } from '@/context/DataContext';
 const NAV_MAIN = [
   { href: '/registros', icon: AlignJustify, label: 'Registros'   },
   { href: '/analistas', icon: BarChart2,    label: 'Reportes'    },
-  { href: '/',          icon: PieChart,     label: 'Métricas'    },
+  { href: '/metricas',  icon: PieChart,     label: 'Métricas'    },
 ];
 
 const NAV_INFORMES = [
@@ -39,46 +39,50 @@ function NavItem({
   href: string; icon: React.ElementType; label: string; active?: boolean; badge?: number;
 }) {
   const [hovered, setHovered] = useState(false);
-  const show = active || hovered;
 
   return (
     <Link
       href={href}
       style={{
-        display: 'flex', alignItems: 'center', gap: 11,
-        padding: '7px 10px',
-        margin: '2px 10px',
-        borderRadius: 10,
-        background: active
-          ? 'rgba(255,255,255,0.07)'
-          : hovered ? 'rgba(255,255,255,0.03)' : 'transparent',
-        border: active
-          ? '1px solid rgba(255,255,255,0.07)'
-          : '1px solid transparent',
-        color: active ? '#fff' : hovered ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)',
-        fontWeight: active ? 600 : 400,
-        fontSize: 13,
-        letterSpacing: '-0.1px',
+        display: 'flex', alignItems: 'center', gap: 14,
+        padding: '12px 24px',
+        margin: '1px 0',
+        borderRadius: 0,
+        color: active ? '#fff' : hovered ? '#ccc' : '#555',
+        fontWeight: active ? 600 : 500,
+        fontSize: 14,
         textDecoration: 'none',
-        transition: 'all 0.15s',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         cursor: 'pointer',
+        background: active 
+          ? 'linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%)' 
+          : 'transparent',
+        position: 'relative',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Icon box */}
-      <div style={{
-        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: active
-          ? 'rgba(255,255,255,0.1)'
-          : hovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)',
-        transition: 'background 0.15s',
-      }}>
-        <Icon size={14} strokeWidth={active ? 2.2 : 1.7} />
-      </div>
+      {/* Indicator pill */}
+      {active && (
+        <div style={{
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 3,
+          height: 20,
+          background: '#0078d4',
+          borderRadius: '0 2px 2px 0',
+          boxShadow: '0 0 10px rgba(0, 120, 212, 0.3)',
+        }} />
+      )}
 
-      <span style={{ flex: 1 }}>{label}</span>
+      <Icon 
+        size={18} 
+        strokeWidth={active ? 2.5 : 2} 
+        style={{ opacity: active ? 1 : 0.4 }}
+      />
+      <span style={{ flex: 1, letterSpacing: '0.2px' }}>{label}</span>
 
       {badge && badge > 0 ? (
         <span style={{
@@ -88,7 +92,7 @@ function NavItem({
           padding: '2px 7px', borderRadius: 20,
           minWidth: 20, textAlign: 'center', flexShrink: 0,
         }}>
-          {badge > 99 ? '99+' : badge}
+          {badge}
         </span>
       ) : null}
     </Link>
@@ -100,17 +104,14 @@ function NavItem({
 function Divider({ label }: { label: string }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '14px 20px 6px',
+      padding: '24px 32px 10px',
+      fontSize: 10,
+      fontWeight: 800,
+      textTransform: 'uppercase',
+      color: '#333',
+      letterSpacing: '1.5px',
     }}>
-      <span style={{
-        fontSize: 9, fontWeight: 700, letterSpacing: '1.5px',
-        textTransform: 'uppercase', color: 'rgba(255,255,255,0.15)',
-        flexShrink: 0,
-      }}>
-        {label}
-      </span>
-      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
+      {label}
     </div>
   );
 }
@@ -124,11 +125,15 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
   return (
     <aside className={`main-sidebar${hidden ? ' sidebar-hidden' : ''}`}
-      style={{ background: '#070708' }}
+      style={{ 
+        background: 'linear-gradient(180deg, #0a0a0b 0%, #000 100%)',
+        borderRight: '1px solid rgba(255,255,255,0.03)',
+        boxShadow: '20px 0 50px rgba(0,0,0,0.5)',
+      }}
     >
 
       {/* Nav */}
-      <div className="sidebar-content" style={{ padding: '40px 0 12px' }}>
+      <div className="sidebar-content" style={{ padding: '30px 0' }}>
 
         {/* Principal */}
         {NAV_MAIN.map(item => (
