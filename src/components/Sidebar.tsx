@@ -49,9 +49,9 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const pathname = usePathname();
   const { isAdmin } = useAuth();
   const { pendingReminders } = useData();
-  const { 
-    filters, setFilter, limpiarFiltros, hayFiltros, 
-    setIsCreationModalOpen, triggerExport, totalResults 
+  const {
+    filters, setFilter, limpiarFiltros, hayFiltros,
+    setIsCreationModalOpen, triggerExport, totalResults
   } = useFilter();
 
   return (
@@ -69,17 +69,17 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         {/* Acciones principales */}
         <div style={{ padding: '0 12px 16px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button 
-              className="btn-primary" 
+            <button
+              className="btn-primary"
               onClick={() => setIsCreationModalOpen(true)}
-              style={{ flex: 1, padding: '7px 10px', fontSize: '12px', justifyContent: 'center' }}
+              style={{ flex: 1, justifyContent: 'center' }}
             >
               <Plus size={14} /> Nuevo
             </button>
-            <button 
-              className="btn-secondary" 
+            <button
+              className="btn-secondary"
               onClick={triggerExport}
-              style={{ padding: '7px 10px', fontSize: '12px' }}
+              style={{ }}
             >
               <Download size={14} />
             </button>
@@ -172,9 +172,9 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
       {hayFiltros && (
         <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-          <button 
-            onClick={limpiarFiltros} 
-            className="btn-clear" 
+          <button
+            onClick={limpiarFiltros}
+            className="btn-clear"
             style={{ width: '100%', fontSize: '12px', justifyContent: 'center' }}
           >
             <X size={14} /> Limpiar Filtros

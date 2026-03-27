@@ -11,7 +11,6 @@ import { Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, Tooltip, Legend, ArcElement);
 
-// Estilos de colores específicos para este dashboard (según imagen)
 const CHART_COLORS = {
   venta: '#fff',
   proyeccion: 'rgba(255,255,255,0.4)',
@@ -104,7 +103,7 @@ export default function DashboardPage() {
           <p style={{ fontSize: '10px', color: '#444', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>Dashboard principal</p>
           <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#fff', letterSpacing: '-1px' }}>Métricas de Gestión</h1>
         </div>
-        
+
         <div style={{ display: 'flex', gap: '12px' }}>
           <div style={{ background: '#0a0a0a', padding: '12px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
             <label style={{ fontSize: '9px', color: '#444', fontWeight: 800, display: 'block', marginBottom: '4px', letterSpacing: '0.5px' }}>FILTRAR PERIODO</label>

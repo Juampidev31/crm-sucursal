@@ -51,13 +51,13 @@ interface Reg {
 interface DiasConfig { analista: string; dias_habiles: number; dias_transcurridos: number; }
 
 const CHART_COLORS: Record<string, string> = {
-  venta: '#4CAF50',
-  proyeccion: '#17a2b8',
-  'en seguimiento': '#ffc107',
-  'score bajo': '#dc3545',
-  afectaciones: '#c0392b',
-  'derivado / aprobado cc': '#27ae60',
-  'derivado / rechazado cc': '#e74c3c',
+  venta: '#ffffff',
+  proyeccion: 'rgba(255,255,255,0.6)',
+  'en seguimiento': 'rgba(255,255,255,0.4)',
+  'score bajo': 'rgba(255,255,255,0.25)',
+  afectaciones: 'rgba(248,113,113,0.4)',
+  'derivado / aprobado cc': 'rgba(255,255,255,0.7)',
+  'derivado / rechazado cc': 'rgba(248,113,113,0.3)',
 };
 
 const ESTADOS_METRICAS = [
@@ -363,6 +363,17 @@ export default function AnalistasPage() {
       { type: 'bar' as const, label: 'Objetivo', data: historico.map(h => h.objetivo), backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 4, yAxisID: 'y' },
       { type: 'bar' as const, label: 'Alcance', data: historico.map(h => h.alcance), backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 4, yAxisID: 'y' },
       {
+        type: 'line' as const,
+        label: 'Meta 100%',
+        data: historico.map(() => 100),
+        borderColor: '#f87171',
+        borderWidth: 1.5,
+        borderDash: [5, 5],
+        pointRadius: 0,
+        fill: false,
+        yAxisID: 'y2',
+      },
+      {
         type: 'line' as const, label: 'Cumpl. %',
         data: historico.map(h => h.cumplimiento),
         borderColor: '#fff', 
@@ -380,8 +391,8 @@ export default function AnalistasPage() {
         borderWidth: 2, 
         tension: 0.4, 
         yAxisID: 'y2', 
-        pointBackgroundColor: historico.map(h => h.cumplimiento >= 100 ? '#4ade80' : h.cumplimiento >= 75 ? '#fbbf24' : '#f87171'),
-        pointBorderColor: '#fff',
+        pointBackgroundColor: '#fff',
+        pointBorderColor: historico.map(h => h.cumplimiento >= 100 ? '#fff' : '#f87171'),
         pointBorderWidth: 2,
         pointHoverRadius: 8,
       },
@@ -395,9 +406,14 @@ export default function AnalistasPage() {
       tooltip: { callbacks: { label: (c: { dataset: { type?: string; label?: string }; parsed: { y: number } }) => c.dataset.type === 'line' ? ` ${pct(c.parsed.y)}` : ` ${formatCurrency(c.parsed.y)}` } },
     },
     scales: {
-      x: { ticks: { color: '#555' }, grid: { color: 'rgba(255,255,255,0.03)' } },
-      y: { ticks: { color: '#555', callback: (v: string | number) => `$${numFmt.format(Number(v) / 1000000)}M` }, grid: { color: 'rgba(255,255,255,0.03)' } },
-      y2: { position: 'right' as const, ticks: { color: '#555', callback: (v: string | number) => `${v}%` }, grid: { display: false } },
+      x: { ticks: { color: '#555', font: { family: 'Outfit', size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      y: { ticks: { color: '#555', font: { family: 'Outfit', size: 10 }, callback: (v: string | number) => `$${numFmt.format(Number(v) / 1000000)}M` }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      y2: { 
+        position: 'right' as const, 
+        min: 0, suggestedMax: 120, 
+        ticks: { color: '#555', font: { family: 'Outfit', size: 10 }, callback: (v: string | number) => `${v}%` }, 
+        grid: { display: false } 
+      },
     },
   };
 
@@ -480,12 +496,12 @@ export default function AnalistasPage() {
         <div style={{ 
           width: '42px', 
           height: '42px', 
-          background: 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '12px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 0 20px rgba(74, 222, 128, 0.25)',
           flexShrink: 0
         }}>
           <Activity size={22} color="#fff" />
@@ -517,16 +533,15 @@ export default function AnalistasPage() {
         {/* COMISIÓN TOTAL - DESTACADA */}
         {analista !== PDV && (
           <div style={{ 
-            background: 'rgba(74, 222, 128, 0.1)', 
-            border: '1px solid rgba(74, 222, 128, 0.3)',
+            background: 'rgba(255, 255, 255, 0.03)', 
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '16px',
             padding: '8px 18px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            boxShadow: '0 0 20px rgba(74, 222, 128, 0.1)'
           }}>
-            <div style={{ fontSize: '9px', fontWeight: 900, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '2px' }}>COMISIÓN TOTAL</div>
+            <div style={{ fontSize: '9px', fontWeight: 900, color: '#888', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '2px' }}>COMISIÓN TOTAL</div>
             <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{formatCurrency(kpis.comisiones.comisionTotal)}</div>
           </div>
         )}
@@ -581,8 +596,8 @@ export default function AnalistasPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
               <div>
                 <div style={val}>{formatCurrency(kpis.alcanceCapital)}</div>
-                <div style={{ ...sub, color: kpis.tendPct >= 0 ? '#4ade80' : '#f87171' }}>
-                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: kpis.tendPct >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ ...sub, color: kpis.tendPct >= 0 ? '#fff' : '#f87171' }}>
+                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     {kpis.tendPct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                     {Math.abs(kpis.tendPct).toFixed(1)}% vs {prevMesLabel}
                   </div>
@@ -622,11 +637,11 @@ export default function AnalistasPage() {
           </div>
           <div style={box}>
             <div style={lbl}><Zap size={14} color={kpis.cumplReal >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
-            <div style={{ ...val, color: kpis.cumplReal >= 100 ? '#4ade80' : '#f87171' }}>
+            <div style={{ ...val, color: '#fff' }}>
               {pct(kpis.cumplReal)}
             </div>
             <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplReal)}%`, height: '100%', background: kpis.cumplReal >= 100 ? '#4ade80' : '#f87171' }} />
+              <div style={{ width: `${Math.min(100, kpis.cumplReal)}%`, height: '100%', background: kpis.cumplReal >= 100 ? '#fff' : '#f87171' }} />
             </div>
           </div>
           <div style={box}>
@@ -636,11 +651,11 @@ export default function AnalistasPage() {
           </div>
           <div style={box}>
             <div style={lbl}><Zap size={14} color={kpis.cumplProy >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
-            <div style={{ ...val, color: kpis.cumplProy >= 100 ? '#4ade80' : '#f87171' }}>
+            <div style={{ ...val, color: '#fff' }}>
               {pct(kpis.cumplProy)}
             </div>
             <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplProy)}%`, height: '100%', background: kpis.cumplProy >= 100 ? '#4ade80' : '#f87171' }} />
+              <div style={{ width: `${Math.min(100, kpis.cumplProy)}%`, height: '100%', background: kpis.cumplProy >= 100 ? '#fff' : '#f87171' }} />
             </div>
           </div>
         </div>
@@ -712,7 +727,7 @@ export default function AnalistasPage() {
               {pct(kpis.cumplRealOps)}
             </div>
             <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplRealOps)}%`, height: '100%', background: kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171' }} />
+              <div style={{ width: `${Math.min(100, kpis.cumplRealOps)}%`, height: '100%', background: kpis.cumplRealOps >= 100 ? '#fff' : '#f87171' }} />
             </div>
           </div>
           <div style={box}>
@@ -726,7 +741,7 @@ export default function AnalistasPage() {
               {pct(kpis.cumplProyOps)}
             </div>
             <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplProyOps)}%`, height: '100%', background: kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171' }} />
+              <div style={{ width: `${Math.min(100, kpis.cumplProyOps)}%`, height: '100%', background: kpis.cumplProyOps >= 100 ? '#fff' : '#f87171' }} />
             </div>
           </div>
         </div>
@@ -897,14 +912,13 @@ export default function AnalistasPage() {
           </div>
         </div>
       </div>
-
       {/* ── Histórico 12 meses ── */}
       <div style={{ ...card, marginBottom: '16px' }}>
         <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>HISTÓRICO 12 MESES</div>
         <div style={{ fontSize: '11px', color: '#555', marginBottom: '16px' }}>
           {historico[0]?.label} — {historico[11]?.label} {anio}
         </div>
-        <div style={{ height: '260px' }}>
+        <div style={{ height: '320px' }}>
           <Bar data={histChart as any} options={histOpts as any} />
         </div>
       </div>
