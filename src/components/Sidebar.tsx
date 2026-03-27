@@ -105,6 +105,23 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
         {/* Main */}
         <div className="nav-group">
+          <div style={{ padding: '0 8px 8px' }}>
+            <button
+              onClick={() => setIsCreationModalOpen(true)}
+              style={{
+                width: '100%', height: 34,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                background: 'var(--azul)',
+                border: 'none',
+                borderRadius: 6,
+                color: '#fff',
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <Plus size={14} /> Nuevo registro
+            </button>
+          </div>
           {NAV_MAIN.map(item => (
             <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={pathname === item.href} />
           ))}
@@ -130,35 +147,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         )}
       </div>
 
-      {/* Footer action */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <button
-          onClick={() => setIsCreationModalOpen(true)}
-          style={{
-            width: '100%', height: 32,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 6,
-            color: 'rgba(255,255,255,0.4)',
-            fontSize: 12, fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-            e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = 'transparent';
-            e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-          }}
-        >
-          <Plus size={13} /> Nuevo registro
-        </button>
-      </div>
     </aside>
   );
 }
