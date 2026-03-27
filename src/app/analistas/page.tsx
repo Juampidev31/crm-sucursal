@@ -74,6 +74,98 @@ const ESTADOS_RESUMEN = [
   { key: 'derivado / rechazado cc', label: 'DERIVADO RECHAZADO CC' },
 ];
 
+interface MesData { mes: string; obj: string; real: string; cumpl: string; cumplPct: number | null; varIM: string; ops: string; alcance: string; cumplOps: string; cumplOpsPct: number | null; varIMOps: string; }
+interface SeccionData { anio: number; meses: MesData[]; }
+interface LucianaData { trimestrales: { q1: string; q2: string; q3: string; q4: string }; secciones: SeccionData[]; }
+
+function pctColor(v: number | null) { if (v === null) return '#333'; if (v >= 100) return '#34d399'; if (v >= 75) return '#fbbf24'; return '#f87171'; }
+function varColor(v: string) { if (!v || v === '-') return '#555'; return v.startsWith('-') ? '#f87171' : '#34d399'; }
+
+function LucianaHistorico() {
+  const [data, setData] = useState<LucianaData | null>(null);
+  const [anioSel, setAnioSel] = useState<number>(new Date().getFullYear());
+
+  useEffect(() => {
+    fetch('/api/luciana').then(r => r.json()).then(d => {
+      setData(d);
+      if (d.secciones?.length) setAnioSel(d.secciones[d.secciones.length - 1].anio);
+    });
+  }, []);
+
+  if (!data) return <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner" style={{ width: 24, height: 24 }} /></div>;
+
+  const seccion = data.secciones.find(s => s.anio === anioSel);
+  const th: React.CSSProperties = { padding: '8px 12px', color: '#444', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
+
+  return (
+    <div style={{ marginTop: '16px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Histórico Anual — Luciana</div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {/* Trimestrales */}
+          {['Q1','Q2','Q3','Q4'].map((q, i) => {
+            const val = data.trimestrales[`q${i+1}` as keyof typeof data.trimestrales];
+            const pct = parseFloat(val.replace('%','').replace(',','.'));
+            return (
+              <div key={q} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '4px 10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
+                <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(isNaN(pct) ? null : pct) }}>{val || '—'}</div>
+              </div>
+            );
+          })}
+          {/* Selector año */}
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px 3px', display: 'flex' }}>
+            {data.secciones.map(s => (
+              <button key={s.anio} onClick={() => setAnioSel(s.anio)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === s.anio ? '#f7e479' : 'transparent', color: anioSel === s.anio ? '#000' : '#555' }}>{s.anio}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla */}
+      {seccion && (
+        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+            <thead>
+              <tr>
+                <th style={{ ...th, textAlign: 'left' }}>Mes</th>
+                <th style={{ ...th, textAlign: 'right' }}>Objetivo</th>
+                <th style={{ ...th, textAlign: 'right' }}>Real</th>
+                <th style={{ ...th, textAlign: 'right' }}>Cumpl.</th>
+                <th style={{ ...th, textAlign: 'right' }}>Var.IM</th>
+                <th style={{ ...th, textAlign: 'right' }}>Ops Obj.</th>
+                <th style={{ ...th, textAlign: 'right' }}>Alcance</th>
+                <th style={{ ...th, textAlign: 'right' }}>Cumpl.Op</th>
+                <th style={{ ...th, textAlign: 'right' }}>Var.IM</th>
+              </tr>
+            </thead>
+            <tbody>
+              {seccion.meses.map((r, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                  <td style={{ padding: '8px 12px', color: '#888', fontWeight: 600 }}>{r.mes}</td>
+                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'right' }}>{r.obj}</td>
+                  <td style={{ padding: '8px 12px', color: '#aaa', fontWeight: 600, textAlign: 'right' }}>{r.real}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                    {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#333' }}>—</span>}
+                  </td>
+                  <td style={{ padding: '8px 12px', color: varColor(r.varIM), fontWeight: 600, textAlign: 'right', fontSize: '11px' }}>{r.varIM !== '-' ? r.varIM : '—'}</td>
+                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'right' }}>{r.ops}</td>
+                  <td style={{ padding: '8px 12px', color: '#aaa', fontWeight: 600, textAlign: 'right' }}>{r.alcance}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                    {r.cumplOpsPct !== null ? <span style={{ color: pctColor(r.cumplOpsPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplOpsPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumplOps}</span> : <span style={{ color: '#333' }}>—</span>}
+                  </td>
+                  <td style={{ padding: '8px 12px', color: varColor(r.varIMOps), fontWeight: 600, textAlign: 'right', fontSize: '11px' }}>{r.varIMOps !== '-' ? r.varIMOps : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AnalistasPage() {
   const now = new Date();
   const [analista, setAnalista] = useState<string>(PDV);
@@ -898,6 +990,13 @@ export default function AnalistasPage() {
           <Bar data={histChart as any} options={histOpts as any} />
         </div>
       </div>
+
+      {/* ── Histórico anual Luciana (Google Sheets) ── */}
+      {analista === 'Luciana' && (
+        <div style={{ ...card, marginBottom: '16px' }}>
+          <LucianaHistorico />
+        </div>
+      )}
 
     </div>
   );
