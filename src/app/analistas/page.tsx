@@ -89,6 +89,15 @@ function LucianaHistorico({ data }: { data: LucianaData }) {
   const seccion = data.secciones.find(s => s.anio === anioSel);
   const th: React.CSSProperties = { padding: '8px 12px', color: '#444', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
 
+  // Calcular Q1-Q4 desde los meses del año seleccionado
+  const trimestres = [0,1,2,3].map(q => {
+    const meses = seccion?.meses.slice(q * 3, q * 3 + 3) ?? [];
+    const validos = meses.filter(m => m.cumplPct !== null);
+    if (!validos.length) return null;
+    const avg = validos.reduce((s, m) => s + (m.cumplPct ?? 0), 0) / validos.length;
+    return avg;
+  });
+
   return (
     <div style={{ marginTop: '16px' }}>
       {/* Header */}
@@ -97,12 +106,11 @@ function LucianaHistorico({ data }: { data: LucianaData }) {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {/* Trimestrales */}
           {['Q1','Q2','Q3','Q4'].map((q, i) => {
-            const val = data.trimestrales[`q${i+1}` as keyof typeof data.trimestrales];
-            const pct = parseFloat(val.replace('%','').replace(',','.'));
+            const val = trimestres[i];
             return (
               <div key={q} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '4px 10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
-                <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(isNaN(pct) ? null : pct) }}>{val || '—'}</div>
+                <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(val) }}>{val !== null ? `${val.toFixed(1)}%` : '—'}</div>
               </div>
             );
           })}
