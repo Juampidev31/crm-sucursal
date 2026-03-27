@@ -473,23 +473,6 @@ export default function RegistrosPage() {
         </div>
       )}
 
-      {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>Registros</h1>
-          {!loading && (
-            <span style={{ fontSize: 12, color: '#444', fontWeight: 700 }}>
-              {filteredRegistros.length.toLocaleString('es-AR')} resultado{filteredRegistros.length !== 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn-secondary" onClick={exportarCSV} style={{ height: 34, fontSize: 12 }}>
-            <Download size={13} /> Exportar
-          </button>
-        </div>
-      </div>
-
       {/* Toolbar */}
       <div style={{
         background: '#000', border: '1px solid var(--border-color)',
@@ -555,7 +538,10 @@ export default function RegistrosPage() {
           )}
 
           {/* Pagination — pushed right */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="btn-secondary" onClick={exportarCSV} style={{ height: 32, fontSize: 11, padding: '0 10px' }}>
+              <Download size={12} /> Exportar
+            </button>
             <span style={{ fontSize: 12, color: '#444', fontWeight: 600, whiteSpace: 'nowrap' }}>
               {filteredRegistros.length === 0 ? '—' : `${rangeStart}–${rangeEnd} de ${filteredRegistros.length}`}
             </span>
@@ -646,7 +632,7 @@ export default function RegistrosPage() {
                     color: '#444',
                     textTransform: 'uppercase',
                     letterSpacing: '0.6px',
-                    textAlign: i === 3 || i === 4 ? 'right' : i === 8 ? 'center' : 'left',
+                    textAlign: i === 0 ? 'left' : 'center',
                     whiteSpace: 'nowrap',
                   }}>{h}</th>
                 ))}
@@ -666,7 +652,7 @@ export default function RegistrosPage() {
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     {/* Cliente */}
-                    <td style={{ padding: '12px 16px', minWidth: 180 }}>
+                    <td style={{ padding: '12px 16px', minWidth: 180, textAlign: 'left' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -681,19 +667,19 @@ export default function RegistrosPage() {
                     </td>
 
                     {/* Analista */}
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#888' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#888', textAlign: 'center' }}>
                       {displayAnalista(reg.analista)}
                     </td>
 
                     {/* Fecha */}
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#555', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#555', whiteSpace: 'nowrap', textAlign: 'center' }}>
                       {formatDate(reg.fecha)}
                     </td>
 
                     {/* Score */}
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                       {reg.puntaje ? (
-                        <div className="score-cell" style={{ justifyContent: 'flex-end' }}>
+                        <div className="score-cell" style={{ justifyContent: 'center' }}>
                           <div className="score-dot" style={{
                             background: reg.puntaje >= 700 ? '#2563eb' : reg.puntaje >= 600 ? '#059669' : reg.puntaje >= 500 ? '#d97706' : '#dc2626',
                           }} />
@@ -705,7 +691,7 @@ export default function RegistrosPage() {
                     </td>
 
                     {/* Monto */}
-                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       {formatCurrency(Number(reg.monto))}
                     </td>
 
@@ -715,12 +701,12 @@ export default function RegistrosPage() {
                     </td>
 
                     {/* Tipo */}
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: reg.tipo_cliente ? '#888' : '#222' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: reg.tipo_cliente ? '#888' : '#222', textAlign: 'center' }}>
                       {reg.tipo_cliente || '—'}
                     </td>
 
                     {/* Acuerdo */}
-                    <td style={{ padding: '12px 16px', fontSize: 11, color: reg.acuerdo_precios ? '#666' : '#222', textTransform: reg.acuerdo_precios ? 'uppercase' : 'none', letterSpacing: reg.acuerdo_precios ? '0.4px' : 0 }}>
+                    <td style={{ padding: '12px 16px', fontSize: 11, color: reg.acuerdo_precios ? '#666' : '#222', textTransform: reg.acuerdo_precios ? 'uppercase' : 'none', letterSpacing: reg.acuerdo_precios ? '0.4px' : 0, textAlign: 'center' }}>
                       {reg.acuerdo_precios || '—'}
                     </td>
 
