@@ -116,15 +116,15 @@ export default function ReporteCobranzasPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {data?.mediaEmpGlobal && (
-            <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '10px', padding: '8px 16px', textAlign: 'center' }}>
+            <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '10px', padding: '10px 16px', textAlign: 'center', height: '54px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{ fontSize: '9px', color: '#444', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px' }}>MEDIA EMP.</div>
               <div style={{ fontSize: '18px', fontWeight: 900, color: '#f87171' }}>{data.mediaEmpGlobal}</div>
             </div>
           )}
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '10px', padding: '8px 4px' }}>
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '10px', padding: '6px 4px', height: '54px', display: 'flex', alignItems: 'center' }}>
             {YEARS.map(y => (
               <button key={y} onClick={() => setYear(y)} style={{
-                padding: '6px 18px', borderRadius: '7px', border: 'none', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                padding: '8px 18px', borderRadius: '7px', border: 'none', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
                 background: year === y ? '#f7e479' : 'transparent',
                 color: year === y ? '#000' : '#555',
               }}>{y}</button>
