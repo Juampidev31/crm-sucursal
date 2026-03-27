@@ -26,16 +26,23 @@ const dateTimeFmt = new Intl.DateTimeFormat('es-AR', {
 export const formatCurrency = (value: number): string =>
   currencyFmt.format(value);
 
+function parseDateLocal(str: string): Date {
+  // "YYYY-MM-DD" → hora local para evitar el desfase UTC-3
+  const parts = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (parts) return new Date(+parts[1], +parts[2] - 1, +parts[3]);
+  return new Date(str);
+}
+
 export const formatDate = (date: string | Date | null): string => {
   if (!date) return '-';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? parseDateLocal(date) : date;
   if (isNaN(d.getTime())) return '-';
   return dateFmt.format(d);
 };
 
 export const formatDateTime = (date: string | Date | null): string => {
   if (!date) return '-';
-  const d = typeof date === 'string' ? new Date(date) : date;
+  const d = typeof date === 'string' ? parseDateLocal(date) : date;
   if (isNaN(d.getTime())) return '-';
   return dateTimeFmt.format(d);
 };
