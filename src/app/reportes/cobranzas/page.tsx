@@ -139,19 +139,19 @@ export default function ReporteCobranzasPage() {
         </div>
       ) : (
         <>
+          {/* Tablas tramos */}
+          <div style={{ display: 'flex', gap: '14px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <TramoTable titulo="Tramo 90-119" rows={data?.tramo90 ?? []} color="#60a5fa" />
+            <TramoTable titulo="Tramo 120-209" rows={data?.tramo120 ?? []} color="#a78bfa" />
+            <TramoTable titulo="Refinanciaciones" rows={data?.refin ?? []} color="#f7e479" />
+          </div>
+
           {/* Gráfico cumplimiento */}
           <div className="data-card" style={{ marginBottom: '20px' }}>
             <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Cumplimiento por Tramo</h3>
             <div style={{ height: '260px' }}>
               <Bar data={cumplData} options={chartOpts('%') as object} />
             </div>
-          </div>
-
-          {/* Tablas tramos */}
-          <div style={{ display: 'flex', gap: '14px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <TramoTable titulo="Tramo 90-119" rows={data?.tramo90 ?? []} color="#60a5fa" />
-            <TramoTable titulo="Tramo 120-209" rows={data?.tramo120 ?? []} color="#a78bfa" />
-            <TramoTable titulo="Refinanciaciones" rows={data?.refin ?? []} color="#f7e479" />
           </div>
 
           {/* Gráfico morosidad */}
