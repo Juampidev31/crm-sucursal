@@ -483,14 +483,9 @@ export default function RegistrosPage() {
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-secondary" onClick={exportarCSV} style={{ height: 34, fontSize: 12 }}>
-            <Download size={13} /> Exportar
-          </button>
-          <button className="btn-primary" onClick={openNew} style={{ height: 34, fontSize: 12 }}>
-            <Plus size={14} /> Nuevo
-          </button>
-        </div>
+        <button className="btn-secondary" onClick={exportarCSV} style={{ height: 34, fontSize: 12 }}>
+          <Download size={13} /> Exportar
+        </button>
       </div>
 
       {/* Toolbar */}
