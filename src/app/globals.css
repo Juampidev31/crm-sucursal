@@ -126,7 +126,7 @@ a {
 }
 
 .brand-text {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: #fff;
   white-space: nowrap;
@@ -156,25 +156,26 @@ a {
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
+  gap: 10px;
+  padding: 9px 16px;
   border-radius: 6px;
-  color: #94a3b8;
-  font-weight: 500;
-  font-size: 13.5px;
-  transition: all 0.2s ease;
-  margin-bottom: 2px;
+  color: rgba(255,255,255,0.35);
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: -0.1px;
+  transition: color 0.15s ease, background 0.15s ease;
+  margin-bottom: 1px;
   cursor: pointer;
   text-decoration: none;
 }
 
 .sidebar-item:hover {
-  background: var(--hover-bg);
-  color: #fff;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.7);
 }
 
 .sidebar-item.active {
-  background: rgba(0, 120, 212, 0.1);
+  background: rgba(255,255,255,0.05);
   color: #fff;
   font-weight: 600;
   position: relative;
@@ -186,10 +187,11 @@ a {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  background: var(--azul);
+  width: 2px;
+  height: 14px;
+  background: #fff;
   border-radius: 0 2px 2px 0;
+  opacity: 0.6;
 }
 
 /* ============ DASHBOARD ============ */
@@ -237,7 +239,7 @@ a {
 }
 
 .kpi-val {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   margin-bottom: 8px;
   color: #fff;
@@ -273,17 +275,17 @@ a {
 
 .data-table th {
   padding: 12px 16px;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--gris);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   font-weight: 700;
   border-bottom: 1px solid var(--border-color);
 }
 
 .data-table td {
-  padding: 14px 16px;
-  font-size: 13.5px;
+  padding: 16px 16px;
+  font-size: 16px;
   border-bottom: 1px solid rgba(255,255,255,0.03);
   color: #cbd5e1;
 }
@@ -328,7 +330,7 @@ a {
   height: 38px;
   padding: 0 16px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -343,7 +345,7 @@ a {
   height: 38px;
   padding: 0 16px;
   color: var(--gris);
-  font-size: 13px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -429,7 +431,7 @@ a {
   height: 38px;
   padding: 0 12px;
   color: #fff;
-  font-size: 13.5px;
+  font-size: 14px;
   outline: none;
   appearance: none;
   color-scheme: dark;
