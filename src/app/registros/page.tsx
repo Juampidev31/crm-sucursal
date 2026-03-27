@@ -2,59 +2,78 @@
 
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatDate, getStatusColor, getStatusLabel, capitalizarNombre, sanitizarCuil, displayAnalista } from '@/lib/utils';
+import { formatCurrency, formatDate, capitalizarNombre, sanitizarCuil, displayAnalista } from '@/lib/utils';
 import { Registro } from '@/types';
-import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ShieldCheck, ChevronLeft, ChevronRight, Filter, Download, ChevronUp, ChevronDown, FileText } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Filter, Download, ChevronUp, ChevronDown, FileText, ChevronDown as CD } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
 const initialForm: Partial<Registro> = {
   cuil: '', nombre: '', puntaje: 0, es_re: false,
   analista: ANALISTAS[0], fecha: '', fecha_score: '', monto: 0,
-  estado: 'proyeccion', comentarios: ''
+  estado: 'proyeccion', comentarios: '',
 };
 
-// Regex para nombres
 const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
 
-// ── Validación ──
+// Status badge config
+const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string; label: string }> = {
+  'venta':                   { bg: 'rgba(16,185,129,0.10)',  color: '#34d399', border: 'rgba(16,185,129,0.25)', label: 'Venta'          },
+  'proyeccion':              { bg: 'rgba(96,165,250,0.10)',  color: '#93c5fd', border: 'rgba(96,165,250,0.25)', label: 'Proyección'     },
+  'en seguimiento':          { bg: 'rgba(251,191,36,0.10)',  color: '#fcd34d', border: 'rgba(251,191,36,0.25)', label: 'En seguimiento' },
+  'score bajo':              { bg: 'rgba(248,113,113,0.10)', color: '#fca5a5', border: 'rgba(248,113,113,0.2)', label: 'Score bajo'     },
+  'afectaciones':            { bg: 'rgba(239,68,68,0.12)',   color: '#f87171', border: 'rgba(239,68,68,0.3)',   label: 'Afectaciones'   },
+  'derivado / aprobado cc':  { bg: 'rgba(34,211,238,0.10)', color: '#67e8f9', border: 'rgba(34,211,238,0.25)', label: 'Aprob. CC'      },
+  'derivado / rechazado cc': { bg: 'rgba(156,163,175,0.08)',color: '#9ca3af', border: 'rgba(156,163,175,0.2)', label: 'Rechaz. CC'     },
+};
+
+const SCORE_COLOR = (s: number) =>
+  s >= 700 ? '#60a5fa' : s >= 600 ? '#34d399' : s >= 500 ? '#fbbf24' : '#f87171';
+
+// ── Validation ────────────────────────────────────────────────────────────────
+
 function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, string> {
-  if (isAdmin) return {}; 
+  if (isAdmin) return {};
   const errs: Record<string, string> = {};
-  if (!form.nombre?.trim()) {
-    errs.nombre = 'Nombre es requerido';
-  } else if (form.nombre.trim().length < 2) {
-    errs.nombre = 'Mínimo 2 caracteres';
-  } else if (!REGEX_NOMBRE.test(form.nombre.trim())) {
-    errs.nombre = 'Solo letras';
-  }
-  if (form.cuil?.trim() && form.cuil.length !== 11) errs.cuil = 'CUIL: 11 dígitos';
-  if (!form.analista) errs.analista = 'Analista requerido';
-  if (!form.fecha) errs.fecha = 'Fecha requerida';
-  if (!form.monto || Number(form.monto) <= 0) errs.monto = 'Monto > 0';
+  if (!form.nombre?.trim()) errs.nombre = 'Requerido';
+  else if (form.nombre.trim().length < 2) errs.nombre = 'Mín. 2 caracteres';
+  else if (!REGEX_NOMBRE.test(form.nombre.trim())) errs.nombre = 'Solo letras';
+  if (form.cuil?.trim() && form.cuil.length !== 11) errs.cuil = '11 dígitos';
+  if (!form.analista) errs.analista = 'Requerido';
+  if (!form.fecha) errs.fecha = 'Requerido';
+  if (!form.monto || Number(form.monto) <= 0) errs.monto = 'Debe ser > 0';
   return errs;
 }
 
+// ── Field wrapper ─────────────────────────────────────────────────────────────
+
 const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
   <div className="form-group">
-    <label className="form-label">{label} {error && <span style={{ color: 'var(--rojo)' }}>— {error}</span>}</label>
+    <label className="form-label">
+      {label}{error && <span style={{ color: 'var(--rojo)', fontWeight: 400, marginLeft: 6 }}>— {error}</span>}
+    </label>
     {children}
   </div>
 );
 
-// ── Modal de Registro ──
+// ── Modal: Registro ───────────────────────────────────────────────────────────
+
 const RegistroModal = memo(function RegistroModal({
-  isOpen, editingId, initialData, onClose, onSaved, onSavedWithRecordatorio, isAdmin
+  isOpen, editingId, initialData, onClose, onSaved, onSavedWithRecordatorio, isAdmin,
 }: {
-  isOpen: boolean; editingId: string | null; initialData: Partial<Registro>; onClose: () => void; onSaved: (reg: Registro) => void; onSavedWithRecordatorio?: (registro: Registro) => void; isAdmin: boolean;
+  isOpen: boolean; editingId: string | null; initialData: Partial<Registro>;
+  onClose: () => void; onSaved: (reg: Registro) => void;
+  onSavedWithRecordatorio?: (registro: Registro) => void; isAdmin: boolean;
 }) {
-  const [form, setForm] = useState<Partial<Registro>>(initialData);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [showDupModal, setShowDupModal] = useState(false);
+  const [form, setForm]             = useState<Partial<Registro>>(initialData);
+  const [errors, setErrors]         = useState<Record<string, string>>({});
+  const [saving, setSaving]         = useState(false);
+  const [showDupModal, setShowDupModal]           = useState(false);
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
 
   useEffect(() => {
@@ -77,7 +96,7 @@ const RegistroModal = memo(function RegistroModal({
     if (errors[field]) setErrors(prev => { const e = { ...prev }; delete e[field]; return e; });
   };
 
-  const guardar = async (forzar = false) => {
+  const guardar = async () => {
     const errs = validarForm(form, isAdmin);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setSaving(true);
@@ -95,20 +114,14 @@ const RegistroModal = memo(function RegistroModal({
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
       const savedReg: Registro = { ...form as Registro, ...payload, id: editingId };
       onClose();
-      if (agendarRecordatorio && onSavedWithRecordatorio) {
-        onSavedWithRecordatorio(savedReg);
-      } else {
-        onSaved(savedReg);
-      }
+      if (agendarRecordatorio && onSavedWithRecordatorio) onSavedWithRecordatorio(savedReg);
+      else onSaved(savedReg);
     } else {
       const { data: newReg, error } = await supabase.from('registros').insert(payload).select().single();
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
       onClose();
-      if (agendarRecordatorio && onSavedWithRecordatorio && newReg) {
-        onSavedWithRecordatorio(newReg as Registro);
-      } else {
-        onSaved(newReg as Registro);
-      }
+      if (agendarRecordatorio && onSavedWithRecordatorio && newReg) onSavedWithRecordatorio(newReg as Registro);
+      else onSaved(newReg as Registro);
     }
     setSaving(false);
   };
@@ -120,24 +133,44 @@ const RegistroModal = memo(function RegistroModal({
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">{editingId ? 'Editar' : 'Nuevo'} Registro</h3>
-          <button className="btn-icon" onClick={onClose}><X size={20} /></button>
+          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
         <div className="modal-body">
           <div className="form-row">
-            <Field label="CUIL" error={errors.cuil}><input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" /></Field>
-            <Field label="Nombre *" error={errors.nombre}><input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} autoFocus /></Field>
+            <Field label="CUIL" error={errors.cuil}>
+              <input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" />
+            </Field>
+            <Field label="Nombre *" error={errors.nombre}>
+              <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} autoFocus />
+            </Field>
           </div>
           <div className="form-row">
-            <Field label="Analista *"><select className="form-select" value={form.analista || ANALISTAS[0]} onChange={e => set('analista', e.target.value)}>{ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}</select></Field>
-            <Field label="Estado"><select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>{ESTADOS.map(e => <option key={e} value={e}>{getStatusLabel(e)}</option>)}</select></Field>
+            <Field label="Analista *">
+              <select className="form-select" value={form.analista || ANALISTAS[0]} onChange={e => set('analista', e.target.value)}>
+                {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </Field>
+            <Field label="Estado">
+              <select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>
+                {ESTADOS.map(e => <option key={e} value={e}>{STATUS_CONFIG[e]?.label ?? e}</option>)}
+              </select>
+            </Field>
           </div>
           <div className="form-row">
-            <Field label="Monto *"><input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} /></Field>
-            <Field label="Fecha *"><input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} /></Field>
+            <Field label="Monto *" error={errors.monto}>
+              <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
+            </Field>
+            <Field label="Fecha *" error={errors.fecha}>
+              <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} />
+            </Field>
           </div>
           <div className="form-row">
-            <Field label="Fecha Score"><input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} /></Field>
-            <Field label="Score"><input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" /></Field>
+            <Field label="Fecha Score">
+              <input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} />
+            </Field>
+            <Field label="Score">
+              <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
+            </Field>
           </div>
           <div className="form-row">
             <Field label="Tipo de cliente">
@@ -162,38 +195,37 @@ const RegistroModal = memo(function RegistroModal({
                 <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} />
                 <span className="toggle-slider" />
               </span>
-              <span className="toggle-label">
-                <FileText size={14} />
-                Resumen Ejecutivo (RE)
-              </span>
+              <span className="toggle-label"><FileText size={14} />Resumen Ejecutivo (RE)</span>
             </label>
             <label className="toggle-card">
               <span className="toggle-switch">
                 <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} />
                 <span className="toggle-slider" />
               </span>
-              <span className="toggle-label">
-                <AlertTriangle size={14} />
-                Agendar Recordatorio
-              </span>
+              <span className="toggle-label"><AlertTriangle size={14} />Agendar Recordatorio</span>
             </label>
           </div>
-          <p className="modal-required-legend">Los campos marcados con * son obligatorios</p>
+          <p className="modal-required-legend">* Campos obligatorios</p>
         </div>
         <div className="modal-footer">
           {errors._ && <span style={{ color: 'var(--rojo)', fontSize: '13px', flex: 1 }}>{errors._}</span>}
           <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={() => guardar(false)} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+          <button className="btn-primary" onClick={() => guardar()} disabled={saving}>
+            <Save size={14} />{saving ? 'Guardando…' : 'Guardar'}
+          </button>
         </div>
       </div>
     </div>
   );
 });
 
-// ── Modal de Recordatorio ──
-const RecordatorioModal = memo(function RecordatorioModal({ registro, onClose }: { registro: Registro | null; onClose: (saved: boolean) => void; }) {
+// ── Modal: Recordatorio ───────────────────────────────────────────────────────
+
+const RecordatorioModal = memo(function RecordatorioModal({
+  registro, onClose,
+}: { registro: Registro | null; onClose: (saved: boolean) => void }) {
   const [recForm, setRecForm] = useState({ nota: '', fecha: '', hora: '09:00' });
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]   = useState(false);
   const { setPendingReminders } = useData();
 
   useEffect(() => {
@@ -208,8 +240,9 @@ const RecordatorioModal = memo(function RecordatorioModal({ registro, onClose }:
   const save = async () => {
     setSaving(true);
     await supabase.from('recordatorios').insert({
-      registro_id: registro.id, nombre: registro.nombre, cuil: registro.cuil, analista: registro.analista,
-      estado: registro.estado, nota: recForm.nota, fecha_hora: `${recForm.fecha}T${recForm.hora}:00-03:00`,
+      registro_id: registro.id, nombre: registro.nombre, cuil: registro.cuil,
+      analista: registro.analista, estado: registro.estado, nota: recForm.nota,
+      fecha_hora: `${recForm.fecha}T${recForm.hora}:00-03:00`,
       creado_por: registro.analista || 'Sistema', mostrado: false,
     });
     setPendingReminders(n => n + 1);
@@ -218,42 +251,50 @@ const RecordatorioModal = memo(function RecordatorioModal({ registro, onClose }:
 
   return (
     <div className="modal-overlay" onClick={() => onClose(false)}>
-      <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header"><h3 className="modal-title">Recordatorio</h3><button className="btn-icon" onClick={() => onClose(false)}><X size={20} /></button></div>
+      <div className="modal-content" style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Nuevo Recordatorio</h3>
+          <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
+        </div>
         <div className="modal-body">
+          <p style={{ fontSize: '13px', color: '#555', marginBottom: '20px' }}>{registro.nombre}</p>
           <div className="form-row">
             <Field label="Fecha"><input className="form-input" type="date" value={recForm.fecha} onChange={e => setRecForm(p => ({ ...p, fecha: e.target.value }))} /></Field>
             <Field label="Hora"><input className="form-input" type="time" value={recForm.hora} onChange={e => setRecForm(p => ({ ...p, hora: e.target.value }))} /></Field>
           </div>
           <Field label="Nota"><textarea className="form-textarea" value={recForm.nota} onChange={e => setRecForm(p => ({ ...p, nota: e.target.value }))} /></Field>
         </div>
-        <div className="modal-footer"><button className="btn-secondary" onClick={() => onClose(false)}>Cancelar</button><button className="btn-primary" onClick={save} disabled={saving}>Agendar</button></div>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={() => onClose(false)}>Cancelar</button>
+          <button className="btn-primary" onClick={save} disabled={saving}>Agendar</button>
+        </div>
       </div>
     </div>
   );
 });
 
-// ── Modal de confirmación de borrado ──
-const DeleteModal = memo(function DeleteModal({ registro, onConfirm, onCancel }: {
-  registro: Registro | null; onConfirm: () => void; onCancel: () => void;
-}) {
+// ── Modal: Confirmar borrado ──────────────────────────────────────────────────
+
+const DeleteModal = memo(function DeleteModal({
+  registro, onConfirm, onCancel,
+}: { registro: Registro | null; onConfirm: () => void; onCancel: () => void }) {
   if (!registro) return null;
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-content modal-delete" style={{ maxWidth: '420px' }} onClick={e => e.stopPropagation()}>
+      <div className="modal-content" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title" style={{ color: '#ef4444' }}>Eliminar registro</h3>
-          <button className="btn-icon" onClick={onCancel}><X size={20} /></button>
+          <h3 className="modal-title" style={{ color: '#f87171' }}>Eliminar registro</h3>
+          <button className="btn-icon" onClick={onCancel}><X size={18} /></button>
         </div>
-        <div className="modal-body" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
-          <p style={{ color: '#aaa', fontSize: '14px', lineHeight: 1.6 }}>
-            ¿Eliminar a <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?
-            Esta acción no se puede deshacer.
+        <div className="modal-body">
+          <p style={{ fontSize: '14px', color: '#aaa', lineHeight: 1.7 }}>
+            ¿Eliminar a <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?<br />
+            <span style={{ fontSize: '12px', color: '#555' }}>Esta acción no se puede deshacer.</span>
           </p>
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onCancel}>Cancelar</button>
-          <button className="btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={onConfirm}>
+          <button className="btn-primary" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }} onClick={onConfirm}>
             <Trash2 size={14} /> Eliminar
           </button>
         </div>
@@ -262,32 +303,59 @@ const DeleteModal = memo(function DeleteModal({ registro, onConfirm, onCancel }:
   );
 });
 
-// ── Página principal ──
+// ── StatusBadge ───────────────────────────────────────────────────────────────
+
+const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
+  const cfg = STATUS_CONFIG[estado?.toLowerCase()] ?? { bg: 'rgba(255,255,255,0.05)', color: '#888', border: 'rgba(255,255,255,0.08)', label: estado };
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '3px 10px',
+      borderRadius: 6,
+      fontSize: 11,
+      fontWeight: 700,
+      letterSpacing: '0.2px',
+      background: cfg.bg,
+      color: cfg.color,
+      border: `1px solid ${cfg.border}`,
+      whiteSpace: 'nowrap',
+    }}>
+      {cfg.label}
+    </span>
+  );
+});
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function RegistrosPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin }  = useAuth();
   const { registros, setRegistros, loading, refresh } = useData();
-  const { 
-    filters, setFilter, limpiarFiltros, hayFiltros, 
-    isCreationModalOpen, setIsCreationModalOpen, 
+  const {
+    filters, setFilter, limpiarFiltros, hayFiltros,
+    isCreationModalOpen, setIsCreationModalOpen,
     pageSize, triggerExport, exportTick,
-    currentPage, setCurrentPage, setTotalResults
+    currentPage, setCurrentPage, setTotalResults,
   } = useFilter();
 
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
-  const [recordatorioTarget, setRecordatorioTarget] = useState<Registro | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [toast,               setToast]               = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+  const [modalOpen,           setModalOpen]           = useState(false);
+  const [editingId,           setEditingId]           = useState<string | null>(null);
+  const [modalInitialData,    setModalInitialData]    = useState<Partial<Registro>>(initialForm);
+  const [recordatorioTarget,  setRecordatorioTarget]  = useState<Registro | null>(null);
+  const [deleteTarget,        setDeleteTarget]        = useState<Registro | null>(null);
+  const [showAdvanced,        setShowAdvanced]        = useState(false);
 
   const fetchRegistros = useCallback((silent = false) => { refresh(silent); }, [refresh]);
 
-  useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); } }, [toast]);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') => setToast({ message, type }), []);
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') =>
+    setToast({ message, type }), []);
 
-  // Escuchar trigger de creación desde el Sidebar
   useEffect(() => {
     if (isCreationModalOpen) {
       setEditingId(null);
@@ -300,56 +368,41 @@ export default function RegistrosPage() {
   const filteredRegistros = useMemo(() => {
     const list = registros.filter(r => {
       const s = filters.search.toLowerCase();
-      const mSearch = !filters.search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s);
-      const mEstado = !filters.estado || r.estado === filters.estado;
+      const mSearch   = !filters.search   || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s);
+      const mEstado   = !filters.estado   || r.estado === filters.estado;
       const mAnalista = !filters.analista || r.analista === filters.analista;
-      const mDesde = !filters.fechaDesde || (r.fecha && r.fecha >= filters.fechaDesde);
-      const mHasta = !filters.fechaHasta || (r.fecha && r.fecha <= filters.fechaHasta);
-      const mMin = !filters.montoMin || (Number(r.monto) >= Number(filters.montoMin));
-      const mMax = !filters.montoMax || (Number(r.monto) <= Number(filters.montoMax));
-      const mScoreMin = !filters.scoreMin || (r.puntaje !== null && r.puntaje !== undefined && Number(r.puntaje) >= Number(filters.scoreMin));
-      const mScoreMax = !filters.scoreMax || (r.puntaje !== null && r.puntaje !== undefined && Number(r.puntaje) <= Number(filters.scoreMax));
-      const mRe = !filters.esRe || (filters.esRe === 'si' ? r.es_re : !r.es_re);
+      const mDesde    = !filters.fechaDesde || (r.fecha && r.fecha >= filters.fechaDesde);
+      const mHasta    = !filters.fechaHasta || (r.fecha && r.fecha <= filters.fechaHasta);
+      const mMin      = !filters.montoMin  || Number(r.monto) >= Number(filters.montoMin);
+      const mMax      = !filters.montoMax  || Number(r.monto) <= Number(filters.montoMax);
+      const mScoreMin = !filters.scoreMin  || (r.puntaje != null && Number(r.puntaje) >= Number(filters.scoreMin));
+      const mScoreMax = !filters.scoreMax  || (r.puntaje != null && Number(r.puntaje) <= Number(filters.scoreMax));
+      const mRe       = !filters.esRe     || (filters.esRe === 'si' ? r.es_re : !r.es_re);
       return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe;
     });
 
     return [...list].sort((a, b) => {
-      const dA = a.fecha || '';
-      const dB = b.fecha || '';
-      if (dA > dB) return -1;
-      if (dA < dB) return 1;
-
-      const isPriA = a.estado === 'venta' || a.estado === 'derivado / aprobado cc';
-      const isPriB = b.estado === 'venta' || b.estado === 'derivado / aprobado cc';
-      if (isPriA && !isPriB) return -1;
-      if (!isPriA && isPriB) return 1;
-
-      return 0;
+      const dA = a.fecha || '', dB = b.fecha || '';
+      if (dA !== dB) return dA > dB ? -1 : 1;
+      const priA = a.estado === 'venta' || a.estado === 'derivado / aprobado cc';
+      const priB = b.estado === 'venta' || b.estado === 'derivado / aprobado cc';
+      return priA === priB ? 0 : priA ? -1 : 1;
     });
   }, [registros, filters]);
 
-  // Actualizar total de resultados en el Sidebar
-  useEffect(() => {
-    setTotalResults(filteredRegistros.length);
-  }, [filteredRegistros.length, setTotalResults]);
+  useEffect(() => { setTotalResults(filteredRegistros.length); }, [filteredRegistros.length, setTotalResults]);
 
-  // Exportar CSV
   const exportarCSV = useCallback(() => {
     const headers = ['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Puntaje', 'Es RE'];
     const rows = filteredRegistros.map(r => [r.nombre, r.cuil, r.analista, r.estado, r.monto, r.fecha || '', r.puntaje || '', r.es_re ? 'Sí' : 'No']);
     const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `registros.csv`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'registros.csv'; a.click();
     URL.revokeObjectURL(url);
   }, [filteredRegistros]);
 
-  // Escuchar trigger de exportación desde el Sidebar
-  useEffect(() => {
-    if (exportTick > 0) {
-      exportarCSV();
-    }
-  }, [exportTick, exportarCSV]);
+  useEffect(() => { if (exportTick > 0) exportarCSV(); }, [exportTick, exportarCSV]);
 
   const totalPages = Math.ceil(filteredRegistros.length / pageSize) || 1;
   const paginatedRegistros = useMemo(() => {
@@ -357,7 +410,7 @@ export default function RegistrosPage() {
     return filteredRegistros.slice(start, start + pageSize);
   }, [filteredRegistros, currentPage, pageSize]);
 
-  const openNew = useCallback(() => { setEditingId(null); setModalInitialData({ ...initialForm }); setModalOpen(true); }, []);
+  const openNew  = useCallback(() => { setEditingId(null); setModalInitialData({ ...initialForm }); setModalOpen(true); }, []);
   const openEdit = useCallback((reg: Registro) => {
     setEditingId(reg.id);
     setModalInitialData({ ...reg, fecha: reg.fecha || '', fecha_score: reg.fecha_score || '' });
@@ -370,7 +423,7 @@ export default function RegistrosPage() {
     setDeleteTarget(null);
     await supabase.from('registros').delete().eq('id', id);
     setRegistros(prev => prev.filter(r => r.id !== id));
-    showToast('Eliminado', 'success');
+    showToast('Registro eliminado', 'success');
   }, [deleteTarget, showToast, setRegistros]);
 
   const applyOptimistic = useCallback((reg: Registro) => {
@@ -383,7 +436,7 @@ export default function RegistrosPage() {
 
   const handleSaved = useCallback((reg: Registro) => {
     applyOptimistic(reg);
-    showToast(reg.id && registros.some(r => r.id === reg.id) ? 'Actualizado' : 'Creado', 'success');
+    showToast(registros.some(r => r.id === reg.id) ? 'Registro actualizado' : 'Registro creado', 'success');
     fetchRegistros(true);
   }, [applyOptimistic, registros, fetchRegistros, showToast]);
 
@@ -393,64 +446,167 @@ export default function RegistrosPage() {
     fetchRegistros(true);
     setRecordatorioTarget(reg);
   }, [applyOptimistic, fetchRegistros, showToast]);
-  const handleRecordatorioClose = useCallback((saved: boolean) => { setRecordatorioTarget(null); if (saved) showToast('Agendado', 'success'); }, [showToast]);
+
+  const handleRecordatorioClose = useCallback((saved: boolean) => {
+    setRecordatorioTarget(null);
+    if (saved) showToast('Recordatorio agendado', 'success');
+  }, [showToast]);
+
+  const rangeStart = (currentPage - 1) * pageSize + 1;
+  const rangeEnd   = Math.min(currentPage * pageSize, filteredRegistros.length);
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="dashboard-container">
-      {toast && <div className="toast-container"><div className={`toast ${toast.type}`}><AlertCircle size={18} /><span>{toast.message}</span></div></div>}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-      <div className="toolbar-container" style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
-            <div className="search-wrapper" style={{ flex: 1, maxWidth: '320px' }}>
-              <Search className="search-icon" size={16} />
-              <input type="text" className="search-input" placeholder="Búsqueda..." value={filters.search} onChange={e => setFilter('search', e.target.value)} />
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <select className="form-select" value={filters.estado} onChange={e => setFilter('estado', e.target.value)} style={{ width: '160px' }}>
-                <option value="">Estados</option>
-                {ESTADOS.map(st => <option key={st} value={st}>{getStatusLabel(st)}</option>)}
-              </select>
-              <select className="form-select" value={filters.analista} onChange={e => setFilter('analista', e.target.value)} style={{ width: '140px' }}>
-                <option value="">Analistas</option>
-                {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
-              </select>
-              <button 
-                onClick={() => setShowAdvanced(!showAdvanced)} 
-                className="btn-secondary" 
-                style={{ border: showAdvanced ? '1px solid #fff' : undefined }}
-              >
-                <Filter size={14} /> Filtros {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-              {hayFiltros && (
-                <button onClick={limpiarFiltros} className="btn-icon" style={{ color: '#ef4444' }} title="Limpiar filtros">
-                  <X size={18} />
-                </button>
-              )}
-            </div>
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '12px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+            background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : toast.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+            border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : toast.type === 'error' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
+            color: toast.type === 'success' ? '#34d399' : toast.type === 'error' ? '#f87171' : '#fbbf24',
+          }}>
+            <AlertCircle size={15} />
+            {toast.message}
           </div>
-          <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-             <span style={{ fontSize: '13px', color: 'var(--gris)', fontWeight: 600 }}>
-              {filteredRegistros.length === 0 ? '0' : `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, filteredRegistros.length)}`} de {filteredRegistros.length}
+        </div>
+      )}
+
+      {/* Page header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>Registros</h1>
+          {!loading && (
+            <span style={{ fontSize: 12, color: '#444', fontWeight: 700 }}>
+              {filteredRegistros.length.toLocaleString('es-AR')} resultado{filteredRegistros.length !== 1 ? 's' : ''}
             </span>
-            <div style={{ display: 'flex', gap: '4px' }}>
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="btn-icon"><ChevronLeft size={18} /></button>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages} className="btn-icon"><ChevronRight size={18} /></button>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-secondary" onClick={exportarCSV} style={{ height: 34, fontSize: 12 }}>
+            <Download size={13} /> Exportar
+          </button>
+          <button className="btn-primary" onClick={openNew} style={{ height: 34, fontSize: 12 }}>
+            <Plus size={14} /> Nuevo
+          </button>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div style={{
+        background: '#000', border: '1px solid var(--border-color)',
+        borderRadius: 6, padding: '12px 16px', marginBottom: 12,
+      }}>
+        {/* Main filters row */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {/* Search */}
+          <div className="search-wrapper" style={{ flex: 1, maxWidth: 280 }}>
+            <Search className="search-icon" size={14} />
+            <input
+              type="text" className="search-input"
+              placeholder="Buscar nombre, CUIL, analista…"
+              value={filters.search}
+              onChange={e => setFilter('search', e.target.value)}
+              style={{ height: 34, fontSize: 13 }}
+            />
+          </div>
+
+          {/* Estado */}
+          <select
+            className="form-select"
+            value={filters.estado}
+            onChange={e => setFilter('estado', e.target.value)}
+            style={{ width: 150, height: 34, fontSize: 12 }}
+          >
+            <option value="">Todos los estados</option>
+            {ESTADOS.map(st => <option key={st} value={st}>{STATUS_CONFIG[st]?.label ?? st}</option>)}
+          </select>
+
+          {/* Analista */}
+          <select
+            className="form-select"
+            value={filters.analista}
+            onChange={e => setFilter('analista', e.target.value)}
+            style={{ width: 130, height: 34, fontSize: 12 }}
+          >
+            <option value="">Todos</option>
+            {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
+          </select>
+
+          {/* Advanced toggle */}
+          <button
+            onClick={() => setShowAdvanced(p => !p)}
+            className="btn-secondary"
+            style={{ height: 34, fontSize: 12, borderColor: showAdvanced ? 'rgba(255,255,255,0.3)' : undefined }}
+          >
+            <Filter size={13} />
+            Filtros
+            {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+
+          {/* Clear filters */}
+          {hayFiltros && (
+            <button onClick={limpiarFiltros} className="btn-icon" style={{ color: '#f87171', width: 34, height: 34 }} title="Limpiar filtros">
+              <X size={15} />
+            </button>
+          )}
+
+          {/* Pagination — pushed right */}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: '#444', fontWeight: 600, whiteSpace: 'nowrap' }}>
+              {filteredRegistros.length === 0 ? '—' : `${rangeStart}–${rangeEnd} de ${filteredRegistros.length}`}
+            </span>
+            <div style={{ display: 'flex', gap: 2 }}>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="btn-icon"
+                style={{ width: 28, height: 28 }}
+              ><ChevronLeft size={15} /></button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="btn-icon"
+                style={{ width: 28, height: 28 }}
+              ><ChevronRight size={15} /></button>
             </div>
           </div>
         </div>
 
+        {/* Advanced filters */}
         {showAdvanced && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="form-group"><label className="form-label">Desde</label><input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Hasta</label><input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Monto Min</label><input type="number" className="form-input" placeholder="$" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Monto Max</label><input type="number" className="form-input" placeholder="$" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Score Min</label><input type="number" className="form-input" placeholder="0" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Score Max</label><input type="number" className="form-input" placeholder="999" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} /></div>
-            <div className="form-group">
-              <label className="form-label">Tipo</label>
-              <select className="form-select" value={filters.esRe} onChange={e => setFilter('esRe', e.target.value)}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10,
+            marginTop: 12, paddingTop: 12,
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+          }}>
+            {[
+              { label: 'Desde',     type: 'date',   key: 'fechaDesde', placeholder: '' },
+              { label: 'Hasta',     type: 'date',   key: 'fechaHasta', placeholder: '' },
+              { label: 'Monto mín', type: 'number', key: 'montoMin',   placeholder: '$' },
+              { label: 'Monto máx', type: 'number', key: 'montoMax',   placeholder: '$' },
+              { label: 'Score mín', type: 'number', key: 'scoreMin',   placeholder: '0' },
+              { label: 'Score máx', type: 'number', key: 'scoreMax',   placeholder: '999' },
+            ].map(f => (
+              <div key={f.key} className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontSize: 10 }}>{f.label}</label>
+                <input
+                  type={f.type}
+                  className="form-input"
+                  placeholder={f.placeholder}
+                  value={(filters as any)[f.key]}
+                  onChange={e => setFilter(f.key as any, e.target.value)}
+                  style={{ height: 32, fontSize: 12 }}
+                />
+              </div>
+            ))}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontSize: 10 }}>Tipo</label>
+              <select className="form-select" value={filters.esRe} onChange={e => setFilter('esRe', e.target.value)} style={{ height: 32, fontSize: 12 }}>
                 <option value="">Todos</option>
                 <option value="si">Solo RE</option>
                 <option value="no">Sin RE</option>
@@ -460,106 +616,151 @@ export default function RegistrosPage() {
         )}
       </div>
 
-      <div className="data-card" style={{ marginTop: '0' }}>
+      {/* Table */}
+      <div style={{
+        background: '#000', border: '1px solid var(--border-color)',
+        borderRadius: 6, overflow: 'hidden',
+      }}>
         {loading ? (
-          <div className="loading-container"><div className="spinner" /><span>Cargando...</span></div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 280, gap: 16 }}>
+            <div className="spinner" style={{ width: 28, height: 28 }} />
+            <span style={{ fontSize: 12, color: '#444' }}>Cargando registros…</span>
+          </div>
         ) : filteredRegistros.length === 0 ? (
-          <div className="empty-state"><p>No hay registros que coincidan con la búsqueda</p></div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 240, gap: 10 }}>
+            <span style={{ fontSize: 28 }}>—</span>
+            <p style={{ fontSize: 13, color: '#444' }}>No hay registros que coincidan</p>
+            {hayFiltros && (
+              <button onClick={limpiarFiltros} className="btn-secondary" style={{ height: 32, fontSize: 12, marginTop: 4 }}>
+                <X size={12} /> Limpiar filtros
+              </button>
+            )}
+          </div>
         ) : (
-          <table className="data-table">
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>
-                <th style={{ textAlign: 'center' }}>Cliente / CUIL</th>
-                <th style={{ textAlign: 'center' }}>Analista</th>
-                <th style={{ textAlign: 'center' }}>Fecha</th>
-                <th style={{ textAlign: 'center' }}>Score</th>
-                <th style={{ textAlign: 'center' }}>Monto</th>
-                <th style={{ textAlign: 'center' }}>Estado</th>
-                <th style={{ textAlign: 'center' }}>Tipo</th>
-                <th style={{ textAlign: 'center' }}>Acuerdo</th>
-                <th style={{ textAlign: 'center' }}>Acciones</th>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                {['Cliente', 'Analista', 'Fecha', 'Score', 'Monto', 'Estado', 'Tipo', 'Acuerdo', ''].map((h, i) => (
+                  <th key={i} style={{
+                    padding: '10px 16px',
+                    fontSize: 10, fontWeight: 700,
+                    color: '#444',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.6px',
+                    textAlign: i === 3 || i === 4 ? 'right' : i === 8 ? 'center' : 'left',
+                    whiteSpace: 'nowrap',
+                  }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {paginatedRegistros.map(reg => (
-                <tr key={reg.id}>
-                  <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                      <span style={{ fontWeight: 600, fontSize: '14px' }}>{reg.nombre}</span>
-                      {reg.es_re && (
-                        <span style={{ fontSize: '10px', fontWeight: 800, background: 'rgba(0,120,212,0.15)', color: 'var(--azul)', border: '1px solid rgba(0,120,212,0.3)', borderRadius: '4px', padding: '1px 5px', letterSpacing: '0.05em' }}>RE</span>
-                      )}
-                    </div>
-                    {reg.cuil && <div style={{ fontSize: '11px', color: '#555' }}>{reg.cuil}</div>}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>{displayAnalista(reg.analista)}</td>
-                  <td style={{ textAlign: 'center' }}>{formatDate(reg.fecha)}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    {reg.puntaje ? (
-                      <div className="score-cell">
-                        <div className="score-dot" style={(() => {
-                          const c = reg.puntaje >= 700 ? '#2563eb' : reg.puntaje >= 600 ? '#059669' : reg.puntaje >= 500 ? '#d97706' : '#dc2626';
-                          return { background: c, color: c };
-                        })()} />
-                        <span>{reg.puntaje}</span>
+              {paginatedRegistros.map((reg, idx) => {
+                const isVenta = reg.estado === 'venta' || reg.estado === 'derivado / aprobado cc';
+                return (
+                  <tr
+                    key={reg.id}
+                    style={{
+                      borderBottom: '1px solid rgba(255,255,255,0.03)',
+                      transition: 'background 0.1s',
+                      cursor: 'default',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    {/* Cliente */}
+                    <td style={{ padding: '12px 16px', minWidth: 180 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {isVenta && <div style={{ width: 2, height: 32, background: STATUS_CONFIG[reg.estado]?.color ?? '#fff', borderRadius: 2, flexShrink: 0 }} />}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{reg.nombre}</span>
+                            {reg.es_re && (
+                              <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(0,120,212,0.15)', color: '#60a5fa', border: '1px solid rgba(0,120,212,0.3)', letterSpacing: '0.3px' }}>RE</span>
+                            )}
+                          </div>
+                          {reg.cuil && <div style={{ fontSize: 11, color: '#333', marginTop: 1 }}>{reg.cuil}</div>}
+                        </div>
                       </div>
-                    ) : '—'}
-                  </td>
-                  <td style={{ fontWeight: 700, textAlign: 'center' }}>{formatCurrency(Number(reg.monto))}</td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span className="status-badge" style={{ background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                      {getStatusLabel(reg.estado)}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    {reg.tipo_cliente ? (
-                      <span style={{
-                        fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
-                        background: 'rgba(255,255,255,0.06)',
-                        color: '#fff',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {reg.tipo_cliente}
-                      </span>
-                    ) : <span style={{ color: '#333', fontSize: '12px' }}>—</span>}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    {reg.acuerdo_precios ? (
-                      <span style={{
-                        fontSize: '11px', fontWeight: 800, padding: '3px 10px', borderRadius: '6px',
-                        background: 'rgba(255,255,255,0.03)',
-                        color: 'rgba(255,255,255,0.6)',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        whiteSpace: 'nowrap',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}>
-                        {reg.acuerdo_precios}
-                      </span>
-                    ) : <span style={{ color: '#222', fontSize: '12px' }}>—</span>}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                      <button className="btn-icon" style={{ color: 'rgba(255,255,255,0.5)' }} onClick={() => setRecordatorioTarget(reg)}>
-                        <Bell size={15} />
-                      </button>
-                      <button className="btn-icon" style={{ color: 'rgba(255,255,255,0.5)' }} onClick={() => openEdit(reg)}>
-                        <Edit2 size={15} />
-                      </button>
-                      <button className="btn-icon" style={{ color: 'rgba(239,68,68,0.6)' }} onClick={() => setDeleteTarget(reg)}>
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+
+                    {/* Analista */}
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#888' }}>
+                      {displayAnalista(reg.analista)}
+                    </td>
+
+                    {/* Fecha */}
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#555', whiteSpace: 'nowrap' }}>
+                      {formatDate(reg.fecha)}
+                    </td>
+
+                    {/* Score */}
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                      {reg.puntaje ? (
+                        <span style={{ fontSize: 13, fontWeight: 700, color: SCORE_COLOR(reg.puntaje) }}>
+                          {reg.puntaje}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#222', fontSize: 13 }}>—</span>
+                      )}
+                    </td>
+
+                    {/* Monto */}
+                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {formatCurrency(Number(reg.monto))}
+                    </td>
+
+                    {/* Estado */}
+                    <td style={{ padding: '12px 16px' }}>
+                      <StatusBadge estado={reg.estado} />
+                    </td>
+
+                    {/* Tipo */}
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: reg.tipo_cliente ? '#888' : '#222' }}>
+                      {reg.tipo_cliente || '—'}
+                    </td>
+
+                    {/* Acuerdo */}
+                    <td style={{ padding: '12px 16px', fontSize: 11, color: reg.acuerdo_precios ? '#666' : '#222', textTransform: reg.acuerdo_precios ? 'uppercase' : 'none', letterSpacing: reg.acuerdo_precios ? '0.4px' : 0 }}>
+                      {reg.acuerdo_precios || '—'}
+                    </td>
+
+                    {/* Acciones */}
+                    <td style={{ padding: '12px 12px' }}>
+                      <div style={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                        <button
+                          className="btn-icon"
+                          style={{ width: 30, height: 30, color: '#444' }}
+                          title="Recordatorio"
+                          onClick={() => setRecordatorioTarget(reg)}
+                        ><Bell size={14} /></button>
+                        <button
+                          className="btn-icon"
+                          style={{ width: 30, height: 30, color: '#444' }}
+                          title="Editar"
+                          onClick={() => openEdit(reg)}
+                        ><Edit2 size={14} /></button>
+                        <button
+                          className="btn-icon"
+                          style={{ width: 30, height: 30, color: 'rgba(239,68,68,0.4)' }}
+                          title="Eliminar"
+                          onClick={() => setDeleteTarget(reg)}
+                        ><Trash2 size={14} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
 
-      <RegistroModal isOpen={modalOpen} editingId={editingId} initialData={modalInitialData} isAdmin={isAdmin} onClose={() => setModalOpen(false)} onSaved={handleSaved} onSavedWithRecordatorio={handleSavedWithRecordatorio} />
+      {/* Modals */}
+      <RegistroModal
+        isOpen={modalOpen} editingId={editingId} initialData={modalInitialData}
+        isAdmin={isAdmin} onClose={() => setModalOpen(false)}
+        onSaved={handleSaved} onSavedWithRecordatorio={handleSavedWithRecordatorio}
+      />
       <RecordatorioModal registro={recordatorioTarget} onClose={handleRecordatorioClose} />
       <DeleteModal registro={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} />
     </div>
