@@ -483,9 +483,11 @@ export default function RegistrosPage() {
             </span>
           )}
         </div>
-        <button className="btn-secondary" onClick={exportarCSV} style={{ height: 34, fontSize: 12 }}>
-          <Download size={13} /> Exportar
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn-secondary" onClick={exportarCSV} style={{ height: 34, fontSize: 12 }}>
+            <Download size={13} /> Exportar
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -495,6 +497,11 @@ export default function RegistrosPage() {
       }}>
         {/* Main filters row */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {/* Nuevo */}
+          <button className="btn-primary" onClick={openNew} style={{ height: 34, fontSize: 12, flexShrink: 0 }}>
+            <Plus size={14} /> Nuevo
+          </button>
+
           {/* Search */}
           <div className="search-wrapper" style={{ flex: 1, maxWidth: 280 }}>
             <Search className="search-icon" size={14} />
@@ -703,7 +710,7 @@ export default function RegistrosPage() {
                     </td>
 
                     {/* Estado */}
-                    <td style={{ padding: '12px 16px' }}>
+                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                       <StatusBadge estado={reg.estado} />
                     </td>
 

@@ -82,46 +82,13 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   return (
     <aside className={`main-sidebar${hidden ? ' sidebar-hidden' : ''}`}>
 
-      {/* Brand */}
-      <div style={{ padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 28, height: 28,
-            background: '#fff', borderRadius: 5,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <AlignJustify size={13} color="#000" strokeWidth={2.5} />
-          </div>
-          <div style={{ lineHeight: 1.2 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#fff', letterSpacing: '-0.2px' }}>Proyección</div>
-            <div style={{ fontSize: 10, color: '#333', fontWeight: 600 }}>y Ventas</div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Navigation */}
       <div className="sidebar-content">
 
         {/* Main */}
         <div className="nav-group">
-          <div style={{ padding: '0 8px 8px' }}>
-            <button
-              onClick={() => setIsCreationModalOpen(true)}
-              style={{
-                width: '100%', height: 34,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                background: 'var(--azul)',
-                border: 'none',
-                borderRadius: 6,
-                color: '#fff',
-                fontSize: 13, fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              <Plus size={14} /> Nuevo registro
-            </button>
-          </div>
           {NAV_MAIN.map(item => (
             <NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} active={pathname === item.href} />
           ))}
