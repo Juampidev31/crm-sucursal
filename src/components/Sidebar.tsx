@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
-import { useFilter } from '@/context/FilterContext';
 
 // ── Nav config ────────────────────────────────────────────────────────────────
 
@@ -25,11 +24,11 @@ const NAV_INFORMES = [
 ];
 
 const NAV_ADMIN = [
-  { href: '/analisis-temporal', icon: Activity,    label: 'Análisis Temporal' },
-  { href: '/objetivos',         icon: Target,      label: 'Objetivos'         },
-  { href: '/duplicados',        icon: Copy,        label: 'Duplicados'        },
-  { href: '/auditoria',         icon: BarChart2,   label: 'Auditoría'         },
-  { href: '/ajustes',           icon: Settings,    label: 'Ajustes'           },
+  { href: '/analisis-temporal', icon: Activity,  label: 'Análisis Temporal' },
+  { href: '/objetivos',         icon: Target,    label: 'Objetivos'         },
+  { href: '/duplicados',        icon: Copy,      label: 'Duplicados'        },
+  { href: '/auditoria',         icon: BarChart2, label: 'Auditoría'         },
+  { href: '/ajustes',           icon: Settings,  label: 'Ajustes'           },
 ];
 
 // ── NavItem ───────────────────────────────────────────────────────────────────
@@ -39,23 +38,55 @@ function NavItem({
 }: {
   href: string; icon: React.ElementType; label: string; active?: boolean; badge?: number;
 }) {
+  const [hovered, setHovered] = useState(false);
+  const show = active || hovered;
+
   return (
-    <Link href={href} className={`sidebar-item${active ? ' active' : ''}`} style={{
-      color: active ? '#fff' : 'rgba(255,255,255,0.35)',
-      fontWeight: active ? 600 : 400,
-      fontSize: 13,
-      letterSpacing: '-0.1px',
-      gap: 10,
-      padding: '9px 16px',
-    }}>
-      <Icon size={14} strokeWidth={active ? 2.2 : 1.6} style={{ flexShrink: 0, opacity: active ? 1 : 0.6 }} />
+    <Link
+      href={href}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 11,
+        padding: '7px 10px',
+        margin: '2px 10px',
+        borderRadius: 10,
+        background: active
+          ? 'rgba(255,255,255,0.07)'
+          : hovered ? 'rgba(255,255,255,0.03)' : 'transparent',
+        border: active
+          ? '1px solid rgba(255,255,255,0.07)'
+          : '1px solid transparent',
+        color: active ? '#fff' : hovered ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)',
+        fontWeight: active ? 600 : 400,
+        fontSize: 13,
+        letterSpacing: '-0.1px',
+        textDecoration: 'none',
+        transition: 'all 0.15s',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Icon box */}
+      <div style={{
+        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: active
+          ? 'rgba(255,255,255,0.1)'
+          : hovered ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.04)',
+        transition: 'background 0.15s',
+      }}>
+        <Icon size={14} strokeWidth={active ? 2.2 : 1.7} />
+      </div>
+
       <span style={{ flex: 1 }}>{label}</span>
+
       {badge && badge > 0 ? (
         <span style={{
-          fontSize: 10, fontWeight: 700,
-          background: 'rgba(255,255,255,0.07)',
-          color: 'rgba(255,255,255,0.4)',
+          background: '#f59e0b',
+          color: '#000',
+          fontSize: 10, fontWeight: 800,
           padding: '2px 7px', borderRadius: 20,
+          minWidth: 20, textAlign: 'center', flexShrink: 0,
         }}>
           {badge > 99 ? '99+' : badge}
         </span>
@@ -69,18 +100,17 @@ function NavItem({
 function Divider({ label }: { label: string }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      padding: '18px 16px 8px',
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '14px 20px 6px',
     }}>
       <span style={{
-        fontSize: 9, fontWeight: 700,
-        letterSpacing: '1.4px', textTransform: 'uppercase',
-        color: 'rgba(255,255,255,0.18)',
+        fontSize: 9, fontWeight: 700, letterSpacing: '1.5px',
+        textTransform: 'uppercase', color: 'rgba(255,255,255,0.15)',
         flexShrink: 0,
       }}>
         {label}
       </span>
-      <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
     </div>
   );
 }
@@ -93,27 +123,30 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const { pendingReminders } = useData();
 
   return (
-    <aside className={`main-sidebar${hidden ? ' sidebar-hidden' : ''}`}>
+    <aside className={`main-sidebar${hidden ? ' sidebar-hidden' : ''}`}
+      style={{ background: '#070708' }}
+    >
 
       {/* Brand */}
       <div style={{
-        padding: '20px 18px 16px',
+        padding: '20px 20px 16px',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+          {/* Logo box — same style as icon boxes */}
           <div style={{
-            width: 28, height: 28,
-            background: '#fff', borderRadius: 6,
+            width: 34, height: 34,
+            background: '#fff', borderRadius: 9,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <AlignJustify size={13} color="#000" strokeWidth={2.5} />
+            <AlignJustify size={14} color="#000" strokeWidth={2.5} />
           </div>
           <div style={{ lineHeight: 1.3 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', letterSpacing: '-0.2px' }}>
               Proyección
             </div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', fontWeight: 500 }}>
+            <div style={{ fontSize: 10, fontWeight: 500, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1px' }}>
               y Ventas
             </div>
           </div>
@@ -121,37 +154,31 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
       </div>
 
       {/* Nav */}
-      <div className="sidebar-content" style={{ paddingTop: 8, paddingBottom: 8 }}>
+      <div className="sidebar-content" style={{ padding: '10px 0 12px' }}>
 
         {/* Principal */}
-        <div style={{ marginBottom: 2 }}>
-          {NAV_MAIN.map(item => (
-            <NavItem key={item.href} {...item} active={pathname === item.href} />
-          ))}
-          <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
-        </div>
+        {NAV_MAIN.map(item => (
+          <NavItem key={item.href} {...item} active={pathname === item.href} />
+        ))}
+        <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
 
         {/* Informes */}
         <Divider label="Informes" />
-        <div style={{ marginBottom: 2 }}>
-          {NAV_INFORMES.map(item => (
-            <NavItem key={item.href} {...item} active={pathname === item.href} />
-          ))}
-        </div>
+        {NAV_INFORMES.map(item => (
+          <NavItem key={item.href} {...item} active={pathname === item.href} />
+        ))}
 
         {/* Admin */}
         {isAdmin && (
           <>
             <Divider label="Admin" />
-            <div>
-              {NAV_ADMIN.map(item => (
-                <NavItem key={item.href} {...item} active={pathname === item.href} />
-              ))}
-            </div>
+            {NAV_ADMIN.map(item => (
+              <NavItem key={item.href} {...item} active={pathname === item.href} />
+            ))}
           </>
         )}
-      </div>
 
+      </div>
     </aside>
   );
 }
