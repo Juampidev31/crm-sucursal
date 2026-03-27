@@ -81,18 +81,10 @@ interface LucianaData { trimestrales: { q1: string; q2: string; q3: string; q4: 
 function pctColor(v: number | null) { if (v === null) return '#333'; if (v >= 100) return '#34d399'; if (v >= 75) return '#fbbf24'; return '#f87171'; }
 function varColor(v: string) { if (!v || v === '-') return '#555'; return v.startsWith('-') ? '#f87171' : '#34d399'; }
 
-function LucianaHistorico() {
-  const [data, setData] = useState<LucianaData | null>(null);
-  const [anioSel, setAnioSel] = useState<number>(new Date().getFullYear());
-
-  useEffect(() => {
-    fetch('/api/luciana').then(r => r.json()).then(d => {
-      setData(d);
-      if (d.secciones?.length) setAnioSel(d.secciones[d.secciones.length - 1].anio);
-    });
-  }, []);
-
-  if (!data) return <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner" style={{ width: 24, height: 24 }} /></div>;
+function LucianaHistorico({ data }: { data: LucianaData }) {
+  const [anioSel, setAnioSel] = useState<number>(() =>
+    data.secciones.length ? data.secciones[data.secciones.length - 1].anio : new Date().getFullYear()
+  );
 
   const seccion = data.secciones.find(s => s.anio === anioSel);
   const th: React.CSSProperties = { padding: '8px 12px', color: '#444', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
@@ -171,6 +163,11 @@ export default function AnalistasPage() {
   const [analista, setAnalista] = useState<string>(PDV);
   const [mes, setMes] = useState(now.getMonth());
   const [anio, setAnio] = useState(now.getFullYear());
+  const [lucianaData, setLucianaData] = useState<LucianaData | null>(null);
+
+  useEffect(() => {
+    fetch('/api/luciana').then(r => r.json()).then(setLucianaData);
+  }, []);
 
   const { registros: rawRegs, objetivos: todosObjs, diasConfig: diasCfg, loading } = useData();
   const todosRegs = rawRegs as unknown as Reg[];
@@ -992,9 +989,9 @@ export default function AnalistasPage() {
       </div>
 
       {/* ── Histórico anual Luciana (Google Sheets) ── */}
-      {analista === 'Luciana' && (
+      {analista === 'Luciana' && lucianaData && (
         <div style={{ ...card, marginBottom: '16px' }}>
-          <LucianaHistorico />
+          <LucianaHistorico data={lucianaData} />
         </div>
       )}
 
