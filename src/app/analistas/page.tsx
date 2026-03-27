@@ -77,9 +77,76 @@ const ESTADOS_RESUMEN = [
 interface MesData { mes: string; obj: string; real: string; cumpl: string; cumplPct: number | null; varIM: string; ops: string; alcance: string; cumplOps: string; cumplOpsPct: number | null; varIMOps: string; }
 interface SeccionData { anio: number; meses: MesData[]; }
 interface HistoricoData { secciones: SeccionData[]; }
+interface PDVMes { mes: string; obj: string; real: string; cumpl: string; cumplPct: number | null; var: string; }
+interface PDVData { trimestrales: { q1: string; q2: string; q3: string; q4: string }; capital: { left: PDVMes[]; right: PDVMes[] }; operaciones: { left: PDVMes[]; right: PDVMes[] }; anioLeft: number; anioRight: number; }
 
 function pctColor(v: number | null) { if (v === null) return '#333'; if (v >= 100) return '#34d399'; if (v >= 75) return '#fbbf24'; return '#f87171'; }
 function varColor(v: string) { if (!v || v === '-') return '#555'; return v.startsWith('-') ? '#f87171' : '#34d399'; }
+
+function PDVHistorico({ data }: { data: PDVData }) {
+  const [anioSel, setAnioSel] = useState<number>(data.anioRight);
+  const rows = anioSel === data.anioLeft ? data.capital.left : data.capital.right;
+  const opsRows = anioSel === data.anioLeft ? data.operaciones.left : data.operaciones.right;
+
+  const trimestres = [0,1,2,3].map(q => {
+    const meses = rows.slice(q * 3, q * 3 + 3).filter(m => m.cumplPct !== null);
+    if (!meses.length) return null;
+    return meses.reduce((s, m) => s + (m.cumplPct ?? 0), 0) / meses.length;
+  });
+
+  const th: React.CSSProperties = { padding: '8px 12px', color: '#444', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
+
+  const MiniTable = ({ titulo, filas }: { titulo: string; filas: PDVMes[] }) => (
+    <div style={{ background: '#080808', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px', overflow: 'auto', flex: 1 }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <span style={{ fontSize: '10px', fontWeight: 800, color: '#555', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+        <thead><tr>
+          {['Mes','Objetivo','Real','Cumpl.','Var'].map(h => <th key={h} style={{ ...th, textAlign: h === 'Mes' ? 'left' : 'right' }}>{h}</th>)}
+        </tr></thead>
+        <tbody>
+          {filas.map((r, i) => (
+            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+              <td style={{ padding: '8px 12px', color: '#888', fontWeight: 600 }}>{r.mes}</td>
+              <td style={{ padding: '8px 12px', color: '#444', textAlign: 'right' }}>{r.obj}</td>
+              <td style={{ padding: '8px 12px', color: '#aaa', fontWeight: 600, textAlign: 'right' }}>{r.real}</td>
+              <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#333' }}>—</span>}
+              </td>
+              <td style={{ padding: '8px 12px', color: varColor(r.var), fontWeight: 600, textAlign: 'right', fontSize: '11px' }}>{r.var !== '-' ? r.var : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Histórico Anual — PDV</div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {['Q1','Q2','Q3','Q4'].map((q, i) => (
+            <div key={q} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '4px 10px', textAlign: 'center' }}>
+              <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
+              <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(trimestres[i]) }}>{trimestres[i] !== null ? `${trimestres[i]!.toFixed(1)}%` : '—'}</div>
+            </div>
+          ))}
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px 3px', display: 'flex' }}>
+            {[data.anioLeft, data.anioRight].map(a => (
+              <button key={a} onClick={() => setAnioSel(a)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === a ? '#f7e479' : 'transparent', color: anioSel === a ? '#000' : '#555' }}>{a}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+        <MiniTable titulo="Capital" filas={rows} />
+        <MiniTable titulo="Operaciones" filas={opsRows} />
+      </div>
+    </div>
+  );
+}
 
 function AnalistaHistorico({ data }: { data: HistoricoData }) {
   const [anioSel, setAnioSel] = useState<number>(() =>
@@ -173,10 +240,12 @@ export default function AnalistasPage() {
   const [anio, setAnio] = useState(now.getFullYear());
   const [lucianaData, setLucianaData] = useState<HistoricoData | null>(null);
   const [victoriaData, setVictoriaData] = useState<HistoricoData | null>(null);
+  const [pdvData, setPdvData] = useState<PDVData | null>(null);
 
   useEffect(() => {
     fetch('/api/historico?gid=862186907').then(r => r.json()).then(setLucianaData);
     fetch('/api/historico?gid=486046521').then(r => r.json()).then(setVictoriaData);
+    fetch('/api/pdv').then(r => r.json()).then(setPdvData);
   }, []);
 
   const { registros: rawRegs, objetivos: todosObjs, diasConfig: diasCfg, loading } = useData();
@@ -999,6 +1068,11 @@ export default function AnalistasPage() {
       </div>
 
       {/* ── Histórico anual (Google Sheets) ── */}
+      {analista === PDV && pdvData && (
+        <div style={{ ...card, marginBottom: '16px' }}>
+          <PDVHistorico data={pdvData} />
+        </div>
+      )}
       {analista === 'Luciana' && lucianaData && (
         <div style={{ ...card, marginBottom: '16px' }}>
           <AnalistaHistorico data={lucianaData} />
