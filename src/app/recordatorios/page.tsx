@@ -20,7 +20,6 @@ export default function RecordatoriosPage() {
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabType>('pendientes');
-  const [filtroAnalista, setFiltroAnalista] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchRecordatorios = useCallback(async () => {
@@ -75,9 +74,7 @@ export default function RecordatoriosPage() {
   const ahora = new Date();
 
   const filtrados = recordatorios.filter(r => {
-    const matchTab = tab === 'pendientes' ? !r.mostrado : r.mostrado;
-    const matchAnalista = !filtroAnalista || r.analista === filtroAnalista;
-    return matchTab && matchAnalista;
+    return tab === 'pendientes' ? !r.mostrado : r.mostrado;
   });
 
   const pendientesCount = recordatorios.filter(r => !r.mostrado).length;
@@ -153,7 +150,7 @@ export default function RecordatoriosPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="toolbar">
+      <div className="toolbar" style={{ justifyContent: 'flex-start' }}>
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '4px' }}>
           {(['pendientes', 'completados'] as TabType[]).map(t => (
@@ -174,20 +171,6 @@ export default function RecordatoriosPage() {
                 : 'Completados'}
             </button>
           ))}
-        </div>
-
-        {/* Filtro analista */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Filter size={14} style={{ color: '#444' }} />
-          <select
-            className="form-select"
-            style={{ minWidth: '160px' }}
-            value={filtroAnalista}
-            onChange={e => setFiltroAnalista(e.target.value)}
-          >
-            <option value="">Todos los analistas</option>
-            {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
         </div>
       </div>
 

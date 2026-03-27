@@ -342,14 +342,14 @@ export default function AnalistasPage() {
     },
     scales: {
       x: { 
-        title: { display: true, text: 'Día Calendario', color: '#444', font: { size: 10 } },
-        ticks: { color: '#666', font: { size: 10 } }, 
+        title: { display: true, text: 'Día Calendario', color: '#444', font: { size: 12 } },
+        ticks: { color: '#666', font: { size: 11 } }, 
         grid: { display: false } 
       },
       y: { 
         ticks: { 
           color: '#666', 
-          font: { size: 10 },
+          font: { size: 11 },
           callback: (v: any) => `$${numFmt.format(Number(v) / 1000000)}M` 
         }, 
         grid: { color: 'rgba(255,255,255,0.03)' } 
@@ -406,12 +406,12 @@ export default function AnalistasPage() {
       tooltip: { callbacks: { label: (c: { dataset: { type?: string; label?: string }; parsed: { y: number } }) => c.dataset.type === 'line' ? ` ${pct(c.parsed.y)}` : ` ${formatCurrency(c.parsed.y)}` } },
     },
     scales: {
-      x: { ticks: { color: '#555', font: { family: 'Outfit', size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-      y: { ticks: { color: '#555', font: { family: 'Outfit', size: 10 }, callback: (v: string | number) => `$${numFmt.format(Number(v) / 1000000)}M` }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      x: { ticks: { color: '#555', font: { family: 'Outfit', size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      y: { ticks: { color: '#555', font: { family: 'Outfit', size: 11 }, callback: (v: string | number) => `$${numFmt.format(Number(v) / 1000000)}M` }, grid: { color: 'rgba(255,255,255,0.03)' } },
       y2: { 
         position: 'right' as const, 
         min: 0, suggestedMax: 120, 
-        ticks: { color: '#555', font: { family: 'Outfit', size: 10 }, callback: (v: string | number) => `${v}%` }, 
+        ticks: { color: '#555', font: { family: 'Outfit', size: 11 }, callback: (v: string | number) => `${v}%` }, 
         grid: { display: false } 
       },
     },
@@ -441,7 +441,7 @@ export default function AnalistasPage() {
   };
 
   const lbl: React.CSSProperties = { 
-    fontSize: '11px', 
+    fontSize: '13px', 
     color: '#888', 
     fontWeight: 700, 
     textTransform: 'uppercase', 
@@ -453,7 +453,7 @@ export default function AnalistasPage() {
   };
 
   const val: React.CSSProperties = { 
-    fontSize: '24px', 
+    fontSize: '28px', 
     fontWeight: 900, 
     color: '#fff', 
     lineHeight: 1,
@@ -530,21 +530,7 @@ export default function AnalistasPage() {
           </div>
         </div>
 
-        {/* COMISIÓN TOTAL - DESTACADA */}
-        {analista !== PDV && (
-          <div style={{ 
-            background: 'rgba(255, 255, 255, 0.03)', 
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '8px 18px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-          }}>
-            <div style={{ fontSize: '9px', fontWeight: 900, color: '#888', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '2px' }}>COMISIÓN TOTAL</div>
-            <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{formatCurrency(kpis.comisiones.comisionTotal)}</div>
-          </div>
-        )}
+
 
         {/* Selector analista */}
         <select style={sel} value={analista} onChange={e => setAnalista(e.target.value)}>
@@ -579,12 +565,7 @@ export default function AnalistasPage() {
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ ...lbl, fontSize: '14px', borderLeft: '4px solid #fff', paddingLeft: '12px', marginBottom: 0, color: '#fff' }}>CAPITAL</div>
-          {analista !== PDV && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', padding: '6px 14px', borderRadius: '10px' }}>
-              <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 800, letterSpacing: '0.5px' }}>COMISIÓN CAPITAL</span>
-              <span style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>{formatCurrency(kpis.comisiones.comisionCapital)}</span>
-            </div>
-          )}
+
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={box}>
@@ -665,12 +646,7 @@ export default function AnalistasPage() {
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ ...lbl, fontSize: '14px', borderLeft: '4px solid #4ade80', paddingLeft: '12px', marginBottom: 0, color: '#fff' }}>OPERACIONES</div>
-          {analista !== PDV && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', padding: '6px 14px', borderRadius: '10px' }}>
-              <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 800, letterSpacing: '0.5px' }}>COMISIÓN OPS</span>
-              <span style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>{formatCurrency(kpis.comisiones.comisionOperaciones)}</span>
-            </div>
-          )}
+
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={box}>

@@ -88,8 +88,8 @@ const StatCell = React.memo(function StatCell({
 }: { label: string; value: string | number; color?: string }) {
   return (
     <div>
-      <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 800, color, marginTop: 2 }}>{value}</div>
+      <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color, marginTop: 2 }}>{value}</div>
     </div>
   );
 });
@@ -275,8 +275,8 @@ export default function AnalisisTemporalPage() {
     responsive: true, maintainAspectRatio: false,
     plugins: sharedPlugins,
     scales: {
-      x: { ticks: { color: '#444', maxTicksLimit: 12, font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-      y: { ticks: { color: '#444', callback: fmtAxis }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      x: { ticks: { color: '#444', maxTicksLimit: 12, font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      y: { ticks: { color: '#444', font: { size: 11 }, callback: fmtAxis }, grid: { color: 'rgba(255,255,255,0.03)' } },
     },
   }), [sharedPlugins, fmtAxis]);
 
@@ -302,8 +302,8 @@ export default function AnalisisTemporalPage() {
     responsive: true, maintainAspectRatio: false,
     plugins: sharedPlugins,
     scales: {
-      x: { ticks: { color: '#444', font: { size: 11 } }, grid: { display: false } },
-      y: { ticks: { color: '#444', callback: fmtAxis }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      x: { ticks: { color: '#444', font: { size: 12 } }, grid: { display: false } },
+      y: { ticks: { color: '#444', font: { size: 11 }, callback: fmtAxis }, grid: { color: 'rgba(255,255,255,0.03)' } },
     },
   }), [sharedPlugins, fmtAxis]);
 

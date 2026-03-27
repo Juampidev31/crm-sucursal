@@ -55,8 +55,10 @@ function NavItem({
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         cursor: 'pointer',
         background: active 
-          ? 'linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%)' 
-          : 'transparent',
+          ? 'linear-gradient(90deg, rgba(0, 120, 212, 0.25) 0%, transparent 100%)' 
+          : hovered 
+            ? 'linear-gradient(90deg, rgba(0, 120, 212, 0.12) 0%, transparent 100%)' 
+            : 'transparent',
         position: 'relative',
       }}
       onMouseEnter={() => setHovered(true)}
@@ -133,7 +135,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
     >
 
       {/* Nav */}
-      <div className="sidebar-content" style={{ padding: '30px 0' }}>
+      <div className="sidebar-content" style={{ padding: '52px 0 32px' }}>
 
         {/* Principal */}
         {NAV_MAIN.map(item => (
