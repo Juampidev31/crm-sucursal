@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils';
 import { logAudit } from '@/lib/audit';
@@ -17,7 +17,7 @@ type TabType = 'pendientes' | 'completados';
 
 export default function RecordatoriosPage() {
   const { user } = useAuth();
-  const { setPendingReminders } = useData();
+  const { setPendingReminders, pushRecordatorioChange } = useData();
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabType>('pendientes');
@@ -33,7 +33,24 @@ export default function RecordatoriosPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchRecordatorios(); }, [fetchRecordatorios]);
+  const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  useEffect(() => {
+    fetchRecordatorios();
+
+    // Usar BroadcastChannel para actualizaciones inmediatas
+    const bc = supabase
+      .channel('recordatorios-broadcast-client', { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'recordatorio_change' }, async ({ payload }) => {
+        const { type } = payload as { type: string };
+        // Refetch para obtener los datos actualizados
+        await fetchRecordatorios();
+      })
+      .subscribe();
+    broadcastChannelRef.current = bc;
+
+    return () => { supabase.removeChannel(bc); };
+  }, [fetchRecordatorios]);
 
   useEffect(() => {
     if (toast) {
@@ -56,6 +73,7 @@ export default function RecordatoriosPage() {
       setPendingReminders(n => n + 1);
       showToast('Error al actualizar', 'error');
     } else {
+      if (rec) pushRecordatorioChange('UPDATE', { ...rec, mostrado: true });
       logAudit({ id_registro: rec?.registro_id, analista: rec?.analista, accion: 'Recordatorio completado', campo_modificado: 'Recordatorio', valor_nuevo: `${rec?.nombre} | ${rec?.fecha_hora}` });
     }
   };
@@ -73,6 +91,7 @@ export default function RecordatoriosPage() {
       if (wasPending) setPendingReminders(n => n + 1);
       showToast('Error al eliminar', 'error');
     } else {
+      if (backup) pushRecordatorioChange('DELETE', backup);
       logAudit({ id_registro: backup?.registro_id, analista: backup?.analista, accion: 'Eliminación', campo_modificado: 'Recordatorio', valor_anterior: `${backup?.nombre} | ${backup?.fecha_hora}` });
     }
   };

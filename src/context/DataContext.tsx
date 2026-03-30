@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Registro, HistoricoVenta } from '@/types';
+import { Registro, HistoricoVenta, Recordatorio } from '@/types';
 
 export interface Objetivo {
   id?: string;
@@ -54,6 +54,11 @@ interface DataCtx {
   markReminderCompleted: (id: string) => Promise<void>;
   refresh: (silent?: boolean) => void;
   pushRegistroChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => void;
+  pushObjetivosChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', objetivo: Objetivo) => void;
+  pushDiasConfigChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', config: DiasConfig) => void;
+  pushAlertasConfigChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', config: AlertaConfig) => void;
+  pushHistoricoChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', historico: HistoricoVenta) => void;
+  pushRecordatorioChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', recordatorio: Recordatorio) => void;
 }
 
 const DataContext = createContext<DataCtx | null>(null);
@@ -74,6 +79,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const broadcastChannelDiasRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const broadcastChannelAlertasRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const broadcastChannelHistoricoRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const broadcastChannelRecordatoriosRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const clearReminderAlert = useCallback(() => {
     setReminderAlert(null);
@@ -178,6 +184,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const pushRecordatorioChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', recordatorio: Recordatorio) => {
+    broadcastChannelRecordatoriosRef.current?.send({
+      type: 'broadcast',
+      event: 'recordatorio_change',
+      payload: { type, recordatorio, mostrado: recordatorio.mostrado },
+    });
+  }, []);
+
   useEffect(() => {
     const bc = supabase
       .channel('registros-broadcast', { config: { broadcast: { self: false } } })
@@ -270,24 +284,55 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return () => { supabase.removeChannel(bc); };
   }, []);
 
+  useEffect(() => {
+    const bc = supabase
+      .channel('recordatorios-broadcast', { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'recordatorio_change' }, ({ payload }) => {
+        const { type, mostrado } = payload as { type: string; mostrado?: boolean };
+        if (type === 'INSERT' && !mostrado) {
+          setPendingReminders(n => n + 1);
+        } else if (type === 'UPDATE' && mostrado) {
+          setPendingReminders(n => Math.max(0, n - 1));
+        } else if (type === 'DELETE') {
+          setPendingReminders(n => Math.max(0, n - 1));
+        }
+        checkDueRef.current();
+      })
+      .subscribe();
+    broadcastChannelRecordatoriosRef.current = bc;
+    return () => { supabase.removeChannel(bc); };
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('recordatorios-realtime-context')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'recordatorios' }, (payload) => {
+        const nuevo = payload.new as { mostrado?: boolean };
+        if (nuevo.mostrado) setPendingReminders(n => Math.max(0, n - 1));
+        checkDueRef.current();
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'recordatorios' }, () => {
+        setPendingReminders(n => Math.max(0, n - 1));
+        checkDueRef.current();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   // Suscripciones en tiempo real para el resto de tablas
   useEffect(() => {
     const channel = supabase
       .channel('realtime-rest')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'objetivos' }, (payload) => {
-        console.log('[DataContext] Cambio en objetivos:', payload);
         refreshRef.current(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dias_habiles_config' }, (payload) => {
-        console.log('[DataContext] Cambio en dias_habiles_config:', payload);
         refreshRef.current(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_ventas' }, (payload) => {
-        console.log('[DataContext] Cambio en historico_ventas:', payload);
         refreshRef.current(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'alertas_config' }, (payload) => {
-        console.log('[DataContext] Cambio en alertas_config:', payload);
         refreshRef.current(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recordatorios' }, () => {
@@ -299,12 +344,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         checkDueRef.current();
       })
       .subscribe((status) => {
-        console.log('[DataContext] Suscripción realtime:', status);
         if (status === 'SUBSCRIBED') {
-          console.log('[DataContext] Canal suscrito correctamente');
+          // Connected successfully
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('[DataContext] Error en suscripción - reconectando...');
-          setTimeout(() => refreshRef.current(false), 1000);
+          // Silent reconnect - will retry automatically
         }
       });
 
@@ -324,7 +367,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       loading, pendingReminders, reminderAlert,
       setRegistros, setObjetivos, setDiasConfig, setAlertasConfig, setPendingReminders,
       clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange,
-      pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange
+      pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
+      pushRecordatorioChange
     }}>
       {children}
     </DataContext.Provider>
