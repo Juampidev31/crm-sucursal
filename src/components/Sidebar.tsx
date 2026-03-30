@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   AlignJustify, BarChart2, PieChart, FileText,
-  DollarSign, Activity, Settings, Target, Copy, Bell,
+  DollarSign, Activity, Settings, Target, Copy, Bell, Shield, Lock, LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
+import { setSession } from '@/lib/auth';
+
+const ADMIN_PASSWORD = 'dimenza2024';
 
 // ── Nav config ────────────────────────────────────────────────────────────────
 
@@ -27,7 +30,7 @@ const NAV_ADMIN = [
   { href: '/analisis-temporal', icon: Activity,  label: 'Análisis Temporal' },
   { href: '/objetivos',         icon: Target,    label: 'Objetivos'         },
   { href: '/duplicados',        icon: Copy,      label: 'Duplicados'        },
-  { href: '/auditoria',         icon: BarChart2, label: 'Auditoría'         },
+  { href: '/auditoria',         icon: Shield,     label: 'Auditoría'        },
   { href: '/ajustes',           icon: Settings,  label: 'Ajustes'           },
 ];
 
@@ -44,20 +47,20 @@ function NavItem({
     <Link
       href={href}
       style={{
-        display: 'flex', alignItems: 'center', gap: 14,
-        padding: '12px 24px',
-        margin: '1px 0',
+        display: 'flex', alignItems: 'center', gap: 16,
+        padding: '16px 32px',
+        margin: '2px 0',
         borderRadius: 0,
-        color: active ? '#fff' : hovered ? '#ccc' : '#555',
-        fontWeight: active ? 600 : 500,
-        fontSize: 14,
+        color: active ? '#fff' : hovered ? '#fff' : '#444',
+        fontWeight: active ? 700 : 500,
+        fontSize: 17, // Matches records typography
         textDecoration: 'none',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         cursor: 'pointer',
         background: active 
-          ? 'linear-gradient(90deg, rgba(0, 120, 212, 0.25) 0%, transparent 100%)' 
+          ? 'linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%)' 
           : hovered 
-            ? 'linear-gradient(90deg, rgba(0, 120, 212, 0.12) 0%, transparent 100%)' 
+            ? 'linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%)' 
             : 'transparent',
         position: 'relative',
       }}
@@ -71,28 +74,29 @@ function NavItem({
           left: 0,
           top: '50%',
           transform: 'translateY(-50%)',
-          width: 3,
-          height: 20,
-          background: '#0078d4',
+          width: 4,
+          height: 24,
+          background: '#fff',
           borderRadius: '0 2px 2px 0',
-          boxShadow: '0 0 10px rgba(0, 120, 212, 0.3)',
+          boxShadow: '0 0 15px rgba(255, 255, 255, 0.4)',
         }} />
       )}
 
       <Icon 
-        size={18} 
+        size={22} // Larger icon
         strokeWidth={active ? 2.5 : 2} 
-        style={{ opacity: active ? 1 : 0.4 }}
+        style={{ opacity: active ? 1 : 0.5 }}
       />
-      <span style={{ flex: 1, letterSpacing: '0.2px' }}>{label}</span>
+      <span style={{ flex: 1, letterSpacing: '0.5px' }}>{label}</span>
 
       {badge && badge > 0 ? (
         <span style={{
-          background: '#f59e0b',
+          background: '#fff',
           color: '#000',
-          fontSize: 10, fontWeight: 800,
-          padding: '2px 7px', borderRadius: 20,
-          minWidth: 20, textAlign: 'center', flexShrink: 0,
+          fontSize: 11, fontWeight: 900,
+          padding: '3px 9px', borderRadius: 20,
+          minWidth: 22, textAlign: 'center', flexShrink: 0,
+          boxShadow: '0 4px 12px rgba(255,255,255,0.2)'
         }}>
           {badge}
         </span>
@@ -106,12 +110,12 @@ function NavItem({
 function Divider({ label }: { label: string }) {
   return (
     <div style={{
-      padding: '24px 32px 10px',
-      fontSize: 10,
-      fontWeight: 800,
+      padding: '32px 32px 14px',
+      fontSize: 13, // Larger divider text
+      fontWeight: 900,
       textTransform: 'uppercase',
-      color: '#333',
-      letterSpacing: '1.5px',
+      color: '#222',
+      letterSpacing: '2px',
     }}>
       {label}
     </div>
@@ -122,20 +126,44 @@ function Divider({ label }: { label: string }) {
 
 export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const pathname = usePathname();
-  const { isAdmin }          = useAuth();
+  const { isAdmin, logout, refreshUser } = useAuth();
   const { pendingReminders } = useData();
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminError, setAdminError] = useState(false);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showAdminModal) {
+      setAdminPassword('');
+      setAdminError(false);
+      setTimeout(() => passwordInputRef.current?.focus(), 50);
+    }
+  }, [showAdminModal]);
+
+  const handleAdminLogin = () => {
+    if (adminPassword === ADMIN_PASSWORD) {
+      setSession({ username: 'admin', rol: 'admin' });
+      refreshUser();
+      setShowAdminModal(false);
+    } else {
+      setAdminError(true);
+      setAdminPassword('');
+      setTimeout(() => passwordInputRef.current?.focus(), 50);
+    }
+  };
 
   return (
     <aside className={`main-sidebar${hidden ? ' sidebar-hidden' : ''}`}
       style={{ 
-        background: 'linear-gradient(180deg, #0a0a0b 0%, #000 100%)',
+        background: '#000',
         borderRight: '1px solid rgba(255,255,255,0.03)',
-        boxShadow: '20px 0 50px rgba(0,0,0,0.5)',
+        boxShadow: '30px 0 60px rgba(0,0,0,0.8)',
       }}
     >
 
       {/* Nav */}
-      <div className="sidebar-content" style={{ padding: '52px 0 32px' }}>
+      <div className="sidebar-content" style={{ padding: '64px 0 32px' }}>
 
         {/* Principal */}
         {NAV_MAIN.map(item => (
@@ -160,6 +188,94 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         )}
 
       </div>
+
+      {/* Lock / unlock button at bottom */}
+      <div style={{ padding: '16px 24px 32px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        {isAdmin ? (
+          <button
+            onClick={() => { logout(); }}
+            title="Salir del modo admin"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#333', fontSize: 13, padding: '8px 8px',
+              borderRadius: 6, width: '100%',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#333')}
+          >
+            <LogOut size={15} strokeWidth={2} style={{ opacity: 0.5 }} />
+            <span style={{ opacity: 0.5 }}>Salir admin</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowAdminModal(true)}
+            title="Acceso admin"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#222', fontSize: 13, padding: '8px 8px',
+              borderRadius: 6, width: '100%',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#555')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#222')}
+          >
+            <Lock size={14} strokeWidth={2} />
+          </button>
+        )}
+      </div>
+
+      {/* Admin password modal */}
+      {showAdminModal && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setShowAdminModal(false); }}
+        >
+          <div style={{
+            background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12, padding: '32px 28px', width: 320,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <Lock size={18} style={{ color: '#fff' }} />
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Acceso Admin</span>
+            </div>
+            <input
+              ref={passwordInputRef}
+              type="password"
+              value={adminPassword}
+              onChange={e => { setAdminPassword(e.target.value); setAdminError(false); }}
+              onKeyDown={e => { if (e.key === 'Enter') handleAdminLogin(); if (e.key === 'Escape') setShowAdminModal(false); }}
+              placeholder="Contraseña"
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: 8,
+                background: '#1a1a1a', border: `1px solid ${adminError ? '#e53e3e' : 'rgba(255,255,255,0.15)'}`,
+                color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            {adminError && (
+              <div style={{ color: '#e53e3e', fontSize: 13, marginTop: 8 }}>Contraseña incorrecta</div>
+            )}
+            <button
+              onClick={handleAdminLogin}
+              style={{
+                marginTop: 16, width: '100%', padding: '10px',
+                background: '#fff', color: '#000', border: 'none',
+                borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: 'pointer',
+              }}
+            >
+              Ingresar
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
