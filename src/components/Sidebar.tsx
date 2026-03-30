@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   AlignJustify, BarChart2, PieChart, FileText,
-  DollarSign, Activity, Settings, Target, Copy, Bell, Shield, Lock, LogOut,
+  DollarSign, Activity, Settings, Target, Copy, Bell, Shield, Lock, LogOut, // Lock kept for modal
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -189,8 +189,8 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
       </div>
 
-      {/* Lock / unlock button at bottom */}
-      <div style={{ padding: '16px 24px 32px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      {/* Invisible trigger area at bottom */}
+      <div style={{ padding: '0 0 32px' }}>
         {isAdmin ? (
           <button
             onClick={() => { logout(); }}
@@ -198,8 +198,8 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               background: 'none', border: 'none', cursor: 'pointer',
-              color: '#333', fontSize: 13, padding: '8px 8px',
-              borderRadius: 6, width: '100%',
+              color: '#333', fontSize: 13, padding: '8px 32px',
+              borderRadius: 0, width: '100%',
               transition: 'color 0.2s',
             }}
             onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
@@ -211,19 +211,11 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         ) : (
           <button
             onClick={() => setShowAdminModal(true)}
-            title="Acceso admin"
             style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#222', fontSize: 13, padding: '8px 8px',
-              borderRadius: 6, width: '100%',
-              transition: 'color 0.2s',
+              display: 'block', width: '100%', height: '32px',
+              background: 'none', border: 'none', cursor: 'default',
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#555')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#222')}
-          >
-            <Lock size={14} strokeWidth={2} />
-          </button>
+          />
         )}
       </div>
 
