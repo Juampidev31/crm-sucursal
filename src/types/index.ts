@@ -61,6 +61,15 @@ export interface Recordatorio {
   comentario_registro: string;
 }
 
+export interface HistoricoVenta {
+  id?: string;
+  analista: string;
+  anio: number;
+  mes: number; // 0-11
+  capital_real: number;
+  ops_real: number;
+}
+
 export interface DiasHabilesConfig {
   id: string;
   analista: string;

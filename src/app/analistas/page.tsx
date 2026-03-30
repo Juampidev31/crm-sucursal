@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { logAudit } from '@/lib/audit';
 import { formatCurrency, calcularComisiones, calcularDiasHabilesAutomaticos, getStatusLabel } from '@/lib/utils';
 import { useData } from '@/context/DataContext';
 import { CONFIG } from '@/types';
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, BarElement, LineElement,
-  PointElement, Tooltip, Legend, Filler, ArcElement,
+  PointElement, Tooltip, Legend, Filler,
 } from 'chart.js';
-import { Bar, Line, Doughnut } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import {
   Activity,
   TrendingUp,
@@ -22,13 +23,11 @@ import {
   Users,
   ChevronDown,
   FileText,
-  ShieldCheck,
   RotateCcw,
   Plus,
-  PieChart,
 } from 'lucide-react';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler, ArcElement);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler);
 
 // PDV = vista combinada de TODOS los analistas (no es un analista real en la DB)
 const PDV = '__pdv__';
@@ -80,8 +79,8 @@ interface HistoricoData { secciones: SeccionData[]; }
 interface PDVMes { mes: string; obj: string; real: string; cumpl: string; cumplPct: number | null; var: string; }
 interface PDVData { years: number[]; yearData: Record<number, { capital: PDVMes[]; operaciones: PDVMes[] | null }>; }
 
-function pctColor(v: number | null) { if (v === null) return '#333'; if (v >= 100) return '#34d399'; if (v >= 75) return '#fbbf24'; return '#f87171'; }
-function varColor(v: string) { if (!v || v === '-') return '#555'; return v.startsWith('-') ? '#f87171' : '#34d399'; }
+function pctColor(v: number | null) { if (v === null) return '#333'; if (v >= 100) return '#34d399'; return '#f87171'; }
+function varColor(_v: string) { return '#ffffff'; }
 
 function PDVHistorico({ data }: { data: PDVData }) {
   const [anioSel, setAnioSel] = useState<number>(() => data.years[data.years.length - 1]);
@@ -99,23 +98,23 @@ function PDVHistorico({ data }: { data: PDVData }) {
 
   const MiniTable = ({ titulo, filas }: { titulo: string; filas: PDVMes[] }) => (
     <div style={{ background: '#080808', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px', overflow: 'auto', flex: 1 }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
         <span style={{ fontSize: '10px', fontWeight: 800, color: '#555', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
         <thead><tr>
-          {['Mes','Objetivo','Real','Cumpl.','Var'].map(h => <th key={h} style={{ ...th, textAlign: h === 'Mes' ? 'left' : 'right' }}>{h}</th>)}
+          {['Mes','Objetivo','Alcance','Cumpl.','Var'].map(h => <th key={h} style={{ ...th, textAlign: 'center' }}>{h}</th>)}
         </tr></thead>
         <tbody>
           {filas.map((r, i) => (
             <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <td style={{ padding: '8px 12px', color: '#888', fontWeight: 600 }}>{r.mes}</td>
-              <td style={{ padding: '8px 12px', color: '#444', textAlign: 'right' }}>{r.obj}</td>
-              <td style={{ padding: '8px 12px', color: '#aaa', fontWeight: 600, textAlign: 'right' }}>{r.real}</td>
-              <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#333' }}>—</span>}
+              <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.mes}</td>
+              <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.obj}</td>
+              <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.real}</td>
+              <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#fff' }}>—</span>}
               </td>
-              <td style={{ padding: '8px 12px', color: varColor(r.var), fontWeight: 600, textAlign: 'right', fontSize: '11px' }}>{r.var !== '-' ? r.var : '—'}</td>
+              <td style={{ padding: '8px 12px', color: '#fff', textAlign: 'center' }}>{r.var !== '-' ? r.var : '—'}</td>
             </tr>
           ))}
         </tbody>
@@ -127,16 +126,18 @@ function PDVHistorico({ data }: { data: PDVData }) {
     <div style={{ marginTop: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ fontSize: '11px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Histórico Anual — PDV</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {['Q1','Q2','Q3','Q4'].map((q, i) => (
-            <div key={q} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '4px 10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
-              <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(trimestres[i]) }}>{trimestres[i] !== null ? `${trimestres[i]!.toFixed(1)}%` : '—'}</div>
-            </div>
-          ))}
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px 3px', display: 'flex' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
+            {['Q1','Q2','Q3','Q4'].map((q, i) => (
+              <div key={q} style={{ padding: '4px 12px', textAlign: 'center', minWidth: '50px' }}>
+                <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
+                <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(trimestres[i]) }}>{trimestres[i] !== null ? `${trimestres[i]!.toFixed(1)}%` : '—'}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
             {data.years.map(a => (
-              <button key={a} onClick={() => setAnioSel(a)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === a ? '#f7e479' : 'transparent', color: anioSel === a ? '#000' : '#555' }}>{a}</button>
+              <button key={a} onClick={() => setAnioSel(a)} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === a ? '#f7e479' : 'transparent', color: anioSel === a ? '#000' : '#555' }}>{a}</button>
             ))}
           </div>
         </div>
@@ -149,7 +150,7 @@ function PDVHistorico({ data }: { data: PDVData }) {
   );
 }
 
-function AnalistaHistorico({ data }: { data: HistoricoData }) {
+function AnalistaHistorico({ data, nombre }: { data: HistoricoData; nombre: string }) {
   const [anioSel, setAnioSel] = useState<number>(() =>
     data.secciones.length ? data.secciones[data.secciones.length - 1].anio : new Date().getFullYear()
   );
@@ -170,22 +171,24 @@ function AnalistaHistorico({ data }: { data: HistoricoData }) {
     <div style={{ marginTop: '16px' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Histórico Anual — Luciana</div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {/* Trimestrales */}
-          {['Q1','Q2','Q3','Q4'].map((q, i) => {
-            const val = trimestres[i];
-            return (
-              <div key={q} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '4px 10px', textAlign: 'center' }}>
-                <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
-                <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(val) }}>{val !== null ? `${val.toFixed(1)}%` : '—'}</div>
-              </div>
-            );
-          })}
+        <div style={{ fontSize: '11px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Histórico Anual — {nombre}</div>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          {/* Trimestrales en bloque similar a los años */}
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
+            {['Q1','Q2','Q3','Q4'].map((q, i) => {
+              const val = trimestres[i];
+              return (
+                <div key={q} style={{ padding: '4px 12px', textAlign: 'center', minWidth: '50px' }}>
+                  <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
+                  <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(val) }}>{val !== null ? `${val.toFixed(1)}%` : '—'}</div>
+                </div>
+              );
+            })}
+          </div>
           {/* Selector año */}
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px 3px', display: 'flex' }}>
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
             {data.secciones.map(s => (
-              <button key={s.anio} onClick={() => setAnioSel(s.anio)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === s.anio ? '#f7e479' : 'transparent', color: anioSel === s.anio ? '#000' : '#555' }}>{s.anio}</button>
+              <button key={s.anio} onClick={() => setAnioSel(s.anio)} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === s.anio ? '#f7e479' : 'transparent', color: anioSel === s.anio ? '#000' : '#555' }}>{s.anio}</button>
             ))}
           </div>
         </div>
@@ -194,36 +197,36 @@ function AnalistaHistorico({ data }: { data: HistoricoData }) {
       {/* Tabla */}
       {seccion && (
         <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <thead>
               <tr>
-                <th style={{ ...th, textAlign: 'left' }}>Mes</th>
-                <th style={{ ...th, textAlign: 'right' }}>Objetivo</th>
-                <th style={{ ...th, textAlign: 'right' }}>Real</th>
-                <th style={{ ...th, textAlign: 'right' }}>Cumpl.</th>
-                <th style={{ ...th, textAlign: 'right' }}>Var.IM</th>
-                <th style={{ ...th, textAlign: 'right' }}>Ops Obj.</th>
-                <th style={{ ...th, textAlign: 'right' }}>Alcance</th>
-                <th style={{ ...th, textAlign: 'right' }}>Cumpl.Op</th>
-                <th style={{ ...th, textAlign: 'right' }}>Var.IM</th>
+                <th style={{ ...th, textAlign: 'center' }}>Mes</th>
+                <th style={{ ...th, textAlign: 'center' }}>Objetivo</th>
+                <th style={{ ...th, textAlign: 'center' }}>Alcance</th>
+                <th style={{ ...th, textAlign: 'center' }}>Cumpl.</th>
+                <th style={{ ...th, textAlign: 'center' }}>Var.IM</th>
+                <th style={{ ...th, textAlign: 'center' }}>Objetivo</th>
+                <th style={{ ...th, textAlign: 'center' }}>Alcance</th>
+                <th style={{ ...th, textAlign: 'center' }}>Cumpl.</th>
+                <th style={{ ...th, textAlign: 'center' }}>Var.IM</th>
               </tr>
             </thead>
             <tbody>
               {seccion.meses.map((r, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                  <td style={{ padding: '8px 12px', color: '#888', fontWeight: 600 }}>{r.mes}</td>
-                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'right' }}>{r.obj}</td>
-                  <td style={{ padding: '8px 12px', color: '#aaa', fontWeight: 600, textAlign: 'right' }}>{r.real}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                    {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#333' }}>—</span>}
+                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.mes}</td>
+                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.obj}</td>
+                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.real}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                    {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#fff' }}>—</span>}
                   </td>
-                  <td style={{ padding: '8px 12px', color: varColor(r.varIM), fontWeight: 600, textAlign: 'right', fontSize: '11px' }}>{r.varIM !== '-' ? r.varIM : '—'}</td>
-                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'right' }}>{r.ops}</td>
-                  <td style={{ padding: '8px 12px', color: '#aaa', fontWeight: 600, textAlign: 'right' }}>{r.alcance}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                    {r.cumplOpsPct !== null ? <span style={{ color: pctColor(r.cumplOpsPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplOpsPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumplOps}</span> : <span style={{ color: '#333' }}>—</span>}
+                  <td style={{ padding: '8px 12px', color: '#fff', textAlign: 'center' }}>{r.varIM !== '-' ? r.varIM : '—'}</td>
+                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.ops}</td>
+                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.alcance}</td>
+                  <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                    {r.cumplOpsPct !== null ? <span style={{ color: pctColor(r.cumplOpsPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplOpsPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumplOps}</span> : <span style={{ color: '#fff' }}>—</span>}
                   </td>
-                  <td style={{ padding: '8px 12px', color: varColor(r.varIMOps), fontWeight: 600, textAlign: 'right', fontSize: '11px' }}>{r.varIMOps !== '-' ? r.varIMOps : '—'}</td>
+                  <td style={{ padding: '8px 12px', color: '#fff', textAlign: 'center' }}>{r.varIMOps !== '-' ? r.varIMOps : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -237,19 +240,12 @@ function AnalistaHistorico({ data }: { data: HistoricoData }) {
 export default function AnalistasPage() {
   const now = new Date();
   const [analista, setAnalista] = useState<string>(PDV);
+
+
   const [mes, setMes] = useState(now.getMonth());
   const [anio, setAnio] = useState(now.getFullYear());
-  const [lucianaData, setLucianaData] = useState<HistoricoData | null>(null);
-  const [victoriaData, setVictoriaData] = useState<HistoricoData | null>(null);
-  const [pdvData, setPdvData] = useState<PDVData | null>(null);
 
-  useEffect(() => {
-    fetch('/api/historico?gid=862186907').then(r => r.json()).then(setLucianaData);
-    fetch('/api/historico?gid=486046521').then(r => r.json()).then(setVictoriaData);
-    fetch('/api/pdv').then(r => r.json()).then(setPdvData);
-  }, []);
-
-  const { registros: rawRegs, objetivos: todosObjs, diasConfig: diasCfg, loading } = useData();
+  const { registros: rawRegs, objetivos: todosObjs, diasConfig: diasCfg, historicoVentas, loading } = useData();
   const todosRegs = rawRegs as unknown as Reg[];
   const [analistasSel, setAnalistasSel] = useState<string[]>([]);
 
@@ -268,6 +264,115 @@ export default function AnalistasPage() {
     () => analista === PDV ? todosRegs : todosRegs.filter(r => r.analista === analista),
     [todosRegs, analista]
   );
+
+  // ── Histórico Anual — calculado desde Supabase en tiempo real ────────────
+  const historicoAnualData = useMemo(() => {
+    const fmtK = (v: number) => v > 0 ? `$${numFmt.format(v)}` : '-';
+    const fmtPct = (v: number) => `${v.toFixed(1)}%`;
+    const fmtVar = (curr: number, prev: number) => {
+      if (prev === 0) return '-';
+      const p = ((curr - prev) / prev) * 100;
+      return `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`;
+    };
+
+    const aniosSet = new Set<number>();
+    todosObjs.forEach(o => aniosSet.add(o.anio));
+    historicoVentas.forEach(h => aniosSet.add(h.anio));
+    aniosSet.add(new Date().getFullYear());
+    const anios = Array.from(aniosSet).sort();
+
+    const buildAnalistaHistorico = (analistaName: string): HistoricoData => {
+      const secciones = anios.map(anio => {
+        let prevMonto = 0, prevOps = 0;
+        const meses: MesData[] = [];
+        CONFIG.MESES_NOMBRES.forEach((mesNombre, mesIdx) => {
+          const mesKey = mesStr(anio, mesIdx);
+          const mesRegs = todosRegs.filter(r =>
+            r.analista === analistaName &&
+            r.fecha?.slice(0, 7) === mesKey &&
+            esVenta(r.estado || '')
+          );
+          const regsCapital = mesRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+          const regsOps = mesRegs.length;
+          const histEntry = historicoVentas.find(h => h.analista === analistaName && h.anio === anio && h.mes === mesIdx);
+          const real = regsCapital > 0 ? regsCapital : (histEntry?.capital_real || 0);
+          const opsReal = regsOps > 0 ? regsOps : (histEntry?.ops_real || 0);
+          const obj = todosObjs.find(o => o.analista === analistaName && o.mes === mesIdx && o.anio === anio);
+          const metaVentas = Number(obj?.meta_ventas) || 0;
+          const metaOps = Number(obj?.meta_operaciones) || 0;
+          const cumplPct = metaVentas > 0 ? (real / metaVentas) * 100 : null;
+          const cumplOpsPct = metaOps > 0 ? (opsReal / metaOps) * 100 : null;
+          const varIM = fmtVar(real, prevMonto);
+          const varIMOps = fmtVar(opsReal, prevOps);
+          prevMonto = real;
+          prevOps = opsReal;
+          if (metaVentas === 0 && real === 0) return;
+          meses.push({
+            mes: mesNombre,
+            obj: metaVentas > 0 ? fmtK(metaVentas) : '-',
+            real: real > 0 ? fmtK(real) : '-',
+            cumpl: cumplPct !== null ? fmtPct(cumplPct) : '-',
+            cumplPct,
+            varIM,
+            ops: metaOps > 0 ? String(metaOps) : '-',
+            alcance: opsReal > 0 ? String(opsReal) : '-',
+            cumplOps: cumplOpsPct !== null ? fmtPct(cumplOpsPct) : '-',
+            cumplOpsPct,
+            varIMOps,
+          });
+        });
+        return { anio, meses };
+      }).filter(s => s.meses.length > 0);
+      return { secciones };
+    };
+
+    const buildPDVHistorico = (): PDVData => {
+      const yearsData: PDVData['yearData'] = {};
+      anios.forEach(anio => {
+        let prevCapital = 0, prevOps = 0;
+        const capitalRows: PDVMes[] = [];
+        const opsRows: PDVMes[] = [];
+        CONFIG.MESES_NOMBRES.forEach((mesNombre, mesIdx) => {
+          const mesKey = mesStr(anio, mesIdx);
+          const mesRegs = todosRegs.filter(r =>
+            r.fecha?.slice(0, 7) === mesKey && esVenta(r.estado || '')
+          );
+          const regsCapital = mesRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+          const regsOps = mesRegs.length;
+          const pdvHist = historicoVentas.filter(h => h.analista === 'PDV' && h.anio === anio && h.mes === mesIdx);
+          const indivHist = historicoVentas.filter(h => h.analista !== 'PDV' && h.anio === anio && h.mes === mesIdx);
+          const histSrc = pdvHist.length > 0 ? pdvHist : indivHist;
+          const histSum = histSrc.reduce((s, h) => s + (h.capital_real || 0), 0);
+          const histOpsSum = histSrc.reduce((s, h) => s + (h.ops_real || 0), 0);
+          const real = regsCapital > 0 ? regsCapital : histSum;
+          const opsReal = regsOps > 0 ? regsOps : histOpsSum;
+          const pdvObjs = todosObjs.filter(o => o.mes === mesIdx && o.anio === anio && o.analista === 'PDV');
+          const objsForMonth = pdvObjs.length > 0
+            ? pdvObjs
+            : todosObjs.filter(o => o.mes === mesIdx && o.anio === anio && CONFIG.ANALISTAS_DEFAULT.includes(o.analista));
+          const metaVentas = objsForMonth.reduce((s, o) => s + (Number(o.meta_ventas) || 0), 0);
+          const metaOps = objsForMonth.reduce((s, o) => s + (Number(o.meta_operaciones) || 0), 0);
+          const cumplPct = metaVentas > 0 ? (real / metaVentas) * 100 : null;
+          const cumplOpsPct = metaOps > 0 ? (opsReal / metaOps) * 100 : null;
+          const varCapital = fmtVar(real, prevCapital);
+          const varOps = fmtVar(opsReal, prevOps);
+          prevCapital = real;
+          prevOps = opsReal;
+          if (metaVentas === 0 && real === 0) return;
+          capitalRows.push({ mes: mesNombre, obj: metaVentas > 0 ? fmtK(metaVentas) : '-', real: real > 0 ? fmtK(real) : '-', cumpl: cumplPct !== null ? fmtPct(cumplPct) : '-', cumplPct, var: varCapital });
+          opsRows.push({ mes: mesNombre, obj: metaOps > 0 ? String(metaOps) : '-', real: opsReal > 0 ? String(opsReal) : '-', cumpl: cumplOpsPct !== null ? fmtPct(cumplOpsPct) : '-', cumplPct: cumplOpsPct, var: varOps });
+        });
+        if (capitalRows.length > 0) yearsData[anio] = { capital: capitalRows, operaciones: opsRows.length > 0 ? opsRows : null };
+      });
+      const validYears = Object.keys(yearsData).map(Number).sort();
+      return { years: validYears, yearData: yearsData };
+    };
+
+    return {
+      analistaSel: analista !== PDV ? buildAnalistaHistorico(analista) : { secciones: [] as SeccionData[] },
+      pdv: buildPDVHistorico(),
+    };
+  }, [todosRegs, todosObjs, analista, historicoVentas]);
 
   // Objetivos indexados por "anio-mes"
   // PDV = suma de todos los analistas, individual = solo el suyo
@@ -602,7 +707,7 @@ export default function AnalistasPage() {
     background: '#0a0a0a', 
     border: '1px solid rgba(255,255,255,0.02)',
     borderRadius: '16px', 
-    padding: '20px', 
+    padding: '16px', 
     minWidth: '220px',
     boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)', 
     position: 'relative',
@@ -610,19 +715,19 @@ export default function AnalistasPage() {
   };
 
   const lbl: React.CSSProperties = { 
-    fontSize: '13px', 
+    fontSize: '11px', 
     color: '#888', 
     fontWeight: 700, 
     textTransform: 'uppercase', 
     letterSpacing: '1px', 
-    marginBottom: '12px',
+    marginBottom: '10px',
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
   };
 
   const val: React.CSSProperties = { 
-    fontSize: '28px', 
+    fontSize: '22px', 
     fontWeight: 900, 
     color: '#fff', 
     lineHeight: 1,
@@ -643,7 +748,7 @@ export default function AnalistasPage() {
     background: '#070707', 
     border: '1px solid rgba(255,255,255,0.02)', 
     borderRadius: '24px', 
-    padding: '24px',
+    padding: '16px',
     boxShadow: '0 10px 50px rgba(0,0,0,0.5)', // Eliminado brillo excesivo
   };
 
@@ -892,8 +997,8 @@ export default function AnalistasPage() {
         </div>
       </div>
 
-      {/* ── Alertas + Curva + Composición ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 280px', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
+      {/* ── Alertas + Curva ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
           
           {/* Alertas Premium */}
@@ -930,8 +1035,8 @@ export default function AnalistasPage() {
                     {a.status}
                   </div>
                 </div>
-                <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff' }}>
-                  {a.count} <span style={{ fontSize: '11px', color: '#444', fontWeight: 400 }}>Registros</span>
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>
+                  {a.count} <span style={{ fontSize: '10px', color: '#444', fontWeight: 400 }}>Registros</span>
                 </div>
               </div>
             ))}
@@ -981,8 +1086,8 @@ export default function AnalistasPage() {
                 <Activity size={20} style={{ color: '#4ade80' }} />
               </div>
               <div>
-                <div style={{ fontSize: '15px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px' }}>DINÁMICA DE CRECIMIENTO</div>
-                <div style={{ fontSize: '12px', color: '#555', marginTop: '2px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px' }}>DINÁMICA DE CRECIMIENTO</div>
+                <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>
                   Cumplimiento acumulado vs. Proyección ideal ({formatCurrency(curva.objetivo)})
                 </div>
               </div>
@@ -993,69 +1098,6 @@ export default function AnalistasPage() {
           </div>
         </div>
 
-        {/* Composición de Cartera Circular */}
-        <div style={card}>
-          <div style={{ ...lbl, marginBottom: '20px' }}><PieChart size={14} color="#3b82f6" /> COMPOSICIÓN</div>
-          <div style={{ height: '140px', position: 'relative', marginBottom: '20px' }}>
-            <Doughnut 
-              data={{
-                labels: ['Aperturas', 'Renovaciones'],
-                datasets: [{
-                  data: [kpis.aperturas, kpis.renovaciones],
-                  backgroundColor: ['rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0.1)'],
-                  borderWidth: 0,
-                }]
-              }}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '80%',
-                plugins: { legend: { display: false } }
-              }}
-            />
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>{kpis.aperturas + kpis.renovaciones}</div>
-              <div style={{ fontSize: '8px', color: '#666', fontWeight: 800 }}>TOTAL</div>
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-              <span style={{ color: '#888', fontWeight: 600 }}>APERTURAS</span>
-              <span style={{ color: '#fff', fontWeight: 800 }}>{kpis.aperturas}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '10px' }}>
-              <span style={{ color: '#888', fontWeight: 600 }}>RENOVACIONES</span>
-              <span style={{ color: '#fff', fontWeight: 800 }}>{kpis.renovaciones}</span>
-            </div>
-            
-            {/* Resumen de Gestión Integrado */}
-            <div style={{ ...lbl, marginBottom: '12px' }}><Activity size={14} /> ESTADOS DE CARTERA</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
-              {resumenGestion.map(r => (
-                <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', padding: '2px 0' }}>
-                  <span style={{ color: '#888', fontWeight: 600 }}>{r.label.split(' ')[0]} {r.label.split(' ')[1] || ''}</span>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ color: '#fff', fontWeight: 900, fontSize: '11px' }}>{formatCurrency(r.monto)}</div>
-                    <div style={{ color: '#444', fontSize: '8px', fontWeight: 800 }}>{r.ops} CASOS</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ ...lbl, marginBottom: '12px', marginTop: '12px' }}><ShieldCheck size={14} color="#f59e0b" /> ACUERDOS DE PRECIO</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-                <span style={{ color: '#666' }}>Bajo / Medio</span>
-                <span style={{ color: '#fff' }}>{kpis.acuerdosBajo + kpis.acuerdosMedio}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-                <span style={{ color: '#f59e0b' }}>Premium</span>
-                <span style={{ color: '#fff' }}>{kpis.acuerdosPremium}</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
       {/* ── Histórico 12 meses ── */}
       <div style={{ ...card, marginBottom: '16px' }}>
@@ -1068,20 +1110,15 @@ export default function AnalistasPage() {
         </div>
       </div>
 
-      {/* ── Histórico anual (Google Sheets) ── */}
-      {analista === PDV && pdvData && (
+      {/* ── Histórico anual ── */}
+      {analista === PDV && historicoAnualData.pdv.years.length > 0 && (
         <div style={{ ...card, marginBottom: '16px' }}>
-          <PDVHistorico data={pdvData} />
+          <PDVHistorico data={historicoAnualData.pdv} />
         </div>
       )}
-      {analista === 'Luciana' && lucianaData && (
+      {analista !== PDV && historicoAnualData.analistaSel.secciones.length > 0 && (
         <div style={{ ...card, marginBottom: '16px' }}>
-          <AnalistaHistorico data={lucianaData} />
-        </div>
-      )}
-      {analista === 'Victoria' && victoriaData && (
-        <div style={{ ...card, marginBottom: '16px' }}>
-          <AnalistaHistorico data={victoriaData} />
+          <AnalistaHistorico data={historicoAnualData.analistaSel} nombre={analista} />
         </div>
       )}
 

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Registro } from '@/types';
+import { Registro, HistoricoVenta } from '@/types';
 
 export interface Objetivo {
   id?: string;
@@ -32,6 +32,7 @@ interface DataCtx {
   registros: Registro[];
   objetivos: Objetivo[];
   diasConfig: DiasConfig[];
+  historicoVentas: HistoricoVenta[];
   loading: boolean;
   pendingReminders: number;
   reminderAlert: ReminderAlertData | null;
@@ -40,6 +41,7 @@ interface DataCtx {
   clearReminderAlert: () => void;
   markReminderCompleted: (id: string) => Promise<void>;
   refresh: (silent?: boolean) => void;
+  pushRegistroChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => void;
 }
 
 const DataContext = createContext<DataCtx | null>(null);
@@ -48,11 +50,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [diasConfig, setDiasConfig] = useState<DiasConfig[]>([]);
+  const [historicoVentas, setHistoricoVentas] = useState<HistoricoVenta[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingReminders, setPendingReminders] = useState(0);
   const [reminderAlert, setReminderAlert] = useState<ReminderAlertData | null>(null);
   const initialized = useRef(false);
   const shownIds = useRef(new Set<string>());
+  const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const clearReminderAlert = useCallback(() => {
     setReminderAlert(null);
@@ -86,15 +90,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    const [{ data: regs }, { data: objs }, { data: dias }, { count }] = await Promise.all([
+    const [{ data: regs }, { data: objs }, { data: dias }, { count }, { data: hist }] = await Promise.all([
       supabase.from('registros').select('*').order('fecha', { ascending: false }).limit(2000),
       supabase.from('objetivos').select('*'),
       supabase.from('dias_habiles_config').select('analista, dias_habiles, dias_transcurridos'),
       supabase.from('recordatorios').select('*', { count: 'exact', head: true }).eq('mostrado', false),
+      supabase.from('historico_ventas').select('*'),
     ]);
     if (regs) setRegistros(regs as Registro[]);
     if (objs) setObjetivos(objs as Objetivo[]);
     if (dias) setDiasConfig(dias as DiasConfig[]);
+    if (hist) setHistoricoVentas(hist as HistoricoVenta[]);
     setPendingReminders(count || 0);
     setLoading(false);
   }, []);
@@ -112,17 +118,40 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { refreshRef.current = refresh; }, [refresh]);
   useEffect(() => { checkDueRef.current = checkDueReminders; }, [checkDueReminders]);
 
-  // Suscripciones en tiempo real — array de deps vacío, usa refs
+  // Canal broadcast — actualización inmediata entre usuarios sin depender de RLS
+  const pushRegistroChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => {
+    broadcastChannelRef.current?.send({
+      type: 'broadcast',
+      event: 'registro_change',
+      payload: { type, registro },
+    });
+  }, []);
+
+  useEffect(() => {
+    const bc = supabase
+      .channel('registros-broadcast', { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'registro_change' }, ({ payload }) => {
+        const { type, registro } = payload as { type: string; registro: Registro };
+        if (type === 'INSERT') setRegistros(prev => [registro, ...prev]);
+        else if (type === 'UPDATE') setRegistros(prev => prev.map(r => r.id === registro.id ? registro : r));
+        else if (type === 'DELETE') setRegistros(prev => prev.filter(r => r.id !== registro.id));
+      })
+      .subscribe();
+    broadcastChannelRef.current = bc;
+    return () => { supabase.removeChannel(bc); };
+  }, []);
+
+  // Suscripciones en tiempo real para el resto de tablas
   useEffect(() => {
     const channel = supabase
-      .channel('realtime-all')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'registros' }, () => {
-        refreshRef.current(true);
-      })
+      .channel('realtime-rest')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'objetivos' }, () => {
         refreshRef.current(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'dias_habiles_config' }, () => {
+        refreshRef.current(true);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_ventas' }, () => {
         refreshRef.current(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recordatorios' }, () => {
@@ -133,9 +162,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           .then(({ count }) => setPendingReminders(count || 0));
         checkDueRef.current();
       })
-      .subscribe((status) => {
-        console.log('[Realtime]', status);
-      });
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, []);
@@ -148,7 +175,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [checkDueReminders]);
 
   return (
-    <DataContext.Provider value={{ registros, objetivos, diasConfig, loading, pendingReminders, reminderAlert, setRegistros, setPendingReminders, clearReminderAlert, markReminderCompleted, refresh }}>
+    <DataContext.Provider value={{ registros, objetivos, diasConfig, historicoVentas, loading, pendingReminders, reminderAlert, setRegistros, setPendingReminders, clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange }}>
       {children}
     </DataContext.Provider>
   );

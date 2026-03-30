@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils';
+import { logAudit } from '@/lib/audit';
 import { Recordatorio } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -45,6 +46,7 @@ export default function RecordatoriosPage() {
     setToast({ message, type });
 
   const handleMarcarCompletado = async (id: string) => {
+    const rec = recordatorios.find(r => r.id === id);
     setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: true } : r));
     setPendingReminders(n => Math.max(0, n - 1));
     showToast('Marcado como completado', 'success');
@@ -53,6 +55,8 @@ export default function RecordatoriosPage() {
       setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: false } : r));
       setPendingReminders(n => n + 1);
       showToast('Error al actualizar', 'error');
+    } else {
+      logAudit({ id_registro: rec?.registro_id, analista: rec?.analista, accion: 'Recordatorio completado', campo_modificado: 'Recordatorio', valor_nuevo: `${rec?.nombre} | ${rec?.fecha_hora}` });
     }
   };
 
@@ -68,6 +72,8 @@ export default function RecordatoriosPage() {
       setRecordatorios(prev => [...prev, backup].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora)));
       if (wasPending) setPendingReminders(n => n + 1);
       showToast('Error al eliminar', 'error');
+    } else {
+      logAudit({ id_registro: backup?.registro_id, analista: backup?.analista, accion: 'Eliminación', campo_modificado: 'Recordatorio', valor_anterior: `${backup?.nombre} | ${backup?.fecha_hora}` });
     }
   };
 

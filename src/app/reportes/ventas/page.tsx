@@ -1,15 +1,24 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import React, { useState, useMemo, useCallback } from 'react';
 import { formatCurrency, formatDate, displayAnalista } from '@/lib/utils';
-import { Registro, CONFIG } from '@/types';
+import { CONFIG } from '@/types';
+import { useData } from '@/context/DataContext';
 import { Download, TrendingUp, Users, DollarSign, Hash } from 'lucide-react';
 
 export default function ReporteVentasPage() {
-  const [registros, setRegistros] = useState<Registro[]>([]);
-  const [analistas, setAnalistas] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { registros: todosRegistros, loading } = useData();
+
+  const registros = useMemo(() =>
+    todosRegistros.filter(r =>
+      r.estado?.toLowerCase() === 'venta' || r.estado?.toLowerCase().includes('aprobado cc')
+    ), [todosRegistros]);
+
+  const analistas = useMemo(() => {
+    const set = new Set(registros.map(r => r.analista).filter(Boolean));
+    return Array.from(set) as string[];
+  }, [registros]);
+
   const [filtroAnalista, setFiltroAnalista] = useState('');
   const [filtroMes, setFiltroMes] = useState(() => {
     const now = new Date();
@@ -27,21 +36,6 @@ export default function ReporteVentasPage() {
       meses.push({ key, label: `${CONFIG.MESES_NOMBRES[m]} ${a}` });
     }
     return meses;
-  }, []);
-
-  useEffect(() => {
-    supabase
-      .from('registros')
-      .select('*')
-      .or("estado.eq.venta,estado.ilike.%aprobado cc%")
-      .order('fecha', { ascending: false })
-      .then(({ data }) => {
-        const regs = data || [];
-        setRegistros(regs);
-        const set = new Set(regs.map((r: Registro) => r.analista).filter(Boolean));
-        setAnalistas(Array.from(set) as string[]);
-        setLoading(false);
-      });
   }, []);
 
   const filtered = useMemo(() => {
@@ -91,78 +85,89 @@ export default function ReporteVentasPage() {
 
   const sel: React.CSSProperties = {
     background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)',
-    borderRadius: '10px', color: '#fff', fontSize: '13px',
-    padding: '10px 32px 10px 14px', outline: 'none',
+    borderRadius: '10px', color: '#fff', fontSize: '12px',
+    padding: '8px 32px 8px 14px', outline: 'none',
     fontFamily: "'Outfit', sans-serif", cursor: 'pointer',
     WebkitAppearance: 'none', appearance: 'none',
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
+    colorScheme: 'dark', // Ensures native dropdown follows dark theme
   };
 
   return (
     <div className="dashboard-container">
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>Reporte de Ventas</h1>
-          <p style={{ color: '#444', fontSize: '13px', marginTop: '2px' }}>
-            {loading ? 'Cargando...' : `${totales.operaciones} operaciones · ${formatCurrency(totales.monto)}`}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', letterSpacing: '-0.3px' }}>Reporte de Ventas</h1>
+          <p style={{ color: '#444', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <TrendingUp size={14} /> {loading ? 'Cargando indicadores...' : `${totales.operaciones} operaciones registradas · ${formatCurrency(totales.monto)} total`}
           </p>
         </div>
         <button
           onClick={exportarCSV}
           disabled={filtered.length === 0}
           style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
-            background: filtered.length > 0 ? '#f7e479' : 'rgba(255,255,255,0.04)',
-            border: 'none', color: filtered.length > 0 ? '#000' : '#444',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700,
+            background: filtered.length > 0 ? '#fff' : 'rgba(255,255,255,0.02)',
+            border: 'none', color: filtered.length > 0 ? '#000' : '#333',
             cursor: filtered.length > 0 ? 'pointer' : 'default',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
           }}
         >
-          <Download size={14} /> Exportar CSV
+          <Download size={14} /> Exportar Datos
         </button>
       </div>
 
       {/* ── Filtros + KPIs ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '12px', marginBottom: '16px', alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
 
         {/* Filtros */}
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px', justifyContent: 'center' }}>
-          <div style={{ fontSize: '10px', color: '#333', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>FILTROS</div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '10px', color: '#444', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mes</label>
-              <select style={sel} value={filtroMes} onChange={e => setFiltroMes(e.target.value)}>
-                {mesesDisponibles.map(m => (
-                  <option key={m.key} value={m.key}>{m.label}</option>
-                ))}
-              </select>
+        <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'center' }}>
+          <div style={{ fontSize: '11px', color: '#333', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px' }}>CRITERIOS</div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            
+            {/* Custom Selective: Periodo */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
+              <label style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>Periodo</label>
+              <CustomSelector 
+                value={filtroMes} 
+                options={mesesDisponibles.map(m => ({ value: m.key, label: m.label }))}
+                onChange={setFiltroMes}
+                width="160px"
+              />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '10px', color: '#444', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista</label>
-              <select style={sel} value={filtroAnalista} onChange={e => setFiltroAnalista(e.target.value)}>
-                <option value="">Todos</option>
-                {analistas.map(a => <option key={a} value={a}>{displayAnalista(a)}</option>)}
-              </select>
+
+            {/* Custom Selective: Analista */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>Analista</label>
+              <CustomSelector 
+                value={filtroAnalista} 
+                options={[{ value: '', label: 'TODOS' }, ...analistas.map(a => ({ value: a, label: displayAnalista(a) }))]}
+                onChange={setFiltroAnalista}
+                width="160px"
+              />
             </div>
+
           </div>
         </div>
 
         {/* KPIs */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 240px))', gap: '12px', justifyContent: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
           {[
             { icon: <Hash size={14} />, label: 'OPERACIONES', value: totales.operaciones.toString(), sub: 'ventas cerradas' },
             { icon: <DollarSign size={14} />, label: 'TOTAL VENDIDO', value: formatCurrency(totales.monto), sub: 'monto acumulado' },
-            { icon: <TrendingUp size={14} />, label: 'TICKET PROMEDIO', value: totales.ticketProm > 0 ? formatCurrency(totales.ticketProm) : '—', sub: 'por operation' },
+            { icon: <TrendingUp size={14} />, label: 'TICKET PROM.', value: totales.ticketProm > 0 ? formatCurrency(totales.ticketProm) : '—', sub: 'por operation' },
           ].map(k => (
-            <div key={k.label} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#444', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+            <div key={k.label} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#333', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
                 {k.icon}{k.label}
               </div>
-              <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{k.value}</div>
-              <div style={{ fontSize: '10px', color: '#222', marginTop: '8px', fontWeight: 700 }}>{k.sub}</div>
+              <div style={{ fontSize: '22px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{k.value}</div>
+              <div style={{ fontSize: '10px', color: '#222', marginTop: '10px', fontWeight: 700, textTransform: 'uppercase' }}>{k.sub}</div>
             </div>
           ))}
         </div>
@@ -170,22 +175,22 @@ export default function ReporteVentasPage() {
 
       {/* ── Por Analista ── */}
       {porAnalista.length > 0 && (
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '16px 20px', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#444', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '14px' }}>
-            <Users size={12} /> DESGLOSE POR ANALISTA
+        <div className="data-card" style={{ padding: '24px 32px', marginBottom: '24px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '24px' }}>
+            <Users size={14} /> DESGLOSE POR ANALISTA
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {porAnalista.map(a => (
               <div key={a.nombre}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>{displayAnalista(a.nombre)}</span>
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '10px', color: '#333', fontWeight: 800 }}>{a.ops} OPS</span>
-                    <span style={{ fontSize: '15px', fontWeight: 900, color: '#fff' }}>{formatCurrency(a.monto)}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#888' }}>{displayAnalista(a.nombre)}</span>
+                  <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: '#333', fontWeight: 900 }}>{a.ops} OPS</span>
+                    <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff' }}>{formatCurrency(a.monto)}</span>
                   </div>
                 </div>
-                <div style={{ height: '3px', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(a.monto / maxMonto) * 100}%`, background: 'rgba(255,255,255,0.1)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                <div style={{ height: '4px', background: 'rgba(255,255,255,0.01)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(a.monto / maxMonto) * 100}%`, background: 'rgba(255,255,255,0.2)', borderRadius: '4px', transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }} />
                 </div>
               </div>
             ))}
@@ -194,48 +199,50 @@ export default function ReporteVentasPage() {
       )}
 
       {/* ── Tabla detalle ── */}
-      <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', overflow: 'hidden' }}>
+      <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '16px', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '64px' }}>
             <div className="spinner" style={{ width: 32, height: 32 }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#333', fontSize: '14px' }}>
-            Sin ventas para este período
+          <div style={{ padding: '64px', textAlign: 'center', color: '#222', fontSize: '14px', fontWeight: 600 }}>
+            No se encontraron registros financieros para este periodo
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  {['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Puntaje'].map(h => (
-                    <th key={h} style={{ padding: '11px 16px', textAlign: 'center', color: '#333', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.8px', whiteSpace: 'nowrap' }}>{h}</th>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  {['Firma', 'CUIL', 'Gestión', 'Calificación', 'Inversión', 'Fecha', 'Score'].map(h => (
+                    <th key={h} style={{ padding: '16px', textAlign: 'center', color: '#333', fontWeight: 800, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((r, i) => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                    <td style={{ padding: '10px 16px', color: '#e0e0e0', fontWeight: 500, textAlign: 'center' }}>{r.nombre}</td>
-                    <td style={{ padding: '10px 16px', color: '#444', fontFamily: 'monospace', fontSize: '12px', textAlign: 'center' }}>{r.cuil}</td>
-                    <td style={{ padding: '10px 16px', color: '#888', textAlign: 'center' }}>{displayAnalista(r.analista)}</td>
-                    <td style={{ padding: '10px 16px', textAlign: 'center' }}>
+                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.005)' }}>
+                    <td style={{ padding: '14px 16px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>{r.nombre}</td>
+                    <td style={{ padding: '14px 16px', color: '#444', fontFamily: 'monospace', fontSize: '11px', textAlign: 'center', letterSpacing: '0.5px' }}>{r.cuil}</td>
+                    <td style={{ padding: '14px 16px', color: '#666', textAlign: 'center', fontWeight: 700, fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
+                    <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                       <span style={{
-                        padding: '3px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 600,
-                        background: r.estado?.toLowerCase().includes('aprobado') ? 'rgba(147,112,219,0.15)' : 'rgba(74,222,128,0.1)',
-                        color: r.estado?.toLowerCase().includes('aprobado') ? '#9b72db' : '#4ade80',
+                        padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px',
+                        background: r.estado?.toLowerCase().includes('venta') ? 'rgba(74,222,128,0.08)' : 'rgba(167,139,250,0.08)',
+                        color: r.estado?.toLowerCase().includes('venta') ? '#4ade80cc' : '#a78bfacc',
+                        border: '1px solid rgba(255,255,255,0.02)'
                       }}>
                         {r.estado}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 16px', color: '#fff', fontWeight: 700, textAlign: 'center' }}>{formatCurrency(r.monto)}</td>
-                    <td style={{ padding: '10px 16px', color: '#555', textAlign: 'center' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
-                    <td style={{ padding: '10px 16px', color: '#e0e0e0', textAlign: 'center' }}>
+                    <td style={{ padding: '14px 16px', color: '#fff', fontWeight: 800, textAlign: 'center' }}>{formatCurrency(r.monto)}</td>
+                    <td style={{ padding: '14px 16px', color: '#444', textAlign: 'center', fontSize: '13px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
+                    <td style={{ padding: '14px 16px', color: '#fff', textAlign: 'center', fontWeight: 800 }}>
                       {r.puntaje ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                           <div style={{ 
-                            width: 6, height: 6, borderRadius: '50%', 
-                            background: r.puntaje >= 700 ? '#3b82f6' : r.puntaje >= 600 ? '#4ade80' : r.puntaje >= 500 ? '#fbbf24' : '#ef4444' 
+                            width: 5, height: 5, borderRadius: '50%', 
+                            background: r.puntaje >= 700 ? '#60a5facc' : r.puntaje >= 500 ? '#fbbf24cc' : '#ef4444cc',
+                            boxShadow: `0 0 8px ${r.puntaje >= 700 ? '#60a5fa22' : r.puntaje >= 500 ? '#fbbf2422' : '#ef444422'}`
                           }} />
                           {r.puntaje}
                         </div>
@@ -249,6 +256,62 @@ export default function ReporteVentasPage() {
         )}
       </div>
 
+    </div>
+  );
+}
+
+function CustomSelector({ value, options, onChange, width }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; width: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selected = options.find(o => o.value === value) || options[0];
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handle = () => setIsOpen(false);
+    window.addEventListener('click', handle);
+    return () => window.removeEventListener('click', handle);
+  }, [isOpen]);
+
+  return (
+    <div style={{ position: 'relative', width }} onClick={e => e.stopPropagation()}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px',
+          padding: '8px 12px', color: '#fff', fontSize: '12px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '34px'
+        }}
+      >
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.label}</span>
+        <div style={{ color: '#444', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, width: '100%', marginTop: '4px',
+          background: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+          zIndex: 100, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.8)'
+        }}>
+          <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+            {options.map(opt => (
+              <div 
+                key={opt.value}
+                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                style={{
+                  padding: '10px 12px', fontSize: '12px', color: value === opt.value ? '#fff' : '#666',
+                  background: value === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent',
+                  cursor: 'pointer', transition: 'all 0.1s'
+                }}
+                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                onMouseOut={e => e.currentTarget.style.background = value === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent'}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,10 +4,11 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, sanitizarCuil, displayAnalista } from '@/lib/utils';
 import { Registro } from '@/types';
-import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Filter, Download, ChevronUp, ChevronDown, FileText, ChevronDown as CD } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Filter, Download, ChevronUp, ChevronDown, FileText, TrendingUp, Activity, DollarSign, Hash, ChevronDown as CD } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
+import { logAudit } from '@/lib/audit';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,14 @@ const initialForm: Partial<Registro> = {
 };
 
 const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
+
+const FIELD_LABELS: Record<string, string> = {
+  nombre: 'Nombre', cuil: 'CUIL', analista: 'Analista',
+  estado: 'Estado', monto: 'Monto', fecha: 'Fecha',
+  puntaje: 'Score', es_re: 'Es RE', comentarios: 'Comentarios',
+  tipo_cliente: 'Tipo cliente', acuerdo_precios: 'Acuerdo precios',
+  fecha_score: 'Fecha score',
+};
 
 // Status label map (monochromatic — no per-state colors)
 const STATUS_LABEL: Record<string, string> = {
@@ -40,23 +49,36 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (!form.nombre?.trim()) errs.nombre = 'Requerido';
   else if (form.nombre.trim().length < 2) errs.nombre = 'Mín. 2 caracteres';
   else if (!REGEX_NOMBRE.test(form.nombre.trim())) errs.nombre = 'Solo letras';
-  if (form.cuil?.trim() && form.cuil.length !== 11) errs.cuil = '11 dígitos';
+  
+  if (!form.cuil?.trim()) errs.cuil = 'Requerido';
+  else if (form.cuil.length !== 11) errs.cuil = '11 dígitos';
+  
   if (!form.analista) errs.analista = 'Requerido';
-  if (!form.fecha) errs.fecha = 'Requerido';
-  if (!form.monto || Number(form.monto) <= 0) errs.monto = 'Debe ser > 0';
+  if (!form.estado) errs.estado = 'Requerido';
+  const requiereTipoYAcuerdo = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
+  if (requiereTipoYAcuerdo && !form.tipo_cliente) errs.tipo_cliente = 'Requerido';
+  if (requiereTipoYAcuerdo && !form.acuerdo_precios) errs.acuerdo_precios = 'Requerido';
+  
   return errs;
 }
 
 // ── Field wrapper ─────────────────────────────────────────────────────────────
 
-const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
-  <div className="form-group">
-    <label className="form-label">
-      {label}{error && <span style={{ color: 'var(--rojo)', fontWeight: 400, marginLeft: 6 }}>— {error}</span>}
-    </label>
-    {children}
-  </div>
-);
+const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => {
+  const isRequired = label.includes('*');
+  const cleanLabel = label.replace('*', '').trim();
+  
+  return (
+    <div className="form-group">
+      <label className="form-label">
+        {cleanLabel}
+        {isRequired && <span style={{ color: 'var(--rojo)', marginLeft: 4 }}>*</span>}
+        {error && <span style={{ color: 'var(--rojo)', fontWeight: 400, marginLeft: 6 }}>— {error}</span>}
+      </label>
+      {children}
+    </div>
+  );
+};
 
 // ── Modal: Registro ───────────────────────────────────────────────────────────
 
@@ -109,6 +131,19 @@ const RegistroModal = memo(function RegistroModal({
     if (editingId) {
       const { error } = await supabase.from('registros').update(payload).eq('id', editingId);
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
+      // Auditar todos los cambios en una sola entrada
+      const AUDIT_FIELDS = ['nombre','cuil','analista','estado','monto','fecha','fecha_score','puntaje','es_re','comentarios','tipo_cliente','acuerdo_precios'] as const;
+      const cambios = AUDIT_FIELDS.filter(field => String((initialData as Record<string,unknown>)[field] ?? '') !== String((payload as Record<string,unknown>)[field] ?? ''));
+      if (cambios.length > 0) {
+        logAudit({
+          id_registro:      editingId,
+          analista:         String(payload.analista ?? ''),
+          accion:           'Modificación',
+          campo_modificado: cambios.map(f => FIELD_LABELS[f] ?? f).join(', '),
+          valor_anterior:   cambios.map(f => String((initialData as Record<string,unknown>)[f] ?? '—')).join(' | '),
+          valor_nuevo:      cambios.map(f => String((payload    as Record<string,unknown>)[f] ?? '—')).join(' | '),
+        });
+      }
       const savedReg: Registro = { ...form as Registro, ...payload, id: editingId };
       onClose();
       if (agendarRecordatorio && onSavedWithRecordatorio) onSavedWithRecordatorio(savedReg);
@@ -116,6 +151,7 @@ const RegistroModal = memo(function RegistroModal({
     } else {
       const { data: newReg, error } = await supabase.from('registros').insert(payload).select().single();
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
+      logAudit({ id_registro: (newReg as Registro).id, analista: String(payload.analista ?? ''), accion: 'Creación', campo_modificado: 'Nuevo registro', valor_nuevo: `${payload.nombre} | ${payload.estado} | $${payload.monto}` });
       onClose();
       if (agendarRecordatorio && onSavedWithRecordatorio && newReg) onSavedWithRecordatorio(newReg as Registro);
       else onSaved(newReg as Registro);
@@ -134,7 +170,7 @@ const RegistroModal = memo(function RegistroModal({
         </div>
         <div className="modal-body">
           <div className="form-row">
-            <Field label="CUIL" error={errors.cuil}>
+            <Field label="CUIL *" error={errors.cuil}>
               <input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" />
             </Field>
             <Field label="Nombre *" error={errors.nombre}>
@@ -147,17 +183,17 @@ const RegistroModal = memo(function RegistroModal({
                 {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </Field>
-            <Field label="Estado">
+            <Field label="Estado *">
               <select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>
                 {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
               </select>
             </Field>
           </div>
           <div className="form-row">
-            <Field label="Monto *" error={errors.monto}>
+            <Field label="Monto" error={errors.monto}>
               <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
             </Field>
-            <Field label="Fecha *" error={errors.fecha}>
+            <Field label="Fecha" error={errors.fecha}>
               <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} />
             </Field>
           </div>
@@ -170,14 +206,14 @@ const RegistroModal = memo(function RegistroModal({
             </Field>
           </div>
           <div className="form-row">
-            <Field label="Tipo de cliente">
+            <Field label={`Tipo de cliente${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.tipo_cliente}>
               <select className="form-select" value={form.tipo_cliente || ''} onChange={e => set('tipo_cliente', e.target.value)}>
                 <option value="">— Sin especificar —</option>
                 <option value="Apertura">Apertura</option>
                 <option value="Renovacion">Renovación</option>
               </select>
             </Field>
-            <Field label="Acuerdo de precios">
+            <Field label={`Acuerdo de precios${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.acuerdo_precios}>
               <select className="form-select" value={form.acuerdo_precios || ''} onChange={e => set('acuerdo_precios', e.target.value)}>
                 <option value="">— Sin especificar —</option>
                 <option value="Riesgo Bajo">Riesgo Bajo</option>
@@ -202,7 +238,9 @@ const RegistroModal = memo(function RegistroModal({
               <span className="toggle-label"><AlertTriangle size={14} />Agendar Recordatorio</span>
             </label>
           </div>
-          <p className="modal-required-legend">* Campos obligatorios</p>
+          <p className="modal-required-legend" style={{ color: 'var(--rojo)' }}>
+            <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
+          </p>
         </div>
         <div className="modal-footer">
           {errors._ && <span style={{ color: 'var(--rojo)', fontSize: '13px', flex: 1 }}>{errors._}</span>}
@@ -242,6 +280,7 @@ const RecordatorioModal = memo(function RecordatorioModal({
       fecha_hora: `${recForm.fecha}T${recForm.hora}:00-03:00`,
       creado_por: registro.analista || 'Sistema', mostrado: false,
     });
+    logAudit({ id_registro: registro.id, analista: registro.analista, accion: 'Recordatorio creado', campo_modificado: 'Recordatorio', valor_nuevo: `${registro.nombre} | ${recForm.fecha} ${recForm.hora}${recForm.nota ? ' | ' + recForm.nota : ''}` });
     setPendingReminders(n => n + 1);
     setSaving(false); onClose(true);
   };
@@ -256,14 +295,18 @@ const RecordatorioModal = memo(function RecordatorioModal({
         <div className="modal-body">
           <p style={{ fontSize: '13px', color: '#555', marginBottom: '20px' }}>{registro.nombre}</p>
           <div className="form-row">
-            <Field label="Fecha"><input className="form-input" type="date" value={recForm.fecha} onChange={e => setRecForm(p => ({ ...p, fecha: e.target.value }))} /></Field>
-            <Field label="Hora"><input className="form-input" type="time" value={recForm.hora} onChange={e => setRecForm(p => ({ ...p, hora: e.target.value }))} /></Field>
+            <Field label="Fecha *"><input className="form-input" type="date" value={recForm.fecha} onChange={e => setRecForm(p => ({ ...p, fecha: e.target.value }))} /></Field>
+            <Field label="Hora *"><input className="form-input" type="time" value={recForm.hora} onChange={e => setRecForm(p => ({ ...p, hora: e.target.value }))} /></Field>
           </div>
           <Field label="Nota"><textarea className="form-textarea" value={recForm.nota} onChange={e => setRecForm(p => ({ ...p, nota: e.target.value }))} /></Field>
+          
+          <p className="modal-required-legend" style={{ color: 'var(--rojo)' }}>
+            <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
+          </p>
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={() => onClose(false)}>Cancelar</button>
-          <button className="btn-primary" onClick={save} disabled={saving}>Agendar</button>
+          <button className="btn-primary" onClick={save} disabled={saving || !recForm.fecha || !recForm.hora}>Agendar</button>
         </div>
       </div>
     </div>
@@ -291,7 +334,7 @@ const DeleteModal = memo(function DeleteModal({
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onCancel}>Cancelar</button>
-          <button className="btn-primary" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }} onClick={onConfirm}>
+          <button className="btn-danger" onClick={onConfirm}>
             <Trash2 size={14} /> Eliminar
           </button>
         </div>
@@ -313,7 +356,7 @@ const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
       fontWeight: 600,
       letterSpacing: '0.2px',
       background: 'rgba(255,255,255,0.04)',
-      color: 'rgba(255,255,255,0.55)',
+      color: '#aaa',
       border: '1px solid rgba(255,255,255,0.07)',
       whiteSpace: 'nowrap',
     }}>
@@ -326,7 +369,7 @@ const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
 
 export default function RegistrosPage() {
   const { isAdmin }  = useAuth();
-  const { registros, setRegistros, loading, refresh } = useData();
+  const { registros, setRegistros, loading, refresh, pushRegistroChange } = useData();
   const {
     filters, setFilter, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
@@ -343,6 +386,23 @@ export default function RegistrosPage() {
   const [showAdvanced,        setShowAdvanced]        = useState(false);
 
   const fetchRegistros = useCallback((silent = false) => { refresh(silent); }, [refresh]);
+
+  // ── Animaciones ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes pulseGlow {
+        0% { opacity: 0.4; transform: scale(0.95); box-shadow: 0 0 5px currentColor; }
+        50% { opacity: 1; transform: scale(1.05); box-shadow: 0 0 12px currentColor; }
+        100% { opacity: 0.4; transform: scale(0.95); box-shadow: 0 0 5px currentColor; }
+      }
+      .score-dot-pulse {
+        animation: pulseGlow 2.5s infinite ease-in-out;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -416,12 +476,14 @@ export default function RegistrosPage() {
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
-    const id = deleteTarget.id;
+    const reg = deleteTarget;
     setDeleteTarget(null);
-    await supabase.from('registros').delete().eq('id', id);
-    setRegistros(prev => prev.filter(r => r.id !== id));
+    await supabase.from('registros').delete().eq('id', reg.id);
+    logAudit({ id_registro: reg.id, analista: reg.analista, accion: 'Eliminación', campo_modificado: 'Registro', valor_anterior: `${reg.nombre} | ${reg.estado} | $${reg.monto}` });
+    setRegistros(prev => prev.filter(r => r.id !== reg.id));
+    pushRegistroChange('DELETE', reg);
     showToast('Registro eliminado', 'success');
-  }, [deleteTarget, showToast, setRegistros]);
+  }, [deleteTarget, pushRegistroChange, showToast, setRegistros]);
 
   const applyOptimistic = useCallback((reg: Registro) => {
     setRegistros(prev => {
@@ -432,17 +494,20 @@ export default function RegistrosPage() {
   }, [setRegistros]);
 
   const handleSaved = useCallback((reg: Registro) => {
+    const isNew = !registros.find(r => r.id === reg.id);
     applyOptimistic(reg);
-    showToast(registros.some(r => r.id === reg.id) ? 'Registro actualizado' : 'Registro creado', 'success');
+    pushRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
     fetchRegistros(true);
-  }, [applyOptimistic, registros, fetchRegistros, showToast]);
+  }, [applyOptimistic, fetchRegistros, pushRegistroChange, registros]);
 
   const handleSavedWithRecordatorio = useCallback((reg: Registro) => {
+    const isNew = !registros.find(r => r.id === reg.id);
     applyOptimistic(reg);
+    pushRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
     showToast('Guardado', 'success');
     fetchRegistros(true);
     setRecordatorioTarget(reg);
-  }, [applyOptimistic, fetchRegistros, showToast]);
+  }, [applyOptimistic, fetchRegistros, pushRegistroChange, registros, showToast]);
 
   const handleRecordatorioClose = useCallback((saved: boolean) => {
     setRecordatorioTarget(null);
@@ -475,89 +540,129 @@ export default function RegistrosPage() {
 
       {/* Toolbar */}
       <div style={{
-        background: '#000', border: '1px solid var(--border-color)',
-        borderRadius: 6, padding: '12px 16px', marginBottom: 12,
+        background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)',
+        borderRadius: '12px', padding: '16px 20px', marginBottom: '16px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
       }}>
         {/* Main filters row */}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {/* Nuevo */}
-          <button className="btn-primary" onClick={openNew} style={{ height: 34, fontSize: 12, flexShrink: 0 }}>
-            <Plus size={14} /> Nuevo
+          <button 
+            className="btn-primary" 
+            onClick={openNew} 
+            style={{ 
+              height: 38, fontSize: '12px', fontWeight: 800, flexShrink: 0,
+              background: '#fff', color: '#000', border: 'none', padding: '0 20px',
+              borderRadius: '9px', display: 'flex', alignItems: 'center', gap: '8px'
+            }}
+          >
+            <Plus size={15} strokeWidth={3} /> NUEVO
           </button>
 
           {/* Search */}
-          <div className="search-wrapper" style={{ flex: 1, maxWidth: 280 }}>
-            <Search className="search-icon" size={14} />
+          <div className="search-wrapper" style={{ flex: 1, maxWidth: 350, position: 'relative' }}>
+            <Search 
+              style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#444' }} 
+              size={15} 
+            />
             <input
-              type="text" className="search-input"
-              placeholder="Buscar nombre, CUIL, analista…"
+              type="text" 
+              className="search-input"
+              placeholder="Buscar registros..."
               value={filters.search}
               onChange={e => setFilter('search', e.target.value)}
-              style={{ height: 34, fontSize: 13 }}
+              style={{ 
+                height: 42, fontSize: '15px', paddingLeft: 42, background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', color: '#fff', width: '100%'
+              }}
             />
           </div>
 
           {/* Estado */}
-          <select
-            className="form-select"
-            value={filters.estado}
-            onChange={e => setFilter('estado', e.target.value)}
-            style={{ width: 150, height: 34, fontSize: 12 }}
-          >
-            <option value="">Todos los estados</option>
-            {ESTADOS.map(st => <option key={st} value={st}>{STATUS_LABEL[st] ?? st}</option>)}
-          </select>
+          <div style={{ position: 'relative' }}>
+            <select
+              className="form-select"
+              value={filters.estado}
+              onChange={e => setFilter('estado', e.target.value)}
+              style={{ 
+                width: 180, height: 42, fontSize: '14px', fontWeight: 600,
+                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: '10px', colorScheme: 'dark', color: '#888'
+              }}
+            >
+              <option value="">Estados</option>
+              {ESTADOS.map(st => <option key={st} value={st}>{STATUS_LABEL[st] ?? st}</option>)}
+            </select>
+          </div>
 
           {/* Analista */}
           <select
             className="form-select"
             value={filters.analista}
             onChange={e => setFilter('analista', e.target.value)}
-            style={{ width: 130, height: 34, fontSize: 12 }}
+            style={{ 
+              width: 150, height: 42, fontSize: '14px', fontWeight: 600,
+              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '10px', colorScheme: 'dark', color: '#888'
+            }}
           >
-            <option value="">Todos</option>
+            <option value="">Analistas</option>
             {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
           </select>
 
           {/* Advanced toggle */}
           <button
             onClick={() => setShowAdvanced(p => !p)}
-            className="btn-secondary"
-            style={{ height: 34, fontSize: 12, borderColor: showAdvanced ? 'rgba(255,255,255,0.3)' : undefined }}
+            style={{ 
+              height: 42, padding: '0 20px', borderRadius: '10px', fontSize: '13px', fontWeight: 700,
+              background: showAdvanced ? '#fff' : 'rgba(255,255,255,0.02)',
+              color: showAdvanced ? '#000' : '#444', 
+              border: '1px solid rgba(255,255,255,0.05)',
+              display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: '0.2s'
+            }}
           >
-            <Filter size={13} />
-            Filtros
-            {showAdvanced ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            <Filter size={14} /> Filtros
+            {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
           {/* Clear filters */}
           {hayFiltros && (
-            <button onClick={limpiarFiltros} className="btn-icon" style={{ color: '#f87171', width: 34, height: 34 }} title="Limpiar filtros">
-              <X size={15} />
+            <button 
+              onClick={limpiarFiltros} 
+              style={{ 
+                width: 42, height: 42, borderRadius: '10px', background: 'rgba(248,113,113,0.05)',
+                border: '1px solid rgba(248,113,113,0.1)', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+              }} 
+              title="Limpiar filtros"
+            >
+              <X size={18} />
             </button>
           )}
 
-          {/* Pagination — pushed right */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="btn-secondary" onClick={exportarCSV} style={{ height: 32, fontSize: 11, padding: '0 10px' }}>
-              <Download size={12} /> Exportar
+          {/* Export & Pagination — pushed right */}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button 
+              onClick={exportarCSV} 
+              style={{ 
+                height: 38, padding: '0 16px', fontSize: '12px', fontWeight: 800,
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '8px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+              }}
+            >
+              <Download size={14} /> EXPORTAR
             </button>
-            <span style={{ fontSize: 12, color: '#444', fontWeight: 600, whiteSpace: 'nowrap' }}>
-              {filteredRegistros.length === 0 ? '—' : `${rangeStart}–${rangeEnd} de ${filteredRegistros.length}`}
-            </span>
-            <div style={{ display: 'flex', gap: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="btn-icon"
-                style={{ width: 28, height: 28 }}
-              ><ChevronLeft size={15} /></button>
+                style={{ width: 34, height: 34, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'transparent', color: currentPage === 1 ? '#222' : '#666', cursor: 'pointer' }}
+              ><ChevronLeft size={16} /></button>
+              <span style={{ fontSize: '13px', color: '#333', fontWeight: 800, letterSpacing: '0.5px' }}>{currentPage} / {totalPages}</span>
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage >= totalPages}
-                className="btn-icon"
-                style={{ width: 28, height: 28 }}
-              ><ChevronRight size={15} /></button>
+                style={{ width: 34, height: 34, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'transparent', color: currentPage >= totalPages ? '#222' : '#666', cursor: 'pointer' }}
+              ><ChevronRight size={16} /></button>
             </div>
           </div>
         </div>
@@ -565,33 +670,42 @@ export default function RegistrosPage() {
         {/* Advanced filters */}
         {showAdvanced && (
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10,
-            marginTop: 12, paddingTop: 12,
-            borderTop: '1px solid rgba(255,255,255,0.05)',
+            display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px',
+            marginTop: '12px', paddingTop: '12px',
+            borderTop: '1px solid rgba(255,255,255,0.03)',
           }}>
             {[
-              { label: 'Desde',     type: 'date',   key: 'fechaDesde', placeholder: '' },
-              { label: 'Hasta',     type: 'date',   key: 'fechaHasta', placeholder: '' },
+              { label: 'Desde',     type: 'date',   key: 'fechaDesde' },
+              { label: 'Hasta',     type: 'date',   key: 'fechaHasta' },
               { label: 'Monto mín', type: 'number', key: 'montoMin',   placeholder: '$' },
               { label: 'Monto máx', type: 'number', key: 'montoMax',   placeholder: '$' },
               { label: 'Score mín', type: 'number', key: 'scoreMin',   placeholder: '0' },
               { label: 'Score máx', type: 'number', key: 'scoreMax',   placeholder: '999' },
             ].map(f => (
-              <div key={f.key} className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ fontSize: 10 }}>{f.label}</label>
+              <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '10px', color: '#333', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</label>
                 <input
                   type={f.type}
-                  className="form-input"
                   placeholder={f.placeholder}
                   value={(filters as any)[f.key]}
                   onChange={e => setFilter(f.key as any, e.target.value)}
-                  style={{ height: 32, fontSize: 12 }}
+                  style={{ 
+                    height: 34, fontSize: '13px', padding: '0 12px', background: 'rgba(255,255,255,0.01)',
+                    border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', color: '#fff', width: '100%'
+                  }}
                 />
               </div>
             ))}
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Tipo</label>
-              <select className="form-select" value={filters.esRe} onChange={e => setFilter('esRe', e.target.value)} style={{ height: 32, fontSize: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '10px', color: '#333', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Tipo</label>
+              <select 
+                value={filters.esRe} 
+                onChange={e => setFilter('esRe', e.target.value)} 
+                style={{ 
+                  height: 34, fontSize: '13px', padding: '0 10px', background: 'rgba(255,255,255,0.01)',
+                  border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', color: '#fff', colorScheme: 'dark'
+                }}
+              >
                 <option value="">Todos</option>
                 <option value="si">Solo RE</option>
                 <option value="no">Sin RE</option>
@@ -603,141 +717,147 @@ export default function RegistrosPage() {
 
       {/* Table */}
       <div style={{
-        background: '#000', border: '1px solid var(--border-color)',
-        borderRadius: 6, overflow: 'hidden',
+        background: '#000', border: '1px solid rgba(255,255,255,0.03)',
+        borderRadius: '16px', overflow: 'hidden',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
       }}>
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 280, gap: 16 }}>
-            <div className="spinner" style={{ width: 28, height: 28 }} />
-            <span style={{ fontSize: 12, color: '#444' }}>Cargando registros…</span>
-          </div>
-        ) : filteredRegistros.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 240, gap: 10 }}>
-            <span style={{ fontSize: 28 }}>—</span>
-            <p style={{ fontSize: 13, color: '#444' }}>No hay registros que coincidan</p>
+        {filteredRegistros.length === 0 && !loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12 }}>
+            <span style={{ fontSize: 40, color: '#111' }}>—</span>
+            <p style={{ fontSize: 16, color: '#444', fontWeight: 600 }}>No se encontraron registros coincidentes</p>
             {hayFiltros && (
-              <button onClick={limpiarFiltros} className="btn-secondary" style={{ height: 32, fontSize: 12, marginTop: 4 }}>
-                <X size={12} /> Limpiar filtros
+              <button onClick={limpiarFiltros} style={{ background: 'transparent', border: '1px solid #222', color: '#666', padding: '10px 20px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', marginTop: '12px' }}>
+                <X size={14} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> LIMPIAR FILTROS
               </button>
             )}
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Cliente', 'Analista', 'Fecha', 'Score', 'Monto', 'Estado', 'Tipo', 'Acuerdo', ''].map((h, i) => (
-                  <th key={i} style={{
-                    padding: '10px 16px',
-                    fontSize: 10, fontWeight: 700,
-                    color: '#444',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.6px',
-                    textAlign: i === 0 ? 'left' : 'center',
-                    whiteSpace: 'nowrap',
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedRegistros.map((reg) => {
-                return (
-                  <tr
-                    key={reg.id}
-                    style={{
-                      borderBottom: '1px solid rgba(255,255,255,0.03)',
-                      transition: 'background 0.1s',
-                      cursor: 'default',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {/* Cliente */}
-                    <td style={{ padding: '12px 16px', minWidth: 180, textAlign: 'left' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{reg.nombre}</span>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.005)' }}>
+                  {['Cliente / CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
+                    <th key={i} style={{
+                      padding: '20px 24px',
+                      fontSize: 11, fontWeight: 900,
+                      color: '#222',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1.2px',
+                      textAlign: (i === 0) ? 'left' : 'center',
+                      whiteSpace: 'nowrap',
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedRegistros.map((reg) => {
+                  return (
+                    <tr
+                      key={reg.id}
+                      style={{
+                        borderBottom: '1px solid rgba(255,255,255,0.02)',
+                        transition: 'all 0.2s ease',
+                        cursor: 'default',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.012)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      {/* Cliente */}
+                      <td style={{ padding: '18px 24px', minWidth: 220, textAlign: 'left' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>{reg.nombre}</span>
                             {reg.es_re && (
-                              <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(0,120,212,0.15)', color: '#60a5fa', border: '1px solid rgba(0,120,212,0.3)', letterSpacing: '0.3px' }}>RE</span>
+                              <span style={{ 
+                                fontSize: '9px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px', 
+                                background: '#333', color: '#fff', border: '1px solid #444', letterSpacing: '0.5px' 
+                              }}>RE</span>
                             )}
+                          {reg.cuil && <div style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
+                        </div>
+                        </div>
+                      </td>
+
+                      {/* Analista */}
+                      <td style={{ padding: '18px 24px', fontSize: '15px', color: '#888', fontWeight: 600, textAlign: 'center' }}>
+                        {displayAnalista(reg.analista)}
+                      </td>
+
+                      {/* Fecha */}
+                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '14px', color: '#fff', fontWeight: 600 }}>{formatDate(reg.fecha)}</div>
+                      </td>
+
+                      {/* Score */}
+                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+                        {reg.puntaje ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <div 
+                              className="score-dot-pulse"
+                              style={{ 
+                                width: 6, height: 6, borderRadius: '50%', 
+                                background: reg.puntaje >= 700 ? '#60a5facc' : reg.puntaje >= 500 ? '#fbbf24cc' : '#ef4444cc',
+                                boxShadow: `0 0 10px ${reg.puntaje >= 700 ? '#60a5fa33' : reg.puntaje >= 500 ? '#fbbf2433' : '#ef444433'}`,
+                                color: reg.puntaje >= 700 ? '#60a5fa' : reg.puntaje >= 500 ? '#fbbf24' : '#ef4444',
+                              }} 
+                            />
+                            <span style={{ fontSize: '15px', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{reg.puntaje}</span>
                           </div>
-                          {reg.cuil && <div style={{ fontSize: 11, color: '#333', marginTop: 1 }}>{reg.cuil}</div>}
+                        ) : (
+                          <span style={{ color: '#111', fontSize: 13 }}>—</span>
+                        )}
+                      </td>
+
+                      {/* Monto */}
+                      <td style={{ padding: '18px 24px', fontSize: '17px', fontWeight: 900, color: '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        {formatCurrency(Number(reg.monto))}
+                      </td>
+
+                      {/* Estado */}
+                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+                        <StatusBadge estado={reg.estado} />
+                      </td>
+
+                      {/* Tipo / Acuerdo */}
+                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 800, color: reg.tipo_cliente ? '#fff' : '#222' }}>{reg.tipo_cliente || '—'}</span>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{reg.acuerdo_precios || '—'}</span>
+                         </div>
+                      </td>
+
+                      {/* Acciones */}
+                      <td style={{ padding: '18px 24px' }}>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                          <button
+                            onClick={() => setRecordatorioTarget(reg)}
+                            style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                            title="Recordatorio"
+                            onMouseOver={e => e.currentTarget.style.color = '#fff'}
+                            onMouseOut={e => e.currentTarget.style.color = '#444'}
+                          ><Bell size={16} /></button>
+                          <button
+                            onClick={() => openEdit(reg)}
+                            style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                            title="Editar"
+                            onMouseOver={e => e.currentTarget.style.color = '#fff'}
+                            onMouseOut={e => e.currentTarget.style.color = '#444'}
+                          ><Edit2 size={16} /></button>
+                          <button
+                            onClick={() => setDeleteTarget(reg)}
+                            style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.1)', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                            title="Eliminar"
+                            onMouseOver={e => e.currentTarget.style.background = 'rgba(248,113,113,0.15)'}
+                            onMouseOut={e => e.currentTarget.style.background = 'rgba(248,113,113,0.05)'}
+                          ><Trash2 size={16} /></button>
                         </div>
-                      </div>
-                    </td>
-
-                    {/* Analista */}
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#888', textAlign: 'center' }}>
-                      {displayAnalista(reg.analista)}
-                    </td>
-
-                    {/* Fecha */}
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#555', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                      {formatDate(reg.fecha)}
-                    </td>
-
-                    {/* Score */}
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      {reg.puntaje ? (
-                        <div className="score-cell" style={{ justifyContent: 'center' }}>
-                          <div className="score-dot" style={{
-                            background: reg.puntaje >= 700 ? '#2563eb' : reg.puntaje >= 600 ? '#059669' : reg.puntaje >= 500 ? '#d97706' : '#dc2626',
-                          }} />
-                          <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.7)' }}>{reg.puntaje}</span>
-                        </div>
-                      ) : (
-                        <span style={{ color: '#222', fontSize: 13 }}>—</span>
-                      )}
-                    </td>
-
-                    {/* Monto */}
-                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      {formatCurrency(Number(reg.monto))}
-                    </td>
-
-                    {/* Estado */}
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                      <StatusBadge estado={reg.estado} />
-                    </td>
-
-                    {/* Tipo */}
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: reg.tipo_cliente ? '#888' : '#222', textAlign: 'center' }}>
-                      {reg.tipo_cliente || '—'}
-                    </td>
-
-                    {/* Acuerdo */}
-                    <td style={{ padding: '12px 16px', fontSize: 11, color: reg.acuerdo_precios ? '#666' : '#222', textTransform: reg.acuerdo_precios ? 'uppercase' : 'none', letterSpacing: reg.acuerdo_precios ? '0.4px' : 0, textAlign: 'center' }}>
-                      {reg.acuerdo_precios || '—'}
-                    </td>
-
-                    {/* Acciones */}
-                    <td style={{ padding: '12px 12px' }}>
-                      <div style={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                        <button
-                          className="btn-icon"
-                          style={{ width: 30, height: 30, color: '#444' }}
-                          title="Recordatorio"
-                          onClick={() => setRecordatorioTarget(reg)}
-                        ><Bell size={14} /></button>
-                        <button
-                          className="btn-icon"
-                          style={{ width: 30, height: 30, color: '#444' }}
-                          title="Editar"
-                          onClick={() => openEdit(reg)}
-                        ><Edit2 size={14} /></button>
-                        <button
-                          className="btn-icon"
-                          style={{ width: 30, height: 30, color: 'rgba(239,68,68,0.4)' }}
-                          title="Eliminar"
-                          onClick={() => setDeleteTarget(reg)}
-                        ><Trash2 size={14} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                );
+                      </td>
+                    </tr>
+                  );
               })}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </div>
 
@@ -749,6 +869,7 @@ export default function RegistrosPage() {
       />
       <RecordatorioModal registro={recordatorioTarget} onClose={handleRecordatorioClose} />
       <DeleteModal registro={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} />
+
     </div>
   );
 }
