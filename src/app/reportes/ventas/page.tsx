@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { formatCurrency, formatDate, displayAnalista } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { useData } from '@/context/DataContext';
