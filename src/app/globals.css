@@ -25,7 +25,9 @@ html, body {
   --main-color: #0078d4;
 
   --font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --sidebar-width: 250px;
+  --sidebar-width: 80px;
+  --sidebar-expanded-width: 400px;
+  --sidebar-filters-width: 340px;
 }
 
 .dashboard-container {
@@ -79,11 +81,30 @@ a {
   display: flex;
   flex-direction: column;
   z-index: 100;
-  transition: transform 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: visible;
+}
+
+.main-sidebar.sidebar-expanded {
+  width: var(--sidebar-expanded-width);
+}
+
+.main-sidebar.sidebar-expanded-filters {
+  width: var(--sidebar-filters-width);
 }
 
 .sidebar-hidden {
   transform: translateX(-100%);
+}
+
+.sidebar-expanded + .content-wrapper,
+.main-sidebar.sidebar-expanded ~ .content-wrapper {
+  margin-left: var(--sidebar-expanded-width);
+}
+
+.sidebar-expanded-filters + .content-wrapper,
+.main-sidebar.sidebar-expanded-filters ~ .content-wrapper {
+  margin-left: var(--sidebar-filters-width);
 }
 
 .content-wrapper {
@@ -92,7 +113,7 @@ a {
   padding: 40px;
   background: var(--background);
   min-height: 100vh;
-  transition: margin-left 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   z-index: 1;
 }

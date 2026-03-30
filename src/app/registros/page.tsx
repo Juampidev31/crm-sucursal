@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, sanitizarCuil, displayAnalista } from '@/lib/utils';
 import { Registro } from '@/types';
-import { Search, Plus, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Filter, Download, ChevronUp, ChevronDown, FileText, TrendingUp, Activity, DollarSign, Hash, ChevronDown as CD } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
@@ -371,7 +371,7 @@ export default function RegistrosPage() {
   const { isAdmin }  = useAuth();
   const { registros, setRegistros, loading, refresh, pushRegistroChange } = useData();
   const {
-    filters, setFilter, limpiarFiltros, hayFiltros,
+    filters, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
     pageSize, triggerExport, exportTick,
     currentPage, setCurrentPage, setTotalResults,
@@ -383,7 +383,7 @@ export default function RegistrosPage() {
   const [modalInitialData,    setModalInitialData]    = useState<Partial<Registro>>(initialForm);
   const [recordatorioTarget,  setRecordatorioTarget]  = useState<Registro | null>(null);
   const [deleteTarget,        setDeleteTarget]        = useState<Registro | null>(null);
-  const [showAdvanced,        setShowAdvanced]        = useState(false);
+
 
   const fetchRegistros = useCallback((silent = false) => { refresh(silent); }, [refresh]);
 
@@ -449,6 +449,12 @@ export default function RegistrosPage() {
 
   useEffect(() => { setTotalResults(filteredRegistros.length); }, [filteredRegistros.length, setTotalResults]);
 
+  const totales = useMemo(() => {
+    let suma = 0;
+    filteredRegistros.forEach(r => suma += (Number(r.monto) || 0));
+    return { cantidad: filteredRegistros.length, monto: suma };
+  }, [filteredRegistros]);
+
   const exportarCSV = useCallback(() => {
     const headers = ['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Puntaje', 'Es RE'];
     const rows = filteredRegistros.map(r => [r.nombre, r.cuil, r.analista, r.estado, r.monto, r.fecha || '', r.puntaje || '', r.es_re ? 'Sí' : 'No']);
@@ -467,7 +473,7 @@ export default function RegistrosPage() {
     return filteredRegistros.slice(start, start + pageSize);
   }, [filteredRegistros, currentPage, pageSize]);
 
-  const openNew  = useCallback(() => { setEditingId(null); setModalInitialData({ ...initialForm }); setModalOpen(true); }, []);
+
   const openEdit = useCallback((reg: Registro) => {
     setEditingId(reg.id);
     setModalInitialData({ ...reg, fecha: reg.fecha || '', fecha_score: reg.fecha_score || '' });
@@ -544,103 +550,17 @@ export default function RegistrosPage() {
         borderRadius: '12px', padding: '16px 20px', marginBottom: '16px',
         boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
       }}>
-        {/* Main filters row */}
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {/* Nuevo */}
-          <button 
-            className="btn-primary" 
-            onClick={openNew} 
-            style={{ 
-              height: 38, fontSize: '12px', fontWeight: 800, flexShrink: 0,
-              background: '#fff', color: '#000', border: 'none', padding: '0 20px',
-              borderRadius: '9px', display: 'flex', alignItems: 'center', gap: '8px'
-            }}
-          >
-            <Plus size={15} strokeWidth={3} /> NUEVO
-          </button>
-
-          {/* Search */}
-          <div className="search-wrapper" style={{ flex: 1, maxWidth: 350, position: 'relative' }}>
-            <Search 
-              style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#444' }} 
-              size={15} 
-            />
-            <input
-              type="text" 
-              className="search-input"
-              placeholder="Buscar registros..."
-              value={filters.search}
-              onChange={e => setFilter('search', e.target.value)}
-              style={{ 
-                height: 42, fontSize: '15px', paddingLeft: 42, background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.05)', borderRadius: '10px', color: '#fff', width: '100%'
-              }}
-            />
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#aaa', letterSpacing: '1.5px' }}>Sistema de</span>
+            <span style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#666', letterSpacing: '1px' }}>y</span>
+            <span style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
           </div>
 
-          {/* Estado */}
-          <div style={{ position: 'relative' }}>
-            <select
-              className="form-select"
-              value={filters.estado}
-              onChange={e => setFilter('estado', e.target.value)}
-              style={{ 
-                width: 180, height: 42, fontSize: '14px', fontWeight: 600,
-                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-                borderRadius: '10px', colorScheme: 'dark', color: '#888'
-              }}
-            >
-              <option value="">Estados</option>
-              {ESTADOS.map(st => <option key={st} value={st}>{STATUS_LABEL[st] ?? st}</option>)}
-            </select>
-          </div>
-
-          {/* Analista */}
-          <select
-            className="form-select"
-            value={filters.analista}
-            onChange={e => setFilter('analista', e.target.value)}
-            style={{ 
-              width: 150, height: 42, fontSize: '14px', fontWeight: 600,
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-              borderRadius: '10px', colorScheme: 'dark', color: '#888'
-            }}
-          >
-            <option value="">Analistas</option>
-            {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
-          </select>
-
-          {/* Advanced toggle */}
-          <button
-            onClick={() => setShowAdvanced(p => !p)}
-            style={{ 
-              height: 42, padding: '0 20px', borderRadius: '10px', fontSize: '13px', fontWeight: 700,
-              background: showAdvanced ? '#fff' : 'rgba(255,255,255,0.02)',
-              color: showAdvanced ? '#000' : '#444', 
-              border: '1px solid rgba(255,255,255,0.05)',
-              display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: '0.2s'
-            }}
-          >
-            <Filter size={14} /> Filtros
-            {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-
-          {/* Clear filters */}
-          {hayFiltros && (
-            <button 
-              onClick={limpiarFiltros} 
-              style={{ 
-                width: 42, height: 42, borderRadius: '10px', background: 'rgba(248,113,113,0.05)',
-                border: '1px solid rgba(248,113,113,0.1)', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-              }} 
-              title="Limpiar filtros"
-            >
-              <X size={18} />
-            </button>
-          )}
-
-          {/* Export & Pagination — pushed right */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ flex: 1 }} />
+          {/* Export & Pagination */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button 
               onClick={exportarCSV} 
               style={{ 
@@ -666,53 +586,6 @@ export default function RegistrosPage() {
             </div>
           </div>
         </div>
-
-        {/* Advanced filters */}
-        {showAdvanced && (
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px',
-            marginTop: '12px', paddingTop: '12px',
-            borderTop: '1px solid rgba(255,255,255,0.03)',
-          }}>
-            {[
-              { label: 'Desde',     type: 'date',   key: 'fechaDesde' },
-              { label: 'Hasta',     type: 'date',   key: 'fechaHasta' },
-              { label: 'Monto mín', type: 'number', key: 'montoMin',   placeholder: '$' },
-              { label: 'Monto máx', type: 'number', key: 'montoMax',   placeholder: '$' },
-              { label: 'Score mín', type: 'number', key: 'scoreMin',   placeholder: '0' },
-              { label: 'Score máx', type: 'number', key: 'scoreMax',   placeholder: '999' },
-            ].map(f => (
-              <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label style={{ fontSize: '10px', color: '#333', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</label>
-                <input
-                  type={f.type}
-                  placeholder={f.placeholder}
-                  value={(filters as any)[f.key]}
-                  onChange={e => setFilter(f.key as any, e.target.value)}
-                  style={{ 
-                    height: 34, fontSize: '13px', padding: '0 12px', background: 'rgba(255,255,255,0.01)',
-                    border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', color: '#fff', width: '100%'
-                  }}
-                />
-              </div>
-            ))}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '10px', color: '#333', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Tipo</label>
-              <select 
-                value={filters.esRe} 
-                onChange={e => setFilter('esRe', e.target.value)} 
-                style={{ 
-                  height: 34, fontSize: '13px', padding: '0 10px', background: 'rgba(255,255,255,0.01)',
-                  border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', color: '#fff', colorScheme: 'dark'
-                }}
-              >
-                <option value="">Todos</option>
-                <option value="si">Solo RE</option>
-                <option value="no">Sin RE</option>
-              </select>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Table */}
@@ -732,7 +605,34 @@ export default function RegistrosPage() {
             )}
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
+            {hayFiltros && (
+              <div style={{
+                background: 'rgba(30, 60, 250, 0.05)',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                padding: '12px 24px',
+                display: 'flex', gap: '32px', alignItems: 'center',
+              }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#777', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Registros filtrados <span style={{ color: '#fff', fontSize: '14px', marginLeft: '8px' }}>{totales.cantidad}</span>
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#777', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Total acumulado <span style={{ color: '#fff', fontSize: '14px', marginLeft: '8px' }}>
+                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(totales.monto)}
+                  </span>
+                </span>
+                <div style={{ flex: 1 }} />
+                <button onClick={limpiarFiltros} style={{ 
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#888', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
+                  cursor: 'pointer', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', transition: '0.2s'
+                }}
+                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                 onMouseLeave={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                >
+                  <X size={12} strokeWidth={3} /> Limpiar Filtros
+                </button>
+              </div>
+            )}
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.005)' }}>
