@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useData } from '@/context/DataContext';
 import { CONFIG } from '@/types';
-import { 
-  Save, RotateCcw, AlertCircle, Bell, Clock, History, 
+import {
+  Save, RotateCcw, AlertCircle, Bell, Clock, History,
   Settings
 } from 'lucide-react';
 
@@ -23,6 +24,13 @@ const parsePaste = (e: React.ClipboardEvent<HTMLInputElement>, onChange: (v: str
 };
 
 export default function AjustesPage() {
+  const {
+    alertasConfig: ctxAlertas, setAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
+    diasConfig: ctxDias, setDiasConfig: setCtxDias, pushDiasConfigChange,
+    historicoVentas: ctxHistorico, setHistoricoVentas: setCtxHistorico, pushHistoricoChange,
+    objetivos: ctxObjetivos, setObjetivos: setCtxObjetivos, pushObjetivosChange
+  } = useData();
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('alertas');
   const [alertasConfig, setAlertasConfig] = useState(CONFIG.ALERTAS_DEFAULT);
   const [diasValues, setDiasValues] = useState<Record<string, DiasEntry>>({});
@@ -76,6 +84,11 @@ export default function AjustesPage() {
         const { error } = await supabase.from('alertas_config').insert(alerta);
         if (error) throw error;
       }
+
+      // Actualizar contexto y enviar broadcast
+      setCtxAlertas([...alertasConfig]);
+      alertasConfig.forEach(a => pushAlertasConfigChange('UPDATE', a));
+
       showSuccess('Configuración de alertas guardada');
     } catch (err: any) { showError(`Error: ${err.message}`); }
     setSaving(false);
@@ -91,13 +104,23 @@ export default function AjustesPage() {
     if (!entry) return;
     setSavingDias(analista);
     try {
-      const { error } = await supabase.from('dias_habiles_config').upsert({
+      const config = {
         analista,
         dias_habiles: Number(entry.dias_habiles) || 0,
         dias_transcurridos: Number(entry.dias_transcurridos) || 0,
         manual: true,
-      }, { onConflict: 'analista' });
+      };
+      const { error } = await supabase.from('dias_habiles_config').upsert(config, { onConflict: 'analista' });
       if (error) throw error;
+
+      // Actualizar contexto y enviar broadcast
+      setCtxDias(prev => {
+        const exists = prev.some(d => d.analista === analista);
+        if (exists) return prev.map(d => d.analista === analista ? config : d);
+        return [...prev, config];
+      });
+      pushDiasConfigChange('UPDATE', config);
+
       showSuccess(`Días guardados para ${analista}`);
     } catch (err: any) { showError(`Error: ${err.message}`); }
     setSavingDias(null);
@@ -128,8 +151,8 @@ export default function AjustesPage() {
     setHistRows(rows);
   }, []);
 
-  useEffect(() => { 
-    if (activeTab === 'historico') loadHistorico(histAnalista, histAnio); 
+  useEffect(() => {
+    if (activeTab === 'historico') loadHistorico(histAnalista, histAnio);
   }, [histAnalista, histAnio, loadHistorico, activeTab]);
 
   const saveHistorico = async () => {
@@ -141,16 +164,24 @@ export default function AjustesPage() {
           capital_real: Number(row.capital_real) || 0, ops_real: Number(row.ops_real) || 0,
         }))
         .filter(r => r.capital_real > 0 || r.ops_real > 0);
-      
+
       if (upserts.length > 0) {
         const { error } = await supabase.from('historico_ventas').upsert(upserts, { onConflict: 'analista,anio,mes' });
         if (error) throw error;
+
+        // Actualizar contexto y enviar broadcast para historico
+        setCtxHistorico(prev => {
+          const filtered = prev.filter(h => !(h.analista === histAnalista && h.anio === histAnio));
+          const nuevos = upserts.map(u => ({ ...u, id: undefined }));
+          return [...filtered, ...nuevos];
+        });
+        upserts.forEach(u => pushHistoricoChange('UPDATE', { ...u, id: undefined }));
       }
 
       const zeroMonths = histRows
         .map((_, mesIdx) => mesIdx)
         .filter(mesIdx => !Number(histRows[mesIdx].capital_real) && !Number(histRows[mesIdx].ops_real));
-      
+
       for (const mes of zeroMonths) {
         await supabase.from('historico_ventas').delete().eq('analista', histAnalista).eq('anio', histAnio).eq('mes', mes);
       }
@@ -161,10 +192,18 @@ export default function AjustesPage() {
           meta_ventas: Number(row.meta_ventas) || 0, meta_operaciones: Number(row.meta_operaciones) || 0,
         }))
         .filter(r => r.meta_ventas > 0 || r.meta_operaciones > 0);
-      
+
       if (objUpserts.length > 0) {
         const { error } = await supabase.from('objetivos').upsert(objUpserts, { onConflict: 'analista,mes,anio' });
         if (error) throw error;
+
+        // Actualizar contexto y enviar broadcast para objetivos
+        setCtxObjetivos(prev => {
+          const filtered = prev.filter(o => !(o.analista === histAnalista && o.anio === histAnio));
+          const nuevos = objUpserts.map(u => ({ ...u, id: undefined }));
+          return [...filtered, ...nuevos];
+        });
+        objUpserts.forEach(u => pushObjetivosChange('UPDATE', { ...u, id: undefined }));
       }
       showSuccess(`Histórico guardado para ${histAnalista}`);
     } catch (err: any) { showError(`Error: ${err.message}`); }
@@ -232,7 +271,7 @@ export default function AjustesPage() {
         </div>
       ) : (
         <div style={{ width: '100%' }}>
-          
+
           {/* TAB: ALERTAS */}
           {activeTab === 'alertas' && (
             <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
@@ -250,7 +289,7 @@ export default function AjustesPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div style={{ background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <table className="data-table">
                   <thead>
@@ -314,7 +353,7 @@ export default function AjustesPage() {
                       <h4 style={{ fontWeight: 800, fontSize: '16px' }}>{analista === 'Todos' ? 'Punto de Venta' : analista}</h4>
                       <Clock size={14} color="#333" />
                     </div>
-                    
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       <div className="form-group">
                         <label className="form-label" style={{ color: '#555', fontSize: '11px' }}>Días Hábiles</label>

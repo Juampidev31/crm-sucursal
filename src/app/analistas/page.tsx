@@ -15,6 +15,7 @@ import {
   Activity,
   BarChart2,
   CalendarDays,
+  Wallet,
   TrendingUp,
   TrendingDown,
   Zap,
@@ -726,15 +727,21 @@ export default function AnalistasPage() {
       },
       y: { 
         title: { display: true, text: 'Valores', color: '#fff', font: { family: 'Outfit', size: 11, weight: 800 as const } },
-        ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => `${Number(v) / 1000000}M` }, 
+        ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => {
+          const n = Number(v);
+          if (n >= 1000000) return `${n / 1000000}M`;
+          if (n >= 1000) return `${n / 1000}K`;
+          return n;
+        }}, 
         grid: { display: false },
         min: 0,
-        suggestedMax: 70000000
+        grace: '10%'
       },
       y2: { 
         position: 'right' as const, 
         title: { display: true, text: 'Cumplimiento (%)', color: '#fff', font: { family: 'Outfit', size: 11, weight: 800 as const } },
-        min: 0, suggestedMax: 180, 
+        min: 0, 
+        grace: '10%',
         ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => `${v}%` }, 
         grid: { display: false } 
       },
@@ -1019,6 +1026,37 @@ export default function AnalistasPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Liquidación de Comisiones (Solo Luciana y Victoria) ── */}
+      {(analista === 'Luciana' || analista === 'Victoria') && (
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+              <Wallet size={16} color="#4ade80" />
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>COMISIONES — {analista.toUpperCase()}</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={box}>
+              <div style={lbl}><TrendingUp size={14} color="#666" /> COMISION VENTAS</div>
+              <div style={val}>{formatCurrency(kpis.comisiones.comisionCapital)}</div>
+              <div style={sub}>Base: {pct(kpis.cumplReal)} del objetivo</div>
+            </div>
+            <div style={box}>
+              <div style={lbl}><Zap size={14} color="#666" /> COMISIONES OPERACIONES</div>
+              <div style={val}>{formatCurrency(kpis.comisiones.comisionOperaciones)}</div>
+              <div style={sub}>Base: {kpis.alcanceOps} / {kpis.obj.meta_operaciones} ops</div>
+            </div>
+            <div style={{ ...box, background: 'rgba(74, 222, 128, 0.03)', border: '1px solid rgba(74, 222, 128, 0.1)' }}>
+              <div style={{ ...lbl, color: '#4ade80' }}><Activity size={14} color="#4ade80" /> TOTAL ESTIMADO</div>
+              <div style={{ ...val, color: '#4ade80' }}>{formatCurrency(kpis.comisiones.comisionTotal)}</div>
+              <div style={{ ...sub, color: 'rgba(74, 222, 128, 0.6)' }}>Sujeto a validación administrativa</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Alertas + Curva ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>

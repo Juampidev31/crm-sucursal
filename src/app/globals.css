@@ -10,7 +10,7 @@ html, body {
   color-scheme: dark;
   
   --verde: #10b981;
-  --azul: #0078d4;
+  --azul: #ffffff;
   --rojo: #ef4444;
   --naranja: #f59e0b;
   --dorado: #fbbf24;
@@ -22,7 +22,7 @@ html, body {
   --card-bg-elevated: #000000;
   --border-color: rgba(255, 255, 255, 0.08);
   --hover-bg: rgba(255, 255, 255, 0.05);
-  --main-color: #0078d4;
+  --main-color: #ffffff;
 
   --font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --sidebar-width: 80px;
@@ -138,12 +138,12 @@ a {
 .brand-box {
   width: 32px;
   height: 32px;
-  background: var(--azul);
+  background: #fff;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: #000;
 }
 
 .brand-text {
@@ -337,10 +337,10 @@ a {
 
 /* ============ BUTTONS ============ */
 .btn-primary {
-  background: var(--azul);
-  color: #fff;
+  background: #fff;
+  color: #000;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   height: 38px;
   padding: 0 16px;
   font-weight: 600;
@@ -391,7 +391,8 @@ a {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -467,7 +468,7 @@ a {
   color: #ffffff !important;
   color-scheme: dark;
 }
-.form-input:focus, .form-select:focus { border-color: var(--azul); }
+.form-input:focus, .form-select:focus { border-color: rgba(255,255,255,0.3); }
 .form-row { display: flex; gap: 16px; margin-bottom: 20px; }
 
 /* ============ TOGGLE / CARDS ============ */
@@ -509,8 +510,8 @@ a {
   transition: .4s;
   border-radius: 50%;
 }
-input:checked + .toggle-slider { background-color: var(--azul); }
-input:checked + .toggle-slider:before { transform: translateX(16px); background-color: #fff; }
+input:checked + .toggle-slider { background-color: #fff; }
+input:checked + .toggle-slider:before { transform: translateX(16px); background-color: #000; }
 
 .toggle-label {
   display: flex;

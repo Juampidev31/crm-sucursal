@@ -722,7 +722,19 @@ export default function RegistrosPage() {
                       <td style={{ padding: '18px 24px', textAlign: 'center' }}>
                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                             <span style={{ fontSize: '12px', fontWeight: 800, color: reg.tipo_cliente ? '#fff' : '#222' }}>{reg.tipo_cliente || '—'}</span>
-                            <span style={{ fontSize: '10px', fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{reg.acuerdo_precios || '—'}</span>
+                             <span style={{ 
+                               fontSize: '10px', 
+                               fontWeight: 700, 
+                               color: 
+                                 reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? '#4ade80' : 
+                                 reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' : 
+                                 reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' : 
+                                 '#333', 
+                               textTransform: 'uppercase', 
+                               letterSpacing: '0.4px' 
+                             }}>
+                               {reg.acuerdo_precios || '—'}
+                             </span>
                          </div>
                       </td>
 

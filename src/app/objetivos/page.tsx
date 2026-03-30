@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-
+import { useData } from '@/context/DataContext';
 import { CONFIG } from '@/types';
 import { Save, AlertCircle } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
@@ -17,11 +17,33 @@ interface ObjetivoRow {
 const ANALISTAS = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
 
 export default function ObjetivosPage() {
+  const { objetivos: ctxObjetivos, setObjetivos: setCtxObjetivos, pushObjetivosChange } = useData();
   const [objetivos, setObjetivos] = useState<ObjetivoRow[]>([]);
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Sincronizar estado local con contexto cuando cambia el año
+  useEffect(() => {
+    const objetivosDelAnio = ctxObjetivos.filter(o => o.anio === anio);
+    if (objetivosDelAnio.length > 0) {
+      const grid: ObjetivoRow[] = [];
+      for (const analista of ANALISTAS) {
+        for (let mes = 0; mes < 12; mes++) {
+          const existing = objetivosDelAnio.find(o => o.analista === analista && o.mes === mes);
+          grid.push({
+            analista,
+            mes,
+            meta_ventas: existing ? Number(existing.meta_ventas) : 0,
+            meta_operaciones: existing ? Number(existing.meta_operaciones) : 0,
+          });
+        }
+      }
+      setObjetivos(grid);
+      setLoading(false);
+    }
+  }, [ctxObjetivos, anio]);
 
   const fetchObjetivos = useCallback(async () => {
     setLoading(true);
@@ -81,6 +103,23 @@ export default function ObjetivosPage() {
           { onConflict: 'analista,mes,anio' }
         );
       if (error) throw error;
+
+      // Actualizar contexto local y enviar broadcast
+      setCtxObjetivos(prev => {
+        const filtered = prev.filter(o => o.anio !== anio);
+        const nuevos = objetivos.map(obj => ({
+          ...obj,
+          anio,
+          id: undefined,
+        }));
+        return [...filtered, ...nuevos];
+      });
+
+      // Enviar broadcast para otros usuarios
+      objetivos.forEach(obj => {
+        pushObjetivosChange('UPDATE', { ...obj, anio });
+      });
+
       setToast({ message: '✅ Objetivos guardados correctamente', type: 'success' });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error';
@@ -106,9 +145,9 @@ export default function ObjetivosPage() {
           <p style={{ color: 'var(--gris)', fontSize: '13px', fontWeight: 500 }}>Configurá los objetivos mensuales por analista</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <CustomSelect 
+          <CustomSelect
             options={[2024, 2025, 2026, 2027].map(y => ({ label: String(y), value: y }))}
-            value={anio} 
+            value={anio}
             onChange={setAnio}
             width="110px"
           />
