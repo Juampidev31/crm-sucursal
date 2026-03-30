@@ -1,17 +1,28 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useData } from '@/context/DataContext';
 import { CONFIG } from '@/types';
+import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
 import {
   Save, RotateCcw, AlertCircle, Bell, Clock, History,
-  Settings
+  Settings, Target, Activity, Copy, Shield, AlertTriangle,
+  CheckCircle, User, ShieldCheck, BarChart3, Calendar, TrendingUp
 } from 'lucide-react';
+import CustomSelect from '@/components/CustomSelect';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement,
+  BarElement, Tooltip, Legend, Filler,
+} from 'chart.js';
+import { Line, Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, BarElement, Tooltip, Legend, Filler);
 
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
-type ActiveTab = 'alertas' | 'dias' | 'historico';
+type ObjetivoRow = { analista: string; mes: number; meta_ventas: number; meta_operaciones: number };
+type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'analisis-temporal' | 'duplicados' | 'auditoria';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -22,6 +33,8 @@ const parsePaste = (e: React.ClipboardEvent<HTMLInputElement>, onChange: (v: str
   const num = parseFloat(raw);
   if (!isNaN(num)) onChange(String(num));
 };
+
+const ANALISTAS = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
 
 export default function AjustesPage() {
   const {
@@ -43,6 +56,27 @@ export default function AjustesPage() {
   const [histRows, setHistRows] = useState<HistRow[]>(EMPTY_HIST_ROWS());
   const [savingHist, setSavingHist] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Objetivos state
+  const [objetivos, setObjetivos] = useState<ObjetivoRow[]>([]);
+  const [objetivosAnio, setObjetivosAnio] = useState(new Date().getFullYear());
+  const [objetivosAnalista, setObjetivosAnalista] = useState('PDV');
+  const [savingObj, setSavingObj] = useState(false);
+
+  // Analisis temporal state
+  const [analisisRegistros, setAnalisisRegistros] = useState<{ analista: string; estado: string; monto: number; fecha: string | null }[]>([]);
+  const [periodo, setPeriodo] = useState(30);
+  const [analistaFil, setAnalistaFil] = useState('todos');
+  const [metrica, setMetrica] = useState('ventas');
+
+  // Duplicados state
+  const [duplicadosRegistros, setDuplicadosRegistros] = useState<any[]>([]);
+  const [selectedEstados, setSelectedEstados] = useState<string[]>([]);
+  const [selectedAnalistas, setSelectedAnalistas] = useState<string[]>([]);
+
+  // Auditoria state
+  const [auditoriaRegistros, setAuditoriaRegistros] = useState<any[]>([]);
+  const [auditoriaLoading, setAuditoriaLoading] = useState(true);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -155,6 +189,74 @@ export default function AjustesPage() {
     if (activeTab === 'historico') loadHistorico(histAnalista, histAnio);
   }, [histAnalista, histAnio, loadHistorico, activeTab]);
 
+  // Fetch objetivos when tab is active or year changes
+  const fetchObjetivos = useCallback(async () => {
+    const { data } = await supabase
+      .from('objetivos')
+      .select('*')
+      .eq('anio', objetivosAnio);
+
+    const grid: ObjetivoRow[] = [];
+    for (const analista of ANALISTAS) {
+      for (let mes = 0; mes < 12; mes++) {
+        const existing = data?.find(o => o.analista === analista && o.mes === mes);
+        grid.push({
+          analista,
+          mes,
+          meta_ventas: existing ? Number(existing.meta_ventas) : 0,
+          meta_operaciones: existing ? Number(existing.meta_operaciones) : 0,
+        });
+      }
+    }
+    setObjetivos(grid);
+  }, [objetivosAnio]);
+
+  useEffect(() => {
+    if (activeTab === 'objetivos') fetchObjetivos();
+  }, [activeTab, objetivosAnio, fetchObjetivos]);
+
+  // Fetch datos para Analisis Temporal
+  useEffect(() => {
+    if (activeTab === 'analisis-temporal') {
+      supabase
+        .from('registros')
+        .select('analista, estado, monto, fecha')
+        .then(({ data }) => {
+          const regs = (data ?? []) as { analista: string; estado: string; monto: number; fecha: string | null }[];
+          setAnalisisRegistros(regs);
+        });
+    }
+  }, [activeTab]);
+
+  // Fetch datos para Duplicados
+  useEffect(() => {
+    if (activeTab === 'duplicados') {
+      supabase
+        .from('registros')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .then(({ data }) => {
+          setDuplicadosRegistros(data || []);
+        });
+    }
+  }, [activeTab]);
+
+  // Fetch datos para Auditoria
+  useEffect(() => {
+    if (activeTab === 'auditoria') {
+      setAuditoriaLoading(true);
+      supabase
+        .from('auditoria')
+        .select('*')
+        .order('fecha_hora', { ascending: false })
+        .limit(200)
+        .then(({ data }) => {
+          setAuditoriaRegistros(data || []);
+          setAuditoriaLoading(false);
+        });
+    }
+  }, [activeTab]);
+
   const saveHistorico = async () => {
     setSavingHist(true);
     try {
@@ -214,6 +316,296 @@ export default function AjustesPage() {
     setDiasValues(prev => ({ ...prev, [analista]: { ...prev[analista], [field]: value } }));
   };
 
+  // Objetivos handlers
+  const updateObjetivoValue = (analista: string, mes: number, field: 'meta_ventas' | 'meta_operaciones', value: number) => {
+    setObjetivos(prev => prev.map(o =>
+      o.analista === analista && o.mes === mes ? { ...o, [field]: value } : o
+    ));
+  };
+
+  const resetAnalista = (analista: string) => {
+    setObjetivos(prev => prev.map(o =>
+      o.analista === analista ? { ...o, meta_ventas: 0, meta_operaciones: 0 } : o
+    ));
+  };
+
+  const saveObjetivos = async () => {
+    setSavingObj(true);
+    try {
+      const { error } = await supabase
+        .from('objetivos')
+        .upsert(
+          objetivos.map(obj => ({
+            analista: obj.analista,
+            mes: obj.mes,
+            anio: objetivosAnio,
+            meta_ventas: obj.meta_ventas,
+            meta_operaciones: obj.meta_operaciones,
+          })),
+          { onConflict: 'analista,mes,anio' }
+        );
+      if (error) throw error;
+
+      setCtxObjetivos(prev => {
+        const filtered = prev.filter(o => o.anio !== objetivosAnio);
+        const nuevos = objetivos.map(obj => ({ ...obj, anio: objetivosAnio, id: undefined }));
+        return [...filtered, ...nuevos];
+      });
+
+      objetivos.forEach(obj => pushObjetivosChange('UPDATE', { ...obj, anio: objetivosAnio }));
+
+      showSuccess('✅ Objetivos guardados correctamente');
+    } catch (err: any) {
+      showError(`Error: ${err.message}`);
+    }
+    setSavingObj(false);
+  };
+
+  // ========== ANALISIS TEMPORAL HELPERS ==========
+  const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const PERIODOS = [
+    { label: 'Mes actual', value: -1 },
+    { label: 'Mes anterior', value: -2 },
+    { label: 'Últimos 7 días', value: 7 },
+    { label: 'Últimos 15 días', value: 15 },
+    { label: 'Últimos 30 días', value: 30 },
+    { label: 'Últimos 60 días', value: 60 },
+    { label: 'Últimos 90 días', value: 90 },
+  ];
+  const METRICAS = [
+    { value: 'ventas', label: 'Ventas ($)' },
+    { value: 'operaciones', label: 'Operaciones (N)' },
+    { value: 'ticket', label: 'Ticket Promedio ($)' },
+  ];
+
+  const toLocalDate = (fecha: string): Date => new Date(fecha.length === 10 ? `${fecha}T00:00:00` : fecha);
+  const toDateKey = (d: Date): string => d.toISOString().slice(0, 10);
+  const toLocalKey = (d: Date): string =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    if (periodo === -1) {
+      const from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      return { from, to: now, nDays: now.getDate() };
+    }
+    if (periodo === -2) {
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return { from, to, nDays: to.getDate() };
+    }
+    const from = new Date(now);
+    from.setDate(from.getDate() - periodo);
+    from.setHours(0, 0, 0, 0);
+    return { from, to: now, nDays: periodo };
+  }, [periodo]);
+
+  const periodoLabel = useMemo(() => {
+    if (periodo === -1) return 'mes actual';
+    if (periodo === -2) return 'mes anterior';
+    return `últimos ${periodo} días`;
+  }, [periodo]);
+
+  const analisisAnalistas = useMemo(() =>
+    Array.from(new Set(analisisRegistros.map(r => r.analista).filter(Boolean) as string[])),
+    [analisisRegistros]
+  );
+
+  const ventasFiltradas = useMemo(() => {
+    const { from, to } = dateRange;
+    return analisisRegistros.filter(r => {
+      if (!r.fecha) return false;
+      const estado = (r.estado ?? '').toLowerCase();
+      if (estado !== 'venta' && !estado.includes('aprobado cc')) return false;
+      const d = toLocalDate(r.fecha);
+      if (d < from || d > to) return false;
+      if (analistaFil !== 'todos' && r.analista !== analistaFil) return false;
+      return true;
+    });
+  }, [analisisRegistros, dateRange, analistaFil]);
+
+  const calcVal = useCallback((regs: { analista: string; estado: string; monto: number; fecha: string | null }[]): number => {
+    if (metrica === 'operaciones') return regs.length;
+    const total = regs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    return metrica === 'ticket' && regs.length > 0 ? total / regs.length : total;
+  }, [metrica]);
+
+  const tendenciaData = useMemo(() => {
+    const byDate = new Map<string, typeof ventasFiltradas>();
+    for (const r of ventasFiltradas) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      const bucket = byDate.get(key);
+      if (bucket) bucket.push(r);
+      else byDate.set(key, [r]);
+    }
+    const labels: string[] = [];
+    const daily: number[] = [];
+    const cur = new Date(dateRange.from);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.to);
+    end.setHours(23, 59, 59, 999);
+    while (cur <= end) {
+      const key = toLocalKey(cur);
+      labels.push(`${cur.getDate()}/${cur.getMonth() + 1}`);
+      daily.push(calcVal(byDate.get(key) ?? []));
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (metrica === 'ventas') {
+      let acc = 0;
+      return { labels, values: daily.map(v => (acc += v)), daily };
+    }
+    return { labels, values: daily, daily };
+  }, [ventasFiltradas, dateRange, metrica, calcVal]);
+
+  const summary = useMemo(() => ({
+    total: calcVal(ventasFiltradas),
+    avg: dateRange.nDays > 0 ? calcVal(ventasFiltradas) / dateRange.nDays : 0,
+    maxDay: tendenciaData.daily.length ? Math.max(...tendenciaData.daily) : 0,
+  }), [ventasFiltradas, tendenciaData.daily, dateRange.nDays, calcVal]);
+
+  const mapaActividad = useMemo(() => {
+    const { from, to } = dateRange;
+    const dailyMap = new Map<string, number>();
+    for (const r of ventasFiltradas) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      const add = metrica === 'operaciones' ? 1 : Number(r.monto) || 0;
+      dailyMap.set(key, (dailyMap.get(key) ?? 0) + add);
+    }
+    const cur = new Date(from);
+    cur.setHours(0, 0, 0, 0);
+    const dow = cur.getDay();
+    cur.setDate(cur.getDate() + (dow === 0 ? -6 : 1 - dow));
+    const weeks: { valor: number; key: string }[][] = [];
+    while (cur <= to) {
+      const week: typeof weeks[0] = [];
+      for (let d = 0; d < 7; d++) {
+        const key = toLocalKey(cur);
+        week.push({ valor: dailyMap.get(key) ?? 0, key });
+        cur.setDate(cur.getDate() + 1);
+      }
+      weeks.push(week);
+    }
+    return { weeks, maxVal: Math.max(...dailyMap.values(), 1) };
+  }, [ventasFiltradas, dateRange, metrica]);
+
+  const weeklyStats = useMemo(() => {
+    const totals = mapaActividad.weeks
+      .map((w, i) => ({ label: `Sem ${i + 1}`, total: w.reduce((s, d) => s + d.valor, 0) }))
+      .filter(w => w.total > 0);
+    if (!totals.length) return { totals, avg: 0, best: { label: '—', total: 0, vsAvg: 0 }, worst: { label: '—', total: 0, vsAvg: 0 }, withVsAvg: [] };
+    const avg = totals.reduce((s, w) => s + w.total, 0) / totals.length;
+    const withVsAvg = totals.map(w => ({
+      ...w,
+      vsAvg: avg > 0 ? ((w.total - avg) / avg) * 100 : 0
+    }));
+    return {
+      totals, avg,
+      best: { ...totals.reduce((a, b) => b.total > a.total ? b : a), vsAvg: avg > 0 ? ((totals.reduce((a, b) => b.total > a.total ? b : a).total - avg) / avg) * 100 : 0 },
+      worst: { ...totals.reduce((a, b) => b.total < a.total ? b : a), vsAvg: avg > 0 ? ((totals.reduce((a, b) => b.total < a.total ? b : a).total - avg) / avg) * 100 : 0 },
+      withVsAvg,
+    };
+  }, [mapaActividad]);
+
+  const dowStats = useMemo(() => {
+    const sums = Array<number>(7).fill(0);
+    for (const r of ventasFiltradas) {
+      if (!r.fecha) continue;
+      let dow = toLocalDate(r.fecha).getDay();
+      dow = dow === 0 ? 6 : dow - 1;
+      sums[dow] += metrica === 'operaciones' ? 1 : Number(r.monto) || 0;
+    }
+    const max = Math.max(...sums, 0);
+    return { sums, max, activeDay: DIAS_SEMANA[sums.indexOf(max)] ?? '—' };
+  }, [ventasFiltradas, metrica]);
+
+  const fmt = useCallback((v: number) => metrica === 'operaciones' ? String(v) : formatCurrency(v), [metrica]);
+  const fmtK = useCallback((v: number) => metrica === 'operaciones' ? String(v) : `$${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0 }).format(v / 1_000)}K`, [metrica]);
+
+  const analistaOpts = useMemo(() => [
+    { label: 'Todos', value: 'todos' },
+    ...analisisAnalistas.map(a => ({ label: displayAnalista(a), value: a })),
+  ], [analisisAnalistas]);
+
+  const heatColor = (val: number, max: number): string => {
+    if (val === 0) return 'rgba(34,197,94,0.05)';
+    const t = Math.min(val / max, 1);
+    return `rgba(34, 197, 94, ${(0.15 + t * 0.5).toFixed(2)})`;
+  };
+
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
+
+  // ========== DUPLICADOS HELPERS ==========
+  interface GrupoDuplicado {
+    key: string;
+    tipo: 'cuil' | 'nombre';
+    registros: any[];
+  }
+
+  const allEstados = useMemo(() =>
+    Array.from(new Set(duplicadosRegistros.map(r => r.estado?.toLowerCase()).filter(Boolean)))
+      .filter(e => !e?.toLowerCase().includes('column') && !e?.toLowerCase().includes('estado'))
+      .sort() as string[],
+    [duplicadosRegistros]
+  );
+
+  const allAnalistas = useMemo(() =>
+    Array.from(new Set(duplicadosRegistros.map(r => r.analista?.trim()).filter(Boolean)))
+      .filter(a => !a?.toLowerCase().includes('column') && !a?.toLowerCase().includes('analista'))
+      .sort() as string[],
+    [duplicadosRegistros]
+  );
+
+  const toggleFilter = (list: string[], set: React.Dispatch<React.SetStateAction<string[]>>, val: string) => {
+    if (list.includes(val)) set(list.filter(v => v !== val));
+    else set([...list, val]);
+  };
+
+  const duplicados = useMemo((): GrupoDuplicado[] => {
+    const grupos: GrupoDuplicado[] = [];
+    const pool = duplicadosRegistros.filter(r => {
+      const matchEstado = selectedEstados.length === 0 || selectedEstados.includes(r.estado?.toLowerCase() || '');
+      const matchAnalista = selectedAnalistas.length === 0 || selectedAnalistas.includes(r.analista || '');
+      return matchEstado && matchAnalista;
+    });
+
+    const byCuil = new Map<string, any[]>();
+    for (const r of pool) {
+      const cuil = r.cuil?.trim();
+      if (!cuil || cuil.length < 11) continue;
+      if (!byCuil.has(cuil)) byCuil.set(cuil, []);
+      byCuil.get(cuil)!.push(r);
+    }
+    for (const [cuil, regs] of byCuil) {
+      if (regs.length > 1) grupos.push({ key: cuil, tipo: 'cuil', registros: regs });
+    }
+
+    const byNombre = new Map<string, any[]>();
+    for (const r of pool) {
+      const nombre = r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
+      if (!nombre || nombre.length < 3) continue;
+      if (!byNombre.has(nombre)) byNombre.set(nombre, []);
+      byNombre.get(nombre)!.push(r);
+    }
+    for (const [nombre, regs] of byNombre) {
+      if (regs.length > 1) {
+        const existsInCuil = grupos.some(g => g.tipo === 'cuil' && g.registros.some(r => r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ') === nombre));
+        if (!existsInCuil) grupos.push({ key: nombre, tipo: 'nombre', registros: regs });
+      }
+    }
+    return grupos.sort((a, b) => b.registros.length - a.registros.length);
+  }, [duplicadosRegistros, selectedEstados, selectedAnalistas]);
+
+  const chipStyle = (isActive: boolean) => ({
+    padding: '6px 12px', borderRadius: '4px', fontSize: '10px', border: '1px solid',
+    whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.1s',
+    background: isActive ? 'rgba(0,120,212,0.1)' : 'rgba(255,255,255,0.02)',
+    borderColor: isActive ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
+    color: isActive ? 'var(--azul)' : '#444',
+    textTransform: 'uppercase' as const, letterSpacing: '0.8px'
+  });
+
   return (
     <div className="dashboard-container">
       {toast && (
@@ -236,11 +628,15 @@ export default function AjustesPage() {
 
       {/* Nav Tabs */}
       <div className="toolbar" style={{ justifyContent: 'flex-start', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0', borderRadius: 0, background: 'transparent' }}>
-        <div style={{ display: 'flex', gap: '24px' }}>
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           {[
             { id: 'alertas', label: 'Alertas', icon: Bell },
             { id: 'dias', label: 'Días Hábiles', icon: Clock },
             { id: 'historico', label: 'Histórico', icon: History },
+            { id: 'objetivos', label: 'Objetivos', icon: Target },
+            { id: 'analisis-temporal', label: 'Análisis Temporal', icon: Activity },
+            { id: 'duplicados', label: 'Duplicados', icon: Copy },
+            { id: 'auditoria', label: 'Auditoría', icon: Shield },
           ].map(t => (
             <button
               key={t.id}
@@ -507,6 +903,544 @@ export default function AjustesPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: OBJETIVOS */}
+          {activeTab === 'objetivos' && (
+            <div>
+              <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Metas y Objetivos</h2>
+                  <p style={{ fontSize: '13px', color: '#555' }}>Configurá los objetivos mensuales por analista</p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <CustomSelect
+                    options={[2024, 2025, 2026, 2027].map(y => ({ label: String(y), value: y }))}
+                    value={objetivosAnio}
+                    onChange={setObjetivosAnio}
+                    width="110px"
+                  />
+                  <CustomSelect
+                    options={ANALISTAS.map(a => ({ label: a === 'PDV' ? 'Punto de Venta' : a, value: a }))}
+                    value={objetivosAnalista}
+                    onChange={setObjetivosAnalista}
+                    width="140px"
+                  />
+                  <button className="btn-primary" style={{ height: '38px', padding: '0 20px' }} onClick={saveObjetivos} disabled={savingObj}>
+                    {savingObj ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <Save size={16} />}
+                    <span style={{ marginLeft: '8px' }}>Guardar Todo</span>
+                  </button>
+                </div>
+              </header>
+
+              <div className="data-card">
+                <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 className="data-card-title">{objetivosAnalista === 'PDV' ? 'Punto de Venta' : objetivosAnalista}</h3>
+                  <button className="btn-secondary" style={{ fontSize: '11px', padding: '6px 14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }} onClick={() => resetAnalista(objetivosAnalista)}>
+                    Resetear a 0
+                  </button>
+                </div>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Mes</th>
+                      <th>Meta Ventas ($)</th>
+                      <th>Meta Operaciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 12 }, (_, mes) => {
+                      const obj = objetivos.find(o => o.analista === objetivosAnalista && o.mes === mes);
+                      return (
+                        <tr key={mes}>
+                          <td style={{ fontWeight: 600 }}>{CONFIG.MESES_NOMBRES[mes]}</td>
+                          <td>
+                            <input className="form-input" type="number" style={{ width: '180px' }}
+                              value={obj?.meta_ventas || 0}
+                              onChange={e => updateObjetivoValue(objetivosAnalista, mes, 'meta_ventas', Number(e.target.value))}
+                            />
+                          </td>
+                          <td>
+                            <input className="form-input" type="number" style={{ width: '120px' }}
+                              value={obj?.meta_operaciones || 0}
+                              onChange={e => updateObjetivoValue(objetivosAnalista, mes, 'meta_operaciones', Number(e.target.value))}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ANALISIS TEMPORAL */}
+          {activeTab === 'analisis-temporal' && (
+            <div>
+              {/* Filters */}
+              <div style={{
+                background: '#000', border: '1px solid var(--border-color)',
+                borderRadius: 6, padding: '16px 20px',
+                display: 'flex', gap: 16, alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 4 }}>
+                  <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.5)' }} />
+                  <span style={{ fontSize: 14, fontWeight: 700 }}>Análisis Temporal</span>
+                </div>
+                {[
+                  { label: 'PERÍODO', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} /> },
+                  { label: 'ANALISTA', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} /> },
+                  { label: 'MÉTRICA', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} /> },
+                ].map(f => (
+                  <div key={f.label}>
+                    <div style={{ fontSize: 10, color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 10 }}>{f.label}</div>
+                    {f.node}
+                  </div>
+                ))}
+              </div>
+
+              {/* Tendencia + Mapa */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                {/* Tendencia */}
+                <div style={{ background: '#000', border: '1px solid var(--border-color)', borderRadius: 6, padding: 20, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tendencia</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Acumulado por día — {periodoLabel}</div>
+                  </div>
+                  <div style={{ height: 320, flex: 1 }}>
+                    <Line
+                      data={{
+                        labels: tendenciaData.labels,
+                        datasets: [
+                          {
+                            label: metrica === 'ventas' ? 'Acumulado' : metrica === 'operaciones' ? 'Operaciones' : 'Ticket Prom.',
+                            data: tendenciaData.values,
+                            borderColor: 'rgba(34,197,94,0.8)',
+                            backgroundColor: 'rgba(34,197,94,0.1)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: 'rgba(34,197,94,0.9)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1.5,
+                            pointHoverRadius: 6,
+                            fill: true,
+                            tension: 0.3,
+                            spanGaps: false,
+                          },
+                        ],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: {
+                            callbacks: {
+                              label: (ctx: any) => fmt(ctx.parsed.y ?? 0),
+                            },
+                          },
+                        },
+                        scales: {
+                          x: {
+                            ticks: { color: '#555', maxTicksLimit: 10, font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                          },
+                          y: {
+                            ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 24, marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.total)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROMEDIO</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{metrica === 'operaciones' ? summary.avg.toFixed(1) : formatCurrency(summary.avg)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>MÁXIMO DÍA</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.maxDay)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mapa de actividad */}
+                <div style={{ background: '#000', border: '1px solid var(--border-color)', borderRadius: 6, padding: 20, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mapa de Actividad</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Ventas por día — {periodoLabel}</div>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ borderCollapse: 'separate', borderSpacing: 3, width: '100%' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: 30 }} />
+                          {DIAS_SEMANA.map(d => (
+                            <th key={d} style={{ textAlign: 'center', fontSize: 10, color: '#555', fontWeight: 600, padding: '0 2px 6px' }}>{d}</th>
+                          ))}
+                          <th style={{ fontSize: 10, color: '#555', fontWeight: 600, textAlign: 'right', paddingLeft: 8, paddingBottom: 6 }}>TOTAL</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mapaActividad.weeks.slice(0, 6).map((week, wi) => {
+                          const weekTotal = week.reduce((s, d) => s + d.valor, 0);
+                          return (
+                            <tr key={wi}>
+                              <td style={{ fontSize: 10, color: '#444', fontWeight: 600, paddingRight: 6, textAlign: 'right' }}>S{wi + 1}</td>
+                              {week.map((day, di) => (
+                                <td
+                                  key={di}
+                                  title={`${day.key}: ${fmt(day.valor)}`}
+                                  style={{
+                                    background: heatColor(day.valor, mapaActividad.maxVal),
+                                    borderRadius: 4, height: 44,
+                                    textAlign: 'center', fontSize: 10,
+                                    color: day.valor > 0 ? '#86efac' : '#333',
+                                    fontWeight: day.valor > 0 ? 600 : 400,
+                                    border: day.key === todayKey ? '1px solid rgba(247,228,121,0.6)' : 'none',
+                                    padding: '0 4px', cursor: 'default', minWidth: 44,
+                                  }}
+                                >
+                                  {day.valor > 0 ? fmtK(day.valor) : ''}
+                                </td>
+                              ))}
+                              <td style={{ fontSize: 11, color: '#fff', fontWeight: 700, textAlign: 'right', paddingLeft: 8 }}>
+                                {fmtK(weekTotal)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ display: 'flex', gap: 24, marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>DÍA MÁS ACTIVO</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>{dowStats.activeDay}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>TOTAL</div>
+                      <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.total)}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Estacionalidad */}
+              <div style={{ background: '#000', border: '1px solid var(--border-color)', borderRadius: 6, padding: 20, marginBottom: 16 }}>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+                        <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estacionalidad</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Patrones por semana</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cards + Gráfico */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
+                  {/* Cards de semanas */}
+                  {weeklyStats.withVsAvg.map((w) => (
+                    <div key={w.label} style={{ flex: '1 1 130px', minWidth: 120, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>{w.label}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{fmt(w.total)}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: w.vsAvg >= 0 ? '#22c55e' : '#ef4444', marginTop: 6 }}>
+                        {w.vsAvg >= 0 ? '+' : ''}{w.vsAvg.toFixed(1)}% vs promedio
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Gráfico */}
+                  <div style={{ flex: '1 1 200px', minWidth: 180, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: 12, minHeight: 140 }}>
+                    <Bar
+                      data={{
+                        labels: weeklyStats.totals.map(s => s.label),
+                        datasets: [{
+                          label: metrica === 'operaciones' ? 'Operaciones' : 'Total',
+                          data: weeklyStats.totals.map(s => s.total),
+                          backgroundColor: weeklyStats.totals.map(s =>
+                            s.label === weeklyStats.best.label
+                              ? 'rgba(34,197,94,0.6)'
+                              : 'rgba(239,68,68,0.4)'
+                          ),
+                          borderRadius: 4,
+                          borderSkipped: false,
+                        }],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: {
+                            callbacks: { label: (ctx: any) => fmt(ctx.parsed.y ?? 0) },
+                          },
+                        },
+                        scales: {
+                          x: { ticks: { color: '#555', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                          y: {
+                            ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 9 } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Fila inferior: Mejor, Peor, Variación */}
+                <div style={{ display: 'flex', gap: 24, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase' }}>Mejor Sem</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 2 }}>{weeklyStats.best.label}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase' }}>Peor Sem</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 2 }}>{weeklyStats.worst.label}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase' }}>Variación</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 2 }}>
+                      {weeklyStats.best.total > 0 && weeklyStats.worst.total > 0
+                        ? `${((weeklyStats.best.total / weeklyStats.worst.total - 1) * 100).toFixed(1)}%`
+                        : '—'
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Por día de semana */}
+              <div style={{ background: '#000', border: '1px solid var(--border-color)', borderRadius: 6, padding: 20 }}>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Por Día de Semana</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Rendimiento en $</div>
+                </div>
+                <div style={{ height: 200 }}>
+                  <Bar
+                    data={{
+                      labels: DIAS_SEMANA,
+                      datasets: [{
+                        label: metrica === 'operaciones' ? 'Operaciones' : 'Total',
+                        data: dowStats.sums,
+                        backgroundColor: dowStats.sums.map(v =>
+                          v >= dowStats.max * 0.9
+                            ? 'rgba(34,197,94,0.6)'
+                            : 'rgba(34,197,94,0.2)'
+                        ),
+                        borderRadius: 4,
+                        borderSkipped: false,
+                      }],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                          callbacks: { label: (ctx: any) => fmt(ctx.parsed.y ?? 0) },
+                        },
+                      },
+                      scales: {
+                        x: { ticks: { color: '#555', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                        y: {
+                          ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } },
+                          grid: { color: 'rgba(255,255,255,0.03)' },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: DUPLICADOS */}
+          {activeTab === 'duplicados' && (
+            <div>
+              <header className="dashboard-header" style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: 4, height: 18, borderRadius: 2, background: 'var(--azul)' }} />
+                  <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Detección de Duplicados</h2>
+                </div>
+                {duplicados.length > 0 && (
+                  <div style={{ fontSize: '12px', color: '#999', fontWeight: 700 }}>
+                    {duplicados.length} duplicados potenciales encontrados
+                  </div>
+                )}
+              </header>
+
+              {/* Toolbar */}
+              <div className="toolbar-container" style={{ marginBottom: '24px', padding: '16px 20px', background: '#000', border: '1px solid var(--border-color)', borderRadius: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '40px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      <ShieldCheck size={13} color="var(--azul)" />
+                      <span style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase' }}>Estados</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '4px 0', scrollbarWidth: 'none', flex: 1 }}>
+                      {allEstados.map(e => (
+                        <button key={e} onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)} style={chipStyle(selectedEstados.includes(e))}>
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <User size={13} color="var(--azul)" />
+                      <span style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase' }}>Analistas</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {allAnalistas.map(a => (
+                        <button key={a} onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)} style={chipStyle(selectedAnalistas.includes(a))}>
+                          {displayAnalista(a)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {duplicados.length === 0 ? (
+                <div className="empty-state">
+                  <CheckCircle size={40} color="var(--verde)" style={{ opacity: 0.3, marginBottom: '12px' }} />
+                  <p style={{ color: 'var(--verde)', fontWeight: 800, fontSize: '14px' }}>POOL LIMPIO</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {duplicados.map(grupo => (
+                    <div key={grupo.key} className="data-card" style={{ borderLeft: 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <AlertTriangle size={15} color="#444" />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
+                            {grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre?.toUpperCase()}
+                          </div>
+                          <div style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>
+                            {grupo.registros.length} duplicados • filtrado por {grupo.tipo}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: 'left' }}>Cliente / Identificación</th>
+                              <th style={{ textAlign: 'left' }}>Analista</th>
+                              <th style={{ textAlign: 'left' }}>Estado</th>
+                              <th style={{ textAlign: 'right' }}>Monto</th>
+                              <th style={{ textAlign: 'center' }}>Fecha</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {grupo.registros.map((r: any) => (
+                              <tr key={r.id}>
+                                <td style={{ padding: '8px 16px' }}>
+                                  <div style={{ fontWeight: 700, color: '#fff' }}>{r.nombre}</div>
+                                  <div style={{ fontSize: '10px', color: '#333', fontFamily: 'monospace' }}>{r.cuil}</div>
+                                </td>
+                                <td style={{ color: '#555', fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
+                                <td>
+                                  <span className="status-badge" style={{ fontSize: '9px', padding: '2px 8px' }}>{r.estado}</span>
+                                </td>
+                                <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--dorado)' }}>{formatCurrency(r.monto)}</td>
+                                <td style={{ textAlign: 'center', color: '#333', fontSize: '11px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: AUDITORIA */}
+          {activeTab === 'auditoria' && (
+            <div>
+              <header className="dashboard-header" style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Log de Auditoría</h1>
+                </div>
+              </header>
+
+              <div className="data-card">
+                {auditoriaLoading ? (
+                  <div className="loading-container"><div className="spinner" /><span>Cargando...</span></div>
+                ) : (!auditoriaRegistros || auditoriaRegistros.length === 0) ? (
+                  <div className="empty-state">
+                    <p>No hay registros de auditoría</p>
+                    <p>Las acciones del sistema aparecerán aquí automáticamente.</p>
+                  </div>
+                ) : (
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha / Hora</th>
+                        <th>ID Registro</th>
+                        <th>Analista</th>
+                        <th>Acción</th>
+                        <th>Campo</th>
+                        <th>Detalle</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditoriaRegistros.map(reg => (
+                        <tr key={reg.id}>
+                          <td style={{ fontSize: '12px', color: '#888', whiteSpace: 'nowrap' }}>
+                            {formatDateTime(reg.fecha_hora)}
+                          </td>
+                          <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>
+                            {reg.id_registro?.substring(0, 15) || '-'}
+                          </td>
+                          <td>{reg.analista || '-'}</td>
+                          <td>
+                            <span style={{
+                              padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700,
+                              background: reg.accion === 'Creación' ? 'rgba(76,175,80,0.1)' :
+                                reg.accion === 'Eliminación' ? 'rgba(220,53,69,0.1)' : 'rgba(255,193,7,0.1)',
+                              color: reg.accion === 'Creación' ? 'var(--verde)' :
+                                reg.accion === 'Eliminación' ? 'var(--rojo)' : 'var(--naranja)',
+                            }}>
+                              {reg.accion}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '13px' }}>{reg.campo_modificado || '-'}</td>
+                          <td style={{ fontSize: '12px', color: '#888', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {reg.valor_nuevo || reg.valor_anterior || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           )}

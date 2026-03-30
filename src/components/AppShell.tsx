@@ -27,24 +27,25 @@ const ReminderAlertPopup = () => {
   return (
     <div style={{
       position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
-      background: 'var(--azul)', color: '#fff', padding: '16px 20px',
-      borderRadius: '8px', boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+      background: '#0a0a0a', color: '#fff', padding: '16px 20px',
+      borderRadius: '12px', boxShadow: '0 8px 40px rgba(0,0,0,0.8)',
       display: 'flex', alignItems: 'center', gap: '16px',
       animation: 'slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-      border: '1px solid rgba(255,255,255,0.2)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderLeft: '3px solid var(--naranja)',
     }}>
-      <div style={{ 
-        width: '40px', height: '40px', background: 'rgba(255,255,255,0.2)',
-        borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center'
+      <div style={{
+        width: '36px', height: '36px', background: 'rgba(245,158,11,0.1)',
+        borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
-        <Bell size={20} />
+        <Bell size={16} style={{ color: 'var(--naranja)' }} />
       </div>
       <div>
-        <div style={{ fontWeight: 800, fontSize: '14px' }}>Recordatorios Pendientes</div>
-        <div style={{ fontSize: '12px', opacity: 0.9 }}>Tienes {pendingReminders} tareas para hoy</div>
+        <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>Recordatorios Pendientes</div>
+        <div style={{ fontSize: '12px', color: '#555', marginTop: '2px' }}>{pendingReminders} {pendingReminders === 1 ? 'recordatorio' : 'recordatorios'} sin revisar</div>
       </div>
-      <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', opacity: 0.5 }}>
-        <X size={18} />
+      <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', marginLeft: '8px' }}>
+        <X size={16} />
       </button>
     </div>
   );

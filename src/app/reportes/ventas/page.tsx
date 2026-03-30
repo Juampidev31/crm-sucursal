@@ -5,6 +5,7 @@ import { formatCurrency, formatDate, displayAnalista } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { useData } from '@/context/DataContext';
 import { Download, TrendingUp, Users, DollarSign, Hash } from 'lucide-react';
+import { SeccionEstacionalidad } from '@/components/SeccionEstacionalidad';
 
 export default function ReporteVentasPage() {
   const { registros: todosRegistros, loading } = useData();
@@ -172,6 +173,9 @@ export default function ReporteVentasPage() {
           ))}
         </div>
       </div>
+
+      {/* ── Estacionalidad ── */}
+      <SeccionEstacionalidad filtroMes={filtroMes} filtroAnalista={filtroAnalista} />
 
       {/* ── Por Analista ── */}
       {porAnalista.length > 0 && (

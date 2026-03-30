@@ -50,6 +50,8 @@ interface FilterCtx {
   setCurrentPage: (val: number | ((p: number) => number)) => void;
   totalResults: number;
   setTotalResults: (val: number) => void;
+  showFilters: boolean;
+  setShowFilters: (val: boolean | ((v: boolean) => boolean)) => void;
 }
 
 const FilterContext = createContext<FilterCtx | null>(null);
@@ -61,6 +63,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [exportTick, setExportTick] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
 
   const setFilter = useCallback((key: keyof FilterState, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -83,29 +86,13 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     setCurrentPage(1);
   }, [filters, pageSize]);
 
-  // Escuchar tecla Escape para limpiar filtros o cerrar modal
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (isCreationModalOpen) {
-          setIsCreationModalOpen(false);
-          return;
-        }
-        if (hayFiltros) {
-          limpiarFiltros();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hayFiltros, limpiarFiltros, isCreationModalOpen]);
-
   return (
     <FilterContext.Provider value={{
       filters, setFilter, limpiarFiltros, hayFiltros,
       isCreationModalOpen, setIsCreationModalOpen,
       pageSize, setPageSize, triggerExport, exportTick,
-      currentPage, setCurrentPage, totalResults, setTotalResults
+      currentPage, setCurrentPage, totalResults, setTotalResults,
+      showFilters, setShowFilters,
     }}>
       {children}
     </FilterContext.Provider>
