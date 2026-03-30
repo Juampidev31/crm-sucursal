@@ -13,6 +13,8 @@ import {
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Activity,
+  BarChart2,
+  CalendarDays,
   TrendingUp,
   TrendingDown,
   Zap,
@@ -124,8 +126,18 @@ function PDVHistorico({ data }: { data: PDVData }) {
 
   return (
     <div style={{ marginTop: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Histórico Anual — PDV</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+            <CalendarDays size={16} color="#fbbf24" />
+          </div>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO ANUAL — PDV</div>
+            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+              Análisis de rendimiento por cuartiles
+            </div>
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
             {['Q1','Q2','Q3','Q4'].map((q, i) => (
@@ -169,9 +181,18 @@ function AnalistaHistorico({ data, nombre }: { data: HistoricoData; nombre: stri
 
   return (
     <div style={{ marginTop: '16px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px' }}>Histórico Anual — {nombre}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+            <CalendarDays size={16} color="#fbbf24" />
+          </div>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO ANUAL — {nombre}</div>
+            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+              Análisis de rendimiento por cuartiles
+            </div>
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           {/* Trimestrales en bloque similar a los años */}
           <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
@@ -634,58 +655,87 @@ export default function AnalistasPage() {
   const histChart = {
     labels: historico.map(h => h.label),
     datasets: [
-      { type: 'bar' as const, label: 'Objetivo', data: historico.map(h => h.objetivo), backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 4, yAxisID: 'y' },
-      { type: 'bar' as const, label: 'Alcance', data: historico.map(h => h.alcance), backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 4, yAxisID: 'y' },
-      {
-        type: 'line' as const,
-        label: 'Meta 100%',
-        data: historico.map(() => 100),
-        borderColor: '#f87171',
-        borderWidth: 1.5,
-        borderDash: [5, 5],
-        pointRadius: 0,
-        fill: false,
-        yAxisID: 'y2',
+      { 
+        type: 'bar' as const, 
+        label: 'Objetivo Venta', 
+        data: historico.map(h => h.objetivo), 
+        backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+        borderColor: 'rgba(255, 255, 255, 0.15)',
+        borderWidth: { top: 1, left: 1, right: 1, bottom: 0 },
+        borderRadius: 8, 
+        borderSkipped: 'bottom' as const,
+        yAxisID: 'y',
+        barPercentage: 0.85,
+        categoryPercentage: 0.8,
       },
       {
-        type: 'line' as const, label: 'Cumpl. %',
+        type: 'line' as const, 
+        label: 'Cumplimiento (%)',
         data: historico.map(h => h.cumplimiento),
-        borderColor: '#fff', 
-        backgroundColor: (context: any) => {
-          const chart = context.chart;
-          const { ctx, chartArea } = chart;
-          if (!chartArea) return 'transparent';
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-          gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          return gradient;
-        },
-        fill: true,
-        pointRadius: 8,
+        borderColor: '#bbb', 
+        backgroundColor: 'transparent',
+        fill: false,
+        pointRadius: 4,
         borderWidth: 2,
         tension: 0.4,
         yAxisID: 'y2',
-        pointBackgroundColor: historico.map(h => h.alcance > 0 ? 'rgba(74, 222, 128, 0.25)' : 'rgba(248, 113, 113, 0.25)'),
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointHoverRadius: 10,
+        pointBackgroundColor: '#888',
+        pointBorderColor: '#bbb',
+        pointBorderWidth: 1.5,
+        pointHoverRadius: 6,
+      },
+      {
+        type: 'line' as const,
+        label: 'Referencia 100%',
+        data: historico.map(() => 100),
+        borderColor: '#f87171',
+        borderWidth: 1.2,
+        borderDash: [4, 4],
+        pointRadius: 0,
+        fill: false,
+        yAxisID: 'y2',
       },
     ],
   };
 
   const histOpts = {
     responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index' as const, intersect: false },
     plugins: {
-      legend: { position: 'top' as const, labels: { color: '#888', font: { family: 'Outfit', size: 11 as const }, boxWidth: 12, padding: 16 } },
-      tooltip: { callbacks: { label: (c: { dataset: { type?: string; label?: string }; parsed: { y: number } }) => c.dataset.type === 'line' ? ` ${pct(c.parsed.y)}` : ` ${formatCurrency(c.parsed.y)}` } },
+      legend: { 
+        position: 'top' as const, 
+        align: 'end' as const,
+        labels: { color: '#fff', font: { family: 'Outfit', size: 10, weight: 800 as const }, boxWidth: 16, boxHeight: 8, padding: 20 } 
+      },
+      tooltip: { 
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        titleFont: { family: 'Outfit', size: 13, weight: 'bold' as const },
+        bodyFont: { family: 'Outfit', size: 12 },
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: { 
+          label: (c: { dataset: { label?: string }; parsed: { y: number } }) => 
+            c.dataset.label === 'Objetivo Venta' ? ` ${formatCurrency(c.parsed.y)}` : ` ${pct(c.parsed.y)}` 
+        } 
+      },
     },
     scales: {
-      x: { ticks: { color: '#555', font: { family: 'Outfit', size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-      y: { ticks: { color: '#555', font: { family: 'Outfit', size: 11 }, callback: (v: string | number) => `$${numFmt.format(Number(v) / 1000000)}M` }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      x: { 
+        ticks: { color: '#fff', font: { family: 'Outfit', size: 10, weight: 800 as const } }, 
+        grid: { display: false } 
+      },
+      y: { 
+        title: { display: true, text: 'Valores', color: '#fff', font: { family: 'Outfit', size: 11, weight: 800 as const } },
+        ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => `${Number(v) / 1000000}M` }, 
+        grid: { display: false },
+        min: 0,
+        suggestedMax: 70000000
+      },
       y2: { 
         position: 'right' as const, 
-        min: 0, suggestedMax: 120, 
-        ticks: { color: '#555', font: { family: 'Outfit', size: 11 }, callback: (v: string | number) => `${v}%` }, 
+        title: { display: true, text: 'Cumplimiento (%)', color: '#fff', font: { family: 'Outfit', size: 11, weight: 800 as const } },
+        min: 0, suggestedMax: 180, 
+        ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => `${v}%` }, 
         grid: { display: false } 
       },
     },
@@ -766,53 +816,26 @@ export default function AnalistasPage() {
       {/* ── Topbar ── */}
       <div style={{ ...card, display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px', padding: '16px 24px', flexWrap: 'wrap' }}>
         
-        {/* Icono Estilo Imagen */}
-        <div style={{ 
-          width: '42px', 
-          height: '42px', 
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0
-        }}>
-          <Activity size={22} color="#fff" />
-        </div>
-
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ 
-            fontSize: '15px', 
-            fontWeight: 900, 
-            color: '#fff', 
-            textTransform: 'uppercase', 
-            letterSpacing: '0.8px', 
-            lineHeight: 1.2,
-            marginBottom: '2px'
-          }}>
-            PANEL DE CONTROL — {analista === PDV ? 'TOTAL GENERAL' : analista.toUpperCase()}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
+          <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+            <Activity size={16} color="#a855f7" />
           </div>
-          <div style={{ 
-            fontSize: '10px', 
-            fontWeight: 800, 
-            color: '#444', 
-            textTransform: 'uppercase', 
-            letterSpacing: '1px' 
-          }}>
-            PERIODO SELECCIONADO: {mes === now.getMonth() && anio === now.getFullYear() ? `MES ACTUAL ${anio}` : `${CONFIG.MESES_NOMBRES[mes].toUpperCase()} ${anio}`}
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>
+              PANEL DE CONTROL — {analista === PDV ? 'TOTAL GENERAL' : analista.toUpperCase()}
+            </div>
+            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+              Periodo seleccionado: {mes === now.getMonth() && anio === now.getFullYear() ? `Mes actual ${anio}` : `${CONFIG.MESES_NOMBRES[mes]} ${anio}`}
+            </div>
           </div>
         </div>
 
-
-
-        {/* Selector analista */}
+        {/* Selectores */}
         <select style={sel} value={analista} onChange={e => setAnalista(e.target.value)}>
           <option value={PDV}>PDV</option>
           {analistasSel.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
 
-        {/* Selector mes + año */}
         <select style={sel} value={`${anio}-${mes}`} onChange={e => {
           const [a, m] = e.target.value.split('-');
           setAnio(Number(a)); setMes(Number(m));
@@ -1003,7 +1026,17 @@ export default function AnalistasPage() {
           
           {/* Alertas Premium */}
           <div style={card}>
-            <div style={{ ...lbl, marginBottom: '20px' }}><AlertTriangle size={14} color="#f87171" /> ALERTAS DE GESTIÓN</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+                <AlertTriangle size={16} color="#f87171" />
+              </div>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>ALERTAS DE GESTIÓN</div>
+                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+                  Indicadores de acciones requeridas
+                </div>
+              </div>
+            </div>
             {[
               { id: 'proy', label: 'PROYECCIÓN', count: alertas.proyeccion, icon: <TrendingUp size={16} />, color: '#fff', status: alertas.proyeccion > 20 ? 'URGENTE' : 'OK' },
               { id: 'seg', label: 'SEGUIMIENTO', count: alertas.seguimiento, icon: <Clock size={16} />, color: '#fbbf24', status: alertas.seguimiento > 5 ? 'REVISAR' : 'OK' },
@@ -1044,7 +1077,17 @@ export default function AnalistasPage() {
 
           {/* Reportes Anuales Refinado */}
           <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ ...lbl, marginBottom: '16px' }}><Users size={14} /> EQUIPO DE TRABAJO</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+                <Users size={16} color="#38bdf8" />
+              </div>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>EQUIPO DE TRABAJO</div>
+                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+                  Vista global y analistas asignados
+                </div>
+              </div>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {[{ key: PDV, label: 'VISTA GLOBAL (PDV)' }, ...analistasSel.map(a => ({ key: a, label: a }))].map(a => (
                 <div key={a.key} onClick={() => setAnalista(a.key)}
@@ -1100,12 +1143,20 @@ export default function AnalistasPage() {
 
       </div>
       {/* ── Histórico 12 meses ── */}
-      <div style={{ ...card, marginBottom: '16px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>HISTÓRICO 12 MESES</div>
-        <div style={{ fontSize: '11px', color: '#555', marginBottom: '16px' }}>
-          {historico[0]?.label} — {historico[11]?.label} {anio}
+      <div style={{ ...card, marginBottom: '16px', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
+          <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+            <BarChart2 size={16} color="#4ade80" />
+          </div>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO 12 MESES</div>
+            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+              Objetivo vs. Alcance (Ventas $)
+            </div>
+          </div>
         </div>
-        <div style={{ height: '320px' }}>
+        
+        <div style={{ height: '360px', padding: '40px 10px 10px 10px' }}>
           <Bar data={histChart as any} options={histOpts as any} />
         </div>
       </div>
