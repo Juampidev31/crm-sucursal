@@ -94,6 +94,7 @@ const RegistroModal = memo(function RegistroModal({
   const [saving, setSaving] = useState(false);
   const [showDupModal, setShowDupModal] = useState(false);
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
+  const [showComentariosModal, setShowComentariosModal] = useState(false);
 
   useEffect(() => {
     if (isOpen) { setForm(initialData); setErrors({}); setShowDupModal(false); setAgendarRecordatorio(false); }
@@ -376,6 +377,67 @@ const RecordatorioModal = memo(function RecordatorioModal({
   );
 });
 
+// ── Modal: Comentarios ───────────────────────────────────────────────────────
+
+const ComentariosModal = memo(function ComentariosModal({
+  registro, onClose,
+}: { registro: Registro | null; onClose: (saved: boolean, updatedComentarios?: string) => void }) {
+  const [comentarios, setComentarios] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (registro) {
+      setComentarios(registro.comentarios || '');
+    }
+  }, [registro]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(false); };
+    if (registro) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [registro, onClose]);
+
+  if (!registro) return null;
+
+  const save = async () => {
+    setSaving(true);
+    onClose(true, comentarios);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={() => onClose(false)}>
+      <div className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Comentarios</h3>
+          <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
+        </div>
+        <div className="modal-body">
+          <p style={{ fontSize: '13px', color: '#555', marginBottom: '16px', fontWeight: 600 }}>{registro.nombre}</p>
+          <Field label="Comentarios">
+            <textarea
+              className="form-input"
+              value={comentarios}
+              onChange={e => setComentarios(e.target.value)}
+              rows={6}
+              style={{ resize: 'vertical', fontFamily: 'inherit' }}
+              placeholder="Sin comentarios..."
+              autoFocus
+            />
+          </Field>
+        </div>
+        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', padding: '20px 28px' }}>
+          <button className="btn-secondary" onClick={() => onClose(false)} style={{
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
+          }}>CANCELAR</button>
+          <button className="btn-primary" onClick={save} disabled={saving} style={{
+            background: '#fff', color: '#000', border: 'none', fontWeight: 800
+          }}>{saving ? 'GUARDANDO…' : 'GUARDAR'}</button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 // ── Modal: Confirmar borrado ──────────────────────────────────────────────────
 
 const DeleteModal = memo(function DeleteModal({
@@ -455,6 +517,7 @@ export default function RegistrosPage() {
   const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
   const [recordatorioTarget, setRecordatorioTarget] = useState<Registro | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
+  const [comentariosTarget, setComentariosTarget] = useState<Registro | null>(null);
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
 
   // Fetch recordatorios
@@ -679,6 +742,25 @@ export default function RegistrosPage() {
       if (newRec) setRecordatorios(prev => [...prev, newRec]);
     }
   }, [showToast]);
+
+  const handleComentariosClose = useCallback(async (saved: boolean, updatedComentarios?: string) => {
+    if (saved && comentariosTarget && updatedComentarios !== undefined) {
+      const { error } = await supabase
+        .from('registros')
+        .update({ comentarios: updatedComentarios })
+        .eq('id', comentariosTarget.id);
+
+      if (error) {
+        showToast('Error al guardar comentarios', 'error');
+      } else {
+        showToast('Comentarios guardados', 'success');
+        setComentariosTarget(null);
+        fetchRegistros();
+      }
+    } else {
+      setComentariosTarget(null);
+    }
+  }, [comentariosTarget, showToast, fetchRegistros]);
 
   const rangeStart = (currentPage - 1) * pageSize + 1;
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
@@ -1071,7 +1153,7 @@ export default function RegistrosPage() {
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                           {reg.comentarios && reg.comentarios.trim() !== '' && (
                             <button
-                              onClick={() => openEdit(reg)}
+                              onClick={() => setComentariosTarget(reg)}
                               style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
                               title="Ver comentarios"
                               onMouseOver={e => e.currentTarget.style.color = '#fff'}
@@ -1117,6 +1199,7 @@ export default function RegistrosPage() {
         onSaved={handleSaved} onSavedWithRecordatorio={handleSavedWithRecordatorio}
       />
       <RecordatorioModal registro={recordatorioTarget} onClose={handleRecordatorioClose} />
+      <ComentariosModal registro={comentariosTarget} onClose={handleComentariosClose} />
       <DeleteModal registro={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} />
 
     </div>
