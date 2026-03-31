@@ -343,14 +343,15 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
             style={{
               position: 'fixed', inset: 0, zIndex: 9999,
               background: 'rgba(0,0,0,0.7)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+              overflowY: 'auto', padding: '20px 16px',
             }}
             onClick={e => { if (e.target === e.currentTarget) setShowAdminModal(false); }}
           >
             <div style={{
               background: '#111', border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 12, padding: '32px 28px', width: 320,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                 <Lock size={18} style={{ color: '#fff' }} />

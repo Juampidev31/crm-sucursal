@@ -8,7 +8,7 @@ import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/l
 import {
   Save, RotateCcw, AlertCircle, Bell, Clock, History,
   Settings, Target, Activity, Copy, Shield, AlertTriangle,
-  CheckCircle, User, ShieldCheck, BarChart3, Calendar, TrendingUp
+  CheckCircle, User, ShieldCheck, BarChart3, Calendar, TrendingUp, Trash2
 } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
 import {
@@ -77,6 +77,7 @@ export default function AjustesPage() {
   // Auditoria state
   const [auditoriaRegistros, setAuditoriaRegistros] = useState<any[]>([]);
   const [auditoriaLoading, setAuditoriaLoading] = useState(true);
+  const [limpiandoLog, setLimpiandoLog] = useState(false);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -256,6 +257,25 @@ export default function AjustesPage() {
         });
     }
   }, [activeTab]);
+
+  const limpiarLogAuditoria = async () => {
+    if (!confirm('¿Estás seguro de que deseas eliminar todos los registros de auditoría? Esta acción no se puede deshacer.')) {
+      return;
+    }
+    setLimpiandoLog(true);
+    const { data, error } = await supabase
+      .from('auditoria')
+      .delete()
+      .not('id', 'is', null)
+      .select('id');
+    setLimpiandoLog(false);
+    if (error) {
+      setToast({ message: `Error al limpiar log: ${error.message}`, type: 'error' });
+    } else {
+      setToast({ message: `Log de auditoría limpiado exitosamente (${data?.length || 0} registros eliminados)`, type: 'success' });
+      setAuditoriaRegistros([]);
+    }
+  };
 
   const saveHistorico = async () => {
     setSavingHist(true);
@@ -643,7 +663,7 @@ export default function AjustesPage() {
               onClick={() => setActiveTab(t.id as ActiveTab)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '8px 16px', border: 'none', 
+                padding: '8px 16px', border: 'none',
                 background: activeTab === t.id ? '#fff' : 'transparent',
                 borderRadius: '6px',
                 fontFamily: "'Outfit', sans-serif", fontSize: '13px', fontWeight: activeTab === t.id ? 700 : 500,
@@ -703,9 +723,9 @@ export default function AjustesPage() {
                           <input
                             className="form-input"
                             type="number"
-                            style={{ 
-                              width: '100px', 
-                              textAlign: 'center', 
+                            style={{
+                              width: '100px',
+                              textAlign: 'center',
                               background: 'rgba(255,255,255,0.02)',
                               border: '1px solid rgba(255,255,255,0.08)',
                               borderRadius: '4px'
@@ -856,11 +876,11 @@ export default function AjustesPage() {
                         <td>
                           <input
                             className="form-input" type="number"
-                            style={{ 
-                              width: '140px', 
-                              background: 'rgba(255,255,255,0.01)', 
-                              border: 'none', 
-                              borderBottom: '1.5px solid rgba(255,255,255,0.1)', 
+                            style={{
+                              width: '140px',
+                              background: 'rgba(255,255,255,0.01)',
+                              border: 'none',
+                              borderBottom: '1.5px solid rgba(255,255,255,0.1)',
                               borderRadius: 0,
                               padding: '8px 4px'
                             }}
@@ -888,11 +908,11 @@ export default function AjustesPage() {
                         <td>
                           <input
                             className="form-input" type="number"
-                            style={{ 
-                              width: '140px', 
-                              background: 'rgba(255,255,255,0.02)', 
-                              border: 'none', 
-                              borderBottom: '1.5px solid rgba(255,255,255,0.15)', 
+                            style={{
+                              width: '140px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: 'none',
+                              borderBottom: '1.5px solid rgba(255,255,255,0.15)',
                               borderRadius: 0,
                               padding: '8px 4px'
                             }}
@@ -909,12 +929,12 @@ export default function AjustesPage() {
                         <td>
                           <input
                             className="form-input" type="number"
-                            style={{ 
-                              width: '100px', 
-                              background: 'rgba(255,255,255,0.02)', 
-                              border: 'none', 
-                              borderBottom: '1.5px solid rgba(255,255,255,0.15)', 
-                              borderRadius: 0, 
+                            style={{
+                              width: '100px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: 'none',
+                              borderBottom: '1.5px solid rgba(255,255,255,0.15)',
+                              borderRadius: 0,
                               textAlign: 'center',
                               padding: '8px 4px'
                             }}
@@ -1008,14 +1028,14 @@ export default function AjustesPage() {
             <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
               {/* Filters Header Card */}
               <div style={{
-                background: '#0a0a0a', 
+                background: '#0a0a0a',
                 border: '1px solid rgba(255,255,255,0.03)',
-                borderRadius: '8px', 
+                borderRadius: '8px',
                 padding: '24px 32px',
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                marginBottom: '24px', 
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '24px',
                 flexWrap: 'wrap',
                 gap: '40px'
               }}>
@@ -1197,18 +1217,18 @@ export default function AjustesPage() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
                   {/* Cards de semanas */}
                   {weeklyStats.withVsAvg.map((w) => (
-                    <div key={w.label} style={{ 
-                      flex: '1 1 130px', 
-                      minWidth: 120, 
-                      background: 'rgba(255,255,255,0.01)', 
-                      border: '1px solid rgba(255,255,255,0.04)', 
-                      borderRadius: '8px', 
-                      padding: '20px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      justifyContent: 'center', 
-                      alignItems: 'center', 
-                      textAlign: 'center' 
+                    <div key={w.label} style={{
+                      flex: '1 1 130px',
+                      minWidth: 120,
+                      background: 'rgba(255,255,255,0.01)',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                      borderRadius: '8px',
+                      padding: '20px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      textAlign: 'center'
                     }}>
                       <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
                       <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
@@ -1440,6 +1460,21 @@ export default function AjustesPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Log de Auditoría</h1>
                 </div>
+                <button
+                  onClick={limpiarLogAuditoria}
+                  disabled={limpiandoLog || !auditoriaRegistros || auditoriaRegistros.length === 0}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+                    border: 'none', cursor: (limpiandoLog || !auditoriaRegistros || auditoriaRegistros.length === 0) ? 'not-allowed' : 'pointer',
+                    background: limpiandoLog ? 'rgba(220,53,69,0.5)' : 'rgba(220,53,69,0.15)',
+                    color: limpiandoLog ? '#888' : 'var(--rojo)',
+                    opacity: (limpiandoLog || !auditoriaRegistros || auditoriaRegistros.length === 0) ? 0.5 : 1,
+                  }}
+                >
+                  <Trash2 size={16} />
+                  {limpiandoLog ? 'Limpiando...' : 'Limpiar Log'}
+                </button>
               </header>
 
               <div className="data-card">
@@ -1454,37 +1489,38 @@ export default function AjustesPage() {
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>Fecha / Hora</th>
-                        <th>ID Registro</th>
-                        <th>Analista</th>
-                        <th>Acción</th>
-                        <th>Campo</th>
-                        <th>Detalle</th>
+                        <th style={{ textAlign: 'center' }}>Fecha / Hora</th>
+                        <th style={{ textAlign: 'center' }}>ID Registro</th>
+                        <th style={{ textAlign: 'center' }}>Analista</th>
+                        <th style={{ textAlign: 'center' }}>Acción</th>
+                        <th style={{ textAlign: 'center' }}>Campo</th>
+                        <th style={{ textAlign: 'center' }}>Detalle</th>
                       </tr>
                     </thead>
                     <tbody>
                       {auditoriaRegistros.map(reg => (
                         <tr key={reg.id}>
-                          <td style={{ fontSize: '12px', color: '#888', whiteSpace: 'nowrap' }}>
+                          <td style={{ fontSize: '12px', color: '#888', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
                             {formatDateTime(reg.fecha_hora)}
                           </td>
-                          <td style={{ fontSize: '12px', fontFamily: 'monospace' }}>
+                          <td style={{ fontSize: '12px', fontFamily: 'monospace', textAlign: 'center', verticalAlign: 'middle' }}>
                             {reg.id_registro?.substring(0, 15) || '-'}
                           </td>
-                          <td>{reg.analista || '-'}</td>
-                          <td>
+                          <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>{reg.analista || '-'}</td>
+                          <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                             <span style={{
                               padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700,
                               background: reg.accion === 'Creación' ? 'rgba(76,175,80,0.1)' :
                                 reg.accion === 'Eliminación' ? 'rgba(220,53,69,0.1)' : 'rgba(255,193,7,0.1)',
                               color: reg.accion === 'Creación' ? 'var(--verde)' :
                                 reg.accion === 'Eliminación' ? 'var(--rojo)' : 'var(--naranja)',
+                              display: 'inline-block'
                             }}>
                               {reg.accion}
                             </span>
                           </td>
-                          <td style={{ fontSize: '13px' }}>{reg.campo_modificado || '-'}</td>
-                          <td style={{ fontSize: '12px', color: '#888', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <td style={{ fontSize: '13px', textAlign: 'center', verticalAlign: 'middle' }}>{reg.campo_modificado || '-'}</td>
+                          <td style={{ fontSize: '12px', color: '#888', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center', verticalAlign: 'middle' }}>
                             {reg.valor_nuevo || reg.valor_anterior || '-'}
                           </td>
                         </tr>
