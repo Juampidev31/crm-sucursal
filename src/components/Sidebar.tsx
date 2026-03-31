@@ -36,15 +36,16 @@ function NavItem({
       <Link
         href={href}
         onClick={onClick}
+        className={`green-hover-btn ${active ? 'active-item' : ''}`}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 46, height: 46,
           borderRadius: 11,
-          color: active ? '#fff' : '#666',
-          background: active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+          color: active ? '#86efac' : '#666',
+          background: active ? 'rgba(134, 239, 172, 0.1)' : 'rgba(255,255,255,0.04)',
           position: 'relative',
           textDecoration: 'none',
-          border: `1px solid ${active ? 'rgba(255,255,255,0.1)' : 'transparent'}`,
+          border: `1px solid ${active ? 'rgba(134, 239, 172, 0.15)' : 'transparent'}`,
         }}
       >
         <Icon
@@ -140,17 +141,15 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           <div className="sidebar-icon-btn" data-label="Nuevo Registro">
             <button
               onClick={() => setIsCreationModalOpen(true)}
+              className="green-hover-btn"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 46, height: 46,
                 borderRadius: 11,
-                background: 'rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.04)',
                 color: '#fff',
-                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
-                transition: 'all 0.2s',
+                border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
               }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,255,255,0.2)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <Plus size={24} strokeWidth={3} />
             </button>
@@ -183,27 +182,15 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setShowPageSizeSelector(s => !s)}
+              className="green-hover-btn"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 46, height: 46,
                 borderRadius: 11,
-                background: showPageSizeSelector ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)',
-                color: showPageSizeSelector ? '#fff' : '#888',
-                border: `1px solid ${showPageSizeSelector ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}`,
+                background: showPageSizeSelector ? 'rgba(134, 239, 172, 0.15)' : 'rgba(255,255,255,0.04)',
+                color: showPageSizeSelector ? '#86efac' : '#888',
+                border: `1px solid ${showPageSizeSelector ? 'rgba(134, 239, 172, 0.2)' : 'rgba(255,255,255,0.05)'}`,
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => {
-                if (!showPageSizeSelector) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                  e.currentTarget.style.color = '#fff';
-                }
-              }}
-              onMouseLeave={e => {
-                if (!showPageSizeSelector) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                  e.currentTarget.style.color = '#aaa';
-                }
               }}
               title={`Filas por página: ${totalResults} registros`}
             >
@@ -266,16 +253,14 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           <div className="sidebar-icon-btn" data-label="Exportar CSV">
             <button
               onClick={triggerExport}
+              className="green-hover-btn"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 46, height: 46,
                 borderRadius: 11,
                 background: 'rgba(255,255,255,0.04)', color: '#888',
                 border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
-                transition: 'all 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#aaa'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
             >
               <Download size={20} strokeWidth={2} />
             </button>
@@ -313,14 +298,12 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           <button
             onClick={() => { logout(); }}
             title="Salir del modo admin"
+            className="green-hover-btn"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'none', border: 'none', cursor: 'pointer',
               color: '#333', width: '100%', height: 40,
-              transition: 'color 0.2s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#333')}
           >
             <LogOut size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
           </button>
@@ -328,14 +311,12 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           <button
             onClick={() => setShowAdminModal(true)}
             title="Acceso Admin"
+            className="green-hover-btn"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'none', border: 'none', cursor: 'pointer',
               color: '#333', width: '100%', height: 40,
-              transition: 'color 0.2s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#333')}
           >
             <Lock size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
           </button>

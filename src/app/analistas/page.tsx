@@ -110,7 +110,7 @@ function PDVHistorico({ data }: { data: PDVData }) {
         </tr></thead>
         <tbody>
           {filas.map((r, i) => (
-            <tr key={i} style={{ 
+            <tr key={i} style={{
               borderBottom: '1px solid rgba(255,255,255,0.02)',
               background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'
             }}>
@@ -342,9 +342,12 @@ export default function AnalistasPage() {
           );
           const regsCapital = mesRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
           const regsOps = mesRegs.length;
-          const histEntry = historicoVentas.find(h => h.analista === analistaName && h.anio === anio && h.mes === mesIdx);
-          const real = regsCapital > 0 ? regsCapital : (histEntry?.capital_real || 0);
-          const opsReal = regsOps > 0 ? regsOps : (histEntry?.ops_real || 0);
+          // Usar filter + reduce en lugar de find para manejar múltiples registros
+          const histEntries = historicoVentas.filter(h => h.analista === analistaName && h.anio === anio && h.mes === mesIdx);
+          const histSum = histEntries.reduce((s, h) => s + (h.capital_real || 0), 0);
+          const histOpsSum = histEntries.reduce((s, h) => s + (h.ops_real || 0), 0);
+          const real = regsCapital > 0 ? regsCapital : histSum;
+          const opsReal = regsOps > 0 ? regsOps : histOpsSum;
           const obj = todosObjs.find(o => o.analista === analistaName && o.mes === mesIdx && o.anio === anio);
           const metaVentas = Number(obj?.meta_ventas) || 0;
           const metaOps = Number(obj?.meta_operaciones) || 0;
@@ -851,8 +854,8 @@ export default function AnalistasPage() {
 
       {/* --- Action Bar --- */}
       <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-        <select 
-          value={analista} 
+        <select
+          value={analista}
           onChange={e => setAnalista(e.target.value)}
           style={{
             background: '#000', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px',
@@ -865,8 +868,8 @@ export default function AnalistasPage() {
           {analistasSel.map(a => <option key={a} value={a}>{a.toUpperCase()}</option>)}
         </select>
 
-        <select 
-          value={`${anio}-${mes}`} 
+        <select
+          value={`${anio}-${mes}`}
           onChange={e => {
             const [a, m] = e.target.value.split('-');
             setAnio(Number(a)); setMes(Number(m));

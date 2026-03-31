@@ -186,21 +186,40 @@ a {
 }
 
 .sidebar-item:hover {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
-  color: rgba(255, 255, 255, 0.7);
-  border-left-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(90deg, rgba(134, 239, 172, 0.06) 0%, transparent 100%);
+  color: #86efac;
+  border-left-color: rgba(134, 239, 172, 0.2);
 }
 
 .sidebar-item.active {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
-  color: #fff;
+  background: linear-gradient(90deg, rgba(134, 239, 172, 0.1) 0%, transparent 100%);
+  color: #86efac;
   font-weight: 600;
-  border-left: 2px solid #fff;
-  box-shadow: inset 10px 0 20px -10px rgba(255, 255, 255, 0.1);
+  border-left: 2px solid #86efac;
+  box-shadow: inset 10px 0 20px -10px rgba(134, 239, 172, 0.12);
 }
 
-.sidebar-item.active::before {
-  display: none;
+/* Green hover effect for icon buttons */
+.green-hover-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.green-hover-btn:hover {
+  background: rgba(134, 239, 172, 0.08) !important;
+  border-color: rgba(134, 239, 172, 0.2) !important;
+  color: #86efac !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 10px rgba(134, 239, 172, 0.12) !important;
+  transform: translateY(-1px) scale(1.04);
+}
+
+.green-hover-btn svg {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.green-hover-btn:hover svg {
+  color: #86efac !important;
+  opacity: 1 !important;
+  transform: scale(1.05);
 }
 
 /* ============ DASHBOARD ============ */

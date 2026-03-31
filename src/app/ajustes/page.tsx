@@ -242,20 +242,31 @@ export default function AjustesPage() {
     }
   }, [activeTab]);
 
-  // Fetch datos para Auditoria
+  // Fetch datos para Auditoria + suscripción realtime
   useEffect(() => {
-    if (activeTab === 'auditoria') {
-      setAuditoriaLoading(true);
-      supabase
-        .from('auditoria')
-        .select('*')
-        .order('fecha_hora', { ascending: false })
-        .limit(200)
-        .then(({ data }) => {
-          setAuditoriaRegistros(data || []);
-          setAuditoriaLoading(false);
-        });
-    }
+    if (activeTab !== 'auditoria') return;
+
+    setAuditoriaLoading(true);
+    supabase
+      .from('auditoria')
+      .select('*')
+      .order('fecha_hora', { ascending: false })
+      .limit(200)
+      .then(({ data }) => {
+        setAuditoriaRegistros(data || []);
+        setAuditoriaLoading(false);
+      });
+
+    const channel = supabase
+      .channel('auditoria-live', { config: { broadcast: { self: true } } })
+      .on('broadcast', { event: 'auditoria_insert' }, ({ payload }) => {
+        if (payload?.entry) {
+          setAuditoriaRegistros(prev => [payload.entry, ...prev].slice(0, 200));
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [activeTab]);
 
   const limpiarLogAuditoria = async () => {
@@ -1498,8 +1509,8 @@ export default function AjustesPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {auditoriaRegistros.map(reg => (
-                        <tr key={reg.id}>
+                      {auditoriaRegistros.map((reg, idx) => (
+                        <tr key={reg.id ?? `${reg.fecha_hora}-${idx}`}>
                           <td style={{ fontSize: '12px', color: '#888', whiteSpace: 'nowrap', textAlign: 'center', verticalAlign: 'middle' }}>
                             {formatDateTime(reg.fecha_hora)}
                           </td>

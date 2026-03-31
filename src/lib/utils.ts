@@ -28,8 +28,13 @@ export const formatCurrency = (value: number): string =>
 
 function parseDateLocal(str: string): Date {
   // "YYYY-MM-DD" → hora local para evitar el desfase UTC-3
+  // "YYYY-MM-DDTHH:mm:ss..." → incluye hora, usar parse completo
   const parts = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (parts) return new Date(+parts[1], +parts[2] - 1, +parts[3]);
+  if (parts && !str.includes('T')) {
+    // Solo fecha, sin hora → usar mediodía para evitar problemas de zona horaria
+    return new Date(+parts[1], +parts[2] - 1, +parts[3], 12, 0, 0);
+  }
+  // Tiene hora (formato ISO completo) → parsear normalmente
   return new Date(str);
 }
 

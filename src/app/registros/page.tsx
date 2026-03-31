@@ -273,7 +273,7 @@ const RegistroModal = memo(function RegistroModal({
 
 const RecordatorioModal = memo(function RecordatorioModal({
   registro, onClose,
-}: { registro: Registro | null; onClose: (saved: boolean) => void }) {
+}: { registro: Registro | null; onClose: (saved: boolean, newRec?: Recordatorio) => void }) {
   const [recForm, setRecForm] = useState({ nota: '', fecha: '', hora: '09:00' });
   const [saving, setSaving] = useState(false);
   const { pushRecordatorioChange } = useData();
@@ -310,7 +310,7 @@ const RecordatorioModal = memo(function RecordatorioModal({
     logAudit({ id_registro: registro.id, analista: registro.analista, accion: 'Recordatorio creado', campo_modificado: 'Recordatorio', valor_nuevo: `${registro.nombre} | ${recForm.fecha} ${recForm.hora}${recForm.nota ? ' | ' + recForm.nota : ''}` });
     // Broadcast a otros usuarios
     pushRecordatorioChange('INSERT', data as Recordatorio);
-    setSaving(false); onClose(true);
+    setSaving(false); onClose(true, data as Recordatorio);
   };
 
   return (
@@ -641,9 +641,12 @@ export default function RegistrosPage() {
     setRecordatorioTarget(reg);
   }, [applyOptimistic, fetchRegistros, pushRegistroChange, registros, showToast]);
 
-  const handleRecordatorioClose = useCallback((saved: boolean) => {
+  const handleRecordatorioClose = useCallback((saved: boolean, newRec?: Recordatorio) => {
     setRecordatorioTarget(null);
-    if (saved) showToast('Recordatorio agendado', 'success');
+    if (saved) {
+      showToast('Recordatorio agendado', 'success');
+      if (newRec) setRecordatorios(prev => [...prev, newRec]);
+    }
   }, [showToast]);
 
   const rangeStart = (currentPage - 1) * pageSize + 1;
@@ -1037,10 +1040,10 @@ export default function RegistrosPage() {
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                           <button
                             onClick={() => setRecordatorioTarget(reg)}
-                            style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                            style={{ width: 38, height: 38, borderRadius: '10px', background: hasVencido(reg.id) ? 'rgba(220,53,69,0.08)' : 'rgba(255,255,255,0.02)', border: hasVencido(reg.id) ? '1px solid rgba(220,53,69,0.2)' : '1px solid rgba(255,255,255,0.05)', color: hasVencido(reg.id) ? 'var(--rojo)' : '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
                             title="Recordatorio"
-                            onMouseOver={e => e.currentTarget.style.color = '#fff'}
-                            onMouseOut={e => e.currentTarget.style.color = '#444'}
+                            onMouseOver={e => { e.currentTarget.style.color = hasVencido(reg.id) ? 'var(--rojo)' : '#fff'; }}
+                            onMouseOut={e => { e.currentTarget.style.color = hasVencido(reg.id) ? 'var(--rojo)' : '#444'; }}
                           ><Bell size={16} /></button>
                           <button
                             onClick={() => openEdit(reg)}
