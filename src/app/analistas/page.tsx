@@ -331,8 +331,8 @@ export default function AnalistasPage() {
       aniosSet.add(h.anio);
     });
     aniosSet.add(new Date().getFullYear());
-    // Ocultar años 2021 y 2022
-    const anios = Array.from(aniosSet).filter(a => a >= 2023).sort();
+    // Ocultar años 2021 y 2022 solo para analistas individuales (no PDV)
+    const anios = Array.from(aniosSet).filter(a => analista === PDV ? true : a >= 2023).sort();
 
     const buildAnalistaHistorico = (analistaName: string): HistoricoData => {
       const secciones = anios.map(anio => {
