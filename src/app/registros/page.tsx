@@ -169,14 +169,34 @@ const RegistroModal = memo(function RegistroModal({
       <div className="modal-content" onClick={e => e.stopPropagation()} style={{
         background: '#000', border: '1px solid rgba(255,255,255,0.05)',
         boxShadow: '0 40px 100px rgba(0,0,0,0.9)',
+        maxHeight: '90vh', display: 'flex', flexDirection: 'column',
       }}>
-        <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '24px 32px' }}>
+        <style>{`
+          .modal-content::-webkit-scrollbar,
+          .modal-body::-webkit-scrollbar {
+            width: 6px;
+          }
+          .modal-content::-webkit-scrollbar-track,
+          .modal-body::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.02);
+          }
+          .modal-content::-webkit-scrollbar-thumb,
+          .modal-body::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.15);
+            border-radius: 3px;
+          }
+          .modal-content::-webkit-scrollbar-thumb:hover,
+          .modal-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.25);
+          }
+        `}</style>
+        <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '24px 32px', flexShrink: 0 }}>
           <h3 className="modal-title" style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '0.5px' }}>
             {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
           </h3>
           <button className="btn-icon" onClick={onClose} style={{ color: '#444' }}><X size={20} /></button>
         </div>
-        <div className="modal-body">
+        <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
           <div className="form-row">
             <Field label="CUIL *" error={errors.cuil}>
               <input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" />
@@ -261,7 +281,7 @@ const RegistroModal = memo(function RegistroModal({
             <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
           </p>
         </div>
-        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', padding: '24px 32px' }}>
+        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', padding: '24px 32px', flexShrink: 0 }}>
           {errors._ && <span style={{ color: '#fff', fontSize: '12px', flex: 1, fontWeight: 700 }}>{errors._}</span>}
           <button className="btn-secondary" onClick={onClose} style={{
             background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666',
