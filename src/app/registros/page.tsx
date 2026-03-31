@@ -230,6 +230,17 @@ const RegistroModal = memo(function RegistroModal({
               </select>
             </Field>
           </div>
+          <div className="form-row">
+            <Field label="Comentarios">
+              <textarea
+                className="form-input"
+                value={form.comentarios || ''}
+                onChange={e => set('comentarios', e.target.value)}
+                rows={3}
+                style={{ resize: 'vertical', fontFamily: 'inherit' }}
+              />
+            </Field>
+          </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <label className="toggle-card">
               <span className="toggle-switch">
