@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, sanitizarCuil, displayAnalista } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
@@ -990,6 +990,15 @@ export default function RegistrosPage() {
                                 fontSize: '9px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px',
                                 background: '#333', color: '#fff', border: '1px solid #444', letterSpacing: '0.5px'
                               }}>RE</span>
+                            )}
+                            {reg.comentarios && reg.comentarios.trim() !== '' && (
+                              <span style={{
+                                fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px',
+                                background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)',
+                                letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px'
+                              }}>
+                                <MessageSquare size={10} />COMENT
+                              </span>
                             )}
                             {reg.cuil && <div style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
                           </div>
