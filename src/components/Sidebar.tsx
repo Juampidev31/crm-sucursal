@@ -327,11 +327,18 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         ) : (
           <button
             onClick={() => setShowAdminModal(true)}
+            title="Acceso Admin"
             style={{
-              display: 'block', width: '100%', height: '32px',
-              background: 'none', border: 'none', cursor: 'default',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#333', width: '100%', height: 40,
+              transition: 'color 0.2s',
             }}
-          />
+            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#333')}
+          >
+            <Lock size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
+          </button>
         )}
       </div>
 
