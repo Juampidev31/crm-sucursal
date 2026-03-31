@@ -1072,7 +1072,7 @@ export default function RegistrosPage() {
                           {reg.comentarios && reg.comentarios.trim() !== '' && (
                             <button
                               disabled
-                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa', cursor: 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                               title="Tiene comentarios"
                             ><MessageSquare size={16} /></button>
                           )}
