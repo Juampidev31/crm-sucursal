@@ -991,15 +991,6 @@ export default function RegistrosPage() {
                                 background: '#333', color: '#fff', border: '1px solid #444', letterSpacing: '0.5px'
                               }}>RE</span>
                             )}
-                            {reg.comentarios && reg.comentarios.trim() !== '' && (
-                              <span style={{
-                                fontSize: '9px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px',
-                                background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)',
-                                letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '4px'
-                              }}>
-                                <MessageSquare size={10} />COMENT
-                              </span>
-                            )}
                             {reg.cuil && <div style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
                           </div>
                           {hasVencido(reg.id) && (
@@ -1078,6 +1069,13 @@ export default function RegistrosPage() {
                       {/* Acciones */}
                       <td style={{ padding: '18px 24px' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                          {reg.comentarios && reg.comentarios.trim() !== '' && (
+                            <button
+                              disabled
+                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa', cursor: 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              title="Tiene comentarios"
+                            ><MessageSquare size={16} /></button>
+                          )}
                           <button
                             onClick={() => setRecordatorioTarget(reg)}
                             style={{ width: 38, height: 38, borderRadius: '10px', background: hasVencido(reg.id) ? 'rgba(220,53,69,0.08)' : 'rgba(255,255,255,0.02)', border: hasVencido(reg.id) ? '1px solid rgba(220,53,69,0.2)' : '1px solid rgba(255,255,255,0.05)', color: hasVencido(reg.id) ? 'var(--rojo)' : '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
