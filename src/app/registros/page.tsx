@@ -1071,9 +1071,11 @@ export default function RegistrosPage() {
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                           {reg.comentarios && reg.comentarios.trim() !== '' && (
                             <button
-                              disabled
-                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              title="Tiene comentarios"
+                              onClick={() => openEdit(reg)}
+                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                              title="Ver comentarios"
+                              onMouseOver={e => e.currentTarget.style.color = '#fff'}
+                              onMouseOut={e => e.currentTarget.style.color = '#444'}
                             ><MessageSquare size={16} /></button>
                           )}
                           <button
