@@ -411,15 +411,15 @@ const ComentariosModal = memo(function ComentariosModal({
           <h3 className="modal-title">Comentarios</h3>
           <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
         </div>
-        <div className="modal-body" style={{ padding: '24px 32px' }}>
+        <div className="modal-body">
           <p style={{ fontSize: '13px', color: '#555', marginBottom: '16px', fontWeight: 600 }}>{registro.nombre}</p>
           <Field label="Comentarios">
             <textarea
               className="form-input"
               value={comentarios}
               onChange={e => setComentarios(e.target.value)}
-              rows={5}
-              style={{ resize: 'vertical', fontFamily: 'inherit', minHeight: '120px', textAlign: 'center' }}
+              rows={6}
+              style={{ resize: 'vertical', fontFamily: 'inherit' }}
               placeholder="Sin comentarios..."
               autoFocus
             />
