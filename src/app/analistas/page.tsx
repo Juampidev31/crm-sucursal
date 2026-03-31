@@ -324,10 +324,15 @@ export default function AnalistasPage() {
     };
 
     const aniosSet = new Set<number>();
-    todosObjs.forEach(o => aniosSet.add(o.anio));
-    historicoVentas.forEach(h => aniosSet.add(h.anio));
+    todosObjs.forEach(o => {
+      aniosSet.add(o.anio);
+    });
+    historicoVentas.forEach(h => {
+      aniosSet.add(h.anio);
+    });
     aniosSet.add(new Date().getFullYear());
-    const anios = Array.from(aniosSet).sort();
+    // Ocultar años 2021 y 2022
+    const anios = Array.from(aniosSet).filter(a => a >= 2023).sort();
 
     const buildAnalistaHistorico = (analistaName: string): HistoricoData => {
       const secciones = anios.map(anio => {
