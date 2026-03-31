@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useData } from '@/context/DataContext';
-import { CONFIG } from '@/types';
+import { CONFIG, HistoricoVenta } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
 import {
   Save, RotateCcw, AlertCircle, Bell, Clock, History,
@@ -272,10 +272,10 @@ export default function AjustesPage() {
         if (error) throw error;
 
         // Actualizar contexto y enviar broadcast para historico
-        setCtxHistorico(prev => {
+        setCtxHistorico((prev: HistoricoVenta[]) => {
           const filtered = prev.filter(h => !(h.analista === histAnalista && h.anio === histAnio));
           const nuevos = upserts.map(u => ({ ...u, id: undefined }));
-          return [...filtered, ...nuevos];
+          return [...filtered, ...nuevos] as HistoricoVenta[];
         });
         upserts.forEach(u => pushHistoricoChange('UPDATE', { ...u, id: undefined }));
       }
@@ -598,12 +598,12 @@ export default function AjustesPage() {
   }, [duplicadosRegistros, selectedEstados, selectedAnalistas]);
 
   const chipStyle = (isActive: boolean) => ({
-    padding: '6px 12px', borderRadius: '4px', fontSize: '10px', border: '1px solid',
-    whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.1s',
-    background: isActive ? 'rgba(0,120,212,0.1)' : 'rgba(255,255,255,0.02)',
-    borderColor: isActive ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
-    color: isActive ? 'var(--azul)' : '#444',
-    textTransform: 'uppercase' as const, letterSpacing: '0.8px'
+    padding: '6px 14px', borderRadius: '6px', fontSize: '10px', border: '1px solid',
+    whiteSpace: 'nowrap' as const, fontWeight: 800 as const, cursor: 'pointer', transition: 'all 0.2s',
+    background: isActive ? '#fff' : 'rgba(255,255,255,0.02)',
+    borderColor: isActive ? '#fff' : 'rgba(255,255,255,0.05)',
+    color: isActive ? '#000' : 'var(--gris)',
+    textTransform: 'uppercase' as const, letterSpacing: '1px'
   });
 
   return (
@@ -627,8 +627,8 @@ export default function AjustesPage() {
       </header>
 
       {/* Nav Tabs */}
-      <div className="toolbar" style={{ justifyContent: 'flex-start', marginBottom: '24px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0', borderRadius: 0, background: 'transparent' }}>
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      <div className="toolbar" style={{ justifyContent: 'flex-start', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {[
             { id: 'alertas', label: 'Alertas', icon: Bell },
             { id: 'dias', label: 'Días Hábiles', icon: Clock },
@@ -643,18 +643,16 @@ export default function AjustesPage() {
               onClick={() => setActiveTab(t.id as ActiveTab)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '12px 4px', border: 'none', background: 'transparent',
-                fontFamily: "'Outfit', sans-serif", fontSize: '14px', fontWeight: activeTab === t.id ? 700 : 500,
-                cursor: 'pointer', transition: 'all 0.2s',
-                color: activeTab === t.id ? '#fff' : '#666',
-                position: 'relative',
+                padding: '8px 16px', border: 'none', 
+                background: activeTab === t.id ? '#fff' : 'transparent',
+                borderRadius: '6px',
+                fontFamily: "'Outfit', sans-serif", fontSize: '13px', fontWeight: activeTab === t.id ? 700 : 500,
+                cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                color: activeTab === t.id ? '#000' : 'var(--gris)',
               }}
             >
-              <t.icon size={16} />
+              <t.icon size={15} style={{ opacity: activeTab === t.id ? 1 : 0.7 }} />
               {t.label}
-              {activeTab === t.id && (
-                <div style={{ position: 'absolute', bottom: -1, left: 0, right: 0, height: '2px', background: '#fff' }} />
-              )}
             </button>
           ))}
         </div>
@@ -671,10 +669,10 @@ export default function AjustesPage() {
           {/* TAB: ALERTAS */}
           {activeTab === 'alertas' && (
             <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
-              <div className="data-card-header" style={{ marginBottom: '24px' }}>
+              <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Gestión de Alertas</h3>
-                  <p style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>Parámetros de vencimiento y colores de indicadores</p>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Gestión de Alertas</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Parámetros de vencimiento y colores de indicadores</p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button className="btn-secondary" onClick={resetAlertas} style={{ fontSize: '12px' }}>
@@ -705,7 +703,13 @@ export default function AjustesPage() {
                           <input
                             className="form-input"
                             type="number"
-                            style={{ width: '80px', textAlign: 'center' }}
+                            style={{ 
+                              width: '100px', 
+                              textAlign: 'center', 
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '4px'
+                            }}
                             value={alerta.dias}
                             onChange={e => {
                               const updated = [...alertasConfig];
@@ -790,10 +794,10 @@ export default function AjustesPage() {
           {/* TAB: HISTORICO */}
           {activeTab === 'historico' && (
             <div className="data-card" style={{ background: '#0a0a0a' }}>
-              <div className="data-card-header" style={{ marginBottom: '24px' }}>
+              <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Histórico de Desempeño</h3>
-                  <p style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>Control de objetivos y resultados de períodos anteriores</p>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Histórico de Desempeño</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Control de objetivos y resultados de períodos anteriores</p>
                 </div>
                 <button className="btn-primary" onClick={saveHistorico} disabled={savingHist}>
                   <Save size={14} /> {savingHist ? 'Guardando...' : 'Guardar Cambios'}
@@ -801,33 +805,33 @@ export default function AjustesPage() {
               </div>
 
               {/* Selectors */}
-              <div style={{ display: 'flex', gap: '24px', marginBottom: '32px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ display: 'flex', gap: '32px', marginBottom: '32px', padding: '24px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ color: '#444', marginBottom: '8px' }}>Analista</label>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seleccionar Analista</label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {['PDV', ...CONFIG.ANALISTAS_DEFAULT].map(a => (
                       <button key={a} onClick={() => setHistAnalista(a)} style={{
-                        padding: '8px 16px', borderRadius: '8px', border: '1px solid',
+                        padding: '10px 20px', borderRadius: '6px', border: '1px solid',
                         fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600,
                         cursor: 'pointer', transition: 'all 0.2s',
-                        borderColor: histAnalista === a ? 'rgba(255,255,255,0.2)' : 'transparent',
-                        background: histAnalista === a ? 'rgba(255,255,255,0.08)' : 'transparent',
-                        color: histAnalista === a ? '#fff' : '#444',
+                        borderColor: histAnalista === a ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)',
+                        background: histAnalista === a ? '#fff' : 'transparent',
+                        color: histAnalista === a ? '#000' : 'var(--gris)',
                       }}>{a}</button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="form-label" style={{ color: '#444', marginBottom: '8px' }}>Año</label>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Año</label>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 1 - i).map(y => (
                       <button key={y} onClick={() => setHistAnio(y)} style={{
-                        padding: '8px 12px', borderRadius: '8px', border: '1px solid',
+                        padding: '10px 16px', borderRadius: '6px', border: '1px solid',
                         fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600,
                         cursor: 'pointer', transition: 'all 0.2s',
-                        borderColor: histAnio === y ? 'rgba(255,255,255,0.2)' : 'transparent',
-                        background: histAnio === y ? 'rgba(255,255,255,0.08)' : 'transparent',
-                        color: histAnio === y ? '#fff' : '#444',
+                        borderColor: histAnio === y ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)',
+                        background: histAnio === y ? '#fff' : 'transparent',
+                        color: histAnio === y ? '#000' : 'var(--gris)',
                       }}>{y}</button>
                     ))}
                   </div>
@@ -838,21 +842,28 @@ export default function AjustesPage() {
                 <table className="data-table" style={{ border: '1px solid rgba(255,255,255,0.03)' }}>
                   <thead>
                     <tr>
-                      <th style={{ color: '#444', width: '120px' }}>Mes</th>
-                      <th style={{ color: '#888' }}>Metas Capital ($)</th>
-                      <th style={{ color: '#888' }}>Metas Ops</th>
-                      <th style={{ color: '#bbb' }}>Real Capital ($)</th>
-                      <th style={{ color: '#bbb' }}>Real Ops</th>
+                      <th style={{ color: 'var(--gris)', width: '120px', fontSize: '11px' }}>MES</th>
+                      <th style={{ color: 'var(--gris)', opacity: 0.8, fontSize: '11px' }}>METAS CAPITAL ($)</th>
+                      <th style={{ color: 'var(--gris)', opacity: 0.8, fontSize: '11px' }}>METAS OPS</th>
+                      <th style={{ color: '#fff', opacity: 0.9, fontSize: '11px' }}>REAL CAPITAL ($)</th>
+                      <th style={{ color: '#fff', opacity: 0.9, fontSize: '11px' }}>REAL OPS</th>
                     </tr>
                   </thead>
                   <tbody>
                     {CONFIG.MESES_NOMBRES.map((mes, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', height: '54px' }}>
-                        <td style={{ fontWeight: 700, fontSize: '13px', color: '#555', textTransform: 'uppercase' }}>{mes}</td>
+                        <td style={{ fontWeight: 800, fontSize: '12px', color: 'var(--gris)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{mes}</td>
                         <td>
                           <input
                             className="form-input" type="number"
-                            style={{ width: '140px', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: 0 }}
+                            style={{ 
+                              width: '140px', 
+                              background: 'rgba(255,255,255,0.01)', 
+                              border: 'none', 
+                              borderBottom: '1.5px solid rgba(255,255,255,0.1)', 
+                              borderRadius: 0,
+                              padding: '8px 4px'
+                            }}
                             placeholder="-"
                             value={histRows[idx].meta_ventas}
                             onChange={e => setHistRows(prev => {
@@ -877,7 +888,14 @@ export default function AjustesPage() {
                         <td>
                           <input
                             className="form-input" type="number"
-                            style={{ width: '140px', background: 'rgba(255,255,255,0.02)', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', borderRadius: 0 }}
+                            style={{ 
+                              width: '140px', 
+                              background: 'rgba(255,255,255,0.02)', 
+                              border: 'none', 
+                              borderBottom: '1.5px solid rgba(255,255,255,0.15)', 
+                              borderRadius: 0,
+                              padding: '8px 4px'
+                            }}
                             placeholder="-"
                             value={histRows[idx].capital_real}
                             onChange={e => setHistRows(prev => {
@@ -891,7 +909,15 @@ export default function AjustesPage() {
                         <td>
                           <input
                             className="form-input" type="number"
-                            style={{ width: '80px', background: 'rgba(255,255,255,0.02)', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', borderRadius: 0, textAlign: 'center' }}
+                            style={{ 
+                              width: '100px', 
+                              background: 'rgba(255,255,255,0.02)', 
+                              border: 'none', 
+                              borderBottom: '1.5px solid rgba(255,255,255,0.15)', 
+                              borderRadius: 0, 
+                              textAlign: 'center',
+                              padding: '8px 4px'
+                            }}
                             placeholder="-"
                             value={histRows[idx].ops_real}
                             onChange={e => setHistRows(prev => {
@@ -979,33 +1005,46 @@ export default function AjustesPage() {
 
           {/* TAB: ANALISIS TEMPORAL */}
           {activeTab === 'analisis-temporal' && (
-            <div>
-              {/* Filters */}
+            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+              {/* Filters Header Card */}
               <div style={{
-                background: '#000', border: '1px solid var(--border-color)',
-                borderRadius: 6, padding: '16px 20px',
-                display: 'flex', gap: 16, alignItems: 'flex-end', marginBottom: 20, flexWrap: 'wrap',
+                background: '#0a0a0a', 
+                border: '1px solid rgba(255,255,255,0.03)',
+                borderRadius: '8px', 
+                padding: '24px 32px',
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginBottom: '24px', 
+                flexWrap: 'wrap',
+                gap: '40px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 4 }}>
-                  <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.5)' }} />
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>Análisis Temporal</span>
-                </div>
-                {[
-                  { label: 'PERÍODO', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} /> },
-                  { label: 'ANALISTA', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} /> },
-                  { label: 'MÉTRICA', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} /> },
-                ].map(f => (
-                  <div key={f.label}>
-                    <div style={{ fontSize: 10, color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 10 }}>{f.label}</div>
-                    {f.node}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '4px', height: '24px', borderRadius: '2px', background: '#fff' }} />
+                  <div>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Análisis Temporal</h2>
+                    <p style={{ fontSize: '12px', color: 'var(--gris)', marginTop: '2px' }}>Exploración de datos por períodos y métricas</p>
                   </div>
-                ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {[
+                    { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="160px" /> },
+                    { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} width="160px" /> },
+                    { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} width="160px" /> },
+                  ].map(f => (
+                    <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</div>
+                      {f.node}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Tendencia + Mapa */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
                 {/* Tendencia */}
-                <div style={{ background: '#000', border: '1px solid var(--border-color)', borderRadius: 6, padding: 20, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -1076,7 +1115,7 @@ export default function AjustesPage() {
                 </div>
 
                 {/* Mapa de actividad */}
-                <div style={{ background: '#000', border: '1px solid var(--border-color)', borderRadius: 6, padding: 20, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -1141,7 +1180,7 @@ export default function AjustesPage() {
               </div>
 
               {/* Estacionalidad */}
-              <div style={{ background: '#000', border: '1px solid var(--border-color)', borderRadius: 6, padding: 20, marginBottom: 16 }}>
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', marginBottom: '32px' }}>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
@@ -1158,17 +1197,29 @@ export default function AjustesPage() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
                   {/* Cards de semanas */}
                   {weeklyStats.withVsAvg.map((w) => (
-                    <div key={w.label} style={{ flex: '1 1 130px', minWidth: 120, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-                      <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>{w.label}</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{fmt(w.total)}</div>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: w.vsAvg >= 0 ? '#22c55e' : '#ef4444', marginTop: 6 }}>
-                        {w.vsAvg >= 0 ? '+' : ''}{w.vsAvg.toFixed(1)}% vs promedio
+                    <div key={w.label} style={{ 
+                      flex: '1 1 130px', 
+                      minWidth: 120, 
+                      background: 'rgba(255,255,255,0.01)', 
+                      border: '1px solid rgba(255,255,255,0.04)', 
+                      borderRadius: '8px', 
+                      padding: '20px', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      justifyContent: 'center', 
+                      alignItems: 'center', 
+                      textAlign: 'center' 
+                    }}>
+                      <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
+                      <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsAvg >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsAvg >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+                        {w.vsAvg >= 0 ? '↑' : '↓'} {Math.abs(w.vsAvg).toFixed(1)}%
                       </div>
                     </div>
                   ))}
 
                   {/* Gráfico */}
-                  <div style={{ flex: '1 1 200px', minWidth: 180, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: 12, minHeight: 140 }}>
+                  <div style={{ flex: '2 1 300px', minWidth: 280, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '16px', minHeight: 180 }}>
                     <Bar
                       data={{
                         labels: weeklyStats.totals.map(s => s.label),
@@ -1228,7 +1279,7 @@ export default function AjustesPage() {
               </div>
 
               {/* Por día de semana */}
-              <div style={{ background: '#000', border: '1px solid var(--border-color)', borderRadius: 6, padding: 20 }}>
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -1333,8 +1384,8 @@ export default function AjustesPage() {
                   {duplicados.map(grupo => (
                     <div key={grupo.key} className="data-card" style={{ borderLeft: 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <AlertTriangle size={15} color="#444" />
+                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(239,68,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <AlertTriangle size={15} color="#ef4444" />
                         </div>
                         <div>
                           <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
@@ -1362,14 +1413,14 @@ export default function AjustesPage() {
                               <tr key={r.id}>
                                 <td style={{ padding: '8px 16px' }}>
                                   <div style={{ fontWeight: 700, color: '#fff' }}>{r.nombre}</div>
-                                  <div style={{ fontSize: '10px', color: '#333', fontFamily: 'monospace' }}>{r.cuil}</div>
+                                  <div style={{ fontSize: '10px', color: '#666', fontFamily: 'monospace', marginTop: '2px' }}>{r.cuil}</div>
                                 </td>
-                                <td style={{ color: '#555', fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
+                                <td style={{ color: 'var(--gris)', fontSize: '12px', fontWeight: 500 }}>{displayAnalista(r.analista)}</td>
                                 <td>
                                   <span className="status-badge" style={{ fontSize: '9px', padding: '2px 8px' }}>{r.estado}</span>
                                 </td>
-                                <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--dorado)' }}>{formatCurrency(r.monto)}</td>
-                                <td style={{ textAlign: 'center', color: '#333', fontSize: '11px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 800, color: '#fff' }}>{formatCurrency(r.monto)}</td>
+                                <td style={{ textAlign: 'center', color: '#888', fontSize: '11px', fontWeight: 500 }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
                               </tr>
                             ))}
                           </tbody>

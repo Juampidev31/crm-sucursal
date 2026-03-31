@@ -49,6 +49,7 @@ interface DataCtx {
   setObjetivos: React.Dispatch<React.SetStateAction<Objetivo[]>>;
   setDiasConfig: React.Dispatch<React.SetStateAction<DiasConfig[]>>;
   setAlertasConfig: React.Dispatch<React.SetStateAction<AlertaConfig[]>>;
+  setHistoricoVentas: React.Dispatch<React.SetStateAction<HistoricoVenta[]>>;
   setPendingReminders: React.Dispatch<React.SetStateAction<number>>;
   clearReminderAlert: () => void;
   markReminderCompleted: (id: string) => Promise<void>;
@@ -365,7 +366,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     <DataContext.Provider value={{
       registros, objetivos, diasConfig, historicoVentas, alertasConfig,
       loading, pendingReminders, reminderAlert,
-      setRegistros, setObjetivos, setDiasConfig, setAlertasConfig, setPendingReminders,
+      setRegistros, setObjetivos, setDiasConfig, setAlertasConfig, setHistoricoVentas, setPendingReminders,
       clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange,
       pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
       pushRecordatorioChange
