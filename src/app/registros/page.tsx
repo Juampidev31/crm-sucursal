@@ -285,6 +285,12 @@ const RecordatorioModal = memo(function RecordatorioModal({
     }
   }, [registro]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(false); };
+    if (registro) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [registro, onClose]);
+
   if (!registro) return null;
 
   const save = async () => {
@@ -344,10 +350,16 @@ const RecordatorioModal = memo(function RecordatorioModal({
 const DeleteModal = memo(function DeleteModal({
   registro, onConfirm, onCancel,
 }: { registro: Registro | null; onConfirm: () => void; onCancel: () => void }) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
+    if (registro) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [registro, onCancel]);
+
   if (!registro) return null;
   return (
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-content" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+      <div className="modal-content modal-content--danger" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
           <h3 className="modal-title" style={{ color: '#fff', fontWeight: 900, letterSpacing: '1px' }}>ELIMINAR REGISTRO</h3>
           <button className="btn-icon" onClick={onCancel} style={{ color: '#333' }}><X size={18} /></button>
@@ -362,10 +374,7 @@ const DeleteModal = memo(function DeleteModal({
           <button className="btn-secondary" onClick={onCancel} style={{
             background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
           }}>CANCELAR</button>
-          <button className="btn-danger" onClick={onConfirm} style={{
-            background: '#fff', color: '#000', border: 'none', fontWeight: 900,
-            boxShadow: '0 0 20px rgba(255,255,255,0.1)'
-          }}>
+          <button className="btn-danger" onClick={onConfirm}>
             ELIMINAR AHORA
           </button>
         </div>

@@ -18,7 +18,7 @@ body {
 
   --verde: #ffffff;
   --azul: #ffffff;
-  --rojo: #ffffff;
+  --rojo: #ef4444;
   --naranja: #888888;
   --dorado: #ffffff;
   --gris: #666666;
@@ -355,6 +355,30 @@ a {
   transition: all 0.2s;
 }
 
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  box-shadow: 0 0 28px rgba(239, 68, 68, 0.35);
+}
+
 .btn-secondary {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.1);
@@ -431,8 +455,14 @@ a {
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), rgba(180, 200, 255, 0.25), transparent);
+  pointer-events: none;
+}
+
+.modal-content--danger::after {
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.7), rgba(220, 38, 38, 0.5), transparent);
 }
 
 .modal-header {
@@ -537,6 +567,7 @@ a {
   border-color: rgba(255, 255, 255, 0.1);
 }
 
+
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -575,12 +606,12 @@ a {
 }
 
 input:checked+.toggle-slider {
-  background-color: #fff;
+  background-color: rgba(76, 175, 80, 0.8);
 }
 
 input:checked+.toggle-slider:before {
   transform: translateX(16px);
-  background-color: #000;
+  background-color: #fff;
 }
 
 .toggle-label {
@@ -594,7 +625,7 @@ input:checked+.toggle-slider:before {
 
 .modal-required-legend {
   font-size: 11px;
-  color: #444;
+  color: var(--rojo);
   margin-top: 16px;
   font-weight: 600;
   text-transform: uppercase;
