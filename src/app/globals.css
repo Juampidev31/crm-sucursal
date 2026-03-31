@@ -16,19 +16,19 @@ body {
   --foreground: #ffffff;
   color-scheme: dark;
 
-  --verde: #10b981;
+  --verde: #ffffff;
   --azul: #ffffff;
-  --rojo: #ef4444;
-  --naranja: #f59e0b;
-  --dorado: #fbbf24;
-  --gris: #94a3b8;
-  --slate-blue: #64748b;
-  --purple: #8b5cf6;
+  --rojo: #ffffff;
+  --naranja: #888888;
+  --dorado: #ffffff;
+  --gris: #666666;
+  --slate-blue: #444444;
+  --purple: #ffffff;
 
   --card-bg: #000000;
   --card-bg-elevated: #000000;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --hover-bg: rgba(255, 255, 255, 0.05);
+  --border-color: rgba(255, 255, 255, 0.05);
+  --hover-bg: rgba(255, 255, 255, 0.04);
   --main-color: #ffffff;
 
   --font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -75,20 +75,18 @@ a {
 /* ============ LAYOUT ============ */
 .wrapper {
   display: flex;
-  min-height: 100vh;
+  overflow: hidden;
+  height: 100%;
 }
 
 .main-sidebar {
   width: var(--sidebar-width);
-  height: 100vh;
+  height: 100%;
   background: #000000;
   border-right: 1px solid var(--border-color);
-  position: fixed;
-  left: 0;
-  top: 0;
   display: flex;
   flex-direction: column;
-  z-index: 100;
+  z-index: 15;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: visible;
 }
@@ -102,32 +100,19 @@ a {
 }
 
 .sidebar-hidden {
-  transform: translateX(-100%);
-}
-
-.sidebar-expanded+.content-wrapper,
-.main-sidebar.sidebar-expanded~.content-wrapper {
-  margin-left: var(--sidebar-expanded-width);
-}
-
-.sidebar-expanded-filters+.content-wrapper,
-.main-sidebar.sidebar-expanded-filters~.content-wrapper {
-  margin-left: var(--sidebar-filters-width);
+  display: none !important;
 }
 
 .content-wrapper {
-  margin-left: var(--sidebar-width);
   flex: 1;
-  padding: 40px;
+  padding: 24px 32px;
   background: var(--background);
-  min-height: 100vh;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
-  z-index: 1;
+  overflow-y: auto;
 }
 
 .content-fullwidth {
-  margin-left: 0;
   width: 100%;
 }
 
@@ -372,12 +357,15 @@ a {
 
 .btn-secondary {
   background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  height: 38px;
-  padding: 0 16px;
-  color: var(--gris);
-  font-size: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 20px;
+  color: #555;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -481,9 +469,9 @@ a {
 .form-textarea {
   width: 100%;
   background: #000000;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  height: 38px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  height: 42px;
   padding: 0 12px;
   color: #fff;
   font-size: 14px;
@@ -580,12 +568,12 @@ a {
 }
 
 input:checked+.toggle-slider {
-  background-color: #16a34a;
+  background-color: #fff;
 }
 
 input:checked+.toggle-slider:before {
   transform: translateX(16px);
-  background-color: #fff;
+  background-color: #000;
 }
 
 .toggle-label {

@@ -110,28 +110,24 @@ export default function ReporteCobranzasPage() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Reporte de Cobranzas</h1>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {data?.mediaEmpGlobal && (
-            <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '6px 12px', textAlign: 'center', height: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px', marginBottom: '1px' }}>MEDIA EMP.</div>
-              <div style={{ fontSize: '13px', fontWeight: 900, color: '#f87171' }}>{data.mediaEmpGlobal}</div>
-            </div>
-          )}
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px 3px', height: '36px', display: 'flex', alignItems: 'center' }}>
-            {YEARS.map(y => (
-              <button key={y} onClick={() => setYear(y)} style={{
-                padding: '4px 14px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                background: year === y ? '#f7e479' : 'transparent',
-                color: year === y ? '#000' : '#555',
-              }}>{y}</button>
-            ))}
+      {/* ── Action Toolbar ── */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '24px' }}>
+        {data?.mediaEmpGlobal && (
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '6px 12px', textAlign: 'center', height: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px', marginBottom: '1px' }}>MEDIA EMP.</div>
+            <div style={{ fontSize: '13px', fontWeight: 900, color: '#f87171' }}>{data.mediaEmpGlobal}</div>
           </div>
+        )}
+        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px 3px', height: '36px', display: 'flex', alignItems: 'center' }}>
+          {YEARS.map(y => (
+            <button key={y} onClick={() => setYear(y)} style={{
+              padding: '4px 14px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+              background: year === y ? '#fff' : 'transparent',
+              color: year === y ? '#000' : '#555',
+            }}>{y}</button>
+          ))}
         </div>
-      </header>
+      </div>
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>

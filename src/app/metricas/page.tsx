@@ -98,24 +98,24 @@ export default function DashboardPage() {
   if (loading) return <div className="dashboard-container"><div className="spinner" /></div>;
 
   return (
-    <div className="dashboard-container" style={{ padding: '40px', maxWidth: '1400px', margin: '0 auto' }}>
-      <header className="dashboard-header" style={{ marginBottom: '48px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+    <div className="dashboard-container" style={{ padding: '24px 32px', maxWidth: '100%', margin: 0 }}>
+      <header className="dashboard-header" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <p style={{ fontSize: '10px', color: '#444', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>Dashboard principal</p>
-          <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#fff', letterSpacing: '-1px' }}>Métricas de Gestión</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#fff', letterSpacing: '-1px' }}>Métricas de Gestión</h1>
         </div>
-        
+
         <div style={{ display: 'flex', gap: '12px' }}>
-          <div style={{ background: '#0a0a0a', padding: '12px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <label style={{ fontSize: '9px', color: '#444', fontWeight: 800, display: 'block', marginBottom: '4px', letterSpacing: '0.5px' }}>FILTRAR PERIODO</label>
-            <select style={{ background: '#0a0a0a', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 600, outline: 'none', cursor: 'pointer' }} value={mes} onChange={e => setMes(e.target.value)}>
+          <div style={{ background: '#0a0a0a', padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <label style={{ fontSize: '8px', color: '#444', fontWeight: 800, display: 'block', marginBottom: '4px', letterSpacing: '0.5px' }}>FILTRAR PERIODO</label>
+            <select style={{ background: '#0a0a0a', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 600, outline: 'none', cursor: 'pointer' }} value={mes} onChange={e => setMes(e.target.value)}>
               <option value="" style={{ background: '#0a0a0a' }}>Todos los meses</option>
               {MESES.map(m => <option key={m.value} value={m.value} style={{ background: '#0a0a0a' }}>{m.label}</option>)}
             </select>
           </div>
-          <div style={{ background: '#0a0a0a', padding: '12px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <label style={{ fontSize: '9px', color: '#444', fontWeight: 800, display: 'block', marginBottom: '4px', letterSpacing: '0.5px' }}>SELECCIONAR ANALISTA</label>
-            <select style={{ background: '#0a0a0a', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 600, outline: 'none', cursor: 'pointer' }} value={analista} onChange={e => setAnalista(e.target.value)}>
+          <div style={{ background: '#0a0a0a', padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <label style={{ fontSize: '8px', color: '#444', fontWeight: 800, display: 'block', marginBottom: '4px', letterSpacing: '0.5px' }}>SELECCIONAR ANALISTA</label>
+            <select style={{ background: '#0a0a0a', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 600, outline: 'none', cursor: 'pointer' }} value={analista} onChange={e => setAnalista(e.target.value)}>
               <option value="" style={{ background: '#0a0a0a' }}>Total (Todos)</option>
               {ANALISTAS.map(a => <option key={a} value={a} style={{ background: '#0a0a0a' }}>{a}</option>)}
             </select>
@@ -123,24 +123,24 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(400px, 1fr) 500px', gap: '32px', alignItems: 'start' }}>
-        {/* Lado Izquierdo: Lista Refinada */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(450px, 1fr) 480px', gap: '24px', alignItems: 'start' }}>
+        {/* Lado Izquierdo: Lista de Estados */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {stats.filter(s => s.ops > 0).map(s => (
             <div key={s.key} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '18px 24px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px',
+              padding: '16px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '14px',
               border: '1px solid rgba(255,255,255,0.02)',
               transition: 'all 0.2s ease'
             }}>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '3px', height: '16px', background: s.color, borderRadius: '4px', opacity: 0.8 }} />
+              <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                <div style={{ width: '3px', height: '14px', background: s.color, borderRadius: '4px', opacity: 0.8 }} />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '13px', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.2px' }}>{s.label}</div>
-                  <div style={{ fontSize: '10px', color: '#444', fontWeight: 700 }}>{s.ops} OPERACIONES</div>
+                  <div style={{ fontSize: '9px', color: '#444', fontWeight: 700 }}>{s.ops} OPERACIONES</div>
                 </div>
               </div>
-              <div style={{ fontWeight: 800, fontSize: '18px', color: '#fff', letterSpacing: '-0.5px' }}>{formatCurrency(s.monto)}</div>
+              <div style={{ fontWeight: 800, fontSize: '16px', color: '#fff', letterSpacing: '-0.5px' }}>{formatCurrency(s.monto)}</div>
             </div>
           ))}
           {stats.every(s => s.ops === 0) && (
@@ -152,14 +152,14 @@ export default function DashboardPage() {
 
         {/* Lado Derecho: Doughnut Minimalista */}
         <div style={{
-          background: '#040404', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.02)',
-          padding: '48px', position: 'relative', overflow: 'hidden', height: '100%'
+          background: '#040404', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.02)',
+          padding: '40px', position: 'relative', overflow: 'hidden', minHeight: '500px'
         }}>
-          <div style={{ position: 'relative', height: '480px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ position: 'relative', height: '420px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Doughnut data={doughnutData} options={doughnutOptions} />
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -100%)', textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: '#444', fontWeight: 800, letterSpacing: '2px', marginBottom: '4px' }}>TOTAL BRUTO</div>
-              <div style={{ fontSize: '32px', fontWeight: 900, color: '#fff' }}>
+              <div style={{ fontSize: '9px', color: '#444', fontWeight: 800, letterSpacing: '2px', marginBottom: '4px' }}>TOTAL BRUTO</div>
+              <div style={{ fontSize: '28px', fontWeight: 900, color: '#fff' }}>
                 {formatCurrency(stats.reduce((acc, s) => acc + s.monto, 0))}
               </div>
             </div>

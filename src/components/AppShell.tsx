@@ -85,16 +85,61 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isFullWidth = pathname === '/analistas';
-
   return (
     <DataProvider>
       <FilterProvider>
-        <div className="wrapper">
-          <Sidebar hidden={isFullWidth} />
-          <main className={isFullWidth ? 'content-wrapper content-fullwidth' : 'content-wrapper'}>
-            {children}
-          </main>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
+          {/* Top Banner — Full Width — Hidden in Reports/Analysts */}
+          {!pathname.startsWith('/reportes') && pathname !== '/analistas' && (
+            <header style={{
+              height: '60px',
+              width: '100%',
+              background: '#000',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 32px',
+              zIndex: 10,
+              flexShrink: 0,
+              position: 'relative'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '8px',
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)'
+              }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#555', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sistema de</span>
+                <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#333', letterSpacing: '1px' }}>y</span>
+                <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
+              </div>
+
+              <div style={{ flex: 1 }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  {formatDate(new Date().toISOString())}
+                </div>
+              </div>
+            </header>
+          )}
+
+          <div className="wrapper" style={{ flex: 1, overflow: 'hidden' }}>
+            <Sidebar />
+            <main 
+              className="content-wrapper" 
+              style={{ 
+                height: '100%', 
+                overflowY: 'auto',
+                paddingTop: (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined
+              }}
+            >
+              {children}
+            </main>
+          </div>
           <ReminderAlertPopup />
         </div>
       </FilterProvider>

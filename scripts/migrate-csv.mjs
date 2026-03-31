@@ -174,19 +174,32 @@ async function main() {
   console.log('\n🔄 Leyendo archivo:', csvFile, '\n');
 
   // Leer CSV
-  const content = readFileSync(csvFile, 'utf-8');
-  
-  // Detectar delimitador
-  const firstLine = content.split('\n')[0];
-  const delimiter = firstLine.split(';').length > firstLine.split(',').length ? ';' : ',';
+  let content = readFileSync(csvFile, 'utf-8');
+
+  // Detectar delimitador usando la línea con más comas/puntos y coma
+  const allLines = content.split('\n');
+  const sampleLine = allLines.find(l => l.includes(',') || l.includes(';')) || allLines[0];
+  const delimiter = sampleLine.split(';').length > sampleLine.split(',').length ? ';' : ',';
   console.log(`📋 Delimitador detectado: "${delimiter === ';' ? 'punto y coma' : 'coma'}"`);
+
+  // Detectar y saltar filas de metadatos al inicio (antes del header real)
+  // El header real es la primera fila donde la primera columna parece un CUIL o dice "Column"
+  const headerRowIdx = allLines.findIndex(line => {
+    const first = line.split(delimiter)[0].trim().replace(/"/g, '').toLowerCase();
+    return first === 'column 1' || first === 'cuil' || first === 'cuit' || /^\d{11}$/.test(first);
+  });
+
+  if (headerRowIdx > 0) {
+    console.log(`⏭️  Saltando ${headerRowIdx} fila(s) de metadatos al inicio del archivo.`);
+    content = allLines.slice(headerRowIdx).join('\n');
+  }
 
   const records = parse(content, {
     delimiter,
     columns: false,
     skip_empty_lines: true,
     relax_column_count: true,
-    bom: true, // Manejo de BOM en archivos UTF-8
+    bom: true,
   });
 
   if (records.length < 2) {
@@ -226,6 +239,19 @@ async function main() {
       if (!cuil && !nombre) continue;
       if (analista.startsWith('$') || analista.includes('%') || /^\d/.test(analista)) {
         console.log(`⏭️  Fila ${i + 2} ignorada (fila de totales): ${nombre || cuil}`);
+        continue;
+      }
+
+      // Saltar filas marcadas como DUPLICADO (columna FECHA_CREACION = "DUPLICADO")
+      const fechaCreacion = String(fila[10] || '').trim().toUpperCase();
+      if (fechaCreacion === 'DUPLICADO') {
+        console.log(`⏭️  Fila ${i + 2} ignorada (DUPLICADO): ${nombre}`);
+        continue;
+      }
+
+      // El CUIL debe ser numérico de 11 dígitos
+      if (!/^\d{11}$/.test(cuil)) {
+        if (cuil) console.log(`⏭️  Fila ${i + 2} ignorada (CUIL inválido: "${cuil}")`);
         continue;
       }
 

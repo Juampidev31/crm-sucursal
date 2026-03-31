@@ -98,28 +98,21 @@ export default function ReporteVentasPage() {
   return (
     <div className="dashboard-container">
 
-      {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', letterSpacing: '-0.3px' }}>Reporte de Ventas</h1>
-          <p style={{ color: '#444', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <TrendingUp size={14} /> {loading ? 'Cargando indicadores...' : `${totales.operaciones} operaciones registradas · ${formatCurrency(totales.monto)} total`}
-          </p>
-        </div>
+      {/* ── Action Toolbar ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '16px' }}>
         <button
           onClick={exportarCSV}
           disabled={filtered.length === 0}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700,
+            padding: '8px 20px', borderRadius: '10px', fontSize: '12px', fontWeight: 700,
             background: filtered.length > 0 ? '#fff' : 'rgba(255,255,255,0.02)',
             border: 'none', color: filtered.length > 0 ? '#000' : '#333',
             cursor: filtered.length > 0 ? 'pointer' : 'default',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+            transition: 'all 0.2s ease'
           }}
         >
-          <Download size={14} /> Exportar Datos
+          <Download size={14} /> EXPORTAR
         </button>
       </div>
 

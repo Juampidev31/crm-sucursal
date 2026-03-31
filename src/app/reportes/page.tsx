@@ -26,14 +26,6 @@ export default function ReportesHubPage() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header" style={{ marginBottom: '48px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gris)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
-            <BarChart3 size={14} /> Inteligencia de Negocio
-          </div>
-          <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#fff' }}>Centro de Reportes</h1>
-        </div>
-      </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         {reports.map((report) => (

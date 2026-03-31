@@ -162,11 +162,19 @@ const RegistroModal = memo(function RegistroModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">{editingId ? 'Editar' : 'Nuevo'} Registro</h3>
-          <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+    <div className="modal-overlay" onClick={onClose} style={{
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(10px)',
+    }}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{
+        background: '#000', border: '1px solid rgba(255,255,255,0.05)',
+        boxShadow: '0 40px 100px rgba(0,0,0,0.9)',
+      }}>
+        <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '24px 32px' }}>
+          <h3 className="modal-title" style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '0.5px' }}>
+            {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
+          </h3>
+          <button className="btn-icon" onClick={onClose} style={{ color: '#444' }}><X size={20} /></button>
         </div>
         <div className="modal-body">
           <div className="form-row">
@@ -242,11 +250,18 @@ const RegistroModal = memo(function RegistroModal({
             <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
           </p>
         </div>
-        <div className="modal-footer">
-          {errors._ && <span style={{ color: 'var(--rojo)', fontSize: '13px', flex: 1 }}>{errors._}</span>}
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={() => guardar()} disabled={saving}>
-            <Save size={14} />{saving ? 'Guardando…' : 'Guardar'}
+        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', padding: '24px 32px' }}>
+          {errors._ && <span style={{ color: '#fff', fontSize: '12px', flex: 1, fontWeight: 700 }}>{errors._}</span>}
+          <button className="btn-secondary" onClick={onClose} style={{
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666',
+            fontWeight: 700, padding: '12px 24px', borderRadius: '10px'
+          }}>CANCELAR</button>
+          <button className="btn-primary" onClick={() => guardar()} disabled={saving} style={{
+            background: '#fff', color: '#000', border: 'none',
+            fontWeight: 900, padding: '12px 32px', borderRadius: '10px',
+            fontSize: '13px', letterSpacing: '0.5px'
+          }}>
+            <Save size={14} style={{ marginRight: 8 }} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
           </button>
         </div>
       </div>
@@ -311,9 +326,13 @@ const RecordatorioModal = memo(function RecordatorioModal({
             <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
           </p>
         </div>
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={() => onClose(false)}>Cancelar</button>
-          <button className="btn-primary" onClick={save} disabled={saving || !recForm.fecha || !recForm.hora}>Agendar</button>
+        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', padding: '20px 28px' }}>
+          <button className="btn-secondary" onClick={() => onClose(false)} style={{
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
+          }}>CANCELAR</button>
+          <button className="btn-primary" onClick={save} disabled={saving || !recForm.fecha || !recForm.hora} style={{
+            background: '#fff', color: '#000', border: 'none', fontWeight: 800
+          }}>AGENDAR</button>
         </div>
       </div>
     </div>
@@ -329,20 +348,25 @@ const DeleteModal = memo(function DeleteModal({
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title" style={{ color: '#f87171' }}>Eliminar registro</h3>
-          <button className="btn-icon" onClick={onCancel}><X size={18} /></button>
+        <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+          <h3 className="modal-title" style={{ color: '#fff', fontWeight: 900, letterSpacing: '1px' }}>ELIMINAR REGISTRO</h3>
+          <button className="btn-icon" onClick={onCancel} style={{ color: '#333' }}><X size={18} /></button>
         </div>
-        <div className="modal-body">
-          <p style={{ fontSize: '14px', color: '#aaa', lineHeight: 1.7 }}>
-            ¿Eliminar a <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?<br />
-            <span style={{ fontSize: '12px', color: '#555' }}>Esta acción no se puede deshacer.</span>
+        <div className="modal-body" style={{ padding: '32px 28px' }}>
+          <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.8 }}>
+            ¿Confirmar eliminación de <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?<br />
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#333', textTransform: 'uppercase', marginTop: '10px', display: 'block' }}>La acción es permanente.</span>
           </p>
         </div>
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onCancel}>Cancelar</button>
-          <button className="btn-danger" onClick={onConfirm}>
-            <Trash2 size={14} /> Eliminar
+        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+          <button className="btn-secondary" onClick={onCancel} style={{
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
+          }}>CANCELAR</button>
+          <button className="btn-danger" onClick={onConfirm} style={{
+            background: '#fff', color: '#000', border: 'none', fontWeight: 900,
+            boxShadow: '0 0 20px rgba(255,255,255,0.1)'
+          }}>
+            ELIMINAR AHORA
           </button>
         </div>
       </div>
@@ -837,50 +861,7 @@ export default function RegistrosPage() {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div style={{
-        background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)',
-        borderRadius: '12px', padding: '16px 20px', marginBottom: '16px',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
-      }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#aaa', letterSpacing: '1.5px' }}>Sistema de</span>
-            <span style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#666', letterSpacing: '1px' }}>y</span>
-            <span style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
-          </div>
 
-          <div style={{ flex: 1 }} />
-
-          {/* Export & Pagination */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button
-              onClick={exportarCSV}
-              style={{
-                height: 38, padding: '0 16px', fontSize: '12px', fontWeight: 800,
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '8px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-              }}
-            >
-              <Download size={14} /> EXPORTAR
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                style={{ width: 34, height: 34, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'transparent', color: currentPage === 1 ? '#222' : '#666', cursor: 'pointer' }}
-              ><ChevronLeft size={16} /></button>
-              <span style={{ fontSize: '13px', color: '#333', fontWeight: 800, letterSpacing: '0.5px' }}>{currentPage} / {totalPages}</span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages}
-                style={{ width: 34, height: 34, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', background: 'transparent', color: currentPage >= totalPages ? '#222' : '#666', cursor: 'pointer' }}
-              ><ChevronRight size={16} /></button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Table */}
       <div style={{

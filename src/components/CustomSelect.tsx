@@ -33,7 +33,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width }}>
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
           background: '#000000',
@@ -50,14 +50,14 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
           userSelect: 'none',
           transition: 'border-color 0.2s',
           height: '38px',
-          borderColor: isOpen ? 'var(--azul)' : 'rgba(255,255,255,0.08)',
+          borderColor: isOpen ? '#fff' : 'rgba(255,255,255,0.08)',
         }}
       >
         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {selectedOption.label}
         </span>
-        <ChevronDown size={14} style={{ 
-          transform: isOpen ? 'rotate(180deg)' : 'none', 
+        <ChevronDown size={14} style={{
+          transform: isOpen ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.2s',
           color: '#666'
         }} />
@@ -72,7 +72,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
           background: '#000000',
           border: '1px solid rgba(255,255,255,0.12)',
           borderRadius: '4px',
-          zIndex: 1000,
+          zIndex: 100,
           boxShadow: '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05)',
           padding: '4px',
           maxHeight: '300px',
@@ -80,7 +80,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
           animation: 'dropdownIn 0.15s ease-out'
         }}>
           {options.map(opt => (
-            <div 
+            <div
               key={opt.value}
               onClick={() => {
                 onChange(opt.value);
@@ -92,8 +92,8 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
                 fontSize: '12.5px',
                 fontWeight: 500,
                 cursor: 'pointer',
-                color: opt.value === value ? 'var(--azul)' : '#999',
-                background: opt.value === value ? 'rgba(0,120,212,0.1)' : 'transparent',
+                color: opt.value === value ? '#fff' : '#999',
+                background: opt.value === value ? 'rgba(255,255,255,0.08)' : 'transparent',
                 transition: 'all 0.1s',
               }}
               onMouseEnter={e => {

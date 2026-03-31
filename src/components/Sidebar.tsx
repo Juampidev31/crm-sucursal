@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   AlignJustify, BarChart2, PieChart, FileText,
-  DollarSign, Settings, Bell, Lock, LogOut, Plus, Search, X, SlidersHorizontal
+  DollarSign, Settings, Bell, Lock, LogOut, Plus, Search, X, SlidersHorizontal, Download
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
@@ -38,16 +38,17 @@ function NavItem({
         onClick={onClick}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 50, height: 50,
-          borderRadius: 12,
-          color: active ? '#fff' : '#444',
-          background: active ? 'rgba(255,255,255,0.1)' : 'transparent',
+          width: 46, height: 46,
+          borderRadius: 11,
+          color: active ? '#fff' : '#666',
+          background: active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
           position: 'relative',
           textDecoration: 'none',
+          border: `1px solid ${active ? 'rgba(255,255,255,0.1)' : 'transparent'}`,
         }}
       >
         <Icon
-          size={active ? 24 : 22}
+          size={active ? 22 : 20}
           strokeWidth={active ? 2.5 : 2}
           style={{ opacity: active ? 1 : 0.6 }}
         />
@@ -74,12 +75,13 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const pathname = usePathname();
   const { isAdmin, logout, refreshUser } = useAuth();
   const { pendingReminders } = useData();
-  const { filters, setFilter, limpiarFiltros, hayFiltros, setIsCreationModalOpen, showFilters, setShowFilters } = useFilter();
+  const { filters, setFilter, limpiarFiltros, hayFiltros, setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, triggerExport, currentPage, totalResults } = useFilter();
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const isRegistros = pathname === '/registros';
+  const [showPageSizeSelector, setShowPageSizeSelector] = useState(false);
 
   useEffect(() => {
     if (showAdminModal) {
@@ -88,6 +90,20 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
       setTimeout(() => passwordInputRef.current?.focus(), 50);
     }
   }, [showAdminModal]);
+
+  // Cerrar selector de página al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showPageSizeSelector) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('[title="Filas por página"]') && !target.closest('[style*="position: absolute"]')) {
+          setShowPageSizeSelector(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPageSizeSelector]);
 
   const handleAdminLogin = () => {
     if (adminPassword === ADMIN_PASSWORD) {
@@ -109,10 +125,11 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         boxShadow: '20px 0 60px rgba(0,0,0,0.8)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center',
-        paddingTop: 40,
+        paddingTop: 24,
         gap: 8,
-        height: '100vh',
         width: 'var(--sidebar-width)',
+        zIndex: 150,
+        position: 'relative',
       }}
     >
 
@@ -125,10 +142,11 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
               onClick={() => setIsCreationModalOpen(true)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 50, height: 50,
-                borderRadius: 12,
-                background: '#fff', color: '#000',
-                border: 'none', cursor: 'pointer',
+                width: 46, height: 46,
+                borderRadius: 11,
+                background: 'rgba(255,255,255,0.08)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,255,255,0.2)'; }}
@@ -155,6 +173,117 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
       <NavItem href="/reportes/ventas" icon={FileText} label="Ventas" active={pathname === '/reportes/ventas'} />
       <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} />
+
+      <div style={{ width: 28, height: 1, minHeight: 1, flexShrink: 0, background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+
+      {/* Paginación y Exportar (only on /registros) */}
+      {isRegistros && (
+        <>
+          {/* Selector de página */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowPageSizeSelector(s => !s)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 46, height: 46,
+                borderRadius: 11,
+                background: showPageSizeSelector ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)',
+                color: showPageSizeSelector ? '#fff' : '#888',
+                border: `1px solid ${showPageSizeSelector ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}`,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => {
+                if (!showPageSizeSelector) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                  e.currentTarget.style.color = '#fff';
+                }
+              }}
+              onMouseLeave={e => {
+                if (!showPageSizeSelector) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = '#aaa';
+                }
+              }}
+              title={`Filas por página: ${totalResults} registros`}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>Ver</span>
+                <span style={{ fontSize: 13, fontWeight: 900 }}>{pageSize}</span>
+              </div>
+            </button>
+            {showPageSizeSelector && (
+              <div style={{
+                position: 'absolute', left: '60px', bottom: 0,
+                background: '#111', border: '1px solid rgba(255,255,255,0.15)',
+                borderRadius: 10, padding: 8, zIndex: 1000,
+                boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
+                display: 'flex', flexDirection: 'column', gap: 4,
+                minWidth: 120,
+              }}>
+                <div style={{
+                  fontSize: 9, fontWeight: 800, color: '#555',
+                  textTransform: 'uppercase', letterSpacing: '0.5px',
+                  padding: '4px 8px', marginBottom: 4,
+                }}>
+                  {totalResults} registros
+                </div>
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 8px 4px' }} />
+                {[25, 50, 100, 200].map(size => (
+                  <button
+                    key={size}
+                    onClick={() => { setPageSize(size); setShowPageSizeSelector(false); }}
+                    style={{
+                      padding: '8px 16px',
+                      background: pageSize === size ? 'rgba(255,255,255,0.15)' : 'transparent',
+                      border: 'none', borderRadius: 6,
+                      color: pageSize === size ? '#fff' : '#888',
+                      fontSize: 12, fontWeight: 700,
+                      cursor: 'pointer', textAlign: 'left',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => {
+                      if (pageSize !== size) {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                        e.currentTarget.style.color = '#fff';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (pageSize !== size) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = '#888';
+                      }
+                    }}
+                  >
+                    {size} filas
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Botón Exportar */}
+          <div className="sidebar-icon-btn" data-label="Exportar CSV">
+            <button
+              onClick={triggerExport}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 46, height: 46,
+                borderRadius: 11,
+                background: 'rgba(255,255,255,0.04)', color: '#888',
+                border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#aaa'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+            >
+              <Download size={20} strokeWidth={2} />
+            </button>
+          </div>
+
+          <div style={{ width: 28, height: 1, minHeight: 1, flexShrink: 0, background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+        </>
+      )}
 
       <div style={{ width: 28, height: 1, minHeight: 1, flexShrink: 0, background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
 

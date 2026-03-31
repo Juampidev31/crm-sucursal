@@ -41,11 +41,11 @@ const mesStr = (anio: number, mes: number) => `${anio}-${String(mes + 1).padStar
 const esVenta = (estado: string) =>
   estado.toLowerCase() === 'venta' || estado.toLowerCase().includes('aprobado cc');
 
-interface Reg { 
-  analista: string; 
-  estado: string; 
-  monto: number; 
-  fecha: string | null; 
+interface Reg {
+  analista: string;
+  estado: string;
+  monto: number;
+  fecha: string | null;
   tipo_cliente?: string;
   es_re?: boolean;
   acuerdo_precios?: string;
@@ -91,33 +91,36 @@ function PDVHistorico({ data }: { data: PDVData }) {
   const capitalRows: PDVMes[] = (yd?.capital ?? []) as PDVMes[];
   const opsRows: PDVMes[] | null = (yd?.operaciones ?? null) as PDVMes[] | null;
 
-  const trimestres = [0,1,2,3].map(q => {
+  const trimestres = [0, 1, 2, 3].map(q => {
     const meses = capitalRows.slice(q * 3, q * 3 + 3).filter(m => m.cumplPct !== null);
     if (!meses.length) return null;
     return meses.reduce((s, m) => s + (m.cumplPct ?? 0), 0) / meses.length;
   });
 
-  const th: React.CSSProperties = { padding: '8px 12px', color: '#444', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
+  const th: React.CSSProperties = { padding: '8px 12px', color: '#666', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
 
   const MiniTable = ({ titulo, filas }: { titulo: string; filas: PDVMes[] }) => (
     <div style={{ background: '#080808', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px', overflow: 'auto', flex: 1 }}>
       <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <span style={{ fontSize: '10px', fontWeight: 800, color: '#555', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
+        <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
         <thead><tr>
-          {['Mes','Objetivo','Alcance','Cumpl.','Var'].map(h => <th key={h} style={{ ...th, textAlign: 'center' }}>{h}</th>)}
+          {['Mes', 'Objetivo', 'Alcance', 'Cumpl.', 'Var'].map(h => <th key={h} style={{ ...th, textAlign: 'center' }}>{h}</th>)}
         </tr></thead>
         <tbody>
           {filas.map((r, i) => (
-            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-              <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.mes}</td>
-              <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.obj}</td>
-              <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.real}</td>
+            <tr key={i} style={{ 
+              borderBottom: '1px solid rgba(255,255,255,0.02)',
+              background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'
+            }}>
+              <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.mes}</td>
+              <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.obj}</td>
+              <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.real}</td>
               <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                 {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#fff' }}>—</span>}
               </td>
-              <td style={{ padding: '8px 12px', color: '#fff', textAlign: 'center' }}>{r.var !== '-' ? r.var : '—'}</td>
+              <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.var !== '-' ? r.var : '—'}</td>
             </tr>
           ))}
         </tbody>
@@ -141,9 +144,9 @@ function PDVHistorico({ data }: { data: PDVData }) {
         </div>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
-            {['Q1','Q2','Q3','Q4'].map((q, i) => (
+            {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => (
               <div key={q} style={{ padding: '4px 12px', textAlign: 'center', minWidth: '50px' }}>
-                <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
+                <div style={{ fontSize: '8px', color: '#666', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
                 <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(trimestres[i]) }}>{trimestres[i] !== null ? `${trimestres[i]!.toFixed(1)}%` : '—'}</div>
               </div>
             ))}
@@ -169,10 +172,10 @@ function AnalistaHistorico({ data, nombre }: { data: HistoricoData; nombre: stri
   );
 
   const seccion = data.secciones.find(s => s.anio === anioSel);
-  const th: React.CSSProperties = { padding: '8px 12px', color: '#444', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
+  const th: React.CSSProperties = { padding: '8px 12px', color: '#666', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
 
   // Calcular Q1-Q4 desde los meses del año seleccionado
-  const trimestres = [0,1,2,3].map(q => {
+  const trimestres = [0, 1, 2, 3].map(q => {
     const meses = seccion?.meses.slice(q * 3, q * 3 + 3) ?? [];
     const validos = meses.filter(m => m.cumplPct !== null);
     if (!validos.length) return null;
@@ -197,11 +200,11 @@ function AnalistaHistorico({ data, nombre }: { data: HistoricoData; nombre: stri
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           {/* Trimestrales en bloque similar a los años */}
           <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
-            {['Q1','Q2','Q3','Q4'].map((q, i) => {
+            {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => {
               const val = trimestres[i];
               return (
                 <div key={q} style={{ padding: '4px 12px', textAlign: 'center', minWidth: '50px' }}>
-                  <div style={{ fontSize: '8px', color: '#444', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
+                  <div style={{ fontSize: '8px', color: '#666', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
                   <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(val) }}>{val !== null ? `${val.toFixed(1)}%` : '—'}</div>
                 </div>
               );
@@ -216,43 +219,66 @@ function AnalistaHistorico({ data, nombre }: { data: HistoricoData; nombre: stri
         </div>
       </div>
 
-      {/* Tabla */}
+      {/* Tablas en Grid */}
       {seccion && (
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-            <thead>
-              <tr>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          {/* Capital */}
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'auto' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', letterSpacing: '1px', textTransform: 'uppercase' }}>CAPITAL</span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead><tr>
                 <th style={{ ...th, textAlign: 'center' }}>Mes</th>
                 <th style={{ ...th, textAlign: 'center' }}>Objetivo</th>
                 <th style={{ ...th, textAlign: 'center' }}>Alcance</th>
                 <th style={{ ...th, textAlign: 'center' }}>Cumpl.</th>
                 <th style={{ ...th, textAlign: 'center' }}>Var.IM</th>
+              </tr></thead>
+              <tbody>
+                {seccion.meses.map((r, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.mes}</td>
+                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.obj}</td>
+                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.real}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                      {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#666' }}>—</span>}
+                    </td>
+                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.varIM !== '-' ? r.varIM : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Operaciones */}
+          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'auto' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', letterSpacing: '1px', textTransform: 'uppercase' }}>OPERACIONES</span>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead><tr>
+                <th style={{ ...th, textAlign: 'center' }}>Mes</th>
                 <th style={{ ...th, textAlign: 'center' }}>Objetivo</th>
                 <th style={{ ...th, textAlign: 'center' }}>Alcance</th>
                 <th style={{ ...th, textAlign: 'center' }}>Cumpl.</th>
                 <th style={{ ...th, textAlign: 'center' }}>Var.IM</th>
-              </tr>
-            </thead>
-            <tbody>
-              {seccion.meses.map((r, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.mes}</td>
-                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.obj}</td>
-                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.real}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                    {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#fff' }}>—</span>}
-                  </td>
-                  <td style={{ padding: '8px 12px', color: '#fff', textAlign: 'center' }}>{r.varIM !== '-' ? r.varIM : '—'}</td>
-                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.ops}</td>
-                  <td style={{ padding: '8px 12px', color: '#444', textAlign: 'center' }}>{r.alcance}</td>
-                  <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                    {r.cumplOpsPct !== null ? <span style={{ color: pctColor(r.cumplOpsPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplOpsPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumplOps}</span> : <span style={{ color: '#fff' }}>—</span>}
-                  </td>
-                  <td style={{ padding: '8px 12px', color: '#fff', textAlign: 'center' }}>{r.varIMOps !== '-' ? r.varIMOps : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </tr></thead>
+              <tbody>
+                {seccion.meses.map((r, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.mes}</td>
+                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.ops}</td>
+                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.alcance}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                      {r.cumplOpsPct !== null ? <span style={{ color: pctColor(r.cumplOpsPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplOpsPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumplOps}</span> : <span style={{ color: '#666' }}>—</span>}
+                    </td>
+                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.varIMOps !== '-' ? r.varIMOps : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -451,21 +477,21 @@ export default function AnalistasPage() {
     // Proyección: misma fórmula que el GAS original: (alcance / dt) * dh
     // Si el mes ya terminó, se fuerza proyectado = alcance para evitar distorsiones
     const proyCapital = esMesPasado ? alcanceCapital : (dt > 0 ? (alcanceCapital / dt) * dh : 0);
-    const proyOpsRaw  = esMesPasado ? alcanceOps     : (dt > 0 ? (alcanceOps / dt) * dh : 0);
-    const proyOps     = esMesPasado ? alcanceOps     : Math.round(proyOpsRaw);
+    const proyOpsRaw = esMesPasado ? alcanceOps : (dt > 0 ? (alcanceOps / dt) * dh : 0);
+    const proyOps = esMesPasado ? alcanceOps : Math.round(proyOpsRaw);
 
-    const cumplReal      = obj.meta_ventas > 0 ? (alcanceCapital / obj.meta_ventas) * 100 : 0;
-    const cumplProy      = obj.meta_ventas > 0 ? (proyCapital / obj.meta_ventas) * 100 : 0;
-    const cumplRealOps   = obj.meta_operaciones > 0 ? (alcanceOps / obj.meta_operaciones) * 100 : 0;
-    const cumplProyOps   = obj.meta_operaciones > 0 ? (proyOpsRaw / obj.meta_operaciones) * 100 : 0;
+    const cumplReal = obj.meta_ventas > 0 ? (alcanceCapital / obj.meta_ventas) * 100 : 0;
+    const cumplProy = obj.meta_ventas > 0 ? (proyCapital / obj.meta_ventas) * 100 : 0;
+    const cumplRealOps = obj.meta_operaciones > 0 ? (alcanceOps / obj.meta_operaciones) * 100 : 0;
+    const cumplProyOps = obj.meta_operaciones > 0 ? (proyOpsRaw / obj.meta_operaciones) * 100 : 0;
 
-    const tendPct  = alcancePrev > 0 ? ((alcanceCapital - alcancePrev) / alcancePrev) * 100 : 0;
+    const tendPct = alcancePrev > 0 ? ((alcanceCapital - alcancePrev) / alcancePrev) * 100 : 0;
     const tendPctOps = prevOpsPrev > 0 ? ((alcanceOps - prevOpsPrev) / prevOpsPrev) * 100 : 0;
     const comisiones = calcularComisiones(alcanceCapital, alcanceOps, obj.meta_ventas, obj.meta_operaciones);
 
     const aperturas = regs.filter(r => r.fecha?.slice(0, 7) === key && r.tipo_cliente === 'Apertura').length;
     const renovaciones = regs.filter(r => r.fecha?.slice(0, 7) === key && (r.tipo_cliente === 'Renovacion' || r.es_re)).length;
-    
+
     // Desglose de acuerdos
     const acuerdosBajo = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Riesgo Bajo').length;
     const acuerdosMedio = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Riesgo Medio').length;
@@ -511,12 +537,12 @@ export default function AnalistasPage() {
       Math.round((objetivo / lastDay) * (i + 1))
     )];
 
-    return { 
-      dias: [0, ...Array.from({ length: lastDay }, (_, i) => i + 1)], 
-      stats, 
-      referencias, 
+    return {
+      dias: [0, ...Array.from({ length: lastDay }, (_, i) => i + 1)],
+      stats,
+      referencias,
       diaHoy,
-      objetivo 
+      objetivo
     };
   }, [regs, mes, anio, kpis.obj.meta_ventas, now]);
 
@@ -539,9 +565,9 @@ export default function AnalistasPage() {
 
   // ── Alertas y resumen de gestión ─────────────────────────────────
   const alertas = useMemo(() => ({
-    proyeccion:    regs.filter(r => r.estado?.toLowerCase() === 'proyeccion').length,
-    seguimiento:   regs.filter(r => r.estado?.toLowerCase() === 'en seguimiento').length,
-    afectaciones:  regs.filter(r => r.estado?.toLowerCase() === 'afectaciones').length,
+    proyeccion: regs.filter(r => r.estado?.toLowerCase() === 'proyeccion').length,
+    seguimiento: regs.filter(r => r.estado?.toLowerCase() === 'en seguimiento').length,
+    afectaciones: regs.filter(r => r.estado?.toLowerCase() === 'afectaciones').length,
   }), [regs]);
 
   const resumenGestion = useMemo(() =>
@@ -574,20 +600,20 @@ export default function AnalistasPage() {
       {
         label: 'Venta Real',
         data: curva.stats.map(s => s.acum),
-        borderColor: '#fff', 
+        borderColor: '#fff',
         backgroundColor: (context: any) => {
           const chart = context.chart;
           const { ctx, chartArea } = chart;
           if (!chartArea) return null;
           const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)'); 
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
           gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.15)');
           gradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
           return gradient;
         },
-        fill: true, 
-        tension: 0.4, 
-        borderWidth: 2, 
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
         pointRadius: curva.dias.map(d => d <= curva.diaHoy ? 4 : 0),
         pointBackgroundColor: curva.stats.map(s => s.hasSale ? '#4ade80' : '#f87171'),
         pointBorderColor: '#fff',
@@ -597,11 +623,11 @@ export default function AnalistasPage() {
       {
         label: 'Venta Ideal',
         data: curva.referencias,
-        borderColor: 'rgba(255,255,255,0.25)', 
+        borderColor: 'rgba(255,255,255,0.25)',
         borderDash: [5, 5],
-        fill: false, 
-        tension: 0, 
-        pointRadius: 0, 
+        fill: false,
+        tension: 0,
+        pointRadius: 0,
         borderWidth: 1.5,
       },
     ],
@@ -626,9 +652,9 @@ export default function AnalistasPage() {
             const isIdeal = context.datasetIndex === 1;
             const dayIdx = context.dataIndex;
             const idealVal = curva.referencias[dayIdx];
-            
+
             if (isIdeal) return ` VENTA IDEAL: ${formatCurrency(val)}`;
-            
+
             const diff = idealVal > 0 ? ((val - idealVal) / idealVal) * 100 : 0;
             const diffStr = diff >= 0 ? `(+${diff.toFixed(1)}% vs ideal)` : `(${diff.toFixed(1)}% vs ideal)`;
             return ` VENTA REAL: ${formatCurrency(val)} ${diffStr}`;
@@ -637,18 +663,18 @@ export default function AnalistasPage() {
       }
     },
     scales: {
-      x: { 
+      x: {
         title: { display: true, text: 'Día Calendario', color: '#444', font: { size: 12 } },
-        ticks: { color: '#666', font: { size: 11 } }, 
-        grid: { display: false } 
+        ticks: { color: '#666', font: { size: 11 } },
+        grid: { display: false }
       },
-      y: { 
-        ticks: { 
-          color: '#666', 
+      y: {
+        ticks: {
+          color: '#666',
           font: { size: 11 },
-          callback: (v: any) => `$${numFmt.format(Number(v) / 1000000)}M` 
-        }, 
-        grid: { color: 'rgba(255,255,255,0.03)' } 
+          callback: (v: any) => `$${numFmt.format(Number(v) / 1000000)}M`
+        },
+        grid: { color: 'rgba(255,255,255,0.03)' }
       },
     },
   };
@@ -656,24 +682,24 @@ export default function AnalistasPage() {
   const histChart = {
     labels: historico.map(h => h.label),
     datasets: [
-      { 
-        type: 'bar' as const, 
-        label: 'Objetivo Venta', 
-        data: historico.map(h => h.objetivo), 
-        backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+      {
+        type: 'bar' as const,
+        label: 'Objetivo Venta',
+        data: historico.map(h => h.objetivo),
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderColor: 'rgba(255, 255, 255, 0.15)',
         borderWidth: { top: 1, left: 1, right: 1, bottom: 0 },
-        borderRadius: 8, 
+        borderRadius: 8,
         borderSkipped: 'bottom' as const,
         yAxisID: 'y',
         barPercentage: 0.85,
         categoryPercentage: 0.8,
       },
       {
-        type: 'line' as const, 
+        type: 'line' as const,
         label: 'Cumplimiento (%)',
         data: historico.map(h => h.cumplimiento),
-        borderColor: '#bbb', 
+        borderColor: '#bbb',
         backgroundColor: 'transparent',
         fill: false,
         pointRadius: 4,
@@ -703,47 +729,49 @@ export default function AnalistasPage() {
     responsive: true, maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
     plugins: {
-      legend: { 
-        position: 'top' as const, 
+      legend: {
+        position: 'top' as const,
         align: 'end' as const,
-        labels: { color: '#fff', font: { family: 'Outfit', size: 10, weight: 800 as const }, boxWidth: 16, boxHeight: 8, padding: 20 } 
+        labels: { color: '#fff', font: { family: 'Outfit', size: 10, weight: 800 as const }, boxWidth: 16, boxHeight: 8, padding: 20 }
       },
-      tooltip: { 
+      tooltip: {
         backgroundColor: 'rgba(0,0,0,0.9)',
         titleFont: { family: 'Outfit', size: 13, weight: 'bold' as const },
         bodyFont: { family: 'Outfit', size: 12 },
         padding: 12,
         cornerRadius: 8,
-        callbacks: { 
-          label: (c: { dataset: { label?: string }; parsed: { y: number } }) => 
-            c.dataset.label === 'Objetivo Venta' ? ` ${formatCurrency(c.parsed.y)}` : ` ${pct(c.parsed.y)}` 
-        } 
+        callbacks: {
+          label: (c: { dataset: { label?: string }; parsed: { y: number } }) =>
+            c.dataset.label === 'Objetivo Venta' ? ` ${formatCurrency(c.parsed.y)}` : ` ${pct(c.parsed.y)}`
+        }
       },
     },
     scales: {
-      x: { 
-        ticks: { color: '#fff', font: { family: 'Outfit', size: 10, weight: 800 as const } }, 
-        grid: { display: false } 
+      x: {
+        ticks: { color: '#fff', font: { family: 'Outfit', size: 10, weight: 800 as const } },
+        grid: { display: false }
       },
-      y: { 
+      y: {
         title: { display: true, text: 'Valores', color: '#fff', font: { family: 'Outfit', size: 11, weight: 800 as const } },
-        ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => {
-          const n = Number(v);
-          if (n >= 1000000) return `${n / 1000000}M`;
-          if (n >= 1000) return `${n / 1000}K`;
-          return n;
-        }}, 
+        ticks: {
+          color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => {
+            const n = Number(v);
+            if (n >= 1000000) return `${n / 1000000}M`;
+            if (n >= 1000) return `${n / 1000}K`;
+            return n;
+          }
+        },
         grid: { display: false },
         min: 0,
         grace: '10%'
       },
-      y2: { 
-        position: 'right' as const, 
+      y2: {
+        position: 'right' as const,
         title: { display: true, text: 'Cumplimiento (%)', color: '#fff', font: { family: 'Outfit', size: 11, weight: 800 as const } },
-        min: 0, 
+        min: 0,
         grace: '10%',
-        ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => `${v}%` }, 
-        grid: { display: false } 
+        ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => `${v}%` },
+        grid: { display: false }
       },
     },
   };
@@ -757,44 +785,45 @@ export default function AnalistasPage() {
     WebkitAppearance: 'none', appearance: 'none',
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center',
+    minWidth: '180px', maxWidth: '220px', width: 'auto',
   };
 
   const box: React.CSSProperties = {
-    flex: 1, 
-    background: '#0a0a0a', 
+    flex: 1,
+    background: '#0a0a0a',
     border: '1px solid rgba(255,255,255,0.02)',
-    borderRadius: '16px', 
-    padding: '16px', 
+    borderRadius: '16px',
+    padding: '16px',
     minWidth: '220px',
-    boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)', 
+    boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)',
     position: 'relative',
     overflow: 'hidden',
   };
 
-  const lbl: React.CSSProperties = { 
-    fontSize: '11px', 
-    color: '#888', 
-    fontWeight: 700, 
-    textTransform: 'uppercase', 
-    letterSpacing: '1px', 
+  const lbl: React.CSSProperties = {
+    fontSize: '11px',
+    color: '#888',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '1px',
     marginBottom: '10px',
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
   };
 
-  const val: React.CSSProperties = { 
-    fontSize: '22px', 
-    fontWeight: 900, 
-    color: '#fff', 
+  const val: React.CSSProperties = {
+    fontSize: '22px',
+    fontWeight: 900,
+    color: '#fff',
     lineHeight: 1,
     fontFamily: "'Outfit', sans-serif",
     letterSpacing: '-0.5px'
   };
 
-  const sub: React.CSSProperties = { 
-    fontSize: '12px', 
-    color: '#555', 
+  const sub: React.CSSProperties = {
+    fontSize: '12px',
+    color: '#555',
     marginTop: '6px',
     display: 'flex',
     alignItems: 'center',
@@ -802,9 +831,9 @@ export default function AnalistasPage() {
   };
 
   const card: React.CSSProperties = {
-    background: '#070707', 
-    border: '1px solid rgba(255,255,255,0.02)', 
-    borderRadius: '24px', 
+    background: '#070707',
+    border: '1px solid rgba(255,255,255,0.02)',
+    borderRadius: '24px',
     padding: '16px',
     boxShadow: '0 10px 50px rgba(0,0,0,0.5)', // Eliminado brillo excesivo
   };
@@ -820,48 +849,44 @@ export default function AnalistasPage() {
   return (
     <div className="dashboard-container">
 
-      {/* ── Topbar ── */}
-      <div style={{ ...card, display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '16px', padding: '16px 24px', flexWrap: 'wrap' }}>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '200px' }}>
-          <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-            <Activity size={16} color="#a855f7" />
-          </div>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>
-              PANEL DE CONTROL — {analista === PDV ? 'TOTAL GENERAL' : analista.toUpperCase()}
-            </div>
-            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-              Periodo seleccionado: {mes === now.getMonth() && anio === now.getFullYear() ? `Mes actual ${anio}` : `${CONFIG.MESES_NOMBRES[mes]} ${anio}`}
-            </div>
-          </div>
-        </div>
-
-        {/* Selectores */}
-        <select style={sel} value={analista} onChange={e => setAnalista(e.target.value)}>
-          <option value={PDV}>PDV</option>
-          {analistasSel.map(a => <option key={a} value={a}>{a}</option>)}
+      {/* --- Action Bar --- */}
+      <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+        <select 
+          value={analista} 
+          onChange={e => setAnalista(e.target.value)}
+          style={{
+            background: '#000', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px',
+            padding: '8px 14px', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 700,
+            cursor: 'pointer', outline: 'none', appearance: 'none',
+            textTransform: 'uppercase', letterSpacing: '1px'
+          }}
+        >
+          <option value={PDV}>TODOS LOS ANALISTAS</option>
+          {analistasSel.map(a => <option key={a} value={a}>{a.toUpperCase()}</option>)}
         </select>
 
-        <select style={sel} value={`${anio}-${mes}`} onChange={e => {
-          const [a, m] = e.target.value.split('-');
-          setAnio(Number(a)); setMes(Number(m));
-        }}>
-          {Array.from({ length: 18 }, (_, i) => {
+        <select 
+          value={`${anio}-${mes}`} 
+          onChange={e => {
+            const [a, m] = e.target.value.split('-');
+            setAnio(Number(a)); setMes(Number(m));
+          }}
+          style={{
+            background: '#000', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px',
+            padding: '8px 14px', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 700,
+            cursor: 'pointer', outline: 'none', appearance: 'none',
+            textTransform: 'uppercase', letterSpacing: '1px'
+          }}
+        >
+          {Array.from({ length: 12 }, (_, i) => {
             let m = now.getMonth() - i; let a = now.getFullYear();
             while (m < 0) { m += 12; a--; }
             return (
               <option key={`${a}-${m}`} value={`${a}-${m}`}>
-                {m === now.getMonth() && a === now.getFullYear() ? 'Mes Actual' : `${CONFIG.MESES_NOMBRES[m].substring(0, 3)} ${a}`}
+                {CONFIG.MESES_NOMBRES[m].toUpperCase()} {a}
               </option>
             );
           })}
-        </select>
-
-        <select style={sel} value={anio} onChange={e => setAnio(Number(e.target.value))}>
-          {[now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2].map(a => (
-            <option key={a} value={a}>{a}</option>
-          ))}
         </select>
       </div>
 
@@ -890,7 +915,7 @@ export default function AnalistasPage() {
               </div>
               {/* Sparkline (Mini Gráfico) */}
               <div style={{ width: '100px', height: '50px' }}>
-                <Line 
+                <Line
                   data={{
                     labels: curva.stats.map(s => s.day),
                     datasets: [{
@@ -971,7 +996,7 @@ export default function AnalistasPage() {
               </div>
               {/* Sparkline Operaciones */}
               <div style={{ width: '100px', height: '50px' }}>
-                <Line 
+                <Line
                   data={{
                     labels: curva.dias,
                     datasets: [{
@@ -1061,7 +1086,7 @@ export default function AnalistasPage() {
       {/* ── Alertas + Curva ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-          
+
           {/* Alertas Premium */}
           <div style={card}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
@@ -1080,10 +1105,10 @@ export default function AnalistasPage() {
               { id: 'seg', label: 'SEGUIMIENTO', count: alertas.seguimiento, icon: <Clock size={16} />, color: '#fbbf24', status: alertas.seguimiento > 5 ? 'REVISAR' : 'OK' },
               { id: 'afect', label: 'AFECTACIONES', count: alertas.afectaciones, icon: <ShieldAlert size={16} />, color: '#f87171', status: alertas.afectaciones > 0 ? 'URGENTE' : 'OK' },
             ].map(a => (
-              <div key={a.id} style={{ 
-                background: 'rgba(255,255,255,0.03)', 
-                borderRadius: '12px', 
-                padding: '12px', 
+              <div key={a.id} style={{
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '12px',
+                padding: '12px',
                 marginBottom: '8px',
                 border: '1px solid rgba(255,255,255,0.05)',
                 display: 'flex',
@@ -1094,10 +1119,10 @@ export default function AnalistasPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 700, color: '#666' }}>
                     {a.icon} {a.label}
                   </div>
-                  <div style={{ 
-                    fontSize: '9px', 
-                    fontWeight: 900, 
-                    padding: '2px 6px', 
+                  <div style={{
+                    fontSize: '9px',
+                    fontWeight: 900,
+                    padding: '2px 6px',
                     borderRadius: '4px',
                     background: a.status === 'OK' ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
                     color: a.status === 'OK' ? '#4ade80' : '#f87171',
@@ -1130,25 +1155,25 @@ export default function AnalistasPage() {
               {[{ key: PDV, label: 'VISTA GLOBAL (PDV)' }, ...analistasSel.map(a => ({ key: a, label: a }))].map(a => (
                 <div key={a.key} onClick={() => setAnalista(a.key)}
                   className="analista-item"
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '12px', 
-                    padding: '10px 14px', 
-                    borderRadius: '12px', 
-                    cursor: 'pointer', 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
                     background: a.key === analista ? 'rgba(255,255,255,0.07)' : 'transparent',
                     border: `1px solid ${a.key === analista ? 'rgba(255,255,255,0.1)' : 'transparent'}`,
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' 
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}>
-                  <div style={{ 
-                    width: 8, height: 8, borderRadius: '50%', 
+                  <div style={{
+                    width: 8, height: 8, borderRadius: '50%',
                     background: a.key === analista ? '#4ade80' : '#444',
                     boxShadow: a.key === analista ? '0 0 10px rgba(74,222,128,0.5)' : 'none'
                   }} />
-                  <span style={{ 
-                    fontSize: '13px', 
-                    fontWeight: a.key === analista ? 700 : 500, 
+                  <span style={{
+                    fontSize: '13px',
+                    fontWeight: a.key === analista ? 700 : 500,
                     color: a.key === analista ? '#fff' : '#666',
                     textTransform: 'uppercase',
                     letterSpacing: '0.5px'
@@ -1193,7 +1218,7 @@ export default function AnalistasPage() {
             </div>
           </div>
         </div>
-        
+
         <div style={{ height: '360px', padding: '40px 10px 10px 10px' }}>
           <Bar data={histChart as any} options={histOpts as any} />
         </div>
