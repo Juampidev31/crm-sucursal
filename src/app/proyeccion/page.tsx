@@ -321,7 +321,7 @@ export default function ProyeccionPage() {
           </div>
 
           {/* Comisiones */}
-          {analistaSeleccionado !== 'PDV' && (
+          {analistaSeleccionado !== 'PDV' && d.comisionTotal > 0 && (
             <div className="chart-card">
               <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '24px', textTransform: 'uppercase', letterSpacing: '1px' }}>
                 Comisiones — {analistaSeleccionado}

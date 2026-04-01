@@ -1061,7 +1061,7 @@ export default function AnalistasPage() {
       </div>
 
       {/* ── Liquidación de Comisiones (Solo Luciana y Victoria) ── */}
-      {(analista === 'Luciana' || analista === 'Victoria') && (
+      {(analista === 'Luciana' || analista === 'Victoria') && kpis.comisiones.comisionTotal > 0 && (
         <div style={{ marginBottom: '32px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
             <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>

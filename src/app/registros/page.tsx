@@ -203,7 +203,13 @@ const RegistroModal = memo(function RegistroModal({
               <input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" />
             </Field>
             <Field label="Nombre *" error={errors.nombre}>
-              <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} autoFocus />
+              <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} onPaste={e => {
+                if (isAdmin) return;
+                e.preventDefault();
+                const pasted = e.clipboardData.getData('text');
+                const clean = pasted.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '');
+                set('nombre', capitalizarNombre(clean));
+              }} autoFocus />
             </Field>
           </div>
           <div className="form-row">

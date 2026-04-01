@@ -11,7 +11,7 @@ export const ANALISTAS = ['Luciana', 'Victoria'];
 
 interface FilterState {
   search: string;
-  estado: string;
+  estados: string[];
   analista: string;
   fechaDesde: string;
   fechaHasta: string;
@@ -24,7 +24,7 @@ interface FilterState {
 
 const initialState: FilterState = {
   search: '',
-  estado: '',
+  estados: [],
   analista: '',
   fechaDesde: '',
   fechaHasta: '',
@@ -38,6 +38,7 @@ const initialState: FilterState = {
 interface FilterCtx {
   filters: FilterState;
   setFilter: (key: keyof FilterState, value: string) => void;
+  toggleEstado: (estado: string) => void;
   limpiarFiltros: () => void;
   hayFiltros: boolean;
   isCreationModalOpen: boolean;
@@ -69,12 +70,19 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
+  const toggleEstado = useCallback((estado: string) => {
+    setFilters(prev => {
+      const cur = prev.estados;
+      return { ...prev, estados: cur.includes(estado) ? cur.filter(e => e !== estado) : [...cur, estado] };
+    });
+  }, []);
+
   const limpiarFiltros = useCallback(() => {
     setFilters(initialState);
   }, []);
 
   const hayFiltros = useMemo(() => {
-    return Object.values(filters).some(v => v !== '');
+    return Object.entries(filters).some(([k, v]) => k === 'estados' ? (v as string[]).length > 0 : v !== '');
   }, [filters]);
 
   const triggerExport = useCallback(() => {
@@ -88,7 +96,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <FilterContext.Provider value={{
-      filters, setFilter, limpiarFiltros, hayFiltros,
+      filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,
       isCreationModalOpen, setIsCreationModalOpen,
       pageSize, setPageSize, triggerExport, exportTick,
       currentPage, setCurrentPage, totalResults, setTotalResults,

@@ -63,8 +63,8 @@ export const getStatusLabel = (status: string): string => {
     'en seguimiento': 'En Seguimiento',
     'score bajo': 'Score Bajo',
     'afectaciones': 'Afectaciones',
-    'derivado / aprobado cc': 'Aprobado CC',
-    'derivado / rechazado cc': 'Rechazado CC',
+    'derivado / aprobado cc': 'Derivado/aprobado CC',
+    'derivado / rechazado cc': 'Derivado/rechazado CC',
   };
   return map[status?.toLowerCase()] || status;
 };
@@ -145,8 +145,23 @@ export const calcularComisiones = (
  */
 export const capitalizarNombre = (value: string): string => {
   const trailingSpace = value.endsWith(' ') ? ' ' : '';
-  const sinComas = value.replace(/,/g, '').replace(/\s+/g, ' ').trim();
-  const partes = sinComas.split(' ').filter(Boolean);
+  // 1. Strip leading/trailing dots, commas, dashes, spaces
+  let cleaned = value.replace(/^[.,\-\s]+/, '').replace(/[.\-]+$/g, '');
+  // 2. Normalize multiple spaces and commas
+  cleaned = cleaned.replace(/,+/g, ',').replace(/\s+/g, ' ').trim();
+  // 3. If there's a comma, split into "Apellido, Nombre" parts
+  if (cleaned.includes(',')) {
+    const [apellido, ...rest] = cleaned.split(',');
+    const nombre = rest.join(' ').trim();
+    const capApellido = apellido.trim().split(' ').filter(Boolean)
+      .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+    if (!nombre) return capApellido + ',' + trailingSpace;
+    const capNombre = nombre.split(' ').filter(Boolean)
+      .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+    return capApellido + ', ' + capNombre + trailingSpace;
+  }
+  // 4. No comma — first word is apellido, rest is nombre
+  const partes = cleaned.split(' ').filter(Boolean);
   if (partes.length === 0) return '';
   const cap = partes.map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
   if (cap.length === 1) return cap[0] + trailingSpace;
