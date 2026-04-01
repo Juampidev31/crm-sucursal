@@ -93,11 +93,13 @@ const RegistroModal = memo(function RegistroModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [showDupModal, setShowDupModal] = useState(false);
+  const [dupRecord, setDupRecord] = useState<Registro | null>(null);
+  const [dupBlocked, setDupBlocked] = useState(false);
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
   const [showComentariosModal, setShowComentariosModal] = useState(false);
 
   useEffect(() => {
-    if (isOpen) { setForm(initialData); setErrors({}); setShowDupModal(false); setAgendarRecordatorio(false); }
+    if (isOpen) { setForm(initialData); setErrors({}); setShowDupModal(false); setDupRecord(null); setDupBlocked(false); setAgendarRecordatorio(false); }
   }, [isOpen, initialData]);
 
   useEffect(() => {
@@ -116,9 +118,28 @@ const RegistroModal = memo(function RegistroModal({
     if (errors[field]) setErrors(prev => { const e = { ...prev }; delete e[field]; return e; });
   };
 
-  const guardar = async () => {
+  const guardar = async (bypassDupCheck = false) => {
     const errs = validarForm(form, isAdmin);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+
+    if (!bypassDupCheck) {
+      const cuil = form.cuil?.trim() ?? '';
+      const nombre = form.nombre?.trim() ?? '';
+      let q1 = supabase.from('registros').select('id,nombre,cuil,estado').eq('cuil', cuil);
+      let q2 = supabase.from('registros').select('id,nombre,cuil,estado').ilike('nombre', nombre);
+      if (editingId) { q1 = q1.neq('id', editingId); q2 = q2.neq('id', editingId); }
+      const [{ data: d1 }, { data: d2 }] = await Promise.all([q1, q2]);
+      const seen = new Set<string>();
+      const dups = [...(d1 ?? []), ...(d2 ?? [])].filter(d => { if (seen.has(d.id)) return false; seen.add(d.id); return true; });
+      if (dups.length > 0) {
+        const dup = dups[0] as Registro;
+        setDupRecord(dup);
+        setDupBlocked(!ESTADOS_PERMITIDOS_DUPLICADO.includes(dup.estado));
+        setShowDupModal(true);
+        return;
+      }
+    }
+
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, created_at, updated_at, ...cleanForm } = form as Registro & { created_at?: string; updated_at?: string };
@@ -163,6 +184,7 @@ const RegistroModal = memo(function RegistroModal({
   if (!isOpen) return null;
 
   return (
+    <>
     <div className="modal-overlay" onClick={onClose} style={{
       background: 'rgba(0,0,0,0.85)',
       backdropFilter: 'blur(10px)',
@@ -304,6 +326,44 @@ const RegistroModal = memo(function RegistroModal({
         </div>
       </div>
     </div>
+
+    {showDupModal && dupRecord && (
+      <div className="modal-overlay" style={{ zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
+        <div className="modal-content" style={{ maxWidth: '480px', background: '#000', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 40px 100px rgba(0,0,0,0.9)' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '20px 28px' }}>
+            <h3 className="modal-title" style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '0.5px', color: dupBlocked ? 'var(--rojo)' : '#f59e0b' }}>
+              {dupBlocked ? 'REGISTRO DUPLICADO' : 'REGISTRO EXISTENTE'}
+            </h3>
+            {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: '#444' }}><X size={18} /></button>}
+          </div>
+          <div className="modal-body" style={{ padding: '20px 28px' }}>
+            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+              <AlertCircle size={20} style={{ color: dupBlocked ? 'var(--rojo)' : '#f59e0b', flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: 6 }}>{dupRecord.nombre}</p>
+                <p style={{ fontSize: '13px', color: '#888', marginBottom: 10 }}>
+                  CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong style={{ color: '#ccc' }}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
+                </p>
+                {dupBlocked
+                  ? <p style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6 }}>Este cliente ya tiene un registro activo en ese estado. No se puede crear un duplicado. Modificá el registro existente para continuar.</p>
+                  : <p style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6 }}>Ya existe un registro con este CUIL o nombre. ¿Deseás guardar de todas formas?</p>
+                }
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '16px 28px', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            {dupBlocked
+              ? <button className="btn-primary" onClick={() => setShowDupModal(false)} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>ENTENDIDO</button>
+              : <>
+                  <button className="btn-secondary" onClick={() => setShowDupModal(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666', fontWeight: 700, padding: '10px 20px', borderRadius: '10px', fontSize: '13px' }}>CANCELAR</button>
+                  <button className="btn-primary" onClick={() => { setShowDupModal(false); guardar(true); }} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 900, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>GUARDAR DE TODAS FORMAS</button>
+                </>
+            }
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 });
 
@@ -821,7 +881,7 @@ export default function RegistrosPage() {
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}>
             {/* Búsqueda */}
-            <div style={{ flex: '1 1 200px', minWidth: '180px' }}>
+            <div style={{ flex: '1 1 240px', minWidth: '200px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>BÚSQUEDA</label>
               <input
                 type="text"
@@ -838,7 +898,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Estado */}
-            <div style={{ flex: '1 1 180px', minWidth: '160px' }}>
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>ESTADO</label>
               <select
                 value={filters.estado}
@@ -856,7 +916,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Analista */}
-            <div style={{ flex: '1 1 150px', minWidth: '140px' }}>
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>ANALISTA</label>
               <select
                 value={filters.analista}
@@ -874,7 +934,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Score Min */}
-            <div style={{ flex: '0 1 100px' }}>
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>SCORE MIN</label>
               <input
                 type="number"
@@ -891,7 +951,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Score Max */}
-            <div style={{ flex: '0 1 100px' }}>
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>SCORE MAX</label>
               <input
                 type="number"
@@ -908,7 +968,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Monto Min */}
-            <div style={{ flex: '0 1 120px' }}>
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>MONTO MIN</label>
               <input
                 type="number"
@@ -925,7 +985,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Monto Max */}
-            <div style={{ flex: '0 1 120px' }}>
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>MONTO MAX</label>
               <input
                 type="number"
@@ -942,7 +1002,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Fecha Desde */}
-            <div style={{ flex: '0 1 140px' }}>
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>FECHA DESDE</label>
               <input
                 type="date"
@@ -958,7 +1018,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Fecha Hasta */}
-            <div style={{ flex: '0 1 140px' }}>
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>FECHA HASTA</label>
               <input
                 type="date"

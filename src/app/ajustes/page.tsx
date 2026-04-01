@@ -40,6 +40,7 @@ const ANALISTAS = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
 
 export default function AjustesPage() {
   const {
+    registros: ctxRegistros,
     alertasConfig: ctxAlertas, setAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
     diasConfig: ctxDias, setDiasConfig: setCtxDias, pushDiasConfigChange,
     historicoVentas: ctxHistorico, setHistoricoVentas: setCtxHistorico, pushHistoricoChange,
@@ -225,18 +226,15 @@ export default function AjustesPage() {
     if (activeTab === 'objetivos') fetchObjetivos();
   }, [activeTab, objetivosAnio, fetchObjetivos]);
 
-  // Fetch datos para Analisis Temporal
+  // Sincronizar datos para Analisis Temporal desde el DataContext (mismo dataset que el resto de la app)
   useEffect(() => {
-    if (activeTab === 'analisis-temporal') {
-      supabase
-        .from('registros')
-        .select('analista, estado, monto, fecha')
-        .then(({ data }) => {
-          const regs = (data ?? []) as { analista: string; estado: string; monto: number; fecha: string | null }[];
-          setAnalisisRegistros(regs);
-        });
-    }
-  }, [activeTab]);
+    setAnalisisRegistros(ctxRegistros.map(r => ({
+      analista: r.analista,
+      estado: r.estado,
+      monto: r.monto,
+      fecha: r.fecha ?? null,
+    })));
+  }, [ctxRegistros]);
 
   // Fetch datos para Duplicados
   useEffect(() => {
@@ -403,7 +401,16 @@ export default function AjustesPage() {
 
   // ========== ANALISIS TEMPORAL HELPERS ==========
   const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  const PERIODOS = [
+  const ANALISTAS_VIEW = ['PDV', 'Luciana', 'Victoria'];
+
+  const analisisAnios = useMemo(() =>
+    Array.from(new Set(
+      analisisRegistros.filter(r => r.fecha).map(r => parseInt(r.fecha!.slice(0, 4)))
+    )).sort(),
+    [analisisRegistros]
+  );
+
+  const PERIODOS = useMemo(() => [
     { label: 'Mes actual', value: -1 },
     { label: 'Mes anterior', value: -2 },
     { label: 'Últimos 7 días', value: 7 },
@@ -411,7 +418,9 @@ export default function AjustesPage() {
     { label: 'Últimos 30 días', value: 30 },
     { label: 'Últimos 60 días', value: 60 },
     { label: 'Últimos 90 días', value: 90 },
-  ];
+    ...analisisAnios.map(y => ({ label: `Año ${y}`, value: y })),
+    { label: 'Histórico completo', value: 0 },
+  ], [analisisAnios]);
   const METRICAS = [
     { value: 'ventas', label: 'Ventas ($)' },
     { value: 'operaciones', label: 'Operaciones (N)' },
@@ -434,15 +443,28 @@ export default function AjustesPage() {
       const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
       return { from, to, nDays: to.getDate() };
     }
+    if (periodo === 0) {
+      const minYear = analisisAnios[0] ?? now.getFullYear();
+      const from = new Date(minYear, 0, 1, 0, 0, 0, 0);
+      return { from, to: now, nDays: Math.ceil((now.getTime() - from.getTime()) / 86400000) };
+    }
+    if (periodo >= 2000 && periodo <= 2100) {
+      const from = new Date(periodo, 0, 1, 0, 0, 0, 0);
+      const end = new Date(periodo, 11, 31, 23, 59, 59, 999);
+      const to = end > now ? now : end;
+      return { from, to, nDays: Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1 };
+    }
     const from = new Date(now);
     from.setDate(from.getDate() - periodo);
     from.setHours(0, 0, 0, 0);
     return { from, to: now, nDays: periodo };
-  }, [periodo]);
+  }, [periodo, analisisAnios]);
 
   const periodoLabel = useMemo(() => {
     if (periodo === -1) return 'mes actual';
     if (periodo === -2) return 'mes anterior';
+    if (periodo === 0) return 'histórico completo';
+    if (periodo >= 2000) return `año ${periodo}`;
     return `últimos ${periodo} días`;
   }, [periodo]);
 
@@ -453,12 +475,14 @@ export default function AjustesPage() {
 
   const ventasFiltradas = useMemo(() => {
     const { from, to } = dateRange;
+    const fromStr = toLocalKey(from);
+    const toStr = toLocalKey(to);
     return analisisRegistros.filter(r => {
       if (!r.fecha) return false;
       const estado = (r.estado ?? '').toLowerCase();
       if (estado !== 'venta' && !estado.includes('aprobado cc')) return false;
-      const d = toLocalDate(r.fecha);
-      if (d < from || d > to) return false;
+      const dateStr = r.fecha.slice(0, 10);
+      if (dateStr < fromStr || dateStr > toStr) return false;
       if (analistaFil !== 'todos' && r.analista !== analistaFil) return false;
       return true;
     });
@@ -567,6 +591,36 @@ export default function AjustesPage() {
     { label: 'Todos', value: 'todos' },
     ...analisisAnalistas.map(a => ({ label: displayAnalista(a), value: a })),
   ], [analisisAnalistas]);
+
+  const semanasPorAnalista = useMemo(() => {
+    type Row = { weekKey: string; weekLabel: string; analistas: Record<string, number>; total: number };
+    const byWeek = new Map<string, Record<string, number>>();
+    for (const r of ventasFiltradas) {
+      if (!r.fecha) continue;
+      const d = toLocalDate(r.fecha);
+      const dow = d.getDay();
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+      monday.setHours(0, 0, 0, 0);
+      const weekKey = toLocalKey(monday);
+      const val = metrica === 'operaciones' ? 1 : Number(r.monto) || 0;
+      const analista = (r.analista ?? '').trim();
+      if (!byWeek.has(weekKey)) byWeek.set(weekKey, {});
+      const wk = byWeek.get(weekKey)!;
+      wk[analista] = (wk[analista] ?? 0) + val;
+    }
+    return Array.from(byWeek.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([weekKey, data]): Row => {
+        const [y, m, d] = weekKey.split('-').map(Number);
+        const monday = new Date(y, m - 1, d);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        const fd = (dt: Date) => `${dt.getDate()}/${dt.getMonth() + 1}`;
+        const total = Object.values(data).reduce((s, v) => s + v, 0);
+        return { weekKey, weekLabel: `${fd(monday)}–${fd(sunday)}/${sunday.getFullYear()}`, analistas: data, total };
+      });
+  }, [ventasFiltradas, metrica]);
 
   const heatColor = (val: number, max: number): string => {
     if (val === 0) return 'rgba(34,197,94,0.05)';
@@ -1127,7 +1181,12 @@ export default function AjustesPage() {
                         },
                         scales: {
                           x: {
-                            ticks: { color: '#555', maxTicksLimit: 10, font: { size: 10 } },
+                            ticks: {
+                              color: '#555',
+                              maxTicksLimit: 20,
+                              font: { size: 10 },
+                              autoSkipPadding: 4,
+                            },
                             grid: { color: 'rgba(255,255,255,0.03)' },
                           },
                           y: {
@@ -1316,6 +1375,58 @@ export default function AjustesPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Semanas por analista */}
+              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', marginBottom: '32px' }}>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semanas por Analista</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>PDV · Luciana · Victoria — {periodoLabel}</div>
+                </div>
+                {semanasPorAnalista.length === 0
+                  ? <p style={{ fontSize: 13, color: '#555', textAlign: 'center', padding: '32px 0' }}>Sin datos en el período seleccionado.</p>
+                  : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left', color: '#555', fontWeight: 700, padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap' }}>Semana</th>
+                            {ANALISTAS_VIEW.map(a => (
+                              <th key={a} style={{ textAlign: 'right', color: '#555', fontWeight: 700, padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{a}</th>
+                            ))}
+                            <th style={{ textAlign: 'right', color: '#888', fontWeight: 800, padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>TOTAL</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {semanasPorAnalista.map((row, i) => (
+                            <tr key={row.weekKey} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                              <td style={{ color: '#999', padding: '7px 12px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{row.weekLabel}</td>
+                              {ANALISTAS_VIEW.map(a => (
+                                <td key={a} style={{ textAlign: 'right', color: row.analistas[a] ? '#fff' : '#333', fontWeight: row.analistas[a] ? 700 : 400, padding: '7px 12px', fontVariantNumeric: 'tabular-nums' }}>
+                                  {row.analistas[a] ? fmtK(row.analistas[a]) : '—'}
+                                </td>
+                              ))}
+                              <td style={{ textAlign: 'right', color: '#86efac', fontWeight: 800, padding: '7px 12px', fontVariantNumeric: 'tabular-nums' }}>{fmtK(row.total)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                            <td style={{ color: '#555', fontWeight: 700, padding: '10px 12px', textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.5px' }}>Total</td>
+                            {ANALISTAS_VIEW.map(a => {
+                              const t = semanasPorAnalista.reduce((s, r) => s + (r.analistas[a] ?? 0), 0);
+                              return <td key={a} style={{ textAlign: 'right', color: t > 0 ? '#fff' : '#333', fontWeight: 800, padding: '10px 12px', fontVariantNumeric: 'tabular-nums' }}>{t > 0 ? fmtK(t) : '—'}</td>;
+                            })}
+                            <td style={{ textAlign: 'right', color: '#86efac', fontWeight: 900, padding: '10px 12px', fontVariantNumeric: 'tabular-nums' }}>{fmtK(semanasPorAnalista.reduce((s, r) => s + r.total, 0))}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )
+                }
               </div>
 
               {/* Por día de semana */}
@@ -1558,314 +1669,314 @@ export default function AjustesPage() {
             };
 
             return (
-            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-              {/* HEADER */}
-              <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 4, height: 28, borderRadius: 2, background: '#fff' }} />
-                  <div>
-                    <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Log de Auditoría</h1>
-                    <p style={{ fontSize: '12px', color: '#555', marginTop: 2 }}>Registro completo de actividad del sistema en tiempo real</p>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={exportCSV} disabled={!filtered.length} style={{
-                    display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6,
-                    fontSize: '11px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.08)',
-                    background: 'rgba(255,255,255,0.03)', color: '#888', cursor: filtered.length ? 'pointer' : 'not-allowed',
-                    opacity: filtered.length ? 1 : 0.4, transition: 'all 0.2s',
-                  }}><Download size={13} /> Exportar CSV</button>
-                  <button onClick={limpiarLogAuditoria}
-                    disabled={limpiandoLog || !auditoriaRegistros?.length}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6,
-                      fontSize: '11px', fontWeight: 700, border: 'none',
-                      cursor: (limpiandoLog || !auditoriaRegistros?.length) ? 'not-allowed' : 'pointer',
-                      background: limpiandoLog ? 'rgba(220,53,69,0.5)' : 'rgba(220,53,69,0.1)',
-                      color: limpiandoLog ? '#888' : '#ef4444',
-                      opacity: (limpiandoLog || !auditoriaRegistros?.length) ? 0.4 : 1, transition: 'all 0.2s',
-                    }}>
-                    <Trash2 size={13} /> {limpiandoLog ? 'Limpiando...' : 'Limpiar Todo'}
-                  </button>
-                </div>
-              </header>
-
-              {/* KPI CARDS */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
-                {[
-                  { label: 'TOTAL EVENTOS', value: (auditoriaRegistros || []).length, icon: <BarChart3 size={14} />, accent: '#fff' },
-                  { label: 'HOY', value: todayCount, icon: <Calendar size={14} />, accent: '#22c55e' },
-                  { label: 'CREACIONES', value: creaciones, icon: <Plus size={14} />, accent: '#22c55e' },
-                  { label: 'EDICIONES', value: ediciones, icon: <Edit3 size={14} />, accent: '#fbbf24' },
-                  { label: 'ELIMINACIONES', value: eliminaciones, icon: <Trash2 size={14} />, accent: '#ef4444' },
-                  { label: 'RECORDATORIOS', value: recordatorios, icon: <Bell size={14} />, accent: '#a855f7' },
-                ].map(kpi => (
-                  <div key={kpi.label} style={{
-                    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
-                    padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: '9px', fontWeight: 800, color: '#555', letterSpacing: '0.8px', textTransform: 'uppercase' }}>{kpi.label}</span>
-                      <span style={{ color: kpi.accent, opacity: 0.6 }}>{kpi.icon}</span>
+              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                {/* HEADER */}
+                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 4, height: 28, borderRadius: 2, background: '#fff' }} />
+                    <div>
+                      <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Log de Auditoría</h1>
+                      <p style={{ fontSize: '12px', color: '#555', marginTop: 2 }}>Registro completo de actividad del sistema en tiempo real</p>
                     </div>
-                    <div style={{ fontSize: '22px', fontWeight: 900, color: kpi.accent, letterSpacing: '-1px' }}>{kpi.value}</div>
                   </div>
-                ))}
-              </div>
-
-              {/* TOP ANALYST STRIP */}
-              {topAnalyst && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 18px', marginBottom: 20,
-                  background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
-                }}>
-                  <User size={13} color="#555" />
-                  <span style={{ fontSize: '11px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista más activo:</span>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: '#fff' }}>{topAnalyst[0]}</span>
-                  <span style={{ fontSize: '11px', color: '#555' }}>({topAnalyst[1]} eventos)</span>
-                  <div style={{ flex: 1 }} />
-                  <span style={{ fontSize: '10px', color: '#333' }}>{allAuditAnalistas.length} analistas registrados</span>
-                </div>
-              )}
-
-              {/* FILTERS TOOLBAR */}
-              <div style={{
-                background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
-                padding: '16px 20px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end',
-              }}>
-                {/* Search */}
-                <div style={{ flex: '1 1 220px', minWidth: 180 }}>
-                  <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Buscar</label>
-                  <div style={{ position: 'relative' }}>
-                    <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#444' }} />
-                    <input
-                      value={auditSearch} onChange={e => { setAuditSearch(e.target.value); setAuditPage(1); }}
-                      placeholder="Cliente, analista, acción..."
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={exportCSV} disabled={!filtered.length} style={{
+                      display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6,
+                      fontSize: '11px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.03)', color: '#888', cursor: filtered.length ? 'pointer' : 'not-allowed',
+                      opacity: filtered.length ? 1 : 0.4, transition: 'all 0.2s',
+                    }}><Download size={13} /> Exportar CSV</button>
+                    <button onClick={limpiarLogAuditoria}
+                      disabled={limpiandoLog || !auditoriaRegistros?.length}
                       style={{
-                        width: '100%', padding: '8px 10px 8px 32px', background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: '#ccc',
-                        fontSize: '12px', fontFamily: "'Outfit', sans-serif", outline: 'none',
-                      }}
-                    />
+                        display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6,
+                        fontSize: '11px', fontWeight: 700, border: 'none',
+                        cursor: (limpiandoLog || !auditoriaRegistros?.length) ? 'not-allowed' : 'pointer',
+                        background: limpiandoLog ? 'rgba(220,53,69,0.5)' : 'rgba(220,53,69,0.1)',
+                        color: limpiandoLog ? '#888' : '#ef4444',
+                        opacity: (limpiandoLog || !auditoriaRegistros?.length) ? 0.4 : 1, transition: 'all 0.2s',
+                      }}>
+                      <Trash2 size={13} /> {limpiandoLog ? 'Limpiando...' : 'Limpiar Todo'}
+                    </button>
+                  </div>
+                </header>
+
+                {/* KPI CARDS */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
+                  {[
+                    { label: 'TOTAL EVENTOS', value: (auditoriaRegistros || []).length, icon: <BarChart3 size={14} />, accent: '#fff' },
+                    { label: 'HOY', value: todayCount, icon: <Calendar size={14} />, accent: '#22c55e' },
+                    { label: 'CREACIONES', value: creaciones, icon: <Plus size={14} />, accent: '#22c55e' },
+                    { label: 'EDICIONES', value: ediciones, icon: <Edit3 size={14} />, accent: '#fbbf24' },
+                    { label: 'ELIMINACIONES', value: eliminaciones, icon: <Trash2 size={14} />, accent: '#ef4444' },
+                    { label: 'RECORDATORIOS', value: recordatorios, icon: <Bell size={14} />, accent: '#a855f7' },
+                  ].map(kpi => (
+                    <div key={kpi.label} style={{
+                      background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
+                      padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '9px', fontWeight: 800, color: '#555', letterSpacing: '0.8px', textTransform: 'uppercase' }}>{kpi.label}</span>
+                        <span style={{ color: kpi.accent, opacity: 0.6 }}>{kpi.icon}</span>
+                      </div>
+                      <div style={{ fontSize: '22px', fontWeight: 900, color: kpi.accent, letterSpacing: '-1px' }}>{kpi.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* TOP ANALYST STRIP */}
+                {topAnalyst && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 18px', marginBottom: 20,
+                    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
+                  }}>
+                    <User size={13} color="#555" />
+                    <span style={{ fontSize: '11px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista más activo:</span>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#fff' }}>{topAnalyst[0]}</span>
+                    <span style={{ fontSize: '11px', color: '#555' }}>({topAnalyst[1]} eventos)</span>
+                    <div style={{ flex: 1 }} />
+                    <span style={{ fontSize: '10px', color: '#333' }}>{allAuditAnalistas.length} analistas registrados</span>
+                  </div>
+                )}
+
+                {/* FILTERS TOOLBAR */}
+                <div style={{
+                  background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
+                  padding: '16px 20px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end',
+                }}>
+                  {/* Search */}
+                  <div style={{ flex: '1 1 220px', minWidth: 180 }}>
+                    <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Buscar</label>
+                    <div style={{ position: 'relative' }}>
+                      <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#444' }} />
+                      <input
+                        value={auditSearch} onChange={e => { setAuditSearch(e.target.value); setAuditPage(1); }}
+                        placeholder="Cliente, analista, acción..."
+                        style={{
+                          width: '100%', padding: '8px 10px 8px 32px', background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: '#ccc',
+                          fontSize: '12px', fontFamily: "'Outfit', sans-serif", outline: 'none',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Acción */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Acción</label>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {['todas', ...allAcciones].map(a => (
+                        <button key={a} onClick={() => { setAuditFilterAccion(a); setAuditPage(1); }} style={{
+                          padding: '5px 10px', borderRadius: 4, border: '1px solid',
+                          fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
+                          fontFamily: "'Outfit', sans-serif", whiteSpace: 'nowrap',
+                          borderColor: auditFilterAccion === a ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
+                          background: auditFilterAccion === a ? '#fff' : 'transparent',
+                          color: auditFilterAccion === a ? '#000' : '#666',
+                        }}>{a === 'todas' ? 'Todas' : a}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Analista */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista</label>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {['todos', ...allAuditAnalistas].map(a => (
+                        <button key={a} onClick={() => { setAuditFilterAnalista(a); setAuditPage(1); }} style={{
+                          padding: '5px 10px', borderRadius: 4, border: '1px solid',
+                          fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
+                          fontFamily: "'Outfit', sans-serif", whiteSpace: 'nowrap',
+                          borderColor: auditFilterAnalista === a ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
+                          background: auditFilterAnalista === a ? '#fff' : 'transparent',
+                          color: auditFilterAnalista === a ? '#000' : '#666',
+                        }}>{a === 'todos' ? 'Todos' : a}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Período */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Período</label>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {[{ k: 'hoy', l: 'Hoy' }, { k: '7d', l: '7 días' }, { k: '30d', l: '30 días' }, { k: 'todo', l: 'Todo' }].map(p => (
+                        <button key={p.k} onClick={() => { setAuditFilterPeriodo(p.k); setAuditPage(1); }} style={{
+                          padding: '5px 10px', borderRadius: 4, border: '1px solid',
+                          fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
+                          fontFamily: "'Outfit', sans-serif",
+                          borderColor: auditFilterPeriodo === p.k ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
+                          background: auditFilterPeriodo === p.k ? '#fff' : 'transparent',
+                          color: auditFilterPeriodo === p.k ? '#000' : '#666',
+                        }}>{p.l}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Results Count */}
+                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'flex-end' }}>
+                    <span style={{ fontSize: '11px', color: '#444', fontWeight: 600 }}>
+                      {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
                 </div>
 
-                {/* Acción */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Acción</label>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {['todas', ...allAcciones].map(a => (
-                      <button key={a} onClick={() => { setAuditFilterAccion(a); setAuditPage(1); }} style={{
-                        padding: '5px 10px', borderRadius: 4, border: '1px solid',
-                        fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                        fontFamily: "'Outfit', sans-serif", whiteSpace: 'nowrap',
-                        borderColor: auditFilterAccion === a ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
-                        background: auditFilterAccion === a ? '#fff' : 'transparent',
-                        color: auditFilterAccion === a ? '#000' : '#666',
-                      }}>{a === 'todas' ? 'Todas' : a}</button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Analista */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista</label>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {['todos', ...allAuditAnalistas].map(a => (
-                      <button key={a} onClick={() => { setAuditFilterAnalista(a); setAuditPage(1); }} style={{
-                        padding: '5px 10px', borderRadius: 4, border: '1px solid',
-                        fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                        fontFamily: "'Outfit', sans-serif", whiteSpace: 'nowrap',
-                        borderColor: auditFilterAnalista === a ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
-                        background: auditFilterAnalista === a ? '#fff' : 'transparent',
-                        color: auditFilterAnalista === a ? '#000' : '#666',
-                      }}>{a === 'todos' ? 'Todos' : a}</button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Período */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Período</label>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {[{ k: 'hoy', l: 'Hoy' }, { k: '7d', l: '7 días' }, { k: '30d', l: '30 días' }, { k: 'todo', l: 'Todo' }].map(p => (
-                      <button key={p.k} onClick={() => { setAuditFilterPeriodo(p.k); setAuditPage(1); }} style={{
-                        padding: '5px 10px', borderRadius: 4, border: '1px solid',
-                        fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                        fontFamily: "'Outfit', sans-serif",
-                        borderColor: auditFilterPeriodo === p.k ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
-                        background: auditFilterPeriodo === p.k ? '#fff' : 'transparent',
-                        color: auditFilterPeriodo === p.k ? '#000' : '#666',
-                      }}>{p.l}</button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Results Count */}
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'flex-end' }}>
-                  <span style={{ fontSize: '11px', color: '#444', fontWeight: 600 }}>
-                    {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              </div>
-
-              {/* DATA TABLE */}
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6, overflow: 'hidden' }}>
-                {auditoriaLoading ? (
-                  <div className="loading-container" style={{ minHeight: 200 }}><div className="spinner" /><span>Cargando registros...</span></div>
-                ) : !filtered.length ? (
-                  <div className="empty-state" style={{ minHeight: 200 }}>
-                    <Shield size={36} color="#333" style={{ marginBottom: 8 }} />
-                    <p style={{ fontWeight: 800, fontSize: '13px', color: '#444' }}>{auditSearch || auditFilterAccion !== 'todas' || auditFilterAnalista !== 'todos' || auditFilterPeriodo !== 'todo' ? 'Sin resultados para los filtros aplicados' : 'No hay registros de auditoría'}</p>
-                    <p style={{ fontSize: '11px', color: '#333', marginTop: 4 }}>Las acciones del sistema aparecerán aquí automáticamente.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table className="data-table" style={{ marginBottom: 0 }}>
-                        <thead>
-                          <tr>
-                            <th style={{ width: 40, textAlign: 'center', padding: '10px 8px' }} />
-                            <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Fecha / Hora</th>
-                            <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Analista</th>
-                            <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Acción</th>
-                            <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Campo</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paged.map((reg: any, idx: number) => {
-                            const rowKey = reg.id ?? `${reg.fecha_hora}-${idx}`;
-                            const isExpanded = auditExpandedRow === rowKey;
-                            const ac = accionColor(reg.accion);
-                            return (
-                              <React.Fragment key={rowKey}>
-                                <tr
-                                  onClick={() => setAuditExpandedRow(isExpanded ? null : rowKey)}
-                                  style={{
-                                    cursor: 'pointer', transition: 'background 0.15s',
-                                    background: isExpanded ? 'rgba(255,255,255,0.02)' : 'transparent',
-                                    borderBottom: isExpanded ? 'none' : '1px solid rgba(255,255,255,0.03)',
-                                  }}
-                                  onMouseEnter={e => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)'; }}
-                                  onMouseLeave={e => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                                >
-                                  <td style={{ textAlign: 'center', padding: '10px 8px', verticalAlign: 'middle' }}>
-                                    <ChevronRight size={12} color="#444" style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }} />
-                                  </td>
-                                  <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{formatDateTime(reg.fecha_hora)}</div>
-                                    <div style={{ fontSize: '10px', color: '#444', marginTop: 1 }}>{relativeTime(reg.fecha_hora)}</div>
-                                  </td>
-                                  <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                      <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <User size={11} color="#666" />
-                                      </div>
-                                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{reg.analista || '—'}</span>
-                                    </div>
-                                  </td>
-                                  <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
-                                    <span style={{
-                                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                                      padding: '4px 10px', borderRadius: 4, fontSize: '10px', fontWeight: 700,
-                                      background: ac.bg, color: ac.color, border: `1px solid ${ac.border}`,
-                                      letterSpacing: '0.3px',
-                                    }}>
-                                      {accionIcon(reg.accion)}
-                                      {reg.accion}
-                                    </span>
-                                  </td>
-                                  <td style={{ padding: '10px 14px', verticalAlign: 'middle', fontSize: '12px', color: '#888' }}>
-                                    {reg.campo_modificado || '—'}
-                                  </td>
-                                </tr>
-
-                                {/* EXPANDED DETAIL ROW */}
-                                {isExpanded && (
-                                  <tr style={{ background: 'rgba(255,255,255,0.015)' }}>
-                                    <td colSpan={5} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                      <div style={{
-                                        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                                        gap: 16, padding: '16px 20px', background: 'rgba(255,255,255,0.02)',
-                                        borderRadius: 6, border: '1px solid rgba(255,255,255,0.04)',
-                                      }}>
-                                        <div>
-                                          <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>ID Completo</div>
-                                          <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#888', wordBreak: 'break-all' }}>{reg.id_registro || '—'}</div>
+                {/* DATA TABLE */}
+                <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6, overflow: 'hidden' }}>
+                  {auditoriaLoading ? (
+                    <div className="loading-container" style={{ minHeight: 200 }}><div className="spinner" /><span>Cargando registros...</span></div>
+                  ) : !filtered.length ? (
+                    <div className="empty-state" style={{ minHeight: 200 }}>
+                      <Shield size={36} color="#333" style={{ marginBottom: 8 }} />
+                      <p style={{ fontWeight: 800, fontSize: '13px', color: '#444' }}>{auditSearch || auditFilterAccion !== 'todas' || auditFilterAnalista !== 'todos' || auditFilterPeriodo !== 'todo' ? 'Sin resultados para los filtros aplicados' : 'No hay registros de auditoría'}</p>
+                      <p style={{ fontSize: '11px', color: '#333', marginTop: 4 }}>Las acciones del sistema aparecerán aquí automáticamente.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table className="data-table" style={{ marginBottom: 0 }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: 40, textAlign: 'center', padding: '10px 8px' }} />
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Fecha / Hora</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Analista</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Acción</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Campo</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paged.map((reg: any, idx: number) => {
+                              const rowKey = reg.id ?? `${reg.fecha_hora}-${idx}`;
+                              const isExpanded = auditExpandedRow === rowKey;
+                              const ac = accionColor(reg.accion);
+                              return (
+                                <React.Fragment key={rowKey}>
+                                  <tr
+                                    onClick={() => setAuditExpandedRow(isExpanded ? null : rowKey)}
+                                    style={{
+                                      cursor: 'pointer', transition: 'background 0.15s',
+                                      background: isExpanded ? 'rgba(255,255,255,0.02)' : 'transparent',
+                                      borderBottom: isExpanded ? 'none' : '1px solid rgba(255,255,255,0.03)',
+                                    }}
+                                    onMouseEnter={e => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)'; }}
+                                    onMouseLeave={e => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                                  >
+                                    <td style={{ textAlign: 'center', padding: '10px 8px', verticalAlign: 'middle' }}>
+                                      <ChevronRight size={12} color="#444" style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+                                    </td>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
+                                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{formatDateTime(reg.fecha_hora)}</div>
+                                      <div style={{ fontSize: '10px', color: '#444', marginTop: 1 }}>{relativeTime(reg.fecha_hora)}</div>
+                                    </td>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                          <User size={11} color="#666" />
                                         </div>
-                                        <div>
-                                          <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista (ID)</div>
-                                          <div style={{ fontSize: '11px', color: '#888' }}>{reg.id_analista || reg.analista || '—'}</div>
-                                        </div>
-                                        <div>
-                                          <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Timestamp</div>
-                                          <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#888' }}>{reg.fecha_hora || '—'}</div>
-                                        </div>
-                                        {reg.valor_anterior && (
-                                          <div style={{ gridColumn: '1 / -1' }}>
-                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Anterior</div>
-                                            <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'rgba(239,68,68,0.04)', borderRadius: 4, border: '1px solid rgba(239,68,68,0.08)', wordBreak: 'break-all' }}>{reg.valor_anterior}</div>
-                                          </div>
-                                        )}
-                                        {reg.valor_nuevo && (
-                                          <div style={{ gridColumn: '1 / -1' }}>
-                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Nuevo</div>
-                                            <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'rgba(34,197,94,0.04)', borderRadius: 4, border: '1px solid rgba(34,197,94,0.08)', wordBreak: 'break-all' }}>{reg.valor_nuevo}</div>
-                                          </div>
-                                        )}
+                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{reg.analista || '—'}</span>
                                       </div>
                                     </td>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
+                                      <span style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                                        padding: '4px 10px', borderRadius: 4, fontSize: '10px', fontWeight: 700,
+                                        background: ac.bg, color: ac.color, border: `1px solid ${ac.border}`,
+                                        letterSpacing: '0.3px',
+                                      }}>
+                                        {accionIcon(reg.accion)}
+                                        {reg.accion}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', fontSize: '12px', color: '#888' }}>
+                                      {reg.campo_modificado || '—'}
+                                    </td>
                                   </tr>
-                                )}
-                              </React.Fragment>
+
+                                  {/* EXPANDED DETAIL ROW */}
+                                  {isExpanded && (
+                                    <tr style={{ background: 'rgba(255,255,255,0.015)' }}>
+                                      <td colSpan={5} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                        <div style={{
+                                          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                          gap: 16, padding: '16px 20px', background: 'rgba(255,255,255,0.02)',
+                                          borderRadius: 6, border: '1px solid rgba(255,255,255,0.04)',
+                                        }}>
+                                          <div>
+                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>ID Completo</div>
+                                            <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#888', wordBreak: 'break-all' }}>{reg.id_registro || '—'}</div>
+                                          </div>
+                                          <div>
+                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista (ID)</div>
+                                            <div style={{ fontSize: '11px', color: '#888' }}>{reg.id_analista || reg.analista || '—'}</div>
+                                          </div>
+                                          <div>
+                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Timestamp</div>
+                                            <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#888' }}>{reg.fecha_hora || '—'}</div>
+                                          </div>
+                                          {reg.valor_anterior && (
+                                            <div style={{ gridColumn: '1 / -1' }}>
+                                              <div style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Anterior</div>
+                                              <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'rgba(239,68,68,0.04)', borderRadius: 4, border: '1px solid rgba(239,68,68,0.08)', wordBreak: 'break-all' }}>{reg.valor_anterior}</div>
+                                            </div>
+                                          )}
+                                          {reg.valor_nuevo && (
+                                            <div style={{ gridColumn: '1 / -1' }}>
+                                              <div style={{ fontSize: '9px', fontWeight: 800, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Nuevo</div>
+                                              <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'rgba(34,197,94,0.04)', borderRadius: 4, border: '1px solid rgba(34,197,94,0.08)', wordBreak: 'break-all' }}>{reg.valor_nuevo}</div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* PAGINATION */}
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.04)',
+                      }}>
+                        <span style={{ fontSize: '11px', color: '#444' }}>
+                          Mostrando {(safePage - 1) * AUDIT_PAGE_SIZE + 1}–{Math.min(safePage * AUDIT_PAGE_SIZE, filtered.length)} de {filtered.length}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button onClick={() => setAuditPage(p => Math.max(1, p - 1))} disabled={safePage <= 1} style={{
+                            width: 30, height: 30, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
+                            background: 'rgba(255,255,255,0.03)', color: safePage <= 1 ? '#333' : '#888',
+                            cursor: safePage <= 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}><ChevronLeft size={14} /></button>
+                          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                            let page: number;
+                            if (totalPages <= 5) page = i + 1;
+                            else if (safePage <= 3) page = i + 1;
+                            else if (safePage >= totalPages - 2) page = totalPages - 4 + i;
+                            else page = safePage - 2 + i;
+                            return (
+                              <button key={page} onClick={() => setAuditPage(page)} style={{
+                                width: 30, height: 30, borderRadius: 4, border: '1px solid',
+                                fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
+                                fontFamily: "'Outfit', sans-serif",
+                                borderColor: safePage === page ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)',
+                                background: safePage === page ? '#fff' : 'rgba(255,255,255,0.03)',
+                                color: safePage === page ? '#000' : '#666',
+                              }}>{page}</button>
                             );
                           })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* PAGINATION */}
-                    <div style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.04)',
-                    }}>
-                      <span style={{ fontSize: '11px', color: '#444' }}>
-                        Mostrando {(safePage - 1) * AUDIT_PAGE_SIZE + 1}–{Math.min(safePage * AUDIT_PAGE_SIZE, filtered.length)} de {filtered.length}
-                      </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <button onClick={() => setAuditPage(p => Math.max(1, p - 1))} disabled={safePage <= 1} style={{
-                          width: 30, height: 30, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
-                          background: 'rgba(255,255,255,0.03)', color: safePage <= 1 ? '#333' : '#888',
-                          cursor: safePage <= 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}><ChevronLeft size={14} /></button>
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                          let page: number;
-                          if (totalPages <= 5) page = i + 1;
-                          else if (safePage <= 3) page = i + 1;
-                          else if (safePage >= totalPages - 2) page = totalPages - 4 + i;
-                          else page = safePage - 2 + i;
-                          return (
-                            <button key={page} onClick={() => setAuditPage(page)} style={{
-                              width: 30, height: 30, borderRadius: 4, border: '1px solid',
-                              fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                              fontFamily: "'Outfit', sans-serif",
-                              borderColor: safePage === page ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)',
-                              background: safePage === page ? '#fff' : 'rgba(255,255,255,0.03)',
-                              color: safePage === page ? '#000' : '#666',
-                            }}>{page}</button>
-                          );
-                        })}
-                        <button onClick={() => setAuditPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} style={{
-                          width: 30, height: 30, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
-                          background: 'rgba(255,255,255,0.03)', color: safePage >= totalPages ? '#333' : '#888',
-                          cursor: safePage >= totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}><ChevronRight size={14} /></button>
+                          <button onClick={() => setAuditPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} style={{
+                            width: 30, height: 30, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
+                            background: 'rgba(255,255,255,0.03)', color: safePage >= totalPages ? '#333' : '#888',
+                            cursor: safePage >= totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}><ChevronRight size={14} /></button>
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
             );
           })()}
 

@@ -138,7 +138,7 @@ function PDVHistorico({ data }: { data: PDVData }) {
           <div>
             <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO ANUAL — PDV</div>
             <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-              Análisis de rendimiento por cuartiles
+              Rendimiento ANUAL
             </div>
           </div>
         </div>
@@ -193,7 +193,7 @@ function AnalistaHistorico({ data, nombre }: { data: HistoricoData; nombre: stri
           <div>
             <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO ANUAL — {nombre}</div>
             <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-              Análisis de rendimiento por cuartiles
+              Rendimiento ANUAL
             </div>
           </div>
         </div>
