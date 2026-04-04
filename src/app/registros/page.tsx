@@ -134,7 +134,7 @@ const RegistroModal = memo(function RegistroModal({
       if (dups.length > 0) {
         const dup = dups[0] as Registro;
         setDupRecord(dup);
-        setDupBlocked(!ESTADOS_PERMITIDOS_DUPLICADO.includes(dup.estado));
+        setDupBlocked(!isAdmin && !ESTADOS_PERMITIDOS_DUPLICADO.includes(dup.estado));
         setShowDupModal(true);
         return;
       }
