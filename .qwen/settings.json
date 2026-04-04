@@ -13,7 +13,8 @@
       "Bash(git revert *)",
       "Bash(node *)",
       "Bash(npx *)",
-      "Bash(findstr *)"
+      "Bash(findstr *)",
+      "Bash(del *)"
     ]
   },
   "$version": 3

@@ -185,36 +185,11 @@ const RegistroModal = memo(function RegistroModal({
 
   return (
     <>
-    <div className="modal-overlay" onClick={onClose} style={{
-      background: 'rgba(0,0,0,0.85)',
-      backdropFilter: 'blur(10px)',
-    }}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{
-        background: '#000', border: '1px solid rgba(255,255,255,0.05)',
-        boxShadow: '0 40px 100px rgba(0,0,0,0.9)',
-        maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-      }}>
-        <style>{`
-          .modal-content::-webkit-scrollbar,
-          .modal-body::-webkit-scrollbar {
-            width: 6px;
-          }
-          .modal-content::-webkit-scrollbar-track,
-          .modal-body::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.02);
-          }
-          .modal-content::-webkit-scrollbar-thumb,
-          .modal-body::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.15);
-            border-radius: 3px;
-          }
-          .modal-content::-webkit-scrollbar-thumb:hover,
-          .modal-body::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,255,255,0.25);
-          }
-        `}</style>
-        <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', padding: '24px 32px', flexShrink: 0 }}>
-          <h3 className="modal-title" style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '0.5px' }}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">
+            <FileText size={18} style={{ color: '#888' }} />
             {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
           </h3>
           <button className="btn-icon" onClick={onClose} style={{ color: '#444' }}><X size={20} /></button>
@@ -222,7 +197,7 @@ const RegistroModal = memo(function RegistroModal({
         <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
           <div className="form-row">
             <Field label="CUIL *" error={errors.cuil}>
-              <input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" />
+              <input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
             </Field>
             <Field label="Nombre *" error={errors.nombre}>
               <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} onPaste={e => {
@@ -231,7 +206,7 @@ const RegistroModal = memo(function RegistroModal({
                 const pasted = e.clipboardData.getData('text');
                 const clean = pasted.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '');
                 set('nombre', capitalizarNombre(clean));
-              }} autoFocus />
+              }} />
             </Field>
           </div>
           <div className="form-row">
@@ -310,7 +285,7 @@ const RegistroModal = memo(function RegistroModal({
             <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
           </p>
         </div>
-        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', padding: '24px 32px', flexShrink: 0 }}>
+        <div className="modal-footer">
           {errors._ && <span style={{ color: '#fff', fontSize: '12px', flex: 1, fontWeight: 700 }}>{errors._}</span>}
           <button className="btn-secondary" onClick={onClose} style={{
             background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666',
@@ -328,9 +303,9 @@ const RegistroModal = memo(function RegistroModal({
     </div>
 
     {showDupModal && dupRecord && (
-      <div className="modal-overlay" style={{ zIndex: 1100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
-        <div className="modal-content" style={{ maxWidth: '480px', background: '#000', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 40px 100px rgba(0,0,0,0.9)' }} onClick={e => e.stopPropagation()}>
-          <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '20px 28px' }}>
+      <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
+        <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
             <h3 className="modal-title" style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '0.5px', color: dupBlocked ? 'var(--rojo)' : '#f59e0b' }}>
               {dupBlocked ? 'REGISTRO DUPLICADO' : 'REGISTRO EXISTENTE'}
             </h3>
@@ -351,7 +326,7 @@ const RegistroModal = memo(function RegistroModal({
               </div>
             </div>
           </div>
-          <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '16px 28px', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <div className="modal-footer">
             {dupBlocked
               ? <button className="btn-primary" onClick={() => setShowDupModal(false)} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>ENTENDIDO</button>
               : <>
@@ -415,7 +390,10 @@ const RecordatorioModal = memo(function RecordatorioModal({
     <div className="modal-overlay" onClick={() => onClose(false)}>
       <div className="modal-content" style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Nuevo Recordatorio</h3>
+          <h3 className="modal-title">
+            <Bell size={18} style={{ color: '#888' }} />
+            Nuevo Recordatorio
+          </h3>
           <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
         </div>
         <div className="modal-body">
@@ -430,7 +408,7 @@ const RecordatorioModal = memo(function RecordatorioModal({
             <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
           </p>
         </div>
-        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', padding: '20px 28px' }}>
+        <div className="modal-footer">
           <button className="btn-secondary" onClick={() => onClose(false)} style={{
             background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
           }}>CANCELAR</button>
@@ -474,7 +452,10 @@ const ComentariosModal = memo(function ComentariosModal({
     <div className="modal-overlay" onClick={() => onClose(false)}>
       <div className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Comentarios</h3>
+          <h3 className="modal-title">
+            <MessageSquare size={18} style={{ color: '#888' }} />
+            Comentarios
+          </h3>
           <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
         </div>
         <div className="modal-body">
@@ -491,7 +472,7 @@ const ComentariosModal = memo(function ComentariosModal({
             />
           </Field>
         </div>
-        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', padding: '20px 28px' }}>
+        <div className="modal-footer">
           <button className="btn-secondary" onClick={() => onClose(false)} style={{
             background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
           }}>CANCELAR</button>
@@ -519,8 +500,11 @@ const DeleteModal = memo(function DeleteModal({
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content modal-content--danger" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-          <h3 className="modal-title" style={{ color: '#fff', fontWeight: 900, letterSpacing: '1px' }}>ELIMINAR REGISTRO</h3>
+        <div className="modal-header">
+          <h3 className="modal-title" style={{ color: 'var(--rojo)' }}>
+            <AlertTriangle size={18} />
+            ELIMINAR REGISTRO
+          </h3>
           <button className="btn-icon" onClick={onCancel} style={{ color: '#333' }}><X size={18} /></button>
         </div>
         <div className="modal-body" style={{ padding: '32px 28px' }}>
@@ -529,7 +513,7 @@ const DeleteModal = memo(function DeleteModal({
             <span style={{ fontSize: '11px', fontWeight: 700, color: '#333', textTransform: 'uppercase', marginTop: '10px', display: 'block' }}>La acción es permanente.</span>
           </p>
         </div>
-        <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+        <div className="modal-footer">
           <button className="btn-secondary" onClick={onCancel} style={{
             background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
           }}>CANCELAR</button>
