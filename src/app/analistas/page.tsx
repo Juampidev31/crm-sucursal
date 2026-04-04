@@ -869,7 +869,7 @@ export default function AnalistasPage() {
             textTransform: 'uppercase', letterSpacing: '1px'
           }}
         >
-          <option value={PDV}>TODOS LOS ANALISTAS</option>
+          <option value={PDV}>PDV</option>
           {analistasSel.map(a => <option key={a} value={a}>{a.toUpperCase()}</option>)}
         </select>
 
