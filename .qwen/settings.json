@@ -10,7 +10,10 @@
       "Bash(git merge *)",
       "Bash(git stash)",
       "Bash(git stash *)",
-      "Bash(git revert *)"
+      "Bash(git revert *)",
+      "Bash(node *)",
+      "Bash(npx *)",
+      "Bash(findstr *)"
     ]
   },
   "$version": 3
