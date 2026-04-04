@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, sanitizarCuil, displayAnalista } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
@@ -197,7 +197,29 @@ const RegistroModal = memo(function RegistroModal({
         <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
           <div className="form-row">
             <Field label="CUIL *" error={errors.cuil}>
-              <input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input className="form-input" style={{ flex: 1 }} value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
+                <button
+                  type="button"
+                  disabled={(form.cuil?.length ?? 0) !== 11}
+                  title="Copiar CUIL y abrir BCRA"
+                  onClick={() => {
+                    navigator.clipboard.writeText(form.cuil || '').catch(() => {});
+                    window.open('https://www.bcra.gob.ar/situacion-crediticia/', '_blank', 'noopener,noreferrer');
+                  }}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    gap: 4, padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
+                    border: '1px solid var(--border)',
+                    background: (form.cuil?.length ?? 0) === 11 ? 'var(--accent)' : 'var(--surface2)',
+                    color: (form.cuil?.length ?? 0) === 11 ? 'var(--bg)' : 'var(--text-muted)',
+                    cursor: (form.cuil?.length ?? 0) === 11 ? 'pointer' : 'not-allowed',
+                    whiteSpace: 'nowrap', transition: 'background 0.15s',
+                  }}
+                >
+                  <ExternalLink size={13} /> BCRA
+                </button>
+              </div>
             </Field>
             <Field label="Nombre *" error={errors.nombre}>
               <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} onPaste={e => {
