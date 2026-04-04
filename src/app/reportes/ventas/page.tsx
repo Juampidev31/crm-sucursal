@@ -140,7 +140,7 @@ export default function ReporteVentasPage() {
               <label style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>Analista</label>
               <CustomSelector 
                 value={filtroAnalista} 
-                options={[{ value: '', label: 'TODOS' }, ...analistas.map(a => ({ value: a, label: displayAnalista(a) }))]}
+                options={[{ value: '', label: 'PDV' }, ...analistas.map(a => ({ value: a, label: displayAnalista(a) }))]}
                 onChange={setFiltroAnalista}
                 width="160px"
               />

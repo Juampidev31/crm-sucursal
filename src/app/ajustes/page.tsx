@@ -36,6 +36,25 @@ const parsePaste = (e: React.ClipboardEvent<HTMLInputElement>, onChange: (v: str
   if (!isNaN(num)) onChange(String(num));
 };
 
+const VariacionBadge = ({ valor }: { valor: number }) => {
+  const esPositivo = valor > 0;
+  const esCero = Math.abs(valor) < 0.5;
+  return (
+    <span style={{
+      display: 'inline-block',
+      fontSize: 11,
+      fontWeight: 700,
+      padding: '1px 6px',
+      borderRadius: 4,
+      marginTop: 2,
+      color: esCero ? '#888' : esPositivo ? '#4ade80' : '#f87171',
+      background: esCero ? 'rgba(255,255,255,0.05)' : esPositivo ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
+    }}>
+      {esCero ? '— 0%' : `${esPositivo ? '▲' : '▼'} ${valor >= 0 ? '+' : ''}${valor.toFixed(1)}%`}
+    </span>
+  );
+};
+
 const ANALISTAS = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
 
 export default function AjustesPage() {
@@ -71,6 +90,9 @@ export default function AjustesPage() {
   const [periodo, setPeriodo] = useState(30);
   const [analistaFil, setAnalistaFil] = useState('todos');
   const [metrica, setMetrica] = useState('ventas');
+  const [compararPeriodo, setCompararPeriodo] = useState(true);
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   // Duplicados state
   const [duplicadosRegistros, setDuplicadosRegistros] = useState<any[]>([]);
@@ -421,6 +443,8 @@ export default function AjustesPage() {
     { label: 'Últimos 90 días', value: 90 },
     ...analisisAnios.map(y => ({ label: `Año ${y}`, value: y })),
     { label: 'Histórico completo', value: 0 },
+    { label: '───', value: -999, disabled: true },
+    { label: 'Rango personalizado', value: -10 },
   ], [analisisAnios]);
   const METRICAS = [
     { value: 'ventas', label: 'Ventas ($)' },
@@ -444,6 +468,13 @@ export default function AjustesPage() {
       const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
       return { from, to, nDays: to.getDate() };
     }
+    if (periodo === -10 && fechaDesde && fechaHasta) {
+      // Rango personalizado
+      const from = new Date(`${fechaDesde}T00:00:00`);
+      const to = new Date(`${fechaHasta}T23:59:59.999`);
+      const nDays = Math.max(Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1, 1);
+      return { from, to, nDays };
+    }
     if (periodo === 0) {
       const minYear = analisisAnios[0] ?? now.getFullYear();
       const from = new Date(minYear, 0, 1, 0, 0, 0, 0);
@@ -459,15 +490,64 @@ export default function AjustesPage() {
     from.setDate(from.getDate() - periodo);
     from.setHours(0, 0, 0, 0);
     return { from, to: now, nDays: periodo };
-  }, [periodo, analisisAnios]);
+  }, [periodo, analisisAnios, fechaDesde, fechaHasta]);
+
+  const dateRangeAnterior = useMemo(() => {
+    if (!compararPeriodo) return null;
+    const now = new Date();
+    const duracionMs = dateRange.to.getTime() - dateRange.from.getTime();
+    if (periodo === -1) {
+      // Mes actual → anterior es mes anterior completo
+      const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      return { from, to, nDays: to.getDate() };
+    }
+    if (periodo === -2) {
+      // Mes anterior → ante-anterior
+      const to = new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59, 999);
+      const from = new Date(now.getFullYear(), now.getMonth() - 2, 1, 0, 0, 0, 0);
+      return { from, to, nDays: to.getDate() - from.getDate() + 1 };
+    }
+    if (periodo === -10) {
+      // Rango personalizado → mismo período antes de fechaDesde
+      const to = new Date(dateRange.from);
+      to.setDate(to.getDate() - 1);
+      to.setHours(23, 59, 59, 999);
+      const from = new Date(to);
+      from.setTime(from.getTime() - duracionMs);
+      from.setHours(0, 0, 0, 0);
+      const nDays = Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1;
+      return { from, to, nDays };
+    }
+    if (periodo === 0) return null; // Histórico completo no tiene anterior
+    if (periodo >= 2000) {
+      // Año X → año X-1
+      const prevYear = periodo - 1;
+      const from = new Date(prevYear, 0, 1, 0, 0, 0, 0);
+      const to = new Date(prevYear, 11, 31, 23, 59, 59, 999);
+      const nDays = Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1;
+      return { from, to, nDays };
+    }
+    // Últimos N días → los N días antes de ese rango
+    const to = new Date(dateRange.from);
+    to.setDate(to.getDate() - 1);
+    to.setHours(23, 59, 59, 999);
+    const from = new Date(to);
+    from.setTime(from.getTime() - duracionMs);
+    from.setHours(0, 0, 0, 0);
+    const nDays = Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1;
+    return { from, to, nDays };
+  }, [compararPeriodo, dateRange, periodo]);
 
   const periodoLabel = useMemo(() => {
     if (periodo === -1) return 'mes actual';
     if (periodo === -2) return 'mes anterior';
     if (periodo === 0) return 'histórico completo';
+    if (periodo === -10 && fechaDesde && fechaHasta) return `${fechaDesde} → ${fechaHasta}`;
+    if (periodo === -10) return 'rango personalizado';
     if (periodo >= 2000) return `año ${periodo}`;
     return `últimos ${periodo} días`;
-  }, [periodo]);
+  }, [periodo, fechaDesde, fechaHasta]);
 
   const analisisAnalistas = useMemo(() =>
     Array.from(new Set(analisisRegistros.map(r => r.analista).filter(Boolean) as string[])),
@@ -528,6 +608,74 @@ export default function AjustesPage() {
     avg: dateRange.nDays > 0 ? calcVal(ventasFiltradas) / dateRange.nDays : 0,
     maxDay: tendenciaData.daily.length ? Math.max(...tendenciaData.daily) : 0,
   }), [ventasFiltradas, tendenciaData.daily, dateRange.nDays, calcVal]);
+
+  // === PERIODO ANTERIOR ===
+  const ventasFiltradasAnterior = useMemo(() => {
+    if (!dateRangeAnterior) return [];
+    const { from, to } = dateRangeAnterior;
+    const fromStr = toLocalKey(from);
+    const toStr = toLocalKey(to);
+    return analisisRegistros.filter(r => {
+      if (!r.fecha) return false;
+      const estado = (r.estado ?? '').toLowerCase();
+      if (estado !== 'venta' && !estado.includes('aprobado cc')) return false;
+      const dateStr = r.fecha.slice(0, 10);
+      if (dateStr < fromStr || dateStr > toStr) return false;
+      if (analistaFil !== 'todos' && r.analista !== analistaFil) return false;
+      return true;
+    });
+  }, [analisisRegistros, dateRangeAnterior, analistaFil]);
+
+  const tendenciaDataAnterior = useMemo(() => {
+    if (!dateRangeAnterior || !ventasFiltradasAnterior.length) return null;
+    const byDate = new Map<string, typeof ventasFiltradasAnterior>();
+    for (const r of ventasFiltradasAnterior) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      const bucket = byDate.get(key);
+      if (bucket) bucket.push(r);
+      else byDate.set(key, [r]);
+    }
+    const labels: string[] = [];
+    const daily: number[] = [];
+    const cur = new Date(dateRangeAnterior.from);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(dateRangeAnterior.to);
+    end.setHours(23, 59, 59, 999);
+    while (cur <= end) {
+      const key = toLocalKey(cur);
+      labels.push(`${cur.getDate()}/${cur.getMonth() + 1}`);
+      daily.push(calcVal(byDate.get(key) ?? []));
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (metrica === 'ventas') {
+      let acc = 0;
+      return { labels, values: daily.map(v => (acc += v)), daily };
+    }
+    return { labels, values: daily, daily };
+  }, [ventasFiltradasAnterior, dateRangeAnterior, metrica, calcVal]);
+
+  const summaryAnterior = useMemo(() => {
+    if (!dateRangeAnterior || !ventasFiltradasAnterior.length) return null;
+    return {
+      total: calcVal(ventasFiltradasAnterior),
+      avg: dateRangeAnterior.nDays > 0 ? calcVal(ventasFiltradasAnterior) / dateRangeAnterior.nDays : 0,
+      maxDay: tendenciaDataAnterior?.daily.length ? Math.max(...tendenciaDataAnterior.daily) : 0,
+    };
+  }, [ventasFiltradasAnterior, tendenciaDataAnterior, dateRangeAnterior, calcVal]);
+
+  const variacion = useMemo(() => {
+    if (!summaryAnterior) return null;
+    const calc = (curr: number, prev: number) => {
+      if (prev === 0) return curr === 0 ? 0 : 100;
+      return ((curr - prev) / prev) * 100;
+    };
+    return {
+      total: calc(summary.total, summaryAnterior.total),
+      avg: calc(summary.avg, summaryAnterior.avg),
+      maxDay: calc(summary.maxDay, summaryAnterior.maxDay),
+    };
+  }, [summary, summaryAnterior]);
 
   const mapaActividad = useMemo(() => {
     const { from, to } = dateRange;
@@ -590,7 +738,54 @@ export default function AjustesPage() {
   const fmt = useCallback((v: number) => metrica === 'operaciones' ? String(v) : formatCurrency(v), [metrica]);
   const fmtK = useCallback((v: number) => metrica === 'operaciones' ? String(v) : `$${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0 }).format(v / 1_000)}K`, [metrica]);
 
-  // ACUERDOS DE PRECIOS - Calcular totales por tipo
+  // ACUERDOS DE PRECIOS - Evolución temporal por semana
+  const acuerdosTimeData = useMemo(() => {
+    const { from, to } = dateRange;
+    const cur = new Date(from);
+    cur.setHours(0, 0, 0, 0);
+    const weeks: { label: string; bajo: number; medio: number; premium: number; bajoN: number; medioN: number; premiumN: number }[] = [];
+    let weekNum = 1;
+
+    while (cur <= to) {
+      const weekStart = new Date(cur);
+      const weekEnd = new Date(cur);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      if (weekEnd > to) weekEnd.setTime(to.getTime());
+
+      const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
+      const data: { bajo: number; medio: number; premium: number; bajoN: number; medioN: number; premiumN: number } = {
+        bajo: 0, medio: 0, premium: 0, bajoN: 0, medioN: 0, premiumN: 0,
+      };
+
+      for (const r of ventasFiltradas) {
+        if (!r.fecha) continue;
+        const rd = new Date(`${r.fecha}T00:00:00`);
+        if (rd >= weekStart && rd <= weekEnd) {
+          const acuerdo = r.acuerdo_precios?.trim();
+          const monto = Number(r.monto) || 0;
+          if (acuerdo === 'Riesgo Bajo' || acuerdo?.toLowerCase() === 'riesgo bajo') {
+            data.bajo += monto; data.bajoN += 1;
+          } else if (acuerdo === 'Riesgo Medio' || acuerdo?.toLowerCase() === 'riesgo medio') {
+            data.medio += monto; data.medioN += 1;
+          } else if (acuerdo === 'Premium' || acuerdo?.toLowerCase() === 'premium') {
+            data.premium += monto; data.premiumN += 1;
+          }
+        }
+      }
+
+      const weekTotal = data.bajo + data.medio + data.premium;
+      if (weekTotal > 0 || weekNum <= 8) {
+        weeks.push({ label: weekLabel, ...data });
+      }
+
+      cur.setDate(cur.getDate() + 7);
+      weekNum++;
+    }
+
+    return weeks;
+  }, [ventasFiltradas, dateRange]);
+
+  // ACUERDOS DE PRECIOS - Totales (para referencia)
   const acuerdosData = useMemo(() => {
     const tipos = {
       'Riesgo Bajo': { monto: 0, cantidad: 0 },
@@ -623,8 +818,6 @@ export default function AjustesPage() {
     const t = Math.min(val / max, 1);
     return `rgba(34, 197, 94, ${(0.15 + t * 0.5).toFixed(2)})`;
   };
-
-  const todayKey = useMemo(() => toDateKey(new Date()), []);
 
   // ========== DUPLICADOS HELPERS ==========
   interface GrupoDuplicado {
@@ -1116,10 +1309,9 @@ export default function AjustesPage() {
                     <p style={{ fontSize: '12px', color: 'var(--gris)', marginTop: '2px' }}>Exploración de datos por períodos y métricas</p>
                   </div>
                 </div>
-
                 <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
                   {[
-                    { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="160px" /> },
+                    { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="170px" /> },
                     { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} width="160px" /> },
                     { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} width="160px" /> },
                   ].map(f => (
@@ -1128,6 +1320,55 @@ export default function AjustesPage() {
                       {f.node}
                     </div>
                   ))}
+                  {periodo === -10 && (
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Desde</div>
+                        <input
+                          type="date"
+                          value={fechaDesde}
+                          onChange={e => setFechaDesde(e.target.value)}
+                          style={{
+                            width: '150px', height: '34px', borderRadius: '6px',
+                            background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)',
+                            color: '#fff', fontSize: '12px', padding: '0 10px',
+                            outline: 'none',
+                          }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Hasta</div>
+                        <input
+                          type="date"
+                          value={fechaHasta}
+                          onChange={e => setFechaHasta(e.target.value)}
+                          style={{
+                            width: '150px', height: '34px', borderRadius: '6px',
+                            background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)',
+                            color: '#fff', fontSize: '12px', padding: '0 10px',
+                            outline: 'none',
+                          }}
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Comparar</div>
+                    <button
+                      onClick={() => setCompararPeriodo(v => !v)}
+                      style={{
+                        width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
+                        background: compararPeriodo ? 'rgba(34,197,94,0.8)' : '#333',
+                        position: 'relative', transition: 'background 0.2s',
+                      }}
+                    >
+                      <div style={{
+                        width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                        position: 'absolute', top: 3, left: compararPeriodo ? 25 : 3,
+                        transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                      }} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1140,7 +1381,12 @@ export default function AjustesPage() {
                       <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
                       <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tendencia</span>
                     </div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Acumulado por día — {periodoLabel}</div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>
+                      {compararPeriodo && dateRangeAnterior
+                        ? `Comparación: ${periodoLabel} vs período anterior`
+                        : `Acumulado por día — ${periodoLabel}`
+                      }
+                    </div>
                   </div>
                   <div style={{ height: 320, flex: 1 }}>
                     <Line
@@ -1162,16 +1408,42 @@ export default function AjustesPage() {
                             tension: 0.3,
                             spanGaps: false,
                           },
+                          ...(compararPeriodo && tendenciaDataAnterior ? [{
+                            label: 'Período anterior',
+                            data: tendenciaDataAnterior.values,
+                            borderColor: 'rgba(100,150,255,0.5)',
+                            backgroundColor: 'rgba(100,150,255,0.08)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: 'rgba(100,150,255,0.4)',
+                            pointBorderColor: 'rgba(100,150,255,0.7)',
+                            pointBorderWidth: 1.5,
+                            pointHoverRadius: 6,
+                            fill: true,
+                            tension: 0.3,
+                            spanGaps: false,
+                          }] : []),
                         ],
                       }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                          legend: { display: false },
+                          legend: {
+                            display: compararPeriodo && !!tendenciaDataAnterior,
+                            position: 'top' as const,
+                            align: 'end' as const,
+                            labels: {
+                              color: '#888',
+                              boxWidth: 16,
+                              padding: 12,
+                              font: { size: 10 },
+                              usePointStyle: true,
+                            },
+                          },
                           tooltip: {
                             callbacks: {
-                              label: (ctx: any) => fmt(ctx.parsed.y ?? 0),
+                              label: (ctx: any) => `${ctx.dataset.label}: ${fmt(ctx.parsed.y ?? 0)}`,
                             },
                           },
                         },
@@ -1193,18 +1465,36 @@ export default function AjustesPage() {
                       }}
                     />
                   </div>
-                  <div style={{ display: 'flex', gap: 24, marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div>
+                  <div style={{ display: 'flex', gap: 24, marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
+                    <div style={{ minWidth: 120 }}>
                       <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL</div>
                       <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.total)}</div>
+                      {variacion && (
+                        <VariacionBadge valor={variacion.total} />
+                      )}
+                      {summaryAnterior && (
+                        <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {fmt(summaryAnterior.total)}</div>
+                      )}
                     </div>
-                    <div>
+                    <div style={{ minWidth: 120 }}>
                       <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROMEDIO</div>
                       <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{metrica === 'operaciones' ? summary.avg.toFixed(1) : formatCurrency(summary.avg)}</div>
+                      {variacion && (
+                        <VariacionBadge valor={variacion.avg} />
+                      )}
+                      {summaryAnterior && (
+                        <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {metrica === 'operaciones' ? summaryAnterior.avg.toFixed(1) : formatCurrency(summaryAnterior.avg)}</div>
+                      )}
                     </div>
-                    <div>
+                    <div style={{ minWidth: 120 }}>
                       <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>MÁXIMO DÍA</div>
                       <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.maxDay)}</div>
+                      {variacion && (
+                        <VariacionBadge valor={variacion.maxDay} />
+                      )}
+                      {summaryAnterior && (
+                        <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {fmt(summaryAnterior.maxDay)}</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1245,7 +1535,7 @@ export default function AjustesPage() {
                                     textAlign: 'center', fontSize: 10,
                                     color: day.valor > 0 ? '#86efac' : '#333',
                                     fontWeight: day.valor > 0 ? 600 : 400,
-                                    border: day.key === todayKey ? '1px solid rgba(247,228,121,0.6)' : 'none',
+                                    border: 'none',
                                     padding: '0 4px', cursor: 'default', minWidth: 44,
                                   }}
                                 >
@@ -1421,121 +1711,117 @@ export default function AjustesPage() {
                   </div>
                 </div>
 
-                {/* ACUERDO DE PRECIOS */}
+                {/* ACUERDO DE PRECIOS - Evolución Temporal */}
                 <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
-                      <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>ACUERDO DE PRECIOS</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evolución Acuerdo de Precios</span>
                     </div>
-                    <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Distribución por tipo de acuerdo</div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Proporción semanal: Riesgo Bajo vs Medio vs Premium</div>
                   </div>
-                  <div style={{ height: 200 }}>
+                  <div style={{ height: 220 }}>
                     <Bar
                       data={{
-                        labels: ['RIESGO BAJO', 'RIESGO MEDIO', 'PREMIUM'],
+                        labels: acuerdosTimeData.map(w => w.label),
                         datasets: [
                           {
-                            label: 'Monto',
-                            data: [
-                              acuerdosData['Riesgo Bajo'].monto,
-                              acuerdosData['Riesgo Medio'].monto,
-                              acuerdosData['Premium'].monto,
-                            ],
-                            backgroundColor: [
-                              'rgba(74, 222, 128, 0.6)',
-                              'rgba(239, 68, 68, 0.4)',
-                              'rgba(96, 165, 250, 0.6)',
-                            ],
-                            borderRadius: 4,
+                            label: 'Riesgo Bajo',
+                            data: acuerdosTimeData.map(w => w.bajo),
+                            backgroundColor: 'rgba(74, 222, 128, 0.6)',
+                            borderRadius: 2,
                             borderSkipped: false,
+                            stack: 'stack1',
                           },
                           {
-                            label: 'Cantidad',
-                            data: [
-                              acuerdosData['Riesgo Bajo'].cantidad,
-                              acuerdosData['Riesgo Medio'].cantidad,
-                              acuerdosData['Premium'].cantidad,
-                            ],
-                            backgroundColor: [
-                              'rgba(74, 222, 128, 0.25)',
-                              'rgba(239, 68, 68, 0.2)',
-                              'rgba(96, 165, 250, 0.25)',
-                            ],
-                            borderRadius: 4,
+                            label: 'Riesgo Medio',
+                            data: acuerdosTimeData.map(w => w.medio),
+                            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                            borderRadius: 2,
                             borderSkipped: false,
-                            yAxisID: 'y1',
+                            stack: 'stack1',
+                          },
+                          {
+                            label: 'Premium',
+                            data: acuerdosTimeData.map(w => w.premium),
+                            backgroundColor: 'rgba(96, 165, 250, 0.5)',
+                            borderRadius: 2,
+                            borderSkipped: false,
+                            stack: 'stack1',
                           },
                         ],
                       }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
-                        layout: {
-                          padding: { top: 20 },
-                        },
                         plugins: {
                           legend: {
-                            display: false,
+                            position: 'top' as const,
+                            align: 'end' as const,
+                            labels: {
+                              color: '#888',
+                              boxWidth: 12,
+                              padding: 10,
+                              font: { size: 10 },
+                              usePointStyle: true,
+                            },
                           },
                           tooltip: {
                             callbacks: {
-                              label: (ctx: any) => {
-                                if (ctx.dataset.label === 'Monto') return `Monto: ${formatCurrency(ctx.parsed.y)}`;
-                                return `Cantidad: ${ctx.parsed.y}`;
+                              label: (ctx: any) => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`,
+                              afterBody: (items: any[]) => {
+                                if (!items.length) return '';
+                                const idx = items[0].dataIndex;
+                                const w = acuerdosTimeData[idx];
+                                const total = w.bajo + w.medio + w.premium;
+                                if (total === 0) return '';
+                                return `  Bajo: ${((w.bajo / total) * 100).toFixed(0)}%  |  Medio: ${((w.medio / total) * 100).toFixed(0)}%  |  Premium: ${((w.premium / total) * 100).toFixed(0)}%`;
                               },
                             },
                           },
                         },
                         scales: {
-                          x: { ticks: { color: '#555', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                          y: {
-                            type: 'linear',
-                            position: 'left',
-                            ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } },
+                          x: {
+                            stacked: true,
+                            ticks: { color: '#555', font: { size: 9 }, maxRotation: 45 },
                             grid: { color: 'rgba(255,255,255,0.03)' },
                           },
-                          y1: {
-                            type: 'linear',
-                            position: 'right',
-                            ticks: { color: '#888', font: { size: 10 }, stepSize: 1 },
-                            grid: { drawOnChartArea: false },
+                          y: {
+                            stacked: true,
+                            ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 9 } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
                           },
                         },
                       }}
-                      plugins={[
-                        {
-                          id: 'acuerdosLabels',
-                          afterDatasetsDraw(chart: any) {
-                            const { ctx } = chart;
-                            const montoDataset = chart.data.datasets[0];
-                            const cantDataset = chart.data.datasets[1];
-                            ctx.save();
-                            ctx.textAlign = 'center';
-                            montoDataset.data.forEach((val: number, i: number) => {
-                              // Monto arriba de la barra verde
-                              const montoMeta = chart.getDatasetMeta(0);
-                              if (montoMeta.data[i]) {
-                                const { x, y } = montoMeta.data[i];
-                                ctx.font = 'bold 9px sans-serif';
-                                ctx.fillStyle = '#fff';
-                                ctx.fillText(formatCurrency(val), x, y - 6);
-                              }
-                              // Cantidad arriba de la barra oscura
-                              const cantMeta = chart.getDatasetMeta(1);
-                              if (cantMeta.data[i]) {
-                                const { x, y } = cantMeta.data[i];
-                                ctx.font = 'bold 9px sans-serif';
-                                ctx.fillStyle = '#888';
-                                ctx.fillText(`${cantDataset.data[i]} ops`, x, y - 6);
-                              }
-                            });
-                            ctx.restore();
-                          },
-                        },
-                      ]}
                     />
                   </div>
+                  {/* Resumen de proporciones */}
+                  {(() => {
+                    const totalBajo = acuerdosTimeData.reduce((s, w) => s + w.bajo, 0);
+                    const totalMedio = acuerdosTimeData.reduce((s, w) => s + w.medio, 0);
+                    const totalPremium = acuerdosTimeData.reduce((s, w) => s + w.premium, 0);
+                    const total = totalBajo + totalMedio + totalPremium;
+                    if (total === 0) return null;
+                    return (
+                      <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ flex: 1, textAlign: 'center' }}>
+                          <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Riesgo Bajo</div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: '#4ade80', marginTop: 2 }}>{((totalBajo / total) * 100).toFixed(1)}%</div>
+                          <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalBajo)}</div>
+                        </div>
+                        <div style={{ flex: 1, textAlign: 'center' }}>
+                          <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Riesgo Medio</div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: '#ef4444', marginTop: 2 }}>{((totalMedio / total) * 100).toFixed(1)}%</div>
+                          <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalMedio)}</div>
+                        </div>
+                        <div style={{ flex: 1, textAlign: 'center' }}>
+                          <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Premium</div>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: '#60a5fa', marginTop: 2 }}>{((totalPremium / total) * 100).toFixed(1)}%</div>
+                          <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalPremium)}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
