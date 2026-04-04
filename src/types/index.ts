@@ -29,7 +29,7 @@ export interface Auditoria {
 }
 
 export interface Objetivo {
-  id: string;
+  id?: string;
   analista: string;
   mes: number;
   anio: number;
@@ -38,12 +38,18 @@ export interface Objetivo {
 }
 
 export interface AlertaConfig {
-  id: string;
+  id?: string;
   nombre: string;
   estado: string;
   dias: number;
   mensaje: string;
   color: string;
+}
+
+export interface DiasConfig {
+  analista: string;
+  dias_habiles: number;
+  dias_transcurridos: number;
 }
 
 export interface Recordatorio {

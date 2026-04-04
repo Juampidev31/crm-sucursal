@@ -52,22 +52,18 @@ export const formatDateTime = (date: string | Date | null): string => {
   return dateTimeFmt.format(d);
 };
 
-export const getStatusColor = (_status: string): string => {
-  return '#aaaaaa';
+export const STATUS_LABEL: Record<string, string> = {
+  'venta': 'Venta',
+  'proyeccion': 'Proyección',
+  'en seguimiento': 'En seguimiento',
+  'score bajo': 'Score bajo',
+  'afectaciones': 'Afectaciones',
+  'derivado / aprobado cc': 'Aprob. CC',
+  'derivado / rechazado cc': 'Rechaz. CC',
 };
 
-export const getStatusLabel = (status: string): string => {
-  const map: Record<string, string> = {
-    'venta': 'Venta',
-    'proyeccion': 'Proyección',
-    'en seguimiento': 'En Seguimiento',
-    'score bajo': 'Score Bajo',
-    'afectaciones': 'Afectaciones',
-    'derivado / aprobado cc': 'Derivado/aprobado CC',
-    'derivado / rechazado cc': 'Derivado/rechazado CC',
-  };
-  return map[status?.toLowerCase()] || status;
-};
+export const getStatusLabel = (status: string): string =>
+  STATUS_LABEL[status?.toLowerCase()] || status;
 
 export const calcularDiasHabilesEntreFechas = (fechaInicio: Date, fechaFin: Date): number => {
   if (!fechaInicio || !fechaFin) return 0;

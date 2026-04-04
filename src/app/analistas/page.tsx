@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { logAudit } from '@/lib/audit';
 import { formatCurrency, calcularComisiones, calcularDiasHabilesAutomaticos, getStatusLabel } from '@/lib/utils';
 import { useData } from '@/context/DataContext';
-import { CONFIG } from '@/types';
+import { CONFIG, DiasConfig } from '@/types';
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, BarElement, LineElement,
@@ -50,7 +50,6 @@ interface Reg {
   es_re?: boolean;
   acuerdo_precios?: string;
 }
-interface DiasConfig { analista: string; dias_habiles: number; dias_transcurridos: number; }
 
 const CHART_COLORS: Record<string, string> = {
   venta: '#ffffff',

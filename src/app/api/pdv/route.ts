@@ -62,7 +62,7 @@ function parseSections(rows: string[][]): { left: ReturnType<typeof parseCol>[];
 }
 
 export async function GET() {
-  const yearData: Record<number, { capital: object[]; operaciones: object[] | null }> = {};
+  const yearData: Record<number, { capital: (object | null)[]; operaciones: (object | null)[] | null }> = {};
 
   for (const sheet of SHEETS) {
     const res = await fetch(

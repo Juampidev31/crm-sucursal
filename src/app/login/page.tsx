@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { setSession, getSession } from '@/lib/auth';
 
-const ADMIN_PASSWORD = 'dimenza2024';
-
 export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,13 +13,22 @@ export default function LoginPage() {
     if (getSession()) router.replace('/');
   }, [router]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setSession({ username: 'admin', rol: 'admin' });
-      router.replace('/');
-    } else {
-      setError('Contraseña incorrecta');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        setSession({ username: 'admin', rol: 'admin' });
+        router.replace('/');
+      } else {
+        setError('Contraseña incorrecta');
+      }
+    } catch {
+      setError('Error de conexión');
     }
   };
 

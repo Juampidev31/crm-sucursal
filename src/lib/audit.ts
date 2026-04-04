@@ -34,13 +34,11 @@ export function logAudit(entry: AuditEntry): void {
     fecha_hora: now,
   };
 
-  console.log('[Auditoría] Payload antes de insertar:', payload);
   supabase.from('auditoria').insert(payload).select().then(({ data, error }) => {
     if (error) {
       console.error('[Auditoría] Error al escribir log:', error.message, error.details ?? '');
       return;
     }
-    console.log('[Auditoría] Insertado:', data?.[0]);
     const inserted = data?.[0] ?? { ...payload, fecha_hora: now };
     auditBroadcastChannel.send({
       type: 'broadcast',

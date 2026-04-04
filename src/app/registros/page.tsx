@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatDate, capitalizarNombre, sanitizarCuil, displayAnalista } from '@/lib/utils';
+import { formatCurrency, formatDate, capitalizarNombre, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
 import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -28,17 +28,6 @@ const FIELD_LABELS: Record<string, string> = {
   puntaje: 'Score', es_re: 'Es RE', comentarios: 'Comentarios',
   tipo_cliente: 'Tipo cliente', acuerdo_precios: 'Acuerdo precios',
   fecha_score: 'Fecha score',
-};
-
-// Status label map (monochromatic — no per-state colors)
-const STATUS_LABEL: Record<string, string> = {
-  'venta': 'Venta',
-  'proyeccion': 'Proyección',
-  'en seguimiento': 'En seguimiento',
-  'score bajo': 'Score bajo',
-  'afectaciones': 'Afectaciones',
-  'derivado / aprobado cc': 'Aprob. CC',
-  'derivado / rechazado cc': 'Rechaz. CC',
 };
 
 // ── Validation ────────────────────────────────────────────────────────────────
@@ -454,6 +443,7 @@ const ComentariosModal = memo(function ComentariosModal({
   useEffect(() => {
     if (registro) {
       setComentarios(registro.comentarios || '');
+      setSaving(false);
     }
   }, [registro]);
 
@@ -605,7 +595,6 @@ export default function RegistrosPage() {
       }
       if (data) {
         setRecordatorios(data);
-        console.log('Recordatorios cargados:', data.length);
       }
     };
     fetchRecordatorios();
@@ -613,24 +602,7 @@ export default function RegistrosPage() {
     // Realtime subscription for recordatorios - escucha cambios de TODOS los usuarios
     const channel = supabase
       .channel('recordatorios-realtime-registros')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'recordatorios' }, async () => {
-        // Refetch all recordatorios on insert
-        const { data } = await supabase
-          .from('recordatorios')
-          .select('*')
-          .eq('mostrado', false);
-        if (data) setRecordatorios(data);
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'recordatorios' }, async () => {
-        // Refetch all recordatorios on update
-        const { data } = await supabase
-          .from('recordatorios')
-          .select('*')
-          .eq('mostrado', false);
-        if (data) setRecordatorios(data);
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'recordatorios' }, async () => {
-        // Refetch all recordatorios on delete
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recordatorios' }, async () => {
         const { data } = await supabase
           .from('recordatorios')
           .select('*')
@@ -644,18 +616,14 @@ export default function RegistrosPage() {
     };
   }, []);
 
-  // Check if a record has an expired reminder
-  const hasVencido = useCallback((registroId: string) => {
-    const ahora = new Date();
-    const tieneVencido = recordatorios.some(r => {
-      if (r.registro_id !== registroId) return false;
-      const fechaRecordatorio = new Date(r.fecha_hora);
-      return fechaRecordatorio < ahora;
-    });
-    if (tieneVencido) {
-      console.log('Recordatorio vencido encontrado para registro:', registroId);
+  // Pre-computar IDs con recordatorio vencido (O(m) una vez, O(1) lookup)
+  const vencidoIds = useMemo(() => {
+    const ahora = Date.now();
+    const ids = new Set<string>();
+    for (const r of recordatorios) {
+      if (new Date(r.fecha_hora).getTime() < ahora) ids.add(r.registro_id);
     }
-    return tieneVencido;
+    return ids;
   }, [recordatorios]);
 
   // Handle Escape key
@@ -677,7 +645,6 @@ export default function RegistrosPage() {
   }, [hayFiltros, limpiarFiltros, showFilters, setShowFilters, modalOpen]);
 
 
-  const fetchRegistros = useCallback((silent = false) => { refresh(silent); }, [refresh]);
 
   // ── Animaciones ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -795,17 +762,17 @@ export default function RegistrosPage() {
     const isNew = !registros.find(r => r.id === reg.id);
     applyOptimistic(reg);
     pushRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
-    fetchRegistros(true);
-  }, [applyOptimistic, fetchRegistros, pushRegistroChange, registros]);
+    refresh(true);
+  }, [applyOptimistic, refresh, pushRegistroChange, registros]);
 
   const handleSavedWithRecordatorio = useCallback((reg: Registro) => {
     const isNew = !registros.find(r => r.id === reg.id);
     applyOptimistic(reg);
     pushRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
     showToast('Guardado', 'success');
-    fetchRegistros(true);
+    refresh(true);
     setRecordatorioTarget(reg);
-  }, [applyOptimistic, fetchRegistros, pushRegistroChange, registros, showToast]);
+  }, [applyOptimistic, refresh, pushRegistroChange, registros, showToast]);
 
   const handleRecordatorioClose = useCallback((saved: boolean, newRec?: Recordatorio) => {
     setRecordatorioTarget(null);
@@ -827,12 +794,12 @@ export default function RegistrosPage() {
       } else {
         showToast('Comentarios guardados', 'success');
         setComentariosTarget(null);
-        fetchRegistros();
+        refresh();
       }
     } else {
       setComentariosTarget(null);
     }
-  }, [comentariosTarget, showToast, fetchRegistros]);
+  }, [comentariosTarget, showToast, refresh]);
 
   const rangeStart = (currentPage - 1) * pageSize + 1;
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
@@ -1090,7 +1057,7 @@ export default function RegistrosPage() {
                 </span>
                 <span style={{ fontSize: '11px', fontWeight: 800, color: '#777', letterSpacing: '1px', textTransform: 'uppercase' }}>
                   Total acumulado <span style={{ color: '#fff', fontSize: '14px', marginLeft: '8px' }}>
-                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(totales.monto)}
+                    {formatCurrency(totales.monto)}
                   </span>
                 </span>
                 <div style={{ flex: 1 }} />
@@ -1147,7 +1114,7 @@ export default function RegistrosPage() {
                             )}
                             {reg.cuil && <div style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
                           </div>
-                          {hasVencido(reg.id) && (
+                          {vencidoIds.has(reg.id) && (
                             <span style={{
                               fontSize: '11px', fontWeight: 700, color: 'var(--rojo)',
                               background: 'rgba(220,53,69,0.1)', padding: '2px 8px',
@@ -1234,10 +1201,10 @@ export default function RegistrosPage() {
                           )}
                           <button
                             onClick={() => setRecordatorioTarget(reg)}
-                            style={{ width: 38, height: 38, borderRadius: '10px', background: hasVencido(reg.id) ? 'rgba(220,53,69,0.08)' : 'rgba(255,255,255,0.02)', border: hasVencido(reg.id) ? '1px solid rgba(220,53,69,0.2)' : '1px solid rgba(255,255,255,0.05)', color: hasVencido(reg.id) ? 'var(--rojo)' : '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                            style={{ width: 38, height: 38, borderRadius: '10px', background: vencidoIds.has(reg.id) ? 'rgba(220,53,69,0.08)' : 'rgba(255,255,255,0.02)', border: vencidoIds.has(reg.id) ? '1px solid rgba(220,53,69,0.2)' : '1px solid rgba(255,255,255,0.05)', color: vencidoIds.has(reg.id) ? 'var(--rojo)' : '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
                             title="Recordatorio"
-                            onMouseOver={e => { e.currentTarget.style.color = hasVencido(reg.id) ? 'var(--rojo)' : '#fff'; }}
-                            onMouseOut={e => { e.currentTarget.style.color = hasVencido(reg.id) ? 'var(--rojo)' : '#444'; }}
+                            onMouseOver={e => { e.currentTarget.style.color = vencidoIds.has(reg.id) ? 'var(--rojo)' : '#fff'; }}
+                            onMouseOut={e => { e.currentTarget.style.color = vencidoIds.has(reg.id) ? 'var(--rojo)' : '#444'; }}
                           ><Bell size={16} /></button>
                           <button
                             onClick={() => openEdit(reg)}

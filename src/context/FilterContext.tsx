@@ -11,6 +11,7 @@ export const ANALISTAS = ['Luciana', 'Victoria'];
 
 interface FilterState {
   search: string;
+  estado: string;
   estados: string[];
   analista: string;
   fechaDesde: string;
@@ -24,6 +25,7 @@ interface FilterState {
 
 const initialState: FilterState = {
   search: '',
+  estado: '',
   estados: [],
   analista: '',
   fechaDesde: '',

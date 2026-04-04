@@ -12,18 +12,6 @@ import { useData } from '@/context/DataContext';
 import { setSession } from '@/lib/auth';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 
-const ADMIN_PASSWORD = 'dimenza2024';
-
-const STATUS_LABEL: Record<string, string> = {
-  'venta': 'Venta',
-  'proyeccion': 'Proyección',
-  'en seguimiento': 'En seguimiento',
-  'score bajo': 'Score bajo',
-  'afectaciones': 'Afectaciones',
-  'derivado / aprobado cc': 'Aprob. CC',
-  'derivado / rechazado cc': 'Rechaz. CC',
-};
-
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
 function NavItem({
@@ -106,15 +94,24 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showPageSizeSelector]);
 
-  const handleAdminLogin = () => {
-    if (adminPassword === ADMIN_PASSWORD) {
-      setSession({ username: 'admin', rol: 'admin' });
-      refreshUser();
-      setShowAdminModal(false);
-    } else {
+  const handleAdminLogin = async () => {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword }),
+      });
+      if (res.ok) {
+        setSession({ username: 'admin', rol: 'admin' });
+        refreshUser();
+        setShowAdminModal(false);
+      } else {
+        setAdminError(true);
+        setAdminPassword('');
+        setTimeout(() => passwordInputRef.current?.focus(), 50);
+      }
+    } catch {
       setAdminError(true);
-      setAdminPassword('');
-      setTimeout(() => passwordInputRef.current?.focus(), 50);
     }
   };
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { formatDateTime, getStatusColor, getStatusLabel } from '@/lib/utils';
+import { formatDateTime, getStatusLabel } from '@/lib/utils';
 import { logAudit } from '@/lib/audit';
 import { Recordatorio } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -264,7 +264,7 @@ export default function RecordatoriosPage() {
                     {rec.estado && (
                       <span
                         className="status-badge"
-                        style={{ color: getStatusColor(rec.estado), fontSize: '11px' }}
+                        style={{ color: '#aaa', fontSize: '11px' }}
                       >
                         {getStatusLabel(rec.estado)}
                       </span>

@@ -2,30 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Registro, HistoricoVenta, Recordatorio } from '@/types';
+import { Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig } from '@/types';
 
-export interface Objetivo {
-  id?: string;
-  analista: string;
-  mes: number;
-  anio: number;
-  meta_ventas: number;
-  meta_operaciones: number;
-}
-
-export interface DiasConfig {
-  analista: string;
-  dias_habiles: number;
-  dias_transcurridos: number;
-}
-
-export interface AlertaConfig {
-  nombre: string;
-  estado: string;
-  dias: number;
-  mensaje: string;
-  color: string;
-}
+export type { Objetivo, DiasConfig, AlertaConfig };
 
 export interface ReminderAlertData {
   id: string;
@@ -75,12 +54,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [reminderAlert, setReminderAlert] = useState<ReminderAlertData | null>(null);
   const initialized = useRef(false);
   const shownIds = useRef(new Set<string>());
-  const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const broadcastChannelObjetivosRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const broadcastChannelDiasRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const broadcastChannelAlertasRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const broadcastChannelHistoricoRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const broadcastChannelRecordatoriosRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const clearReminderAlert = useCallback(() => {
     setReminderAlert(null);
@@ -144,72 +118,43 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { refreshRef.current = refresh; }, [refresh]);
   useEffect(() => { checkDueRef.current = checkDueReminders; }, [checkDueReminders]);
 
-  // Canal broadcast — actualización inmediata entre usuarios sin depender de RLS
+  // ── Push callbacks (envían por broadcast) ──────────────────────────────────
+
   const pushRegistroChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => {
-    broadcastChannelRef.current?.send({
-      type: 'broadcast',
-      event: 'registro_change',
-      payload: { type, registro },
-    });
+    broadcastRef.current?.send({ type: 'broadcast', event: 'registro_change', payload: { type, registro } });
   }, []);
 
   const pushObjetivosChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', objetivo: Objetivo) => {
-    broadcastChannelObjetivosRef.current?.send({
-      type: 'broadcast',
-      event: 'objetivos_change',
-      payload: { type, objetivo },
-    });
+    broadcastRef.current?.send({ type: 'broadcast', event: 'objetivos_change', payload: { type, objetivo } });
   }, []);
 
   const pushDiasConfigChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', config: DiasConfig) => {
-    broadcastChannelDiasRef.current?.send({
-      type: 'broadcast',
-      event: 'dias_config_change',
-      payload: { type, config },
-    });
+    broadcastRef.current?.send({ type: 'broadcast', event: 'dias_config_change', payload: { type, config } });
   }, []);
 
   const pushAlertasConfigChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', config: AlertaConfig) => {
-    broadcastChannelAlertasRef.current?.send({
-      type: 'broadcast',
-      event: 'alertas_config_change',
-      payload: { type, config },
-    });
+    broadcastRef.current?.send({ type: 'broadcast', event: 'alertas_config_change', payload: { type, config } });
   }, []);
 
   const pushHistoricoChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', historico: HistoricoVenta) => {
-    broadcastChannelHistoricoRef.current?.send({
-      type: 'broadcast',
-      event: 'historico_change',
-      payload: { type, historico },
-    });
+    broadcastRef.current?.send({ type: 'broadcast', event: 'historico_change', payload: { type, historico } });
   }, []);
 
   const pushRecordatorioChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', recordatorio: Recordatorio) => {
-    broadcastChannelRecordatoriosRef.current?.send({
-      type: 'broadcast',
-      event: 'recordatorio_change',
-      payload: { type, recordatorio, mostrado: recordatorio.mostrado },
-    });
+    broadcastRef.current?.send({ type: 'broadcast', event: 'recordatorio_change', payload: { type, recordatorio, mostrado: recordatorio.mostrado } });
   }, []);
+
+  // ── Canal único de broadcast (reemplaza 6 canales separados) ───────────────
 
   useEffect(() => {
     const bc = supabase
-      .channel('registros-broadcast', { config: { broadcast: { self: false } } })
+      .channel('crm-broadcast', { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'registro_change' }, ({ payload }) => {
         const { type, registro } = payload as { type: string; registro: Registro };
         if (type === 'INSERT') setRegistros(prev => [registro, ...prev]);
         else if (type === 'UPDATE') setRegistros(prev => prev.map(r => r.id === registro.id ? registro : r));
         else if (type === 'DELETE') setRegistros(prev => prev.filter(r => r.id !== registro.id));
       })
-      .subscribe();
-    broadcastChannelRef.current = bc;
-    return () => { supabase.removeChannel(bc); };
-  }, []);
-
-  useEffect(() => {
-    const bc = supabase
-      .channel('objetivos-broadcast', { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'objetivos_change' }, ({ payload }) => {
         const { type, objetivo } = payload as { type: string; objetivo: Objetivo };
         if (type === 'INSERT' || type === 'UPDATE') {
@@ -222,14 +167,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           setObjetivos(prev => prev.filter(o => !(o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio)));
         }
       })
-      .subscribe();
-    broadcastChannelObjetivosRef.current = bc;
-    return () => { supabase.removeChannel(bc); };
-  }, []);
-
-  useEffect(() => {
-    const bc = supabase
-      .channel('dias-config-broadcast', { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'dias_config_change' }, ({ payload }) => {
         const { type, config } = payload as { type: string; config: DiasConfig };
         if (type === 'INSERT' || type === 'UPDATE') {
@@ -240,14 +177,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           setDiasConfig(prev => prev.filter(d => d.analista !== config.analista));
         }
       })
-      .subscribe();
-    broadcastChannelDiasRef.current = bc;
-    return () => { supabase.removeChannel(bc); };
-  }, []);
-
-  useEffect(() => {
-    const bc = supabase
-      .channel('alertas-config-broadcast', { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'alertas_config_change' }, ({ payload }) => {
         const { type, config } = payload as { type: string; config: AlertaConfig };
         if (type === 'INSERT' || type === 'UPDATE') {
@@ -260,14 +189,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           setAlertasConfig(prev => prev.filter(a => !(a.nombre === config.nombre && a.estado === config.estado)));
         }
       })
-      .subscribe();
-    broadcastChannelAlertasRef.current = bc;
-    return () => { supabase.removeChannel(bc); };
-  }, []);
-
-  useEffect(() => {
-    const bc = supabase
-      .channel('historico-broadcast', { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'historico_change' }, ({ payload }) => {
         const { type, historico } = payload as { type: string; historico: HistoricoVenta };
         if (type === 'INSERT' || type === 'UPDATE') {
@@ -280,14 +201,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           setHistoricoVentas(prev => prev.filter(h => !(h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes)));
         }
       })
-      .subscribe();
-    broadcastChannelHistoricoRef.current = bc;
-    return () => { supabase.removeChannel(bc); };
-  }, []);
-
-  useEffect(() => {
-    const bc = supabase
-      .channel('recordatorios-broadcast', { config: { broadcast: { self: false } } })
       .on('broadcast', { event: 'recordatorio_change' }, ({ payload }) => {
         const { type, mostrado } = payload as { type: string; mostrado?: boolean };
         if (type === 'INSERT' && !mostrado) {
@@ -300,13 +213,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         checkDueRef.current();
       })
       .subscribe();
-    broadcastChannelRecordatoriosRef.current = bc;
+
+    broadcastRef.current = bc;
     return () => { supabase.removeChannel(bc); };
   }, []);
 
+  // ── Canal único de postgres_changes (reemplaza 2 canales separados) ────────
+
   useEffect(() => {
     const channel = supabase
-      .channel('recordatorios-realtime-context')
+      .channel('crm-realtime')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'recordatorios' }, (payload) => {
         const nuevo = payload.new as { mostrado?: boolean };
         if (nuevo.mostrado) setPendingReminders(n => Math.max(0, n - 1));
@@ -316,24 +232,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setPendingReminders(n => Math.max(0, n - 1));
         checkDueRef.current();
       })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  // Suscripciones en tiempo real para el resto de tablas
-  useEffect(() => {
-    const channel = supabase
-      .channel('realtime-rest')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'objetivos' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'objetivos' }, () => {
         refreshRef.current(true);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dias_habiles_config' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dias_habiles_config' }, () => {
         refreshRef.current(true);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_ventas' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_ventas' }, () => {
         refreshRef.current(true);
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'alertas_config' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'alertas_config' }, () => {
         refreshRef.current(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recordatorios' }, () => {
@@ -344,13 +252,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           .then(({ count }) => setPendingReminders(count || 0));
         checkDueRef.current();
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          // Connected successfully
-        } else if (status === 'CHANNEL_ERROR') {
-          // Silent reconnect - will retry automatically
-        }
-      });
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, []);
