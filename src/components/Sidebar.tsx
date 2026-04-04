@@ -27,8 +27,8 @@ function NavItem({
         className={`green-hover-btn ${active ? 'active-item' : ''}`}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 46, height: 46,
-          borderRadius: 11,
+          width: 52, height: 52,
+          borderRadius: 13,
           color: active ? '#86efac' : '#666',
           background: active ? 'rgba(134, 239, 172, 0.1)' : 'rgba(255,255,255,0.04)',
           position: 'relative',
@@ -37,7 +37,7 @@ function NavItem({
         }}
       >
         <Icon
-          size={active ? 22 : 20}
+          size={active ? 24 : 22}
           strokeWidth={active ? 2.5 : 2}
           style={{ opacity: active ? 1 : 0.6 }}
         />
@@ -124,7 +124,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         display: 'flex', flexDirection: 'column',
         alignItems: 'center',
         paddingTop: 24,
-        gap: 8,
+        gap: 10,
         width: 'var(--sidebar-width)',
         zIndex: 150,
         position: 'relative',
@@ -141,17 +141,37 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
               className="green-hover-btn"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 46, height: 46,
-                borderRadius: 11,
+                width: 52, height: 52,
+                borderRadius: 13,
                 background: 'rgba(255,255,255,0.04)',
                 color: '#fff',
                 border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
               }}
             >
-              <Plus size={24} strokeWidth={3} />
+              <Plus size={26} strokeWidth={3} />
             </button>
           </div>
-          <div style={{ width: 28, height: 1, minHeight: 1, flexShrink: 0, background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+          <div style={{
+            width: 36,
+            height: 1,
+            flexShrink: 0,
+            background: 'transparent',
+            margin: '8px 0',
+            position: 'relative',
+            overflow: 'visible',
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 36,
+              height: 1,
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
+              borderRadius: 1,
+              boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
+            }} />
+          </div>
         </>
       )}
 
@@ -165,12 +185,52 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
       <NavItem href="/metricas" icon={PieChart} label="Métricas" active={pathname === '/metricas'} />
       <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
 
-      <div style={{ width: 28, height: 1, minHeight: 1, flexShrink: 0, background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+      <div style={{
+        width: 36,
+        height: 1,
+        flexShrink: 0,
+        background: 'transparent',
+        margin: '8px 0',
+        position: 'relative',
+        overflow: 'visible',
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 36,
+          height: 1,
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
+          borderRadius: 1,
+          boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
+        }} />
+      </div>
 
       <NavItem href="/reportes/ventas" icon={FileText} label="Ventas" active={pathname === '/reportes/ventas'} />
       <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} />
 
-      <div style={{ width: 28, height: 1, minHeight: 1, flexShrink: 0, background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+      <div style={{
+        width: 36,
+        height: 1,
+        flexShrink: 0,
+        background: 'transparent',
+        margin: '8px 0',
+        position: 'relative',
+        overflow: 'visible',
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 36,
+          height: 1,
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
+          borderRadius: 1,
+          boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
+        }} />
+      </div>
 
       {/* Paginación y Exportar (only on /registros) */}
       {isRegistros && (
@@ -182,8 +242,8 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
               className="green-hover-btn"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 46, height: 46,
-                borderRadius: 11,
+                width: 52, height: 52,
+                borderRadius: 13,
                 background: showPageSizeSelector ? 'rgba(134, 239, 172, 0.15)' : 'rgba(255,255,255,0.04)',
                 color: showPageSizeSelector ? '#86efac' : '#888',
                 border: `1px solid ${showPageSizeSelector ? 'rgba(134, 239, 172, 0.2)' : 'rgba(255,255,255,0.05)'}`,
@@ -193,7 +253,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
             >
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                 <span style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>Ver</span>
-                <span style={{ fontSize: 13, fontWeight: 900 }}>{pageSize}</span>
+                <span style={{ fontSize: 14, fontWeight: 900 }}>{pageSize}</span>
               </div>
             </button>
             {showPageSizeSelector && (
@@ -253,21 +313,40 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
               className="green-hover-btn"
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 46, height: 46,
-                borderRadius: 11,
+                width: 52, height: 52,
+                borderRadius: 13,
                 background: 'rgba(255,255,255,0.04)', color: '#888',
                 border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
               }}
             >
-              <Download size={20} strokeWidth={2} />
+              <Download size={22} strokeWidth={2} />
             </button>
           </div>
 
-          <div style={{ width: 28, height: 1, minHeight: 1, flexShrink: 0, background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
         </>
       )}
 
-      <div style={{ width: 28, height: 1, minHeight: 1, flexShrink: 0, background: 'rgba(255,255,255,0.15)', margin: '4px 0' }} />
+      <div style={{
+        width: 36,
+        height: 1,
+        flexShrink: 0,
+        background: 'transparent',
+        margin: '8px 0',
+        position: 'relative',
+        overflow: 'visible',
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 36,
+          height: 1,
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
+          borderRadius: 1,
+          boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
+        }} />
+      </div>
 
       <NavItem
         href="#"
@@ -282,7 +361,27 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
       {isAdmin && (
         <>
-          <div style={{ width: 32, height: 1, background: 'rgba(255,255,255,0.05)', margin: '30px auto' }} />
+          <div style={{
+            width: 36,
+            height: 1,
+            flexShrink: 0,
+            background: 'transparent',
+            margin: '30px auto',
+            position: 'relative',
+            overflow: 'visible',
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 36,
+              height: 1,
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
+              borderRadius: 1,
+              boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
+            }} />
+          </div>
           <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname === '/ajustes'} />
         </>
       )}

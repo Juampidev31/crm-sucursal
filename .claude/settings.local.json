@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(ls \"c:/Users/HP/.gemini/antigravity/scratch/Proyeccion y ventas ORIGINAL/next-ventas/.env\"*)",
+      "Bash(ls \"c:/Users/HP/.gemini/antigravity/scratch/Proyeccion y ventas ORIGINAL/next-ventas/.env.local\"*)",
+      "Bash(ls \"c:/Users/HP/.gemini/antigravity/scratch/Proyeccion y ventas ORIGINAL/next-ventas/.env.example\"*)"
     ]
   }
 }
