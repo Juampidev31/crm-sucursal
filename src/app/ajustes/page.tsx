@@ -67,7 +67,7 @@ export default function AjustesPage() {
   const [savingObj, setSavingObj] = useState(false);
 
   // Analisis temporal state
-  const [analisisRegistros, setAnalisisRegistros] = useState<{ analista: string; estado: string; monto: number; fecha: string | null }[]>([]);
+  const [analisisRegistros, setAnalisisRegistros] = useState<{ analista: string; estado: string; monto: number; fecha: string | null; acuerdo_precios?: string }[]>([]);
   const [periodo, setPeriodo] = useState(30);
   const [analistaFil, setAnalistaFil] = useState('todos');
   const [metrica, setMetrica] = useState('ventas');
@@ -233,6 +233,7 @@ export default function AjustesPage() {
       estado: r.estado,
       monto: r.monto,
       fecha: r.fecha ?? null,
+      acuerdo_precios: r.acuerdo_precios,
     })));
   }, [ctxRegistros]);
 
@@ -573,12 +574,14 @@ export default function AjustesPage() {
   }, [mapaActividad]);
 
   const dowStats = useMemo(() => {
-    const sums = Array<number>(7).fill(0);
+    const sums = Array<number>(6).fill(0); // Lun-Sáb (excluyendo solo Dom)
     for (const r of ventasFiltradas) {
       if (!r.fecha) continue;
       let dow = toLocalDate(r.fecha).getDay();
-      dow = dow === 0 ? 6 : dow - 1;
-      sums[dow] += metrica === 'operaciones' ? 1 : Number(r.monto) || 0;
+      dow = dow === 0 ? -1 : dow - 1; // Dom = -1 (excluido), Lun=0, Mar=1, ..., Sáb=5
+      if (dow >= 0 && dow <= 5) { // Lun-Sáb
+        sums[dow] += metrica === 'operaciones' ? 1 : Number(r.monto) || 0;
+      }
     }
     const max = Math.max(...sums, 0);
     return { sums, max, activeDay: DIAS_SEMANA[sums.indexOf(max)] ?? '—' };
@@ -587,40 +590,33 @@ export default function AjustesPage() {
   const fmt = useCallback((v: number) => metrica === 'operaciones' ? String(v) : formatCurrency(v), [metrica]);
   const fmtK = useCallback((v: number) => metrica === 'operaciones' ? String(v) : `$${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0 }).format(v / 1_000)}K`, [metrica]);
 
+  // ACUERDOS DE PRECIOS - Calcular totales por tipo
+  const acuerdosData = useMemo(() => {
+    const tipos = {
+      'Riesgo Bajo': { monto: 0, cantidad: 0 },
+      'Riesgo Medio': { monto: 0, cantidad: 0 },
+      'Premium': { monto: 0, cantidad: 0 },
+    };
+    for (const r of ventasFiltradas) {
+      const acuerdo = r.acuerdo_precios?.trim();
+      if (acuerdo === 'Riesgo Bajo' || acuerdo?.toLowerCase() === 'riesgo bajo') {
+        tipos['Riesgo Bajo'].monto += Number(r.monto) || 0;
+        tipos['Riesgo Bajo'].cantidad += 1;
+      } else if (acuerdo === 'Riesgo Medio' || acuerdo?.toLowerCase() === 'riesgo medio') {
+        tipos['Riesgo Medio'].monto += Number(r.monto) || 0;
+        tipos['Riesgo Medio'].cantidad += 1;
+      } else if (acuerdo === 'Premium' || acuerdo?.toLowerCase() === 'premium') {
+        tipos['Premium'].monto += Number(r.monto) || 0;
+        tipos['Premium'].cantidad += 1;
+      }
+    }
+    return tipos;
+  }, [ventasFiltradas]);
+
   const analistaOpts = useMemo(() => [
     { label: 'Todos', value: 'todos' },
     ...analisisAnalistas.map(a => ({ label: displayAnalista(a), value: a })),
   ], [analisisAnalistas]);
-
-  const semanasPorAnalista = useMemo(() => {
-    type Row = { weekKey: string; weekLabel: string; analistas: Record<string, number>; total: number };
-    const byWeek = new Map<string, Record<string, number>>();
-    for (const r of ventasFiltradas) {
-      if (!r.fecha) continue;
-      const d = toLocalDate(r.fecha);
-      const dow = d.getDay();
-      const monday = new Date(d);
-      monday.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-      monday.setHours(0, 0, 0, 0);
-      const weekKey = toLocalKey(monday);
-      const val = metrica === 'operaciones' ? 1 : Number(r.monto) || 0;
-      const analista = (r.analista ?? '').trim();
-      if (!byWeek.has(weekKey)) byWeek.set(weekKey, {});
-      const wk = byWeek.get(weekKey)!;
-      wk[analista] = (wk[analista] ?? 0) + val;
-    }
-    return Array.from(byWeek.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([weekKey, data]): Row => {
-        const [y, m, d] = weekKey.split('-').map(Number);
-        const monday = new Date(y, m - 1, d);
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        const fd = (dt: Date) => `${dt.getDate()}/${dt.getMonth() + 1}`;
-        const total = Object.values(data).reduce((s, v) => s + v, 0);
-        return { weekKey, weekLabel: `${fd(monday)}–${fd(sunday)}/${sunday.getFullYear()}`, analistas: data, total };
-      });
-  }, [ventasFiltradas, metrica]);
 
   const heatColor = (val: number, max: number): string => {
     if (val === 0) return 'rgba(34,197,94,0.05)';
@@ -1377,101 +1373,169 @@ export default function AjustesPage() {
                 </div>
               </div>
 
-              {/* Semanas por analista */}
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', marginBottom: '32px' }}>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semanas por Analista</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>PDV · Luciana · Victoria — {periodoLabel}</div>
-                </div>
-                {semanasPorAnalista.length === 0
-                  ? <p style={{ fontSize: 13, color: '#555', textAlign: 'center', padding: '32px 0' }}>Sin datos en el período seleccionado.</p>
-                  : (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                        <thead>
-                          <tr>
-                            <th style={{ textAlign: 'left', color: '#555', fontWeight: 700, padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap' }}>Semana</th>
-                            {ANALISTAS_VIEW.map(a => (
-                              <th key={a} style={{ textAlign: 'right', color: '#555', fontWeight: 700, padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{a}</th>
-                            ))}
-                            <th style={{ textAlign: 'right', color: '#888', fontWeight: 800, padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>TOTAL</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {semanasPorAnalista.map((row, i) => (
-                            <tr key={row.weekKey} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                              <td style={{ color: '#999', padding: '7px 12px', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{row.weekLabel}</td>
-                              {ANALISTAS_VIEW.map(a => (
-                                <td key={a} style={{ textAlign: 'right', color: row.analistas[a] ? '#fff' : '#333', fontWeight: row.analistas[a] ? 700 : 400, padding: '7px 12px', fontVariantNumeric: 'tabular-nums' }}>
-                                  {row.analistas[a] ? fmtK(row.analistas[a]) : '—'}
-                                </td>
-                              ))}
-                              <td style={{ textAlign: 'right', color: '#86efac', fontWeight: 800, padding: '7px 12px', fontVariantNumeric: 'tabular-nums' }}>{fmtK(row.total)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                            <td style={{ color: '#555', fontWeight: 700, padding: '10px 12px', textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.5px' }}>Total</td>
-                            {ANALISTAS_VIEW.map(a => {
-                              const t = semanasPorAnalista.reduce((s, r) => s + (r.analistas[a] ?? 0), 0);
-                              return <td key={a} style={{ textAlign: 'right', color: t > 0 ? '#fff' : '#333', fontWeight: 800, padding: '10px 12px', fontVariantNumeric: 'tabular-nums' }}>{t > 0 ? fmtK(t) : '—'}</td>;
-                            })}
-                            <td style={{ textAlign: 'right', color: '#86efac', fontWeight: 900, padding: '10px 12px', fontVariantNumeric: 'tabular-nums' }}>{fmtK(semanasPorAnalista.reduce((s, r) => s + r.total, 0))}</td>
-                          </tr>
-                        </tfoot>
-                      </table>
+              {/* Por día de semana + Acuerdo de Precios (lado a lado) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+                {/* Por día de semana */}
+                <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Por Día de Semana</span>
                     </div>
-                  )
-                }
-              </div>
-
-              {/* Por día de semana */}
-              <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Por Día de Semana</span>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Rendimiento en $</div>
                   </div>
-                  <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Rendimiento en $</div>
+                  <div style={{ height: 200 }}>
+                    <Bar
+                      data={{
+                        labels: DIAS_SEMANA.slice(0, 6), // Lun-Sáb (excluyendo Dom)
+                        datasets: [{
+                          label: metrica === 'operaciones' ? 'Operaciones' : 'Total',
+                          data: dowStats.sums,
+                          backgroundColor: dowStats.sums.map(v =>
+                            v >= dowStats.max * 0.9
+                              ? 'rgba(34,197,94,0.6)'
+                              : 'rgba(34,197,94,0.2)'
+                          ),
+                          borderRadius: 4,
+                          borderSkipped: false,
+                        }],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: {
+                            callbacks: { label: (ctx: any) => fmt(ctx.parsed.y ?? 0) },
+                          },
+                        },
+                        scales: {
+                          x: { ticks: { color: '#555', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                          y: {
+                            ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
                 </div>
-                <div style={{ height: 200 }}>
-                  <Bar
-                    data={{
-                      labels: DIAS_SEMANA,
-                      datasets: [{
-                        label: metrica === 'operaciones' ? 'Operaciones' : 'Total',
-                        data: dowStats.sums,
-                        backgroundColor: dowStats.sums.map(v =>
-                          v >= dowStats.max * 0.9
-                            ? 'rgba(34,197,94,0.6)'
-                            : 'rgba(34,197,94,0.2)'
-                        ),
-                        borderRadius: 4,
-                        borderSkipped: false,
-                      }],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                          callbacks: { label: (ctx: any) => fmt(ctx.parsed.y ?? 0) },
+
+                {/* ACUERDO DE PRECIOS */}
+                <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>ACUERDO DE PRECIOS</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Distribución por tipo de acuerdo</div>
+                  </div>
+                  <div style={{ height: 200 }}>
+                    <Bar
+                      data={{
+                        labels: ['RIESGO BAJO', 'RIESGO MEDIO', 'PREMIUM'],
+                        datasets: [
+                          {
+                            label: 'Monto',
+                            data: [
+                              acuerdosData['Riesgo Bajo'].monto,
+                              acuerdosData['Riesgo Medio'].monto,
+                              acuerdosData['Premium'].monto,
+                            ],
+                            backgroundColor: [
+                              'rgba(74, 222, 128, 0.6)',
+                              'rgba(239, 68, 68, 0.4)',
+                              'rgba(96, 165, 250, 0.6)',
+                            ],
+                            borderRadius: 4,
+                            borderSkipped: false,
+                          },
+                          {
+                            label: 'Cantidad',
+                            data: [
+                              acuerdosData['Riesgo Bajo'].cantidad,
+                              acuerdosData['Riesgo Medio'].cantidad,
+                              acuerdosData['Premium'].cantidad,
+                            ],
+                            backgroundColor: [
+                              'rgba(74, 222, 128, 0.25)',
+                              'rgba(239, 68, 68, 0.2)',
+                              'rgba(96, 165, 250, 0.25)',
+                            ],
+                            borderRadius: 4,
+                            borderSkipped: false,
+                            yAxisID: 'y1',
+                          },
+                        ],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                          padding: { top: 20 },
                         },
-                      },
-                      scales: {
-                        x: { ticks: { color: '#555', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                        y: {
-                          ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } },
-                          grid: { color: 'rgba(255,255,255,0.03)' },
+                        plugins: {
+                          legend: {
+                            display: false,
+                          },
+                          tooltip: {
+                            callbacks: {
+                              label: (ctx: any) => {
+                                if (ctx.dataset.label === 'Monto') return `Monto: ${formatCurrency(ctx.parsed.y)}`;
+                                return `Cantidad: ${ctx.parsed.y}`;
+                              },
+                            },
+                          },
                         },
-                      },
-                    }}
-                  />
+                        scales: {
+                          x: { ticks: { color: '#555', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                          y: {
+                            type: 'linear',
+                            position: 'left',
+                            ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } },
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                          },
+                          y1: {
+                            type: 'linear',
+                            position: 'right',
+                            ticks: { color: '#888', font: { size: 10 }, stepSize: 1 },
+                            grid: { drawOnChartArea: false },
+                          },
+                        },
+                      }}
+                      plugins={[
+                        {
+                          id: 'acuerdosLabels',
+                          afterDatasetsDraw(chart: any) {
+                            const { ctx } = chart;
+                            const montoDataset = chart.data.datasets[0];
+                            const cantDataset = chart.data.datasets[1];
+                            ctx.save();
+                            ctx.textAlign = 'center';
+                            montoDataset.data.forEach((val: number, i: number) => {
+                              // Monto arriba de la barra verde
+                              const montoMeta = chart.getDatasetMeta(0);
+                              if (montoMeta.data[i]) {
+                                const { x, y } = montoMeta.data[i];
+                                ctx.font = 'bold 9px sans-serif';
+                                ctx.fillStyle = '#fff';
+                                ctx.fillText(formatCurrency(val), x, y - 6);
+                              }
+                              // Cantidad arriba de la barra oscura
+                              const cantMeta = chart.getDatasetMeta(1);
+                              if (cantMeta.data[i]) {
+                                const { x, y } = cantMeta.data[i];
+                                ctx.font = 'bold 9px sans-serif';
+                                ctx.fillStyle = '#888';
+                                ctx.fillText(`${cantDataset.data[i]} ops`, x, y - 6);
+                              }
+                            });
+                            ctx.restore();
+                          },
+                        },
+                      ]}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

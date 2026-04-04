@@ -400,7 +400,7 @@ a {
 
 .btn-secondary {
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   height: 40px;
   padding: 0 20px;
@@ -525,7 +525,7 @@ a {
 .form-textarea {
   width: 100%;
   background: #000000;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   height: 42px;
   padding: 0 12px;
@@ -688,4 +688,23 @@ input:checked+.toggle-slider:before {
   color: #fff;
   font-size: 13.5px;
   outline: none;
+}
+
+/* ============ SCROLLBAR ============ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a2a;
 }
