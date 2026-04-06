@@ -48,6 +48,11 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   const requiereTipoYAcuerdo = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
   if (requiereTipoYAcuerdo && !form.tipo_cliente) errs.tipo_cliente = 'Requerido';
   if (requiereTipoYAcuerdo && !form.acuerdo_precios) errs.acuerdo_precios = 'Requerido';
+  if (requiereTipoYAcuerdo && !form.cuotas?.trim()) errs.cuotas = 'Requerido';
+  if (requiereTipoYAcuerdo && !form.rango_etario) errs.rango_etario = 'Requerido';
+  if (requiereTipoYAcuerdo && !form.sexo) errs.sexo = 'Requerido';
+  if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
+  if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
 
   return errs;
 }
@@ -263,10 +268,10 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="Premium">Premium</option>
                 </select>
               </Field>
-              <Field label="Cuotas">
+              <Field label={`Cuotas${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.cuotas}>
                 <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
               </Field>
-              <Field label="Rango etario">
+              <Field label={`Rango etario${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.rango_etario}>
                 <select className="form-select" value={form.rango_etario || ''} onChange={e => set('rango_etario', e.target.value)}>
                   <option value="">— Sin especificar —</option>
                   <option value="18-25">18-25</option>
@@ -279,7 +284,7 @@ const RegistroModal = memo(function RegistroModal({
               </Field>
             </div>
             <div className="form-row-3">
-              <Field label="Sexo">
+              <Field label={`Sexo${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.sexo}>
                 <select className="form-select" value={form.sexo || ''} onChange={e => set('sexo', e.target.value)}>
                   <option value="">— Sin especificar —</option>
                   <option value="Masculino">Masculino</option>
@@ -287,10 +292,10 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="Otro">Otro</option>
                 </select>
               </Field>
-              <Field label="Empleador">
+              <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
                 <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', e.target.value)} placeholder="Nombre del empleador" />
               </Field>
-              <Field label="Localidad">
+              <Field label={`Localidad${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
                 <input className="form-input" value={form.localidad || ''} onChange={e => set('localidad', e.target.value)} placeholder="Localidad" />
               </Field>
             </div>
