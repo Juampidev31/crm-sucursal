@@ -22,6 +22,10 @@ const initialForm: Partial<Registro> = {
 
 const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
 
+const LOCALIDADES = [
+  'Paraná',
+];
+
 const FIELD_LABELS: Record<string, string> = {
   nombre: 'Nombre', cuil: 'CUIL', analista: 'Analista',
   estado: 'Estado', monto: 'Monto', fecha: 'Fecha',
@@ -296,7 +300,10 @@ const RegistroModal = memo(function RegistroModal({
                 <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', capitalizarTexto(e.target.value))} placeholder="Nombre del empleador" />
               </Field>
               <Field label={`Localidad${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
-                <input className="form-input" value={form.localidad || ''} onChange={e => set('localidad', capitalizarTexto(e.target.value))} placeholder="Localidad" />
+                <select className="form-select" value={form.localidad || ''} onChange={e => set('localidad', e.target.value)}>
+                  <option value="">— Sin especificar —</option>
+                  {LOCALIDADES.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                </select>
               </Field>
             </div>
             <div className="form-row">
