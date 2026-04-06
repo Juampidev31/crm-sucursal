@@ -231,6 +231,30 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return tipos;
   }, [registros, selectedMes, selectedAnio]);
 
+  // ── Distribuciones demográficas (ventas del mes) ─────────────────────────
+  const ventasMes = useMemo(() =>
+    filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta),
+    [registros, selectedMes, selectedAnio]
+  );
+
+  const distPor = (campo: keyof Registro) => {
+    const map = new Map<string, { monto: number; cantidad: number }>();
+    for (const r of ventasMes) {
+      const val = (r[campo] as string | undefined)?.trim() || 'Sin dato';
+      const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
+      map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([label, data]) => ({ label, ...data }));
+  };
+
+  const distCuotas = useMemo(() => distPor('cuotas'), [ventasMes]);
+  const distRangoEtario = useMemo(() => distPor('rango_etario'), [ventasMes]);
+  const distSexo = useMemo(() => distPor('sexo'), [ventasMes]);
+  const distEmpleador = useMemo(() => distPor('empleador'), [ventasMes]);
+  const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
+
   // ── Ranking analistas ─────────────────────────────────────────────────────
   const rankingAnalistas = useMemo(() =>
     [...kpiPorAnalista].sort((a, b) => b.capital - a.capital),
@@ -401,7 +425,41 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {/* Distribuciones demográficas */}
+            {ventasMes.length > 0 && (() => {
+              const DistTable = ({ titulo, datos }: { titulo: string; datos: { label: string; monto: number; cantidad: number }[] }) => (
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>{titulo}</div>
+                  <div style={{ background: '#0d0d0d', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                    {datos.slice(0, 8).map((d, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', borderBottom: i < datos.slice(0, 8).length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                        <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: '#555' }}>{formatCurrency(d.monto)}</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.04)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+              return (
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Ventas por Categoría</div>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+                    <DistTable titulo="Cuotas" datos={distCuotas} />
+                    <DistTable titulo="Rango Etario" datos={distRangoEtario} />
+                    <DistTable titulo="Sexo" datos={distSexo} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <DistTable titulo="Empleador" datos={distEmpleador} />
+                    <DistTable titulo="Localidad" datos={distLocalidad} />
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 24 }}>
               <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
               <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} />
               <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen(p => ({ ...p, empresas_estrategicas: v }))} />
