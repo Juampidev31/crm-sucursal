@@ -370,8 +370,18 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr>
-                    {['Analista', 'Capital', 'vs Obj.', 'Tendencia', 'Ops', 'vs Obj.', 'Ticket', 'Conversión', 'Clientes'].map(h => (
-                      <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Analista' ? 'left' : 'right', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap' }}>{h}</th>
+                    {[
+                      { key: 'analista', label: 'Analista' },
+                      { key: 'capital', label: 'Capital' },
+                      { key: 'vs-obj-capital', label: 'vs Obj.' },
+                      { key: 'tendencia', label: 'Tendencia' },
+                      { key: 'ops', label: 'Ops' },
+                      { key: 'vs-obj-ops', label: 'vs Obj.' },
+                      { key: 'ticket', label: 'Ticket' },
+                      { key: 'conversion', label: 'Conversión' },
+                      { key: 'clientes', label: 'Clientes' },
+                    ].map(h => (
+                      <th key={h.key} style={{ padding: '8px 12px', textAlign: h.key === 'analista' ? 'left' : 'right', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap' }}>{h.label}</th>
                     ))}
                   </tr>
                 </thead>
