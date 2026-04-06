@@ -185,7 +185,7 @@ const RegistroModal = memo(function RegistroModal({
             <button className="btn-icon" onClick={onClose} style={{ color: '#444' }}><X size={20} /></button>
           </div>
           <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
-            <div className="form-row">
+            <div className="form-row-3">
               <Field label="CUIL *" error={errors.cuil}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input className="form-input" style={{ flex: 1 }} value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
@@ -220,20 +220,18 @@ const RegistroModal = memo(function RegistroModal({
                   set('nombre', capitalizarNombre(clean));
                 }} />
               </Field>
-            </div>
-            <div className="form-row">
               <Field label="Analista *">
                 <select className="form-select" value={form.analista || ANALISTAS[0]} onChange={e => set('analista', e.target.value)}>
                   {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </Field>
+            </div>
+            <div className="form-row-3">
               <Field label="Estado *">
                 <select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>
                   {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
                 </select>
               </Field>
-            </div>
-            <div className="form-row">
               <Field label="Monto" error={errors.monto}>
                 <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
               </Field>
@@ -241,15 +239,13 @@ const RegistroModal = memo(function RegistroModal({
                 <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} />
               </Field>
             </div>
-            <div className="form-row">
+            <div className="form-row-3">
               <Field label="Fecha Score">
                 <input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} />
               </Field>
               <Field label="Score">
                 <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
               </Field>
-            </div>
-            <div className="form-row">
               <Field label={`Tipo de cliente${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.tipo_cliente}>
                 <select className="form-select" value={form.tipo_cliente || ''} onChange={e => set('tipo_cliente', e.target.value)}>
                   <option value="">— Sin especificar —</option>
@@ -257,6 +253,8 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="Renovacion">Renovación</option>
                 </select>
               </Field>
+            </div>
+            <div className="form-row-3">
               <Field label={`Acuerdo de precios${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.acuerdo_precios}>
                 <select className="form-select" value={form.acuerdo_precios || ''} onChange={e => set('acuerdo_precios', e.target.value)}>
                   <option value="">— Sin especificar —</option>
@@ -265,8 +263,6 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="Premium">Premium</option>
                 </select>
               </Field>
-            </div>
-            <div className="form-row-3">
               <Field label="Cuotas">
                 <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
               </Field>
@@ -281,6 +277,8 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="65+">65+</option>
                 </select>
               </Field>
+            </div>
+            <div className="form-row-3">
               <Field label="Sexo">
                 <select className="form-select" value={form.sexo || ''} onChange={e => set('sexo', e.target.value)}>
                   <option value="">— Sin especificar —</option>
@@ -289,8 +287,6 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="Otro">Otro</option>
                 </select>
               </Field>
-            </div>
-            <div className="form-row">
               <Field label="Empleador">
                 <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', e.target.value)} placeholder="Nombre del empleador" />
               </Field>
