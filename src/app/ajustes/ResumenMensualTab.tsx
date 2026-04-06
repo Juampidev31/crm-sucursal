@@ -366,113 +366,184 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           {/* ── SECCIÓN 2: INDICADORES CLAVE ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader('2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
-            <div style={{ overflowX: 'auto', marginBottom: 24 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr>
-                    {[
-                      { key: 'analista', label: 'Analista' },
-                      { key: 'capital', label: 'Capital' },
-                      { key: 'vs-obj-capital', label: 'vs Obj.' },
-                      { key: 'tendencia', label: 'Tendencia' },
-                      { key: 'ops', label: 'Ops' },
-                      { key: 'vs-obj-ops', label: 'vs Obj.' },
-                      { key: 'ticket', label: 'Ticket' },
-                      { key: 'conversion', label: 'Conversión' },
-                      { key: 'clientes', label: 'Clientes' },
-                    ].map(h => (
-                      <th key={h.key} style={{ padding: '8px 12px', textAlign: h.key === 'analista' ? 'left' : 'right', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap' }}>{h.label}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {kpiPorAnalista.map(k => (
-                    <tr key={k.analista} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                      <td style={{ padding: '10px 12px', fontWeight: 700, color: '#ccc' }}>{k.analista}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right', color: '#aaa' }}>{formatCurrency(k.capital)}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                        {k.cumplCapital !== null ? <span style={{ color: cumplColor(k.cumplCapital), fontWeight: 800, fontSize: 12 }}>{k.cumplCapital.toFixed(0)}%</span> : <span style={{ color: '#333' }}>—</span>}
-                      </td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>{tendBadge(k.tendCapital)}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right', color: '#aaa' }}>{k.ops}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                        {k.cumplOps !== null ? <span style={{ color: cumplColor(k.cumplOps), fontWeight: 800, fontSize: 12 }}>{k.cumplOps.toFixed(0)}%</span> : <span style={{ color: '#333' }}>—</span>}
-                      </td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right', color: '#555' }}>{formatCurrency(k.ticket)}</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right', color: '#555' }}>{k.conversion.toFixed(1)}%</td>
-                      <td style={{ padding: '10px 12px', textAlign: 'right', color: '#555' }}>{k.clientesIngresados}</td>
-                    </tr>
-                  ))}
-                  <tr style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 800, color: '#fff' }}>Total PDV</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                      {kpiTotal.cumplCapital !== null ? <span style={{ color: cumplColor(kpiTotal.cumplCapital), fontWeight: 800 }}>{kpiTotal.cumplCapital.toFixed(0)}%</span> : <span style={{ color: '#333' }}>—</span>}
-                    </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>{tendBadge(kpiTotal.tendCapital)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#fff' }}>{kpiTotal.ops}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                      {kpiTotal.cumplOps !== null ? <span style={{ color: cumplColor(kpiTotal.cumplOps), fontWeight: 800 }}>{kpiTotal.cumplOps.toFixed(0)}%</span> : <span style={{ color: '#333' }}>—</span>}
-                    </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#fff' }}>{kpiTotal.conversion.toFixed(1)}%</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#fff' }}>{kpiTotal.clientes}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
 
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 12 }}>Distribución por Acuerdo de Precios</div>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {Object.entries(distribucionAcuerdos).map(([tipo, data]) => (
-                  <div key={tipo} style={{ flex: 1, minWidth: 140, background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6 }}>{tipo}</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{formatCurrency(data.monto)}</div>
-                    <div style={{ fontSize: 11, color: '#444', marginTop: 3 }}>{data.cantidad} operaciones</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Distribuciones demográficas */}
-            {ventasMes.length > 0 && (() => {
-              const DistTable = ({ titulo, datos }: { titulo: string; datos: { label: string; monto: number; cantidad: number }[] }) => (
-                <div style={{ flex: 1, minWidth: 220 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>{titulo}</div>
-                  <div style={{ background: '#0d0d0d', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden' }}>
-                    {datos.slice(0, 8).map((d, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', borderBottom: i < datos.slice(0, 8).length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                        <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, color: '#555' }}>{formatCurrency(d.monto)}</span>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.04)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+            {/* Tarjetas por analista */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
+              {[...kpiPorAnalista, {
+                analista: 'Total PDV',
+                capital: kpiTotal.capital, ops: kpiTotal.ops, ticket: kpiTotal.ticket,
+                conversion: kpiTotal.conversion, clientesIngresados: kpiTotal.clientes,
+                cumplCapital: kpiTotal.cumplCapital, cumplOps: kpiTotal.cumplOps,
+                tendCapital: kpiTotal.tendCapital, tendOps: kpiTotal.tendOps,
+                metaCapital: kpiTotal.metaCapital, metaOps: kpiTotal.metaOps,
+              }].map((k, idx) => {
+                const isTotal = idx === kpiPorAnalista.length;
+                return (
+                  <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
+                    {/* Header de la tarjeta */}
+                    <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, background: isTotal ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Users size={13} color={isTotal ? '#a78bfa' : '#666'} />
                         </div>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: isTotal ? '#a78bfa' : '#ccc' }}>{k.analista}</span>
                       </div>
-                    ))}
+                      {tendBadge(k.tendCapital)}
+                    </div>
+                    {/* Métricas */}
+                    <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
+                        {k.cumplCapital !== null && (
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplCapital), whiteSpace: 'nowrap' as const }}>{k.cumplCapital.toFixed(0)}%</span>
+                          </div>
+                        )}
+                        {k.metaCapital > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {formatCurrency(k.metaCapital)}</div>}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
+                        {k.cumplOps !== null && (
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplOps), whiteSpace: 'nowrap' as const }}>{k.cumplOps.toFixed(0)}%</span>
+                          </div>
+                        )}
+                        {k.metaOps > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {k.metaOps}</div>}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ticket Prom.</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{formatCurrency(k.ticket)}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Conversión</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}% <span style={{ fontSize: 10, color: '#444' }}>({k.clientesIngresados} ing.)</span></div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
+                );
+              })}
+            </div>
+
+            {/* Distribución por Acuerdo de Precios */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <div style={{ width: 3, height: 14, background: '#60a5fa', borderRadius: 4 }} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Distribución por Acuerdo de Precios</span>
+              </div>
+              {(() => {
+                const totalOps = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
+                const totalMonto = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
+                const colores: Record<string, string> = { 'Bajo Riesgo': '#34d399', 'Riesgo Medio': '#fbbf24', 'Premium': '#a78bfa' };
+                return (
+                  <>
+                    {/* Barra de progreso compuesta */}
+                    {totalOps > 0 && (
+                      <div style={{ display: 'flex', height: 6, borderRadius: 4, overflow: 'hidden', marginBottom: 14, gap: 1 }}>
+                        {Object.entries(distribucionAcuerdos).map(([tipo, data]) => (
+                          <div key={tipo} style={{ width: `${totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0}%`, background: colores[tipo] ?? '#555', transition: 'width 0.4s' }} />
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                      {Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
+                        const pctOps = totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0;
+                        const pctMonto = totalMonto > 0 ? (data.monto / totalMonto) * 100 : 0;
+                        const color = colores[tipo] ?? '#555';
+                        return (
+                          <div key={tipo} style={{ background: `${color}0d`, borderRadius: 10, padding: '14px 16px', border: `1px solid ${color}22` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{tipo}</span>
+                            </div>
+                            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 2 }}>{data.cantidad}</div>
+                            <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{formatCurrency(data.monto)}</div>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color, background: `${color}18`, padding: '2px 7px', borderRadius: 4 }}>{pctOps.toFixed(0)}% ops</span>
+                              <span style={{ fontSize: 11, color: '#444' }}>{pctMonto.toFixed(0)}% $</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Ventas por Categoría */}
+            {ventasMes.length > 0 && (() => {
+              const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+              const DistBlock = ({ titulo, icon, datos, color }: { titulo: string; icon: React.ReactNode; datos: { label: string; monto: number; cantidad: number }[]; color: string }) => {
+                const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
+                return (
+                  <div style={{ flex: 1, minWidth: 220 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+                      <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
+                    </div>
+                    <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                      {datos.slice(0, 7).map((d, i) => {
+                        const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
+                        const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
+                        return (
+                          <div key={i} style={{ padding: '9px 14px', borderBottom: i < Math.min(datos.length, 7) - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                              <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
+                                <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                                <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' as const }}>{pct.toFixed(0)}%</span>
+                              </div>
+                            </div>
+                            <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${pctMonto}%`, background: color, opacity: 0.6, borderRadius: 2 }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              };
               return (
-                <div style={{ marginTop: 24 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Ventas por Categoría</div>
+                <div style={{ marginBottom: 28 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                    <div style={{ width: 3, height: 14, background: '#fb923c', borderRadius: 4 }} />
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Ventas por Categoría</span>
+                    <span style={{ fontSize: 11, color: '#333', marginLeft: 4 }}>{ventasMes.length} operaciones · {formatCurrency(totalMes)}</span>
+                  </div>
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-                    <DistTable titulo="Cuotas" datos={distCuotas} />
-                    <DistTable titulo="Rango Etario" datos={distRangoEtario} />
-                    <DistTable titulo="Sexo" datos={distSexo} />
+                    <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" />
+                    <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" />
+                    <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" />
                   </div>
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <DistTable titulo="Empleador" datos={distEmpleador} />
-                    <DistTable titulo="Localidad" datos={distLocalidad} />
+                    <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" />
+                    <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" />
                   </div>
                 </div>
               );
             })()}
 
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 24 }}>
-              <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
-              <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} />
-              <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen(p => ({ ...p, empresas_estrategicas: v }))} />
+            {/* Gestiones comerciales */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 3, height: 14, background: '#34d399', borderRadius: 4 }} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Gestión Comercial</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+                <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
+                <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} placeholder="Salidas al campo, visitas programadas..." />
+                <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen(p => ({ ...p, empresas_estrategicas: v }))} placeholder="Empresas clave contactadas o visitadas..." />
+              </div>
             </div>
           </div>
 
