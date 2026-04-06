@@ -16,6 +16,11 @@ CREATE TABLE IF NOT EXISTS registros (
   monto NUMERIC(15,2) DEFAULT 0,
   estado TEXT DEFAULT 'proyeccion',
   comentarios TEXT DEFAULT '',
+  cuotas TEXT,
+  rango_etario TEXT,
+  sexo TEXT,
+  empleador TEXT,
+  localidad TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );

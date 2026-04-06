@@ -27,7 +27,8 @@ const FIELD_LABELS: Record<string, string> = {
   estado: 'Estado', monto: 'Monto', fecha: 'Fecha',
   puntaje: 'Score', es_re: 'Es RE', comentarios: 'Comentarios',
   tipo_cliente: 'Tipo cliente', acuerdo_precios: 'Acuerdo precios',
-  fecha_score: 'Fecha score',
+  fecha_score: 'Fecha score', cuotas: 'Cuotas', rango_etario: 'Rango etario',
+  sexo: 'Sexo', empleador: 'Empleador', localidad: 'Localidad',
 };
 
 // ── Validation ────────────────────────────────────────────────────────────────
@@ -143,7 +144,7 @@ const RegistroModal = memo(function RegistroModal({
       const { error } = await supabase.from('registros').update(payload).eq('id', editingId);
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
       // Auditar todos los cambios en una sola entrada
-      const AUDIT_FIELDS = ['nombre', 'cuil', 'analista', 'estado', 'monto', 'fecha', 'fecha_score', 'puntaje', 'es_re', 'comentarios', 'tipo_cliente', 'acuerdo_precios'] as const;
+      const AUDIT_FIELDS = ['nombre', 'cuil', 'analista', 'estado', 'monto', 'fecha', 'fecha_score', 'puntaje', 'es_re', 'comentarios', 'tipo_cliente', 'acuerdo_precios', 'cuotas', 'rango_etario', 'sexo', 'empleador', 'localidad'] as const;
       const cambios = AUDIT_FIELDS.filter(field => String((initialData as Record<string, unknown>)[field] ?? '') !== String((payload as Record<string, unknown>)[field] ?? ''));
       if (cambios.length > 0) {
         logAudit({
@@ -174,181 +175,216 @@ const RegistroModal = memo(function RegistroModal({
 
   return (
     <>
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">
-            <FileText size={18} style={{ color: '#888' }} />
-            {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
-          </h3>
-          <button className="btn-icon" onClick={onClose} style={{ color: '#444' }}><X size={20} /></button>
-        </div>
-        <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
-          <div className="form-row">
-            <Field label="CUIL *" error={errors.cuil}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input className="form-input" style={{ flex: 1 }} value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
-                <button
-                  type="button"
-                  disabled={(form.cuil?.length ?? 0) !== 11}
-                  title="Copiar CUIL y abrir BCRA"
-                  onClick={() => {
-                    navigator.clipboard.writeText(form.cuil || '').catch(() => {});
-                    window.open('https://www.bcra.gob.ar/situacion-crediticia/', '_blank', 'noopener,noreferrer');
-                  }}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    gap: 4, padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-                    border: '1px solid var(--border)',
-                    background: (form.cuil?.length ?? 0) === 11 ? 'var(--accent)' : 'var(--surface2)',
-                    color: (form.cuil?.length ?? 0) === 11 ? 'var(--bg)' : 'var(--text-muted)',
-                    cursor: (form.cuil?.length ?? 0) === 11 ? 'pointer' : 'not-allowed',
-                    whiteSpace: 'nowrap', transition: 'background 0.15s',
-                  }}
-                >
-                  <ExternalLink size={13} /> BCRA
-                </button>
-              </div>
-            </Field>
-            <Field label="Nombre *" error={errors.nombre}>
-              <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} onPaste={e => {
-                if (isAdmin) return;
-                e.preventDefault();
-                const pasted = e.clipboardData.getData('text');
-                const clean = pasted.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '');
-                set('nombre', capitalizarNombre(clean));
-              }} />
-            </Field>
-          </div>
-          <div className="form-row">
-            <Field label="Analista *">
-              <select className="form-select" value={form.analista || ANALISTAS[0]} onChange={e => set('analista', e.target.value)}>
-                {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
-            </Field>
-            <Field label="Estado *">
-              <select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>
-                {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
-              </select>
-            </Field>
-          </div>
-          <div className="form-row">
-            <Field label="Monto" error={errors.monto}>
-              <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
-            </Field>
-            <Field label="Fecha" error={errors.fecha}>
-              <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} />
-            </Field>
-          </div>
-          <div className="form-row">
-            <Field label="Fecha Score">
-              <input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} />
-            </Field>
-            <Field label="Score">
-              <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
-            </Field>
-          </div>
-          <div className="form-row">
-            <Field label={`Tipo de cliente${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.tipo_cliente}>
-              <select className="form-select" value={form.tipo_cliente || ''} onChange={e => set('tipo_cliente', e.target.value)}>
-                <option value="">— Sin especificar —</option>
-                <option value="Apertura">Apertura</option>
-                <option value="Renovacion">Renovación</option>
-              </select>
-            </Field>
-            <Field label={`Acuerdo de precios${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.acuerdo_precios}>
-              <select className="form-select" value={form.acuerdo_precios || ''} onChange={e => set('acuerdo_precios', e.target.value)}>
-                <option value="">— Sin especificar —</option>
-                <option value="Riesgo Bajo">Riesgo Bajo</option>
-                <option value="Riesgo Medio">Riesgo Medio</option>
-                <option value="Premium">Premium</option>
-              </select>
-            </Field>
-          </div>
-          <div className="form-row">
-            <Field label="Comentarios">
-              <textarea
-                className="form-input"
-                value={form.comentarios || ''}
-                onChange={e => set('comentarios', e.target.value)}
-                rows={3}
-                style={{ resize: 'vertical', fontFamily: 'inherit' }}
-              />
-            </Field>
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <label className="toggle-card">
-              <span className="toggle-switch">
-                <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} />
-                <span className="toggle-slider" />
-              </span>
-              <span className="toggle-label"><FileText size={14} />Resumen Ejecutivo (RE)</span>
-            </label>
-            <label className="toggle-card">
-              <span className="toggle-switch">
-                <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} />
-                <span className="toggle-slider" />
-              </span>
-              <span className="toggle-label"><AlertTriangle size={14} />Agendar Recordatorio</span>
-            </label>
-          </div>
-          <p className="modal-required-legend" style={{ color: 'var(--rojo)' }}>
-            <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
-          </p>
-        </div>
-        <div className="modal-footer">
-          {errors._ && <span style={{ color: '#fff', fontSize: '12px', flex: 1, fontWeight: 700 }}>{errors._}</span>}
-          <button className="btn-secondary" onClick={onClose} style={{
-            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666',
-            fontWeight: 700, padding: '12px 24px', borderRadius: '10px'
-          }}>CANCELAR</button>
-          <button className="btn-primary" onClick={() => guardar()} disabled={saving} style={{
-            background: '#fff', color: '#000', border: 'none',
-            fontWeight: 900, padding: '12px 32px', borderRadius: '10px',
-            fontSize: '13px', letterSpacing: '0.5px'
-          }}>
-            <Save size={14} style={{ marginRight: 8 }} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    {showDupModal && dupRecord && (
-      <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
-        <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
-            <h3 className="modal-title" style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '0.5px', color: dupBlocked ? 'var(--rojo)' : '#f59e0b' }}>
-              {dupBlocked ? 'REGISTRO DUPLICADO' : 'REGISTRO EXISTENTE'}
+            <h3 className="modal-title">
+              <FileText size={18} style={{ color: '#888' }} />
+              {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
             </h3>
-            {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: '#444' }}><X size={18} /></button>}
+            <button className="btn-icon" onClick={onClose} style={{ color: '#444' }}><X size={20} /></button>
           </div>
-          <div className="modal-body" style={{ padding: '20px 28px' }}>
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <AlertCircle size={20} style={{ color: dupBlocked ? 'var(--rojo)' : '#f59e0b', flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: 6 }}>{dupRecord.nombre}</p>
-                <p style={{ fontSize: '13px', color: '#888', marginBottom: 10 }}>
-                  CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong style={{ color: '#ccc' }}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
-                </p>
-                {dupBlocked
-                  ? <p style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6 }}>Este cliente ya tiene un registro activo en ese estado. No se puede crear un duplicado. Modificá el registro existente para continuar.</p>
-                  : <p style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6 }}>Ya existe un registro con este CUIL o nombre. ¿Deseás guardar de todas formas?</p>
-                }
-              </div>
+          <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
+            <div className="form-row">
+              <Field label="CUIL *" error={errors.cuil}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input className="form-input" style={{ flex: 1 }} value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
+                  <button
+                    type="button"
+                    disabled={(form.cuil?.length ?? 0) !== 11}
+                    title="Copiar CUIL y abrir BCRA"
+                    onClick={() => {
+                      navigator.clipboard.writeText(form.cuil || '').catch(() => { });
+                      window.open('https://www.bcra.gob.ar/situacion-crediticia/', '_blank', 'noopener,noreferrer');
+                    }}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      gap: 4, padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
+                      border: '1px solid var(--border)',
+                      background: (form.cuil?.length ?? 0) === 11 ? 'var(--accent)' : 'var(--surface2)',
+                      color: (form.cuil?.length ?? 0) === 11 ? 'var(--bg)' : 'var(--text-muted)',
+                      cursor: (form.cuil?.length ?? 0) === 11 ? 'pointer' : 'not-allowed',
+                      whiteSpace: 'nowrap', transition: 'background 0.15s',
+                    }}
+                  >
+                    <ExternalLink size={13} /> BCRA
+                  </button>
+                </div>
+              </Field>
+              <Field label="Nombre *" error={errors.nombre}>
+                <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} onPaste={e => {
+                  if (isAdmin) return;
+                  e.preventDefault();
+                  const pasted = e.clipboardData.getData('text');
+                  const clean = pasted.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '');
+                  set('nombre', capitalizarNombre(clean));
+                }} />
+              </Field>
             </div>
+            <div className="form-row">
+              <Field label="Analista *">
+                <select className="form-select" value={form.analista || ANALISTAS[0]} onChange={e => set('analista', e.target.value)}>
+                  {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </Field>
+              <Field label="Estado *">
+                <select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>
+                  {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
+                </select>
+              </Field>
+            </div>
+            <div className="form-row">
+              <Field label="Monto" error={errors.monto}>
+                <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
+              </Field>
+              <Field label="Fecha" error={errors.fecha}>
+                <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} />
+              </Field>
+            </div>
+            <div className="form-row">
+              <Field label="Fecha Score">
+                <input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} />
+              </Field>
+              <Field label="Score">
+                <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
+              </Field>
+            </div>
+            <div className="form-row">
+              <Field label={`Tipo de cliente${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.tipo_cliente}>
+                <select className="form-select" value={form.tipo_cliente || ''} onChange={e => set('tipo_cliente', e.target.value)}>
+                  <option value="">— Sin especificar —</option>
+                  <option value="Apertura">Apertura</option>
+                  <option value="Renovacion">Renovación</option>
+                </select>
+              </Field>
+              <Field label={`Acuerdo de precios${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.acuerdo_precios}>
+                <select className="form-select" value={form.acuerdo_precios || ''} onChange={e => set('acuerdo_precios', e.target.value)}>
+                  <option value="">— Sin especificar —</option>
+                  <option value="Riesgo Bajo">Riesgo Bajo</option>
+                  <option value="Riesgo Medio">Riesgo Medio</option>
+                  <option value="Premium">Premium</option>
+                </select>
+              </Field>
+            </div>
+            <div className="form-row">
+              <Field label="Cuotas">
+                <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
+              </Field>
+              <Field label="Rango etario">
+                <select className="form-select" value={form.rango_etario || ''} onChange={e => set('rango_etario', e.target.value)}>
+                  <option value="">— Sin especificar —</option>
+                  <option value="18-25">18-25</option>
+                  <option value="26-35">26-35</option>
+                  <option value="36-45">36-45</option>
+                  <option value="46-55">46-55</option>
+                  <option value="56-65">56-65</option>
+                  <option value="65+">65+</option>
+                </select>
+              </Field>
+            </div>
+            <div className="form-row">
+              <Field label="Sexo">
+                <select className="form-select" value={form.sexo || ''} onChange={e => set('sexo', e.target.value)}>
+                  <option value="">— Sin especificar —</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </Field>
+              <Field label="Empleador">
+                <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', e.target.value)} placeholder="Nombre del empleador" />
+              </Field>
+            </div>
+            <div className="form-row">
+              <Field label="Localidad">
+                <input className="form-input" value={form.localidad || ''} onChange={e => set('localidad', e.target.value)} placeholder="Localidad" />
+              </Field>
+              <div />
+            </div>
+            <div className="form-row">
+              <Field label="Comentarios">
+                <textarea
+                  className="form-input"
+                  value={form.comentarios || ''}
+                  onChange={e => set('comentarios', e.target.value)}
+                  rows={3}
+                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                />
+              </Field>
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <label className="toggle-card">
+                <span className="toggle-switch">
+                  <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} />
+                  <span className="toggle-slider" />
+                </span>
+                <span className="toggle-label"><FileText size={14} />Resumen Ejecutivo (RE)</span>
+              </label>
+              <label className="toggle-card">
+                <span className="toggle-switch">
+                  <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} />
+                  <span className="toggle-slider" />
+                </span>
+                <span className="toggle-label"><AlertTriangle size={14} />Agendar Recordatorio</span>
+              </label>
+            </div>
+            <p className="modal-required-legend" style={{ color: 'var(--rojo)' }}>
+              <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
+            </p>
           </div>
           <div className="modal-footer">
-            {dupBlocked
-              ? <button className="btn-primary" onClick={() => setShowDupModal(false)} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>ENTENDIDO</button>
-              : <>
+            {errors._ && <span style={{ color: '#fff', fontSize: '12px', flex: 1, fontWeight: 700 }}>{errors._}</span>}
+            <button className="btn-secondary" onClick={onClose} style={{
+              background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666',
+              fontWeight: 700, padding: '12px 24px', borderRadius: '10px'
+            }}>CANCELAR</button>
+            <button className="btn-primary" onClick={() => guardar()} disabled={saving} style={{
+              background: '#fff', color: '#000', border: 'none',
+              fontWeight: 900, padding: '12px 32px', borderRadius: '10px',
+              fontSize: '13px', letterSpacing: '0.5px'
+            }}>
+              <Save size={14} style={{ marginRight: 8 }} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showDupModal && dupRecord && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
+          <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '0.5px', color: dupBlocked ? 'var(--rojo)' : '#f59e0b' }}>
+                {dupBlocked ? 'REGISTRO DUPLICADO' : 'REGISTRO EXISTENTE'}
+              </h3>
+              {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: '#444' }}><X size={18} /></button>}
+            </div>
+            <div className="modal-body" style={{ padding: '20px 28px' }}>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <AlertCircle size={20} style={{ color: dupBlocked ? 'var(--rojo)' : '#f59e0b', flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: 6 }}>{dupRecord.nombre}</p>
+                  <p style={{ fontSize: '13px', color: '#888', marginBottom: 10 }}>
+                    CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong style={{ color: '#ccc' }}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
+                  </p>
+                  {dupBlocked
+                    ? <p style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6 }}>Este cliente ya tiene un registro activo en ese estado. No se puede crear un duplicado. Modificá el registro existente para continuar.</p>
+                    : <p style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6 }}>Ya existe un registro con este CUIL o nombre. ¿Deseás guardar de todas formas?</p>
+                  }
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              {dupBlocked
+                ? <button className="btn-primary" onClick={() => setShowDupModal(false)} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>ENTENDIDO</button>
+                : <>
                   <button className="btn-secondary" onClick={() => setShowDupModal(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666', fontWeight: 700, padding: '10px 20px', borderRadius: '10px', fontSize: '13px' }}>CANCELAR</button>
                   <button className="btn-primary" onClick={() => { setShowDupModal(false); guardar(true); }} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 900, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>GUARDAR DE TODAS FORMAS</button>
                 </>
-            }
+              }
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
     </>
   );
 });

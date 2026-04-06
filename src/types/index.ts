@@ -12,6 +12,11 @@ export interface Registro {
   comentarios: string;
   tipo_cliente?: string;
   acuerdo_precios?: string;
+  cuotas?: string;
+  rango_etario?: string;
+  sexo?: string;
+  empleador?: string;
+  localidad?: string;
   created_at?: string;
   updated_at?: string;
 }

@@ -28,6 +28,8 @@ import {
   FileText,
   RotateCcw,
   Plus,
+  DollarSign,
+  Percent,
 } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler);
@@ -505,6 +507,12 @@ export default function AnalistasPage() {
     const acuerdosPremium = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Premium').length;
     const acuerdos = acuerdosBajo + acuerdosMedio + acuerdosPremium;
 
+    // Venta promedio y conversión
+    const ventaPromedio = alcanceOps > 0 ? alcanceCapital / alcanceOps : 0;
+    // Clientes atendidos = todos los registros del analista en el mes (independientemente del estado)
+    const clientesAtendidos = regs.filter(r => r.fecha?.slice(0, 7) === key && r.analista === analista).length;
+    const conversion = clientesAtendidos > 0 ? (alcanceOps / clientesAtendidos) * 100 : 0;
+
     return {
       obj, alcanceCapital, alcanceOps,
       alcancePrev, prevOpsPrev, tendPct, tendPctOps,
@@ -512,9 +520,10 @@ export default function AnalistasPage() {
       cumplReal, cumplProy, cumplRealOps, cumplProyOps,
       dh, dt, comisiones, pMes, pAnio,
       aperturas, renovaciones, acuerdos,
-      acuerdosBajo, acuerdosMedio, acuerdosPremium
+      acuerdosBajo, acuerdosMedio, acuerdosPremium,
+      ventaPromedio, clientesAtendidos, conversion
     };
-  }, [regs, objMap, diasInfo, mes, anio]);
+  }, [regs, objMap, diasInfo, mes, anio, analista]);
 
   // ── Curva de crecimiento (acumulado diario) ──────────────────────
   const curva = useMemo(() => {
@@ -975,6 +984,11 @@ export default function AnalistasPage() {
               <div style={{ width: `${Math.min(100, kpis.cumplProy)}%`, height: '100%', background: kpis.cumplProy >= 100 ? '#fff' : '#f87171' }} />
             </div>
           </div>
+          <div style={box}>
+            <div style={lbl}><DollarSign size={14} color="#666" /> VENTA PROMEDIO</div>
+            <div style={val}>{formatCurrency(kpis.ventaPromedio)}</div>
+            <div style={sub}>por operación</div>
+          </div>
         </div>
       </div>
 
@@ -1055,6 +1069,11 @@ export default function AnalistasPage() {
             <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
               <div style={{ width: `${Math.min(100, kpis.cumplProyOps)}%`, height: '100%', background: kpis.cumplProyOps >= 100 ? '#fff' : '#f87171' }} />
             </div>
+          </div>
+          <div style={box}>
+            <div style={lbl}><Percent size={14} color="#666" /> CONVERSIÓN</div>
+            <div style={val}>{pct(kpis.conversion)}</div>
+            <div style={sub}>{kpis.alcanceOps} / {kpis.clientesAtendidos} clientes</div>
           </div>
         </div>
       </div>
