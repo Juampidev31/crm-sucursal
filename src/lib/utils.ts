@@ -134,6 +134,18 @@ export const calcularComisiones = (
 };
 
 /**
+ * Capitaliza texto genérico: primera letra de cada palabra en mayúscula.
+ * Ej: "jubilado" → "Jubilado" | "PAraná" → "Paraná"
+ */
+export const capitalizarTexto = (value: string): string => {
+  return value
+    .trim()
+    .split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+};
+
+/**
  * Capitaliza la primera letra de cada palabra y agrega coma después del primer nombre.
  * Ej: "garcia juan pablo" → "Garcia, Juan Pablo"
  * Ej: "garcia"            → "Garcia"  (una sola palabra, sin coma)

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatDate, capitalizarNombre, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
+import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
 import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -293,10 +293,10 @@ const RegistroModal = memo(function RegistroModal({
                 </select>
               </Field>
               <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
-                <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', e.target.value)} placeholder="Nombre del empleador" />
+                <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', capitalizarTexto(e.target.value))} placeholder="Nombre del empleador" />
               </Field>
               <Field label={`Localidad${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
-                <input className="form-input" value={form.localidad || ''} onChange={e => set('localidad', e.target.value)} placeholder="Localidad" />
+                <input className="form-input" value={form.localidad || ''} onChange={e => set('localidad', capitalizarTexto(e.target.value))} placeholder="Localidad" />
               </Field>
             </div>
             <div className="form-row">
