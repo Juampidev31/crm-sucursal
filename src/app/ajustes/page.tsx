@@ -13,6 +13,7 @@ import {
   ChevronLeft, ChevronRight, RefreshCw
 } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
+import ResumenMensualTab from './ResumenMensualTab';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement,
   BarElement, Tooltip, Legend, Filler,
@@ -24,7 +25,7 @@ ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, BarEleme
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ObjetivoRow = { analista: string; mes: number; meta_ventas: number; meta_operaciones: number };
-type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'analisis-temporal' | 'duplicados' | 'auditoria';
+type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'analisis-temporal' | 'duplicados' | 'auditoria' | 'resumen-mensual';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -920,6 +921,7 @@ export default function AjustesPage() {
             { id: 'analisis-temporal', label: 'Análisis Temporal', icon: Activity },
             { id: 'duplicados', label: 'Duplicados', icon: Copy },
             { id: 'auditoria', label: 'Auditoría', icon: Shield },
+            { id: 'resumen-mensual', label: 'Resumen Mensual', icon: BarChart3 },
           ].map(t => (
             <button
               key={t.id}
@@ -2251,7 +2253,8 @@ export default function AjustesPage() {
                                           gap: 16, padding: '16px 20px', background: 'rgba(255,255,255,0.02)',
                                           borderRadius: 6, border: '1px solid rgba(255,255,255,0.04)',
                                         }}>
-                                          <div>
+                                          {/* ID Completo - Hidden */}
+                                          <div style={{ display: 'none' }}>
                                             <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>ID Completo</div>
                                             <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#888', wordBreak: 'break-all' }}>{reg.id_registro || '—'}</div>
                                           </div>
@@ -2259,7 +2262,8 @@ export default function AjustesPage() {
                                             <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista (ID)</div>
                                             <div style={{ fontSize: '11px', color: '#888' }}>{reg.id_analista || reg.analista || '—'}</div>
                                           </div>
-                                          <div>
+                                          {/* Timestamp - Hidden */}
+                                          <div style={{ display: 'none' }}>
                                             <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Timestamp</div>
                                             <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#888' }}>{reg.fecha_hora || '—'}</div>
                                           </div>
@@ -2330,6 +2334,16 @@ export default function AjustesPage() {
               </div>
             );
           })()}
+
+          {/* TAB: RESUMEN MENSUAL */}
+          {activeTab === 'resumen-mensual' && (
+            <ResumenMensualTab
+              registros={ctxRegistros}
+              objetivos={ctxObjetivos}
+              onSuccess={showSuccess}
+              onError={showError}
+            />
+          )}
 
           {/* Info del sistema */}
           <footer style={{ marginTop: '48px', padding: '24px', borderTop: '1px solid rgba(255,255,255,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
