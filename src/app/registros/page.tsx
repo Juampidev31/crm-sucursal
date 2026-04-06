@@ -309,7 +309,7 @@ const RegistroModal = memo(function RegistroModal({
                 />
               </Field>
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <label className="toggle-card">
                 <span className="toggle-switch">
                   <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} />
