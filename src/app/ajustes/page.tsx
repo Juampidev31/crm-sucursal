@@ -1388,7 +1388,7 @@ export default function AjustesPage() {
                       }
                     </div>
                   </div>
-                  <div style={{ height: 320, flex: 1 }}>
+                  <div style={{ height: 450, flex: 1 }}>
                     <Line
                       data={{
                         labels: tendenciaData.labels,
@@ -1531,7 +1531,7 @@ export default function AjustesPage() {
                                   title={`${day.key}: ${fmt(day.valor)}`}
                                   style={{
                                     background: heatColor(day.valor, mapaActividad.maxVal),
-                                    borderRadius: 4, height: 44,
+                                    borderRadius: 4, height: 64,
                                     textAlign: 'center', fontSize: 10,
                                     color: day.valor > 0 ? '#86efac' : '#333',
                                     fontWeight: day.valor > 0 ? 600 : 400,
@@ -1972,7 +1972,6 @@ export default function AjustesPage() {
             const cutoff = now - (periodoMs[auditFilterPeriodo] || Infinity);
 
             const allAcciones = [...new Set((auditoriaRegistros || []).map((r: any) => r.accion).filter(Boolean))];
-            const allAuditAnalistas = [...new Set((auditoriaRegistros || []).map((r: any) => r.analista).filter(Boolean))];
 
             const filtered = (auditoriaRegistros || []).filter((reg: any) => {
               if (auditFilterAccion !== 'todas' && reg.accion !== auditFilterAccion) return false;
@@ -1987,20 +1986,22 @@ export default function AjustesPage() {
               return true;
             });
 
+            const allAuditAnalistas = [...new Set((auditoriaRegistros || []).map((r: any) => r.analista).filter(Boolean))];
+
             const totalPages = Math.max(1, Math.ceil(filtered.length / AUDIT_PAGE_SIZE));
             const safePage = Math.min(auditPage, totalPages);
             const paged = filtered.slice((safePage - 1) * AUDIT_PAGE_SIZE, safePage * AUDIT_PAGE_SIZE);
 
-            // — KPI stats —
+            // — KPI stats (calculated from filtered data) —
             const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-            const todayCount = (auditoriaRegistros || []).filter((r: any) => r.fecha_hora && new Date(r.fecha_hora) >= todayStart).length;
-            const creaciones = (auditoriaRegistros || []).filter((r: any) => r.accion === 'Creación').length;
-            const ediciones = (auditoriaRegistros || []).filter((r: any) => !['Creación', 'Eliminación'].includes(r.accion) && !r.accion?.includes('Recordatorio')).length;
-            const eliminaciones = (auditoriaRegistros || []).filter((r: any) => r.accion === 'Eliminación').length;
-            const recordatorios = (auditoriaRegistros || []).filter((r: any) => r.accion?.includes('Recordatorio')).length;
+            const todayCount = filtered.filter((r: any) => r.fecha_hora && new Date(r.fecha_hora) >= todayStart).length;
+            const creaciones = filtered.filter((r: any) => r.accion === 'Creación').length;
+            const ediciones = filtered.filter((r: any) => !['Creación', 'Eliminación'].includes(r.accion) && !r.accion?.includes('Recordatorio')).length;
+            const eliminaciones = filtered.filter((r: any) => r.accion === 'Eliminación').length;
+            const recordatorios = filtered.filter((r: any) => r.accion?.includes('Recordatorio')).length;
 
             const analystCounts: Record<string, number> = {};
-            (auditoriaRegistros || []).forEach((r: any) => { if (r.analista) analystCounts[r.analista] = (analystCounts[r.analista] || 0) + 1; });
+            filtered.forEach((r: any) => { if (r.analista) analystCounts[r.analista] = (analystCounts[r.analista] || 0) + 1; });
             const topAnalyst = Object.entries(analystCounts).sort((a, b) => b[1] - a[1])[0];
 
             // — CSV export —
@@ -2054,7 +2055,7 @@ export default function AjustesPage() {
                 {/* KPI CARDS */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
                   {[
-                    { label: 'TOTAL EVENTOS', value: (auditoriaRegistros || []).length, icon: <BarChart3 size={14} />, accent: '#fff' },
+                    { label: 'TOTAL EVENTOS', value: filtered.length, icon: <BarChart3 size={14} />, accent: '#fff' },
                     { label: 'HOY', value: todayCount, icon: <Calendar size={14} />, accent: '#22c55e' },
                     { label: 'CREACIONES', value: creaciones, icon: <Plus size={14} />, accent: '#22c55e' },
                     { label: 'EDICIONES', value: ediciones, icon: <Edit3 size={14} />, accent: '#fbbf24' },

@@ -366,7 +366,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
             height: 1,
             flexShrink: 0,
             background: 'transparent',
-            margin: '30px auto',
+            margin: '10px auto',
             position: 'relative',
             overflow: 'visible',
           }}>
