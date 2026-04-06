@@ -5,6 +5,75 @@ import { supabase } from '@/lib/supabase';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Download } from 'lucide-react';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
+  LineElement, PointElement, Tooltip, Legend, BarController, LineController,
+} from 'chart.js';
+import AnalisisTemporalTab from './AnalisisTemporalTab';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
+
+// ── Plugin inline: data labels on bars ───────────────────────────────────
+const labelsPlugin: any = {
+  id: 'labelsPlugin',
+  afterDatasetsDraw(chart: any) {
+    const { ctx, scales } = chart;
+    const isHorizontal = chart.config.options.indexAxis === 'y';
+    const isStacked = chart.config.options.scales?.x?.stacked || chart.config.options.scales?.y?.stacked;
+
+    chart.data.datasets.forEach((ds: any, dsIdx: number) => {
+      const meta = chart.getDatasetMeta(dsIdx);
+      if (!meta || meta.hidden || meta.type !== 'bar') return;
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = isStacked ? 'middle' : 'bottom';
+
+      // Shadow for readability
+      ctx.shadowColor = 'rgba(0,0,0,1)';
+      ctx.shadowBlur = 5;
+
+      // Detección mejorada de porcentaje
+      const isPct = ds.label?.includes('%') ||
+        chart.config.options.scales?.y?.ticks?.callback?.toString().includes('%') ||
+        chart.config.options.scales?.x?.ticks?.callback?.toString().includes('%') ||
+        chart.config.options.plugins?.title?.text?.toString().includes('%');
+
+      meta.data.forEach((bar: any, idx: number) => {
+        const val = ds.data[idx];
+        if (val === null || val === undefined || (val === 0 && !isPct)) return;
+
+        let label = '';
+        const v = Math.abs(val);
+
+        if (isPct) {
+          label = Math.round(val) + '%';
+        } else if (v >= 1_000_000) {
+          label = (val / 1_000_000).toFixed(1).replace('.', ',') + 'M';
+        } else if (v >= 1000) {
+          label = (val / 1000).toFixed(0) + 'K';
+        } else {
+          // Redondear a 1 decimal si es < 10, sino entero
+          label = (val < 10 && val > 0 && !Number.isInteger(val)) ? val.toFixed(1).replace('.', ',') : Math.round(val).toString();
+        }
+
+        if (isHorizontal) {
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, bar.x + 6, bar.y);
+        } else if (isStacked) {
+          ctx.fillText(label, bar.x, bar.y + (bar.base - bar.y) / 2);
+        } else {
+          ctx.fillText(label, bar.x, bar.y - 7);
+        }
+      });
+      ctx.restore();
+    });
+  },
+};
 
 interface PlanAccion {
   problema: string;
@@ -28,6 +97,8 @@ interface ResumenMensual {
   operacion_procesos: string;
   experiencia_cliente: string;
   plan_acciones: PlanAccion[];
+  gestiones_por_analista: Record<string, number>;
+  presupuestos_por_analista: Record<string, number>;
 }
 
 const EMPTY_RESUMEN = (): ResumenMensual => ({
@@ -38,6 +109,8 @@ const EMPTY_RESUMEN = (): ResumenMensual => ({
   operacion_procesos: '',
   experiencia_cliente: '',
   plan_acciones: [],
+  gestiones_por_analista: {},
+  presupuestos_por_analista: {},
 });
 
 interface Props {
@@ -97,6 +170,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           operacion_procesos: existing.operacion_procesos ?? '',
           experiencia_cliente: existing.experiencia_cliente ?? '',
           plan_acciones: existing.plan_acciones ?? [],
+          gestiones_por_analista: existing.gestiones_por_analista ?? {},
+          presupuestos_por_analista: existing.presupuestos_por_analista ?? {},
         });
       } else {
         setResumen(EMPTY_RESUMEN());
@@ -123,7 +198,62 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   };
 
   // ── PDF ───────────────────────────────────────────────────────────────────
-  const handleDescargarPDF = () => {
+  const handleDescargarPDF = async () => {
+    // Capturar gráficos como imágenes base64
+    const chartImages: Record<string, string> = {};
+    const chartMap: Record<string, string> = {
+      'chart-capital-objetivo': 'Capital vs Objetivo',
+      'chart-ticket-promedio': 'Ticket Promedio',
+      'chart-cumplimiento': '% Cumplimiento',
+      'chart-variacion': 'Variación %',
+      'chart-conversion-total': '% Conversión Total',
+      'chart-aperturas-renovaciones': 'Aperturas vs Renovaciones',
+      'chart-acuerdos': 'Acuerdo de Precios',
+      'chart-embudo': 'Embudo Comercial',
+      'chart-conversion-presupuesto': '% Conversión Presupuesto',
+      'chart-empleo-publico-privado': 'Empleo Público / Privado',
+      // Analisis Temporal
+      'chart-at-tendencia': 'Tendencia',
+      'chart-at-estacionalidad': 'Estacionalidad — Patrones por semana',
+      'chart-at-dia-semana': 'Por Día de Semana — Rendimiento en $',
+      'chart-at-acuerdos': 'Evolución Acuerdo de Precios — Proporción semanal',
+    };
+    // Esperar un tick para que los canvas estén renderizados
+    await new Promise(r => setTimeout(r, 300));
+    for (const [domId] of Object.entries(chartMap)) {
+      const wrapper = document.getElementById(domId);
+      if (wrapper) {
+        const canvas = wrapper.querySelector('canvas') as HTMLCanvasElement;
+        if (canvas) {
+          try { chartImages[domId] = canvas.toDataURL('image/png'); } catch { /* ignorar */ }
+        }
+      }
+    }
+
+    // Helper: capturar sección HTML del DOM, reemplazando canvas por imágenes
+    const capturarSeccion = (id: string) => {
+      const el = document.getElementById(id);
+      if (!el) return '';
+      const clone = el.cloneNode(true) as HTMLElement;
+      // Reemplazar todos los canvas con imágenes capturadas
+      clone.querySelectorAll('canvas').forEach(canvas => {
+        const wrapper = canvas.closest('[id]');
+        const wId = wrapper?.id || '';
+        if (chartImages[wId]) {
+          const img = document.createElement('img');
+          img.src = chartImages[wId];
+          img.style.cssText = 'width:100%;height:auto;object-fit:contain;display:block';
+          canvas.parentNode?.replaceChild(img, canvas);
+        }
+      });
+      // Resolver CSS vars
+      clone.innerHTML = clone.innerHTML.replace(/var\(--gris\)/g, '#666');
+      return clone.outerHTML;
+    };
+
+    const tendenciaMapaHTML = capturarSeccion('seccion-tendencia-mapa');
+    const estacionalidadHTML = capturarSeccion('seccion-estacionalidad');
+
     const mesNombre = CONFIG.MESES_NOMBRES[selectedMes - 1];
     const titulo = `Resumen ${mesNombre} ${selectedAnio}`;
 
@@ -133,7 +263,34 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
     const fmtPct = (n: number | null) => n !== null ? `${n.toFixed(1)}%` : '—';
     const fmtBar = (pct: number, color: string) =>
-      `<div style="height:4px;background:#e5e7eb;border-radius:2px;margin-top:4px"><div style="height:100%;width:${Math.min(pct, 100)}%;background:${color};border-radius:2px"></div></div>`;
+      `<div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:4px"><div style="height:100%;width:${Math.min(pct, 100)}%;background:${color};border-radius:2px"></div></div>`;
+
+    const chartTitles: Record<string, string> = {
+      'chart-capital-objetivo': 'Capital vs Objetivo',
+      'chart-ticket-promedio': 'Ticket Promedio',
+      'chart-cumplimiento': '% Cumplimiento',
+      'chart-variacion': 'Variación %',
+      'chart-conversion-total': '% Conversión Total',
+      'chart-aperturas-renovaciones': 'Aperturas vs Renovaciones',
+      'chart-acuerdos': 'Acuerdo de Precios',
+      'chart-embudo': 'Embudo Comercial',
+      'chart-conversion-presupuesto': '% Conversión Presupuesto',
+      'chart-empleo-publico-privado': '% Empleo Público / Privado',
+      'chart-at-tendencia': 'Tendencia',
+      'chart-at-estacionalidad': 'Estacionalidad — Patrones por semana',
+      'chart-at-dia-semana': 'Por Día de Semana — Rendimiento en $',
+      'chart-at-acuerdos': 'Evolución Acuerdo de Precios — Proporción semanal',
+    };
+
+    const chartImg = (id: string, height = 200) =>
+      chartImages[id]
+        ? `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 16px;margin-bottom:14px">
+            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">${chartTitles[id] || id}</div>
+            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:8px">
+              <img src="${chartImages[id]}" style="width:100%;height:${height}px;object-fit:contain;display:block" />
+            </div>
+          </div>`
+        : '';
 
     const analistas = [...kpiPorAnalista, {
       analista: 'Total PDV', capital: kpiTotal.capital, ops: kpiTotal.ops,
@@ -144,12 +301,12 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     }];
 
     const seccion = (num: string, titulo: string) =>
-      `<h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#374151;border-bottom:2px solid #e5e7eb;padding-bottom:6px;margin:28px 0 14px">${num}. ${titulo}</h2>`;
+      `<h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#aaa;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:6px;margin:28px 0 14px">${num}. ${titulo}</h2>`;
 
     const textarea = (label: string, valor: string) => valor.trim() ? `
       <div style="margin-bottom:12px">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#9ca3af;margin-bottom:4px">${label}</div>
-        <div style="font-size:12px;color:#374151;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;white-space:pre-wrap;line-height:1.5">${valor}</div>
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;margin-bottom:4px">${label}</div>
+        <div style="font-size:12px;color:#ccc;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:10px 12px;white-space:pre-wrap;line-height:1.5">${valor}</div>
       </div>` : '';
 
     const distBlock = (titulo: string, datos: { label: string; monto: number; cantidad: number }[], color: string) => {
@@ -157,21 +314,21 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       if (datos.length === 0) return '';
       return `
         <div style="flex:1;min-width:160px">
-          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;color:#6b7280;margin-bottom:6px">${titulo}</div>
-          <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:6px">${titulo}</div>
+          <div style="border:1px solid rgba(255,255,255,0.06);border-radius:8px;overflow:hidden">
             ${datos.slice(0, 7).map((d, i) => {
-              const pct = total > 0 ? (d.cantidad / total) * 100 : 0;
-              return `<div style="padding:6px 10px;${i > 0 ? 'border-top:1px solid #f3f4f6' : ''}">
+        const pct = total > 0 ? (d.cantidad / total) * 100 : 0;
+        return `<div style="padding:6px 10px;${i > 0 ? 'border-top:1px solid rgba(255,255,255,0.04)' : ''}">
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:11px;color:#374151;font-weight:600">${d.label}</span>
+                  <span style="font-size:11px;color:#ccc;font-weight:600">${d.label}</span>
                   <div style="display:flex;gap:8px;align-items:center">
-                    <span style="font-size:10px;color:#9ca3af">${formatCurrency(d.monto)}</span>
+                    <span style="font-size:10px;color:#666">${formatCurrency(d.monto)}</span>
                     <span style="font-size:11px;font-weight:700;color:${color}">${pct.toFixed(0)}% (${d.cantidad})</span>
                   </div>
                 </div>
-                <div style="height:2px;background:#f3f4f6;border-radius:2px;margin-top:3px"><div style="height:100%;width:${pct}%;background:${color};opacity:0.5;border-radius:2px"></div></div>
+                <div style="height:2px;background:rgba(255,255,255,0.04);border-radius:2px;margin-top:3px"><div style="height:100%;width:${pct}%;background:${color};opacity:0.5;border-radius:2px"></div></div>
               </div>`;
-            }).join('')}
+      }).join('')}
           </div>
         </div>`;
     };
@@ -184,44 +341,44 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   <meta charset="UTF-8">
   <title>${titulo}</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; background: #fff; padding: 32px 40px; font-size: 13px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #ccc; background: #0a0a0a; padding: 32px 40px; font-size: 13px; }
     @page { margin: 20mm 18mm; size: A4; }
     @media print { body { padding: 0; } .no-print { display: none; } }
     table { width: 100%; border-collapse: collapse; }
-    th { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; padding: 6px 10px; border-bottom: 1px solid #e5e7eb; }
-    td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid #f3f4f6; color: #374151; }
-    tr:last-child td { border-bottom: none; font-weight: 700; color: #111827; border-top: 2px solid #e5e7eb; }
+    th { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #555; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #aaa; }
+    tr:last-child td { border-bottom: none; font-weight: 700; color: #eee; border-top: 1px solid rgba(255,255,255,0.1); }
   </style>
 </head>
 <body>
   <!-- PORTADA -->
-  <div style="margin-bottom:32px;padding-bottom:20px;border-bottom:3px solid #111827">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-bottom:6px">Informe de Gestión Comercial</div>
-    <h1 style="font-size:28px;font-weight:900;color:#111827">${titulo}</h1>
-    <div style="font-size:12px;color:#6b7280;margin-top:6px">Generado el ${new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+  <div style="margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15)">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#555;margin-bottom:6px">Informe de Gestión Comercial</div>
+    <h1 style="font-size:28px;font-weight:900;color:#fff">${titulo}</h1>
+    <div style="font-size:12px;color:#555;margin-top:6px">Generado el ${new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
   </div>
 
-  <!-- SECCIÓN 1: TABLERO DE MANDO -->
-  ${seccion('1', 'Tablero de Mando')}
+  <!-- SECCIÓN 1: TABLERO -->
+  ${seccion('1', 'Tablero — vs ' + mesAntLabel)}
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
     ${[
-      { label: 'Capital Vendido', valor: formatCurrency(kpiTotal.capital), sub: `Meta: ${kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}`, pct: kpiTotal.cumplCapital, color: kpiTotal.cumplCapital !== null && kpiTotal.cumplCapital >= 100 ? '#16a34a' : '#dc2626' },
-      { label: 'Operaciones', valor: String(kpiTotal.ops), sub: `Meta: ${kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}`, pct: kpiTotal.cumplOps, color: kpiTotal.cumplOps !== null && kpiTotal.cumplOps >= 100 ? '#16a34a' : '#dc2626' },
-      { label: 'Ticket Promedio', valor: formatCurrency(kpiTotal.ticket), sub: `Conversión: ${kpiTotal.conversion.toFixed(1)}% · ${kpiTotal.clientes} clientes`, pct: null, color: '#374151' },
-    ].map(k => `
-      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#9ca3af;margin-bottom:6px">${k.label}</div>
-        <div style="font-size:20px;font-weight:900;color:#111827">${k.valor}</div>
-        <div style="font-size:10px;color:#6b7280;margin-top:3px">${k.sub}</div>
+        { label: 'Capital Vendido', valor: formatCurrency(kpiTotal.capital), sub: `Meta: ${kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}`, pct: kpiTotal.cumplCapital, color: kpiTotal.cumplCapital !== null && kpiTotal.cumplCapital >= 100 ? '#16a34a' : '#dc2626' },
+        { label: 'Operaciones', valor: String(kpiTotal.ops), sub: `Meta: ${kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}`, pct: kpiTotal.cumplOps, color: kpiTotal.cumplOps !== null && kpiTotal.cumplOps >= 100 ? '#16a34a' : '#dc2626' },
+        { label: 'Ticket Promedio', valor: formatCurrency(kpiTotal.ticket), sub: `Conversión: ${kpiTotal.conversion.toFixed(1)}% · ${kpiTotal.clientes} clientes`, pct: null, color: '#374151' },
+      ].map(k => `
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:14px 16px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:6px">${k.label}</div>
+        <div style="font-size:20px;font-weight:900;color:#fff">${k.valor}</div>
+        <div style="font-size:10px;color:#666;margin-top:3px">${k.sub}</div>
         ${k.pct !== null ? `<div style="margin-top:6px;display:flex;align-items:center;gap:6px"><span style="font-size:12px;font-weight:800;color:${k.color}">${fmtPct(k.pct)} cumpl.</span></div>${fmtBar(k.pct, k.color)}` : ''}
       </div>`).join('')}
   </div>
   ${[
-    { label: 'Principales Logros', val: resumen.logros },
-    { label: 'Principales Desvíos / Problemas', val: resumen.desvios },
-    { label: 'Acciones Clave a Seguir', val: resumen.acciones_clave },
-  ].map(f => textarea(f.label, f.val)).join('')}
+        { label: 'Principales Logros', val: resumen.logros },
+        { label: 'Principales Desvíos / Problemas', val: resumen.desvios },
+        { label: 'Acciones Clave a Seguir', val: resumen.acciones_clave },
+      ].map(f => textarea(f.label, f.val)).join('')}
 
   <!-- SECCIÓN 2: INDICADORES -->
   ${seccion('2', 'Indicadores por Analista')}
@@ -243,24 +400,33 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       </tr>`).join('')}
     </tbody>
   </table>
-
-  <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:10px">Distribución por Acuerdo de Precios</div>
-  <div style="display:flex;gap:10px;margin-bottom:20px">
-    ${Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
-      const pctOps = totalOpsAcuerdo > 0 ? (data.cantidad / totalOpsAcuerdo) * 100 : 0;
-      const pctMonto = totalMontoAcuerdo > 0 ? (data.monto / totalMontoAcuerdo) * 100 : 0;
-      const color = acuerdoColores[tipo] ?? '#374151';
-      return `<div style="flex:1;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;border-left:3px solid ${color}">
-        <div style="font-size:10px;font-weight:700;color:${color};margin-bottom:6px">${tipo}</div>
-        <div style="font-size:18px;font-weight:900;color:#111827">${data.cantidad}</div>
-        <div style="font-size:11px;color:#6b7280">${formatCurrency(data.monto)}</div>
-        <div style="margin-top:6px;font-size:11px;font-weight:700;color:${color}">${pctOps.toFixed(0)}% ops · ${pctMonto.toFixed(0)}% $</div>
-      </div>`;
-    }).join('')}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+  ${chartImg('chart-capital-objetivo', 240)}
+  ${chartImg('chart-ticket-promedio', 240)}
+  ${chartImg('chart-cumplimiento', 240)}
+  ${chartImg('chart-variacion', 240)}
+  ${chartImg('chart-conversion-total', 240)}
+  ${chartImg('chart-aperturas-renovaciones', 240)}
   </div>
 
+  <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">Distribución por Acuerdo de Precios</div>
+  <div style="display:flex;gap:10px;margin-bottom:20px">
+    ${Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
+        const pctOps = totalOpsAcuerdo > 0 ? (data.cantidad / totalOpsAcuerdo) * 100 : 0;
+        const pctMonto = totalMontoAcuerdo > 0 ? (data.monto / totalMontoAcuerdo) * 100 : 0;
+        const color = acuerdoColores[tipo] ?? '#555';
+        return `<div style="flex:1;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px;border-left:3px solid ${color}">
+        <div style="font-size:10px;font-weight:700;color:${color};margin-bottom:6px">${tipo}</div>
+        <div style="font-size:18px;font-weight:900;color:#fff">${data.cantidad}</div>
+        <div style="font-size:11px;color:#666">${formatCurrency(data.monto)}</div>
+        <div style="margin-top:6px;font-size:11px;font-weight:700;color:${color}">${pctOps.toFixed(0)}% ops · ${pctMonto.toFixed(0)}% $</div>
+      </div>`;
+      }).join('')}
+  </div>
+  ${chartImg('chart-acuerdos', 240)}
+
   ${ventasMes.length > 0 ? `
-  <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:10px">Ventas por Categoría (${ventasMes.length} ops · ${formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))})</div>
+  <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">Ventas por Categoría (${ventasMes.length} ops · ${formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))})</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
     ${distBlock('Cuotas', distCuotas, '#2563eb')}
     ${distBlock('Rango Etario', distRangoEtario, '#16a34a')}
@@ -272,42 +438,56 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   </div>` : ''}
 
   ${[
-    { label: 'Gestiones Realizadas', val: resumen.gestiones_realizadas },
-    { label: 'Coordinación de Salidas', val: resumen.coordinacion_salidas },
-    { label: 'Empresas Estratégicas', val: resumen.empresas_estrategicas },
-  ].map(f => textarea(f.label, f.val)).join('')}
+        { label: 'Gestiones Realizadas', val: resumen.gestiones_realizadas },
+        { label: 'Coordinación de Salidas', val: resumen.coordinacion_salidas },
+        { label: 'Empresas Estratégicas', val: resumen.empresas_estrategicas },
+      ].map(f => textarea(f.label, f.val)).join('')}
 
   <!-- SECCIÓN 3: ANÁLISIS COMERCIAL -->
   ${seccion('3', 'Análisis Comercial')}
   <div style="display:flex;gap:10px;margin-bottom:14px">
     ${rankingAnalistas.map((k, i) => `
-      <div style="flex:1;border:1px solid ${i === 0 ? '#bbf7d0' : '#fecaca'};border-radius:8px;padding:12px 14px;background:${i === 0 ? '#f0fdf4' : '#fef2f2'}">
-        <div style="font-size:9px;font-weight:700;color:${i === 0 ? '#16a34a' : '#dc2626'};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">${i === 0 ? '▲ Mejor desempeño' : '▼ Menor desempeño'}</div>
-        <div style="font-size:14px;font-weight:800;color:#111827">${k.analista}</div>
-        <div style="font-size:12px;color:#6b7280;margin-top:3px">${formatCurrency(k.capital)} · ${k.ops} ops.</div>
+      <div style="flex:1;border:1px solid ${i === 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'};border-radius:8px;padding:12px 14px;background:${i === 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)'}">
+        <div style="font-size:9px;font-weight:700;color:${i === 0 ? '#4ade80' : '#f87171'};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">${i === 0 ? '▲ Mejor desempeño' : '▼ Menor desempeño'}</div>
+        <div style="font-size:14px;font-weight:800;color:#fff">${k.analista}</div>
+        <div style="font-size:12px;color:#666;margin-top:3px">${formatCurrency(k.capital)} · ${k.ops} ops.</div>
       </div>`).join('')}
   </div>
+  ${chartImg('chart-empleo-publico-privado', 240)}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  ${chartImg('chart-embudo', 260)}
+  ${chartImg('chart-conversion-presupuesto', 260)}
+  </div>
   ${textarea('Interpretación del Período', resumen.analisis_comercial)}
+
+  <!-- ANÁLISIS TEMPORAL -->
+  ${seccion('8', 'Análisis Temporal')}
+  ${tendenciaMapaHTML ? `<div style="margin-bottom:14px">${tendenciaMapaHTML}</div>` : chartImg('chart-at-tendencia', 350)}
+  ${estacionalidadHTML ? `<div style="margin-bottom:14px">${estacionalidadHTML}</div>` : chartImg('chart-at-estacionalidad', 180)}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  ${chartImg('chart-at-dia-semana', 200)}
+  ${chartImg('chart-at-acuerdos', 220)}
+  </div>
 
   <!-- SECCIÓN 4: GESTIÓN DEL EQUIPO -->
   ${seccion('4', 'Gestión del Equipo')}
   ${auditoriaData.length > 0 ? `
   <div style="display:flex;gap:10px;margin-bottom:14px">
     ${CONFIG.ANALISTAS_DEFAULT.map(analista => {
-      const count = auditoriaData.filter(a => a.analista === analista).length;
-      return `<div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px">
-        <div style="font-size:10px;font-weight:700;color:#6b7280;margin-bottom:4px">${analista}</div>
-        <div style="font-size:20px;font-weight:900;color:#111827">${count}</div>
-        <div style="font-size:10px;color:#9ca3af">acciones registradas</div>
+        const count = auditoriaData.filter(a => a.analista === analista).length;
+        return `<div style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px">
+        <div style="font-size:10px;font-weight:700;color:#666;margin-bottom:4px">${analista}</div>
+        <div style="font-size:20px;font-weight:900;color:#fff">${count}</div>
+        <div style="font-size:10px;color:#555">acciones registradas</div>
       </div>`;
-    }).join('')}
+      }).join('')}
   </div>` : ''}
   ${[
-    { label: 'Dotación Actual', val: resumen.dotacion },
-    { label: 'Ausentismo / Tardanzas', val: resumen.ausentismo },
-    { label: 'Capacitación Realizada', val: resumen.capacitacion },
-    { label: 'Evaluación de Desempeño', val: resumen.evaluacion_desempeno },
-  ].map(f => textarea(f.label, f.val)).join('')}
+        { label: 'Dotación Actual', val: resumen.dotacion },
+        { label: 'Ausentismo / Tardanzas', val: resumen.ausentismo },
+        { label: 'Capacitación Realizada', val: resumen.capacitacion },
+        { label: 'Evaluación de Desempeño', val: resumen.evaluacion_desempeno },
+      ].map(f => textarea(f.label, f.val)).join('')}
 
   <!-- SECCIÓN 5 -->
   ${seccion('5', 'Operación y Procesos')}
@@ -335,10 +515,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         <td style="white-space:nowrap">${f.fecha ? new Date(f.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '—'}</td>
       </tr>`).join('')}
     </tbody>
-  </table>` : '<p style="font-size:12px;color:#9ca3af;font-style:italic">Sin acciones registradas.</p>'}
+  </table>` : '<p style="font-size:12px;color:#555;font-style:italic">Sin acciones registradas.</p>'}
 
-  <div style="margin-top:40px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;display:flex;justify-content:space-between">
-    <span>Obsidiana CRM · ${titulo}</span>
+  <div style="margin-top:40px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);font-size:10px;color:#555;text-align:center">
     <span>Generado el ${new Date().toLocaleString('es-AR')}</span>
   </div>
 
@@ -348,8 +527,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
     const win = window.open('', '_blank');
     if (!win) { onError('El navegador bloqueó la ventana emergente. Permitila para descargar el PDF.'); return; }
-    win.document.write(html);
-    win.document.close();
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    win.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
   };
 
   // ── Helpers de cálculo ────────────────────────────────────────────────────
@@ -485,11 +666,397 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const distEmpleador = useMemo(() => distPor('empleador'), [ventasMes]);
   const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
 
+  // ── Distribuciones mes anterior ───────────────────────────────────────────
+  const ventasMesAnt = useMemo(() =>
+    filterByMonth(registros, mesPrev, anioPrev).filter(isVenta),
+    [registros, mesPrev, anioPrev]
+  );
+
+  const distPorAnt = (campo: keyof Registro, fuente: typeof ventasMesAnt) => {
+    const map = new Map<string, { monto: number; cantidad: number }>();
+    for (const r of fuente) {
+      const val = (r[campo] as string | undefined)?.trim() || 'Sin dato';
+      const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
+      map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
+    }
+    return map;
+  };
+
+  const distCuotasAnt = useMemo(() => distPorAnt('cuotas', ventasMesAnt), [ventasMesAnt]);
+  const distRangoAnt = useMemo(() => distPorAnt('rango_etario', ventasMesAnt), [ventasMesAnt]);
+  const distSexoAnt = useMemo(() => distPorAnt('sexo', ventasMesAnt), [ventasMesAnt]);
+  const distEmpleadorAnt = useMemo(() => distPorAnt('empleador', ventasMesAnt), [ventasMesAnt]);
+  const distLocalidadAnt = useMemo(() => distPorAnt('localidad', ventasMesAnt), [ventasMesAnt]);
+  const distAcuerdosAnt = useMemo(() => distPorAnt('acuerdo_precios', ventasMesAnt), [ventasMesAnt]);
+
+  // ── Config base de gráficos (dark theme) ─────────────────────────────────
+  const mesActualLabel = CONFIG.MESES_NOMBRES[selectedMes - 1].slice(0, 3);
+  const mesAntLabel = CONFIG.MESES_NOMBRES[mesPrev - 1].slice(0, 3);
+
+  const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, showLegend = false, stacked = false): any => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: horizontal ? 'y' as const : 'x' as const,
+    layout: { padding: { top: showLabels ? 50 : 20, bottom: 5 } },
+    plugins: {
+      legend: {
+        display: showLegend,
+        position: 'top' as const,
+        align: 'end' as const,
+        labels: { color: '#666', font: { size: 10 }, usePointStyle: true, padding: 10 }
+      },
+      tooltip: { backgroundColor: '#111', titleColor: '#fff', bodyColor: '#aaa', borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1 },
+      datalabels: {
+        display: showLabels,
+        align: stacked ? 'center' as const : 'top' as const,
+        anchor: stacked ? 'center' as const : 'end' as const,
+        offset: stacked ? 0 : 12,
+        color: '#fff',
+        formatter: (v: any) => {
+          if (v === 0 || v === undefined || v === null) return '';
+          const n = Number(v);
+          if (isNaN(n)) return v;
+          if (yLabel.includes('%')) return n.toFixed(0) + '%';
+          if (yLabel.includes('ops') || yLabel.includes('reg')) return n;
+          if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+          if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+          return n;
+        },
+        font: { size: 10, weight: 800 }
+      },
+    },
+    categoryPercentage: 0.8,
+    barPercentage: 0.7,
+    scales: {
+      x: {
+        stacked,
+        ticks: {
+          color: '#555', font: { size: 10 },
+          callback: function (this: any, val: any) {
+            let label = this.getLabelForValue(val);
+            if (label === undefined) label = val;
+            if (horizontal) {
+              const n = Number(label);
+              if (isNaN(n)) return label;
+              return (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : n) + yLabel;
+            }
+            return label;
+          }
+        },
+        grid: { color: 'rgba(255,255,255,0.03)' }
+      },
+      y: {
+        stacked,
+        ticks: {
+          color: '#555', font: { size: 10 },
+          callback: function (this: any, val: any) {
+            let label = this.getLabelForValue(val);
+            if (label === undefined) label = val;
+            if (!horizontal) {
+              const n = Number(label);
+              if (isNaN(n)) return label;
+              return (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : n) + yLabel;
+            }
+            return label;
+          }
+        },
+        grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true,
+      },
+    },
+  });
+
+  // Helper: línea de referencia 100%
+  const refLine100 = (n: number) => ({
+    type: 'line' as const,
+    label: 'Meta 100%',
+    data: Array(n).fill(100),
+    borderColor: '#f87171',
+    borderWidth: 1.5,
+    borderDash: [5, 4],
+    pointRadius: 0,
+    fill: false,
+    order: 0,
+  });
+
+  // ── Datos gráfico cumplimiento por analista ───────────────────────────────
+  const chartCumplimiento = useMemo(() => {
+    const labels = kpiPorAnalista.map(k => k.analista);
+    return {
+      labels,
+      datasets: [
+        {
+          label: `Capital ${mesActualLabel}`,
+          data: kpiPorAnalista.map(k => k.cumplCapital ?? 0),
+          backgroundColor: 'rgba(96,165,250,0.7)', borderRadius: 4, order: 1,
+        },
+        {
+          label: `Capital ${mesAntLabel}`,
+          data: kpiPorAnalista.map(k => {
+            const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+            const capitalAnt = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+            const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
+            return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
+          }),
+          backgroundColor: 'rgba(96,165,250,0.25)', borderRadius: 4, order: 1,
+        },
+        {
+          label: `Ops ${mesActualLabel}`,
+          data: kpiPorAnalista.map(k => k.cumplOps ?? 0),
+          backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, order: 1,
+        },
+        {
+          label: `Ops ${mesAntLabel}`,
+          data: kpiPorAnalista.map(k => {
+            const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+            const opsAnt = ant.length;
+            const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
+            return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
+          }),
+          backgroundColor: 'rgba(167,139,250,0.25)', borderRadius: 4, order: 1,
+        },
+        refLine100(labels.length),
+      ],
+    };
+  }, [kpiPorAnalista, registros, objetivos, mesPrev, anioPrev, mesActualLabel, mesAntLabel]);
+
+  // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
+  const chartAcuerdos = useMemo(() => {
+    const tipos = ['Bajo Riesgo', 'Riesgo Medio', 'Premium'];
+    const analistas = CONFIG.ANALISTAS_DEFAULT;
+    const colores = ['#60a5fa', '#a78bfa'];
+
+    return {
+      labels: tipos,
+      datasets: analistas.map((an, idx) => ({
+        label: an,
+        data: tipos.map(t => {
+          const norm = t.toLowerCase().split(' ')[0];
+          return filterByMonth(registros, selectedMes, selectedAnio).filter(r =>
+            isVenta(r) && r.analista === an && (r.acuerdo_precios ?? '').toLowerCase().includes(norm)
+          ).length;
+        }),
+        backgroundColor: colores[idx] || '#555',
+        borderRadius: 4,
+        maxBarThickness: 70,
+      }))
+    };
+  }, [registros, selectedMes, selectedAnio, filterByMonth, isVenta]);
+
+  // ── Helper gráfico horizontal por categoría ───────────────────────────────
+  const buildCatChart = (
+    actual: { label: string; cantidad: number }[],
+    anterior: Map<string, { cantidad: number }>,
+    color: string,
+    limit = 8
+  ) => {
+    const top = actual.slice(0, limit);
+    return {
+      labels: top.map(d => d.label),
+      datasets: [
+        {
+          label: mesActualLabel,
+          data: top.map(d => d.cantidad),
+          backgroundColor: color,
+          borderRadius: 4, order: 1,
+        },
+        {
+          label: mesAntLabel,
+          data: top.map(d => anterior.get(d.label)?.cantidad ?? 0),
+          backgroundColor: `${color}44`,
+          borderRadius: 4, order: 1,
+        },
+      ],
+    };
+  };
+
+  const chartSexo = useMemo(() => buildCatChart(distSexo, distSexoAnt, '#f472b6'), [distSexo, distSexoAnt, mesActualLabel, mesAntLabel]);
+
   // ── Ranking analistas ─────────────────────────────────────────────────────
   const rankingAnalistas = useMemo(() =>
     [...kpiPorAnalista].sort((a, b) => b.capital - a.capital),
     [kpiPorAnalista]
   );
+
+  // ── Chart 1: Capital vs Objetivo ──────────────────────────────────────────
+  const chartCapitalVsObjetivo = useMemo(() => {
+    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const capitalAct = [...kpiPorAnalista.map(k => k.capital), kpiTotal.capital];
+    const capitalAnt = [
+      ...kpiPorAnalista.map(k => {
+        const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+        return ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      }),
+      ventasMesAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0),
+    ];
+    const objetivo = [...kpiPorAnalista.map(k => k.metaCapital || 0), kpiTotal.metaCapital || 0];
+    return {
+      labels,
+      datasets: [
+        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4, order: 1, maxBarThickness: 70 },
+        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(96,165,250,0.25)', borderRadius: 4, order: 1, maxBarThickness: 70 },
+        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#f87171', fill: false, order: 0 },
+      ],
+    };
+  }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, ventasMesAnt, mesActualLabel, mesAntLabel]);
+
+  // ── Chart 2: Ticket Promedio ──────────────────────────────────────────────
+  const chartTicketPromedio = useMemo(() => {
+    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const ticketAnt = [
+      ...kpiPorAnalista.map(k => {
+        const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+        const cap = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+        return ant.length > 0 ? cap / ant.length : 0;
+      }),
+      ventasMesAnt.length > 0 ? ventasMesAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0) / ventasMesAnt.length : 0,
+    ];
+    return {
+      labels,
+      datasets: [
+        { label: `Ticket ${mesActualLabel}`, data: [...kpiPorAnalista.map(k => k.ticket), kpiTotal.ticket], backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4, maxBarThickness: 70 },
+        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: 'rgba(52,211,153,0.25)', borderRadius: 4, maxBarThickness: 70 },
+      ],
+    };
+  }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, ventasMesAnt, mesActualLabel, mesAntLabel]);
+
+  // ── Chart 4: Variación % vs mes anterior ─────────────────────────────────
+  const chartVariacion = useMemo(() => {
+    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const capitalVar = [...kpiPorAnalista.map(k => k.tendCapital ?? 0), kpiTotal.tendCapital ?? 0];
+    const opsVar = [...kpiPorAnalista.map(k => k.tendOps ?? 0), kpiTotal.tendOps ?? 0];
+    return {
+      labels,
+      datasets: [
+        { label: 'Variación Capital %', data: capitalVar, backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
+        { label: 'Variación Ops %', data: opsVar, backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.7)' : 'rgba(251,191,36,0.7)'), borderRadius: 4, maxBarThickness: 70 },
+      ],
+    };
+  }, [kpiPorAnalista, kpiTotal]);
+
+  // ── Chart 7: Aperturas vs Renovaciones ───────────────────────────────────
+  const apertVsRenData = useMemo(() => {
+    const allVentas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
+    const allAnt = ventasMesAnt;
+    return {
+      porAnalista: CONFIG.ANALISTAS_DEFAULT.map(analista => {
+        const v = allVentas.filter(r => r.analista === analista);
+        return { analista, aperturas: v.filter(r => !r.es_re).length, renovaciones: v.filter(r => r.es_re).length };
+      }),
+      total: { aperturas: allVentas.filter(r => !r.es_re).length, renovaciones: allVentas.filter(r => r.es_re).length },
+      ant: { aperturas: allAnt.filter(r => !r.es_re).length, renovaciones: allAnt.filter(r => r.es_re).length },
+    };
+  }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
+
+  const chartAperturas = useMemo(() => {
+    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    return {
+      labels,
+      datasets: [
+        { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => apertVsRenData.ant.aperturas / CONFIG.ANALISTAS_DEFAULT.length), apertVsRenData.ant.aperturas], backgroundColor: 'rgba(96,165,250,0.25)', borderRadius: 4, maxBarThickness: 50 },
+      ],
+    };
+  }, [apertVsRenData, mesActualLabel, mesAntLabel]);
+
+  const chartRenovaciones = useMemo(() => {
+    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    return {
+      labels,
+      datasets: [
+        { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], backgroundColor: '#a78bfa', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => apertVsRenData.ant.renovaciones / CONFIG.ANALISTAS_DEFAULT.length), apertVsRenData.ant.renovaciones], backgroundColor: 'rgba(167,139,250,0.25)', borderRadius: 4, maxBarThickness: 50 },
+      ],
+    };
+  }, [apertVsRenData, mesActualLabel, mesAntLabel]);
+
+  // ── Chart 8: % Empleo Público / Privado ──────────────────────────────────
+  const empleoPublPrivData = useMemo(() => {
+    const PUBLICO = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
+    const ventas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
+    const ant = ventasMesAnt;
+    const classify = (r: typeof ventas[0]) => {
+      const e = (r.empleador ?? '').toLowerCase();
+      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'Sin dato' : 'Privado';
+    };
+    const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
+    const countsAnt: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
+    ventas.forEach(r => counts[classify(r)]++);
+    ant.forEach(r => countsAnt[classify(r)]++);
+    return { counts, countsAnt };
+  }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
+
+  const chartEmpleoPublPriv = useMemo(() => {
+    const { counts } = empleoPublPrivData;
+    const labels = ['Público', 'Privado', 'Sin dato'];
+    const colors = ['rgba(52,211,153,0.8)', 'rgba(96,165,250,0.8)', 'rgba(100,100,100,0.5)'];
+    const filtered = labels.filter(l => (counts[l] ?? 0) > 0);
+    return {
+      labels: filtered,
+      datasets: [{
+        label: 'Operaciones',
+        data: filtered.map(l => counts[l] ?? 0),
+        backgroundColor: labels.map(c => colors[labels.indexOf(c)]),
+        borderRadius: 4,
+      }],
+    };
+  }, [empleoPublPrivData]);
+
+  // ── Chart 10: % Total Conversión ─────────────────────────────────────────
+  const chartConversionTotal = useMemo(() => {
+    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const actual = [...kpiPorAnalista.map(k => k.conversion), kpiTotal.conversion];
+    const anterior = [
+      ...kpiPorAnalista.map(k => {
+        const regsAnt = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista);
+        const ventasAnt = regsAnt.filter(isVenta);
+        return regsAnt.length > 0 ? (ventasAnt.length / regsAnt.length) * 100 : 0;
+      }),
+      (() => {
+        const regsAnt = filterByMonth(registros, mesPrev, anioPrev);
+        const ventasAnt = regsAnt.filter(isVenta);
+        return regsAnt.length > 0 ? (ventasAnt.length / regsAnt.length) * 100 : 0;
+      })(),
+    ];
+    return {
+      labels,
+      datasets: [
+        { label: `Conversión % ${mesActualLabel}`, data: actual, backgroundColor: 'rgba(251,191,36,0.8)', borderRadius: 4, order: 1 },
+        { label: `Conversión % ${mesAntLabel}`, data: anterior, backgroundColor: 'rgba(251,191,36,0.25)', borderRadius: 4, order: 1 },
+        refLine100(labels.length),
+      ],
+    };
+  }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, mesActualLabel, mesAntLabel]);
+
+  // ── Chart 5: Embudo Comercial ─────────────────────────────────────────────
+  const chartEmbudo = useMemo(() => {
+    const labels = CONFIG.ANALISTAS_DEFAULT;
+    return {
+      labels,
+      datasets: [
+        { label: 'Gestiones', data: labels.map(a => resumen.gestiones_por_analista[a] ?? 0), backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4 },
+        { label: 'Clientes Atendidos', data: kpiPorAnalista.map(k => k.clientesIngresados), backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4 },
+        { label: 'Con Presupuesto', data: labels.map(a => resumen.presupuestos_por_analista[a] ?? 0), backgroundColor: 'rgba(251,191,36,0.8)', borderRadius: 4 },
+        { label: 'Ops Cerradas', data: kpiPorAnalista.map(k => k.ops), backgroundColor: 'rgba(167,139,250,0.8)', borderRadius: 4 },
+      ],
+    };
+  }, [resumen.gestiones_por_analista, resumen.presupuestos_por_analista, kpiPorAnalista]);
+
+  // ── Chart 6: % Conversión de Presupuesto ─────────────────────────────────
+  const chartConversionPresupuesto = useMemo(() => {
+    const labels = CONFIG.ANALISTAS_DEFAULT;
+    const data = labels.map((a, i) => {
+      const pres = resumen.presupuestos_por_analista[a] ?? 0;
+      const ops = kpiPorAnalista[i]?.ops ?? 0;
+      return pres > 0 ? (ops / pres) * 100 : 0;
+    });
+    return {
+      labels,
+      datasets: [
+        { label: '% Conv. Presupuesto → Venta', data, backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4, order: 1 },
+        refLine100(labels.length),
+      ],
+    };
+  }, [resumen.presupuestos_por_analista, kpiPorAnalista]);
 
   // ── Textarea helper ───────────────────────────────────────────────────────
   const ManualTextarea = ({ label, value, onChange, placeholder }: {
@@ -549,9 +1116,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         </div>
       ) : (
         <>
-          {/* ── SECCIÓN 1: TABLERO DE MANDO ── */}
+          {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('1. Tablero de Mando', <BarChart3 size={15} color="#60a5fa" />)}
+            {sectionHeader('1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
               <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
@@ -662,6 +1229,131 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               })}
             </div>
 
+            {/* ── GRÁFICOS PRINCIPALES ── */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 3, height: 14, background: '#60a5fa', borderRadius: 4 }} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Gráficos del Período — vs {mesAntLabel}</span>
+              </div>
+
+              {/* Fila 1: Capital vs Objetivo + Ticket Promedio */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
+                {[
+                  { id: 'chart-capital-objetivo', titulo: 'Capital vs Objetivo', data: chartCapitalVsObjetivo, yLabel: '$', labels: true, legend: null },
+                  {
+                    id: 'chart-ticket-promedio',
+                    titulo: `Ticket Promedio — vs ${mesAntLabel}`,
+                    data: chartTicketPromedio,
+                    yLabel: '$',
+                    labels: true,
+                    legend: [
+                      { label: `Actual`, color: 'rgba(52,211,153,0.8)' },
+                      { label: `Anterior`, color: 'rgba(52,211,153,0.25)' }
+                    ]
+                  },
+                ].map(({ id, titulo, data, yLabel, labels, legend }) => (
+                  <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</div>
+                      {legend && (
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          {legend.map(item => (
+                            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.color }} />
+                              <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div id={id} style={{ height: 280 }}>
+                      <Bar data={data as any} options={baseChartOpts(yLabel, false, labels, false)} {...(labels ? { plugins: [labelsPlugin] } : {})} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Fila 2: % Cumplimiento + Variación % */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Capital</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(167,139,250,0.8)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Ops</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="chart-cumplimiento" style={{ height: 280 }}>
+                    <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Positivo</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(248,113,113,0.7)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Negativo</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="chart-variacion" style={{ height: 280 }}>
+                    <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Fila 3: % Conversión Total + Aperturas vs Renovaciones */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>% Total Conversión</div>
+                  <div id="chart-conversion-total" style={{ height: 280 }}>
+                    <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones — vs {mesAntLabel}</div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Actual</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesAntLabel}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase' }}>Aperturas</div>
+                      <div id="chart-aperturas" style={{ height: 260 }}>
+                        <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase' }}>Renovaciones</div>
+                      <div id="chart-renovaciones" style={{ height: 260 }}>
+                        <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
             {/* Distribución por Acuerdo de Precios */}
             <div style={{ marginBottom: 28 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -687,11 +1379,27 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         const pctOps = totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0;
                         const pctMonto = totalMonto > 0 ? (data.monto / totalMonto) * 100 : 0;
                         const color = colores[tipo] ?? '#555';
+
+                        // Desglose por analista
+                        const desglose = CONFIG.ANALISTAS_DEFAULT.map(an => ({
+                          nombre: an,
+                          ops: ventasMes.filter(r => (r.acuerdo_precios || 'Bajo Riesgo') === tipo && r.analista === an).length
+                        }));
+
                         return (
                           <div key={tipo} style={{ background: `${color}0d`, borderRadius: 10, padding: '14px 16px', border: `1px solid ${color}22` }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                              <span style={{ fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{tipo}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{tipo}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                {desglose.map((d, i) => (
+                                  <div key={d.nombre} style={{ fontSize: 9, fontWeight: 800, color: i === 0 ? '#60a5fa' : '#a78bfa', background: 'rgba(255,255,255,0.03)', padding: '1px 4px', borderRadius: 3 }}>
+                                    {d.nombre.slice(0, 1)}: {d.ops}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                             <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 2 }}>{data.cantidad}</div>
                             <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{formatCurrency(data.monto)}</div>
@@ -706,6 +1414,25 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                   </>
                 );
               })()}
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', marginBottom: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Resumen de acuerdos por analista</div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Luciana</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Victoria</span>
+                  </div>
+                </div>
+              </div>
+              <div id="chart-acuerdos" style={{ height: 240 }}>
+                <Bar data={chartAcuerdos} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+              </div>
             </div>
 
             {/* Ventas por Categoría */}
@@ -750,14 +1477,24 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Ventas por Categoría</span>
                     <span style={{ fontSize: 11, color: '#333', marginLeft: 4 }}>{ventasMes.length} operaciones · {formatCurrency(totalMes)}</span>
                   </div>
+                  {/* Cuotas + Rango Etario — horizontales */}
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
                     <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" />
                     <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" />
                     <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" />
-                  </div>
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                     <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" />
                     <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" />
+                  </div>
+
+                  {/* % Empleo Público / Privado — barras verticales */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                      <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
+                      <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
+                    </div>
+                    <div id="chart-empleo-publico-privado" style={{ height: 240 }}>
+                      <Bar data={chartEmpleoPublPriv} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />
+                    </div>
                   </div>
                 </div>
               );
@@ -797,134 +1534,188 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               onChange={v => setResumen(p => ({ ...p, analisis_comercial: v }))}
               placeholder="¿Por qué se vendió más o menos? Impacto de campañas, comportamiento del cliente, factores externos..."
             />
-          </div>
 
-          {/* ── SECCIÓN 4: GESTIÓN DEL EQUIPO ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('4. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
-            {auditoriaData.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  {CONFIG.ANALISTAS_DEFAULT.map(analista => {
-                    const count = auditoriaData.filter(a => a.analista === analista).length;
-                    return (
-                      <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 4 }}>{analista}</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{count}</div>
-                        <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
+            {/* Embudo comercial — inputs numéricos + gráfico */}
+            <div style={{ marginTop: 28, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <div style={{ width: 3, height: 14, background: '#60a5fa', borderRadius: 4 }} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Embudo Comercial</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 20 }}>
+                {CONFIG.ANALISTAS_DEFAULT.map(a => (
+                  <div key={a} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#aaa', marginBottom: 12 }}>{a}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+                      <div>
+                        <label style={{ fontSize: 10, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Gestiones</label>
+                        <input
+                          type="number" min="0"
+                          value={resumen.gestiones_por_analista[a] ?? ''}
+                          onChange={e => setResumen(p => ({ ...p, gestiones_por_analista: { ...p.gestiones_por_analista, [a]: Number(e.target.value) } }))}
+                          placeholder="0"
+                          style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 13, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
+                        />
                       </div>
-                    );
-                  })}
+                      <div>
+                        <label style={{ fontSize: 10, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Con Presupuesto</label>
+                        <input
+                          type="number" min="0"
+                          value={resumen.presupuestos_por_analista[a] ?? ''}
+                          onChange={e => setResumen(p => ({ ...p, presupuestos_por_analista: { ...p.presupuestos_por_analista, [a]: Number(e.target.value) } }))}
+                          placeholder="0"
+                          style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 13, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Embudo Comercial por Analista</div>
+                  <div id="chart-embudo" style={{ height: 260 }}>
+                    <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>% Conversión Presupuesto → Venta</div>
+                  <div id="chart-conversion-presupuesto" style={{ height: 260 }}>
+                    <Bar data={chartConversionPresupuesto as any} options={baseChartOpts('%', false, true)} plugins={[labelsPlugin]} />
+                  </div>
                 </div>
               </div>
-            )}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <ManualTextarea label="Dotación Actual" value={resumen.dotacion} onChange={v => setResumen(p => ({ ...p, dotacion: v }))} />
-              <ManualTextarea label="Ausentismo / Tardanzas" value={resumen.ausentismo} onChange={v => setResumen(p => ({ ...p, ausentismo: v }))} />
-              <ManualTextarea label="Capacitación Realizada" value={resumen.capacitacion} onChange={v => setResumen(p => ({ ...p, capacitacion: v }))} />
-              <ManualTextarea label="Evaluación de Desempeño" value={resumen.evaluacion_desempeno} onChange={v => setResumen(p => ({ ...p, evaluacion_desempeno: v }))} />
             </div>
-          </div>
 
-          {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-            <ManualTextarea
-              label="Cumplimiento de Procedimientos / Tiempos / Stock"
-              value={resumen.operacion_procesos}
-              onChange={v => setResumen(p => ({ ...p, operacion_procesos: v }))}
-              placeholder="Cumplimiento de procedimientos, tiempos de atención, stock de merchandising y flyers..."
-            />
-          </div>
+            {/* ── SECCIÓN 8: ANÁLISIS TEMPORAL ── */}
+            <AnalisisTemporalTab registros={registros} />
 
-          {/* ── SECCIÓN 6: EXPERIENCIA DEL CLIENTE ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('6. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-            <ManualTextarea
-              label="Reclamos y Satisfacción"
-              value={resumen.experiencia_cliente}
-              onChange={v => setResumen(p => ({ ...p, experiencia_cliente: v }))}
-              placeholder="Cantidad y tipo de reclamos, nivel de satisfacción, problemas recurrentes..."
-            />
-          </div>
+            {/* ── SECCIÓN 4: GESTIÓN DEL EQUIPO ── */}
+            <div className="data-card" style={{ background: '#0a0a0a' }}>
+              {sectionHeader('4. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+              {auditoriaData.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    {CONFIG.ANALISTAS_DEFAULT.map(analista => {
+                      const count = auditoriaData.filter(a => a.analista === analista).length;
+                      return (
+                        <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 4 }}>{analista}</div>
+                          <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{count}</div>
+                          <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <ManualTextarea label="Dotación Actual" value={resumen.dotacion} onChange={v => setResumen(p => ({ ...p, dotacion: v }))} />
+                <ManualTextarea label="Ausentismo / Tardanzas" value={resumen.ausentismo} onChange={v => setResumen(p => ({ ...p, ausentismo: v }))} />
+                <ManualTextarea label="Capacitación Realizada" value={resumen.capacitacion} onChange={v => setResumen(p => ({ ...p, capacitacion: v }))} />
+                <ManualTextarea label="Evaluación de Desempeño" value={resumen.evaluacion_desempeno} onChange={v => setResumen(p => ({ ...p, evaluacion_desempeno: v }))} />
+              </div>
+            </div>
 
-          {/* ── SECCIÓN 7: PLAN DE ACCIÓN ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('7. Plan de Acción', <Target size={15} color="#fb923c" />)}
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
-              <thead>
-                <tr>
-                  {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución', ''].map(h => (
-                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {resumen.plan_acciones.map((fila, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                    {(['problema', 'accion', 'responsable'] as const).map(campo => (
-                      <td key={campo} style={{ padding: '6px 8px' }}>
+            {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
+            <div className="data-card" style={{ background: '#0a0a0a' }}>
+              {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+              <ManualTextarea
+                label="Cumplimiento de Procedimientos / Tiempos / Stock"
+                value={resumen.operacion_procesos}
+                onChange={v => setResumen(p => ({ ...p, operacion_procesos: v }))}
+                placeholder="Cumplimiento de procedimientos, tiempos de atención, stock de merchandising y flyers..."
+              />
+            </div>
+
+            {/* ── SECCIÓN 6: EXPERIENCIA DEL CLIENTE ── */}
+            <div className="data-card" style={{ background: '#0a0a0a' }}>
+              {sectionHeader('6. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+              <ManualTextarea
+                label="Reclamos y Satisfacción"
+                value={resumen.experiencia_cliente}
+                onChange={v => setResumen(p => ({ ...p, experiencia_cliente: v }))}
+                placeholder="Cantidad y tipo de reclamos, nivel de satisfacción, problemas recurrentes..."
+              />
+            </div>
+
+            {/* ── SECCIÓN 7: PLAN DE ACCIÓN ── */}
+            <div className="data-card" style={{ background: '#0a0a0a' }}>
+              {sectionHeader('7. Plan de Acción', <Target size={15} color="#fb923c" />)}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
+                <thead>
+                  <tr>
+                    {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución', ''].map(h => (
+                      <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {resumen.plan_acciones.map((fila, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                      {(['problema', 'accion', 'responsable'] as const).map(campo => (
+                        <td key={campo} style={{ padding: '6px 8px' }}>
+                          <input
+                            value={fila[campo]}
+                            onChange={e => {
+                              const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, [campo]: e.target.value } : f);
+                              setResumen(p => ({ ...p, plan_acciones: updated }));
+                            }}
+                            placeholder={campo === 'problema' ? 'Describí el problema...' : campo === 'accion' ? 'Acción concreta...' : 'Responsable'}
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
+                          />
+                        </td>
+                      ))}
+                      <td style={{ padding: '6px 8px' }}>
                         <input
-                          value={fila[campo]}
+                          type="date"
+                          value={fila.fecha}
                           onChange={e => {
-                            const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, [campo]: e.target.value } : f);
+                            const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, fecha: e.target.value } : f);
                             setResumen(p => ({ ...p, plan_acciones: updated }));
                           }}
-                          placeholder={campo === 'problema' ? 'Describí el problema...' : campo === 'accion' ? 'Acción concreta...' : 'Responsable'}
-                          style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
+                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', colorScheme: 'dark' as const }}
                         />
                       </td>
-                    ))}
-                    <td style={{ padding: '6px 8px' }}>
-                      <input
-                        type="date"
-                        value={fila.fecha}
-                        onChange={e => {
-                          const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, fecha: e.target.value } : f);
-                          setResumen(p => ({ ...p, plan_acciones: updated }));
-                        }}
-                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', colorScheme: 'dark' as const }}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <button
-                        onClick={() => setResumen(p => ({ ...p, plan_acciones: p.plan_acciones.filter((_, i) => i !== idx) }))}
-                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, color: '#f87171', cursor: 'pointer', padding: '7px 10px', display: 'flex', alignItems: 'center' }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button
-              onClick={() => setResumen(p => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#888', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '8px 14px' }}
-            >
-              <Plus size={13} /> Agregar fila
-            </button>
-          </div>
+                      <td style={{ padding: '6px 8px' }}>
+                        <button
+                          onClick={() => setResumen(p => ({ ...p, plan_acciones: p.plan_acciones.filter((_, i) => i !== idx) }))}
+                          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, color: '#f87171', cursor: 'pointer', padding: '7px 10px', display: 'flex', alignItems: 'center' }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button
+                onClick={() => setResumen(p => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#888', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '8px 14px' }}
+              >
+                <Plus size={13} /> Agregar fila
+              </button>
+            </div>
 
-          {/* ── BOTONES ── */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingBottom: 8 }}>
-            <button
-              onClick={handleDescargarPDF}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#aaa', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-            >
-              <Download size={14} />
-              Descargar PDF
-            </button>
-            <button
-              className="btn-primary"
-              onClick={handleGuardar}
-              disabled={saving}
-              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              <Save size={14} />
-              {saving ? 'Guardando...' : `Guardar Resumen — ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio}`}
-            </button>
+            {/* ── BOTONES ── */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingBottom: 8 }}>
+              <button
+                onClick={handleDescargarPDF}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#aaa', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                <Download size={14} />
+                Descargar PDF
+              </button>
+              <button
+                className="btn-primary"
+                onClick={handleGuardar}
+                disabled={saving}
+                style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                <Save size={14} />
+                {saving ? 'Guardando...' : `Guardar Resumen — ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio}`}
+              </button>
+            </div>
           </div>
         </>
       )}

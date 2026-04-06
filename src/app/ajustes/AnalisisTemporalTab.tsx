@@ -1,0 +1,789 @@
+'use client';
+
+import React, { useState, useCallback, useMemo } from 'react';
+import { Registro, CONFIG } from '@/types';
+import { formatCurrency } from '@/lib/utils';
+import CustomSelect from '@/components/CustomSelect';
+import { Line, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement,
+  BarElement, Tooltip, Legend, Filler,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, BarElement, Tooltip, Legend, Filler);
+
+interface Props {
+  registros: Registro[];
+}
+
+const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+const toLocalKey = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const toLocalDate = (fecha: string): Date => new Date(fecha.length === 10 ? `${fecha}T00:00:00` : fecha);
+
+const VariacionBadge = ({ valor }: { valor: number }) => {
+  const esPositivo = valor > 0;
+  const esCero = Math.abs(valor) < 0.5;
+  return (
+    <span style={{
+      display: 'inline-block',
+      fontSize: 11,
+      fontWeight: 700,
+      padding: '1px 6px',
+      borderRadius: 4,
+      marginTop: 2,
+      color: esCero ? '#888' : esPositivo ? '#4ade80' : '#f87171',
+      background: esCero ? 'rgba(255,255,255,0.05)' : esPositivo ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
+    }}>
+      {esCero ? '— 0%' : `${esPositivo ? '▲' : '▼'} ${valor >= 0 ? '+' : ''}${valor.toFixed(1)}%`}
+    </span>
+  );
+};
+
+export default function AnalisisTemporalTab({ registros }: Props) {
+  const [periodo, setPeriodo] = useState(30);
+  const [analistaFil, setAnalistaFil] = useState('todos');
+  const [metrica, setMetrica] = useState('ventas');
+  const [compararPeriodo, setCompararPeriodo] = useState(true);
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+
+  const isVenta = (r: { estado: string }) => {
+    const e = (r.estado ?? '').toLowerCase();
+    return e === 'venta' || e.includes('aprobado cc');
+  };
+
+  const filterByMonth = (regs: Registro[], mes: number, anio: number) =>
+    regs.filter(r => {
+      if (!r.fecha) return false;
+      const d = toLocalDate(r.fecha);
+      return d.getMonth() + 1 === mes && d.getFullYear() === anio;
+    });
+
+  const analisisAnios = useMemo(() =>
+    Array.from(new Set(
+      registros.filter(r => r.fecha).map(r => parseInt(r.fecha!.slice(0, 4)))
+    )).sort(),
+    [registros]
+  );
+
+  const analisisAnalistas = useMemo(() =>
+    Array.from(new Set(registros.map(r => r.analista).filter(Boolean) as string[])),
+    [registros]
+  );
+
+  const PERIODOS = useMemo(() => [
+    { label: 'Mes actual', value: -1 },
+    { label: 'Mes anterior', value: -2 },
+    { label: 'Últimos 7 días', value: 7 },
+    { label: 'Últimos 15 días', value: 15 },
+    { label: 'Últimos 30 días', value: 30 },
+    { label: 'Últimos 60 días', value: 60 },
+    { label: 'Últimos 90 días', value: 90 },
+    ...analisisAnios.map(y => ({ label: `Año ${y}`, value: y })),
+    { label: 'Histórico completo', value: 0 },
+    { label: '───', value: -999, disabled: true },
+    { label: 'Rango personalizado', value: -10 },
+  ], [analisisAnios]);
+
+  const METRICAS = [
+    { value: 'ventas', label: 'Ventas ($)' },
+    { value: 'operaciones', label: 'Operaciones (N)' },
+    { value: 'ticket', label: 'Ticket Promedio ($)' },
+  ];
+
+  const analistaOpts = useMemo(() => [
+    { value: 'todos', label: 'Todos' },
+    ...analisisAnalistas.map(a => ({ value: a, label: a })),
+  ], [analisisAnalistas]);
+
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    if (periodo === -1) {
+      const from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      return { from, to: now, nDays: now.getDate() };
+    }
+    if (periodo === -2) {
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return { from, to, nDays: to.getDate() };
+    }
+    if (periodo === -10 && fechaDesde && fechaHasta) {
+      const from = new Date(`${fechaDesde}T00:00:00`);
+      const to = new Date(`${fechaHasta}T23:59:59.999`);
+      const nDays = Math.max(Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1, 1);
+      return { from, to, nDays };
+    }
+    if (periodo === 0) {
+      const minYear = analisisAnios[0] ?? now.getFullYear();
+      const from = new Date(minYear, 0, 1, 0, 0, 0, 0);
+      return { from, to: now, nDays: Math.ceil((now.getTime() - from.getTime()) / 86400000) };
+    }
+    if (periodo >= 2000 && periodo <= 2100) {
+      const from = new Date(periodo, 0, 1, 0, 0, 0, 0);
+      const end = new Date(periodo, 11, 31, 23, 59, 59, 999);
+      const to = end > now ? now : end;
+      return { from, to, nDays: Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1 };
+    }
+    const from = new Date(now);
+    from.setDate(from.getDate() - periodo);
+    from.setHours(0, 0, 0, 0);
+    return { from, to: now, nDays: periodo };
+  }, [periodo, analisisAnios, fechaDesde, fechaHasta]);
+
+  const dateRangeAnterior = useMemo(() => {
+    if (!compararPeriodo) return null;
+    const now = new Date();
+    const duracionMs = dateRange.to.getTime() - dateRange.from.getTime();
+    if (periodo === -1) {
+      const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      return { from, to, nDays: to.getDate() };
+    }
+    if (periodo === -2) {
+      const to = new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59, 999);
+      const from = new Date(now.getFullYear(), now.getMonth() - 2, 1, 0, 0, 0, 0);
+      return { from, to, nDays: to.getDate() - from.getDate() + 1 };
+    }
+    if (periodo === -10) {
+      const to = new Date(dateRange.from);
+      to.setDate(to.getDate() - 1);
+      to.setHours(23, 59, 59, 999);
+      const from = new Date(to);
+      from.setTime(from.getTime() - duracionMs);
+      from.setHours(0, 0, 0, 0);
+      const nDays = Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1;
+      return { from, to, nDays };
+    }
+    if (periodo === 0) return null;
+    if (periodo >= 2000) {
+      const prevYear = periodo - 1;
+      const from = new Date(prevYear, 0, 1, 0, 0, 0, 0);
+      const to = new Date(prevYear, 11, 31, 23, 59, 59, 999);
+      const nDays = Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1;
+      return { from, to, nDays };
+    }
+    const to = new Date(dateRange.from);
+    to.setDate(to.getDate() - 1);
+    to.setHours(23, 59, 59, 999);
+    const from = new Date(to);
+    from.setTime(from.getTime() - duracionMs);
+    from.setHours(0, 0, 0, 0);
+    const nDays = Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1;
+    return { from, to, nDays };
+  }, [compararPeriodo, dateRange, periodo]);
+
+  const periodoLabel = useMemo(() => {
+    if (periodo === -1) return 'mes actual';
+    if (periodo === -2) return 'mes anterior';
+    if (periodo === 0) return 'histórico completo';
+    if (periodo === -10 && fechaDesde && fechaHasta) return `${fechaDesde} → ${fechaHasta}`;
+    if (periodo === -10) return 'rango personalizado';
+    if (periodo >= 2000) return `año ${periodo}`;
+    return `últimos ${periodo} días`;
+  }, [periodo, fechaDesde, fechaHasta]);
+
+  const ventasFiltradas = useMemo(() => {
+    const { from, to } = dateRange;
+    const fromStr = toLocalKey(from);
+    const toStr = toLocalKey(to);
+    return registros.filter(r => {
+      if (!r.fecha) return false;
+      const estado = (r.estado ?? '').toLowerCase();
+      if (!isVenta(r)) return false;
+      const dateStr = r.fecha.slice(0, 10);
+      if (dateStr < fromStr || dateStr > toStr) return false;
+      if (analistaFil !== 'todos' && r.analista !== analistaFil) return false;
+      return true;
+    });
+  }, [registros, dateRange, analistaFil]);
+
+  const calcVal = useCallback((regs: typeof registros): number => {
+    if (metrica === 'operaciones') return regs.length;
+    const total = regs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    return metrica === 'ticket' && regs.length > 0 ? total / regs.length : total;
+  }, [metrica]);
+
+  const fmt = useCallback((v: number) =>
+    metrica === 'operaciones' ? String(v) : formatCurrency(v),
+    [metrica]
+  );
+
+  const fmtK = useCallback((v: number) =>
+    metrica === 'operaciones' ? String(v) : `$${new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0 }).format(v / 1_000)}K`,
+    [metrica]
+  );
+
+  const tendenciaData = useMemo(() => {
+    const byDate = new Map<string, typeof ventasFiltradas>();
+    for (const r of ventasFiltradas) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      const bucket = byDate.get(key);
+      if (bucket) bucket.push(r);
+      else byDate.set(key, [r]);
+    }
+    const labels: string[] = [];
+    const daily: number[] = [];
+    const cur = new Date(dateRange.from);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.to);
+    end.setHours(23, 59, 59, 999);
+    while (cur <= end) {
+      const key = toLocalKey(cur);
+      labels.push(`${cur.getDate()}/${cur.getMonth() + 1}`);
+      daily.push(calcVal(byDate.get(key) ?? []));
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (metrica === 'ventas') {
+      let acc = 0;
+      return { labels, values: daily.map(v => (acc += v)), daily };
+    }
+    return { labels, values: daily, daily };
+  }, [ventasFiltradas, dateRange, metrica, calcVal]);
+
+  const ventasFiltradasAnterior = useMemo(() => {
+    if (!dateRangeAnterior) return [];
+    const { from, to } = dateRangeAnterior;
+    const fromStr = toLocalKey(from);
+    const toStr = toLocalKey(to);
+    return registros.filter(r => {
+      if (!r.fecha) return false;
+      if (!isVenta(r)) return false;
+      const dateStr = r.fecha.slice(0, 10);
+      if (dateStr < fromStr || dateStr > toStr) return false;
+      if (analistaFil !== 'todos' && r.analista !== analistaFil) return false;
+      return true;
+    });
+  }, [registros, dateRangeAnterior, analistaFil]);
+
+  const tendenciaDataAnterior = useMemo(() => {
+    if (!dateRangeAnterior || ventasFiltradasAnterior.length === 0) return null;
+    const byDate = new Map<string, typeof ventasFiltradasAnterior>();
+    for (const r of ventasFiltradasAnterior) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      const bucket = byDate.get(key);
+      if (bucket) bucket.push(r);
+      else byDate.set(key, [r]);
+    }
+    const labels: string[] = [];
+    const daily: number[] = [];
+    const cur = new Date(dateRangeAnterior.from);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(dateRangeAnterior.to);
+    end.setHours(23, 59, 59, 999);
+    while (cur <= end) {
+      const key = toLocalKey(cur);
+      labels.push(`${cur.getDate()}/${cur.getMonth() + 1}`);
+      daily.push(calcVal(byDate.get(key) ?? []));
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (metrica === 'ventas') {
+      let acc = 0;
+      return { labels, values: daily.map(v => (acc += v)), daily };
+    }
+    return { labels, values: daily, daily };
+  }, [ventasFiltradasAnterior, dateRangeAnterior, metrica, calcVal]);
+
+  const summary = useMemo(() => ({
+    total: calcVal(ventasFiltradas),
+    avg: dateRange.nDays > 0 ? calcVal(ventasFiltradas) / dateRange.nDays : 0,
+    maxDay: tendenciaData.daily.length ? Math.max(...tendenciaData.daily) : 0,
+  }), [ventasFiltradas, tendenciaData.daily, dateRange.nDays, calcVal]);
+
+  const summaryAnterior = useMemo(() => {
+    if (!dateRangeAnterior || !tendenciaDataAnterior) return null;
+    return {
+      total: calcVal(ventasFiltradasAnterior),
+      avg: dateRangeAnterior.nDays > 0 ? calcVal(ventasFiltradasAnterior) / dateRangeAnterior.nDays : 0,
+      maxDay: tendenciaDataAnterior.daily.length ? Math.max(...tendenciaDataAnterior.daily) : 0,
+    };
+  }, [ventasFiltradasAnterior, tendenciaDataAnterior, dateRangeAnterior, calcVal]);
+
+  const variacion = useMemo(() => {
+    if (!summaryAnterior) return null;
+    const calc = (act: number, prev: number) => prev > 0 ? ((act - prev) / prev) * 100 : 0;
+    return {
+      total: calc(summary.total, summaryAnterior.total),
+      avg: calc(summary.avg, summaryAnterior.avg),
+      maxDay: calc(summary.maxDay, summaryAnterior.maxDay),
+    };
+  }, [summary, summaryAnterior]);
+
+  const mapaActividad = useMemo(() => {
+    const byDate = new Map<string, number>();
+    for (const r of ventasFiltradas) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      byDate.set(key, (byDate.get(key) || 0) + (Number(r.monto) || 0));
+    }
+    const start = new Date(dateRange.from);
+    const dow0 = (start.getDay() + 6) % 7;
+    for (let i = 0; i < dow0; i++) {
+      const d = new Date(start);
+      d.setDate(d.getDate() - (dow0 - i));
+      byDate.set(toLocalKey(d), 0);
+    }
+    const weeks: { key: string; valor: number }[][] = [];
+    let week: { key: string; valor: number }[] = [];
+    const cur = new Date(start);
+    const end = new Date(dateRange.to);
+    while (cur <= end) {
+      const key = toLocalKey(cur);
+      week.push({ key, valor: byDate.get(key) || 0 });
+      if (week.length === 7) { weeks.push(week); week = []; }
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (week.length > 0) {
+      while (week.length < 7) week.push({ key: '', valor: 0 });
+      weeks.push(week);
+    }
+    let maxVal = 0;
+    for (const w of weeks) for (const d of w) if (d.valor > maxVal) maxVal = d.valor;
+    return { weeks, maxVal };
+  }, [ventasFiltradas, dateRange]);
+
+  const weeklyStats = useMemo(() => {
+    const totals = mapaActividad.weeks
+      .slice(0, 6)
+      .map((w, i) => ({ label: `Sem ${i + 1}`, total: w.reduce((s, d) => s + d.valor, 0) }));
+    const avg = totals.length > 0 ? totals.reduce((s, w) => s + w.total, 0) / totals.length : 1;
+    const withVsAvg = totals.map(w => ({ ...w, vsAvg: avg > 0 ? ((w.total - avg) / avg) * 100 : 0 }));
+    const best = totals.reduce((a, b) => a.total > b.total ? a : b, totals[0] || { label: '—', total: 0 });
+    const withData = totals.filter(w => w.total > 0);
+    const worst = withData.length > 0
+      ? withData.reduce((a, b) => a.total < b.total ? a : b, withData[0])
+      : totals[0] || { label: '—', total: 0 };
+    return { totals, withVsAvg, best, worst };
+  }, [mapaActividad]);
+
+  const dowStats = useMemo(() => {
+    const sums = new Array(7).fill(0);
+    const counts = new Array(7).fill(0);
+    for (const r of ventasFiltradas) {
+      if (!r.fecha) continue;
+      const dow = (toLocalDate(r.fecha).getDay() + 6) % 7;
+      sums[dow] += Number(r.monto) || 0;
+      counts[dow]++;
+    }
+    const max = Math.max(...sums);
+    const activeDay = sums.reduce((a, v, i) => v > sums[a] ? i : a, 0);
+    return { sums: sums.slice(0, 6), counts: counts.slice(0, 6), max, activeDay: DIAS_SEMANA[activeDay] || '—' };
+  }, [ventasFiltradas]);
+
+  const heatColor = (val: number, max: number): string => {
+    if (val === 0) return 'rgba(34,197,94,0.05)';
+    const t = Math.min(val / max, 1);
+    return `rgba(34, 197, 94, ${(0.15 + t * 0.5).toFixed(2)})`;
+  };
+
+  const acuerdosTimeData = useMemo(() => {
+    const byWeek = new Map<string, { bajo: number; medio: number; premium: number }>();
+    for (const r of ventasFiltradas) {
+      if (!r.fecha) continue;
+      const d = toLocalDate(r.fecha);
+      const start = new Date(dateRange.from);
+      const weekNum = Math.floor((d.getTime() - start.getTime()) / 604800000);
+      const label = `S${weekNum + 1}`;
+      if (!byWeek.has(label)) byWeek.set(label, { bajo: 0, medio: 0, premium: 0 });
+      const entry = byWeek.get(label)!;
+      const acuerdo = (r.acuerdo_precios ?? '').toLowerCase();
+      const monto = Number(r.monto) || 0;
+      if (acuerdo.includes('bajo') || acuerdo.includes('riesgo bajo')) entry.bajo += monto;
+      else if (acuerdo.includes('medio') || acuerdo.includes('riesgo medio')) entry.medio += monto;
+      else if (acuerdo.includes('premium')) entry.premium += monto;
+      else entry.medio += monto;
+    }
+    return Array.from(byWeek.entries()).map(([label, data]) => ({ label, ...data }));
+  }, [ventasFiltradas, dateRange]);
+
+  return (
+    <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+      {/* Filters Header Card */}
+      <div style={{
+        background: '#0a0a0a',
+        border: '1px solid rgba(255,255,255,0.03)',
+        borderRadius: '8px',
+        padding: '24px 32px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+        gap: '40px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '4px', height: '24px', borderRadius: '2px', background: '#fff' }} />
+        </div>
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {[
+            { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="170px" /> },
+            { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} width="160px" /> },
+            { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} width="160px" /> },
+          ].map(f => (
+            <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</div>
+              {f.node}
+            </div>
+          ))}
+          {periodo === -10 && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Desde</div>
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={e => setFechaDesde(e.target.value)}
+                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Hasta</div>
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={e => setFechaHasta(e.target.value)}
+                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
+                />
+              </div>
+            </>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+            <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Comparar</div>
+            <button
+              onClick={() => setCompararPeriodo(v => !v)}
+              style={{ width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', background: compararPeriodo ? 'rgba(34,197,94,0.8)' : '#333', position: 'relative', transition: 'background 0.2s' }}
+            >
+              <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: compararPeriodo ? 25 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tendencia + Mapa */}
+      <div id="seccion-tendencia-mapa" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
+        {/* Tendencia */}
+        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tendencia</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>
+              {compararPeriodo && dateRangeAnterior
+                ? `Comparación: ${periodoLabel} vs período anterior`
+                : `Acumulado por día — ${periodoLabel}`
+              }
+            </div>
+          </div>
+          <div id="chart-at-tendencia" style={{ height: 450, flex: 1 }}>
+            <Line
+              data={{
+                labels: tendenciaData.labels,
+                datasets: [
+                  {
+                    label: metrica === 'ventas' ? 'Acumulado' : metrica === 'operaciones' ? 'Operaciones' : 'Ticket Prom.',
+                    data: tendenciaData.values,
+                    borderColor: 'rgba(34,197,94,0.8)',
+                    backgroundColor: 'rgba(34,197,94,0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgba(34,197,94,0.9)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.3,
+                    spanGaps: false,
+                  },
+                  ...(compararPeriodo && tendenciaDataAnterior ? [{
+                    label: 'Período anterior',
+                    data: tendenciaDataAnterior.values,
+                    borderColor: 'rgba(100,150,255,0.5)',
+                    backgroundColor: 'rgba(100,150,255,0.08)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgba(100,150,255,0.4)',
+                    pointBorderColor: 'rgba(100,150,255,0.7)',
+                    pointBorderWidth: 1.5,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.3,
+                    spanGaps: false,
+                  }] : []),
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: compararPeriodo && !!tendenciaDataAnterior,
+                    position: 'top' as const,
+                    align: 'end' as const,
+                    labels: { color: '#888', boxWidth: 16, padding: 12, font: { size: 10 }, usePointStyle: true },
+                  },
+                  tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${fmt(ctx.parsed.y ?? 0)}` } },
+                },
+                scales: {
+                  x: { ticks: { color: '#555', maxTicksLimit: 20, font: { size: 10 }, autoSkipPadding: 4 }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                },
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 24, marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)', flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 120 }}>
+              <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.total)}</div>
+              {variacion && <VariacionBadge valor={variacion.total} />}
+              {summaryAnterior && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {fmt(summaryAnterior.total)}</div>}
+            </div>
+            <div style={{ minWidth: 120 }}>
+              <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROMEDIO</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{metrica === 'operaciones' ? summary.avg.toFixed(1) : formatCurrency(summary.avg)}</div>
+              {variacion && <VariacionBadge valor={variacion.avg} />}
+              {summaryAnterior && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {metrica === 'operaciones' ? summaryAnterior.avg.toFixed(1) : formatCurrency(summaryAnterior.avg)}</div>}
+            </div>
+            <div style={{ minWidth: 120 }}>
+              <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>MÁXIMO DÍA</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.maxDay)}</div>
+              {variacion && <VariacionBadge valor={variacion.maxDay} />}
+              {summaryAnterior && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {fmt(summaryAnterior.maxDay)}</div>}
+            </div>
+          </div>
+        </div>
+
+        {/* Mapa de actividad */}
+        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mapa de Actividad</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Ventas por día — {periodoLabel}</div>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'separate', borderSpacing: 3, width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 30 }} />
+                  {DIAS_SEMANA.map(d => (
+                    <th key={d} style={{ textAlign: 'center', fontSize: 10, color: '#555', fontWeight: 600, padding: '0 2px 6px' }}>{d}</th>
+                  ))}
+                  <th style={{ fontSize: 10, color: '#555', fontWeight: 600, textAlign: 'right', paddingLeft: 8, paddingBottom: 6 }}>TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mapaActividad.weeks.slice(0, 6).map((week, wi) => {
+                  const weekTotal = week.reduce((s, d) => s + d.valor, 0);
+                  return (
+                    <tr key={wi}>
+                      <td style={{ fontSize: 10, color: '#444', fontWeight: 600, paddingRight: 6, textAlign: 'right' }}>S{wi + 1}</td>
+                      {week.map((day, di) => (
+                        <td key={di} title={`${day.key}: ${fmt(day.valor)}`}
+                          style={{
+                            background: heatColor(day.valor, mapaActividad.maxVal),
+                            borderRadius: 4, height: 64, textAlign: 'center', fontSize: 10,
+                            color: day.valor > 0 ? '#86efac' : '#333', fontWeight: day.valor > 0 ? 600 : 400,
+                            border: 'none', padding: '0 4px', cursor: 'default', minWidth: 44,
+                          }}
+                        >{day.valor > 0 ? fmtK(day.valor) : ''}</td>
+                      ))}
+                      <td style={{ fontSize: 11, color: '#fff', fontWeight: 700, textAlign: 'right', paddingLeft: 8 }}>{fmtK(weekTotal)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: 'flex', gap: 24, marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+            <div>
+              <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>DÍA MÁS ACTIVO</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>{dowStats.activeDay}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>TOTAL</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.total)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Estacionalidad */}
+      <div id="seccion-estacionalidad" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', marginBottom: '32px' }}>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+                <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estacionalidad</span>
+              </div>
+              <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Patrones por semana</div>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
+          {weeklyStats.withVsAvg.map((w) => (
+            <div key={w.label} style={{ flex: '1 1 130px', minWidth: 120, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
+              <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsAvg >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsAvg >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+                {w.vsAvg >= 0 ? '↑' : '↓'} {Math.abs(w.vsAvg).toFixed(1)}%
+              </div>
+            </div>
+          ))}
+          <div id="chart-at-estacionalidad" style={{ flex: '2 1 300px', minWidth: 280, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '16px', minHeight: 180 }}>
+            <Bar
+              data={{
+                labels: weeklyStats.totals.map(s => s.label),
+                datasets: [{
+                  label: metrica === 'operaciones' ? 'Operaciones' : 'Total',
+                  data: weeklyStats.totals.map(s => s.total),
+                  backgroundColor: weeklyStats.totals.map(s => s.label === weeklyStats.best.label ? 'rgba(34,197,94,0.7)' : 'rgba(34,197,94,0.3)'),
+                  borderRadius: 4,
+                  borderSkipped: false,
+                }],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => fmt(ctx.parsed.y ?? 0) } } },
+                scales: {
+                  x: { ticks: { color: '#555', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                },
+              }}
+            />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 24, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 16 }}>
+          <div>
+            <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase' }}>Mejor Sem</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 2 }}>{weeklyStats.best.label}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase' }}>Peor Sem</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 2 }}>{weeklyStats.worst.label}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase' }}>Variación</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 2 }}>
+              {weeklyStats.best.total > 0 && weeklyStats.worst.total > 0 ? `${((weeklyStats.best.total / weeklyStats.worst.total - 1) * 100).toFixed(1)}%` : '—'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Por día de semana + Acuerdo de Precios */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Por Día de Semana</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Rendimiento en $</div>
+          </div>
+          <div id="chart-at-dia-semana" style={{ height: 200 }}>
+            <Bar
+              data={{
+                labels: DIAS_SEMANA.slice(0, 6),
+                datasets: [{
+                  label: metrica === 'operaciones' ? 'Operaciones' : 'Total',
+                  data: dowStats.sums,
+                  backgroundColor: dowStats.sums.map(v => v >= dowStats.max * 0.9 ? 'rgba(34,197,94,0.6)' : 'rgba(34,197,94,0.2)'),
+                  borderRadius: 4,
+                  borderSkipped: false,
+                }],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => fmt(ctx.parsed.y ?? 0) } } },
+                scales: {
+                  x: { ticks: { color: '#555', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                },
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evolución Acuerdo de Precios</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Proporción semanal: Riesgo Bajo vs Medio vs Premium</div>
+          </div>
+          <div id="chart-at-acuerdos" style={{ height: 220 }}>
+            <Bar
+              data={{
+                labels: acuerdosTimeData.map(w => w.label),
+                datasets: [
+                  { label: 'Riesgo Bajo', data: acuerdosTimeData.map(w => w.bajo), backgroundColor: 'rgba(74, 222, 128, 0.6)', borderRadius: 2, borderSkipped: false, stack: 'stack1' },
+                  { label: 'Riesgo Medio', data: acuerdosTimeData.map(w => w.medio), backgroundColor: 'rgba(239, 68, 68, 0.5)', borderRadius: 2, borderSkipped: false, stack: 'stack1' },
+                  { label: 'Premium', data: acuerdosTimeData.map(w => w.premium), backgroundColor: 'rgba(96, 165, 250, 0.5)', borderRadius: 2, borderSkipped: false, stack: 'stack1' },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { position: 'top' as const, align: 'end' as const, labels: { color: '#888', boxWidth: 12, padding: 10, font: { size: 10 }, usePointStyle: true } },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx: any) => `${ctx.dataset.label}: ${formatCurrency(ctx.parsed.y)}`,
+                      afterBody: (items: any[]) => {
+                        if (!items.length) return '';
+                        const idx = items[0].dataIndex;
+                        const w = acuerdosTimeData[idx];
+                        const total = w.bajo + w.medio + w.premium;
+                        if (total === 0) return '';
+                        return `  Bajo: ${((w.bajo / total) * 100).toFixed(0)}%  |  Medio: ${((w.medio / total) * 100).toFixed(0)}%  |  Premium: ${((w.premium / total) * 100).toFixed(0)}%`;
+                      },
+                    },
+                  },
+                },
+                scales: {
+                  x: { stacked: true, ticks: { color: '#555', font: { size: 9 }, maxRotation: 45 }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  y: { stacked: true, ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                },
+              }}
+            />
+          </div>
+          {(() => {
+            const totalBajo = acuerdosTimeData.reduce((s, w) => s + w.bajo, 0);
+            const totalMedio = acuerdosTimeData.reduce((s, w) => s + w.medio, 0);
+            const totalPremium = acuerdosTimeData.reduce((s, w) => s + w.premium, 0);
+            const total = totalBajo + totalMedio + totalPremium;
+            if (total === 0) return null;
+            return (
+              <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Riesgo Bajo</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#4ade80', marginTop: 2 }}>{((totalBajo / total) * 100).toFixed(1)}%</div>
+                  <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalBajo)}</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Riesgo Medio</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#ef4444', marginTop: 2 }}>{((totalMedio / total) * 100).toFixed(1)}%</div>
+                  <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalMedio)}</div>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Premium</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#60a5fa', marginTop: 2 }}>{((totalPremium / total) * 100).toFixed(1)}%</div>
+                  <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalPremium)}</div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+    </div>
+  );
+}
