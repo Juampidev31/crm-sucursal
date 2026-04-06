@@ -266,7 +266,7 @@ const RegistroModal = memo(function RegistroModal({
                 </select>
               </Field>
             </div>
-            <div className="form-row">
+            <div className="form-row-3">
               <Field label="Cuotas">
                 <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
               </Field>
@@ -281,8 +281,6 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="65+">65+</option>
                 </select>
               </Field>
-            </div>
-            <div className="form-row">
               <Field label="Sexo">
                 <select className="form-select" value={form.sexo || ''} onChange={e => set('sexo', e.target.value)}>
                   <option value="">— Sin especificar —</option>
@@ -291,15 +289,14 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="Otro">Otro</option>
                 </select>
               </Field>
+            </div>
+            <div className="form-row">
               <Field label="Empleador">
                 <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', e.target.value)} placeholder="Nombre del empleador" />
               </Field>
-            </div>
-            <div className="form-row">
               <Field label="Localidad">
                 <input className="form-input" value={form.localidad || ''} onChange={e => set('localidad', e.target.value)} placeholder="Localidad" />
               </Field>
-              <div />
             </div>
             <div className="form-row">
               <Field label="Comentarios">
