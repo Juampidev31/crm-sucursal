@@ -46,6 +46,15 @@ function ResumenMensualContent() {
       setLoading(true);
       setError(null);
 
+      console.log('Buscando resumen_mensual:', { anio, mes });
+
+      // Primero ver TODOS los registros para debug
+      const { data: allData, error: allError } = await supabase
+        .from('resumen_mensual')
+        .select('anio, mes');
+
+      console.log('Todos los registros:', allData, allError);
+
       const { data, error } = await supabase
         .from('resumen_mensual')
         .select('*')
@@ -53,12 +62,14 @@ function ResumenMensualContent() {
         .eq('mes', mes)
         .maybeSingle();
 
+      console.log('Resultado query:', { data, error });
+
       if (error) {
         setError(error.message);
       } else if (data) {
         setResumen(data as ResumenMensual);
       } else {
-        setError('No se encontró el reporte para este período');
+        setError(`No se encontró el reporte para ${MESES_NOMBRES[mes - 1]} ${anio}. Registros disponibles: ${allData?.map(d => `${d.anio}-${d.mes}`).join(', ') || 'ninguno'}`);
       }
 
       setLoading(false);
