@@ -56,6 +56,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { loading } = useAuth();
   const isLoginPage = pathname === '/login';
+  const isPublicRoute = pathname.startsWith('/publico');
+
+  if (isPublicRoute || isLoginPage) return <>{children}</>;
 
   // Manejador global de Escape — vuelve a Registros si no hay modales abiertos
   useEffect(() => {
@@ -129,10 +132,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="wrapper" style={{ flex: 1, overflow: 'hidden' }}>
             <Sidebar />
-            <main 
-              className="content-wrapper" 
-              style={{ 
-                height: '100%', 
+            <main
+              className="content-wrapper"
+              style={{
+                height: '100%',
                 overflowY: 'auto',
                 paddingTop: (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined
               }}
