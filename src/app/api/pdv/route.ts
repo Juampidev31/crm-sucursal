@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { parseCSV, cleanCurrency as clean, parsePct } from '@/lib/csv-utils';
 
 const SHEET_ID = '1ehrJ32n1j1sbrqH3cBzZL9ZaVu9EC79k-6czhp0Ee6k';
 const SHEETS = [
@@ -6,27 +7,6 @@ const SHEETS = [
   { gid: '407412851', years: [2024] },              // sección1 left=2024 / sección2 left=ops2024
   { gid: '1482735050', years: [2025, 2026] },       // sección1 left=2025 right=2026 / sección2 left=ops2025 right=ops2026
 ];
-
-function parseCSV(text: string): string[][] {
-  return text.split('\n').map(line => {
-    const cols: string[] = [];
-    let inQuote = false, cur = '';
-    for (const c of line) {
-      if (c === '"') { inQuote = !inQuote; }
-      else if (c === ',' && !inQuote) { cols.push(cur); cur = ''; }
-      else cur += c;
-    }
-    cols.push(cur);
-    return cols;
-  });
-}
-
-function clean(v: string) { return (v || '').trim().replace(/^\$/, ''); }
-function parsePct(v: string): number | null {
-  const s = clean(v).replace('%', '').replace(',', '.');
-  const n = parseFloat(s);
-  return isNaN(n) ? null : n;
-}
 
 function parseCol(r: string[], offset: number) {
   const mes = clean(r[offset]);

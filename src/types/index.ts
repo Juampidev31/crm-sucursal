@@ -21,18 +21,6 @@ export interface Registro {
   updated_at?: string;
 }
 
-export interface Auditoria {
-  id: string;
-  id_registro: string;
-  fecha_hora: string;
-  analista: string;
-  accion: string;
-  campo_modificado: string;
-  valor_anterior: string;
-  valor_nuevo: string;
-  id_analista: string;
-}
-
 export interface Objetivo {
   id?: string;
   analista: string;

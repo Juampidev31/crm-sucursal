@@ -90,12 +90,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     const [{ data: regs }, { data: objs }, { data: dias }, { count }, { data: hist }, { data: alertas }] = await Promise.all([
-      supabase.from('registros').select('*').order('fecha', { ascending: false }).limit(2000),
-      supabase.from('objetivos').select('*'),
-      supabase.from('dias_habiles_config').select('analista, dias_habiles, dias_transcurridos'),
-      supabase.from('recordatorios').select('*', { count: 'exact', head: true }).eq('mostrado', false),
-      supabase.from('historico_ventas').select('*'),
-      supabase.from('alertas_config').select('*'),
+      supabase.from('registros').select('id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,localidad').order('fecha', { ascending: false }).limit(2000),
+      supabase.from('objetivos').select('id,analista,mes,anio,meta_ventas,meta_operaciones'),
+      supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
+      supabase.from('recordatorios').select('id', { count: 'exact', head: true }).eq('mostrado', false),
+      supabase.from('historico_ventas').select('id,analista,anio,mes,capital_real,ops_real'),
+      supabase.from('alertas_config').select('id,nombre,estado,dias,mensaje,color'),
     ]);
     if (regs) setRegistros(regs as Registro[]);
     if (objs) setObjetivos(objs as Objetivo[]);
@@ -121,29 +121,33 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // ── Push callbacks (envían por broadcast) ──────────────────────────────────
 
-  const pushRegistroChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => {
-    broadcastRef.current?.send({ type: 'broadcast', event: 'registro_change', payload: { type, registro } });
+  const pushBroadcast = useCallback((event: string, payload: Record<string, unknown>) => {
+    broadcastRef.current?.send({ type: 'broadcast', event, payload }).catch(() => {});
   }, []);
+
+  const pushRegistroChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => {
+    pushBroadcast('registro_change', { type, registro });
+  }, [pushBroadcast]);
 
   const pushObjetivosChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', objetivo: Objetivo) => {
-    broadcastRef.current?.send({ type: 'broadcast', event: 'objetivos_change', payload: { type, objetivo } });
-  }, []);
+    pushBroadcast('objetivos_change', { type, objetivo });
+  }, [pushBroadcast]);
 
   const pushDiasConfigChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', config: DiasConfig) => {
-    broadcastRef.current?.send({ type: 'broadcast', event: 'dias_config_change', payload: { type, config } });
-  }, []);
+    pushBroadcast('dias_config_change', { type, config });
+  }, [pushBroadcast]);
 
   const pushAlertasConfigChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', config: AlertaConfig) => {
-    broadcastRef.current?.send({ type: 'broadcast', event: 'alertas_config_change', payload: { type, config } });
-  }, []);
+    pushBroadcast('alertas_config_change', { type, config });
+  }, [pushBroadcast]);
 
   const pushHistoricoChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', historico: HistoricoVenta) => {
-    broadcastRef.current?.send({ type: 'broadcast', event: 'historico_change', payload: { type, historico } });
-  }, []);
+    pushBroadcast('historico_change', { type, historico });
+  }, [pushBroadcast]);
 
   const pushRecordatorioChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', recordatorio: Recordatorio) => {
-    broadcastRef.current?.send({ type: 'broadcast', event: 'recordatorio_change', payload: { type, recordatorio, mostrado: recordatorio.mostrado } });
-  }, []);
+    pushBroadcast('recordatorio_change', { type, recordatorio, mostrado: recordatorio.mostrado });
+  }, [pushBroadcast]);
 
   // Bulk refresh trigger - hace que todos los clientes recarguen datos
   const pushBulkRefresh = useCallback(() => {

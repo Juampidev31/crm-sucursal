@@ -1,30 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { parseCSV, parsePct } from '@/lib/csv-utils';
 
 const SHEET_ID = '1RcjEoiOM4PN92fNQv0ZUy-soh7Qa98vdvys0rr9_JlM';
 const SHEETS: Record<string, string> = {
   '2025': '1325602277',
   '2026': '666232440',
 };
-
-function parseCSV(text: string): string[][] {
-  return text.split('\n').map(line => {
-    const cols: string[] = [];
-    let inQuote = false, cur = '';
-    for (const c of line) {
-      if (c === '"') { inQuote = !inQuote; }
-      else if (c === ',' && !inQuote) { cols.push(cur); cur = ''; }
-      else cur += c;
-    }
-    cols.push(cur);
-    return cols;
-  });
-}
-
-function parsePct(val: string): number | null {
-  if (!val || val.trim() === '' || val.trim() === '-') return null;
-  const n = parseFloat(val.replace('%', '').replace(',', '.'));
-  return isNaN(n) ? null : n;
-}
 
 export async function GET(req: NextRequest) {
   const year = req.nextUrl.searchParams.get('year') || '2026';

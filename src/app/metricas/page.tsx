@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { formatCurrency, getStatusLabel } from '@/lib/utils';
 import { useData } from '@/context/DataContext';
+import { ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   Tooltip, Legend, ArcElement,
@@ -21,13 +22,6 @@ const CHART_COLORS = {
   'derivado / aprobado cc': 'rgba(255,255,255,0.6)',
   'derivado / rechazado cc': 'rgba(255,100,100,0.4)'
 };
-
-const ESTADOS = [
-  'venta', 'proyeccion', 'en seguimiento', 'score bajo', 'afectaciones',
-  'derivado / aprobado cc', 'derivado / rechazado cc'
-];
-
-const ANALISTAS = ['Luciana', 'Victoria'];
 
 const MESES = [
   { value: '01', label: 'Enero' },

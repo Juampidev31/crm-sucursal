@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useData } from '@/context/DataContext';
+import { useToast } from '@/hooks/useToast';
 import { CONFIG, HistoricoVenta } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
 import {
@@ -74,7 +75,7 @@ export default function AjustesPage() {
   const [histAnio, setHistAnio] = useState(new Date().getFullYear() - 1);
   const [histRows, setHistRows] = useState<HistRow[]>(EMPTY_HIST_ROWS());
   const [savingHist, setSavingHist] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const { toast, showSuccess, showError } = useToast(3000);
 
   // Objetivos state
   const [objetivos, setObjetivos] = useState<ObjetivoRow[]>([]);
@@ -124,12 +125,6 @@ export default function AjustesPage() {
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
-  useEffect(() => {
-    if (toast) { const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }
-  }, [toast]);
-
-  const showSuccess = (msg: string) => setToast({ message: msg, type: 'success' });
-  const showError = (msg: string) => setToast({ message: msg, type: 'error' });
 
   const saveAlertas = async () => {
     setSaving(true);
@@ -288,9 +283,9 @@ export default function AjustesPage() {
       .select('id');
     setLimpiandoLog(false);
     if (error) {
-      setToast({ message: `Error al limpiar log: ${error.message}`, type: 'error' });
+      showError(`Error al limpiar log: ${error.message}`);
     } else {
-      setToast({ message: `Log de auditoría limpiado exitosamente (${data?.length || 0} registros eliminados)`, type: 'success' });
+      showSuccess(`Log de auditoría limpiado exitosamente (${data?.length || 0} registros eliminados)`);
       setAuditoriaRegistros([]);
     }
   };

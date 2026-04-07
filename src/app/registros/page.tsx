@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
+import { useToast } from '@/hooks/useToast';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -455,6 +456,7 @@ const RecordatorioModal = memo(function RecordatorioModal({
 
     if (error) {
       setSaving(false);
+      onClose(false);
       return;
     }
 
@@ -640,7 +642,7 @@ export default function RegistrosPage() {
     showFilters, setShowFilters,
   } = useFilter();
 
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+  const { toast, showToast } = useToast(4000);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
@@ -729,15 +731,6 @@ export default function RegistrosPage() {
     document.head.appendChild(style);
     return () => { document.head.removeChild(style); };
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') =>
-    setToast({ message, type }), []);
 
   useEffect(() => {
     if (isCreationModalOpen) {

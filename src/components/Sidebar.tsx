@@ -58,6 +58,25 @@ function NavItem({
   );
 }
 
+function SidebarDivider() {
+  return (
+    <div style={{
+      width: 36, height: 1, flexShrink: 0,
+      background: 'transparent', margin: '8px 0',
+      position: 'relative', overflow: 'visible',
+    }}>
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 36, height: 1,
+        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
+        borderRadius: 1,
+        boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
+      }} />
+    </div>
+  );
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export default function Sidebar({ hidden }: { hidden?: boolean }) {
@@ -151,27 +170,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
               <Plus size={26} strokeWidth={3} />
             </button>
           </div>
-          <div style={{
-            width: 36,
-            height: 1,
-            flexShrink: 0,
-            background: 'transparent',
-            margin: '8px 0',
-            position: 'relative',
-            overflow: 'visible',
-          }}>
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 36,
-              height: 1,
-              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
-              borderRadius: 1,
-              boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
-            }} />
-          </div>
+          <SidebarDivider />
         </>
       )}
 
@@ -185,52 +184,12 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
       <NavItem href="/metricas" icon={PieChart} label="Métricas" active={pathname === '/metricas'} />
       <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
 
-      <div style={{
-        width: 36,
-        height: 1,
-        flexShrink: 0,
-        background: 'transparent',
-        margin: '8px 0',
-        position: 'relative',
-        overflow: 'visible',
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 36,
-          height: 1,
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
-          borderRadius: 1,
-          boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
-        }} />
-      </div>
+      <SidebarDivider />
 
       <NavItem href="/reportes/ventas" icon={FileText} label="Ventas" active={pathname === '/reportes/ventas'} />
       <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} />
 
-      <div style={{
-        width: 36,
-        height: 1,
-        flexShrink: 0,
-        background: 'transparent',
-        margin: '8px 0',
-        position: 'relative',
-        overflow: 'visible',
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 36,
-          height: 1,
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
-          borderRadius: 1,
-          boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
-        }} />
-      </div>
+      <SidebarDivider />
 
       {/* Paginación y Exportar (only on /registros) */}
       {isRegistros && (
@@ -326,27 +285,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         </>
       )}
 
-      <div style={{
-        width: 36,
-        height: 1,
-        flexShrink: 0,
-        background: 'transparent',
-        margin: '8px 0',
-        position: 'relative',
-        overflow: 'visible',
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 36,
-          height: 1,
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
-          borderRadius: 1,
-          boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
-        }} />
-      </div>
+      <SidebarDivider />
 
       <NavItem
         href="#"
@@ -361,27 +300,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
       {isAdmin && (
         <>
-          <div style={{
-            width: 36,
-            height: 1,
-            flexShrink: 0,
-            background: 'transparent',
-            margin: '10px auto',
-            position: 'relative',
-            overflow: 'visible',
-          }}>
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 36,
-              height: 1,
-              background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
-              borderRadius: 1,
-              boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
-            }} />
-          </div>
+          <SidebarDivider />
           <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname === '/ajustes'} />
         </>
       )}

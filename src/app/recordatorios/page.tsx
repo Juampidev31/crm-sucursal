@@ -10,8 +10,8 @@ import { useData } from '@/context/DataContext';
 import {
   Bell, Check, Trash2, AlertCircle, Clock, User, Filter, RefreshCw, Calendar,
 } from 'lucide-react';
-
-const ANALISTAS = ['Luciana', 'Victoria'];
+import { ANALISTAS } from '@/context/FilterContext';
+import { useToast } from '@/hooks/useToast';
 
 type TabType = 'pendientes' | 'completados';
 
@@ -21,7 +21,7 @@ export default function RecordatoriosPage() {
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabType>('pendientes');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const { toast, showToast } = useToast();
 
   const fetchRecordatorios = useCallback(async () => {
     setLoading(true);
@@ -51,16 +51,6 @@ export default function RecordatoriosPage() {
 
     return () => { supabase.removeChannel(bc); };
   }, [fetchRecordatorios]);
-
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 3500);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
-
-  const showToast = (message: string, type: 'success' | 'error') =>
-    setToast({ message, type });
 
   const handleMarcarCompletado = async (id: string) => {
     const rec = recordatorios.find(r => r.id === id);

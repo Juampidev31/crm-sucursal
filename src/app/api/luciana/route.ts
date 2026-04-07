@@ -1,28 +1,7 @@
 import { NextResponse } from 'next/server';
+import { parseCSV, clean, parsePct } from '@/lib/csv-utils';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1ixuDCB2G5i-eDVP1TvVPylHBaxcoTODnRlizNkJqsfw/export?format=csv&gid=862186907';
-
-function parseCSV(text: string): string[][] {
-  return text.split('\n').map(line => {
-    const cols: string[] = [];
-    let inQuote = false, cur = '';
-    for (const c of line) {
-      if (c === '"') { inQuote = !inQuote; }
-      else if (c === ',' && !inQuote) { cols.push(cur); cur = ''; }
-      else cur += c;
-    }
-    cols.push(cur);
-    return cols;
-  });
-}
-
-function clean(v: string) { return (v || '').trim(); }
-
-function parsePct(v: string): number | null {
-  const s = clean(v).replace('%', '').replace(',', '.');
-  const n = parseFloat(s);
-  return isNaN(n) ? null : n;
-}
 
 export async function GET() {
   const res = await fetch(CSV_URL, { cache: 'no-store' });
