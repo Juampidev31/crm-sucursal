@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -31,11 +31,12 @@ interface ResumenMensual {
 const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const ANALISTAS_DEFAULT = ['Luciana', 'Victoria'];
 
-export default function ResumenMensualPublico() {
+// Componente interno que usa useSearchParams
+function ResumenMensualContent() {
   const searchParams = useSearchParams();
   const anio = parseInt(searchParams.get('anio') || '2026');
   const mes = parseInt(searchParams.get('mes') || '1');
-  
+
   const [resumen, setResumen] = useState<ResumenMensual | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,14 +45,14 @@ export default function ResumenMensualPublico() {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      
+
       const { data, error } = await supabase
         .from('resumen_mensual')
         .select('*')
         .eq('anio', anio)
         .eq('mes', mes)
         .maybeSingle();
-      
+
       if (error) {
         setError(error.message);
       } else if (data) {
@@ -59,10 +60,10 @@ export default function ResumenMensualPublico() {
       } else {
         setError('No se encontró el reporte para este período');
       }
-      
+
       setLoading(false);
     };
-    
+
     fetchData();
   }, [anio, mes]);
 
@@ -127,7 +128,7 @@ export default function ResumenMensualPublico() {
         {/* Tablero KPIs */}
         <div className="data-card" style={{ background: '#0a0a0a', marginBottom: 24 }}>
           {sectionHeader('Tablero', <BarChart3 size={16} color="#60a5fa" />)}
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16, marginBottom: 24 }}>
             {/* Gestiones por analista */}
             {ANALISTAS_DEFAULT.map(analista => (
@@ -156,7 +157,7 @@ export default function ResumenMensualPublico() {
               </div>
               <p style={{ fontSize: 13, color: '#ccc', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{resumen.principales_logros || '—'}</p>
             </div>
-            
+
             <div style={{ background: 'rgba(248,113,113,0.05)', borderRadius: 8, padding: 16, border: '1px solid rgba(248,113,113,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <AlertTriangle size={14} color="#f87171" />
@@ -164,7 +165,7 @@ export default function ResumenMensualPublico() {
               </div>
               <p style={{ fontSize: 13, color: '#ccc', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{resumen.principales_desvios || '—'}</p>
             </div>
-            
+
             <div style={{ background: 'rgba(251,191,36,0.05)', borderRadius: 8, padding: 16, border: '1px solid rgba(251,191,36,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <Target size={14} color="#fbbf24" />
@@ -220,5 +221,18 @@ export default function ResumenMensualPublico() {
         </footer>
       </main>
     </div>
+  );
+}
+
+// Export default con Suspense boundary
+export default function ResumenMensualPublico() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="spinner" style={{ width: 40, height: 40 }} />
+      </div>
+    }>
+      <ResumenMensualContent />
+    </Suspense>
   );
 }
