@@ -200,6 +200,26 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return () => { cancelled = true; };
   }, [selectedMes, selectedAnio]);
 
+  // ── Generar Link ──────────────────────────────────────────────────────
+  const handleGenerarLink = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('✅ Link copiado al portapapeles:\n' + url);
+      onSuccess('Link copiado al portapapeles');
+    } catch (err) {
+      // Fallback
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      alert('✅ Link copiado al portapapeles:\n' + url);
+      onSuccess('Link copiado al portapapeles');
+    }
+  };
+
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleGuardar = async () => {
     setSaving(true);
@@ -1203,112 +1223,112 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
           {/* ── SECCIÓN 3: DISTRIBUCIÓN POR ACUERDO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-              {sectionHeader('3. Distribución por Acuerdo de Precios', <PieChart size={15} color="#60a5fa" />)}
-              {(() => {
-                const totalOps = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
-                const totalMonto = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
-                const colores: Record<string, string> = { 'Riesgo BAJO': '#34d399', 'Riesgo MEDIO': '#fbbf24', 'PREMIUM': '#a78bfa', 'No califica': '#f97316' };
-                return (
-                  <>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                      {Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
-                        const pctOps = totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0;
-                        const pctMonto = totalMonto > 0 ? (data.monto / totalMonto) * 100 : 0;
-                        const color = colores[tipo] ?? '#555';
-
-                        // Desglose por analista
-                        const desglose = CONFIG.ANALISTAS_DEFAULT.map(an => ({
-                          nombre: an,
-                          ops: ventasMes.filter(r => {
-                            const val = (r.acuerdo_precios ?? '').toLowerCase();
-                            const mapVal: Record<string, string> = { 'riesgo bajo': 'Riesgo BAJO', 'riesgo medio': 'Riesgo MEDIO', 'premium': 'PREMIUM', 'no califica': 'No califica' };
-                            return mapVal[val] === tipo && r.analista === an;
-                          }).length
-                        }));
-
-                        return (
-                          <div key={tipo} style={{ background: `${color}0d`, borderRadius: 10, padding: '14px 16px', border: `1px solid ${color}22` }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                                <span style={{ fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{tipo}</span>
-                              </div>
-                              <div style={{ display: 'flex', gap: 6 }}>
-                                {desglose.map((d, i) => (
-                                  <div key={d.nombre} style={{ fontSize: 9, fontWeight: 800, color: i === 0 ? '#60a5fa' : '#a78bfa', background: 'rgba(255,255,255,0.03)', padding: '1px 4px', borderRadius: 3 }}>
-                                    {d.nombre.slice(0, 1)}: {d.ops}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 2 }}>{data.cantidad}</div>
-                            <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{formatCurrency(data.monto)}</div>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, color, background: `${color}18`, padding: '2px 7px', borderRadius: 4 }}>{pctOps.toFixed(0)}% ops</span>
-                              <span style={{ fontSize: 11, color: '#444' }}>{pctMonto.toFixed(0)}% $</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* ── SECCIÓN 4: VENTAS POR CATEGORÍA ── */}
-            {ventasMes.length > 0 && (() => {
-              const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-              const DistBlock = ({ titulo, icon, datos, color }: { titulo: string; icon: React.ReactNode; datos: { label: string; monto: number; cantidad: number }[]; color: string }) => {
-                const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
-                return (
-                  <div style={{ flex: 1, minWidth: 220 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
-                    </div>
-                    <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden' }}>
-                      {datos.slice(0, 7).map((d, i) => {
-                        const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
-                        const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
-                        return (
-                          <div key={i} style={{ padding: '9px 14px', borderBottom: i < Math.min(datos.length, 7) - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                              <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
-                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
-                                <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' as const }}>{pct.toFixed(0)}%</span>
-                              </div>
-                            </div>
-                            <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${pctMonto}%`, background: color, opacity: 0.6, borderRadius: 2 }} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              };
+            {sectionHeader('3. Distribución por Acuerdo de Precios', <PieChart size={15} color="#60a5fa" />)}
+            {(() => {
+              const totalOps = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
+              const totalMonto = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
+              const colores: Record<string, string> = { 'Riesgo BAJO': '#34d399', 'Riesgo MEDIO': '#fbbf24', 'PREMIUM': '#a78bfa', 'No califica': '#f97316' };
               return (
-                <div className="data-card" style={{ background: '#0a0a0a' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
-                    <div style={{ flex: 1 }}>{sectionHeader('4. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
-                    <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(totalMes)}</span>
+                <>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                    {Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
+                      const pctOps = totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0;
+                      const pctMonto = totalMonto > 0 ? (data.monto / totalMonto) * 100 : 0;
+                      const color = colores[tipo] ?? '#555';
+
+                      // Desglose por analista
+                      const desglose = CONFIG.ANALISTAS_DEFAULT.map(an => ({
+                        nombre: an,
+                        ops: ventasMes.filter(r => {
+                          const val = (r.acuerdo_precios ?? '').toLowerCase();
+                          const mapVal: Record<string, string> = { 'riesgo bajo': 'Riesgo BAJO', 'riesgo medio': 'Riesgo MEDIO', 'premium': 'PREMIUM', 'no califica': 'No califica' };
+                          return mapVal[val] === tipo && r.analista === an;
+                        }).length
+                      }));
+
+                      return (
+                        <div key={tipo} style={{ background: `${color}0d`, borderRadius: 10, padding: '14px 16px', border: `1px solid ${color}22` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{tipo}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              {desglose.map((d, i) => (
+                                <div key={d.nombre} style={{ fontSize: 9, fontWeight: 800, color: i === 0 ? '#60a5fa' : '#a78bfa', background: 'rgba(255,255,255,0.03)', padding: '1px 4px', borderRadius: 3 }}>
+                                  {d.nombre.slice(0, 1)}: {d.ops}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 2 }}>{data.cantidad}</div>
+                          <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{formatCurrency(data.monto)}</div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color, background: `${color}18`, padding: '2px 7px', borderRadius: 4 }}>{pctOps.toFixed(0)}% ops</span>
+                            <span style={{ fontSize: 11, color: '#444' }}>{pctMonto.toFixed(0)}% $</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {/* Cuotas + Rango Etario — horizontales */}
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-                    <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" />
-                    <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" />
-                    <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" />
-                    <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" />
-                    <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" />
+                </>
+              );
+            })()}
+          </div>
+
+          {/* ── SECCIÓN 4: VENTAS POR CATEGORÍA ── */}
+          {ventasMes.length > 0 && (() => {
+            const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+            const DistBlock = ({ titulo, icon, datos, color }: { titulo: string; icon: React.ReactNode; datos: { label: string; monto: number; cantidad: number }[]; color: string }) => {
+              const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
+              return (
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
+                  </div>
+                  <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+                    {datos.slice(0, 7).map((d, i) => {
+                      const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
+                      const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
+                      return (
+                        <div key={i} style={{ padding: '9px 14px', borderBottom: i < Math.min(datos.length, 7) - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                            <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' as const }}>{pct.toFixed(0)}%</span>
+                            </div>
+                          </div>
+                          <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${pctMonto}%`, background: color, opacity: 0.6, borderRadius: 2 }} />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
-            })()}
+            };
+            return (
+              <div className="data-card" style={{ background: '#0a0a0a' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
+                  <div style={{ flex: 1 }}>{sectionHeader('4. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+                  <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(totalMes)}</span>
+                </div>
+                {/* Cuotas + Rango Etario — horizontales */}
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+                  <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" />
+                  <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" />
+                  <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" />
+                  <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" />
+                  <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" />
+                </div>
+              </div>
+            );
+          })()}
           {/* ── SECCIÓN 5: ANÁLISIS COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader('5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
@@ -1385,86 +1405,93 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             </div>
           </div>
 
-            {/* ── SECCIÓN 10: PLAN DE ACCIÓN ── */}
-            <div className="data-card" style={{ background: '#0a0a0a' }}>
-              {sectionHeader('10. Plan de Acción', <Target size={15} color="#fb923c" />)}
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
-                <thead>
-                  <tr>
-                    {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución', ''].map(h => (
-                      <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {resumen.plan_acciones.map((fila, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                      {(['problema', 'accion', 'responsable'] as const).map(campo => (
-                        <td key={campo} style={{ padding: '6px 8px' }}>
-                          <input
-                            value={fila[campo]}
-                            onChange={e => {
-                              const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, [campo]: e.target.value } : f);
-                              setResumen(p => ({ ...p, plan_acciones: updated }));
-                            }}
-                            placeholder={campo === 'problema' ? 'Describí el problema...' : campo === 'accion' ? 'Acción concreta...' : 'Responsable'}
-                            style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
-                          />
-                        </td>
-                      ))}
-                      <td style={{ padding: '6px 8px' }}>
+          {/* ── SECCIÓN 10: PLAN DE ACCIÓN ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader('10. Plan de Acción', <Target size={15} color="#fb923c" />)}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
+              <thead>
+                <tr>
+                  {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución', ''].map(h => (
+                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {resumen.plan_acciones.map((fila, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                    {(['problema', 'accion', 'responsable'] as const).map(campo => (
+                      <td key={campo} style={{ padding: '6px 8px' }}>
                         <input
-                          type="date"
-                          value={fila.fecha}
+                          value={fila[campo]}
                           onChange={e => {
-                            const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, fecha: e.target.value } : f);
+                            const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, [campo]: e.target.value } : f);
                             setResumen(p => ({ ...p, plan_acciones: updated }));
                           }}
-                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', colorScheme: 'dark' as const }}
+                          placeholder={campo === 'problema' ? 'Describí el problema...' : campo === 'accion' ? 'Acción concreta...' : 'Responsable'}
+                          style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
                         />
                       </td>
-                      <td style={{ padding: '6px 8px' }}>
-                        <button
-                          onClick={() => setResumen(p => ({ ...p, plan_acciones: p.plan_acciones.filter((_, i) => i !== idx) }))}
-                          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, color: '#f87171', cursor: 'pointer', padding: '7px 10px', display: 'flex', alignItems: 'center' }}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <button
-                onClick={() => setResumen(p => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#888', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '8px 14px' }}
-              >
-                <Plus size={13} /> Agregar fila
-              </button>
-            </div>
+                    ))}
+                    <td style={{ padding: '6px 8px' }}>
+                      <input
+                        type="date"
+                        value={fila.fecha}
+                        onChange={e => {
+                          const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, fecha: e.target.value } : f);
+                          setResumen(p => ({ ...p, plan_acciones: updated }));
+                        }}
+                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', colorScheme: 'dark' as const }}
+                      />
+                    </td>
+                    <td style={{ padding: '6px 8px' }}>
+                      <button
+                        onClick={() => setResumen(p => ({ ...p, plan_acciones: p.plan_acciones.filter((_, i) => i !== idx) }))}
+                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, color: '#f87171', cursor: 'pointer', padding: '7px 10px', display: 'flex', alignItems: 'center' }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              onClick={() => setResumen(p => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#888', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '8px 14px' }}
+            >
+              <Plus size={13} /> Agregar fila
+            </button>
+          </div>
 
-            {/* ── SECCIÓN 11: ANÁLISIS TEMPORAL ── */}
-            <AnalisisTemporalTab registros={registros} />
+          {/* ── SECCIÓN 11: ANÁLISIS TEMPORAL ── */}
+          <AnalisisTemporalTab registros={registros} />
 
-            {/* ── BOTONES ── */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 40, paddingBottom: 40 }}>
-              <button
-                onClick={handleDescargarPDF}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#aaa', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                <Download size={14} />
-                Descargar PDF
-              </button>
-              <button
-                className="btn-primary"
-                onClick={handleGuardar}
-                disabled={saving}
-                style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-              >
-                <Save size={14} />
-                {saving ? 'Guardando...' : `Guardar Resumen — ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio}`}
-              </button>
-            </div>
+          {/* ── BOTONES ── */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 40, paddingBottom: 40 }}>
+            <button
+              onClick={handleGenerarLink}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(52,211,153,0.2)', background: 'rgba(52,211,153,0.08)', color: '#34d399', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+              Generar Link
+            </button>
+            <button
+              onClick={handleDescargarPDF}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#aaa', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            >
+              <Download size={14} />
+              Descargar PDF
+            </button>
+            <button
+              className="btn-primary"
+              onClick={handleGuardar}
+              disabled={saving}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <Save size={14} />
+              {saving ? 'Guardando...' : `Guardar Resumen — ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio}`}
+            </button>
+          </div>
         </div>
       )}
     </div>
