@@ -308,7 +308,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     *, *::before, *::after { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     html, body { margin: 0; padding: 0; background: #0a0a0a; color: #ccc; font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
     body { padding: 32px 40px; }
-    @page { margin: 15mm 14mm; size: A4; background: #0a0a0a; }
+    @page { margin: 10mm 12mm; size: A4 landscape; background: #0a0a0a; }
     @media print { body { padding: 0; background: #0a0a0a; } }
     /* Ocultar scrollbars, transiciones y cursores interactivos */
     * { scrollbar-width: none; transition: none !important; animation: none !important; cursor: default !important; }
