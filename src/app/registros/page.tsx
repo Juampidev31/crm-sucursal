@@ -9,7 +9,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
-import { useToast } from '@/hooks/useToast';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -254,41 +253,7 @@ const RegistroModal = memo(function RegistroModal({
                 <input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} />
               </Field>
               <Field label="Score">
-                <div style={{ position: 'relative' }}>
-                  <input
-                    className="form-input"
-                    type="number"
-                    value={form.puntaje || ''}
-                    onChange={e => {
-                      const score = Number(e.target.value);
-                      set('puntaje', score);
-                      // Autocompletar Acuerdo de Precios según el Score
-                      let acuerdoAuto = '';
-                      if (score >= 700) acuerdoAuto = 'Premium';
-                      else if (score >= 600) acuerdoAuto = 'Riesgo Bajo';
-                      else if (score >= 500) acuerdoAuto = 'Riesgo Medio';
-                      else if (score >= 0) acuerdoAuto = 'No califica';
-                      if (acuerdoAuto) set('acuerdo_precios', acuerdoAuto);
-                    }}
-                    placeholder="0"
-                    style={form.puntaje ? { paddingRight: '70px' } : undefined}
-                  />
-                  {form.puntaje !== undefined && form.puntaje !== null && form.puntaje >= 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      right: 4,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: form.puntaje >= 700 ? '#10b981' : form.puntaje >= 600 ? '#60a5fa' : form.puntaje >= 500 ? '#f59e0b' : '#f87171',
-                      pointerEvents: 'none',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {form.puntaje >= 700 ? 'PREM' : form.puntaje >= 600 ? 'R.BJO' : form.puntaje >= 500 ? 'R.MED' : 'NOCAL'}
-                    </div>
-                  )}
-                </div>
+                <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
               </Field>
               <Field label={`Tipo de cliente${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.tipo_cliente}>
                 <select className="form-select" value={form.tipo_cliente || ''} onChange={e => set('tipo_cliente', e.target.value)}>
@@ -299,6 +264,14 @@ const RegistroModal = memo(function RegistroModal({
               </Field>
             </div>
             <div className="form-row-3">
+              <Field label={`Acuerdo de precios${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.acuerdo_precios}>
+                <select className="form-select" value={form.acuerdo_precios || ''} onChange={e => set('acuerdo_precios', e.target.value)}>
+                  <option value="">— Sin especificar —</option>
+                  <option value="Riesgo Bajo">Riesgo Bajo</option>
+                  <option value="Riesgo Medio">Riesgo Medio</option>
+                  <option value="Premium">Premium</option>
+                </select>
+              </Field>
               <Field label={`Cuotas${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.cuotas}>
                 <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
               </Field>
@@ -456,7 +429,6 @@ const RecordatorioModal = memo(function RecordatorioModal({
 
     if (error) {
       setSaving(false);
-      onClose(false);
       return;
     }
 
@@ -642,7 +614,7 @@ export default function RegistrosPage() {
     showFilters, setShowFilters,
   } = useFilter();
 
-  const { toast, showToast } = useToast(4000);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
@@ -731,6 +703,15 @@ export default function RegistrosPage() {
     document.head.appendChild(style);
     return () => { document.head.removeChild(style); };
   }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'warning') =>
+    setToast({ message, type }), []);
 
   useEffect(() => {
     if (isCreationModalOpen) {
@@ -1238,8 +1219,7 @@ export default function RegistrosPage() {
                               reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? '#4ade80' :
                                 reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
                                   reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
-                                    reg.acuerdo_precios?.toUpperCase().includes('NO CALIFICA') ? '#f97316' :
-                                      '#333',
+                                    '#333',
                             textTransform: 'uppercase',
                             letterSpacing: '0.4px'
                           }}>
@@ -1291,75 +1271,6 @@ export default function RegistrosPage() {
           </div>
         )}
       </div>
-
-      {/* Paginación */}
-      {filteredRegistros.length > 0 && totalPages > 1 && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '22px 24px', marginTop: 8,
-          background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 12,
-        }}>
-          {/* Rango */}
-          <span style={{ fontSize: 13, color: '#444', fontWeight: 500 }}>
-            Mostrando {rangeEnd - rangeStart + 1} de {filteredRegistros.length} registros
-          </span>
-
-          {/* Controles */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {[
-              { label: 'Primera', page: 1, disabled: currentPage === 1 },
-              { label: '← Anterior', page: currentPage - 1, disabled: currentPage === 1 },
-            ].map(({ label, page, disabled }) => (
-              <button
-                key={label}
-                onClick={() => !disabled && setCurrentPage(page)}
-                disabled={disabled}
-                style={{
-                  padding: '6px 14px', fontSize: 13, fontWeight: 500,
-                  borderRadius: 8, cursor: disabled ? 'default' : 'pointer',
-                  background: 'transparent',
-                  border: '1px solid',
-                  borderColor: disabled ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)',
-                  color: disabled ? '#2a2a2a' : '#666',
-                  transition: 'all 0.12s ease', userSelect: 'none',
-                }}
-                onMouseEnter={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'rgba(255,255,255,0.22)'; b.style.color = '#ccc'; } }}
-                onMouseLeave={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'rgba(255,255,255,0.1)'; b.style.color = '#666'; } }}
-              >{label}</button>
-            ))}
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', fontSize: 13 }}>
-              <span style={{ color: '#3a3a3a', fontWeight: 500 }}>Página</span>
-              <span style={{ color: '#888', fontWeight: 700 }}>{currentPage}</span>
-              <span style={{ color: '#3a3a3a' }}>de</span>
-              <span style={{ color: '#555', fontWeight: 600 }}>{totalPages}</span>
-            </div>
-
-            {[
-              { label: 'Siguiente →', page: currentPage + 1, disabled: currentPage === totalPages },
-              { label: 'Última', page: totalPages, disabled: currentPage === totalPages },
-            ].map(({ label, page, disabled }) => (
-              <button
-                key={label}
-                onClick={() => !disabled && setCurrentPage(page)}
-                disabled={disabled}
-                style={{
-                  padding: '6px 14px', fontSize: 13, fontWeight: 500,
-                  borderRadius: 8, cursor: disabled ? 'default' : 'pointer',
-                  background: 'transparent',
-                  border: '1px solid',
-                  borderColor: disabled ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)',
-                  color: disabled ? '#2a2a2a' : '#666',
-                  transition: 'all 0.12s ease', userSelect: 'none',
-                }}
-                onMouseEnter={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'rgba(255,255,255,0.22)'; b.style.color = '#ccc'; } }}
-                onMouseLeave={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'rgba(255,255,255,0.1)'; b.style.color = '#666'; } }}
-              >{label}</button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Modals */}
       <RegistroModal
