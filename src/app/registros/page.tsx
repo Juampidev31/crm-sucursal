@@ -270,6 +270,7 @@ const RegistroModal = memo(function RegistroModal({
                   <option value="Riesgo Bajo">Riesgo Bajo</option>
                   <option value="Riesgo Medio">Riesgo Medio</option>
                   <option value="Premium">Premium</option>
+                  <option value="No califica">No califica</option>
                 </select>
               </Field>
               <Field label={`Cuotas${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.cuotas}>

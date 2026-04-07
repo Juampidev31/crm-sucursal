@@ -747,7 +747,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => apertVsRenData.ant.aperturas / CONFIG.ANALISTAS_DEFAULT.length), apertVsRenData.ant.aperturas], backgroundColor: 'rgba(96,165,250,0.25)', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => Math.round(apertVsRenData.ant.aperturas / CONFIG.ANALISTAS_DEFAULT.length)), apertVsRenData.ant.aperturas], backgroundColor: 'rgba(96,165,250,0.25)', borderRadius: 4, maxBarThickness: 50 },
       ],
     };
   }, [apertVsRenData, mesActualLabel, mesAntLabel]);
@@ -758,7 +758,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], backgroundColor: '#a78bfa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => apertVsRenData.ant.renovaciones / CONFIG.ANALISTAS_DEFAULT.length), apertVsRenData.ant.renovaciones], backgroundColor: 'rgba(167,139,250,0.25)', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => Math.round(apertVsRenData.ant.renovaciones / CONFIG.ANALISTAS_DEFAULT.length)), apertVsRenData.ant.renovaciones], backgroundColor: 'rgba(167,139,250,0.25)', borderRadius: 4, maxBarThickness: 50 },
       ],
     };
   }, [apertVsRenData, mesActualLabel, mesAntLabel]);
@@ -960,15 +960,15 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
-                      <div id="chart-aperturas" style={{ height: 140 }}>
+                      <div id="chart-aperturas" style={{ height: 140, position: 'relative', width: '100%' }}>
                         <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
-                      <div id="chart-renovaciones" style={{ height: 140 }}>
+                      <div id="chart-renovaciones" style={{ height: 140, position: 'relative', width: '100%' }}>
                         <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
