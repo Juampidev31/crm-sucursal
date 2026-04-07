@@ -119,6 +119,26 @@ interface Props {
 
 const now = new Date();
 
+const ManualTextarea = ({ label, value, onChange, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string;
+}) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 260 }}>
+    <label style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{label}</label>
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder ?? `${label}...`}
+      rows={4}
+      style={{
+        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 8, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 13,
+        padding: '12px 14px', resize: 'vertical', outline: 'none',
+        width: '100%', boxSizing: 'border-box' as const,
+      }}
+    />
+  </div>
+);
+
 export default function ResumenMensualTab({ registros, objetivos, onSuccess, onError }: Props) {
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
@@ -851,27 +871,6 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       ],
     };
   }, [resumen.presupuestos_por_analista, kpiPorAnalista]);
-
-  // ── Textarea helper ───────────────────────────────────────────────────────
-  const ManualTextarea = ({ label, value, onChange, placeholder }: {
-    label: string; value: string; onChange: (v: string) => void; placeholder?: string;
-  }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 260 }}>
-      <label style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{label}</label>
-      <textarea
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder ?? `${label}...`}
-        rows={4}
-        style={{
-          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 8, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 13,
-          padding: '12px 14px', resize: 'vertical', outline: 'none',
-          width: '100%', boxSizing: 'border-box' as const,
-        }}
-      />
-    </div>
-  );
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
