@@ -722,7 +722,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: 'Variación Capital %', data: capitalVar, backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
-        { label: 'Variación Ops %', data: opsVar, backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.7)' : 'rgba(251,191,36,0.7)'), borderRadius: 4, maxBarThickness: 70 },
+        { label: 'Variación Ops %', data: opsVar, backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
       ],
     };
   }, [kpiPorAnalista, kpiTotal]);
@@ -1115,7 +1115,19 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                   </div>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Embudo Comercial por Analista</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Embudo Comercial por Analista</div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Atendidos</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(167,139,250,0.8)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Op. Cerradas</span>
+                      </div>
+                    </div>
+                  </div>
                   <div id="chart-embudo" style={{ height: 280 }}>
                     <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
                   </div>
@@ -1124,7 +1136,19 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               {/* Fila 3: % Total Conversión + % Empleo Público/Privado + Resumen Acuerdos */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>% Total Conversión</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Total Conversión</div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesActualLabel}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.25)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesAntLabel}</span>
+                      </div>
+                    </div>
+                  </div>
                   <div id="chart-conversion-total" style={{ height: 280 }}>
                     <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
                   </div>
