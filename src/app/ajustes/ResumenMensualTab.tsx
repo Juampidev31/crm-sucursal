@@ -282,10 +282,17 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       cloned.parentNode?.replaceChild(span, cloned);
     });
 
-    // 7. Resolver CSS vars residuales
+    // 7. Resolver CSS vars residuales + fix grids para print
     clone.innerHTML = clone.innerHTML
       .replace(/var\(--gris\)/g, '#666')
-      .replace(/var\(--rojo\)/g, '#f87171');
+      .replace(/var\(--rojo\)/g, '#f87171')
+      .replace(/repeat\(auto-fit,\s*minmax\(\d+px,\s*1fr\)\)/g, 'repeat(2, 1fr)');
+
+    // 8. Agregar break-inside: avoid a cada data-card y tarjeta interna
+    clone.querySelectorAll('.data-card').forEach(el => {
+      (el as HTMLElement).style.breakInside = 'avoid';
+      (el as HTMLElement).style.pageBreakInside = 'avoid';
+    });
 
     const mesNombre = CONFIG.MESES_NOMBRES[selectedMes - 1];
     const titulo = `Resumen ${mesNombre} ${selectedAnio}`;
@@ -306,12 +313,22 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     /* Ocultar scrollbars, transiciones y cursores interactivos */
     * { scrollbar-width: none; transition: none !important; animation: none !important; cursor: default !important; }
     /* Clases del proyecto */
-    .data-card { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 24px; margin-bottom: 0; }
+    .data-card { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 24px; margin-bottom: 0; break-inside: avoid; page-break-inside: avoid; }
     .data-table { width: 100%; border-collapse: collapse; text-align: left; }
     /* Ocultar el spinner y elementos no imprimibles */
     .spinner, [class*="no-print"] { display: none !important; }
     /* Inputs/botones residuales ocultos */
     input, button { display: none !important; }
+    /* ── Print grid fix: auto-fit no funciona en print, forzar columnas fijas ── */
+    [style*="grid-template-columns"] { display: grid !important; }
+    [style*="repeat(auto-fit"] { grid-template-columns: repeat(2, 1fr) !important; }
+    /* Evitar corte dentro de tarjetas y gráficos */
+    [style*="border-radius: 10px"], [style*="border-radius: 12px"], [style*="borderRadius"] { break-inside: avoid; page-break-inside: avoid; }
+    img { max-width: 100%; height: auto !important; }
+    /* Forzar que cada sección principal empiece en nueva página excepto la primera */
+    .data-card + .data-card { page-break-before: auto; }
+    /* Flex containers: no shrink */
+    [style*="display: flex"] { flex-shrink: 0; }
   </style>
 </head>
 <body>
