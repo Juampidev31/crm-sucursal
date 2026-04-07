@@ -5,6 +5,7 @@ import { Registro, CONFIG } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import CustomSelect from '@/components/CustomSelect';
 import { Line, Bar } from 'react-chartjs-2';
+import { BarChart2 } from 'lucide-react';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement,
   BarElement, Tooltip, Legend, Filler,
@@ -416,7 +417,14 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '4px', height: '24px', borderRadius: '2px', background: '#fff' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BarChart2 size={18} color="#fff" />
+            <h2 style={{ fontSize: '14px', fontWeight: 800, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              11. Rendimiento y Tendencias
+            </h2>
+          </div>
         </div>
+
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
           {[
             { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="170px" /> },

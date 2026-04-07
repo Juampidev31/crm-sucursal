@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { formatCurrency } from '@/lib/utils';
-import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Download } from 'lucide-react';
+import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Download, Briefcase, PieChart, Tag } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -299,14 +299,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   <div style="margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15)">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#555;margin-bottom:6px">Informe de Gestión Comercial</div>
     <h1 style="font-size:28px;font-weight:900;color:#fff;margin:0">${titulo}</h1>
-    <div style="font-size:12px;color:#555;margin-top:6px">Generado el ${new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
   </div>
 
   ${clone.innerHTML}
-
-  <div style="margin-top:40px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);font-size:10px;color:#555;text-align:center">
-    Generado el ${new Date().toLocaleString('es-AR')}
-  </div>
 
   <script>window.onload = () => { window.print(); }</script>
 </body>
@@ -914,11 +909,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           <span style={{ color: '#555', fontSize: 13 }}>Cargando resumen...</span>
         </div>
       ) : (
-        <div id="resumen-reporte-body">
+        <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader('1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
               <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
@@ -930,6 +925,12 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     </span>
                   )}
                   {tendBadge(kpiTotal.tendCapital)}
+                </div>
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 12 }}>Capital vs Objetivo</div>
+                  <div id="chart-capital-objetivo" style={{ height: 180 }}>
+                    <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                  </div>
                 </div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -944,19 +945,62 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                   )}
                   {tendBadge(kpiTotal.tendOps)}
                 </div>
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Act</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Ant</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
+                      <div id="chart-aperturas" style={{ height: 140 }}>
+                        <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
+                      <div id="chart-renovaciones" style={{ height: 140 }}>
+                        <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
                 <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
                 <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>{kpiTotal.clientes} clientes ingresados</div>
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Act</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.25)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Ant</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="chart-ticket-promedio" style={{ height: 180 }}>
+                    <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                  </div>
+                </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <ManualTextarea label="Principales Logros" value={resumen.logros} onChange={v => setResumen(p => ({ ...p, logros: v }))} placeholder="Describí los principales logros del período..." />
-              <ManualTextarea label="Principales Desvíos / Problemas" value={resumen.desvios} onChange={v => setResumen(p => ({ ...p, desvios: v }))} placeholder="Describí los desvíos o problemas detectados..." />
-              <ManualTextarea label="Acciones Clave a Seguir" value={resumen.acciones_clave} onChange={v => setResumen(p => ({ ...p, acciones_clave: v }))} placeholder="Acciones prioritarias para el próximo período..." />
-            </div>
+
           </div>
 
           {/* ── SECCIÓN 2: INDICADORES CLAVE ── */}
@@ -1030,50 +1074,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
             {/* ── GRÁFICOS PRINCIPALES ── */}
             <div style={{ marginBottom: 28 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <div style={{ width: 3, height: 14, background: '#60a5fa', borderRadius: 4 }} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Gráficos del Período — vs {mesAntLabel}</span>
-              </div>
+              {/* Fila 1: Eliminada y movidos a KPIs */}
 
-              {/* Fila 1: Capital vs Objetivo + Ticket Promedio */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
-                {[
-                  { id: 'chart-capital-objetivo', titulo: 'Capital vs Objetivo', data: chartCapitalVsObjetivo, yLabel: '$', labels: true, legend: null },
-                  {
-                    id: 'chart-ticket-promedio',
-                    titulo: `Ticket Promedio — vs ${mesAntLabel}`,
-                    data: chartTicketPromedio,
-                    yLabel: '$',
-                    labels: true,
-                    legend: [
-                      { label: `Actual`, color: 'rgba(52,211,153,0.8)' },
-                      { label: `Anterior`, color: 'rgba(52,211,153,0.25)' }
-                    ]
-                  },
-                ].map(({ id, titulo, data, yLabel, labels, legend }) => (
-                  <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</div>
-                      {legend && (
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          {legend.map(item => (
-                            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: item.color }} />
-                              <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{item.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div id={id} style={{ height: 280 }}>
-                      <Bar data={data as any} options={baseChartOpts(yLabel, false, labels, false)} {...(labels ? { plugins: [labelsPlugin] } : {})} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Fila 2: % Cumplimiento + Variación % */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
+              {/* Fila 2: % Cumplimiento + Variación % + Embudo Comercial */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
@@ -1110,69 +1114,63 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
                   </div>
                 </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Embudo Comercial por Analista</div>
+                  <div id="chart-embudo" style={{ height: 280 }}>
+                    <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
+                  </div>
+                </div>
               </div>
-
-              {/* Fila 3: % Conversión Total + Aperturas vs Renovaciones */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
+              {/* Fila 3: % Total Conversión + % Empleo Público/Privado + Resumen Acuerdos */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>% Total Conversión</div>
                   <div id="chart-conversion-total" style={{ height: 280 }}>
                     <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
                   </div>
                 </div>
-                <div id="chart-aperturas-renovaciones" style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones — vs {mesAntLabel}</div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                    <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
+                    <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
+                  </div>
+                  <div id="chart-empleo-publico-privado" style={{ height: 280 }}>
+                    <Bar data={chartEmpleoPublPriv} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Resumen de acuerdos por analista</div>
                     <div style={{ display: 'flex', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Actual</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Luciana</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesAntLabel}</span>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Victoria</span>
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                    <div>
-                      <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase' }}>Aperturas</div>
-                      <div id="chart-aperturas" style={{ height: 260 }}>
-                        <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase' }}>Renovaciones</div>
-                      <div id="chart-renovaciones" style={{ height: 260 }}>
-                        <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-                      </div>
-                    </div>
+                  <div id="chart-acuerdos" style={{ height: 280 }}>
+                    <Bar data={chartAcuerdos} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                   </div>
                 </div>
               </div>
 
             </div>
+          </div>
 
-            {/* Distribución por Acuerdo de Precios */}
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <div style={{ width: 3, height: 14, background: '#60a5fa', borderRadius: 4 }} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Distribución por Acuerdo de Precios</span>
-              </div>
+          {/* ── SECCIÓN 3: DISTRIBUCIÓN POR ACUERDO ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+              {sectionHeader('3. Distribución por Acuerdo de Precios', <PieChart size={15} color="#60a5fa" />)}
               {(() => {
                 const totalOps = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
                 const totalMonto = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
                 const colores: Record<string, string> = { 'Riesgo BAJO': '#34d399', 'Riesgo MEDIO': '#fbbf24', 'PREMIUM': '#a78bfa', 'No califica': '#f97316' };
                 return (
                   <>
-                    {/* Barra de progreso compuesta */}
-                    {totalOps > 0 && (
-                      <div style={{ display: 'flex', height: 6, borderRadius: 4, overflow: 'hidden', marginBottom: 14, gap: 1 }}>
-                        {Object.entries(distribucionAcuerdos).map(([tipo, data]) => (
-                          <div key={tipo} style={{ width: `${totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0}%`, background: colores[tipo] ?? '#555', transition: 'width 0.4s' }} />
-                        ))}
-                      </div>
-                    )}
+
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                       {Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
                         const pctOps = totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0;
@@ -1219,26 +1217,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               })()}
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', marginBottom: 28 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Resumen de acuerdos por analista</div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Luciana</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Victoria</span>
-                  </div>
-                </div>
-              </div>
-              <div id="chart-acuerdos" style={{ height: 240 }}>
-                <Bar data={chartAcuerdos} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-              </div>
-            </div>
-
-            {/* Ventas por Categoría */}
+            {/* ── SECCIÓN 4: VENTAS POR CATEGORÍA ── */}
             {ventasMes.length > 0 && (() => {
               const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
               const DistBlock = ({ titulo, icon, datos, color }: { titulo: string; icon: React.ReactNode; datos: { label: string; monto: number; cantidad: number }[]; color: string }) => {
@@ -1274,11 +1253,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                 );
               };
               return (
-                <div style={{ marginBottom: 28 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                    <div style={{ width: 3, height: 14, background: '#fb923c', borderRadius: 4 }} />
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Ventas por Categoría</span>
-                    <span style={{ fontSize: 11, color: '#333', marginLeft: 4 }}>{ventasMes.length} operaciones · {formatCurrency(totalMes)}</span>
+                <div className="data-card" style={{ background: '#0a0a0a' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
+                    <div style={{ flex: 1 }}>{sectionHeader('4. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+                    <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(totalMes)}</span>
                   </div>
                   {/* Cuotas + Rango Etario — horizontales */}
                   <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -1288,163 +1266,88 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" />
                     <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" />
                   </div>
-
-                  {/* % Empleo Público / Privado — barras verticales */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                      <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-                      <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
-                    </div>
-                    <div id="chart-empleo-publico-privado" style={{ height: 240 }}>
-                      <Bar data={chartEmpleoPublPriv} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />
-                    </div>
-                  </div>
                 </div>
               );
             })()}
-
-            {/* Gestiones comerciales */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <div style={{ width: 3, height: 14, background: '#34d399', borderRadius: 4 }} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Gestión Comercial</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-                <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
-                <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} placeholder="Salidas al campo, visitas programadas..." />
-                <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen(p => ({ ...p, empresas_estrategicas: v }))} placeholder="Empresas clave contactadas o visitadas..." />
-              </div>
-            </div>
-          </div>
-
-          {/* ── SECCIÓN 3: ANÁLISIS COMERCIAL ── */}
+          {/* ── SECCIÓN 5: ANÁLISIS COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('3. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-              {rankingAnalistas.map((k, i) => (
-                <div key={k.analista} style={{ flex: 1, minWidth: 180, background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '14px 18px', border: `1px solid ${i === 0 ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.12)'}` }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: i === 0 ? '#34d399' : '#f87171', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 6 }}>
-                    {i === 0 ? '▲ Mejor desempeño' : '▼ Menor desempeño'}
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#ccc' }}>{k.analista}</div>
-                  <div style={{ fontSize: 13, color: '#888', marginTop: 4 }}>{formatCurrency(k.capital)} · {k.ops} ops.</div>
-                </div>
-              ))}
-            </div>
+            {sectionHeader('5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
             <ManualTextarea
               label="Interpretación del Período"
               value={resumen.analisis_comercial}
               onChange={v => setResumen(p => ({ ...p, analisis_comercial: v }))}
               placeholder="¿Por qué se vendió más o menos? Impacto de campañas, comportamiento del cliente, factores externos..."
             />
+          </div>
 
-            {/* Embudo comercial — inputs numéricos + gráfico */}
-            <div style={{ marginTop: 28, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <div style={{ width: 3, height: 14, background: '#60a5fa', borderRadius: 4 }} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>Embudo Comercial</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 20 }}>
-                {CONFIG.ANALISTAS_DEFAULT.map(a => (
-                  <div key={a} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#aaa', marginBottom: 12 }}>{a}</div>
-                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
-                      <div>
-                        <label style={{ fontSize: 10, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Gestiones</label>
-                        <input
-                          type="number" min="0"
-                          value={resumen.gestiones_por_analista[a] ?? ''}
-                          onChange={e => setResumen(p => ({ ...p, gestiones_por_analista: { ...p.gestiones_por_analista, [a]: Number(e.target.value) } }))}
-                          placeholder="0"
-                          style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 13, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
-                        />
+          {/* ── SECCIÓN 6: OPERACIÓN Y PROCESOS ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader('6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+            <ManualTextarea
+              label="Cumplimiento de Procedimientos / Tiempos / Stock"
+              value={resumen.operacion_procesos}
+              onChange={v => setResumen(p => ({ ...p, operacion_procesos: v }))}
+              placeholder="Cumplimiento de procedimientos, tiempos de atención, stock de merchandising y flyers..."
+            />
+          </div>
+
+          {/* ── SECCIÓN 7: GESTIÓN COMERCIAL ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader('7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+              <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
+              <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} placeholder="Salidas al campo, visitas programadas..." />
+              <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen(p => ({ ...p, empresas_estrategicas: v }))} placeholder="Empresas clave contactadas o visitadas..." />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginTop: 16 }}>
+              <ManualTextarea label="Principales Logros" value={resumen.logros} onChange={v => setResumen(p => ({ ...p, logros: v }))} placeholder="Describí los principales logros del período..." />
+              <ManualTextarea label="Principales Desvíos / Problemas" value={resumen.desvios} onChange={v => setResumen(p => ({ ...p, desvios: v }))} placeholder="Describí los desvíos o problemas detectados..." />
+              <ManualTextarea label="Acciones Clave a Seguir" value={resumen.acciones_clave} onChange={v => setResumen(p => ({ ...p, acciones_clave: v }))} placeholder="Acciones prioritarias para el próximo período..." />
+            </div>
+          </div>
+
+          {/* ── SECCIÓN 8: EXPERIENCIA DEL CLIENTE ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader('8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+            <ManualTextarea
+              label="Reclamos y Satisfacción"
+              value={resumen.experiencia_cliente}
+              onChange={v => setResumen(p => ({ ...p, experiencia_cliente: v }))}
+              placeholder="Cantidad y tipo de reclamos, nivel de satisfacción, problemas recurrentes..."
+            />
+          </div>
+
+          {/* ── SECCIÓN 9: GESTIÓN DEL EQUIPO ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader('9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+            {auditoriaData.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  {CONFIG.ANALISTAS_DEFAULT.map(analista => {
+                    const count = auditoriaData.filter(a => a.analista === analista).length;
+                    return (
+                      <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 4 }}>{analista}</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{count}</div>
+                        <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
                       </div>
-                      <div>
-                        <label style={{ fontSize: 10, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Con Presupuesto</label>
-                        <input
-                          type="number" min="0"
-                          value={resumen.presupuestos_por_analista[a] ?? ''}
-                          onChange={e => setResumen(p => ({ ...p, presupuestos_por_analista: { ...p.presupuestos_por_analista, [a]: Number(e.target.value) } }))}
-                          placeholder="0"
-                          style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 13, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Embudo Comercial por Analista</div>
-                  <div id="chart-embudo" style={{ height: 260 }}>
-                    <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>% Conversión Presupuesto → Venta</div>
-                  <div id="chart-conversion-presupuesto" style={{ height: 260 }}>
-                    <Bar data={chartConversionPresupuesto as any} options={baseChartOpts('%', false, true)} plugins={[labelsPlugin]} />
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
+            )}
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <ManualTextarea label="Dotación Actual" value={resumen.dotacion} onChange={v => setResumen(p => ({ ...p, dotacion: v }))} />
+              <ManualTextarea label="Ausentismo / Tardanzas" value={resumen.ausentismo} onChange={v => setResumen(p => ({ ...p, ausentismo: v }))} />
+              <ManualTextarea label="Capacitación Realizada" value={resumen.capacitacion} onChange={v => setResumen(p => ({ ...p, capacitacion: v }))} />
+              <ManualTextarea label="Evaluación de Desempeño" value={resumen.evaluacion_desempeno} onChange={v => setResumen(p => ({ ...p, evaluacion_desempeno: v }))} />
             </div>
+          </div>
 
-            {/* ── SECCIÓN 8: ANÁLISIS TEMPORAL ── */}
-            <AnalisisTemporalTab registros={registros} />
-
-            {/* ── SECCIÓN 4: GESTIÓN DEL EQUIPO ── */}
+            {/* ── SECCIÓN 10: PLAN DE ACCIÓN ── */}
             <div className="data-card" style={{ background: '#0a0a0a' }}>
-              {sectionHeader('4. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
-              {auditoriaData.length > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    {CONFIG.ANALISTAS_DEFAULT.map(analista => {
-                      const count = auditoriaData.filter(a => a.analista === analista).length;
-                      return (
-                        <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 4 }}>{analista}</div>
-                          <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{count}</div>
-                          <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <ManualTextarea label="Dotación Actual" value={resumen.dotacion} onChange={v => setResumen(p => ({ ...p, dotacion: v }))} />
-                <ManualTextarea label="Ausentismo / Tardanzas" value={resumen.ausentismo} onChange={v => setResumen(p => ({ ...p, ausentismo: v }))} />
-                <ManualTextarea label="Capacitación Realizada" value={resumen.capacitacion} onChange={v => setResumen(p => ({ ...p, capacitacion: v }))} />
-                <ManualTextarea label="Evaluación de Desempeño" value={resumen.evaluacion_desempeno} onChange={v => setResumen(p => ({ ...p, evaluacion_desempeno: v }))} />
-              </div>
-            </div>
-
-            {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
-            <div className="data-card" style={{ background: '#0a0a0a' }}>
-              {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-              <ManualTextarea
-                label="Cumplimiento de Procedimientos / Tiempos / Stock"
-                value={resumen.operacion_procesos}
-                onChange={v => setResumen(p => ({ ...p, operacion_procesos: v }))}
-                placeholder="Cumplimiento de procedimientos, tiempos de atención, stock de merchandising y flyers..."
-              />
-            </div>
-
-            {/* ── SECCIÓN 6: EXPERIENCIA DEL CLIENTE ── */}
-            <div className="data-card" style={{ background: '#0a0a0a' }}>
-              {sectionHeader('6. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-              <ManualTextarea
-                label="Reclamos y Satisfacción"
-                value={resumen.experiencia_cliente}
-                onChange={v => setResumen(p => ({ ...p, experiencia_cliente: v }))}
-                placeholder="Cantidad y tipo de reclamos, nivel de satisfacción, problemas recurrentes..."
-              />
-            </div>
-
-            {/* ── SECCIÓN 7: PLAN DE ACCIÓN ── */}
-            <div className="data-card" style={{ background: '#0a0a0a' }}>
-              {sectionHeader('7. Plan de Acción', <Target size={15} color="#fb923c" />)}
+              {sectionHeader('10. Plan de Acción', <Target size={15} color="#fb923c" />)}
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
                 <thead>
                   <tr>
@@ -1500,8 +1403,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               </button>
             </div>
 
+            {/* ── SECCIÓN 11: ANÁLISIS TEMPORAL ── */}
+            <AnalisisTemporalTab registros={registros} />
+
             {/* ── BOTONES ── */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 40, paddingBottom: 40 }}>
               <button
                 onClick={handleDescargarPDF}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#aaa', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
@@ -1519,7 +1425,6 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                 {saving ? 'Guardando...' : `Guardar Resumen — ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio}`}
               </button>
             </div>
-          </div>
         </div>
       )}
     </div>
