@@ -65,9 +65,12 @@ function ResumenMensualContent() {
       console.log('Resultado query:', { data, error });
 
       if (error) {
+        console.error('Error fetching:', error);
         setError(error.message);
       } else if (data) {
+        console.log('Datos encontrados, setResumen:', data);
         setResumen(data as ResumenMensual);
+        console.log('Después de setResumen - resumen state debería tener datos');
       } else {
         setError(`No se encontró el reporte para ${MESES_NOMBRES[mes - 1]} ${anio}. Registros disponibles: ${allData?.map(d => `${d.anio}-${d.mes}`).join(', ') || 'ninguno'}`);
       }
