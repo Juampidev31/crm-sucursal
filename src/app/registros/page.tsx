@@ -253,7 +253,41 @@ const RegistroModal = memo(function RegistroModal({
                 <input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} />
               </Field>
               <Field label="Score">
-                <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={form.puntaje || ''}
+                    onChange={e => {
+                      const score = Number(e.target.value);
+                      set('puntaje', score);
+                      // Autocompletar Acuerdo de Precios según el Score
+                      let acuerdoAuto = '';
+                      if (score >= 700) acuerdoAuto = 'Premium';
+                      else if (score >= 600) acuerdoAuto = 'Riesgo Bajo';
+                      else if (score >= 500) acuerdoAuto = 'Riesgo Medio';
+                      else if (score >= 0) acuerdoAuto = 'No califica';
+                      if (acuerdoAuto) set('acuerdo_precios', acuerdoAuto);
+                    }}
+                    placeholder="0"
+                    style={form.puntaje ? { paddingRight: '70px' } : undefined}
+                  />
+                  {form.puntaje !== undefined && form.puntaje !== null && form.puntaje >= 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      right: 4,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: form.puntaje >= 700 ? '#10b981' : form.puntaje >= 600 ? '#60a5fa' : form.puntaje >= 500 ? '#f59e0b' : '#f87171',
+                      pointerEvents: 'none',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {form.puntaje >= 700 ? 'PREM' : form.puntaje >= 600 ? 'R.BJO' : form.puntaje >= 500 ? 'R.MED' : 'NOCAL'}
+                    </div>
+                  )}
+                </div>
               </Field>
               <Field label={`Tipo de cliente${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.tipo_cliente}>
                 <select className="form-select" value={form.tipo_cliente || ''} onChange={e => set('tipo_cliente', e.target.value)}>
@@ -264,15 +298,6 @@ const RegistroModal = memo(function RegistroModal({
               </Field>
             </div>
             <div className="form-row-3">
-              <Field label={`Acuerdo de precios${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.acuerdo_precios}>
-                <select className="form-select" value={form.acuerdo_precios || ''} onChange={e => set('acuerdo_precios', e.target.value)}>
-                  <option value="">— Sin especificar —</option>
-                  <option value="Riesgo Bajo">Riesgo Bajo</option>
-                  <option value="Riesgo Medio">Riesgo Medio</option>
-                  <option value="Premium">Premium</option>
-                  <option value="No califica">No califica</option>
-                </select>
-              </Field>
               <Field label={`Cuotas${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.cuotas}>
                 <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
               </Field>

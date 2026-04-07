@@ -196,346 +196,116 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
   // ── PDF ───────────────────────────────────────────────────────────────────
   const handleDescargarPDF = async () => {
-    // Capturar gráficos como imágenes base64
-    const chartImages: Record<string, string> = {};
-    const chartMap: Record<string, string> = {
-      'chart-capital-objetivo': 'Capital vs Objetivo',
-      'chart-ticket-promedio': 'Ticket Promedio',
-      'chart-cumplimiento': '% Cumplimiento',
-      'chart-variacion': 'Variación %',
-      'chart-conversion-total': '% Conversión Total',
-      'chart-aperturas-renovaciones': 'Aperturas vs Renovaciones',
-      'chart-acuerdos': 'Acuerdo de Precios',
-      'chart-embudo': 'Embudo Comercial',
-      'chart-conversion-presupuesto': '% Conversión Presupuesto',
-      'chart-empleo-publico-privado': 'Empleo Público / Privado',
-      // Analisis Temporal
-      'chart-at-tendencia': 'Tendencia',
-      'chart-at-estacionalidad': 'Estacionalidad — Patrones por semana',
-      'chart-at-dia-semana': 'Por Día de Semana — Rendimiento en $',
-      'chart-at-acuerdos': 'Evolución Acuerdo de Precios — Proporción semanal',
-    };
-    // Esperar un tick para que los canvas estén renderizados
+    const root = document.getElementById('resumen-reporte-body');
+    if (!root) { onError('No se encontró el contenido del reporte.'); return; }
+
+    // 1. Esperar render de gráficos
     await new Promise(r => setTimeout(r, 300));
-    for (const [domId] of Object.entries(chartMap)) {
-      const wrapper = document.getElementById(domId);
-      if (wrapper) {
-        const canvases = wrapper.querySelectorAll('canvas') as NodeListOf<HTMLCanvasElement>;
-        if (canvases.length === 1) {
-          try { chartImages[domId] = canvases[0].toDataURL('image/png'); } catch { /* ignorar */ }
-        } else if (canvases.length > 1) {
-          // Múltiples canvases: capturar cada uno por separado como array JSON
-          const imgs: string[] = [];
-          canvases.forEach(c => { try { imgs.push(c.toDataURL('image/png')); } catch { /* ignorar */ } });
-          if (imgs.length) chartImages[domId] = JSON.stringify(imgs);
-        }
+
+    // 2. Capturar todos los canvas ANTES de clonar
+    const canvasImages = new Map<HTMLCanvasElement, string>();
+    root.querySelectorAll('canvas').forEach(canvas => {
+      try { canvasImages.set(canvas as HTMLCanvasElement, (canvas as HTMLCanvasElement).toDataURL('image/png')); } catch { /* ignorar */ }
+    });
+
+    // 3. Clonar el DOM real del reporte
+    const clone = root.cloneNode(true) as HTMLElement;
+
+    // 4. Reemplazar cada canvas clonado con su imagen capturada
+    const origCanvases = Array.from(root.querySelectorAll('canvas')) as HTMLCanvasElement[];
+    const cloneCanvases = Array.from(clone.querySelectorAll('canvas')) as HTMLCanvasElement[];
+    origCanvases.forEach((orig, i) => {
+      const src = canvasImages.get(orig);
+      const clonedCanvas = cloneCanvases[i];
+      if (src && clonedCanvas) {
+        const img = document.createElement('img');
+        img.src = src;
+        img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
+        clonedCanvas.parentNode?.replaceChild(img, clonedCanvas);
       }
-    }
+    });
 
-    // Helper: capturar sección HTML del DOM, reemplazando canvas por imágenes
-    const capturarSeccion = (id: string) => {
-      const el = document.getElementById(id);
-      if (!el) return '';
-      const clone = el.cloneNode(true) as HTMLElement;
-      // Reemplazar todos los canvas con imágenes capturadas
-      clone.querySelectorAll('canvas').forEach(canvas => {
-        const wrapper = canvas.closest('[id]');
-        const wId = wrapper?.id || '';
-        if (chartImages[wId]) {
-          const img = document.createElement('img');
-          img.src = chartImages[wId];
-          img.style.cssText = 'width:100%;height:auto;object-fit:contain;display:block';
-          canvas.parentNode?.replaceChild(img, canvas);
-        }
-      });
-      // Resolver CSS vars
-      clone.innerHTML = clone.innerHTML.replace(/var\(--gris\)/g, '#666');
-      return clone.outerHTML;
-    };
+    // 5. Reemplazar textareas por divs con el valor actual
+    const origTextareas = Array.from(root.querySelectorAll('textarea')) as HTMLTextAreaElement[];
+    const cloneTextareas = Array.from(clone.querySelectorAll('textarea')) as HTMLTextAreaElement[];
+    origTextareas.forEach((orig, i) => {
+      const cloned = cloneTextareas[i];
+      if (!cloned) return;
+      const computed = window.getComputedStyle(orig);
+      const div = document.createElement('div');
+      div.style.cssText = cloned.style.cssText;
+      div.style.whiteSpace = 'pre-wrap';
+      div.style.overflow = 'visible';
+      div.style.resize = 'none';
+      div.style.minHeight = computed.height !== 'auto' ? computed.height : '72px';
+      div.style.display = 'block';
+      div.textContent = orig.value;
+      cloned.parentNode?.replaceChild(div, cloned);
+    });
 
-    const tendenciaMapaHTML = capturarSeccion('seccion-tendencia-mapa');
-    const estacionalidadHTML = capturarSeccion('seccion-estacionalidad');
+    // 6. Reemplazar inputs con su valor como texto; ocultar botones
+    clone.querySelectorAll('button').forEach(el => (el as HTMLElement).style.display = 'none');
+
+    const origInputs = Array.from(root.querySelectorAll('input')) as HTMLInputElement[];
+    const cloneInputs = Array.from(clone.querySelectorAll('input')) as HTMLInputElement[];
+    origInputs.forEach((orig, i) => {
+      const cloned = cloneInputs[i];
+      if (!cloned) return;
+      const computed = window.getComputedStyle(orig);
+      const span = document.createElement('div');
+      span.style.cssText = cloned.style.cssText;
+      span.style.minHeight = computed.height !== 'auto' ? computed.height : '32px';
+      span.style.display = 'flex';
+      span.style.alignItems = 'center';
+      span.textContent = orig.value || orig.placeholder || '—';
+      if (!orig.value) span.style.color = '#333';
+      cloned.parentNode?.replaceChild(span, cloned);
+    });
+
+    // 7. Resolver CSS vars residuales
+    clone.innerHTML = clone.innerHTML
+      .replace(/var\(--gris\)/g, '#666')
+      .replace(/var\(--rojo\)/g, '#f87171');
 
     const mesNombre = CONFIG.MESES_NOMBRES[selectedMes - 1];
     const titulo = `Resumen ${mesNombre} ${selectedAnio}`;
-
-    const acuerdoColores: Record<string, string> = { 'Riesgo BAJO': '#34d399', 'Riesgo MEDIO': '#fbbf24', 'PREMIUM': '#a78bfa', 'No califica': '#f97316' };
-    const totalOpsAcuerdo = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
-    const totalMontoAcuerdo = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
-
-    const fmtPct = (n: number | null) => n !== null ? `${n.toFixed(1)}%` : '—';
-    const fmtBar = (pct: number, color: string) =>
-      `<div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:4px"><div style="height:100%;width:${Math.min(pct, 100)}%;background:${color};border-radius:2px"></div></div>`;
-
-    const chartTitles: Record<string, string> = {
-      'chart-capital-objetivo': 'Capital vs Objetivo',
-      'chart-ticket-promedio': 'Ticket Promedio',
-      'chart-cumplimiento': '% Cumplimiento',
-      'chart-variacion': 'Variación %',
-      'chart-conversion-total': '% Conversión Total',
-      'chart-aperturas-renovaciones': 'Aperturas vs Renovaciones',
-      'chart-acuerdos': 'Acuerdo de Precios',
-      'chart-embudo': 'Embudo Comercial',
-      'chart-conversion-presupuesto': '% Conversión Presupuesto',
-      'chart-empleo-publico-privado': '% Empleo Público / Privado',
-      'chart-at-tendencia': 'Tendencia',
-      'chart-at-estacionalidad': 'Estacionalidad — Patrones por semana',
-      'chart-at-dia-semana': 'Por Día de Semana — Rendimiento en $',
-      'chart-at-acuerdos': 'Evolución Acuerdo de Precios — Proporción semanal',
-    };
-
-    const chartImg = (id: string, height = 200) => {
-      const raw = chartImages[id];
-      if (!raw) return '';
-      let isMulti = false;
-      let imgs: string[] = [];
-      try { imgs = JSON.parse(raw); isMulti = Array.isArray(imgs); } catch { imgs = [raw]; }
-      const innerHtml = isMulti
-        ? `<div style="display:grid;grid-template-columns:repeat(${imgs.length},1fr);gap:8px">
-            ${imgs.map(src => `<img src="${src}" style="width:100%;height:${height}px;object-fit:contain;display:block" />`).join('')}
-           </div>`
-        : `<img src="${imgs[0]}" style="width:100%;height:${height}px;object-fit:contain;display:block" />`;
-      return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 16px;margin-bottom:14px">
-            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">${chartTitles[id] || id}</div>
-            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:8px">
-              ${innerHtml}
-            </div>
-          </div>`;
-    };
-
-    const analistas = [...kpiPorAnalista, {
-      analista: 'Total PDV', capital: kpiTotal.capital, ops: kpiTotal.ops,
-      ticket: kpiTotal.ticket, conversion: kpiTotal.conversion,
-      clientesIngresados: kpiTotal.clientes, cumplCapital: kpiTotal.cumplCapital,
-      cumplOps: kpiTotal.cumplOps, tendCapital: kpiTotal.tendCapital,
-      tendOps: kpiTotal.tendOps, metaCapital: kpiTotal.metaCapital, metaOps: kpiTotal.metaOps,
-    }];
-
-    const seccion = (num: string, titulo: string) =>
-      `<h2 style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#aaa;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:6px;margin:28px 0 14px">${num}. ${titulo}</h2>`;
-
-    const textarea = (label: string, valor: string) => valor.trim() ? `
-      <div style="margin-bottom:12px">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;margin-bottom:4px">${label}</div>
-        <div style="font-size:12px;color:#ccc;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:10px 12px;white-space:pre-wrap;line-height:1.5">${valor}</div>
-      </div>` : '';
-
-    const distBlock = (titulo: string, datos: { label: string; monto: number; cantidad: number }[], color: string) => {
-      const total = datos.reduce((s, d) => s + d.cantidad, 0);
-      if (datos.length === 0) return '';
-      return `
-        <div style="flex:1;min-width:160px">
-          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:6px">${titulo}</div>
-          <div style="border:1px solid rgba(255,255,255,0.06);border-radius:8px;overflow:hidden">
-            ${datos.slice(0, 7).map((d, i) => {
-        const pct = total > 0 ? (d.cantidad / total) * 100 : 0;
-        return `<div style="padding:6px 10px;${i > 0 ? 'border-top:1px solid rgba(255,255,255,0.04)' : ''}">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-size:11px;color:#ccc;font-weight:600">${d.label}</span>
-                  <div style="display:flex;gap:8px;align-items:center">
-                    <span style="font-size:10px;color:#666">${formatCurrency(d.monto)}</span>
-                    <span style="font-size:11px;font-weight:700;color:${color}">${pct.toFixed(0)}% (${d.cantidad})</span>
-                  </div>
-                </div>
-                <div style="height:2px;background:rgba(255,255,255,0.04);border-radius:2px;margin-top:3px"><div style="height:100%;width:${pct}%;background:${color};opacity:0.5;border-radius:2px"></div></div>
-              </div>`;
-      }).join('')}
-          </div>
-        </div>`;
-    };
-
-    const planAcciones = resumen.plan_acciones.filter(f => f.problema || f.accion);
 
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>${titulo}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #ccc; background: #0a0a0a; padding: 32px 40px; font-size: 13px; }
-    @page { margin: 20mm 18mm; size: A4; }
-    @media print { body { padding: 0; } .no-print { display: none; } }
-    table { width: 100%; border-collapse: collapse; }
-    th { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #555; padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #aaa; }
-    tr:last-child td { border-bottom: none; font-weight: 700; color: #eee; border-top: 1px solid rgba(255,255,255,0.1); }
+    *, *::before, *::after { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body { margin: 0; padding: 0; background: #0a0a0a; color: #ccc; font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
+    body { padding: 32px 40px; }
+    @page { margin: 15mm 14mm; size: A4; background: #0a0a0a; }
+    @media print { body { padding: 0; background: #0a0a0a; } }
+    /* Ocultar scrollbars, transiciones y cursores interactivos */
+    * { scrollbar-width: none; transition: none !important; animation: none !important; cursor: default !important; }
+    /* Clases del proyecto */
+    .data-card { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 24px; margin-bottom: 0; }
+    .data-table { width: 100%; border-collapse: collapse; text-align: left; }
+    /* Ocultar el spinner y elementos no imprimibles */
+    .spinner, [class*="no-print"] { display: none !important; }
+    /* Inputs/botones residuales ocultos */
+    input, button { display: none !important; }
   </style>
 </head>
 <body>
   <!-- PORTADA -->
   <div style="margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15)">
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#555;margin-bottom:6px">Informe de Gestión Comercial</div>
-    <h1 style="font-size:28px;font-weight:900;color:#fff">${titulo}</h1>
+    <h1 style="font-size:28px;font-weight:900;color:#fff;margin:0">${titulo}</h1>
     <div style="font-size:12px;color:#555;margin-top:6px">Generado el ${new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
   </div>
 
-  <!-- SECCIÓN 1: TABLERO -->
-  ${seccion('1', 'Tablero — vs ' + mesAntLabel)}
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
-    ${[
-        { label: 'Capital Vendido', valor: formatCurrency(kpiTotal.capital), sub: `Meta: ${kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}`, pct: kpiTotal.cumplCapital, tend: kpiTotal.tendCapital, color: kpiTotal.cumplCapital !== null && kpiTotal.cumplCapital >= 100 ? '#34d399' : '#f87171' },
-        { label: 'Operaciones', valor: String(kpiTotal.ops), sub: `Meta: ${kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}`, pct: kpiTotal.cumplOps, tend: kpiTotal.tendOps, color: kpiTotal.cumplOps !== null && kpiTotal.cumplOps >= 100 ? '#34d399' : '#f87171' },
-        { label: 'Ticket Promedio', valor: formatCurrency(kpiTotal.ticket), sub: `Conversión: ${kpiTotal.conversion.toFixed(1)}%`, sub2: `${kpiTotal.clientes} clientes ingresados`, pct: null, tend: null, color: '#555' },
-      ].map(k => `
-      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:14px 16px">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:6px">${k.label}</div>
-        <div style="font-size:20px;font-weight:900;color:#fff">${k.valor}</div>
-        <div style="font-size:10px;color:#666;margin-top:3px">${k.sub}</div>
-        ${'sub2' in k && k.sub2 ? `<div style="font-size:10px;color:#444;margin-top:2px">${k.sub2}</div>` : ''}
-        ${k.pct !== null ? `
-          <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
-            <span style="font-size:12px;font-weight:800;color:${k.color}">${fmtPct(k.pct)} cumpl.</span>
-            ${k.tend !== null ? `<span style="font-size:11px;font-weight:700;color:${k.tend >= 0 ? '#34d399' : '#f87171'};background:${k.tend >= 0 ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)'};padding:1px 6px;border-radius:4px">${k.tend >= 0 ? '▲' : '▼'} ${Math.abs(k.tend).toFixed(1)}%</span>` : ''}
-          </div>
-          ${fmtBar(k.pct, k.color)}` : ''}
-      </div>`).join('')}
-  </div>
-  ${[
-        { label: 'Principales Logros', val: resumen.logros },
-        { label: 'Principales Desvíos / Problemas', val: resumen.desvios },
-        { label: 'Acciones Clave a Seguir', val: resumen.acciones_clave },
-      ].map(f => textarea(f.label, f.val)).join('')}
-
-  <!-- SECCIÓN 2: INDICADORES -->
-  ${seccion('2', 'Indicadores por Analista')}
-  <table style="margin-bottom:20px">
-    <thead><tr>
-      <th style="text-align:left">Analista</th><th style="text-align:right">Capital</th><th style="text-align:right">vs Obj %</th>
-      <th style="text-align:right">Ops</th><th style="text-align:right">vs Obj %</th><th style="text-align:right">Ticket</th><th style="text-align:right">Conversión</th><th style="text-align:right">Clientes</th>
-    </tr></thead>
-    <tbody>
-      ${analistas.map(k => `<tr>
-        <td style="font-weight:700">${k.analista}</td>
-        <td style="text-align:right">${formatCurrency(k.capital)}</td>
-        <td style="text-align:right;color:${k.cumplCapital !== null && k.cumplCapital >= 100 ? '#16a34a' : '#dc2626'};font-weight:700">${fmtPct(k.cumplCapital)}</td>
-        <td style="text-align:right">${k.ops}</td>
-        <td style="text-align:right;color:${k.cumplOps !== null && k.cumplOps >= 100 ? '#16a34a' : '#dc2626'};font-weight:700">${fmtPct(k.cumplOps)}</td>
-        <td style="text-align:right">${formatCurrency(k.ticket)}</td>
-        <td style="text-align:right">${k.conversion.toFixed(1)}%</td>
-        <td style="text-align:right">${k.clientesIngresados}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-  ${chartImg('chart-capital-objetivo', 240)}
-  ${chartImg('chart-ticket-promedio', 240)}
-  ${chartImg('chart-cumplimiento', 240)}
-  ${chartImg('chart-variacion', 240)}
-  ${chartImg('chart-conversion-total', 240)}
-  ${chartImg('chart-aperturas-renovaciones', 240)}
-  </div>
-
-  <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">Distribución por Acuerdo de Precios</div>
-  <div style="display:flex;gap:10px;margin-bottom:20px">
-    ${Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
-        const pctOps = totalOpsAcuerdo > 0 ? (data.cantidad / totalOpsAcuerdo) * 100 : 0;
-        const pctMonto = totalMontoAcuerdo > 0 ? (data.monto / totalMontoAcuerdo) * 100 : 0;
-        const color = acuerdoColores[tipo] ?? '#555';
-        return `<div style="flex:1;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px;border-left:3px solid ${color}">
-        <div style="font-size:10px;font-weight:700;color:${color};margin-bottom:6px">${tipo}</div>
-        <div style="font-size:18px;font-weight:900;color:#fff">${data.cantidad}</div>
-        <div style="font-size:11px;color:#666">${formatCurrency(data.monto)}</div>
-        <div style="margin-top:6px;font-size:11px;font-weight:700;color:${color}">${pctOps.toFixed(0)}% ops · ${pctMonto.toFixed(0)}% $</div>
-      </div>`;
-      }).join('')}
-  </div>
-  ${chartImg('chart-acuerdos', 240)}
-
-  ${ventasMes.length > 0 ? `
-  <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">Ventas por Categoría (${ventasMes.length} ops · ${formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))})</div>
-  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-    ${distBlock('Cuotas', distCuotas, '#60a5fa')}
-    ${distBlock('Rango Etario', distRangoEtario, '#34d399')}
-    ${distBlock('Sexo', distSexo, '#f472b6')}
-  </div>
-  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
-    ${distBlock('Empleador', distEmpleador, '#fbbf24')}
-    ${distBlock('Localidad', distLocalidad, '#a78bfa')}
-  </div>
-  ${chartImg('chart-empleo-publico-privado', 240)}` : ''}
-
-  ${[
-        { label: 'Gestiones Realizadas', val: resumen.gestiones_realizadas },
-        { label: 'Coordinación de Salidas', val: resumen.coordinacion_salidas },
-        { label: 'Empresas Estratégicas', val: resumen.empresas_estrategicas },
-      ].map(f => textarea(f.label, f.val)).join('')}
-
-  <!-- SECCIÓN 3: ANÁLISIS COMERCIAL -->
-  ${seccion('3', 'Análisis Comercial')}
-  <div style="display:flex;gap:10px;margin-bottom:14px">
-    ${rankingAnalistas.map((k, i) => `
-      <div style="flex:1;border:1px solid ${i === 0 ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'};border-radius:8px;padding:12px 14px;background:${i === 0 ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)'}">
-        <div style="font-size:9px;font-weight:700;color:${i === 0 ? '#4ade80' : '#f87171'};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">${i === 0 ? '▲ Mejor desempeño' : '▼ Menor desempeño'}</div>
-        <div style="font-size:14px;font-weight:800;color:#fff">${k.analista}</div>
-        <div style="font-size:12px;color:#666;margin-top:3px">${formatCurrency(k.capital)} · ${k.ops} ops.</div>
-      </div>`).join('')}
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-  ${chartImg('chart-embudo', 260)}
-  ${chartImg('chart-conversion-presupuesto', 260)}
-  </div>
-  ${textarea('Interpretación del Período', resumen.analisis_comercial)}
-
-  <!-- ANÁLISIS TEMPORAL -->
-  ${seccion('8', 'Análisis Temporal')}
-  ${tendenciaMapaHTML ? `<div style="margin-bottom:14px">${tendenciaMapaHTML}</div>` : chartImg('chart-at-tendencia', 350)}
-  ${estacionalidadHTML ? `<div style="margin-bottom:14px">${estacionalidadHTML}</div>` : chartImg('chart-at-estacionalidad', 180)}
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-  ${chartImg('chart-at-dia-semana', 200)}
-  ${chartImg('chart-at-acuerdos', 220)}
-  </div>
-
-  <!-- SECCIÓN 4: GESTIÓN DEL EQUIPO -->
-  ${seccion('4', 'Gestión del Equipo')}
-  ${auditoriaData.length > 0 ? `
-  <div style="display:flex;gap:10px;margin-bottom:14px">
-    ${CONFIG.ANALISTAS_DEFAULT.map(analista => {
-        const count = auditoriaData.filter(a => a.analista === analista).length;
-        return `<div style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:12px 14px">
-        <div style="font-size:10px;font-weight:700;color:#666;margin-bottom:4px">${analista}</div>
-        <div style="font-size:20px;font-weight:900;color:#fff">${count}</div>
-        <div style="font-size:10px;color:#555">acciones registradas</div>
-      </div>`;
-      }).join('')}
-  </div>` : ''}
-  ${[
-        { label: 'Dotación Actual', val: resumen.dotacion },
-        { label: 'Ausentismo / Tardanzas', val: resumen.ausentismo },
-        { label: 'Capacitación Realizada', val: resumen.capacitacion },
-        { label: 'Evaluación de Desempeño', val: resumen.evaluacion_desempeno },
-      ].map(f => textarea(f.label, f.val)).join('')}
-
-  <!-- SECCIÓN 5 -->
-  ${seccion('5', 'Operación y Procesos')}
-  ${textarea('Cumplimiento de Procedimientos / Tiempos / Stock', resumen.operacion_procesos)}
-
-  <!-- SECCIÓN 6 -->
-  ${seccion('6', 'Experiencia del Cliente')}
-  ${textarea('Reclamos y Satisfacción', resumen.experiencia_cliente)}
-
-  <!-- SECCIÓN 7: PLAN DE ACCIÓN -->
-  ${seccion('7', 'Plan de Acción')}
-  ${planAcciones.length > 0 ? `
-  <table>
-    <thead><tr>
-      <th style="text-align:left">Problema Detectado</th>
-      <th style="text-align:left">Acción Concreta</th>
-      <th style="text-align:left">Responsable</th>
-      <th style="text-align:left">Fecha</th>
-    </tr></thead>
-    <tbody>
-      ${planAcciones.map(f => `<tr>
-        <td>${f.problema}</td>
-        <td>${f.accion}</td>
-        <td style="font-weight:600">${f.responsable}</td>
-        <td style="white-space:nowrap">${f.fecha ? new Date(f.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '—'}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>` : '<p style="font-size:12px;color:#555;font-style:italic">Sin acciones registradas.</p>'}
+  ${clone.innerHTML}
 
   <div style="margin-top:40px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);font-size:10px;color:#555;text-align:center">
-    <span>Generado el ${new Date().toLocaleString('es-AR')}</span>
+    Generado el ${new Date().toLocaleString('es-AR')}
   </div>
 
   <script>window.onload = () => { window.print(); }</script>
@@ -1144,7 +914,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           <span style={{ color: '#555', fontSize: 13 }}>Cargando resumen...</span>
         </div>
       ) : (
-        <>
+        <div id="resumen-reporte-body">
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader('1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
@@ -1750,7 +1520,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
