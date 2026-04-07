@@ -1274,6 +1274,75 @@ export default function RegistrosPage() {
         )}
       </div>
 
+      {/* Paginación */}
+      {filteredRegistros.length > 0 && totalPages > 1 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '22px 24px', marginTop: 8,
+          background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 12,
+        }}>
+          {/* Rango */}
+          <span style={{ fontSize: 13, color: '#444', fontWeight: 500 }}>
+            Mostrando {rangeEnd - rangeStart + 1} de {filteredRegistros.length} registros
+          </span>
+
+          {/* Controles */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {[
+              { label: 'Primera', page: 1, disabled: currentPage === 1 },
+              { label: '← Anterior', page: currentPage - 1, disabled: currentPage === 1 },
+            ].map(({ label, page, disabled }) => (
+              <button
+                key={label}
+                onClick={() => !disabled && setCurrentPage(page)}
+                disabled={disabled}
+                style={{
+                  padding: '6px 14px', fontSize: 13, fontWeight: 500,
+                  borderRadius: 8, cursor: disabled ? 'default' : 'pointer',
+                  background: 'transparent',
+                  border: '1px solid',
+                  borderColor: disabled ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)',
+                  color: disabled ? '#2a2a2a' : '#666',
+                  transition: 'all 0.12s ease', userSelect: 'none',
+                }}
+                onMouseEnter={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'rgba(255,255,255,0.22)'; b.style.color = '#ccc'; } }}
+                onMouseLeave={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'rgba(255,255,255,0.1)'; b.style.color = '#666'; } }}
+              >{label}</button>
+            ))}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', fontSize: 13 }}>
+              <span style={{ color: '#3a3a3a', fontWeight: 500 }}>Página</span>
+              <span style={{ color: '#888', fontWeight: 700 }}>{currentPage}</span>
+              <span style={{ color: '#3a3a3a' }}>de</span>
+              <span style={{ color: '#555', fontWeight: 600 }}>{totalPages}</span>
+            </div>
+
+            {[
+              { label: 'Siguiente →', page: currentPage + 1, disabled: currentPage === totalPages },
+              { label: 'Última', page: totalPages, disabled: currentPage === totalPages },
+            ].map(({ label, page, disabled }) => (
+              <button
+                key={label}
+                onClick={() => !disabled && setCurrentPage(page)}
+                disabled={disabled}
+                style={{
+                  padding: '6px 14px', fontSize: 13, fontWeight: 500,
+                  borderRadius: 8, cursor: disabled ? 'default' : 'pointer',
+                  background: 'transparent',
+                  border: '1px solid',
+                  borderColor: disabled ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)',
+                  color: disabled ? '#2a2a2a' : '#666',
+                  transition: 'all 0.12s ease', userSelect: 'none',
+                }}
+                onMouseEnter={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'rgba(255,255,255,0.22)'; b.style.color = '#ccc'; } }}
+                onMouseLeave={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'rgba(255,255,255,0.1)'; b.style.color = '#666'; } }}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Modals */}
       <RegistroModal
         isOpen={modalOpen} editingId={editingId} initialData={modalInitialData}
