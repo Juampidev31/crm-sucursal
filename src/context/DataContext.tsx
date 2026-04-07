@@ -39,6 +39,7 @@ interface DataCtx {
   pushAlertasConfigChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', config: AlertaConfig) => void;
   pushHistoricoChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', historico: HistoricoVenta) => void;
   pushRecordatorioChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', recordatorio: Recordatorio) => void;
+  pushBulkRefresh: () => void;
 }
 
 const DataContext = createContext<DataCtx | null>(null);
@@ -144,6 +145,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     broadcastRef.current?.send({ type: 'broadcast', event: 'recordatorio_change', payload: { type, recordatorio, mostrado: recordatorio.mostrado } });
   }, []);
 
+  // Bulk refresh trigger - hace que todos los clientes recarguen datos
+  const pushBulkRefresh = useCallback(() => {
+    broadcastRef.current?.send({ type: 'broadcast', event: 'bulk_refresh', payload: {} });
+  }, []);
+
   // ── Canal único de broadcast (reemplaza 6 canales separados) ───────────────
 
   useEffect(() => {
@@ -212,6 +218,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }
         checkDueRef.current();
       })
+      .on('broadcast', { event: 'bulk_refresh' }, () => {
+        refreshRef.current(true);
+      })
       .subscribe();
 
     broadcastRef.current = bc;
@@ -271,7 +280,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setRegistros, setObjetivos, setDiasConfig, setAlertasConfig, setHistoricoVentas, setPendingReminders,
       clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange,
       pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
-      pushRecordatorioChange
+      pushRecordatorioChange, pushBulkRefresh
     }}>
       {children}
     </DataContext.Provider>

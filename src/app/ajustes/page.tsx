@@ -9,16 +9,18 @@ import {
   Save, RotateCcw, AlertCircle, Bell, Clock, History,
   Settings, Target, Activity, Copy, Shield, AlertTriangle,
   CheckCircle, User, ShieldCheck, BarChart3, Calendar, TrendingUp, Trash2,
-  Search, Filter, Download, ArrowRight, Eye, Edit3, Plus,
+  Search, Filter, Download, ArrowRight, Eye, Edit3, Plus, Users,
   ChevronLeft, ChevronRight, RefreshCw
 } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
 import ResumenMensualTab from './ResumenMensualTab';
+import BulkModifyTab from './BulkModifyTab';
+import { useAuth } from '@/context/AuthContext';
 
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ObjetivoRow = { analista: string; mes: number; meta_ventas: number; meta_operaciones: number };
-type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual';
+type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -52,6 +54,7 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
 const ANALISTAS = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
 
 export default function AjustesPage() {
+  const { isAdmin } = useAuth();
   const {
     registros: ctxRegistros,
     alertasConfig: ctxAlertas, setAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
@@ -497,6 +500,7 @@ export default function AjustesPage() {
             { id: 'duplicados', label: 'Duplicados', icon: Copy },
             { id: 'auditoria', label: 'Auditoría', icon: Shield },
             { id: 'resumen-mensual', label: 'Resumen Mensual', icon: BarChart3 },
+            ...(isAdmin ? [{ id: 'modificacion-masiva', label: 'Modificación Masiva', icon: Users }] : []),
           ].map(t => (
             <button
               key={t.id}
@@ -1377,6 +1381,11 @@ export default function AjustesPage() {
               onSuccess={showSuccess}
               onError={showError}
             />
+          )}
+
+          {/* TAB: MODIFICACIÓN MASIVA (solo admin) */}
+          {activeTab === 'modificacion-masiva' && isAdmin && (
+            <BulkModifyTab />
           )}
 
           {/* Info del sistema */}

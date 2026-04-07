@@ -1220,7 +1220,8 @@ export default function RegistrosPage() {
                               reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? '#4ade80' :
                                 reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
                                   reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
-                                    '#333',
+                                    reg.acuerdo_precios?.toUpperCase().includes('NO CALIFICA') ? '#f97316' :
+                                      '#333',
                             textTransform: 'uppercase',
                             letterSpacing: '0.4px'
                           }}>

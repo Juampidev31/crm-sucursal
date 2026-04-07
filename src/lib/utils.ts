@@ -60,6 +60,7 @@ export const STATUS_LABEL: Record<string, string> = {
   'afectaciones': 'Afectaciones',
   'derivado / aprobado cc': 'Aprob. CC',
   'derivado / rechazado cc': 'Rechaz. CC',
+  'no califica': 'No califica',
 };
 
 export const getStatusLabel = (status: string): string =>
