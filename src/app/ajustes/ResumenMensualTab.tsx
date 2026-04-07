@@ -200,23 +200,23 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return () => { cancelled = true; };
   }, [selectedMes, selectedAnio]);
 
-  // ── Generar Link ──────────────────────────────────────────────────────
+  // ── Generar Link público para compartir el reporte ──────────────────────
   const handleGenerarLink = async () => {
-    const url = window.location.href;
+    const baseUrl = window.location.origin;
+    const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}`;
     try {
-      await navigator.clipboard.writeText(url);
-      alert('✅ Link copiado al portapapeles:\n' + url);
-      onSuccess('Link copiado al portapapeles');
+      await navigator.clipboard.writeText(publicUrl);
+      alert('✅ Link copiado al portapapeles:\n' + publicUrl);
+      onSuccess('Link público copiado al portapapeles');
     } catch (err) {
-      // Fallback
       const input = document.createElement('input');
-      input.value = url;
+      input.value = publicUrl;
       document.body.appendChild(input);
       input.select();
       document.execCommand('copy');
       document.body.removeChild(input);
-      alert('✅ Link copiado al portapapeles:\n' + url);
-      onSuccess('Link copiado al portapapeles');
+      alert('✅ Link copiado al portapapeles:\n' + publicUrl);
+      onSuccess('Link público copiado al portapapeles');
     }
   };
 

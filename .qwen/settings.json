@@ -20,7 +20,9 @@
       "Bash(move *)",
       "Bash(git restore *)",
       "Bash(robocopy *)",
-      "Bash(copy *)"
+      "Bash(copy *)",
+      "Bash(git reset *)",
+      "Bash(mkdir *)"
     ]
   },
   "$version": 3
