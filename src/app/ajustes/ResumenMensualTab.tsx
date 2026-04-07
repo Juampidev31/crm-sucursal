@@ -223,12 +223,12 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleGuardar = async () => {
     setSaving(true);
+    const payload = { anio: selectedAnio, mes: selectedMes, ...resumen, updated_at: new Date().toISOString() };
+    console.log('Intentando guardar:', payload);
     const { error } = await supabase
       .from('resumen_mensual')
-      .upsert(
-        { anio: selectedAnio, mes: selectedMes, ...resumen, updated_at: new Date().toISOString() },
-        { onConflict: 'anio,mes' }
-      );
+      .upsert(payload, { onConflict: 'anio,mes' });
+    console.log('Resultado upsert:', error);
     setSaving(false);
     if (error) onError(`Error al guardar: ${error.message}`);
     else onSuccess(`Resumen de ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio} guardado`);
