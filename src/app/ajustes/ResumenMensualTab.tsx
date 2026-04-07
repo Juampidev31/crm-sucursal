@@ -36,11 +36,8 @@ const labelsPlugin: any = {
       ctx.shadowColor = 'rgba(0,0,0,1)';
       ctx.shadowBlur = 5;
 
-      // Detección mejorada de porcentaje
-      const isPct = ds.label?.includes('%') ||
-        chart.config.options.scales?.y?.ticks?.callback?.toString().includes('%') ||
-        chart.config.options.scales?.x?.ticks?.callback?.toString().includes('%') ||
-        chart.config.options.plugins?.title?.text?.toString().includes('%');
+      // Detección de porcentaje: solo mediante flag explícito
+      const isPct = chart.config.options?._isPct === true;
 
       meta.data.forEach((bar: any, idx: number) => {
         const val = ds.data[idx];
@@ -223,9 +220,14 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     for (const [domId] of Object.entries(chartMap)) {
       const wrapper = document.getElementById(domId);
       if (wrapper) {
-        const canvas = wrapper.querySelector('canvas') as HTMLCanvasElement;
-        if (canvas) {
-          try { chartImages[domId] = canvas.toDataURL('image/png'); } catch { /* ignorar */ }
+        const canvases = wrapper.querySelectorAll('canvas') as NodeListOf<HTMLCanvasElement>;
+        if (canvases.length === 1) {
+          try { chartImages[domId] = canvases[0].toDataURL('image/png'); } catch { /* ignorar */ }
+        } else if (canvases.length > 1) {
+          // Múltiples canvases: capturar cada uno por separado como array JSON
+          const imgs: string[] = [];
+          canvases.forEach(c => { try { imgs.push(c.toDataURL('image/png')); } catch { /* ignorar */ } });
+          if (imgs.length) chartImages[domId] = JSON.stringify(imgs);
         }
       }
     }
@@ -257,7 +259,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const mesNombre = CONFIG.MESES_NOMBRES[selectedMes - 1];
     const titulo = `Resumen ${mesNombre} ${selectedAnio}`;
 
-    const acuerdoColores: Record<string, string> = { 'Riesgo BAJO': '#16a34a', 'Riesgo MEDIO': '#d97706', 'PREMIUM': '#7c3aed', 'No califica': '#ea580c' };
+    const acuerdoColores: Record<string, string> = { 'Riesgo BAJO': '#34d399', 'Riesgo MEDIO': '#fbbf24', 'PREMIUM': '#a78bfa', 'No califica': '#f97316' };
     const totalOpsAcuerdo = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
     const totalMontoAcuerdo = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
 
@@ -282,15 +284,24 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       'chart-at-acuerdos': 'Evolución Acuerdo de Precios — Proporción semanal',
     };
 
-    const chartImg = (id: string, height = 200) =>
-      chartImages[id]
-        ? `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 16px;margin-bottom:14px">
+    const chartImg = (id: string, height = 200) => {
+      const raw = chartImages[id];
+      if (!raw) return '';
+      let isMulti = false;
+      let imgs: string[] = [];
+      try { imgs = JSON.parse(raw); isMulti = Array.isArray(imgs); } catch { imgs = [raw]; }
+      const innerHtml = isMulti
+        ? `<div style="display:grid;grid-template-columns:repeat(${imgs.length},1fr);gap:8px">
+            ${imgs.map(src => `<img src="${src}" style="width:100%;height:${height}px;object-fit:contain;display:block" />`).join('')}
+           </div>`
+        : `<img src="${imgs[0]}" style="width:100%;height:${height}px;object-fit:contain;display:block" />`;
+      return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 16px;margin-bottom:14px">
             <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">${chartTitles[id] || id}</div>
             <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:8px">
-              <img src="${chartImages[id]}" style="width:100%;height:${height}px;object-fit:contain;display:block" />
+              ${innerHtml}
             </div>
-          </div>`
-        : '';
+          </div>`;
+    };
 
     const analistas = [...kpiPorAnalista, {
       analista: 'Total PDV', capital: kpiTotal.capital, ops: kpiTotal.ops,
@@ -363,15 +374,21 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   ${seccion('1', 'Tablero — vs ' + mesAntLabel)}
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
     ${[
-        { label: 'Capital Vendido', valor: formatCurrency(kpiTotal.capital), sub: `Meta: ${kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}`, pct: kpiTotal.cumplCapital, color: kpiTotal.cumplCapital !== null && kpiTotal.cumplCapital >= 100 ? '#16a34a' : '#dc2626' },
-        { label: 'Operaciones', valor: String(kpiTotal.ops), sub: `Meta: ${kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}`, pct: kpiTotal.cumplOps, color: kpiTotal.cumplOps !== null && kpiTotal.cumplOps >= 100 ? '#16a34a' : '#dc2626' },
-        { label: 'Ticket Promedio', valor: formatCurrency(kpiTotal.ticket), sub: `Conversión: ${kpiTotal.conversion.toFixed(1)}% · ${kpiTotal.clientes} clientes`, pct: null, color: '#374151' },
+        { label: 'Capital Vendido', valor: formatCurrency(kpiTotal.capital), sub: `Meta: ${kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}`, pct: kpiTotal.cumplCapital, tend: kpiTotal.tendCapital, color: kpiTotal.cumplCapital !== null && kpiTotal.cumplCapital >= 100 ? '#34d399' : '#f87171' },
+        { label: 'Operaciones', valor: String(kpiTotal.ops), sub: `Meta: ${kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}`, pct: kpiTotal.cumplOps, tend: kpiTotal.tendOps, color: kpiTotal.cumplOps !== null && kpiTotal.cumplOps >= 100 ? '#34d399' : '#f87171' },
+        { label: 'Ticket Promedio', valor: formatCurrency(kpiTotal.ticket), sub: `Conversión: ${kpiTotal.conversion.toFixed(1)}%`, sub2: `${kpiTotal.clientes} clientes ingresados`, pct: null, tend: null, color: '#555' },
       ].map(k => `
       <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:14px 16px">
         <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#555;margin-bottom:6px">${k.label}</div>
         <div style="font-size:20px;font-weight:900;color:#fff">${k.valor}</div>
         <div style="font-size:10px;color:#666;margin-top:3px">${k.sub}</div>
-        ${k.pct !== null ? `<div style="margin-top:6px;display:flex;align-items:center;gap:6px"><span style="font-size:12px;font-weight:800;color:${k.color}">${fmtPct(k.pct)} cumpl.</span></div>${fmtBar(k.pct, k.color)}` : ''}
+        ${'sub2' in k && k.sub2 ? `<div style="font-size:10px;color:#444;margin-top:2px">${k.sub2}</div>` : ''}
+        ${k.pct !== null ? `
+          <div style="margin-top:6px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;font-weight:800;color:${k.color}">${fmtPct(k.pct)} cumpl.</span>
+            ${k.tend !== null ? `<span style="font-size:11px;font-weight:700;color:${k.tend >= 0 ? '#34d399' : '#f87171'};background:${k.tend >= 0 ? 'rgba(52,211,153,0.1)' : 'rgba(248,113,113,0.1)'};padding:1px 6px;border-radius:4px">${k.tend >= 0 ? '▲' : '▼'} ${Math.abs(k.tend).toFixed(1)}%</span>` : ''}
+          </div>
+          ${fmtBar(k.pct, k.color)}` : ''}
       </div>`).join('')}
   </div>
   ${[
@@ -428,14 +445,15 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   ${ventasMes.length > 0 ? `
   <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">Ventas por Categoría (${ventasMes.length} ops · ${formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))})</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-    ${distBlock('Cuotas', distCuotas, '#2563eb')}
-    ${distBlock('Rango Etario', distRangoEtario, '#16a34a')}
-    ${distBlock('Sexo', distSexo, '#db2777')}
+    ${distBlock('Cuotas', distCuotas, '#60a5fa')}
+    ${distBlock('Rango Etario', distRangoEtario, '#34d399')}
+    ${distBlock('Sexo', distSexo, '#f472b6')}
   </div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
-    ${distBlock('Empleador', distEmpleador, '#d97706')}
-    ${distBlock('Localidad', distLocalidad, '#7c3aed')}
-  </div>` : ''}
+    ${distBlock('Empleador', distEmpleador, '#fbbf24')}
+    ${distBlock('Localidad', distLocalidad, '#a78bfa')}
+  </div>
+  ${chartImg('chart-empleo-publico-privado', 240)}` : ''}
 
   ${[
         { label: 'Gestiones Realizadas', val: resumen.gestiones_realizadas },
@@ -453,7 +471,6 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         <div style="font-size:12px;color:#666;margin-top:3px">${formatCurrency(k.capital)} · ${k.ops} ops.</div>
       </div>`).join('')}
   </div>
-  ${chartImg('chart-empleo-publico-privado', 240)}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
   ${chartImg('chart-embudo', 260)}
   ${chartImg('chart-conversion-presupuesto', 260)}
@@ -702,6 +719,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     maintainAspectRatio: false,
     indexAxis: horizontal ? 'y' as const : 'x' as const,
     layout: { padding: { top: showLabels ? 50 : 20, bottom: 5 } },
+    _isPct: yLabel.includes('%'), // Flag explícito para el plugin
     plugins: {
       legend: {
         display: showLegend,
@@ -1332,7 +1350,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div id="chart-aperturas-renovaciones" style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones — vs {mesAntLabel}</div>
                     <div style={{ display: 'flex', gap: 10 }}>
