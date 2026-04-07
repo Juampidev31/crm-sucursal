@@ -257,7 +257,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const mesNombre = CONFIG.MESES_NOMBRES[selectedMes - 1];
     const titulo = `Resumen ${mesNombre} ${selectedAnio}`;
 
-    const acuerdoColores: Record<string, string> = { 'Bajo Riesgo': '#16a34a', 'Riesgo Medio': '#d97706', 'Premium': '#7c3aed' };
+    const acuerdoColores: Record<string, string> = { 'Riesgo BAJO': '#16a34a', 'Riesgo MEDIO': '#d97706', 'PREMIUM': '#7c3aed', 'No califica': '#ea580c' };
     const totalOpsAcuerdo = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
     const totalMontoAcuerdo = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
 
@@ -622,21 +622,25 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   // ── Distribución acuerdo de precios ──────────────────────────────────────
   const distribucionAcuerdos = useMemo(() => {
     const tipos: Record<string, { monto: number; cantidad: number }> = {
-      'Bajo Riesgo': { monto: 0, cantidad: 0 },
-      'Riesgo Medio': { monto: 0, cantidad: 0 },
-      'Premium': { monto: 0, cantidad: 0 },
+      'Riesgo BAJO': { monto: 0, cantidad: 0 },
+      'Riesgo MEDIO': { monto: 0, cantidad: 0 },
+      'PREMIUM': { monto: 0, cantidad: 0 },
+      'No califica': { monto: 0, cantidad: 0 },
+    };
+    // Mapeo para match con DB
+    const matchTipo = (acuerdo: string): string | null => {
+      const a = acuerdo.toLowerCase();
+      if (a === 'riesgo bajo') return 'Riesgo BAJO';
+      if (a === 'riesgo medio') return 'Riesgo MEDIO';
+      if (a === 'premium') return 'PREMIUM';
+      if (a === 'no califica') return 'No califica';
+      return null;
     };
     for (const r of filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta)) {
-      const a = (r.acuerdo_precios ?? '').toLowerCase();
-      if (a.includes('bajo') || a === 'bajo riesgo') {
-        tipos['Bajo Riesgo'].monto += Number(r.monto) || 0;
-        tipos['Bajo Riesgo'].cantidad += 1;
-      } else if (a.includes('medio') || a === 'riesgo medio') {
-        tipos['Riesgo Medio'].monto += Number(r.monto) || 0;
-        tipos['Riesgo Medio'].cantidad += 1;
-      } else if (a === 'premium') {
-        tipos['Premium'].monto += Number(r.monto) || 0;
-        tipos['Premium'].cantidad += 1;
+      const matched = matchTipo(r.acuerdo_precios ?? '');
+      if (matched) {
+        tipos[matched].monto += Number(r.monto) || 0;
+        tipos[matched].cantidad += 1;
       }
     }
     return tipos;
@@ -821,18 +825,25 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
   // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
   const chartAcuerdos = useMemo(() => {
-    const tipos = ['Bajo Riesgo', 'Riesgo Medio', 'Premium'];
+    const tiposDisplay = ['Riesgo BAJO', 'Riesgo MEDIO', 'PREMIUM', 'No califica'];
+    // Mapeo display label → valor real en DB
+    const tiposDB: Record<string, string> = {
+      'Riesgo BAJO': 'riesgo bajo',
+      'Riesgo MEDIO': 'riesgo medio',
+      'PREMIUM': 'premium',
+      'No califica': 'no califica',
+    };
     const analistas = CONFIG.ANALISTAS_DEFAULT;
     const colores = ['#60a5fa', '#a78bfa'];
 
     return {
-      labels: tipos,
+      labels: tiposDisplay,
       datasets: analistas.map((an, idx) => ({
         label: an,
-        data: tipos.map(t => {
-          const norm = t.toLowerCase().split(' ')[0];
+        data: tiposDisplay.map(t => {
+          const dbVal = tiposDB[t];
           return filterByMonth(registros, selectedMes, selectedAnio).filter(r =>
-            isVenta(r) && r.analista === an && (r.acuerdo_precios ?? '').toLowerCase().includes(norm)
+            isVenta(r) && r.analista === an && (r.acuerdo_precios ?? '').toLowerCase() === dbVal
           ).length;
         }),
         backgroundColor: colores[idx] || '#555',
@@ -1363,7 +1374,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               {(() => {
                 const totalOps = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
                 const totalMonto = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
-                const colores: Record<string, string> = { 'Bajo Riesgo': '#34d399', 'Riesgo Medio': '#fbbf24', 'Premium': '#a78bfa' };
+                const colores: Record<string, string> = { 'Riesgo BAJO': '#34d399', 'Riesgo MEDIO': '#fbbf24', 'PREMIUM': '#a78bfa', 'No califica': '#f97316' };
                 return (
                   <>
                     {/* Barra de progreso compuesta */}
@@ -1374,7 +1385,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         ))}
                       </div>
                     )}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                       {Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
                         const pctOps = totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0;
                         const pctMonto = totalMonto > 0 ? (data.monto / totalMonto) * 100 : 0;
@@ -1383,7 +1394,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         // Desglose por analista
                         const desglose = CONFIG.ANALISTAS_DEFAULT.map(an => ({
                           nombre: an,
-                          ops: ventasMes.filter(r => (r.acuerdo_precios || 'Bajo Riesgo') === tipo && r.analista === an).length
+                          ops: ventasMes.filter(r => {
+                            const val = (r.acuerdo_precios ?? '').toLowerCase();
+                            const mapVal: Record<string, string> = { 'riesgo bajo': 'Riesgo BAJO', 'riesgo medio': 'Riesgo MEDIO', 'premium': 'PREMIUM', 'no califica': 'No califica' };
+                            return mapVal[val] === tipo && r.analista === an;
+                          }).length
                         }));
 
                         return (
