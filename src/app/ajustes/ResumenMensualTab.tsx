@@ -182,7 +182,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             const parsed = JSON.parse(textPart);
             textPart = parsed.text || '';
             htmlPart = parsed.html || '';
-          } catch (e) {}
+          } catch (e) { }
         } else if (textPart.trim().startsWith('<div')) {
           htmlPart = textPart;
           textPart = '';
@@ -294,7 +294,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       const snapshotHtml = clone.innerHTML;
       const { error: saveError } = await supabase
         .from('resumen_mensual')
-        .update({ 
+        .update({
           experiencia_cliente: JSON.stringify({
             text: resumen.experiencia_cliente, // Guardamos el texto actual
             html: snapshotHtml // Guardamos el nuevo diseño visual
@@ -1009,16 +1009,39 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   // ── Chart 5: Embudo Comercial ─────────────────────────────────────────────
   const chartEmbudo = useMemo(() => {
     const labels = CONFIG.ANALISTAS_DEFAULT;
+    const regsMes = filterByMonth(registros, selectedMes, selectedAnio);
+
+    // Todos los estados que cuentan como "clientes ingresados"
+    const matchIngresado = (estado: string) => {
+      const e = estado.toLowerCase();
+      return ['proyeccion', 'score bajo', 'en seguimiento', 'no califica', 'afectaciones', 'aprobado cc', 'rechazado cc', 'venta'].some(est => e.includes(est));
+    };
+
+    const ingresados = labels.map(a => {
+      const regsAnalista = regsMes.filter(r => r.analista === a);
+      return regsAnalista.filter(r => matchIngresado(r.estado)).length;
+    });
+    const cerradas = labels.map(a => {
+      const regsAnalista = regsMes.filter(r => r.analista === a);
+      return regsAnalista.filter(isVenta).length;
+    });
+    const conversion = labels.map((a, i) => {
+      return ingresados[i] > 0 ? `${((cerradas[i] / ingresados[i]) * 100).toFixed(1)}%` : '0%';
+    });
+    const chartLabels = labels.map((l, i) => `${l} (${conversion[i]})`);
+
     return {
-      labels,
+      labels: chartLabels,
       datasets: [
-        { label: 'Gestiones', data: labels.map(a => resumen.gestiones_por_analista[a] ?? 0), backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4 },
-        { label: 'Clientes Atendidos', data: kpiPorAnalista.map(k => k.clientesIngresados), backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4 },
-        { label: 'Con Presupuesto', data: labels.map(a => resumen.presupuestos_por_analista[a] ?? 0), backgroundColor: 'rgba(251,191,36,0.8)', borderRadius: 4 },
-        { label: 'Ops Cerradas', data: kpiPorAnalista.map(k => k.ops), backgroundColor: 'rgba(167,139,250,0.8)', borderRadius: 4 },
+        {
+          label: 'Clientes Ingresados', data: ingresados, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4
+        },
+        {
+          label: 'Op. Cerradas', data: cerradas, backgroundColor: 'rgba(167,139,250,0.8)', borderRadius: 4
+        },
       ],
     };
-  }, [resumen.gestiones_por_analista, resumen.presupuestos_por_analista, kpiPorAnalista]);
+  }, [registros, selectedMes, selectedAnio]);
 
   // ── Chart 6: % Conversión de Presupuesto ─────────────────────────────────
   const chartConversionPresupuesto = useMemo(() => {
