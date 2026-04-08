@@ -455,6 +455,46 @@ export default function AjustesPage() {
     return grupos.sort((a, b) => b.registros.length - a.registros.length);
   }, [duplicadosRegistros, selectedEstados, selectedAnalistas]);
 
+  // ── Variantes de Empleador ──────────────────────────────────────────────
+  interface VarianteEmpleador {
+    normalizado: string;
+    variantes: string[];
+    cantidad: number;
+    monto: number;
+  }
+
+  const variantesEmpleador = useMemo((): VarianteEmpleador[] => {
+    const normalizar = (nombre: string): string => {
+      if (!nombre) return 'Sin dato';
+      let n = nombre.toUpperCase().trim();
+      n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
+      n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
+      n = n.replace(/\s+/g, ' ').trim();
+      return n || 'Sin dato';
+    };
+
+    const map = new Map<string, { variantes: Set<string>; cantidad: number; monto: number }>();
+    for (const r of duplicadosRegistros) {
+      const raw = (r.empleador ?? '').trim();
+      if (!raw) continue;
+      const key = normalizar(raw);
+      const prev = map.get(key) ?? { variantes: new Set<string>(), cantidad: 0, monto: 0 };
+      prev.variantes.add(raw);
+      prev.cantidad += 1;
+      prev.monto += Number(r.monto) || 0;
+      map.set(key, prev);
+    }
+
+    const result: VarianteEmpleador[] = [];
+    for (const [normalizado, data] of map) {
+      if (data.variantes.size > 1) {
+        result.push({ normalizado, variantes: Array.from(data.variantes).sort(), cantidad: data.cantidad, monto: data.monto });
+      }
+    }
+    return result.sort((a, b) => b.cantidad - a.cantidad);
+  }, [duplicadosRegistros]);
+
   const chipStyle = (isActive: boolean) => ({
     padding: '6px 14px', borderRadius: '6px', fontSize: '10px', border: '1px solid',
     whiteSpace: 'nowrap' as const, fontWeight: 800 as const, cursor: 'pointer', transition: 'all 0.2s',
@@ -964,6 +1004,56 @@ export default function AjustesPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* ── Variantes de Empleador ─────────────────────────────────── */}
+              {variantesEmpleador.length > 0 && (
+                <div style={{ marginTop: '32px' }}>
+                  <header className="dashboard-header" style={{ marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: 4, height: 18, borderRadius: 2, background: '#fbbf24' }} />
+                      <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Variantes de Empleador</h2>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#999', fontWeight: 700 }}>
+                      {variantesEmpleador.length} empleadores con variantes
+                    </div>
+                  </header>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {variantesEmpleador.map((v, i) => (
+                      <div key={i} className="data-card" style={{ borderLeft: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
+                          <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(251,191,36,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <AlertTriangle size={15} color="#fbbf24" />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+                              {v.normalizado}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>
+                              {v.variantes.length} variantes • {v.cantidad} registros • {formatCurrency(v.monto)}
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {v.variantes.map((varName, j) => (
+                                <span key={j} style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  background: 'rgba(255,255,255,0.04)',
+                                  border: '1px solid rgba(255,255,255,0.06)',
+                                  color: '#888',
+                                  fontWeight: 600,
+                                }}>
+                                  {varName}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
