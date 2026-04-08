@@ -119,7 +119,7 @@ const RegistroModal = memo(function RegistroModal({
       setDupBlocked(false);
       setAgendarRecordatorio(false);
       if (empleadoresLoaded) {
-        setEmpleadorCustom(!initialData.empleador || !empleadoresDB.includes(initialData.empleador));
+        setEmpleadorCustom(!!initialData.empleador && !empleadoresDB.includes(initialData.empleador));
       }
     }
   }, [isOpen, initialData, empleadoresLoaded]);
