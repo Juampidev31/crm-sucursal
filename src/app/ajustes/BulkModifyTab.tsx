@@ -440,10 +440,21 @@ export default function BulkModifyTab() {
                       className="form-input"
                       value={filtros.empleador[0] || ''}
                       onChange={e => setFiltros(p => ({ ...p, empleador: e.target.value ? [e.target.value] : [] }))}
+                      style={{
+                        background: '#111',
+                        color: '#ccc',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '6px',
+                        padding: '10px 12px',
+                        fontSize: '13px',
+                        width: '100%',
+                        outline: 'none',
+                        cursor: 'pointer',
+                      }}
                     >
-                      <option value="">Todos</option>
+                      <option value="" style={{ background: '#111', color: '#666' }}>Todos</option>
                       {allEmpleadores.map(e => (
-                        <option key={e} value={e}>{e}</option>
+                        <option key={e} value={e} style={{ background: '#111', color: '#ccc' }}>{e}</option>
                       ))}
                     </select>
                   </div>
