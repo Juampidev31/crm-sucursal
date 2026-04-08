@@ -202,28 +202,130 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
   // ── Generar Link público para compartir el reporte ──────────────────────
   const handleGenerarLink = async () => {
+    try {
+    const root = document.getElementById('resumen-reporte-body');
+    if (!root) { alert('ERROR: No se encontró el contenido del reporte.'); return; }
+
+    // 1. Esperar render de gráficos
+    await new Promise(r => setTimeout(r, 300));
+
+    // 2. Capturar canvas como imágenes
+    const canvasImages = new Map<HTMLCanvasElement, string>();
+    root.querySelectorAll('canvas').forEach(canvas => {
+      try { canvasImages.set(canvas as HTMLCanvasElement, (canvas as HTMLCanvasElement).toDataURL('image/png')); } catch { /* ignorar */ }
+    });
+
+    // 3. Clonar
+    const clone = root.cloneNode(true) as HTMLElement;
+
+    // 4. Canvas → img
+    const origCanvases = Array.from(root.querySelectorAll('canvas')) as HTMLCanvasElement[];
+    const cloneCanvases = Array.from(clone.querySelectorAll('canvas')) as HTMLCanvasElement[];
+    origCanvases.forEach((orig, i) => {
+      const src = canvasImages.get(orig);
+      const clonedCanvas = cloneCanvases[i];
+      if (src && clonedCanvas) {
+        const img = document.createElement('img');
+        img.src = src;
+        img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
+        clonedCanvas.parentNode?.replaceChild(img, clonedCanvas);
+      }
+    });
+
+    // 5. Textareas → divs
+    const origTextareas = Array.from(root.querySelectorAll('textarea')) as HTMLTextAreaElement[];
+    const cloneTextareas = Array.from(clone.querySelectorAll('textarea')) as HTMLTextAreaElement[];
+    origTextareas.forEach((orig, i) => {
+      const cloned = cloneTextareas[i];
+      if (!cloned) return;
+      const computed = window.getComputedStyle(orig);
+      const div = document.createElement('div');
+      div.style.cssText = cloned.style.cssText;
+      div.style.whiteSpace = 'pre-wrap';
+      div.style.overflow = 'visible';
+      div.style.resize = 'none';
+      div.style.minHeight = computed.height !== 'auto' ? computed.height : '72px';
+      div.style.display = 'block';
+      div.textContent = orig.value;
+      cloned.parentNode?.replaceChild(div, cloned);
+    });
+
+    // 6. Inputs → texto; ocultar botones
+    clone.querySelectorAll('button').forEach(el => (el as HTMLElement).style.display = 'none');
+    const origInputs = Array.from(root.querySelectorAll('input')) as HTMLInputElement[];
+    const cloneInputs = Array.from(clone.querySelectorAll('input')) as HTMLInputElement[];
+    origInputs.forEach((orig, i) => {
+      const cloned = cloneInputs[i];
+      if (!cloned) return;
+      const computed = window.getComputedStyle(orig);
+      const span = document.createElement('div');
+      span.style.cssText = cloned.style.cssText;
+      span.style.minHeight = computed.height !== 'auto' ? computed.height : '32px';
+      span.style.display = 'flex';
+      span.style.alignItems = 'center';
+      span.textContent = orig.value || orig.placeholder || '—';
+      if (!orig.value) span.style.color = '#333';
+      cloned.parentNode?.replaceChild(span, cloned);
+    });
+
+    // 7. CSS vars fix
+    clone.innerHTML = clone.innerHTML
+      .replace(/var\(--gris\)/g, '#666')
+      .replace(/var\(--rojo\)/g, '#f87171');
+
+    // 8. Guardar snapshot en columna existente
+    const snapshotHtml = clone.innerHTML;
+    const { error: saveError } = await supabase
+      .from('resumen_mensual')
+      .update({ experiencia_cliente: snapshotHtml })
+      .eq('anio', selectedAnio)
+      .eq('mes', selectedMes);
+
+    if (saveError) {
+      alert(`ERROR al guardar snapshot: ${saveError.message}`);
+      return;
+    }
+
     const baseUrl = window.location.origin;
     const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}`;
+
+    // 9. Copiar link
     try {
       await navigator.clipboard.writeText(publicUrl);
-      alert('✅ Link copiado al portapapeles:\n' + publicUrl);
-      onSuccess('Link público copiado al portapapeles');
-    } catch (err) {
-      const input = document.createElement('input');
-      input.value = publicUrl;
-      document.body.appendChild(input);
-      input.select();
+    } catch {
+      const inp = document.createElement('input');
+      inp.value = publicUrl;
+      document.body.appendChild(inp);
+      inp.select();
       document.execCommand('copy');
-      document.body.removeChild(input);
-      alert('✅ Link copiado al portapapeles:\n' + publicUrl);
-      onSuccess('Link público copiado al portapapeles');
+      document.body.removeChild(inp);
+    }
+    alert('✅ Link copiado al portapapeles:\n' + publicUrl);
+    onSuccess('Link público generado y copiado');
+    } catch (err: any) {
+      alert('ERROR inesperado: ' + (err?.message || err));
     }
   };
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleGuardar = async () => {
     setSaving(true);
-    const payload = { anio: selectedAnio, mes: selectedMes, ...resumen, updated_at: new Date().toISOString() };
+    // Enriquecer con KPIs calculadas antes de guardar
+    const gestionesMap: Record<string, number> = {};
+    const presupuestosMap: Record<string, number> = {};
+    kpiPorAnalista.forEach(k => {
+      gestionesMap[k.analista] = k.clientesIngresados;
+      presupuestosMap[k.analista] = k.ops;
+    });
+    const { experiencia_cliente: _snap, ...resumenSinSnapshot } = resumen;
+    const payload = {
+      anio: selectedAnio,
+      mes: selectedMes,
+      ...resumenSinSnapshot,
+      gestiones_por_analista: gestionesMap,
+      presupuestos_por_analista: presupuestosMap,
+      updated_at: new Date().toISOString(),
+    };
     console.log('Intentando guardar:', payload);
     const { error } = await supabase
       .from('resumen_mensual')

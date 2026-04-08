@@ -58,10 +58,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/login';
   const isPublicRoute = pathname.startsWith('/publico');
 
-  if (isPublicRoute || isLoginPage) return <>{children}</>;
-
   // Manejador global de Escape — vuelve a Registros si no hay modales abiertos
   useEffect(() => {
+    if (isPublicRoute || isLoginPage) return;
     const handleGlobalEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         const modalOpen = !!document.querySelector('.modal-overlay');
@@ -75,7 +74,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', handleGlobalEscape);
   }, [pathname, router]);
 
-  if (isLoginPage) return <>{children}</>;
+  if (isPublicRoute || isLoginPage) return <>{children}</>;
 
   if (loading) {
     return (
