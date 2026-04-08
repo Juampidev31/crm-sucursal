@@ -97,7 +97,18 @@ const RegistroModal = memo(function RegistroModal({
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
   const [showComentariosModal, setShowComentariosModal] = useState(false);
   const [empleadoresDB, setEmpleadoresDB] = useState<string[]>([]);
+  const [empleadoresLoaded, setEmpleadoresLoaded] = useState(false);
   const [empleadorCustom, setEmpleadorCustom] = useState(false);
+
+  // Cargar empleadores una sola vez al montar el componente
+  useEffect(() => {
+    supabase.from('registros').select('empleador').not('empleador', 'is', null).not('empleador', 'eq', '').order('empleador').then(({ data }) => {
+      if (data) {
+        setEmpleadoresDB(Array.from(new Set(data.map(r => r.empleador as string))).sort());
+      }
+      setEmpleadoresLoaded(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -107,19 +118,11 @@ const RegistroModal = memo(function RegistroModal({
       setDupRecord(null);
       setDupBlocked(false);
       setAgendarRecordatorio(false);
-      if (empleadoresDB.length === 0) {
-        supabase.from('registros').select('empleador').not('empleador', 'is', null).not('empleador', 'eq', '').order('empleador').then(({ data }) => {
-          if (data) {
-            const lista = Array.from(new Set(data.map(r => r.empleador as string))).sort();
-            setEmpleadoresDB(lista);
-            setEmpleadorCustom(!initialData.empleador || !lista.includes(initialData.empleador));
-          }
-        });
-      } else {
+      if (empleadoresLoaded) {
         setEmpleadorCustom(!initialData.empleador || !empleadoresDB.includes(initialData.empleador));
       }
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, empleadoresLoaded]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -318,7 +321,9 @@ const RegistroModal = memo(function RegistroModal({
                 </select>
               </Field>
               <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
-                {empleadorCustom ? (
+                {!empleadoresLoaded ? (
+                  <input className="form-input" value={form.empleador || ''} disabled placeholder="Cargando empleadores..." />
+                ) : empleadorCustom ? (
                   <input
                     className="form-input"
                     value={form.empleador || ''}
