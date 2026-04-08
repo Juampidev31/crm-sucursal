@@ -190,12 +190,25 @@ export default function BulkModifyTab() {
     if (errores > 0) {
       setToast({ message: `Actualizados ${actualizados}, ${errores} errores`, type: 'error' });
     } else {
+      const correctedName = empleadorCorreccion.trim();
+      const oldVariants = [...empleadoresSeleccionados];
+
       setToast({ message: `${actualizados} empleador(es) corregido(s)`, type: 'success' });
       setEmpleadoresSeleccionados([]);
       setEmpleadorCorreccion('');
-      // Reload all filter data immediately after correction
-      await loadFilterData();
+
+      // Optimistic update: remove old variants, add corrected name
+      setAllEmpleadores(prev => {
+        const filtered = prev.filter(e => !oldVariants.includes(e));
+        if (!filtered.includes(correctedName)) {
+          return [...filtered, correctedName].sort();
+        }
+        return filtered.sort();
+      });
+
+      // Background reload for consistency + broadcast for other tabs
       pushBulkRefresh();
+      loadFilterData();
     }
   }, [empleadoresSeleccionados, empleadorCorreccion, pushBulkRefresh, loadFilterData]);
 
