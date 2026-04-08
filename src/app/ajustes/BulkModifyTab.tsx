@@ -181,11 +181,23 @@ export default function BulkModifyTab() {
       setToast({ message: `${actualizados} empleador(es) corregido(s)`, type: 'success' });
       setEmpleadoresSeleccionados([]);
       setEmpleadorCorreccion('');
-      // Recargar empleadores para actualizar la lista
-      const { data } = await supabase.from('registros').select('empleador');
-      if (data) {
-        setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
-      }
+
+      // Optimistic update: remove old variants and add the corrected name immediately
+      setAllEmpleadores(prev => {
+        const filtered = prev.filter(e => !empleadoresSeleccionados.includes(e));
+        const corrected = empleadorCorreccion.trim();
+        if (!filtered.includes(corrected)) {
+          return [...filtered, corrected].sort();
+        }
+        return filtered.sort();
+      });
+
+      // Background reload to ensure consistency
+      supabase.from('registros').select('empleador').then(({ data }) => {
+        if (data) {
+          setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
+        }
+      });
       pushBulkRefresh();
     }
   }, [empleadoresSeleccionados, empleadorCorreccion, pushBulkRefresh]);
