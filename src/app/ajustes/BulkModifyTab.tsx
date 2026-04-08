@@ -316,76 +316,79 @@ export default function BulkModifyTab() {
         </div>
 
         {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
-        {variantesEmpleador.length > 0 && (
-          <div style={{
-            marginBottom: '28px', padding: '20px',
-            background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.12)',
-            borderRadius: '10px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <AlertTriangle size={18} color="#fbbf24" />
-              <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase' }}>
-                Variantes de Empleador — {variantesEmpleador.length} grupos para corregir
-              </h4>
+        <div style={{
+          marginBottom: '28px', padding: '20px',
+          background: variantesEmpleador.length > 0 ? 'rgba(251,191,36,0.04)' : 'rgba(255,255,255,0.02)',
+          border: `1px solid ${variantesEmpleador.length > 0 ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.04)'}`,
+          borderRadius: '10px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <AlertTriangle size={18} color={variantesEmpleador.length > 0 ? '#fbbf24' : '#555'} />
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesEmpleador.length > 0 ? '#fbbf24' : '#555', textTransform: 'uppercase' }}>
+              {variantesEmpleador.length > 0
+                ? `Corrector de Empleador — ${variantesEmpleador.length} grupos para corregir`
+                : 'Corrector de Empleador — Sin variantes detectadas'}
+            </h4>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                Seleccionar variante a corregir
+              </label>
+              <select
+                className="form-input"
+                value={empleadorSeleccionado}
+                onChange={e => setEmpleadorSeleccionado(e.target.value)}
+                style={{
+                  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                }}
+              >
+                <option value="" style={{ background: '#111', color: '#666' }}>— Seleccionar —</option>
+                {variantesEmpleador.flatMap(v =>
+                  v.variantes.map(variante => (
+                    <option key={variante} value={variante} style={{ background: '#111', color: '#ccc' }}>
+                      {variante} ({v.normalizado})
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
-                  Seleccionar variante a corregir
-                </label>
-                <select
-                  className="form-input"
-                  value={empleadorSeleccionado}
-                  onChange={e => setEmpleadorSeleccionado(e.target.value)}
-                  style={{
-                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                  }}
-                >
-                  <option value="" style={{ background: '#111', color: '#666' }}>— Seleccionar —</option>
-                  {variantesEmpleador.flatMap(v =>
-                    v.variantes.map(variante => (
-                      <option key={variante} value={variante} style={{ background: '#111', color: '#ccc' }}>
-                        {variante} ({v.normalizado})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
-                  Nombre correcto
-                </label>
-                <input
-                  className="form-input"
-                  placeholder="Ej: MUNICIPALIDAD DE PARANA"
-                  value={empleadorCorreccion}
-                  onChange={e => setEmpleadorCorreccion(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && corregirEmpleador()}
-                  style={{
-                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                  }}
-                />
-              </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                Nombre correcto
+              </label>
+              <input
+                className="form-input"
+                placeholder="Ej: MUNICIPALIDAD DE PARANA"
+                value={empleadorCorreccion}
+                onChange={e => setEmpleadorCorreccion(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && corregirEmpleador()}
+                style={{
+                  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                }}
+              />
             </div>
+          </div>
 
-            <button
-              onClick={corregirEmpleador}
-              disabled={updating || !empleadorSeleccionado || !empleadorCorreccion.trim()}
-              style={{
-                background: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
-                color: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? '#666' : '#000',
-                border: 'none', borderRadius: '6px', padding: '10px 24px',
-                fontSize: '11px', fontWeight: 900, cursor: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
-                textTransform: 'uppercase', letterSpacing: '1px',
-              }}
-            >
-              {updating ? 'CORRIGIENDO...' : 'CORREGIR EMPLEADOR'}
-            </button>
+          <button
+            onClick={corregirEmpleador}
+            disabled={updating || !empleadorSeleccionado || !empleadorCorreccion.trim()}
+            style={{
+              background: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
+              color: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? '#666' : '#000',
+              border: 'none', borderRadius: '6px', padding: '10px 24px',
+              fontSize: '11px', fontWeight: 900, cursor: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
+              textTransform: 'uppercase', letterSpacing: '1px',
+            }}
+          >
+            {updating ? 'CORRIGIENDO...' : 'CORREGIR EMPLEADOR'}
+          </button>
 
-            {/* Lista de variantes detectadas */}
+          {/* Lista de variantes detectadas */}
+          {variantesEmpleador.length > 0 ? (
             <div style={{ marginTop: '20px', maxHeight: 200, overflowY: 'auto' }}>
               {variantesEmpleador.map((v, i) => (
                 <div key={i} style={{
@@ -416,8 +419,13 @@ export default function BulkModifyTab() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+              <p>No se detectaron empleadores con múltiples variantes.</p>
+              <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>Todos los empleadores están escritos de forma uniforme.</p>
+            </div>
+          )}
+        </div>
 
         {/* STEP 1: FILTROS */}
         {step === 'filter' && (
