@@ -182,26 +182,16 @@ export default function BulkModifyTab() {
       setEmpleadoresSeleccionados([]);
       setEmpleadorCorreccion('');
 
-      // Optimistic update: remove old variants and add the corrected name immediately
-      setAllEmpleadores(prev => {
-        const filtered = prev.filter(e => !empleadoresSeleccionados.includes(e));
-        const corrected = empleadorCorreccion.trim();
-        if (!filtered.includes(corrected)) {
-          return [...filtered, corrected].sort();
-        }
-        return filtered.sort();
-      });
-
-      // Background reload to ensure consistency
-      supabase.from('registros').select('empleador').then(({ data }) => {
-        if (data) {
-          setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
-        }
-      });
+      // Refetch local inmediato + broadcast para otros tabs
+      const { data } = await supabase.from('registros').select('empleador');
+      if (data) {
+        setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
+      }
       pushBulkRefresh();
     }
   }, [empleadoresSeleccionados, empleadorCorreccion, pushBulkRefresh]);
 
+  // Cargar datos iniciales de filtros
   useEffect(() => {
     const fetchData = async () => {
       const { data } = await supabase.from('registros').select('estado,analista,acuerdo_precios,tipo_cliente,localidad,empleador');
@@ -214,6 +204,20 @@ export default function BulkModifyTab() {
       setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
     };
     fetchData();
+  }, []);
+
+  // Escuchar broadcast de bulk_refresh para refrescar empleadores en tiempo real
+  useEffect(() => {
+    const channel = supabase
+      .channel('bulk-employer-refresh')
+      .on('broadcast', { event: 'bulk_refresh' }, async () => {
+        const { data } = await supabase.from('registros').select('empleador');
+        if (data) {
+          setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   useEffect(() => {
