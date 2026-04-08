@@ -86,7 +86,7 @@ export default function BulkModifyTab() {
   const [allLocalidades, setAllLocalidades] = useState<string[]>([]);
   const [allEmpleadores, setAllEmpleadores] = useState<string[]>([]);
   const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
-  const [empleadorSeleccionado, setEmpleadorSeleccionado] = useState<string>('');
+  const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
   const [mostrarTodos, setMostrarTodos] = useState(false);
 
   interface VarianteEmpleador {
@@ -123,24 +123,30 @@ export default function BulkModifyTab() {
   }, [allEmpleadores, mostrarTodos]);
 
   const corregirEmpleador = useCallback(async () => {
-    if (!empleadorSeleccionado || !empleadorCorreccion.trim()) {
-      setToast({ message: 'Seleccioná un empleador y escribí el nombre correcto', type: 'error' });
+    if (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) {
+      setToast({ message: 'Seleccioná al menos un empleador y escribí el nombre correcto', type: 'error' });
       return;
     }
     setUpdating(true);
-    const { error } = await supabase
-      .from('registros')
-      .update({ empleador: empleadorCorreccion.trim() })
-      .eq('empleador', empleadorSeleccionado);
+    let actualizados = 0;
+    let errores = 0;
+    for (const emp of empleadoresSeleccionados) {
+      const { error } = await supabase
+        .from('registros')
+        .update({ empleador: empleadorCorreccion.trim() })
+        .eq('empleador', emp);
+      if (error) errores++;
+      else actualizados++;
+    }
     setUpdating(false);
-    if (error) {
-      setToast({ message: `Error: ${error.message}`, type: 'error' });
+    if (errores > 0) {
+      setToast({ message: `Actualizados ${actualizados}, ${errores} errores`, type: 'error' });
     } else {
-      setToast({ message: `Empleador corregido. Actualizá los filtros para ver cambios.`, type: 'success' });
-      setEmpleadorSeleccionado('');
+      setToast({ message: `${actualizados} empleador(es) corregido(s). Recargá para ver cambios.`, type: 'success' });
+      setEmpleadoresSeleccionados([]);
       setEmpleadorCorreccion('');
     }
-  }, [empleadorSeleccionado, empleadorCorreccion]);
+  }, [empleadoresSeleccionados, empleadorCorreccion]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -341,30 +347,7 @@ export default function BulkModifyTab() {
             </label>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
-                Seleccionar variante a corregir
-              </label>
-              <select
-                className="form-input"
-                value={empleadorSeleccionado}
-                onChange={e => setEmpleadorSeleccionado(e.target.value)}
-                style={{
-                  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                }}
-              >
-                <option value="" style={{ background: '#111', color: '#666' }}>— Seleccionar —</option>
-                {variantesEmpleador.flatMap(v =>
-                  v.variantes.map(variante => (
-                    <option key={variante} value={variante} style={{ background: '#111', color: '#ccc' }}>
-                      {variante} ({v.normalizado})
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
             <div>
               <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
                 Nombre correcto
@@ -385,17 +368,23 @@ export default function BulkModifyTab() {
 
           <button
             onClick={corregirEmpleador}
-            disabled={updating || !empleadorSeleccionado || !empleadorCorreccion.trim()}
+            disabled={updating || empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()}
             style={{
-              background: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
-              color: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? '#666' : '#000',
+              background: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
+              color: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#666' : '#000',
               border: 'none', borderRadius: '6px', padding: '10px 24px',
-              fontSize: '11px', fontWeight: 900, cursor: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
+              fontSize: '11px', fontWeight: 900, cursor: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
               textTransform: 'uppercase', letterSpacing: '1px',
             }}
           >
-            {updating ? 'CORRIGIENDO...' : 'CORREGIR EMPLEADOR'}
+            {updating ? 'CORRIGIENDO...' : `CORREGIR ${empleadoresSeleccionados.length} EMPLEADOR(ES)`}
           </button>
+
+          {empleadoresSeleccionados.length > 0 && (
+            <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+              Seleccionados: {empleadoresSeleccionados.length} — {empleadorCorreccion || '(sin nombre correcto)'}
+            </div>
+          )}
 
           {/* Lista de variantes detectadas */}
           {variantesEmpleador.length > 0 ? (
@@ -410,21 +399,28 @@ export default function BulkModifyTab() {
                     {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {v.variantes.map((varName, j) => (
-                      <span
-                        key={j}
-                        onClick={() => setEmpleadorSeleccionado(varName)}
-                        style={{
-                          padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
-                          background: empleadorSeleccionado === varName ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
-                          border: empleadorSeleccionado === varName ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
-                          color: empleadorSeleccionado === varName ? '#fbbf24' : '#888',
-                          fontWeight: 600, cursor: 'pointer',
-                        }}
-                      >
-                        {varName}
-                      </span>
-                    ))}
+                    {v.variantes.map((varName, j) => {
+                      const isSelected = empleadoresSeleccionados.includes(varName);
+                      return (
+                        <span
+                          key={j}
+                          onClick={() => {
+                            setEmpleadoresSeleccionados(prev =>
+                              isSelected ? prev.filter(v => v !== varName) : [...prev, varName]
+                            );
+                          }}
+                          style={{
+                            padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
+                            background: isSelected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
+                            border: isSelected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
+                            color: isSelected ? '#fbbf24' : '#888',
+                            fontWeight: 600, cursor: 'pointer',
+                          }}
+                        >
+                          {varName}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
