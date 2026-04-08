@@ -486,12 +486,16 @@ export default function AjustesPage() {
       map.set(key, prev);
     }
 
+    console.log('[Variantes Empleador] Total empleadores únicos:', map.size);
+    console.log('[Variantes Empleador] Muestra:', Array.from(map.entries()).slice(0, 5));
+
     const result: VarianteEmpleador[] = [];
     for (const [normalizado, data] of map) {
       if (data.variantes.size > 1) {
         result.push({ normalizado, variantes: Array.from(data.variantes).sort(), cantidad: data.cantidad, monto: data.monto });
       }
     }
+    console.log('[Variantes Empleador] Con variantes:', result.length);
     return result.sort((a, b) => b.cantidad - a.cantidad);
   }, [duplicadosRegistros]);
 
@@ -1008,18 +1012,26 @@ export default function AjustesPage() {
               )}
 
               {/* ── Variantes de Empleador ─────────────────────────────────── */}
-              {variantesEmpleador.length > 0 && (
-                <div style={{ marginTop: '32px' }}>
-                  <header className="dashboard-header" style={{ marginBottom: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: 4, height: 18, borderRadius: 2, background: '#fbbf24' }} />
-                      <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Variantes de Empleador</h2>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#999', fontWeight: 700 }}>
-                      {variantesEmpleador.length} empleadores con variantes
-                    </div>
-                  </header>
+              <div style={{ marginTop: '32px' }}>
+                <header className="dashboard-header" style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: 4, height: 18, borderRadius: 2, background: '#fbbf24' }} />
+                    <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Variantes de Empleador</h2>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#999', fontWeight: 700 }}>
+                    {variantesEmpleador.length > 0
+                      ? `${variantesEmpleador.length} empleadores con variantes`
+                      : 'Sin variantes detectadas'}
+                  </div>
+                </header>
 
+                {variantesEmpleador.length === 0 ? (
+                  <div className="empty-state" style={{ padding: '40px 20px' }}>
+                    <CheckCircle size={40} color="var(--verde)" style={{ opacity: 0.3, marginBottom: '12px' }} />
+                    <p style={{ color: 'var(--verde)', fontWeight: 800, fontSize: '14px' }}>TODOS LOS EMPLEADORES ESTÁN NORMALIZADOS</p>
+                    <p style={{ color: '#666', fontSize: '12px', marginTop: '8px' }}>No se encontraron empleadores con múltiples formas de escritura.</p>
+                  </div>
+                ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {variantesEmpleador.map((v, i) => (
                       <div key={i} className="data-card" style={{ borderLeft: 'none' }}>
@@ -1054,8 +1066,8 @@ export default function AjustesPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
