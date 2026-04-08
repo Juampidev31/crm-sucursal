@@ -132,6 +132,32 @@ export default function BulkModifyTab() {
     );
   }, [variantesEmpleador, busquedaEmpleador]);
 
+  // Grupos con duplicados reales (más de 1 variante) — independiente de mostrarTodos
+  const variantesConDuplicados = useMemo(() => {
+    const normalizar = (nombre: string): string => {
+      if (!nombre) return 'Sin dato';
+      let n = nombre.toUpperCase().trim();
+      n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
+      n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
+      n = n.replace(/\s+/g, ' ').trim();
+      return n || 'Sin dato';
+    };
+    const map = new Map<string, Set<string>>();
+    for (const e of allEmpleadores) {
+      const key = normalizar(e);
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key)!.add(e);
+    }
+    const result: VarianteEmpleador[] = [];
+    for (const [normalizado, variantes] of map) {
+      if (variantes.size > 1) {
+        result.push({ normalizado, variantes: Array.from(variantes).sort(), cantidad: variantes.size });
+      }
+    }
+    return result.sort((a, b) => b.cantidad - a.cantidad);
+  }, [allEmpleadores]);
+
   const corregirEmpleador = useCallback(async () => {
     if (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) {
       setToast({ message: 'Seleccioná al menos un empleador y escribí el nombre correcto', type: 'error' });
@@ -325,7 +351,7 @@ export default function BulkModifyTab() {
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {variantesEmpleador.length > 0 && (
+            {variantesConDuplicados.length > 0 && (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -340,7 +366,7 @@ export default function BulkModifyTab() {
                 textTransform: 'uppercase',
               }}>
                 <AlertTriangle size={12} />
-                {variantesEmpleador.length} variante{variantesEmpleador.length > 1 ? 's' : ''} detectada{variantesEmpleador.length > 1 ? 's' : ''}
+                {variantesConDuplicados.length} variante{variantesConDuplicados.length > 1 ? 's' : ''} con duplicado{variantesConDuplicados.length > 1 ? 's' : ''}
               </div>
             )}
             <button
