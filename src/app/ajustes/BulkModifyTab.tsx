@@ -324,18 +324,38 @@ export default function BulkModifyTab() {
               Filtra registros por cualquier condición y actualiza campos masivamente
             </p>
           </div>
-          <button
-            onClick={resetAll}
-            style={{
-              background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
-              color: '#666', borderRadius: '6px', padding: '6px 14px',
-              fontSize: '10px', fontWeight: 800, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '6px',
-              textTransform: 'uppercase',
-            }}
-          >
-            <X size={12} /> Resetear
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {variantesEmpleador.length > 0 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                background: 'rgba(251,191,36,0.1)',
+                border: '1px solid rgba(251,191,36,0.3)',
+                borderRadius: '6px',
+                fontSize: '10px',
+                fontWeight: 800,
+                color: '#fbbf24',
+                textTransform: 'uppercase',
+              }}>
+                <AlertTriangle size={12} />
+                {variantesEmpleador.length} variante{variantesEmpleador.length > 1 ? 's' : ''} detectada{variantesEmpleador.length > 1 ? 's' : ''}
+              </div>
+            )}
+            <button
+              onClick={resetAll}
+              style={{
+                background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
+                color: '#666', borderRadius: '6px', padding: '6px 14px',
+                fontSize: '10px', fontWeight: 800, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '6px',
+                textTransform: 'uppercase',
+              }}
+            >
+              <X size={12} /> Resetear
+            </button>
+          </div>
         </div>
 
         {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
