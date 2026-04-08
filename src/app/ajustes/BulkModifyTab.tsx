@@ -88,6 +88,7 @@ export default function BulkModifyTab() {
   const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
   const [mostrarTodos, setMostrarTodos] = useState(false);
+  const [busquedaEmpleador, setBusquedaEmpleador] = useState('');
 
   interface VarianteEmpleador {
     normalizado: string;
@@ -121,6 +122,15 @@ export default function BulkModifyTab() {
     }
     return result.sort((a, b) => b.cantidad - a.cantidad);
   }, [allEmpleadores, mostrarTodos]);
+
+  const variantesFiltradas = useMemo(() => {
+    if (!busquedaEmpleador.trim()) return variantesEmpleador;
+    const q = busquedaEmpleador.toLowerCase();
+    return variantesEmpleador.filter(v =>
+      v.normalizado.toLowerCase().includes(q) ||
+      v.variantes.some(variant => variant.toLowerCase().includes(q))
+    );
+  }, [variantesEmpleador, busquedaEmpleador]);
 
   const corregirEmpleador = useCallback(async () => {
     if (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) {
@@ -372,19 +382,32 @@ export default function BulkModifyTab() {
             </div>
           </div>
 
-          <button
-            onClick={corregirEmpleador}
-            disabled={updating || empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()}
-            style={{
-              background: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
-              color: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#666' : '#000',
-              border: 'none', borderRadius: '6px', padding: '10px 24px',
-              fontSize: '11px', fontWeight: 900, cursor: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
-              textTransform: 'uppercase', letterSpacing: '1px',
-            }}
-          >
-            {updating ? 'CORRIGIENDO...' : `CORREGIR ${empleadoresSeleccionados.length} EMPLEADOR(ES)`}
-          </button>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button
+              onClick={corregirEmpleador}
+              disabled={updating || empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()}
+              style={{
+                background: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
+                color: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#666' : '#000',
+                border: 'none', borderRadius: '6px', padding: '10px 24px',
+                fontSize: '11px', fontWeight: 900, cursor: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
+                textTransform: 'uppercase', letterSpacing: '1px',
+                flexShrink: 0,
+              }}
+            >
+              {updating ? 'CORRIGIENDO...' : `CORREGIR ${empleadoresSeleccionados.length} EMPLEADOR(ES)`}
+            </button>
+            <input
+              className="form-input"
+              placeholder="Buscar empleador..."
+              value={busquedaEmpleador}
+              onChange={e => setBusquedaEmpleador(e.target.value)}
+              style={{
+                background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '6px', padding: '10px 12px', fontSize: '13px', flex: 1, outline: 'none',
+              }}
+            />
+          </div>
 
           {empleadoresSeleccionados.length > 0 && (
             <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
@@ -393,9 +416,9 @@ export default function BulkModifyTab() {
           )}
 
           {/* Lista de variantes detectadas */}
-          {variantesEmpleador.length > 0 ? (
+          {variantesFiltradas.length > 0 ? (
             <div style={{ marginTop: '20px', maxHeight: 200, overflowY: 'auto' }}>
-              {variantesEmpleador.map((v, i) => (
+              {variantesFiltradas.map((v, i) => (
                 <div key={i} style={{
                   marginBottom: 12, padding: '12px 14px',
                   background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
@@ -433,9 +456,9 @@ export default function BulkModifyTab() {
             </div>
           ) : (
             <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
-              <p>No se detectaron empleadores con múltiples variantes.</p>
+              <p>{busquedaEmpleador ? 'No se encontraron resultados.' : 'No se detectaron empleadores con múltiples variantes.'}</p>
               <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
-                Activá <strong>"Mostrar todos"</strong> para ver la lista completa de empleadores.
+                {busquedaEmpleador ? 'Intentá con otro término.' : 'Activá <strong>"Mostrar todos"</strong> para ver la lista completa de empleadores.'}
               </p>
             </div>
           )}
