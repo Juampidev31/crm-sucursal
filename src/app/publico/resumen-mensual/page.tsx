@@ -30,8 +30,21 @@ function ResumenMensualContent() {
 
       if (error) {
         setError(error.message);
-      } else if (data?.experiencia_cliente && data.experiencia_cliente.length > 200) {
-        setHtmlSnapshot(data.experiencia_cliente);
+      } else if (data?.experiencia_cliente) {
+        // Intentar parsear el JSON
+        const raw = data.experiencia_cliente;
+        if (raw.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(raw);
+            setHtmlSnapshot(parsed.html || null);
+          } catch (e) {
+            setHtmlSnapshot(raw);
+          }
+        } else if (raw.length > 200) {
+          setHtmlSnapshot(raw);
+        } else {
+          setError(`No hay una captura visual guardada para este reporte.`);
+        }
       } else {
         setError(`No se encontró el reporte para ${MESES_NOMBRES[mes - 1]} ${anio}. Primero generá el link desde Ajustes > Resumen Mensual.`);
       }
@@ -40,6 +53,9 @@ function ResumenMensualContent() {
     };
 
     fetchData();
+
+    // Establecer el título de la pestaña dinámicamente
+    document.title = `Resumen Mensual — ${MESES_NOMBRES[mes - 1]} ${anio}`;
   }, [anio, mes]);
 
   if (loading) {
@@ -91,9 +107,6 @@ function ResumenMensualContent() {
           dangerouslySetInnerHTML={{ __html: htmlSnapshot }}
           style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
         />
-        <footer style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.03)', textAlign: 'center' }}>
-          <p style={{ fontSize: 11, color: '#444' }}>Generado el {new Date().toLocaleDateString('es-AR')} — Sistema de Proyecciones y Ventas</p>
-        </footer>
       </main>
     </div>
   );

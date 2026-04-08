@@ -145,6 +145,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const [resumen, setResumen] = useState<ResumenMensual>(EMPTY_RESUMEN());
   const [auditoriaData, setAuditoriaData] = useState<{ analista: string; accion: string; fecha_hora: string }[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [lastSnapshot, setLastSnapshot] = useState(''); // Estado para el HTML
   const [saving, setSaving] = useState(false);
 
   // ── Fetch al cambiar mes/año ──────────────────────────────────────────────
@@ -172,6 +173,21 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     ]).then(([{ data: existing }, { data: audit }]) => {
       if (cancelled) return;
       if (existing) {
+        // Intentar parsear el JSON de experiencia_cliente
+        let textPart = existing.experiencia_cliente || '';
+        let htmlPart = '';
+
+        if (textPart.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(textPart);
+            textPart = parsed.text || '';
+            htmlPart = parsed.html || '';
+          } catch (e) {}
+        } else if (textPart.trim().startsWith('<div')) {
+          htmlPart = textPart;
+          textPart = '';
+        }
+
         setResumen({
           logros: existing.logros ?? '',
           desvios: existing.desvios ?? '',
@@ -185,11 +201,12 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           capacitacion: existing.capacitacion ?? '',
           evaluacion_desempeno: existing.evaluacion_desempeno ?? '',
           operacion_procesos: existing.operacion_procesos ?? '',
-          experiencia_cliente: existing.experiencia_cliente ?? '',
+          experiencia_cliente: textPart, // Cargamos solo el texto
           plan_acciones: existing.plan_acciones ?? [],
           gestiones_por_analista: existing.gestiones_por_analista ?? {},
           presupuestos_por_analista: existing.presupuestos_por_analista ?? {},
         });
+        setLastSnapshot(htmlPart); // Guardamos el HTML en el estado oculto
       } else {
         setResumen(EMPTY_RESUMEN());
       }
@@ -273,11 +290,16 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         .replace(/var\(--gris\)/g, '#666')
         .replace(/var\(--rojo\)/g, '#f87171');
 
-      // 8. Guardar snapshot en columna existente
+      // 8. Guardar snapshot en columna existente (Preservando el texto del usuario)
       const snapshotHtml = clone.innerHTML;
       const { error: saveError } = await supabase
         .from('resumen_mensual')
-        .update({ experiencia_cliente: snapshotHtml })
+        .update({ 
+          experiencia_cliente: JSON.stringify({
+            text: resumen.experiencia_cliente, // Guardamos el texto actual
+            html: snapshotHtml // Guardamos el nuevo diseño visual
+          })
+        })
         .eq('anio', selectedAnio)
         .eq('mes', selectedMes);
 
@@ -317,11 +339,15 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       gestionesMap[k.analista] = k.clientesIngresados;
       presupuestosMap[k.analista] = k.ops;
     });
-    const { experiencia_cliente: _snap, ...resumenSinSnapshot } = resumen;
     const payload = {
       anio: selectedAnio,
       mes: selectedMes,
-      ...resumenSinSnapshot,
+      ...resumen,
+      // Guardamos como JSON para no perder el snapshot si existe
+      experiencia_cliente: JSON.stringify({
+        text: resumen.experiencia_cliente,
+        html: lastSnapshot // Mantenemos el HTML previo cargado en el useEffect
+      }),
       gestiones_por_analista: gestionesMap,
       presupuestos_por_analista: presupuestosMap,
       updated_at: new Date().toISOString(),
