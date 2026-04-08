@@ -30,6 +30,7 @@ interface Filtros {
   rangoEtario: string[];
   sexo: string[];
   localidad: string[];
+  empleador: string[];
   esRe: string; // '' = todos, 'si' = solo RE, 'no' = solo no RE
   montoMin: string;
   montoMax: string;
@@ -55,7 +56,7 @@ interface CamposAModificar {
 const EMPTY_FILTROS: Filtros = {
   estados: [], analistas: [], scoreMin: '', scoreMax: '',
   acuerdoPrecios: [], tipoCliente: [], rangoEtario: [], sexo: [],
-  localidad: [], esRe: '', montoMin: '', montoMax: '',
+  localidad: [], empleador: [], esRe: '', montoMin: '', montoMax: '',
   fechaDesde: '', fechaHasta: '', search: '',
 };
 
@@ -83,16 +84,18 @@ export default function BulkModifyTab() {
   const [allAcuerdos, setAllAcuerdos] = useState<string[]>([]);
   const [allTipos, setAllTipos] = useState<string[]>([]);
   const [allLocalidades, setAllLocalidades] = useState<string[]>([]);
+  const [allEmpleadores, setAllEmpleadores] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await supabase.from('registros').select('estado,analista,acuerdo_precios,tipo_cliente,localidad');
+      const { data } = await supabase.from('registros').select('estado,analista,acuerdo_precios,tipo_cliente,localidad,empleador');
       if (!data) return;
       setAllEstados(Array.from(new Set(data.map(r => r.estado).filter(Boolean))).sort());
       setAllAnalistas(Array.from(new Set(data.map(r => r.analista).filter(Boolean))).sort());
       setAllAcuerdos(Array.from(new Set(data.map(r => r.acuerdo_precios).filter(Boolean))).sort());
       setAllTipos(Array.from(new Set(data.map(r => r.tipo_cliente).filter(Boolean))).sort());
       setAllLocalidades(Array.from(new Set(data.map(r => r.localidad).filter(Boolean))).sort());
+      setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
     };
     fetchData();
   }, []);
@@ -120,6 +123,7 @@ export default function BulkModifyTab() {
     if (filtros.rangoEtario.length > 0) query = query.in('rango_etario', filtros.rangoEtario);
     if (filtros.sexo.length > 0) query = query.in('sexo', filtros.sexo);
     if (filtros.localidad.length > 0) query = query.in('localidad', filtros.localidad);
+    if (filtros.empleador.length > 0) query = query.in('empleador', filtros.empleador);
     if (filtros.esRe === 'si') query = query.eq('es_re', true);
     if (filtros.esRe === 'no') query = query.eq('es_re', false);
     if (filtros.scoreMin) query = query.gte('puntaje', Number(filtros.scoreMin));
@@ -423,6 +427,18 @@ export default function BulkModifyTab() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {allLocalidades.map(l => (
                         <span key={l} onClick={() => toggleFilter('localidad', l)} style={chipStyle(filtros.localidad.includes(l))}>{l}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empleador */}
+                {allEmpleadores.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>EMPLEADOR</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {allEmpleadores.map(e => (
+                        <span key={e} onClick={() => toggleFilter('empleador', e)} style={chipStyle(filtros.empleador.includes(e))}>{e}</span>
                       ))}
                     </div>
                   </div>
