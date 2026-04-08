@@ -344,24 +344,24 @@ export default function BulkModifyTab() {
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {variantesConDuplicados.length > 0 && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                background: 'rgba(251,191,36,0.1)',
-                border: '1px solid rgba(251,191,36,0.3)',
-                borderRadius: '6px',
-                fontSize: '10px',
-                fontWeight: 800,
-                color: '#fbbf24',
-                textTransform: 'uppercase',
-              }}>
-                <AlertTriangle size={12} />
-                {variantesConDuplicados.length} variante{variantesConDuplicados.length > 1 ? 's' : ''} con duplicado{variantesConDuplicados.length > 1 ? 's' : ''}
-              </div>
-            )}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: '6px',
+              fontSize: '10px',
+              fontWeight: 800,
+              color: variantesConDuplicados.length > 0 ? '#ef4444' : '#555',
+              textTransform: 'uppercase',
+            }}>
+              {variantesConDuplicados.length > 0 ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
+              {variantesConDuplicados.length > 0
+                ? `${variantesConDuplicados.length} variante${variantesConDuplicados.length > 1 ? 's' : ''} con duplicado${variantesConDuplicados.length > 1 ? 's' : ''}`
+                : 'Sin duplicados'}
+            </div>
             <button
               onClick={resetAll}
               style={{
@@ -378,17 +378,20 @@ export default function BulkModifyTab() {
         </div>
 
         {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
-        {variantesConDuplicados.length > 0 && (
           <div style={{
             marginBottom: '28px', padding: '20px',
-            background: 'rgba(251,191,36,0.04)',
-            border: '1px solid rgba(251,191,36,0.12)',
+            background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)'}`,
             borderRadius: '10px',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <AlertTriangle size={18} color="#fbbf24" />
-              <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase' }}>
-                Corrector de Empleador — {variantesConDuplicados.length} grupos para corregir
+              {variantesConDuplicados.length > 0
+                ? <AlertTriangle size={18} color="#ef4444" />
+                : <CheckCircle size={18} color="#555" />}
+              <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ef4444' : '#888', textTransform: 'uppercase' }}>
+                {variantesConDuplicados.length > 0
+                  ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
+                  : 'Corrector de Empleador — Sin duplicados'}
               </h4>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto', fontSize: '11px', color: '#666', cursor: 'pointer', fontWeight: 700 }}>
                 <input
@@ -501,7 +504,6 @@ export default function BulkModifyTab() {
               </div>
             )}
           </div>
-        )}
 
         {/* STEP 1: FILTROS */}
         {step === 'filter' && (
