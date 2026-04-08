@@ -436,11 +436,16 @@ export default function BulkModifyTab() {
                 {allEmpleadores.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
                     <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>EMPLEADOR</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <select
+                      className="form-input"
+                      value={filtros.empleador[0] || ''}
+                      onChange={e => setFiltros(p => ({ ...p, empleador: e.target.value ? [e.target.value] : [] }))}
+                    >
+                      <option value="">Todos</option>
                       {allEmpleadores.map(e => (
-                        <span key={e} onClick={() => toggleFilter('empleador', e)} style={chipStyle(filtros.empleador.includes(e))}>{e}</span>
+                        <option key={e} value={e}>{e}</option>
                       ))}
-                    </div>
+                    </select>
                   </div>
                 )}
 
