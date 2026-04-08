@@ -387,16 +387,16 @@ export default function BulkModifyTab() {
         {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
         <div style={{
           marginBottom: '28px', padding: '20px',
-          background: variantesEmpleador.length > 0 ? 'rgba(251,191,36,0.04)' : 'rgba(255,255,255,0.02)',
-          border: `1px solid ${variantesEmpleador.length > 0 ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.04)'}`,
+          background: variantesConDuplicados.length > 0 ? 'rgba(251,191,36,0.04)' : 'rgba(255,255,255,0.02)',
+          border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.04)'}`,
           borderRadius: '10px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <AlertTriangle size={18} color={variantesEmpleador.length > 0 ? '#fbbf24' : '#555'} />
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesEmpleador.length > 0 ? '#fbbf24' : '#555', textTransform: 'uppercase' }}>
-              {variantesEmpleador.length > 0
-                ? `Corrector de Empleador — ${variantesEmpleador.length} grupos para corregir`
-                : 'Corrector de Empleador — Sin variantes detectadas'}
+            <AlertTriangle size={18} color={variantesConDuplicados.length > 0 ? '#fbbf24' : '#555'} />
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#fbbf24' : '#555', textTransform: 'uppercase' }}>
+              {variantesConDuplicados.length > 0
+                ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
+                : 'Corrector de Empleador — Sin duplicados detectados'}
             </h4>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto', fontSize: '11px', color: '#666', cursor: 'pointer', fontWeight: 700 }}>
               <input
