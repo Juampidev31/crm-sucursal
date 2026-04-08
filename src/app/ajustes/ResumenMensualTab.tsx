@@ -631,10 +631,40 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       .map(([label, data]) => ({ label, ...data }));
   };
 
+  // ── Normalización de empleador para agrupar duplicados ────────────────────
+  const normalizarEmpleador = (nombre: string): string => {
+    if (!nombre) return 'Sin dato';
+    let n = nombre.toUpperCase().trim();
+    // Quitar acentos
+    n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Quitar sufijos legales comunes
+    n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
+    // Quitar palabras vacías al final
+    n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
+    // Quitar múltiples espacios
+    n = n.replace(/\s+/g, ' ').trim();
+    return n || 'Sin dato';
+  };
+
+  const distEmpleador = useMemo(() => {
+    const map = new Map<string, { monto: number; cantidad: number; variantes: Set<string> }>();
+    for (const r of ventasMes) {
+      const raw = (r.empleador ?? '').trim();
+      const key = normalizarEmpleador(raw);
+      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Set<string>() };
+      prev.monto += Number(r.monto) || 0;
+      prev.cantidad += 1;
+      if (raw) prev.variantes.add(raw);
+      map.set(key, prev);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([label, data]) => ({ label, monto: data.monto, cantidad: data.cantidad }));
+  }, [ventasMes]);
+
   const distCuotas = useMemo(() => distPor('cuotas'), [ventasMes]);
   const distRangoEtario = useMemo(() => distPor('rango_etario'), [ventasMes]);
   const distSexo = useMemo(() => distPor('sexo'), [ventasMes]);
-  const distEmpleador = useMemo(() => distPor('empleador'), [ventasMes]);
   const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
 
   // ── Distribuciones mes anterior ───────────────────────────────────────────
@@ -656,7 +686,20 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const distCuotasAnt = useMemo(() => distPorAnt('cuotas', ventasMesAnt), [ventasMesAnt]);
   const distRangoAnt = useMemo(() => distPorAnt('rango_etario', ventasMesAnt), [ventasMesAnt]);
   const distSexoAnt = useMemo(() => distPorAnt('sexo', ventasMesAnt), [ventasMesAnt]);
-  const distEmpleadorAnt = useMemo(() => distPorAnt('empleador', ventasMesAnt), [ventasMesAnt]);
+  const distEmpleadorAnt = useMemo(() => {
+    const map = new Map<string, { monto: number; cantidad: number }>();
+    for (const r of ventasMesAnt) {
+      const raw = (r.empleador ?? '').trim();
+      const key = normalizarEmpleador(raw);
+      const prev = map.get(key) ?? { monto: 0, cantidad: 0 };
+      prev.monto += Number(r.monto) || 0;
+      prev.cantidad += 1;
+      map.set(key, prev);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([label, data]) => ({ label, ...data }));
+  }, [ventasMesAnt]);
   const distLocalidadAnt = useMemo(() => distPorAnt('localidad', ventasMesAnt), [ventasMesAnt]);
   const distAcuerdosAnt = useMemo(() => distPorAnt('acuerdo_precios', ventasMesAnt), [ventasMesAnt]);
 
