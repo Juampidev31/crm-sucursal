@@ -158,6 +158,18 @@ export default function BulkModifyTab() {
     return result.sort((a, b) => b.cantidad - a.cantidad);
   }, [allEmpleadores]);
 
+  // Función para cargar datos de filtros (se puede llamar múltiples veces)
+  const loadFilterData = useCallback(async () => {
+    const { data } = await supabase.from('registros').select('estado,analista,acuerdo_precios,tipo_cliente,localidad,empleador');
+    if (!data) return;
+    setAllEstados(Array.from(new Set(data.map(r => r.estado).filter(Boolean))).sort());
+    setAllAnalistas(Array.from(new Set(data.map(r => r.analista).filter(Boolean))).sort());
+    setAllAcuerdos(Array.from(new Set(data.map(r => r.acuerdo_precios).filter(Boolean))).sort());
+    setAllTipos(Array.from(new Set(data.map(r => r.tipo_cliente).filter(Boolean))).sort());
+    setAllLocalidades(Array.from(new Set(data.map(r => r.localidad).filter(Boolean))).sort());
+    setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
+  }, []);
+
   const corregirEmpleador = useCallback(async () => {
     if (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) {
       setToast({ message: 'Seleccioná al menos un empleador y escribí el nombre correcto', type: 'error' });
@@ -181,44 +193,27 @@ export default function BulkModifyTab() {
       setToast({ message: `${actualizados} empleador(es) corregido(s)`, type: 'success' });
       setEmpleadoresSeleccionados([]);
       setEmpleadorCorreccion('');
-
-      // Refetch local inmediato + broadcast para otros tabs
-      const { data } = await supabase.from('registros').select('empleador');
-      if (data) {
-        setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
-      }
+      // Reload all filter data immediately after correction
+      await loadFilterData();
       pushBulkRefresh();
     }
-  }, [empleadoresSeleccionados, empleadorCorreccion, pushBulkRefresh]);
+  }, [empleadoresSeleccionados, empleadorCorreccion, pushBulkRefresh, loadFilterData]);
 
-  // Cargar datos iniciales de filtros
+  // Cargar datos al montar
   useEffect(() => {
-    const fetchData = async () => {
-      const { data } = await supabase.from('registros').select('estado,analista,acuerdo_precios,tipo_cliente,localidad,empleador');
-      if (!data) return;
-      setAllEstados(Array.from(new Set(data.map(r => r.estado).filter(Boolean))).sort());
-      setAllAnalistas(Array.from(new Set(data.map(r => r.analista).filter(Boolean))).sort());
-      setAllAcuerdos(Array.from(new Set(data.map(r => r.acuerdo_precios).filter(Boolean))).sort());
-      setAllTipos(Array.from(new Set(data.map(r => r.tipo_cliente).filter(Boolean))).sort());
-      setAllLocalidades(Array.from(new Set(data.map(r => r.localidad).filter(Boolean))).sort());
-      setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
-    };
-    fetchData();
-  }, []);
+    loadFilterData();
+  }, [loadFilterData]);
 
-  // Escuchar broadcast de bulk_refresh para refrescar empleadores en tiempo real
+  // Escuchar broadcast de bulk_refresh para refrescar datos en tiempo real
   useEffect(() => {
     const channel = supabase
       .channel('bulk-employer-refresh')
-      .on('broadcast', { event: 'bulk_refresh' }, async () => {
-        const { data } = await supabase.from('registros').select('empleador');
-        if (data) {
-          setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
-        }
+      .on('broadcast', { event: 'bulk_refresh' }, () => {
+        loadFilterData();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [loadFilterData]);
 
   useEffect(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
