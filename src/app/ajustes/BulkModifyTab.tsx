@@ -87,6 +87,7 @@ export default function BulkModifyTab() {
   const [allEmpleadores, setAllEmpleadores] = useState<string[]>([]);
   const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
   const [empleadorSeleccionado, setEmpleadorSeleccionado] = useState<string>('');
+  const [mostrarTodos, setMostrarTodos] = useState(false);
 
   interface VarianteEmpleador {
     normalizado: string;
@@ -114,12 +115,12 @@ export default function BulkModifyTab() {
 
     const result: VarianteEmpleador[] = [];
     for (const [normalizado, variantes] of map) {
-      if (variantes.size > 1) {
+      if (mostrarTodos || variantes.size > 1) {
         result.push({ normalizado, variantes: Array.from(variantes).sort(), cantidad: variantes.size });
       }
     }
     return result.sort((a, b) => b.cantidad - a.cantidad);
-  }, [allEmpleadores]);
+  }, [allEmpleadores, mostrarTodos]);
 
   const corregirEmpleador = useCallback(async () => {
     if (!empleadorSeleccionado || !empleadorCorreccion.trim()) {
@@ -329,6 +330,15 @@ export default function BulkModifyTab() {
                 ? `Corrector de Empleador — ${variantesEmpleador.length} grupos para corregir`
                 : 'Corrector de Empleador — Sin variantes detectadas'}
             </h4>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto', fontSize: '11px', color: '#666', cursor: 'pointer', fontWeight: 700 }}>
+              <input
+                type="checkbox"
+                checked={mostrarTodos}
+                onChange={e => setMostrarTodos(e.target.checked)}
+                style={{ cursor: 'pointer' }}
+              />
+              Mostrar todos
+            </label>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20 }}>
@@ -422,7 +432,9 @@ export default function BulkModifyTab() {
           ) : (
             <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
               <p>No se detectaron empleadores con múltiples variantes.</p>
-              <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>Todos los empleadores están escritos de forma uniforme.</p>
+              <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
+                Activá <strong>"Mostrar todos"</strong> para ver la lista completa de empleadores.
+              </p>
             </div>
           )}
         </div>
