@@ -298,7 +298,7 @@ const RegistroModal = memo(function RegistroModal({
                 </select>
               </Field>
               <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
-                <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', capitalizarTexto(e.target.value))} placeholder="Nombre del empleador" />
+                <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase())} placeholder="Nombre del empleador" />
               </Field>
               <Field label={`Localidad${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
                 <select className="form-select" value={form.localidad || ''} onChange={e => set('localidad', e.target.value)}>
