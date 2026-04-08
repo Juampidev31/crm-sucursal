@@ -96,9 +96,25 @@ const RegistroModal = memo(function RegistroModal({
   const [dupBlocked, setDupBlocked] = useState(false);
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
   const [showComentariosModal, setShowComentariosModal] = useState(false);
+  const [empleadoresDB, setEmpleadoresDB] = useState<string[]>([]);
+  const [empleadorCustom, setEmpleadorCustom] = useState(false);
 
   useEffect(() => {
-    if (isOpen) { setForm(initialData); setErrors({}); setShowDupModal(false); setDupRecord(null); setDupBlocked(false); setAgendarRecordatorio(false); }
+    if (isOpen) {
+      setForm(initialData);
+      setErrors({});
+      setShowDupModal(false);
+      setDupRecord(null);
+      setDupBlocked(false);
+      setAgendarRecordatorio(false);
+      setEmpleadorCustom(!initialData.empleador || !empleadoresDB.includes(initialData.empleador));
+      // Cargar empleadores si no están cargados
+      if (empleadoresDB.length === 0) {
+        supabase.from('registros').select('empleador').not('empleador', 'is', null).not('empleador', 'eq', '').order('empleador').then(({ data }) => {
+          if (data) setEmpleadoresDB(Array.from(new Set(data.map(r => r.empleador as string))).sort());
+        });
+      }
+    }
   }, [isOpen, initialData]);
 
   useEffect(() => {
@@ -298,7 +314,34 @@ const RegistroModal = memo(function RegistroModal({
                 </select>
               </Field>
               <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
-                <input className="form-input" value={form.empleador || ''} onChange={e => set('empleador', e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase())} placeholder="Nombre del empleador" />
+                {empleadorCustom ? (
+                  <input
+                    className="form-input"
+                    value={form.empleador || ''}
+                    onChange={e => set('empleador', e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase())}
+                    placeholder="Nombre del empleador"
+                    autoFocus
+                  />
+                ) : (
+                  <select
+                    className="form-select"
+                    value={empleadoresDB.includes(form.empleador || '') ? form.empleador : ''}
+                    onChange={e => {
+                      if (e.target.value === '__custom__') {
+                        setEmpleadorCustom(true);
+                        set('empleador', '');
+                      } else {
+                        set('empleador', e.target.value);
+                      }
+                    }}
+                  >
+                    <option value="">— Sin especificar —</option>
+                    {empleadoresDB.map(emp => (
+                      <option key={emp} value={emp}>{emp}</option>
+                    ))}
+                    <option value="__custom__">+ Agregar otro...</option>
+                  </select>
+                )}
               </Field>
               <Field label={`Localidad${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
                 <select className="form-select" value={form.localidad || ''} onChange={e => set('localidad', e.target.value)}>
