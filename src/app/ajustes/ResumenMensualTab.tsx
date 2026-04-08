@@ -203,105 +203,105 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   // ── Generar Link público para compartir el reporte ──────────────────────
   const handleGenerarLink = async () => {
     try {
-    const root = document.getElementById('resumen-reporte-body');
-    if (!root) { alert('ERROR: No se encontró el contenido del reporte.'); return; }
+      const root = document.getElementById('resumen-reporte-body');
+      if (!root) { alert('ERROR: No se encontró el contenido del reporte.'); return; }
 
-    // 1. Esperar render de gráficos
-    await new Promise(r => setTimeout(r, 300));
+      // 1. Esperar render de gráficos
+      await new Promise(r => setTimeout(r, 300));
 
-    // 2. Capturar canvas como imágenes
-    const canvasImages = new Map<HTMLCanvasElement, string>();
-    root.querySelectorAll('canvas').forEach(canvas => {
-      try { canvasImages.set(canvas as HTMLCanvasElement, (canvas as HTMLCanvasElement).toDataURL('image/png')); } catch { /* ignorar */ }
-    });
+      // 2. Capturar canvas como imágenes
+      const canvasImages = new Map<HTMLCanvasElement, string>();
+      root.querySelectorAll('canvas').forEach(canvas => {
+        try { canvasImages.set(canvas as HTMLCanvasElement, (canvas as HTMLCanvasElement).toDataURL('image/png')); } catch { /* ignorar */ }
+      });
 
-    // 3. Clonar
-    const clone = root.cloneNode(true) as HTMLElement;
+      // 3. Clonar
+      const clone = root.cloneNode(true) as HTMLElement;
 
-    // 4. Canvas → img
-    const origCanvases = Array.from(root.querySelectorAll('canvas')) as HTMLCanvasElement[];
-    const cloneCanvases = Array.from(clone.querySelectorAll('canvas')) as HTMLCanvasElement[];
-    origCanvases.forEach((orig, i) => {
-      const src = canvasImages.get(orig);
-      const clonedCanvas = cloneCanvases[i];
-      if (src && clonedCanvas) {
-        const img = document.createElement('img');
-        img.src = src;
-        img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
-        clonedCanvas.parentNode?.replaceChild(img, clonedCanvas);
+      // 4. Canvas → img
+      const origCanvases = Array.from(root.querySelectorAll('canvas')) as HTMLCanvasElement[];
+      const cloneCanvases = Array.from(clone.querySelectorAll('canvas')) as HTMLCanvasElement[];
+      origCanvases.forEach((orig, i) => {
+        const src = canvasImages.get(orig);
+        const clonedCanvas = cloneCanvases[i];
+        if (src && clonedCanvas) {
+          const img = document.createElement('img');
+          img.src = src;
+          img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
+          clonedCanvas.parentNode?.replaceChild(img, clonedCanvas);
+        }
+      });
+
+      // 5. Textareas → divs
+      const origTextareas = Array.from(root.querySelectorAll('textarea')) as HTMLTextAreaElement[];
+      const cloneTextareas = Array.from(clone.querySelectorAll('textarea')) as HTMLTextAreaElement[];
+      origTextareas.forEach((orig, i) => {
+        const cloned = cloneTextareas[i];
+        if (!cloned) return;
+        const computed = window.getComputedStyle(orig);
+        const div = document.createElement('div');
+        div.style.cssText = cloned.style.cssText;
+        div.style.whiteSpace = 'pre-wrap';
+        div.style.overflow = 'visible';
+        div.style.resize = 'none';
+        div.style.minHeight = computed.height !== 'auto' ? computed.height : '72px';
+        div.style.display = 'block';
+        div.textContent = orig.value;
+        cloned.parentNode?.replaceChild(div, cloned);
+      });
+
+      // 6. Inputs → texto; ocultar botones
+      clone.querySelectorAll('button').forEach(el => (el as HTMLElement).style.display = 'none');
+      const origInputs = Array.from(root.querySelectorAll('input')) as HTMLInputElement[];
+      const cloneInputs = Array.from(clone.querySelectorAll('input')) as HTMLInputElement[];
+      origInputs.forEach((orig, i) => {
+        const cloned = cloneInputs[i];
+        if (!cloned) return;
+        const computed = window.getComputedStyle(orig);
+        const span = document.createElement('div');
+        span.style.cssText = cloned.style.cssText;
+        span.style.minHeight = computed.height !== 'auto' ? computed.height : '32px';
+        span.style.display = 'flex';
+        span.style.alignItems = 'center';
+        span.textContent = orig.value || orig.placeholder || '—';
+        if (!orig.value) span.style.color = '#333';
+        cloned.parentNode?.replaceChild(span, cloned);
+      });
+
+      // 7. CSS vars fix
+      clone.innerHTML = clone.innerHTML
+        .replace(/var\(--gris\)/g, '#666')
+        .replace(/var\(--rojo\)/g, '#f87171');
+
+      // 8. Guardar snapshot en columna existente
+      const snapshotHtml = clone.innerHTML;
+      const { error: saveError } = await supabase
+        .from('resumen_mensual')
+        .update({ experiencia_cliente: snapshotHtml })
+        .eq('anio', selectedAnio)
+        .eq('mes', selectedMes);
+
+      if (saveError) {
+        alert(`ERROR al guardar snapshot: ${saveError.message}`);
+        return;
       }
-    });
 
-    // 5. Textareas → divs
-    const origTextareas = Array.from(root.querySelectorAll('textarea')) as HTMLTextAreaElement[];
-    const cloneTextareas = Array.from(clone.querySelectorAll('textarea')) as HTMLTextAreaElement[];
-    origTextareas.forEach((orig, i) => {
-      const cloned = cloneTextareas[i];
-      if (!cloned) return;
-      const computed = window.getComputedStyle(orig);
-      const div = document.createElement('div');
-      div.style.cssText = cloned.style.cssText;
-      div.style.whiteSpace = 'pre-wrap';
-      div.style.overflow = 'visible';
-      div.style.resize = 'none';
-      div.style.minHeight = computed.height !== 'auto' ? computed.height : '72px';
-      div.style.display = 'block';
-      div.textContent = orig.value;
-      cloned.parentNode?.replaceChild(div, cloned);
-    });
+      const baseUrl = window.location.origin;
+      const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}`;
 
-    // 6. Inputs → texto; ocultar botones
-    clone.querySelectorAll('button').forEach(el => (el as HTMLElement).style.display = 'none');
-    const origInputs = Array.from(root.querySelectorAll('input')) as HTMLInputElement[];
-    const cloneInputs = Array.from(clone.querySelectorAll('input')) as HTMLInputElement[];
-    origInputs.forEach((orig, i) => {
-      const cloned = cloneInputs[i];
-      if (!cloned) return;
-      const computed = window.getComputedStyle(orig);
-      const span = document.createElement('div');
-      span.style.cssText = cloned.style.cssText;
-      span.style.minHeight = computed.height !== 'auto' ? computed.height : '32px';
-      span.style.display = 'flex';
-      span.style.alignItems = 'center';
-      span.textContent = orig.value || orig.placeholder || '—';
-      if (!orig.value) span.style.color = '#333';
-      cloned.parentNode?.replaceChild(span, cloned);
-    });
-
-    // 7. CSS vars fix
-    clone.innerHTML = clone.innerHTML
-      .replace(/var\(--gris\)/g, '#666')
-      .replace(/var\(--rojo\)/g, '#f87171');
-
-    // 8. Guardar snapshot en columna existente
-    const snapshotHtml = clone.innerHTML;
-    const { error: saveError } = await supabase
-      .from('resumen_mensual')
-      .update({ experiencia_cliente: snapshotHtml })
-      .eq('anio', selectedAnio)
-      .eq('mes', selectedMes);
-
-    if (saveError) {
-      alert(`ERROR al guardar snapshot: ${saveError.message}`);
-      return;
-    }
-
-    const baseUrl = window.location.origin;
-    const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}`;
-
-    // 9. Copiar link
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-    } catch {
-      const inp = document.createElement('input');
-      inp.value = publicUrl;
-      document.body.appendChild(inp);
-      inp.select();
-      document.execCommand('copy');
-      document.body.removeChild(inp);
-    }
-    alert('✅ Link copiado al portapapeles:\n' + publicUrl);
-    onSuccess('Link público generado y copiado');
+      // 9. Copiar link
+      try {
+        await navigator.clipboard.writeText(publicUrl);
+      } catch {
+        const inp = document.createElement('input');
+        inp.value = publicUrl;
+        document.body.appendChild(inp);
+        inp.select();
+        document.execCommand('copy');
+        document.body.removeChild(inp);
+      }
+      alert('✅ Link copiado al portapapeles:\n' + publicUrl);
+      onSuccess('Link público generado y copiado');
     } catch (err: any) {
       alert('ERROR inesperado: ' + (err?.message || err));
     }
@@ -743,7 +743,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-          backgroundColor: 'rgba(96,165,250,0.25)', borderRadius: 4, order: 1,
+          backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 1,
         },
         {
           label: `Ops ${mesActualLabel}`,
@@ -758,7 +758,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
           }),
-          backgroundColor: 'rgba(167,139,250,0.25)', borderRadius: 4, order: 1,
+          backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, order: 1, // Purpura oscuro
         },
         refLine100(labels.length),
       ],
@@ -846,7 +846,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4, order: 1, maxBarThickness: 70 },
-        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(96,165,250,0.25)', borderRadius: 4, order: 1, maxBarThickness: 70 },
+        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 1, maxBarThickness: 70 },
         { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#f87171', fill: false, order: 0 },
       ],
     };
@@ -867,7 +867,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Ticket ${mesActualLabel}`, data: [...kpiPorAnalista.map(k => k.ticket), kpiTotal.ticket], backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4, maxBarThickness: 70 },
-        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: 'rgba(52,211,153,0.25)', borderRadius: 4, maxBarThickness: 70 },
+        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: 'rgba(6, 78, 59, 0.9)', borderRadius: 4, maxBarThickness: 70 },
       ],
     };
   }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, ventasMesAnt, mesActualLabel, mesAntLabel]);
@@ -906,7 +906,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => Math.round(apertVsRenData.ant.aperturas / CONFIG.ANALISTAS_DEFAULT.length)), apertVsRenData.ant.aperturas], backgroundColor: 'rgba(96,165,250,0.25)', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => Math.round(apertVsRenData.ant.aperturas / CONFIG.ANALISTAS_DEFAULT.length)), apertVsRenData.ant.aperturas], backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, maxBarThickness: 50 },
       ],
     };
   }, [apertVsRenData, mesActualLabel, mesAntLabel]);
@@ -917,7 +917,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], backgroundColor: '#a78bfa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => Math.round(apertVsRenData.ant.renovaciones / CONFIG.ANALISTAS_DEFAULT.length)), apertVsRenData.ant.renovaciones], backgroundColor: 'rgba(167,139,250,0.25)', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => Math.round(apertVsRenData.ant.renovaciones / CONFIG.ANALISTAS_DEFAULT.length)), apertVsRenData.ant.renovaciones], backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, maxBarThickness: 50 },
       ],
     };
   }, [apertVsRenData, mesActualLabel, mesAntLabel]);
@@ -974,7 +974,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Conversión % ${mesActualLabel}`, data: actual, backgroundColor: 'rgba(251,191,36,0.8)', borderRadius: 4, order: 1 },
-        { label: `Conversión % ${mesAntLabel}`, data: anterior, backgroundColor: 'rgba(251,191,36,0.25)', borderRadius: 4, order: 1 },
+        { label: `Conversión % ${mesAntLabel}`, data: anterior, backgroundColor: 'rgba(124, 45, 18, 0.8)', borderRadius: 4, order: 1 },
         refLine100(labels.length),
       ],
     };
@@ -1047,7 +1047,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           <span style={{ color: '#555', fontSize: 13 }}>Cargando resumen...</span>
         </div>
       ) : (
-        <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader('1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
@@ -1065,7 +1065,19 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                   {tendBadge(kpiTotal.tendCapital)}
                 </div>
                 <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 12 }}>Capital vs Objetivo</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                      </div>
+                    </div>
+                  </div>
                   <div id="chart-capital-objetivo" style={{ height: 180 }}>
                     <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
                   </div>
@@ -1089,11 +1101,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     <div style={{ display: 'flex', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Act</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Ant</span>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                       </div>
                     </div>
                   </div>
@@ -1124,11 +1136,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     <div style={{ display: 'flex', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Act</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.25)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>Ant</span>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                       </div>
                     </div>
                   </div>
@@ -1222,11 +1234,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     <div style={{ display: 'flex', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Capital</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(167,139,250,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Ops</span>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                       </div>
                     </div>
                   </div>
@@ -1279,11 +1291,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     <div style={{ display: 'flex', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesActualLabel}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.25)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesAntLabel}</span>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(124, 45, 18, 0.8)' }} />
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                       </div>
                     </div>
                   </div>
@@ -1569,7 +1581,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           <AnalisisTemporalTab registros={registros} />
 
           {/* ── BOTONES ── */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 40, paddingBottom: 40 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 0, paddingBottom: 0 }}>
             <button
               onClick={handleGenerarLink}
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(52,211,153,0.2)', background: 'rgba(52,211,153,0.08)', color: '#34d399', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}

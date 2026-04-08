@@ -1383,8 +1383,7 @@ export default function AjustesPage() {
             <BulkModifyTab />
           )}
 
-          {/* Info del sistema */}
-          <footer style={{ marginTop: '48px', padding: '24px', borderTop: '1px solid rgba(255,255,255,0.03)' }} />
+
         </div>
       )}
     </div>
