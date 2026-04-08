@@ -142,11 +142,12 @@ export default function BulkModifyTab() {
     if (errores > 0) {
       setToast({ message: `Actualizados ${actualizados}, ${errores} errores`, type: 'error' });
     } else {
-      setToast({ message: `${actualizados} empleador(es) corregido(s). Recargá para ver cambios.`, type: 'success' });
+      setToast({ message: `${actualizados} empleador(es) corregido(s)`, type: 'success' });
       setEmpleadoresSeleccionados([]);
       setEmpleadorCorreccion('');
+      pushBulkRefresh();
     }
-  }, [empleadoresSeleccionados, empleadorCorreccion]);
+  }, [empleadoresSeleccionados, empleadorCorreccion, pushBulkRefresh]);
 
   useEffect(() => {
     const fetchData = async () => {
