@@ -23,7 +23,8 @@
       "Bash(copy *)",
       "Bash(git reset *)",
       "Bash(mkdir *)",
-      "Bash(echo *)"
+      "Bash(echo *)",
+      "Bash(type *)"
     ]
   },
   "$version": 3
