@@ -191,6 +191,12 @@ export default function BulkModifyTab() {
         oldVariants.includes(r.empleador ?? '') ? { ...r, empleador: correctedName } : r
       ));
 
+      // Limpiar filtro si tenía seleccionado un empleador eliminado
+      setFiltros(prev => {
+        const cleaned = prev.empleador.filter(e => !oldVariants.includes(e));
+        return cleaned.length !== prev.empleador.length ? { ...prev, empleador: cleaned } : prev;
+      });
+
       // Broadcast para otras pestañas
       pushBulkRefresh();
     }
