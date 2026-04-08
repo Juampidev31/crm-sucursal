@@ -352,11 +352,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       presupuestos_por_analista: presupuestosMap,
       updated_at: new Date().toISOString(),
     };
-    console.log('Intentando guardar:', payload);
     const { error } = await supabase
       .from('resumen_mensual')
       .upsert(payload, { onConflict: 'anio,mes' });
-    console.log('Resultado upsert:', error);
     setSaving(false);
     if (error) onError(`Error al guardar: ${error.message}`);
     else onSuccess(`Resumen de ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio} guardado`);
@@ -647,19 +645,28 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   };
 
   const distEmpleador = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number; variantes: Set<string> }>();
+    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
     for (const r of ventasMes) {
       const raw = (r.empleador ?? '').trim();
       const key = normalizarEmpleador(raw);
-      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Set<string>() };
+      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
       prev.monto += Number(r.monto) || 0;
       prev.cantidad += 1;
-      if (raw) prev.variantes.add(raw);
+      if (raw) {
+        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
+        // Usar la variante más común como displayLabel
+        let maxCount = 0;
+        let maxVariant = raw;
+        for (const [v, c] of prev.variantes) {
+          if (c > maxCount) { maxCount = c; maxVariant = v; }
+        }
+        prev.displayLabel = maxVariant;
+      }
       map.set(key, prev);
     }
     return Array.from(map.entries())
       .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([label, data]) => ({ label, monto: data.monto, cantidad: data.cantidad }));
+      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
   }, [ventasMes]);
 
   const distCuotas = useMemo(() => distPor('cuotas'), [ventasMes]);
@@ -687,18 +694,27 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const distRangoAnt = useMemo(() => distPorAnt('rango_etario', ventasMesAnt), [ventasMesAnt]);
   const distSexoAnt = useMemo(() => distPorAnt('sexo', ventasMesAnt), [ventasMesAnt]);
   const distEmpleadorAnt = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number }>();
+    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
     for (const r of ventasMesAnt) {
       const raw = (r.empleador ?? '').trim();
       const key = normalizarEmpleador(raw);
-      const prev = map.get(key) ?? { monto: 0, cantidad: 0 };
+      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
       prev.monto += Number(r.monto) || 0;
       prev.cantidad += 1;
+      if (raw) {
+        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
+        let maxCount = 0;
+        let maxVariant = raw;
+        for (const [v, c] of prev.variantes) {
+          if (c > maxCount) { maxCount = c; maxVariant = v; }
+        }
+        prev.displayLabel = maxVariant;
+      }
       map.set(key, prev);
     }
     return Array.from(map.entries())
       .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([label, data]) => ({ label, ...data }));
+      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
   }, [ventasMesAnt]);
   const distLocalidadAnt = useMemo(() => distPorAnt('localidad', ventasMesAnt), [ventasMesAnt]);
   const distAcuerdosAnt = useMemo(() => distPorAnt('acuerdo_precios', ventasMesAnt), [ventasMesAnt]);
