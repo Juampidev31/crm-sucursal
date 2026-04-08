@@ -107,12 +107,16 @@ const RegistroModal = memo(function RegistroModal({
       setDupRecord(null);
       setDupBlocked(false);
       setAgendarRecordatorio(false);
-      setEmpleadorCustom(!initialData.empleador || !empleadoresDB.includes(initialData.empleador));
-      // Cargar empleadores si no están cargados
       if (empleadoresDB.length === 0) {
         supabase.from('registros').select('empleador').not('empleador', 'is', null).not('empleador', 'eq', '').order('empleador').then(({ data }) => {
-          if (data) setEmpleadoresDB(Array.from(new Set(data.map(r => r.empleador as string))).sort());
+          if (data) {
+            const lista = Array.from(new Set(data.map(r => r.empleador as string))).sort();
+            setEmpleadoresDB(lista);
+            setEmpleadorCustom(!initialData.empleador || !lista.includes(initialData.empleador));
+          }
         });
+      } else {
+        setEmpleadorCustom(!initialData.empleador || !empleadoresDB.includes(initialData.empleador));
       }
     }
   }, [isOpen, initialData]);
