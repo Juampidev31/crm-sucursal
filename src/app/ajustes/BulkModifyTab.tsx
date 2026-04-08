@@ -76,15 +76,15 @@ export default function BulkModifyTab() {
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { pushBulkRefresh } = useData();
+  const { registros, setRegistros, pushBulkRefresh } = useData();
 
-  // Datos para filtros dropdown
-  const [allEstados, setAllEstados] = useState<string[]>([]);
-  const [allAnalistas, setAllAnalistas] = useState<string[]>([]);
-  const [allAcuerdos, setAllAcuerdos] = useState<string[]>([]);
-  const [allTipos, setAllTipos] = useState<string[]>([]);
-  const [allLocalidades, setAllLocalidades] = useState<string[]>([]);
-  const [allEmpleadores, setAllEmpleadores] = useState<string[]>([]);
+  // Derivar datos de filtros directamente de registros (reactivo)
+  const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);
+  const allAnalistas = useMemo(() => Array.from(new Set(registros.map(r => r.analista).filter(Boolean))).sort(), [registros]);
+  const allAcuerdos = useMemo(() => Array.from(new Set(registros.map(r => r.acuerdo_precios).filter(Boolean))).sort() as string[], [registros]);
+  const allTipos = useMemo(() => Array.from(new Set(registros.map(r => r.tipo_cliente).filter(Boolean))).sort() as string[], [registros]);
+  const allLocalidades = useMemo(() => Array.from(new Set(registros.map(r => r.localidad).filter(Boolean))).sort() as string[], [registros]);
+  const allEmpleadores = useMemo(() => Array.from(new Set(registros.map(r => r.empleador).filter(Boolean))).sort() as string[], [registros]);
   const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
   const [mostrarTodos, setMostrarTodos] = useState(false);
@@ -158,17 +158,6 @@ export default function BulkModifyTab() {
     return result.sort((a, b) => b.cantidad - a.cantidad);
   }, [allEmpleadores]);
 
-  // Función para cargar datos de filtros (se puede llamar múltiples veces)
-  const loadFilterData = useCallback(async () => {
-    const { data } = await supabase.from('registros').select('estado,analista,acuerdo_precios,tipo_cliente,localidad,empleador');
-    if (!data) return;
-    setAllEstados(Array.from(new Set(data.map(r => r.estado).filter(Boolean))).sort());
-    setAllAnalistas(Array.from(new Set(data.map(r => r.analista).filter(Boolean))).sort());
-    setAllAcuerdos(Array.from(new Set(data.map(r => r.acuerdo_precios).filter(Boolean))).sort());
-    setAllTipos(Array.from(new Set(data.map(r => r.tipo_cliente).filter(Boolean))).sort());
-    setAllLocalidades(Array.from(new Set(data.map(r => r.localidad).filter(Boolean))).sort());
-    setAllEmpleadores(Array.from(new Set(data.map(r => r.empleador).filter(Boolean))).sort());
-  }, []);
 
   const corregirEmpleador = useCallback(async () => {
     if (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) {
@@ -197,36 +186,16 @@ export default function BulkModifyTab() {
       setEmpleadoresSeleccionados([]);
       setEmpleadorCorreccion('');
 
-      // Optimistic update: remove old variants, add corrected name
-      setAllEmpleadores(prev => {
-        const filtered = prev.filter(e => !oldVariants.includes(e));
-        if (!filtered.includes(correctedName)) {
-          return [...filtered, correctedName].sort();
-        }
-        return filtered.sort();
-      });
+      // Optimistic update: actualizar registros en DataContext directamente
+      setRegistros(prev => prev.map(r =>
+        oldVariants.includes(r.empleador ?? '') ? { ...r, empleador: correctedName } : r
+      ));
 
-      // Background reload for consistency + broadcast for other tabs
+      // Broadcast para otras pestañas
       pushBulkRefresh();
-      loadFilterData();
     }
-  }, [empleadoresSeleccionados, empleadorCorreccion, pushBulkRefresh, loadFilterData]);
+  }, [empleadoresSeleccionados, empleadorCorreccion, setRegistros, pushBulkRefresh]);
 
-  // Cargar datos al montar
-  useEffect(() => {
-    loadFilterData();
-  }, [loadFilterData]);
-
-  // Escuchar broadcast de bulk_refresh para refrescar datos en tiempo real
-  useEffect(() => {
-    const channel = supabase
-      .channel('bulk-employer-refresh')
-      .on('broadcast', { event: 'bulk_refresh' }, () => {
-        loadFilterData();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [loadFilterData]);
 
   useEffect(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
