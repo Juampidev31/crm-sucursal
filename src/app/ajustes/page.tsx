@@ -486,16 +486,12 @@ export default function AjustesPage() {
       map.set(key, prev);
     }
 
-    console.log('[Variantes Empleador] Total empleadores únicos:', map.size);
-    console.log('[Variantes Empleador] Muestra:', Array.from(map.entries()).slice(0, 5));
-
     const result: VarianteEmpleador[] = [];
     for (const [normalizado, data] of map) {
       if (data.variantes.size > 1) {
         result.push({ normalizado, variantes: Array.from(data.variantes).sort(), cantidad: data.cantidad, monto: data.monto });
       }
     }
-    console.log('[Variantes Empleador] Con variantes:', result.length);
     return result.sort((a, b) => b.cantidad - a.cantidad);
   }, [duplicadosRegistros]);
 

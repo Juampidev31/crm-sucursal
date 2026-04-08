@@ -85,6 +85,61 @@ export default function BulkModifyTab() {
   const [allTipos, setAllTipos] = useState<string[]>([]);
   const [allLocalidades, setAllLocalidades] = useState<string[]>([]);
   const [allEmpleadores, setAllEmpleadores] = useState<string[]>([]);
+  const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
+  const [empleadorSeleccionado, setEmpleadorSeleccionado] = useState<string>('');
+
+  interface VarianteEmpleador {
+    normalizado: string;
+    variantes: string[];
+    cantidad: number;
+  }
+
+  const variantesEmpleador = useMemo((): VarianteEmpleador[] => {
+    const normalizar = (nombre: string): string => {
+      if (!nombre) return 'Sin dato';
+      let n = nombre.toUpperCase().trim();
+      n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
+      n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
+      n = n.replace(/\s+/g, ' ').trim();
+      return n || 'Sin dato';
+    };
+
+    const map = new Map<string, Set<string>>();
+    for (const e of allEmpleadores) {
+      const key = normalizar(e);
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key)!.add(e);
+    }
+
+    const result: VarianteEmpleador[] = [];
+    for (const [normalizado, variantes] of map) {
+      if (variantes.size > 1) {
+        result.push({ normalizado, variantes: Array.from(variantes).sort(), cantidad: variantes.size });
+      }
+    }
+    return result.sort((a, b) => b.cantidad - a.cantidad);
+  }, [allEmpleadores]);
+
+  const corregirEmpleador = useCallback(async () => {
+    if (!empleadorSeleccionado || !empleadorCorreccion.trim()) {
+      setToast({ message: 'Seleccioná un empleador y escribí el nombre correcto', type: 'error' });
+      return;
+    }
+    setUpdating(true);
+    const { error } = await supabase
+      .from('registros')
+      .update({ empleador: empleadorCorreccion.trim() })
+      .eq('empleador', empleadorSeleccionado);
+    setUpdating(false);
+    if (error) {
+      setToast({ message: `Error: ${error.message}`, type: 'error' });
+    } else {
+      setToast({ message: `Empleador corregido. Actualizá los filtros para ver cambios.`, type: 'success' });
+      setEmpleadorSeleccionado('');
+      setEmpleadorCorreccion('');
+    }
+  }, [empleadorSeleccionado, empleadorCorreccion]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -259,6 +314,110 @@ export default function BulkModifyTab() {
             <X size={12} /> Resetear
           </button>
         </div>
+
+        {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
+        {variantesEmpleador.length > 0 && (
+          <div style={{
+            marginBottom: '28px', padding: '20px',
+            background: 'rgba(251,191,36,0.04)', border: '1px solid rgba(251,191,36,0.12)',
+            borderRadius: '10px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <AlertTriangle size={18} color="#fbbf24" />
+              <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase' }}>
+                Variantes de Empleador — {variantesEmpleador.length} grupos para corregir
+              </h4>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 20 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  Seleccionar variante a corregir
+                </label>
+                <select
+                  className="form-input"
+                  value={empleadorSeleccionado}
+                  onChange={e => setEmpleadorSeleccionado(e.target.value)}
+                  style={{
+                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                  }}
+                >
+                  <option value="" style={{ background: '#111', color: '#666' }}>— Seleccionar —</option>
+                  {variantesEmpleador.flatMap(v =>
+                    v.variantes.map(variante => (
+                      <option key={variante} value={variante} style={{ background: '#111', color: '#ccc' }}>
+                        {variante} ({v.normalizado})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  Nombre correcto
+                </label>
+                <input
+                  className="form-input"
+                  placeholder="Ej: MUNICIPALIDAD DE PARANA"
+                  value={empleadorCorreccion}
+                  onChange={e => setEmpleadorCorreccion(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && corregirEmpleador()}
+                  style={{
+                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                  }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={corregirEmpleador}
+              disabled={updating || !empleadorSeleccionado || !empleadorCorreccion.trim()}
+              style={{
+                background: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
+                color: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? '#666' : '#000',
+                border: 'none', borderRadius: '6px', padding: '10px 24px',
+                fontSize: '11px', fontWeight: 900, cursor: (!empleadorSeleccionado || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
+                textTransform: 'uppercase', letterSpacing: '1px',
+              }}
+            >
+              {updating ? 'CORRIGIENDO...' : 'CORREGIR EMPLEADOR'}
+            </button>
+
+            {/* Lista de variantes detectadas */}
+            <div style={{ marginTop: '20px', maxHeight: 200, overflowY: 'auto' }}>
+              {variantesEmpleador.map((v, i) => (
+                <div key={i} style={{
+                  marginBottom: 12, padding: '12px 14px',
+                  background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                }}>
+                  <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, marginBottom: 6, textTransform: 'uppercase' }}>
+                    {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {v.variantes.map((varName, j) => (
+                      <span
+                        key={j}
+                        onClick={() => setEmpleadorSeleccionado(varName)}
+                        style={{
+                          padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
+                          background: empleadorSeleccionado === varName ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
+                          border: empleadorSeleccionado === varName ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
+                          color: empleadorSeleccionado === varName ? '#fbbf24' : '#888',
+                          fontWeight: 600, cursor: 'pointer',
+                        }}
+                      >
+                        {varName}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* STEP 1: FILTROS */}
         {step === 'filter' && (
