@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
         <div style={{ display: 'flex', gap: '12px' }}>
           <div style={{ background: '#0a0a0a', padding: '10px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
-            <label style={{ fontSize: '8px', color: '#444', fontWeight: 800, display: 'block', marginBottom: '4px', letterSpacing: '0.5px' }}>FILTRAR PERIODO</label>
+            <label style={{ fontSize: '8px', color: '#444', fontWeight: 800, display: 'block', marginBottom: '4px', letterSpacing: '0.5px' }}>FILTRAR PERÍODO</label>
             <select style={{ background: '#0a0a0a', border: 'none', color: '#fff', fontSize: '12px', fontWeight: 600, outline: 'none', cursor: 'pointer' }} value={mes} onChange={e => setMes(e.target.value)}>
               <option value="" style={{ background: '#0a0a0a' }}>Todos los meses</option>
               {MESES.map(m => <option key={m.value} value={m.value} style={{ background: '#0a0a0a' }}>{m.label}</option>)}

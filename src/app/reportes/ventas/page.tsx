@@ -6,6 +6,7 @@ import { CONFIG } from '@/types';
 import { useData } from '@/context/DataContext';
 import { Download, TrendingUp, Users, DollarSign, Hash } from 'lucide-react';
 import { SeccionEstacionalidad } from '@/components/SeccionEstacionalidad';
+import { corregirTildes } from '@/lib/correccion-tildes';
 
 export default function ReporteVentasPage() {
   const { registros: todosRegistros, loading } = useData();
@@ -73,7 +74,17 @@ export default function ReporteVentasPage() {
 
   const exportarCSV = useCallback(() => {
     const headers = ['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Puntaje', 'Es RE', 'Comentarios'];
-    const rows = filtered.map(r => [r.nombre, r.cuil, r.analista, r.estado, r.monto, r.fecha || '', r.puntaje || '', r.es_re ? 'Sí' : 'No', r.comentarios || '']);
+    const rows = filtered.map(r => [
+      corregirTildes(r.nombre),
+      r.cuil,
+      corregirTildes(r.analista),
+      r.estado,
+      r.monto,
+      r.fecha || '',
+      r.puntaje || '',
+      r.es_re ? 'Sí' : 'No',
+      corregirTildes(r.comentarios || '')
+    ]);
     const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -123,12 +134,12 @@ export default function ReporteVentasPage() {
         <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'center' }}>
           <div style={{ fontSize: '11px', color: '#333', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px' }}>CRITERIOS</div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            
-            {/* Custom Selective: Periodo */}
+
+            {/* Custom Selective: Período */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
-              <label style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>Periodo</label>
-              <CustomSelector 
-                value={filtroMes} 
+              <label style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>Período</label>
+              <CustomSelector
+                value={filtroMes}
                 options={mesesDisponibles.map(m => ({ value: m.key, label: m.label }))}
                 onChange={setFiltroMes}
                 width="160px"
@@ -138,8 +149,8 @@ export default function ReporteVentasPage() {
             {/* Custom Selective: Analista */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>Analista</label>
-              <CustomSelector 
-                value={filtroAnalista} 
+              <CustomSelector
+                value={filtroAnalista}
                 options={[{ value: '', label: 'PDV' }, ...analistas.map(a => ({ value: a, label: displayAnalista(a) }))]}
                 onChange={setFiltroAnalista}
                 width="160px"
@@ -203,7 +214,7 @@ export default function ReporteVentasPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: '64px', textAlign: 'center', color: '#222', fontSize: '14px', fontWeight: 600 }}>
-            No se encontraron registros financieros para este periodo
+            No se encontraron registros financieros para este período
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -218,9 +229,9 @@ export default function ReporteVentasPage() {
               <tbody>
                 {filtered.map((r, i) => (
                   <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.005)' }}>
-                    <td style={{ padding: '14px 16px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>{r.nombre}</td>
+                    <td style={{ padding: '14px 16px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>{corregirTildes(r.nombre)}</td>
                     <td style={{ padding: '14px 16px', color: '#444', fontFamily: 'monospace', fontSize: '11px', textAlign: 'center', letterSpacing: '0.5px' }}>{r.cuil}</td>
-                    <td style={{ padding: '14px 16px', color: '#666', textAlign: 'center', fontWeight: 700, fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
+                    <td style={{ padding: '14px 16px', color: '#666', textAlign: 'center', fontWeight: 700, fontSize: '12px' }}>{displayAnalista(corregirTildes(r.analista))}</td>
                     <td style={{ padding: '14px 16px', textAlign: 'center' }}>
                       <span style={{
                         padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px',
@@ -236,8 +247,8 @@ export default function ReporteVentasPage() {
                     <td style={{ padding: '14px 16px', color: '#fff', textAlign: 'center', fontWeight: 800 }}>
                       {r.puntaje ? (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                          <div style={{ 
-                            width: 5, height: 5, borderRadius: '50%', 
+                          <div style={{
+                            width: 5, height: 5, borderRadius: '50%',
                             background: r.puntaje >= 700 ? '#60a5facc' : r.puntaje >= 500 ? '#fbbf24cc' : '#ef4444cc',
                             boxShadow: `0 0 8px ${r.puntaje >= 700 ? '#60a5fa22' : r.puntaje >= 500 ? '#fbbf2422' : '#ef444422'}`
                           }} />
@@ -270,7 +281,7 @@ function CustomSelector({ value, options, onChange, width }: { value: string; op
 
   return (
     <div style={{ position: 'relative', width }} onClick={e => e.stopPropagation()}>
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
           background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px',
@@ -280,10 +291,10 @@ function CustomSelector({ value, options, onChange, width }: { value: string; op
       >
         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.label}</span>
         <div style={{ color: '#444', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
         </div>
       </div>
-      
+
       {isOpen && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, width: '100%', marginTop: '4px',
@@ -292,7 +303,7 @@ function CustomSelector({ value, options, onChange, width }: { value: string; op
         }}>
           <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
             {options.map(opt => (
-              <div 
+              <div
                 key={opt.value}
                 onClick={() => { onChange(opt.value); setIsOpen(false); }}
                 style={{

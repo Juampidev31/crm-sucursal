@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
+import { corregirTildes } from '@/lib/correccion-tildes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -251,12 +252,12 @@ const RegistroModal = memo(function RegistroModal({
                 </div>
               </Field>
               <Field label="Nombre *" error={errors.nombre}>
-                <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? e.target.value : capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '')))} onPaste={e => {
+                <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? corregirTildes(e.target.value) : corregirTildes(capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, ''))))} onPaste={e => {
                   if (isAdmin) return;
                   e.preventDefault();
                   const pasted = e.clipboardData.getData('text');
                   const clean = pasted.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '');
-                  set('nombre', capitalizarNombre(clean));
+                  set('nombre', corregirTildes(capitalizarNombre(clean)));
                 }} />
               </Field>
               <Field label="Analista *">
@@ -334,12 +335,12 @@ const RegistroModal = memo(function RegistroModal({
                   <input
                     className="form-input"
                     value={form.empleador || ''}
-                    onChange={e => set('empleador', e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase())}
+                    onChange={e => set('empleador', corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
                     onBlur={e => set('empleador', normalizarSufijosLegales(e.target.value.trim()))}
                     onPaste={e => {
                       e.preventDefault();
                       const pasted = e.clipboardData.getData('text').trim();
-                      set('empleador', normalizarSufijosLegales(pasted.charAt(0).toUpperCase() + pasted.slice(1).toLowerCase()));
+                      set('empleador', corregirTildes(normalizarSufijosLegales(pasted.charAt(0).toUpperCase() + pasted.slice(1).toLowerCase())));
                     }}
                     placeholder="Nombre del empleador"
                     autoFocus
@@ -377,7 +378,7 @@ const RegistroModal = memo(function RegistroModal({
                 <textarea
                   className="form-input"
                   value={form.comentarios || ''}
-                  onChange={e => set('comentarios', e.target.value)}
+                  onChange={e => set('comentarios', corregirTildes(e.target.value))}
                   rows={3}
                   style={{ resize: 'vertical', fontFamily: 'inherit' }}
                 />
@@ -583,7 +584,7 @@ const ComentariosModal = memo(function ComentariosModal({
             <textarea
               className="form-input"
               value={comentarios}
-              onChange={e => setComentarios(e.target.value)}
+              onChange={e => setComentarios(corregirTildes(e.target.value))}
               rows={6}
               style={{ resize: 'vertical', fontFamily: 'inherit' }}
               placeholder="Sin comentarios..."
