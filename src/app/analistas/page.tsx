@@ -950,7 +950,10 @@ export default function AnalistasPage() {
       {/* ── KPI Capital ── */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ ...lbl, fontSize: '14px', borderLeft: '4px solid #fff', paddingLeft: '12px', marginBottom: 0, color: '#fff' }}>CAPITAL</div>
+          <div style={{ ...lbl, fontSize: '14px', marginBottom: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <DollarSign size={16} color="#fff" strokeWidth={3} />
+            CAPITAL
+          </div>
 
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -1037,7 +1040,10 @@ export default function AnalistasPage() {
       {/* ── KPI Operaciones ── */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ ...lbl, fontSize: '14px', borderLeft: '4px solid #4ade80', paddingLeft: '12px', marginBottom: 0, color: '#fff' }}>OPERACIONES</div>
+          <div style={{ ...lbl, fontSize: '14px', marginBottom: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Activity size={16} color="#4ade80" strokeWidth={3} />
+            OPERACIONES
+          </div>
 
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
