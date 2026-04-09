@@ -89,6 +89,13 @@ export default function BulkModifyTab() {
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
   const [mostrarTodos, setMostrarTodos] = useState(false);
   const [busquedaEmpleador, setBusquedaEmpleador] = useState('');
+  const [gruposDescartados, setGruposDescartados] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const saved = localStorage.getItem('empleador_grupos_ok');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
   interface VarianteEmpleador {
     normalizado: string;
     variantes: string[];
@@ -254,8 +261,23 @@ export default function BulkModifyTab() {
       map.get(key)!.add(e);
     }
     const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
-    return fuzzyGrupos.filter(g => g.cantidad > 1).sort((a, b) => b.cantidad - a.cantidad);
-  }, [allEmpleadores, normalizar, agruparFuzzy]);
+    return fuzzyGrupos.filter(g => g.cantidad > 1 && !gruposDescartados.has(g.normalizado)).sort((a, b) => b.cantidad - a.cantidad);
+  }, [allEmpleadores, normalizar, agruparFuzzy, gruposDescartados]);
+
+  // Helpers para descartar/restaurar grupos
+  const descartarGrupo = useCallback((normalizado: string) => {
+    setGruposDescartados(prev => {
+      const next = new Set(prev);
+      next.add(normalizado);
+      try { localStorage.setItem('empleador_grupos_ok', JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  }, []);
+
+  const restaurarDescartados = useCallback(() => {
+    setGruposDescartados(new Set());
+    try { localStorage.removeItem('empleador_grupos_ok'); } catch {}
+  }, []);
 
 
   const corregirEmpleador = useCallback(async () => {
@@ -498,15 +520,30 @@ export default function BulkModifyTab() {
                   ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
                   : 'Corrector de Empleador — Sin duplicados'}
               </h4>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto', fontSize: '11px', color: '#666', cursor: 'pointer', fontWeight: 700 }}>
-                <input
-                  type="checkbox"
-                  checked={mostrarTodos}
-                  onChange={e => setMostrarTodos(e.target.checked)}
-                  style={{ cursor: 'pointer' }}
-                />
-                Mostrar todos
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
+                {gruposDescartados.size > 0 && (
+                  <button
+                    onClick={restaurarDescartados}
+                    style={{
+                      background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
+                      color: '#60a5fa', borderRadius: '4px', padding: '4px 10px',
+                      fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                      textTransform: 'uppercase', letterSpacing: '0.5px',
+                    }}
+                  >
+                    Restaurar {gruposDescartados.size} descartado{gruposDescartados.size > 1 ? 's' : ''}
+                  </button>
+                )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', color: '#666', cursor: 'pointer', fontWeight: 700 }}>
+                  <input
+                    type="checkbox"
+                    checked={mostrarTodos}
+                    onChange={e => setMostrarTodos(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Mostrar todos
+                </label>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
@@ -570,8 +607,25 @@ export default function BulkModifyTab() {
                     background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
                     border: '1px solid rgba(255,255,255,0.04)',
                   }}>
-                    <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, marginBottom: 6, textTransform: 'uppercase' }}>
-                      {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>
+                        {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                      </div>
+                      {v.cantidad > 1 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); descartarGrupo(v.normalizado); }}
+                          title="Marcar como correcto — no es un duplicado real"
+                          style={{
+                            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+                            color: '#34d399', borderRadius: '4px', padding: '2px 8px',
+                            fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                            textTransform: 'uppercase', letterSpacing: '0.5px',
+                            display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+                          }}
+                        >
+                          <CheckCircle size={10} /> OK
+                        </button>
+                      )}
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {v.variantes.map((varName, j) => {
