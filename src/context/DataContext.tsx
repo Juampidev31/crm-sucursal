@@ -90,7 +90,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     const [{ data: regs }, { data: objs }, { data: dias }, { count }, { data: hist }, { data: alertas }] = await Promise.all([
-      supabase.from('registros').select('id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,localidad').order('fecha', { ascending: false }).limit(2000),
+      supabase.from('registros').select('id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,localidad,created_at,updated_at').order('fecha', { ascending: false }).limit(2000),
       supabase.from('objetivos').select('id,analista,mes,anio,meta_ventas,meta_operaciones'),
       supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
       supabase.from('recordatorios').select('id', { count: 'exact', head: true }).eq('mostrado', false),
@@ -122,7 +122,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // ── Push callbacks (envían por broadcast) ──────────────────────────────────
 
   const pushBroadcast = useCallback((event: string, payload: Record<string, unknown>) => {
-    broadcastRef.current?.send({ type: 'broadcast', event, payload }).catch(() => {});
+    broadcastRef.current?.send({ type: 'broadcast', event, payload }).catch(() => { });
   }, []);
 
   const pushRegistroChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => {

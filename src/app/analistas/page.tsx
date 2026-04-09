@@ -51,6 +51,8 @@ interface Reg {
   tipo_cliente?: string;
   es_re?: boolean;
   acuerdo_precios?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const CHART_COLORS: Record<string, string> = {
@@ -294,7 +296,7 @@ export default function AnalistasPage() {
   const [mes, setMes] = useState(now.getMonth());
   const [anio, setAnio] = useState(now.getFullYear());
 
-  const { registros: rawRegs, objetivos: todosObjs, diasConfig: diasCfg, historicoVentas, loading } = useData();
+  const { registros: rawRegs, objetivos: todosObjs, diasConfig: diasCfg, alertasConfig, historicoVentas, loading } = useData();
   const todosRegs = rawRegs as unknown as Reg[];
   const [analistasSel, setAnalistasSel] = useState<string[]>([]);
 
@@ -592,11 +594,38 @@ export default function AnalistasPage() {
   }, [regs, objMap, mes, anio]);
 
   // ── Alertas y resumen de gestión ─────────────────────────────────
-  const alertas = useMemo(() => ({
-    proyeccion: regs.filter(r => r.estado?.toLowerCase() === 'proyeccion').length,
-    seguimiento: regs.filter(r => r.estado?.toLowerCase() === 'en seguimiento').length,
-    afectaciones: regs.filter(r => r.estado?.toLowerCase() === 'afectaciones').length,
-  }), [regs]);
+  const alertas = useMemo(() => {
+    const now = new Date();
+
+    const countByStateAndDays = (estado: string, diasLimite: number) => {
+      return regs.filter(r => {
+        if (r.estado?.toLowerCase() !== estado.toLowerCase()) return false;
+
+        // Use fecha (business date) so edits don't reset the counter
+        const dateStr = r.fecha || r.created_at;
+
+        // If no date fields available, count all records (fallback to old behavior)
+        if (!dateStr) return true;
+
+        const recordDate = new Date(dateStr);
+        const daysDiff = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        return daysDiff >= diasLimite;
+      }).length;
+    };
+
+    // Get dias limit for each alert type from config
+    const getConfigDias = (estado: string): number => {
+      const config = alertasConfig?.find(a => a.estado.toLowerCase() === estado.toLowerCase());
+      return config?.dias ?? 0; // Return 0 if config not found (show all)
+    };
+
+    return {
+      proyeccion: countByStateAndDays('proyeccion', getConfigDias('proyeccion')),
+      seguimiento: countByStateAndDays('en seguimiento', getConfigDias('en seguimiento')),
+      afectaciones: countByStateAndDays('afectaciones', getConfigDias('afectaciones')),
+    };
+  }, [regs, alertasConfig]);
 
   const resumenGestion = useMemo(() =>
     ESTADOS_RESUMEN.map(g => {
