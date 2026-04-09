@@ -855,7 +855,7 @@ export default function AnalistasPage() {
     borderRadius: '16px',
     padding: '20px',
     minWidth: '220px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.02)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
     position: 'relative',
     overflow: 'hidden',
   };
@@ -950,7 +950,7 @@ export default function AnalistasPage() {
       {/* ── KPI Capital ── */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ ...lbl, fontSize: '14px', marginBottom: 0, color: '#fff' }}>CAPITAL</div>
+          <div style={{ ...lbl, fontSize: '14px', borderLeft: '4px solid #fff', paddingLeft: '12px', marginBottom: 0, color: '#fff' }}>CAPITAL</div>
 
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -986,7 +986,7 @@ export default function AnalistasPage() {
                         return gradient;
                       },
 
-                      borderWidth: 2,
+                      borderWidth: 0,
                       pointRadius: 0,
                       tension: 0.4,
                       fill: true,
@@ -1037,7 +1037,7 @@ export default function AnalistasPage() {
       {/* ── KPI Operaciones ── */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ ...lbl, fontSize: '14px', marginBottom: 0, color: '#fff' }}>OPERACIONES</div>
+          <div style={{ ...lbl, fontSize: '14px', borderLeft: '4px solid #4ade80', paddingLeft: '12px', marginBottom: 0, color: '#fff' }}>OPERACIONES</div>
 
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -1073,7 +1073,7 @@ export default function AnalistasPage() {
                         return gradient;
                       },
 
-                      borderWidth: 2,
+                      borderWidth: 0,
                       pointRadius: 0,
                       tension: 0.4,
                       fill: true,
