@@ -96,18 +96,27 @@ const RegistroModal = memo(function RegistroModal({
   const [dupBlocked, setDupBlocked] = useState(false);
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
   const [showComentariosModal, setShowComentariosModal] = useState(false);
-  const [empleadoresDB, setEmpleadoresDB] = useState<string[]>([]);
-  const [empleadoresLoaded, setEmpleadoresLoaded] = useState(false);
   const [empleadorCustom, setEmpleadorCustom] = useState(false);
+  const { registros: allRegistros } = useData();
 
-  // Cargar empleadores una sola vez al montar el componente
-  useEffect(() => {
-    supabase.from('registros').select('empleador').not('empleador', 'is', null).not('empleador', 'eq', '').order('empleador').then(({ data }) => {
-      if (data) {
-        setEmpleadoresDB(Array.from(new Set(data.map(r => r.empleador as string))).sort());
-      }
-      setEmpleadoresLoaded(true);
-    });
+  // Derivar empleadores reactivamente desde DataContext (se actualiza al corregir en BulkModifyTab)
+  const empleadoresDB = useMemo(() =>
+    Array.from(new Set(allRegistros.map(r => r.empleador).filter(Boolean) as string[])).sort(),
+    [allRegistros]
+  );
+  const empleadoresLoaded = true; // siempre cargados desde DataContext
+
+  // ── Auto-corrección de sufijos legales ──────────────────────────────────
+  const normalizarSufijosLegales = useCallback((valor: string): string => {
+    if (!valor) return valor;
+    // Patrones de sufijos legales con todas sus variantes
+    return valor
+      .replace(/\b(s\.?\s*r\.?\s*l\.?)\b/gi, 'S.R.L.')
+      .replace(/\b(s\.?\s*a\.?\s*s\.?)\b/gi, 'S.A.S.')
+      .replace(/\b(s\.?\s*a\.?)\b(?!\s*\.?\s*s)/gi, 'S.A.')
+      .replace(/\b(ltda\.?)\b/gi, 'Ltda.')
+      .replace(/\b(cia\.?)\b/gi, 'Cia.')
+      .replace(/\b(e\.?\s*i\.?\s*r\.?\s*l\.?)\b/gi, 'E.I.R.L.');
   }, []);
 
   useEffect(() => {
@@ -118,11 +127,9 @@ const RegistroModal = memo(function RegistroModal({
       setDupRecord(null);
       setDupBlocked(false);
       setAgendarRecordatorio(false);
-      if (empleadoresLoaded) {
-        setEmpleadorCustom(!!initialData.empleador && !empleadoresDB.includes(initialData.empleador));
-      }
+      setEmpleadorCustom(!!initialData.empleador && !empleadoresDB.includes(initialData.empleador));
     }
-  }, [isOpen, initialData, empleadoresLoaded]);
+  }, [isOpen, initialData, empleadoresDB]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -328,6 +335,12 @@ const RegistroModal = memo(function RegistroModal({
                     className="form-input"
                     value={form.empleador || ''}
                     onChange={e => set('empleador', e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase())}
+                    onBlur={e => set('empleador', normalizarSufijosLegales(e.target.value.trim()))}
+                    onPaste={e => {
+                      e.preventDefault();
+                      const pasted = e.clipboardData.getData('text').trim();
+                      set('empleador', normalizarSufijosLegales(pasted.charAt(0).toUpperCase() + pasted.slice(1).toLowerCase()));
+                    }}
                     placeholder="Nombre del empleador"
                     autoFocus
                   />
