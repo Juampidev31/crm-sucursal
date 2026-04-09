@@ -38,19 +38,26 @@ export default function LoginPage() {
       minHeight: '100vh', background: '#000',
       fontFamily: "'Outfit', sans-serif",
     }}>
-      <form onSubmit={handleLogin} style={{
+      <form onSubmit={handleLogin} autoComplete="off" style={{
         background: '#0a0a0a',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: '16px', padding: '40px',
         width: '100%', maxWidth: '320px',
         display: 'flex', flexDirection: 'column', gap: '16px',
       }}>
+        {/* Trampa anti-autofill: algunos navegadores ignoran autoComplete="off" en campos password */}
+        <input type="password" name="fake-password" autoComplete="new-password" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1} />
         <input
           type="password"
+          name="admin-pwd"
           value={password}
           onChange={e => { setPassword(e.target.value); setError(''); }}
           placeholder="Contraseña"
           autoFocus
+          autoComplete="new-password"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           style={{
             background: '#111', border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: '10px', color: '#fff', fontSize: '14px',
