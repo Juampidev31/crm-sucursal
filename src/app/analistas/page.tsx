@@ -527,7 +527,7 @@ export default function AnalistasPage() {
     // Venta promedio y conversión
     const ventaPromedio = alcanceOps > 0 ? alcanceCapital / alcanceOps : 0;
     // Clientes atendidos = todos los registros del analista en el mes (independientemente del estado)
-    const clientesAtendidos = regs.filter(r => r.fecha?.slice(0, 7) === key && r.analista === analista).length;
+    const clientesAtendidos = regs.filter(r => r.fecha?.slice(0, 7) === key).length;
     const conversion = clientesAtendidos > 0 ? (alcanceOps / clientesAtendidos) * 100 : 0;
 
     return {
