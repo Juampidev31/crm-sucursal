@@ -973,36 +973,7 @@ export default function AnalistasPage() {
                   </div>
                 </div>
               </div>
-              {/* Sparkline (Mini Gráfico) */}
-              <div style={{ width: '100px', height: '50px' }}>
-                <Line
-                  data={{
-                    labels: curva.stats.map(s => s.day),
-                    datasets: [{
-                      data: curva.stats.map(s => s.acum),
-                      borderColor: kpis.tendPct >= 0 ? '#fff' : '#444',
-                      backgroundColor: (context: any) => {
-                        const canvas = context.chart.ctx;
-                        const gradient = canvas.createLinearGradient(0, 0, 0, 50);
-                        gradient.addColorStop(0, kpis.tendPct >= 0 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)');
-                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                        return gradient;
-                      },
-
-                      borderWidth: 0,
-                      pointRadius: 0,
-                      tension: 0.4,
-                      fill: true,
-                    }]
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    scales: { x: { display: false }, y: { display: false } }
-                  }}
-                />
-              </div>
+              {/* Sparkline removed */}
             </div>
           </div>
           <div style={box}>
@@ -1063,36 +1034,7 @@ export default function AnalistasPage() {
                   </div>
                 </div>
               </div>
-              {/* Sparkline Operaciones */}
-              <div style={{ width: '100px', height: '50px' }}>
-                <Line
-                  data={{
-                    labels: curva.dias,
-                    datasets: [{
-                      data: curva.stats.map(s => s.acum > 0 ? (s.acum / 100000) : 0), // Simplificado para ops
-                      borderColor: '#fff',
-                      backgroundColor: (context: any) => {
-                        const canvas = context.chart.ctx;
-                        const gradient = canvas.createLinearGradient(0, 0, 0, 50);
-                        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
-                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                        return gradient;
-                      },
-
-                      borderWidth: 0,
-                      pointRadius: 0,
-                      tension: 0.4,
-                      fill: true,
-                    }]
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    scales: { x: { display: false }, y: { display: false } }
-                  }}
-                />
-              </div>
+              {/* Sparkline removed */}
             </div>
           </div>
           <div style={box}>
