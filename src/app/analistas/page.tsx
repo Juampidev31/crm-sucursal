@@ -470,15 +470,27 @@ export default function AnalistasPage() {
     const alcanceCapital = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const alcanceOps = ventasMes.length;
 
-    // Mes anterior para tendencia
+    const { diasHabiles: dh, diasTranscurridos: dt } = diasInfo;
+
+    // Mes anterior para tendencia — comparar vs el mismo día hábil del mes anterior
     let pMes = mes - 1; let pAnio = anio;
     if (pMes < 0) { pMes = 11; pAnio--; }
     const prevKey = mesStr(pAnio, pMes);
-    const ventasPrev = regs.filter(r => r.fecha?.slice(0, 7) === prevKey && esVenta(r.estado || ''));
+
+    // Filtrar ventas del mes anterior hasta el mismo número de días hábiles transcurridos
+    const ventasPrev = regs.filter(r => {
+      if (r.fecha?.slice(0, 7) !== prevKey || !esVenta(r.estado || '')) return false;
+      const fechaVenta = new Date(r.fecha);
+      // Contar cuántos días hábiles han pasado desde el inicio del mes hasta esta fecha
+      let diasHabilesHastaFecha = 0;
+      for (let d = 1; d <= fechaVenta.getDate(); d++) {
+        const ds = new Date(pAnio, pMes, d).getDay();
+        if (ds >= 1 && ds <= 5) diasHabilesHastaFecha++;
+      }
+      return diasHabilesHastaFecha <= dt;
+    });
     const alcancePrev = ventasPrev.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const prevOpsPrev = ventasPrev.length;
-
-    const { diasHabiles: dh, diasTranscurridos: dt } = diasInfo;
 
     // Para meses pasados completos, proyectado = alcance real (todos los días ya transcurrieron)
     const esMesPasado = anio < now.getFullYear() || (anio === now.getFullYear() && mes < now.getMonth());
