@@ -28,12 +28,16 @@ function NavItem({
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 52, height: 52,
-          borderRadius: 13,
-          color: active ? '#86efac' : '#666',
-          background: active ? 'rgba(134, 239, 172, 0.1)' : 'rgba(255,255,255,0.04)',
+          borderRadius: 14,
+          color: active ? '#fff' : '#444',
+          background: active 
+            ? 'linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)' 
+            : 'rgba(255,255,255,0.02)',
           position: 'relative',
           textDecoration: 'none',
-          border: `1px solid ${active ? 'rgba(134, 239, 172, 0.15)' : 'transparent'}`,
+          border: `1px solid ${active ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'}`,
+          boxShadow: active ? '0 10px 20px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.05)' : 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
         <Icon
@@ -68,11 +72,18 @@ function SidebarDivider() {
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: 36, height: 1,
-        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 15%, rgba(255,255,255,1) 50%, rgba(255,255,255,0.6) 85%, transparent 100%)',
+        width: 24, height: 1,
+        background: 'rgba(255,255,255,0.05)',
         borderRadius: 1,
-        boxShadow: '0 0 10px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15)',
       }} />
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 4, height: 4,
+        background: 'rgba(255,255,255,0.1)',
+        borderRadius: '50%',
+      }} />
+
     </div>
   );
 }
@@ -137,9 +148,10 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   return (
     <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''}`}
       style={{
-        background: '#000',
-        borderRight: '1px solid rgba(255,255,255,0.03)',
-        boxShadow: '20px 0 60px rgba(0,0,0,0.8)',
+        background: '#070707',
+        borderRight: '1px solid rgba(255,255,255,0.02)',
+        boxShadow: 'inset -20px 0 40px rgba(0,0,0,0.5)',
+
         display: 'flex', flexDirection: 'column',
         alignItems: 'center',
         paddingTop: 24,

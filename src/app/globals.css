@@ -217,10 +217,59 @@ a {
 }
 
 .green-hover-btn:hover svg {
-  color: #86efac !important;
+  color: #fff !important;
   opacity: 1 !important;
   transform: scale(1.05);
 }
+
+/* ============ LUXURY STEALTH EFFECTS ============ */
+
+/* Tooltip Obsidiana */
+[data-label] {
+  position: relative;
+}
+
+[data-label]::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-8px);
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.02);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  z-index: 1000;
+}
+
+[data-label]:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Subtle pulse for active item */
+@keyframes luxury-breathe {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+.active-item {
+  animation: luxury-breathe 4s infinite ease-in-out;
+}
+
 
 /* ============ DASHBOARD ============ */
 .dashboard-container {
