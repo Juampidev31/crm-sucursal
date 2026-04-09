@@ -697,8 +697,8 @@ function MultiSelectDropdown({
         style={{
           width: '100%', height: 38, fontSize: '13px', fontWeight: 600,
           padding: '0 12px', background: '#0a0a0a',
-          border: open ? '1px solid rgba(96,165,250,0.4)' : '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '6px', color: selected.length > 0 ? '#60a5fa' : '#aaa',
+          border: open ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '6px', color: selected.length > 0 ? '#ccc' : '#aaa',
           outline: 'none', cursor: 'pointer', textAlign: 'left' as const,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
@@ -748,20 +748,20 @@ function MultiSelectDropdown({
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '7px 12px', cursor: 'pointer',
-                    background: isSelected ? 'rgba(96,165,250,0.06)' : 'transparent',
+                    background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent',
                     transition: 'background 0.15s',
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(96,165,250,0.06)' : 'transparent'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(255,255,255,0.04)' : 'transparent'; }}
                 >
                   <div style={{
                     width: 14, height: 14, borderRadius: 3,
-                    border: isSelected ? '1.5px solid #60a5fa' : '1.5px solid rgba(255,255,255,0.15)',
-                    background: isSelected ? '#60a5fa' : 'transparent',
+                    border: isSelected ? '1.5px solid #888' : '1.5px solid rgba(255,255,255,0.15)',
+                    background: isSelected ? '#888' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.15s', flexShrink: 0,
                   }}>
-                    {isSelected && <span style={{ fontSize: 9, color: '#000', fontWeight: 900 }}>✓</span>}
+                    {isSelected && <span style={{ fontSize: 9, color: '#fff', fontWeight: 900 }}>✓</span>}
                   </div>
                   <span style={{ fontSize: 12, color: isSelected ? '#ddd' : '#888', fontWeight: isSelected ? 700 : 500 }}>
                     {labels[item] ?? item}
