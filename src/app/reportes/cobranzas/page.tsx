@@ -7,6 +7,9 @@ import {
   BarController, LineController
 } from 'chart.js';
 import { Bar, Line, Chart } from 'react-chartjs-2';
+import SelectReporte from '@/components/SelectReporte';
+import { Calendar } from 'lucide-react';
+
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
@@ -140,17 +143,16 @@ export default function ReporteCobranzasPage() {
   return (
     <div className="dashboard-container">
       {/* ── Action Toolbar ── */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '24px' }}>
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px 3px', height: '36px', display: 'flex', alignItems: 'center' }}>
-          {YEARS.map(y => (
-            <button key={y} onClick={() => setYear(y)} style={{
-              padding: '4px 14px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-              background: year === y ? '#fff' : 'transparent',
-              color: year === y ? '#000' : '#555',
-            }}>{y}</button>
-          ))}
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '32px' }}>
+        <SelectReporte
+          icon="calendar"
+          value={year}
+          onChange={setYear}
+          options={YEARS.map(y => ({ label: `AÑO ${y}`, value: y }))}
+          width="140px"
+        />
       </div>
+
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>

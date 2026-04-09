@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { formatCurrency, formatDate, displayAnalista } from '@/lib/utils';
+import { displayAnalista, formatCurrency, formatDate } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { useData } from '@/context/DataContext';
 import { Download, TrendingUp, Users, DollarSign, Hash } from 'lucide-react';
 import { SeccionEstacionalidad } from '@/components/SeccionEstacionalidad';
 import { corregirTildes } from '@/lib/correccion-tildes';
+import SelectReporte from '@/components/SelectReporte';
+
 
 export default function ReporteVentasPage() {
   const { registros: todosRegistros, loading } = useData();
@@ -135,30 +137,33 @@ export default function ReporteVentasPage() {
           <div style={{ fontSize: '11px', color: '#333', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px' }}>CRITERIOS</div>
           <div style={{ display: 'flex', gap: '12px' }}>
 
-            {/* Custom Selective: Período */}
+            {/* Período */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
               <label style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>Período</label>
-              <CustomSelector
+              <SelectReporte
+                icon="calendar"
                 value={filtroMes}
                 options={mesesDisponibles.map(m => ({ value: m.key, label: m.label }))}
                 onChange={setFiltroMes}
-                width="160px"
+                width="180px"
               />
             </div>
 
-            {/* Custom Selective: Analista */}
+            {/* Analista */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>Analista</label>
-              <CustomSelector
+              <SelectReporte
+                icon="user"
                 value={filtroAnalista}
-                options={[{ value: '', label: 'PDV' }, ...analistas.map(a => ({ value: a, label: displayAnalista(a) }))]}
+                options={[{ value: '', label: 'VISTA GLOBAL' }, ...analistas.map(a => ({ value: a, label: displayAnalista(a) }))]}
                 onChange={setFiltroAnalista}
-                width="160px"
+                width="180px"
               />
             </div>
 
           </div>
         </div>
+
 
         {/* KPIs */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
@@ -269,57 +274,6 @@ export default function ReporteVentasPage() {
 }
 
 function CustomSelector({ value, options, onChange, width }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; width: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selected = options.find(o => o.value === value) || options[0];
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handle = () => setIsOpen(false);
-    window.addEventListener('click', handle);
-    return () => window.removeEventListener('click', handle);
-  }, [isOpen]);
-
-  return (
-    <div style={{ position: 'relative', width }} onClick={e => e.stopPropagation()}>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px',
-          padding: '8px 12px', color: '#fff', fontSize: '12px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '34px'
-        }}
-      >
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selected.label}</span>
-        <div style={{ color: '#444', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg>
-        </div>
-      </div>
-
-      {isOpen && (
-        <div style={{
-          position: 'absolute', top: '100%', left: 0, width: '100%', marginTop: '4px',
-          background: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-          zIndex: 100, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.8)'
-        }}>
-          <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
-            {options.map(opt => (
-              <div
-                key={opt.value}
-                onClick={() => { onChange(opt.value); setIsOpen(false); }}
-                style={{
-                  padding: '10px 12px', fontSize: '12px', color: value === opt.value ? '#fff' : '#666',
-                  background: value === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent',
-                  cursor: 'pointer', transition: 'all 0.1s'
-                }}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                onMouseOut={e => e.currentTarget.style.background = value === opt.value ? 'rgba(255,255,255,0.05)' : 'transparent'}
-              >
-                {opt.label}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return null; // Deprecated, replaced by SelectReporte
 }
+

@@ -32,7 +32,10 @@ import {
   Percent,
 } from 'lucide-react';
 
+import SelectReporte from '@/components/SelectReporte';
+
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler);
+
 
 // PDV = vista combinada de TODOS los analistas (no es un analista real en la DB)
 const PDV = '__pdv__';
@@ -908,44 +911,38 @@ export default function AnalistasPage() {
 
       {/* --- Action Bar --- */}
       <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-        <select
+        <SelectReporte
+          icon="user"
           value={analista}
-          onChange={e => setAnalista(e.target.value)}
-          style={{
-            background: '#000', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px',
-            padding: '8px 14px', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 700,
-            cursor: 'pointer', outline: 'none', appearance: 'none',
-            textTransform: 'uppercase', letterSpacing: '1px'
-          }}
-        >
-          <option value={PDV}>PDV</option>
-          {analistasSel.map(a => <option key={a} value={a}>{a.toUpperCase()}</option>)}
-        </select>
+          onChange={v => setAnalista(v)}
+          options={[
+            { label: 'Vista Global (PDV)', value: PDV },
+            ...analistasSel.map(a => ({ label: a.toUpperCase(), value: a }))
+          ]}
+          width="220px"
+        />
 
-        <select
+        <SelectReporte
+          icon="calendar"
           value={`${anio}-${mes}`}
-          onChange={e => {
-            const [a, m] = e.target.value.split('-');
-            setAnio(Number(a)); setMes(Number(m));
+          onChange={v => {
+            const [a, m] = v.split('-');
+            setAnio(Number(a)); 
+            setMes(Number(m));
           }}
-          style={{
-            background: '#000', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px',
-            padding: '8px 14px', color: 'rgba(255,255,255,0.4)', fontSize: '11px', fontWeight: 700,
-            cursor: 'pointer', outline: 'none', appearance: 'none',
-            textTransform: 'uppercase', letterSpacing: '1px'
-          }}
-        >
-          {Array.from({ length: 12 }, (_, i) => {
-            let m = now.getMonth() - i; let a = now.getFullYear();
+          options={Array.from({ length: 12 }, (_, i) => {
+            let m = now.getMonth() - i; 
+            let a = now.getFullYear();
             while (m < 0) { m += 12; a--; }
-            return (
-              <option key={`${a}-${m}`} value={`${a}-${m}`}>
-                {CONFIG.MESES_NOMBRES[m].toUpperCase()} {a}
-              </option>
-            );
+            return {
+              label: `${CONFIG.MESES_NOMBRES[m].toUpperCase()} ${a}`,
+              value: `${a}-${m}`
+            };
           })}
-        </select>
+          width="180px"
+        />
       </div>
+
 
       {/* ── KPI Capital ── */}
       <div style={{ marginBottom: '24px' }}>
@@ -1154,56 +1151,58 @@ export default function AnalistasPage() {
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
 
-          {/* Alertas Premium */}
-          <div style={card}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                <AlertTriangle size={16} color="#f87171" />
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>ALERTAS DE GESTIÓN</div>
-                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-                  Indicadores de acciones requeridas
+          {/* Alertas Premium - Solo Luciana y Victoria, no PDV */}
+          {(analista !== PDV) && (
+            <div style={card}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+                  <AlertTriangle size={16} color="#f87171" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>ALERTAS DE GESTIÓN</div>
+                  <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+                    Indicadores de acciones requeridas
+                  </div>
                 </div>
               </div>
+              {[
+                { id: 'proy', label: 'PROYECCIÓN', count: alertas.proyeccion, icon: <TrendingUp size={16} />, color: '#fff', status: alertas.proyeccion > 20 ? 'URGENTE' : 'OK' },
+                { id: 'seg', label: 'SEGUIMIENTO', count: alertas.seguimiento, icon: <Clock size={16} />, color: '#fbbf24', status: alertas.seguimiento > 5 ? 'REVISAR' : 'OK' },
+                { id: 'afect', label: 'AFECTACIONES', count: alertas.afectaciones, icon: <ShieldAlert size={16} />, color: '#f87171', status: alertas.afectaciones > 0 ? 'URGENTE' : 'OK' },
+              ].map(a => (
+                <div key={a.id} style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  marginBottom: '8px',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 700, color: '#666' }}>
+                      {a.icon} {a.label}
+                    </div>
+                    <div style={{
+                      fontSize: '9px',
+                      fontWeight: 900,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: a.status === 'OK' ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
+                      color: a.status === 'OK' ? '#4ade80' : '#f87171',
+                      letterSpacing: '0.5px'
+                    }}>
+                      {a.status}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>
+                    {a.count} <span style={{ fontSize: '10px', color: '#444', fontWeight: 400 }}>Registros</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            {[
-              { id: 'proy', label: 'PROYECCIÓN', count: alertas.proyeccion, icon: <TrendingUp size={16} />, color: '#fff', status: alertas.proyeccion > 20 ? 'URGENTE' : 'OK' },
-              { id: 'seg', label: 'SEGUIMIENTO', count: alertas.seguimiento, icon: <Clock size={16} />, color: '#fbbf24', status: alertas.seguimiento > 5 ? 'REVISAR' : 'OK' },
-              { id: 'afect', label: 'AFECTACIONES', count: alertas.afectaciones, icon: <ShieldAlert size={16} />, color: '#f87171', status: alertas.afectaciones > 0 ? 'URGENTE' : 'OK' },
-            ].map(a => (
-              <div key={a.id} style={{
-                background: 'rgba(255,255,255,0.03)',
-                borderRadius: '12px',
-                padding: '12px',
-                marginBottom: '8px',
-                border: '1px solid rgba(255,255,255,0.05)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 700, color: '#666' }}>
-                    {a.icon} {a.label}
-                  </div>
-                  <div style={{
-                    fontSize: '9px',
-                    fontWeight: 900,
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    background: a.status === 'OK' ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
-                    color: a.status === 'OK' ? '#4ade80' : '#f87171',
-                    letterSpacing: '0.5px'
-                  }}>
-                    {a.status}
-                  </div>
-                </div>
-                <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>
-                  {a.count} <span style={{ fontSize: '10px', color: '#444', fontWeight: 400 }}>Registros</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
 
           {/* Reportes Anuales Refinado */}
           <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>

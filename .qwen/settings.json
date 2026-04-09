@@ -24,7 +24,10 @@
       "Bash(git reset *)",
       "Bash(mkdir *)",
       "Bash(echo *)",
-      "Bash(type *)"
+      "Bash(type *)",
+      "Bash(git clean *)",
+      "Bash(select-string *)",
+      "WebSearch"
     ]
   },
   "$version": 3
