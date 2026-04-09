@@ -966,10 +966,13 @@ export default function AnalistasPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
               <div>
                 <div style={val}>{formatCurrency(kpis.alcanceCapital)}</div>
-                <div style={{ ...sub, color: kpis.tendPct >= 0 ? '#fff' : '#f87171' }}>
-                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ ...sub, display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '4px', color: kpis.tendPct >= 0 ? '#fff' : '#f87171' }}>
                     {kpis.tendPct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                    {Math.abs(kpis.tendPct).toFixed(1)}% vs {prevMesLabel}
+                    {Math.abs(kpis.tendPct).toFixed(1)}%
+                  </div>
+                  <div style={{ color: '#444', fontWeight: 600, fontSize: '11px' }}>
+                    MES ANT: <span style={{ color: '#888' }}>{formatCurrency(kpis.alcancePrev)}</span>
                   </div>
                 </div>
               </div>
@@ -1027,10 +1030,13 @@ export default function AnalistasPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
               <div>
                 <div style={val}>{kpis.alcanceOps} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
-                <div style={{ ...sub, color: kpis.tendPctOps >= 0 ? '#4ade80' : '#f87171' }}>
-                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: kpis.tendPctOps >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ ...sub, display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
+                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: kpis.tendPctOps >= 0 ? 'rgba(74,222,128,0.05)' : 'rgba(248,113,113,0.05)', display: 'flex', alignItems: 'center', gap: '4px', color: kpis.tendPctOps >= 0 ? '#4ade80' : '#f87171', border: `1px solid ${kpis.tendPctOps >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)'}` }}>
                     {kpis.tendPctOps >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                    {Math.abs(kpis.tendPctOps).toFixed(1)}% vs {prevMesLabel}
+                    {Math.abs(kpis.tendPctOps).toFixed(1)}%
+                  </div>
+                  <div style={{ color: '#444', fontWeight: 600, fontSize: '11px' }}>
+                    MES ANT: <span style={{ color: '#888' }}>{kpis.prevOpsPrev}</span>
                   </div>
                 </div>
               </div>
