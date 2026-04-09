@@ -960,6 +960,9 @@ export default function AnalistasPage() {
           <div style={box}>
             <div style={lbl}><Target size={14} color="#666" /> OBJETIVO</div>
             <div style={val}>{formatCurrency(kpis.obj.meta_ventas)}</div>
+            <div style={{ color: '#444', fontWeight: 600, fontSize: '11px', marginTop: '8px' }}>
+              MES ANT: <span style={{ color: '#888' }}>{formatCurrency(objMap[mesStr(kpis.pAnio, kpis.pMes)]?.meta_ventas || 0)}</span>
+            </div>
           </div>
           <div style={box}>
             <div style={lbl}><TrendingUp size={14} color="#fff" /> ALCANCE ACTUAL</div>
@@ -1024,6 +1027,9 @@ export default function AnalistasPage() {
           <div style={box}>
             <div style={lbl}><Target size={14} color="#666" /> OBJETIVO</div>
             <div style={val}>{kpis.obj.meta_operaciones} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
+            <div style={{ color: '#444', fontWeight: 600, fontSize: '11px', marginTop: '8px' }}>
+              MES ANT: <span style={{ color: '#888' }}>{objMap[mesStr(kpis.pAnio, kpis.pMes)]?.meta_operaciones || 0}</span>
+            </div>
           </div>
           <div style={box}>
             <div style={lbl}><TrendingUp size={14} color="#fff" /> ALCANCE ACTUAL</div>
