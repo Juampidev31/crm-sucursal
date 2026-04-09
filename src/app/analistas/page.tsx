@@ -951,21 +951,21 @@ export default function AnalistasPage() {
       <div style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ ...lbl, fontSize: '14px', marginBottom: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <DollarSign size={16} color="#fff" strokeWidth={3} />
+            <DollarSign size={18} color="#fff" strokeWidth={3} />
             CAPITAL
           </div>
 
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={box}>
-            <div style={lbl}><Target size={14} color="#666" /> OBJETIVO</div>
+            <div style={lbl}><Target size={18} color="#666" /> OBJETIVO</div>
             <div style={val}>{formatCurrency(kpis.obj.meta_ventas)}</div>
             <div style={{ color: '#444', fontWeight: 600, fontSize: '11px', marginTop: '8px' }}>
               MES ANT: <span style={{ color: '#888' }}>{formatCurrency(objMap[mesStr(kpis.pAnio, kpis.pMes)]?.meta_ventas || 0)}</span>
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><TrendingUp size={14} color="#fff" /> ALCANCE ACTUAL</div>
+            <div style={lbl}><TrendingUp size={18} color="#fff" /> ALCANCE ACTUAL</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
               <div>
                 <div style={val}>{formatCurrency(kpis.alcanceCapital)}</div>
@@ -983,7 +983,7 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><Zap size={14} color={kpis.cumplReal >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
+            <div style={lbl}><Zap size={18} color={kpis.cumplReal >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
             <div style={{ ...val, color: '#fff' }}>
               {pct(kpis.cumplReal)}
             </div>
@@ -993,12 +993,12 @@ export default function AnalistasPage() {
 
           </div>
           <div style={box}>
-            <div style={lbl}><TrendingUp size={14} color="#666" /> PROYECTADO FIN MES</div>
+            <div style={lbl}><TrendingUp size={18} color="#666" /> PROYECTADO FIN MES</div>
             <div style={val}>{formatCurrency(kpis.proyCapital)}</div>
             <div style={sub}>Tendencia actual ({pct(kpis.cumplProy)})</div>
           </div>
           <div style={box}>
-            <div style={lbl}><Zap size={14} color={kpis.cumplProy >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
+            <div style={lbl}><Zap size={18} color={kpis.cumplProy >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
             <div style={{ ...val, color: '#fff' }}>
               {pct(kpis.cumplProy)}
             </div>
@@ -1007,7 +1007,7 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><DollarSign size={14} color="#666" /> VENTA PROMEDIO</div>
+            <div style={lbl}><DollarSign size={18} color="#666" /> VENTA PROMEDIO</div>
             <div style={val}>{formatCurrency(kpis.ventaPromedio)}</div>
             <div style={sub}>por operación</div>
           </div>
@@ -1018,21 +1018,21 @@ export default function AnalistasPage() {
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ ...lbl, fontSize: '14px', marginBottom: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Activity size={16} color="#4ade80" strokeWidth={3} />
+            <Activity size={18} color="#4ade80" strokeWidth={3} />
             OPERACIONES
           </div>
 
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div style={box}>
-            <div style={lbl}><Target size={14} color="#666" /> OBJETIVO</div>
+            <div style={lbl}><Target size={18} color="#666" /> OBJETIVO</div>
             <div style={val}>{kpis.obj.meta_operaciones} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
             <div style={{ color: '#444', fontWeight: 600, fontSize: '11px', marginTop: '8px' }}>
               MES ANT: <span style={{ color: '#888' }}>{objMap[mesStr(kpis.pAnio, kpis.pMes)]?.meta_operaciones || 0}</span>
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><TrendingUp size={14} color="#fff" /> ALCANCE ACTUAL</div>
+            <div style={lbl}><TrendingUp size={18} color="#fff" /> ALCANCE ACTUAL</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
               <div>
                 <div style={val}>{kpis.alcanceOps} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
@@ -1050,7 +1050,7 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><Zap size={14} color={kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
+            <div style={lbl}><Zap size={18} color={kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
             <div style={{ ...val, color: kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171' }}>
               {pct(kpis.cumplRealOps)}
             </div>
@@ -1059,12 +1059,12 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><TrendingUp size={14} color="#666" /> PROYECTADO FIN MES</div>
+            <div style={lbl}><TrendingUp size={18} color="#666" /> PROYECTADO FIN MES</div>
             <div style={val}>{kpis.proyOps} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
             <div style={sub}>Tendencia actual ({pct(kpis.cumplProyOps)})</div>
           </div>
           <div style={box}>
-            <div style={lbl}><Zap size={14} color={kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
+            <div style={lbl}><Zap size={18} color={kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
             <div style={{ ...val, color: kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171' }}>
               {pct(kpis.cumplProyOps)}
             </div>
@@ -1073,7 +1073,7 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={box}>
-            <div style={lbl}><Percent size={14} color="#666" /> CONVERSIÓN</div>
+            <div style={lbl}><Percent size={18} color="#666" /> CONVERSIÓN</div>
             <div style={val}>{pct(kpis.conversion)}</div>
             <div style={sub}>{kpis.alcanceOps} / {kpis.clientesAtendidos} clientes</div>
           </div>
@@ -1112,15 +1112,23 @@ export default function AnalistasPage() {
       )}
 
       {/* ── Alertas + Curva ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: (analista === PDV) ? '1fr' : '350px 1fr', 
+        gap: '16px', 
+        marginBottom: '24px', 
+        alignItems: 'stretch' 
+      }}>
+        {/* Columna Izquierda: Alertas y Equipo (Solo si no es PDV) */}
+        {(analista !== PDV) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
 
           {/* Alertas Premium - Solo Luciana y Victoria, no PDV */}
           {(analista !== PDV) && (
             <div style={card}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                  <AlertTriangle size={16} color="#f87171" />
+                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                  <AlertTriangle size={18} color="#f87171" />
                 </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>ALERTAS DE GESTIÓN</div>
@@ -1168,58 +1176,61 @@ export default function AnalistasPage() {
             </div>
           )}
 
-          {/* Reportes Anuales Refinado */}
-          <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-                <Users size={16} color="#38bdf8" />
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>EQUIPO DE TRABAJO</div>
-                <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-                  Vista global y analistas asignados
+          {/* Equipo de Trabajo - Solo analistas individuales, no PDV */}
+          {(analista !== PDV) && (
+            <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                  <Users size={18} color="#38bdf8" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>EQUIPO DE TRABAJO</div>
+                  <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+                    Vista global y analistas asignados
+                  </div>
                 </div>
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {[{ key: PDV, label: 'VISTA GLOBAL (PDV)' }, ...analistasSel.map(a => ({ key: a, label: a }))].map(a => (
+                  <div key={a.key} onClick={() => setAnalista(a.key)}
+                    className="analista-item"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      background: a.key === analista ? 'rgba(255,255,255,0.07)' : 'transparent',
+                      border: `1px solid ${a.key === analista ? 'rgba(255,255,255,0.1)' : 'transparent'}`,
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}>
+                    <div style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: a.key === analista ? '#4ade80' : '#444',
+                      boxShadow: a.key === analista ? '0 0 10px rgba(74,222,128,0.5)' : 'none'
+                    }} />
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: a.key === analista ? 700 : 500,
+                      color: a.key === analista ? '#fff' : '#666',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>{a.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {[{ key: PDV, label: 'VISTA GLOBAL (PDV)' }, ...analistasSel.map(a => ({ key: a, label: a }))].map(a => (
-                <div key={a.key} onClick={() => setAnalista(a.key)}
-                  className="analista-item"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 14px',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    background: a.key === analista ? 'rgba(255,255,255,0.07)' : 'transparent',
-                    border: `1px solid ${a.key === analista ? 'rgba(255,255,255,0.1)' : 'transparent'}`,
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: '50%',
-                    background: a.key === analista ? '#4ade80' : '#444',
-                    boxShadow: a.key === analista ? '0 0 10px rgba(74,222,128,0.5)' : 'none'
-                  }} />
-                  <span style={{
-                    fontSize: '13px',
-                    fontWeight: a.key === analista ? 700 : 500,
-                    color: a.key === analista ? '#fff' : '#666',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }}>{a.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
+      )}
 
         {/* Curva de crecimiento — MÁS ALTA */}
         <div style={{ ...card, height: '100%', minHeight: '620px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ padding: '10px', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.2)' }}>
-                <Activity size={20} style={{ color: '#4ade80' }} />
+              <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.2)' }}>
+                <Activity size={18} style={{ color: '#4ade80' }} />
               </div>
               <div>
                 <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px' }}>DINÁMICA DE CRECIMIENTO</div>
@@ -1238,8 +1249,8 @@ export default function AnalistasPage() {
       {/* ── Histórico 12 meses ── */}
       <div style={{ ...card, marginBottom: '16px', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
-          <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-            <BarChart2 size={16} color="#4ade80" />
+          <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <BarChart2 size={18} color="#4ade80" />
           </div>
           <div>
             <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO 12 MESES</div>
