@@ -1504,18 +1504,19 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
             const DistBlock = ({ titulo, icon, datos, color, maxItems = 7 }: { titulo: string; icon: React.ReactNode; datos: { label: string; monto: number; cantidad: number }[]; color: string; maxItems?: number }) => {
               const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
+              const displayData = datos.slice(0, maxItems);
               return (
-                <div style={{ flex: 1, minWidth: 220 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+                <div style={{ flex: 1, minWidth: 220, maxHeight: 320, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
                     <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
                   </div>
-                  <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden', maxHeight: 320, overflowY: 'auto' }}>
-                    {datos.slice(0, maxItems).map((d, i) => {
+                  <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden', flex: 1, overflowY: 'auto' }}>
+                    {displayData.map((d, i) => {
                       const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
                       const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
                       return (
-                        <div key={i} style={{ padding: '9px 14px', borderBottom: i < Math.min(datos.length, maxItems) - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                        <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                             <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
