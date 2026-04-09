@@ -850,36 +850,39 @@ export default function AnalistasPage() {
 
   const box: React.CSSProperties = {
     flex: 1,
-    background: '#0a0a0a',
-    border: '1px solid rgba(255,255,255,0.02)',
+    background: 'linear-gradient(145deg, #0d0d0d 0%, #060606 100%)',
+    border: '1px solid rgba(255,255,255,0.04)',
     borderRadius: '16px',
-    padding: '16px',
+    padding: '20px',
     minWidth: '220px',
-    boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.05)',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.02)',
     position: 'relative',
     overflow: 'hidden',
   };
 
+
   const lbl: React.CSSProperties = {
     fontSize: '11px',
-    color: '#888',
-    fontWeight: 700,
+    color: '#444',
+    fontWeight: 800,
     textTransform: 'uppercase',
-    letterSpacing: '1px',
-    marginBottom: '10px',
+    letterSpacing: '1.2px',
+    marginBottom: '12px',
     display: 'flex',
     alignItems: 'center',
     gap: '8px'
   };
 
   const val: React.CSSProperties = {
-    fontSize: '22px',
+    fontSize: '24px',
     fontWeight: 900,
     color: '#fff',
     lineHeight: 1,
     fontFamily: "'Outfit', sans-serif",
-    letterSpacing: '-0.5px'
+    letterSpacing: '-0.8px',
+    textShadow: '0 2px 10px rgba(0,0,0,0.5)'
   };
+
 
   const sub: React.CSSProperties = {
     fontSize: '12px',
@@ -974,15 +977,15 @@ export default function AnalistasPage() {
                     labels: curva.stats.map(s => s.day),
                     datasets: [{
                       data: curva.stats.map(s => s.acum),
-                      borderColor: kpis.tendPct >= 0 ? '#4ade80' : '#f87171',
+                      borderColor: kpis.tendPct >= 0 ? '#fff' : '#444',
                       backgroundColor: (context: any) => {
                         const canvas = context.chart.ctx;
                         const gradient = canvas.createLinearGradient(0, 0, 0, 50);
-                        gradient.addColorStop(0, kpis.tendPct >= 0 ? 'rgba(74, 222, 128, 0.5)' : 'rgba(248, 113, 113, 0.5)');
-                        gradient.addColorStop(0.7, kpis.tendPct >= 0 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(248, 113, 113, 0.2)');
-                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Difuminado total al final
+                        gradient.addColorStop(0, kpis.tendPct >= 0 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)');
+                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
                         return gradient;
                       },
+
                       borderWidth: 2,
                       pointRadius: 0,
                       tension: 0.4,
@@ -1004,9 +1007,10 @@ export default function AnalistasPage() {
             <div style={{ ...val, color: '#fff' }}>
               {pct(kpis.cumplReal)}
             </div>
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplReal)}%`, height: '100%', background: kpis.cumplReal >= 100 ? '#fff' : '#f87171' }} />
+            <div style={{ height: 4, background: 'rgba(255,255,255,0.03)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, kpis.cumplReal)}%`, height: '100%', background: '#fff', boxShadow: '0 0 10px rgba(255,255,255,0.3)' }} />
             </div>
+
           </div>
           <div style={box}>
             <div style={lbl}><TrendingUp size={14} color="#666" /> PROYECTADO FIN MES</div>
@@ -1060,15 +1064,15 @@ export default function AnalistasPage() {
                     labels: curva.dias,
                     datasets: [{
                       data: curva.stats.map(s => s.acum > 0 ? (s.acum / 100000) : 0), // Simplificado para ops
-                      borderColor: kpis.tendPctOps >= 0 ? '#4ade80' : '#f87171',
+                      borderColor: '#fff',
                       backgroundColor: (context: any) => {
                         const canvas = context.chart.ctx;
                         const gradient = canvas.createLinearGradient(0, 0, 0, 50);
-                        gradient.addColorStop(0, kpis.tendPctOps >= 0 ? 'rgba(74, 222, 128, 0.5)' : 'rgba(248, 113, 113, 0.5)');
-                        gradient.addColorStop(0.7, kpis.tendPctOps >= 0 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(248, 113, 113, 0.2)');
-                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Difuminado total al final
+                        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+                        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
                         return gradient;
                       },
+
                       borderWidth: 2,
                       pointRadius: 0,
                       tension: 0.4,
