@@ -668,13 +668,121 @@ const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
   );
 });
 
+// ── MultiSelect Dropdown ──────────────────────────────────────────────────────
+
+function MultiSelectDropdown({
+  items, labels, selected, onToggle, onClear,
+}: {
+  items: string[];
+  labels: Record<string, string>;
+  selected: string[];
+  onToggle: (item: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    if (open) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%', height: 38, fontSize: '13px', fontWeight: 600,
+          padding: '0 12px', background: '#0a0a0a',
+          border: open ? '1px solid rgba(96,165,250,0.4)' : '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '6px', color: selected.length > 0 ? '#60a5fa' : '#aaa',
+          outline: 'none', cursor: 'pointer', textAlign: 'left' as const,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}
+      >
+        {selected.length > 0
+          ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}`
+          : 'Todos'}
+        <span style={{ fontSize: 10, opacity: 0.5 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
+          background: '#111', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '8px', zIndex: 100, overflow: 'hidden',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+        }}>
+          {/* Header con "Todos" y "Limpiar" */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+          }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+              {selected.length}/{items.length}
+            </span>
+            {selected.length > 0 && (
+              <button
+                onClick={() => { onClear(); }}
+                style={{
+                  fontSize: 10, color: '#f87171', background: 'none', border: 'none',
+                  cursor: 'pointer', fontWeight: 700, textTransform: 'uppercase',
+                }}
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          {/* Lista con scroll */}
+          <div style={{ maxHeight: 180, overflowY: 'auto', padding: '4px 0' }}>
+            {items.map(item => {
+              const isSelected = selected.includes(item);
+              return (
+                <div
+                  key={item}
+                  onClick={() => onToggle(item)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '7px 12px', cursor: 'pointer',
+                    background: isSelected ? 'rgba(96,165,250,0.06)' : 'transparent',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.03)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(96,165,250,0.06)' : 'transparent'; }}
+                >
+                  <div style={{
+                    width: 14, height: 14, borderRadius: 3,
+                    border: isSelected ? '1.5px solid #60a5fa' : '1.5px solid rgba(255,255,255,0.15)',
+                    background: isSelected ? '#60a5fa' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.15s', flexShrink: 0,
+                  }}>
+                    {isSelected && <span style={{ fontSize: 9, color: '#000', fontWeight: 900 }}>✓</span>}
+                  </div>
+                  <span style={{ fontSize: 12, color: isSelected ? '#ddd' : '#888', fontWeight: isSelected ? 700 : 500 }}>
+                    {labels[item] ?? item}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
   const { registros, setRegistros, loading, refresh, pushRegistroChange } = useData();
   const {
-    filters, setFilter, limpiarFiltros, hayFiltros,
+    filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
     pageSize, triggerExport, exportTick,
     currentPage, setCurrentPage, setTotalResults,
@@ -793,7 +901,7 @@ export default function RegistrosPage() {
     const list = registros.filter(r => {
       const s = filters.search.toLowerCase();
       const mSearch = !filters.search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s);
-      const mEstado = !filters.estado || r.estado === filters.estado;
+      const mEstado = filters.estados.length === 0 || filters.estados.includes(r.estado);
       const mAnalista = !filters.analista || r.analista === filters.analista;
       const mDesde = !filters.fechaDesde || (r.fecha && r.fecha >= filters.fechaDesde);
       const mHasta = !filters.fechaHasta || (r.fecha && r.fecha <= filters.fechaHasta);
@@ -981,19 +1089,13 @@ export default function RegistrosPage() {
             {/* Estado */}
             <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
               <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>ESTADO</label>
-              <select
-                value={filters.estado}
-                onChange={e => setFilter('estado', e.target.value)}
-                style={{
-                  width: '100%', height: 38, fontSize: '13px', fontWeight: 600,
-                  padding: '0 12px', background: '#0a0a0a',
-                  border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px',
-                  color: '#aaa', outline: 'none', cursor: 'pointer',
-                }}
-              >
-                <option value="">Todos</option>
-                {ESTADOS.map(st => <option key={st} value={st} style={{ background: '#0a0a0a', color: '#fff' }}>{STATUS_LABEL[st] ?? st}</option>)}
-              </select>
+              <MultiSelectDropdown
+                items={ESTADOS}
+                labels={STATUS_LABEL}
+                selected={filters.estados}
+                onToggle={toggleEstado}
+                onClear={() => { filters.estados.forEach(toggleEstado); }}
+              />
             </div>
 
             {/* Analista */}
