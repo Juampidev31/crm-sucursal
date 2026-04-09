@@ -865,13 +865,42 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       return null;
     };
 
+    // DEBUG: Log acuerdo_precios values and match results
+    const monthData = filterByMonth(registros, selectedMes, selectedAnio);
+    const uniqueValues = [...new Set(monthData.map(r => r.acuerdo_precios ?? ''))];
+    const valueCounts: Record<string, number> = {};
+    const matchResults: Record<string, string | null> = {};
+    uniqueValues.forEach(v => {
+      valueCounts[v] = monthData.filter(r => (r.acuerdo_precios ?? '') === v).length;
+      matchResults[v] = matchAcuerdo(v);
+    });
+
+    // Debug: breakdown by analyst for "No califica"
+    const noCalificaRecords = monthData.filter(r => matchAcuerdo(r.acuerdo_precios ?? '') === 'No califica');
+    const noCalificaByAnalyst = CONFIG.ANALISTAS_DEFAULT.map(an => ({
+      analyst: an,
+      total: noCalificaRecords.filter(r => r.analista === an).length,
+    }));
+
+    console.log('DEBUG chartAcuerdos - acuerdo_precios values:', {
+      uniqueValues,
+      valueCounts,
+      matchResults,
+      totalRecords: monthData.length,
+      noCalificaDetail: {
+        total: noCalificaRecords.length,
+        byAnalyst: noCalificaByAnalyst,
+        estados: [...new Set(noCalificaRecords.map(r => r.estado))],
+      },
+    });
+
     return {
       labels: tiposDisplay,
       datasets: analistas.map((an, idx) => ({
         label: an,
         data: tiposDisplay.map(t => {
           return filterByMonth(registros, selectedMes, selectedAnio).filter(r =>
-            isVenta(r) && r.analista === an && matchAcuerdo(r.acuerdo_precios ?? '') === t
+            r.analista === an && matchAcuerdo(r.acuerdo_precios ?? '') === t
           ).length;
         }),
         backgroundColor: colores[idx] || '#555',
