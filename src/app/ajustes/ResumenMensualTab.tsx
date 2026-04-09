@@ -853,24 +853,25 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
   const chartAcuerdos = useMemo(() => {
     const tiposDisplay = ['Riesgo BAJO', 'Riesgo MEDIO', 'PREMIUM', 'No califica'];
-    // Mapeo display label → valor real en DB
-    const tiposDB: Record<string, string> = {
-      'Riesgo BAJO': 'riesgo bajo',
-      'Riesgo MEDIO': 'riesgo medio',
-      'PREMIUM': 'premium',
-      'No califica': 'no califica',
-    };
     const analistas = CONFIG.ANALISTAS_DEFAULT;
     const colores = ['#60a5fa', '#a78bfa'];
+
+    const matchAcuerdo = (acuerdo: string): string | null => {
+      const a = acuerdo.toLowerCase();
+      if (a === 'riesgo bajo') return 'Riesgo BAJO';
+      if (a === 'riesgo medio') return 'Riesgo MEDIO';
+      if (a === 'premium') return 'PREMIUM';
+      if (a === 'no califica') return 'No califica';
+      return null;
+    };
 
     return {
       labels: tiposDisplay,
       datasets: analistas.map((an, idx) => ({
         label: an,
         data: tiposDisplay.map(t => {
-          const dbVal = tiposDB[t];
           return filterByMonth(registros, selectedMes, selectedAnio).filter(r =>
-            isVenta(r) && r.analista === an && (r.acuerdo_precios ?? '').toLowerCase() === dbVal
+            isVenta(r) && r.analista === an && matchAcuerdo(r.acuerdo_precios ?? '') === t
           ).length;
         }),
         backgroundColor: colores[idx] || '#555',
