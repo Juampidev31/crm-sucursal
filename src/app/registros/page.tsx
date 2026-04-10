@@ -276,7 +276,7 @@ const RegistroModal = memo(function RegistroModal({
                 <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
               </Field>
               <Field label="Fecha" error={errors.fecha}>
-                <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} />
+                <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} max={new Date().toISOString().split('T')[0]} />
               </Field>
             </div>
             <div className="form-row-3">
