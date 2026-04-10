@@ -59,6 +59,12 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
 
+  if (form.fecha) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const selected = new Date(form.fecha + 'T00:00:00');
+    if (selected > today) errs.fecha = 'No se permiten fechas futuras';
+  }
+
   return errs;
 }
 
