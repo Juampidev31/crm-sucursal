@@ -13,6 +13,17 @@ import {
 
 const ANALISTAS = CONFIG.ANALISTAS_DEFAULT;
 
+// Interface para registro con variantes
+interface RegistroVariante {
+  id: string;
+  nombre: string;
+  cuil: string;
+  empleador: string;
+  estado: string;
+  puntaje: number;
+  analista: string;
+}
+
 const ACUERDOS_OPCIONES = ['Riesgo Bajo', 'Riesgo Medio', 'Premium', 'No califica'];
 const TIPO_CLIENTE_OPCIONES = ['Apertura', 'Renovacion'];
 const RANGOS_ETARIOS = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
@@ -102,6 +113,12 @@ export default function BulkModifyTab() {
     cantidad: number;
   }
 
+  // Estado para el modal de registros
+  const [modalRegistros, setModalRegistros] = useState<RegistroVariante[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalGrupo, setModalGrupo] = useState<string>('');
+  const [modalLoading, setModalLoading] = useState(false);
+
   // ── Normalización base de empleador ──────────────────────────────────────
   const normalizar = useCallback((nombre: string): string => {
     if (!nombre) return 'Sin dato';
@@ -165,7 +182,7 @@ export default function BulkModifyTab() {
           const tb = tokensB[j];
           // Token exacto, o uno contiene al otro, o Levenshtein cercano
           if (ta === tb || ta.includes(tb) || tb.includes(ta) ||
-              (Math.min(ta.length, tb.length) >= 3 && levenshtein(ta, tb) <= Math.max(1, Math.floor(Math.min(ta.length, tb.length) * 0.3)))) {
+            (Math.min(ta.length, tb.length) >= 3 && levenshtein(ta, tb) <= Math.max(1, Math.floor(Math.min(ta.length, tb.length) * 0.3)))) {
             matched++;
             usedB.add(j);
             break;
@@ -269,14 +286,40 @@ export default function BulkModifyTab() {
     setGruposDescartados(prev => {
       const next = new Set(prev);
       next.add(normalizado);
-      try { localStorage.setItem('empleador_grupos_ok', JSON.stringify(Array.from(next))); } catch {}
+      try { localStorage.setItem('empleador_grupos_ok', JSON.stringify(Array.from(next))); } catch { }
       return next;
     });
   }, []);
 
   const restaurarDescartados = useCallback(() => {
     setGruposDescartados(new Set());
-    try { localStorage.removeItem('empleador_grupos_ok'); } catch {}
+    try { localStorage.removeItem('empleador_grupos_ok'); } catch { }
+  }, []);
+
+  // ── Cargar registros de un grupo de variantes ──────────────────────────
+  const cargarRegistrosGrupo = useCallback(async (variantes: string[], grupoNombre: string) => {
+    setModalLoading(true);
+    setModalGrupo(grupoNombre);
+    setModalOpen(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('registros')
+        .select('id, nombre, cuil, empleador, estado, puntaje, analista')
+        .in('empleador', variantes);
+
+      if (error) {
+        setToast({ message: `Error: ${error.message}`, type: 'error' });
+        setModalRegistros([]);
+      } else {
+        setModalRegistros(data || []);
+      }
+    } catch (err) {
+      setToast({ message: 'Error al cargar registros', type: 'error' });
+      setModalRegistros([]);
+    } finally {
+      setModalLoading(false);
+    }
   }, []);
 
 
@@ -318,10 +361,22 @@ export default function BulkModifyTab() {
         return cleaned.length !== prev.empleador.length ? { ...prev, empleador: cleaned } : prev;
       });
 
+      // Si el modal está abierto, recargar con los nuevos datos
+      if (modalOpen) {
+        const variantesActualizadas = variantesConDuplicados.find(g => g.normalizado === modalGrupo)?.variantes || [];
+        if (variantesActualizadas.length > 0) {
+          // Recargar con las variantes actualizadas
+          setTimeout(() => cargarRegistrosGrupo(variantesActualizadas, modalGrupo), 100);
+        } else {
+          // Si ya no hay variantes, cerrar el modal
+          setModalOpen(false);
+        }
+      }
+
       // Broadcast para otras pestañas
       pushBulkRefresh();
     }
-  }, [empleadoresSeleccionados, empleadorCorreccion, setRegistros, pushBulkRefresh]);
+  }, [empleadoresSeleccionados, empleadorCorreccion, setRegistros, pushBulkRefresh, modalOpen, modalRegistros, modalGrupo, variantesConDuplicados, cargarRegistrosGrupo]);
 
 
   useEffect(() => {
@@ -505,112 +560,131 @@ export default function BulkModifyTab() {
         </div>
 
         {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
-          <div style={{
-            marginBottom: '28px', padding: '20px',
-            background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.02)',
-            border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)'}`,
-            borderRadius: '10px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <div style={{
+          marginBottom: '28px', padding: '20px',
+          background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.02)',
+          border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)'}`,
+          borderRadius: '10px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            {variantesConDuplicados.length > 0
+              ? <AlertTriangle size={18} color="#ef4444" />
+              : <CheckCircle size={18} color="#555" />}
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ef4444' : '#888', textTransform: 'uppercase' }}>
               {variantesConDuplicados.length > 0
-                ? <AlertTriangle size={18} color="#ef4444" />
-                : <CheckCircle size={18} color="#555" />}
-              <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ef4444' : '#888', textTransform: 'uppercase' }}>
-                {variantesConDuplicados.length > 0
-                  ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
-                  : 'Corrector de Empleador — Sin duplicados'}
-              </h4>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
-                {gruposDescartados.size > 0 && (
-                  <button
-                    onClick={restaurarDescartados}
-                    style={{
-                      background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                      color: '#60a5fa', borderRadius: '4px', padding: '4px 10px',
-                      fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                      textTransform: 'uppercase', letterSpacing: '0.5px',
-                    }}
-                  >
-                    Restaurar {gruposDescartados.size} descartado{gruposDescartados.size > 1 ? 's' : ''}
-                  </button>
-                )}
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', color: '#666', cursor: 'pointer', fontWeight: 700 }}>
-                  <input
-                    type="checkbox"
-                    checked={mostrarTodos}
-                    onChange={e => setMostrarTodos(e.target.checked)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  Mostrar todos
-                </label>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
-                  Nombre correcto
-                </label>
-                <input
-                  className="form-input"
-                  placeholder="Ej: MUNICIPALIDAD DE PARANA"
-                  value={empleadorCorreccion}
-                  onChange={e => setEmpleadorCorreccion(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && corregirEmpleador()}
+                ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
+                : 'Corrector de Empleador — Sin duplicados'}
+            </h4>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
+              {gruposDescartados.size > 0 && (
+                <button
+                  onClick={restaurarDescartados}
                   style={{
-                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                    background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
+                    color: '#60a5fa', borderRadius: '4px', padding: '4px 10px',
+                    fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
                   }}
+                >
+                  Restaurar {gruposDescartados.size} descartado{gruposDescartados.size > 1 ? 's' : ''}
+                </button>
+              )}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', color: '#666', cursor: 'pointer', fontWeight: 700 }}>
+                <input
+                  type="checkbox"
+                  checked={mostrarTodos}
+                  onChange={e => setMostrarTodos(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
                 />
-              </div>
+                Mostrar todos
+              </label>
             </div>
+          </div>
 
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <button
-                onClick={corregirEmpleador}
-                disabled={updating || empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()}
-                style={{
-                  background: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
-                  color: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#666' : '#000',
-                  border: 'none', borderRadius: '6px', padding: '10px 24px',
-                  fontSize: '11px', fontWeight: 900, cursor: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
-                  textTransform: 'uppercase', letterSpacing: '1px',
-                  flexShrink: 0,
-                }}
-              >
-                {updating ? 'CORRIGIENDO...' : `CORREGIR ${empleadoresSeleccionados.length} EMPLEADOR(ES)`}
-              </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                Nombre correcto
+              </label>
               <input
                 className="form-input"
-                placeholder="Buscar empleador..."
-                value={busquedaEmpleador}
-                onChange={e => setBusquedaEmpleador(e.target.value)}
+                placeholder="Ej: MUNICIPALIDAD DE PARANA"
+                value={empleadorCorreccion}
+                onChange={e => setEmpleadorCorreccion(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && corregirEmpleador()}
                 style={{
                   background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', flex: 1, outline: 'none',
+                  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
                 }}
               />
             </div>
+          </div>
 
-            {empleadoresSeleccionados.length > 0 && (
-              <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
-                Seleccionados: {empleadoresSeleccionados.length} — {empleadorCorreccion || '(sin nombre correcto)'}
-              </div>
-            )}
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <button
+              onClick={corregirEmpleador}
+              disabled={updating || empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()}
+              style={{
+                background: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
+                color: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#666' : '#000',
+                border: 'none', borderRadius: '6px', padding: '10px 24px',
+                fontSize: '11px', fontWeight: 900, cursor: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
+                textTransform: 'uppercase', letterSpacing: '1px',
+                flexShrink: 0,
+              }}
+            >
+              {updating ? 'CORRIGIENDO...' : `CORREGIR ${empleadoresSeleccionados.length} EMPLEADOR(ES)`}
+            </button>
+            <input
+              className="form-input"
+              placeholder="Buscar empleador..."
+              value={busquedaEmpleador}
+              onChange={e => setBusquedaEmpleador(e.target.value)}
+              style={{
+                background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '6px', padding: '10px 12px', fontSize: '13px', flex: 1, outline: 'none',
+              }}
+            />
+          </div>
 
-            {/* Lista de variantes detectadas */}
-            {variantesFiltradas.length > 0 ? (
-              <div style={{ marginTop: '20px', maxHeight: 200, overflowY: 'auto' }}>
-                {variantesFiltradas.map((v, i) => (
-                  <div key={i} style={{
-                    marginBottom: 12, padding: '12px 14px',
-                    background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
-                    border: '1px solid rgba(255,255,255,0.04)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>
-                        {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
-                      </div>
+          {empleadoresSeleccionados.length > 0 && (
+            <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+              Seleccionados: {empleadoresSeleccionados.length} — {empleadorCorreccion || '(sin nombre correcto)'}
+            </div>
+          )}
+
+          {/* Lista de variantes detectadas */}
+          {variantesFiltradas.length > 0 ? (
+            <div style={{ marginTop: '20px', maxHeight: 200, overflowY: 'auto' }}>
+              {variantesFiltradas.map((v, i) => (
+                <div key={i} style={{
+                  marginBottom: 12, padding: '12px 14px',
+                  background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>
+                      {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      {v.cantidad > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cargarRegistrosGrupo(v.variantes, v.normalizado);
+                          }}
+                          title="Ver todos los registros de este grupo"
+                          style={{
+                            background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
+                            color: '#60a5fa', borderRadius: '4px', padding: '2px 8px',
+                            fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                            textTransform: 'uppercase', letterSpacing: '0.5px',
+                            display: 'flex', alignItems: 'center', gap: 4,
+                          }}
+                        >
+                          <Users size={10} /> Ver {v.cantidad}
+                        </button>
+                      )}
                       {v.cantidad > 1 && (
                         <button
                           onClick={(e) => { e.stopPropagation(); descartarGrupo(v.normalizado); }}
@@ -620,49 +694,50 @@ export default function BulkModifyTab() {
                             color: '#34d399', borderRadius: '4px', padding: '2px 8px',
                             fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                             textTransform: 'uppercase', letterSpacing: '0.5px',
-                            display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+                            display: 'flex', alignItems: 'center', gap: 4,
                           }}
                         >
                           <CheckCircle size={10} /> OK
                         </button>
                       )}
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {v.variantes.map((varName, j) => {
-                        const isSelected = empleadoresSeleccionados.includes(varName);
-                        return (
-                          <span
-                            key={j}
-                            onClick={() => {
-                              setEmpleadoresSeleccionados(prev =>
-                                isSelected ? prev.filter(v => v !== varName) : [...prev, varName]
-                              );
-                            }}
-                            style={{
-                              padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
-                              background: isSelected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
-                              border: isSelected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
-                              color: isSelected ? '#fbbf24' : '#888',
-                              fontWeight: 600, cursor: 'pointer',
-                            }}
-                          >
-                            {varName}
-                          </span>
-                        );
-                      })}
-                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
-                <p>{busquedaEmpleador ? 'No se encontraron resultados.' : 'No se detectaron empleadores con múltiples variantes.'}</p>
-                <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
-                  {busquedaEmpleador ? 'Intentá con otro término.' : 'Activá <strong>"Mostrar todos"</strong> para ver la lista completa de empleadores.'}
-                </p>
-              </div>
-            )}
-          </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {v.variantes.map((varName, j) => {
+                      const isSelected = empleadoresSeleccionados.includes(varName);
+                      return (
+                        <span
+                          key={j}
+                          onClick={() => {
+                            setEmpleadoresSeleccionados(prev =>
+                              isSelected ? prev.filter(v => v !== varName) : [...prev, varName]
+                            );
+                          }}
+                          style={{
+                            padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
+                            background: isSelected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
+                            border: isSelected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
+                            color: isSelected ? '#fbbf24' : '#888',
+                            fontWeight: 600, cursor: 'pointer',
+                          }}
+                        >
+                          {varName}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+              <p>{busquedaEmpleador ? 'No se encontraron resultados.' : 'No se detectaron empleadores con múltiples variantes.'}</p>
+              <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
+                {busquedaEmpleador ? 'Intentá con otro término.' : 'Activá <strong>"Mostrar todos"</strong> para ver la lista completa de empleadores.'}
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* STEP 1: FILTROS */}
         {step === 'filter' && (
@@ -1035,6 +1110,105 @@ export default function BulkModifyTab() {
           </div>
         )}
       </div>
+
+      {/* MODAL DE REGISTROS DEL GRUPO */}
+      {modalOpen && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setModalOpen(false)}
+        >
+          <div
+            style={{
+              background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12, width: '100%', maxWidth: 1200,
+              maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del modal */}
+            <div style={{
+              padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+                  Registros del grupo: {modalGrupo}
+                </h3>
+                <p style={{ fontSize: 12, color: '#888' }}>
+                  {modalRegistros.length} registros encontrados
+                </p>
+              </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#888', borderRadius: 6, padding: '8px 12px',
+                  fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                <X size={14} /> Cerrar
+              </button>
+            </div>
+
+            {/* Contenido del modal */}
+            <div style={{ padding: 24, overflow: 'auto', flex: 1 }}>
+              {modalLoading ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                  <Loader2 size={32} className="animate-spin" style={{ color: '#60a5fa', margin: '0 auto 12px' }} />
+                  <p style={{ color: '#888', fontSize: 13 }}>Cargando registros...</p>
+                </div>
+              ) : modalRegistros.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                  <p>No se encontraron registros</p>
+                </div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Nombre</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Estado</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Score</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Analista</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalRegistros.map((r, idx) => (
+                      <tr
+                        key={r.id}
+                        style={{
+                          borderBottom: '1px solid rgba(255,255,255,0.03)',
+                          background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
+                        }}
+                      >
+                        <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600 }}>{r.nombre || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace' }}>{r.cuil || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: '#fbbf24', fontWeight: 600 }}>{r.empleador}</td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{
+                            padding: '2px 8px', borderRadius: 4, fontSize: 10,
+                            background: 'rgba(255,255,255,0.05)', color: '#888', fontWeight: 600,
+                          }}>
+                            {STATUS_LABEL[r.estado] ?? r.estado}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 700 }}>{r.puntaje ?? '-'}</td>
+                        <td style={{ padding: '10px 12px', color: '#888' }}>{r.analista || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
