@@ -30,8 +30,8 @@ function NavItem({
           width: 52, height: 52,
           borderRadius: 14,
           color: active ? '#fff' : '#444',
-          background: active 
-            ? 'linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)' 
+          background: active
+            ? 'linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)'
             : 'rgba(255,255,255,0.02)',
           position: 'relative',
           textDecoration: 'none',
@@ -337,7 +337,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         ) : (
           <button
             onClick={() => setShowAdminModal(true)}
-            title="Acceso Admin"
+            title="Acceso unico JUAN PABLO"
             className="green-hover-btn"
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -370,7 +370,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                 <Lock size={18} style={{ color: '#fff' }} />
-                <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Acceso Admin</span>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Acceso unico JUAN PABLO</span>
               </div>
               <input
                 ref={passwordInputRef}
