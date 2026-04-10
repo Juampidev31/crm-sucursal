@@ -119,6 +119,12 @@ export default function BulkModifyTab() {
   const [modalGrupo, setModalGrupo] = useState<string>('');
   const [modalLoading, setModalLoading] = useState(false);
 
+  // Estado para el modal de todos los empleadores
+  const [modalEmpleadoresOpen, setModalEmpleadoresOpen] = useState(false);
+  const [busquedaEmpleadorModal, setBusquedaEmpleadorModal] = useState('');
+  const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number }[]>([]);
+  const [empleadoresLoading, setEmpleadoresLoading] = useState(false);
+
   // ── Normalización base de empleador ──────────────────────────────────────
   const normalizar = useCallback((nombre: string): string => {
     if (!nombre) return 'Sin dato';
@@ -319,6 +325,44 @@ export default function BulkModifyTab() {
       setModalRegistros([]);
     } finally {
       setModalLoading(false);
+    }
+  }, []);
+
+  // ── Cargar todos los empleadores con conteo ────────────────────────────
+  const cargarTodosEmpleadores = useCallback(async () => {
+    setEmpleadoresLoading(true);
+    setModalEmpleadoresOpen(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('registros')
+        .select('empleador')
+        .not('empleador', 'is', null)
+        .neq('empleador', '');
+
+      if (error) {
+        setToast({ message: `Error: ${error.message}`, type: 'error' });
+        setEmpleadoresConConteo([]);
+      } else {
+        // Contar ocurrencias de cada empleador
+        const conteo = new Map<string, number>();
+        data.forEach(r => {
+          const emp = r.empleador;
+          conteo.set(emp, (conteo.get(emp) || 0) + 1);
+        });
+
+        // Convertir a array y ordenar por cantidad
+        const empleadosArray = Array.from(conteo.entries())
+          .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+          .sort((a, b) => b.cantidad - a.cantidad);
+
+        setEmpleadoresConConteo(empleadosArray);
+      }
+    } catch (err) {
+      setToast({ message: 'Error al cargar empleadores', type: 'error' });
+      setEmpleadoresConConteo([]);
+    } finally {
+      setEmpleadoresLoading(false);
     }
   }, []);
 
@@ -598,6 +642,18 @@ export default function BulkModifyTab() {
                 />
                 Mostrar todos
               </label>
+              <button
+                onClick={cargarTodosEmpleadores}
+                style={{
+                  background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)',
+                  color: '#fbbf24', borderRadius: '4px', padding: '4px 10px',
+                  fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                  textTransform: 'uppercase', letterSpacing: '0.5px',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                <Users size={10} /> Ver todos ({allEmpleadores.length})
+              </button>
             </div>
           </div>
 
@@ -1204,6 +1260,137 @@ export default function BulkModifyTab() {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE TODOS LOS EMPLEADORES */}
+      {modalEmpleadoresOpen && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setModalEmpleadoresOpen(false)}
+        >
+          <div
+            style={{
+              background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 12, width: '100%', maxWidth: 900,
+              maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del modal */}
+            <div style={{
+              padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+                  Todos los Empleadores
+                </h3>
+                <p style={{ fontSize: 12, color: '#888' }}>
+                  {empleadoresConConteo.length} empleadores únicos
+                </p>
+              </div>
+              <button
+                onClick={() => setModalEmpleadoresOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#888', borderRadius: 6, padding: '8px 12px',
+                  fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                <X size={14} /> Cerrar
+              </button>
+            </div>
+
+            {/* Buscador */}
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <input
+                className="form-input"
+                placeholder="Buscar empleador..."
+                value={busquedaEmpleadorModal}
+                onChange={e => setBusquedaEmpleadorModal(e.target.value)}
+                style={{
+                  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                }}
+              />
+            </div>
+
+            {/* Contenido del modal */}
+            <div style={{ padding: 24, overflow: 'auto', flex: 1 }}>
+              {empleadoresLoading ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                  <Loader2 size={32} className="animate-spin" style={{ color: '#60a5fa', margin: '0 auto 12px' }} />
+                  <p style={{ color: '#888', fontSize: 13 }}>Cargando empleadores...</p>
+                </div>
+              ) : (
+                <>
+                  {(() => {
+                    // Filtrar por búsqueda
+                    const filtered = busquedaEmpleadorModal.trim()
+                      ? empleadoresConConteo.filter(e =>
+                        e.nombre.toLowerCase().includes(busquedaEmpleadorModal.toLowerCase())
+                      )
+                      : empleadoresConConteo;
+
+                    return filtered.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                        <p>No se encontraron empleadores</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                        {filtered.map((emp, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              padding: '12px 14px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                              borderRadius: 8,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{
+                                fontSize: 12,
+                                color: '#ccc',
+                                fontWeight: 600,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {emp.nombre}
+                              </p>
+                            </div>
+                            <div style={{
+                              padding: '4px 10px',
+                              background: 'rgba(96,165,250,0.1)',
+                              border: '1px solid rgba(96,165,250,0.2)',
+                              borderRadius: 4,
+                              fontSize: 11,
+                              color: '#60a5fa',
+                              fontWeight: 700,
+                              flexShrink: 0,
+                              marginLeft: 12,
+                            }}>
+                              {emp.cantidad}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </>
               )}
             </div>
           </div>
