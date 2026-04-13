@@ -1325,7 +1325,7 @@ export default function RegistrosPage() {
                             {reg.es_re && (
                               <span style={{
                                 fontSize: '9px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px',
-                                background: '#333', color: '#fff', border: '1px solid #444', letterSpacing: '0.5px'
+                                background: 'rgba(34, 197, 94, 0.3)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.5)', letterSpacing: '0.5px'
                               }}>RE</span>
                             )}
                             {reg.cuil && <div style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
