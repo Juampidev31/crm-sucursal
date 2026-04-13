@@ -458,7 +458,7 @@ export default function BulkModifyTab() {
     if (filtros.fechaHasta) query = query.lte('fecha', filtros.fechaHasta);
     if (filtros.search) {
       const s = filtros.search.toLowerCase();
-      query = query.or(`nombre.ilike.%${s}%,cuil.ilike.%${s}%`);
+      query = query.or(`nombre.ilike.%${s}%,cuil.ilike.%${s}%,empleador.ilike.%${s}%,estado.ilike.%${s}%,analista.ilike.%${s}%,localidad.ilike.%${s}%,comentarios.ilike.%${s}%`);
     }
 
     const { data, error } = await query;
@@ -908,7 +908,7 @@ export default function BulkModifyTab() {
                 </div>
 
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>BÚSQUEDA (nombre, cuil)</label>
+                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>BÚSQUEDA (cualquier campo)</label>
                   <input className="form-input" placeholder="Buscar..." value={filtros.search} onChange={e => setFiltros(p => ({ ...p, search: e.target.value }))} />
                 </div>
 
