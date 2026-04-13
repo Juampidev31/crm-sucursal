@@ -357,8 +357,8 @@ export default function AnalisisTemporalTab({ registros }: Props) {
   }, [ventasFiltradas, dateRange]);
 
   const weeklyStats = useMemo(() => {
-    const totals = mapaActividad.weeks
-      .slice(0, 4)
+    const firstFourWeeks = mapaActividad.weeks.slice(0, 5);
+    const totals = firstFourWeeks
       .map((w, i) => ({ label: `Semana ${i + 1}`, total: w.reduce((s, d) => s + d.valor, 0) }));
     const avg = totals.length > 0 ? totals.reduce((s, w) => s + w.total, 0) / totals.length : 1;
     const withVsAvg = totals.map(w => ({ ...w, vsAvg: avg > 0 ? ((w.total - avg) / avg) * 100 : 0 }));
@@ -595,7 +595,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {mapaActividad.weeks.slice(0, 4).map((week, wi) => {
+                {mapaActividad.weeks.slice(0, 5).map((week, wi) => {
                   const weekTotal = week.reduce((s, d) => s + d.valor, 0);
                   return (
                     <tr key={wi}>
