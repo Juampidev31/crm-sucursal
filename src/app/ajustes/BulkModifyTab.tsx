@@ -122,6 +122,7 @@ export default function BulkModifyTab() {
   // Estado para el modal de todos los empleadores
   const [modalEmpleadoresOpen, setModalEmpleadoresOpen] = useState(false);
   const [busquedaEmpleadorModal, setBusquedaEmpleadorModal] = useState('');
+  const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'sa' | 'srl' | 'otros'>('todos');
   const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number }[]>([]);
   const [empleadoresLoading, setEmpleadoresLoading] = useState(false);
 
@@ -970,15 +971,57 @@ export default function BulkModifyTab() {
                 {/* Empleador */}
                 {allEmpleadores.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>EMPLEADOR</label>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>EMPLEADOR</label>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {(['S.A.', 'S.R.L.'] as const).map(tipo => {
+                          const patron = tipo === 'S.A.' ? /\bS\.?A\.?\b/i : /\bS\.?R\.?L\.?\b/i;
+                          const matches = allEmpleadores.filter(e => patron.test(e));
+                          if (matches.length === 0) return null;
+                          const activo = matches.length > 0 && matches.every(m => filtros.empleador.includes(m));
+                          return (
+                            <button
+                              key={tipo}
+                              onClick={() => setFiltros(p => ({
+                                ...p,
+                                empleador: activo ? p.empleador.filter(e => !matches.includes(e)) : [...new Set([...p.empleador, ...matches])],
+                              }))}
+                              style={{
+                                background: activo ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)',
+                                border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                                color: activo ? '#fbbf24' : '#666',
+                                borderRadius: '4px', padding: '3px 8px',
+                                fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                                textTransform: 'uppercase', letterSpacing: '0.5px',
+                              }}
+                            >
+                              {tipo} ({matches.length})
+                            </button>
+                          );
+                        })}
+                        {filtros.empleador.length > 1 && (
+                          <button
+                            onClick={() => setFiltros(p => ({ ...p, empleador: [] }))}
+                            style={{
+                              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                              color: '#f87171', borderRadius: '4px', padding: '3px 8px',
+                              fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                              textTransform: 'uppercase', letterSpacing: '0.5px',
+                            }}
+                          >
+                            ✕ Limpiar
+                          </button>
+                        )}
+                      </div>
+                    </div>
                     <select
                       className="form-input"
-                      value={filtros.empleador[0] || ''}
+                      value={filtros.empleador.length === 1 ? filtros.empleador[0] : ''}
                       onChange={e => setFiltros(p => ({ ...p, empleador: e.target.value ? [e.target.value] : [] }))}
                       style={{
                         background: '#111',
-                        color: '#ccc',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        color: filtros.empleador.length > 1 ? '#fbbf24' : '#ccc',
+                        border: `1px solid ${filtros.empleador.length > 1 ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)'}`,
                         borderRadius: '6px',
                         padding: '10px 12px',
                         fontSize: '13px',
@@ -987,11 +1030,29 @@ export default function BulkModifyTab() {
                         cursor: 'pointer',
                       }}
                     >
-                      <option value="" style={{ background: '#111', color: '#666' }}>Todos</option>
+                      <option value="" style={{ background: '#111', color: '#666' }}>
+                        {filtros.empleador.length > 1 ? `${filtros.empleador.length} empleadores seleccionados` : 'Todos'}
+                      </option>
                       {allEmpleadores.map(e => (
                         <option key={e} value={e} style={{ background: '#111', color: '#ccc' }}>{e}</option>
                       ))}
                     </select>
+                    {filtros.empleador.length > 1 && (
+                      <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {filtros.empleador.slice(0, 6).map(e => (
+                          <span key={e} style={{
+                            fontSize: '9px', padding: '2px 7px', borderRadius: '4px',
+                            background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
+                            color: '#fbbf24', fontWeight: 700,
+                          }}>{e}</span>
+                        ))}
+                        {filtros.empleador.length > 6 && (
+                          <span style={{ fontSize: '9px', color: '#666', padding: '2px 4px' }}>
+                            +{filtros.empleador.length - 6} más
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1310,8 +1371,8 @@ export default function BulkModifyTab() {
               </button>
             </div>
 
-            {/* Buscador */}
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            {/* Buscador + filtros tipo */}
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <input
                 className="form-input"
                 placeholder="Buscar empleador..."
@@ -1322,6 +1383,32 @@ export default function BulkModifyTab() {
                   borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
                 }}
               />
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {([
+                  { key: 'todos', label: 'Todos' },
+                  { key: 'sa', label: 'S.A.' },
+                  { key: 'srl', label: 'S.R.L.' },
+                  { key: 'otros', label: 'Otros' },
+                ] as const).map(({ key, label }) => {
+                  const activo = filtroTipoModal === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setFiltroTipoModal(key)}
+                      style={{
+                        background: activo ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                        color: activo ? '#fbbf24' : '#666',
+                        borderRadius: '4px', padding: '4px 12px',
+                        fontSize: '10px', fontWeight: 800, cursor: 'pointer',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Contenido del modal */}
@@ -1334,56 +1421,82 @@ export default function BulkModifyTab() {
               ) : (
                 <>
                   {(() => {
-                    // Filtrar por búsqueda
-                    const filtered = busquedaEmpleadorModal.trim()
+                    const esSA = (n: string) => /\bS\.?A\.?\b/i.test(n);
+                    const esSRL = (n: string) => /\bS\.?R\.?L\.?\b/i.test(n);
+
+                    let filtered = busquedaEmpleadorModal.trim()
                       ? empleadoresConConteo.filter(e =>
-                        e.nombre.toLowerCase().includes(busquedaEmpleadorModal.toLowerCase())
-                      )
+                          e.nombre.toLowerCase().includes(busquedaEmpleadorModal.toLowerCase())
+                        )
                       : empleadoresConConteo;
+
+                    if (filtroTipoModal === 'sa') filtered = filtered.filter(e => esSA(e.nombre));
+                    else if (filtroTipoModal === 'srl') filtered = filtered.filter(e => esSRL(e.nombre));
+                    else if (filtroTipoModal === 'otros') filtered = filtered.filter(e => !esSA(e.nombre) && !esSRL(e.nombre));
+
+                    // Agrupar S.A. y S.R.L. juntos cuando se muestra "todos"
+                    const grupos: { titulo: string; color: string; items: typeof filtered }[] = [];
+                    if (filtroTipoModal === 'todos' && !busquedaEmpleadorModal.trim()) {
+                      const sa = filtered.filter(e => esSA(e.nombre));
+                      const srl = filtered.filter(e => esSRL(e.nombre));
+                      const otros = filtered.filter(e => !esSA(e.nombre) && !esSRL(e.nombre));
+                      if (sa.length > 0) grupos.push({ titulo: `S.A. (${sa.length})`, color: '#fbbf24', items: sa });
+                      if (srl.length > 0) grupos.push({ titulo: `S.R.L. (${srl.length})`, color: '#60a5fa', items: srl });
+                      if (otros.length > 0) grupos.push({ titulo: `Otros (${otros.length})`, color: '#888', items: otros });
+                    } else {
+                      grupos.push({ titulo: '', color: '', items: filtered });
+                    }
 
                     return filtered.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
                         <p>No se encontraron empleadores</p>
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-                        {filtered.map((emp, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              padding: '12px 14px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.06)',
-                              borderRadius: 8,
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{
-                                fontSize: 12,
-                                color: '#ccc',
-                                fontWeight: 600,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                        {grupos.map((grupo, gi) => (
+                          <div key={gi}>
+                            {grupo.titulo && (
+                              <div style={{
+                                fontSize: '10px', fontWeight: 900, color: grupo.color,
+                                textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10,
+                                paddingBottom: 6, borderBottom: `1px solid rgba(255,255,255,0.05)`,
                               }}>
-                                {emp.nombre}
-                              </p>
-                            </div>
-                            <div style={{
-                              padding: '4px 10px',
-                              background: 'rgba(96,165,250,0.1)',
-                              border: '1px solid rgba(96,165,250,0.2)',
-                              borderRadius: 4,
-                              fontSize: 11,
-                              color: '#60a5fa',
-                              fontWeight: 700,
-                              flexShrink: 0,
-                              marginLeft: 12,
-                            }}>
-                              {emp.cantidad}
+                                {grupo.titulo}
+                              </div>
+                            )}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                              {grupo.items.map((emp, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    padding: '12px 14px',
+                                    background: 'rgba(255,255,255,0.02)',
+                                    border: '1px solid rgba(255,255,255,0.06)',
+                                    borderRadius: 8,
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{
+                                      fontSize: 12, color: '#ccc', fontWeight: 600,
+                                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                    }}>
+                                      {emp.nombre}
+                                    </p>
+                                  </div>
+                                  <div style={{
+                                    padding: '4px 10px',
+                                    background: 'rgba(96,165,250,0.1)',
+                                    border: '1px solid rgba(96,165,250,0.2)',
+                                    borderRadius: 4, fontSize: 11, color: '#60a5fa',
+                                    fontWeight: 700, flexShrink: 0, marginLeft: 12,
+                                  }}>
+                                    {emp.cantidad}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         ))}
