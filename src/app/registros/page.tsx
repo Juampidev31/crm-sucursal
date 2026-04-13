@@ -1324,8 +1324,10 @@ export default function RegistrosPage() {
                             <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>{reg.nombre}</span>
                             {reg.es_re && (
                               <span style={{
-                                fontSize: '9px', fontWeight: 900, padding: '2px 6px', borderRadius: '4px',
-                                background: 'rgba(34, 197, 94, 0.3)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.5)', letterSpacing: '0.5px'
+                                fontSize: '8px', fontWeight: 700, padding: '3px 8px', borderRadius: '20px',
+                                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(16, 185, 129, 0.25) 100%)', 
+                                color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.4)', 
+                                letterSpacing: '1px', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.15)'
                               }}>RE</span>
                             )}
                             {reg.cuil && <div style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
