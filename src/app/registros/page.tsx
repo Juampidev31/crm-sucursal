@@ -1325,8 +1325,8 @@ export default function RegistrosPage() {
                             {reg.es_re && (
                               <span style={{
                                 fontSize: '8px', fontWeight: 700, padding: '3px 8px', borderRadius: '2px',
-                                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%)', 
-                                color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.6)', 
+                                background: 'rgba(100, 100, 100, 0.15)', 
+                                color: '#888', border: '1px solid rgba(100, 100, 100, 0.3)', 
                                 letterSpacing: '1.5px', fontStyle: 'italic'
                               }}>RE</span>
                             )}
