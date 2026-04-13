@@ -22,6 +22,16 @@ const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const toLocalKey = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const toLocalDate = (fecha: string): Date => new Date(fecha.length === 10 ? `${fecha}T00:00:00` : fecha);
+const getISOWeek = (d: Date): number => {
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  const day = target.getDay();
+  const week = Math.ceil((((firstThursday - target.getTime()) / 86400000) + 1) / 7);
+  return week;
+};
 
 const VariacionBadge = ({ valor }: { valor: number }) => {
   const esPositivo = valor > 0;
@@ -348,8 +358,8 @@ export default function AnalisisTemporalTab({ registros }: Props) {
 
   const weeklyStats = useMemo(() => {
     const totals = mapaActividad.weeks
-      .slice(0, 6)
-      .map((w, i) => ({ label: `Sem ${i + 1}`, total: w.reduce((s, d) => s + d.valor, 0) }));
+      .slice(0, 4)
+      .map((w, i) => ({ label: `Semana ${i + 1}`, total: w.reduce((s, d) => s + d.valor, 0) }));
     const avg = totals.length > 0 ? totals.reduce((s, w) => s + w.total, 0) / totals.length : 1;
     const withVsAvg = totals.map(w => ({ ...w, vsAvg: avg > 0 ? ((w.total - avg) / avg) * 100 : 0 }));
     const best = totals.reduce((a, b) => a.total > b.total ? a : b, totals[0] || { label: '—', total: 0 });
@@ -585,7 +595,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {mapaActividad.weeks.slice(0, 6).map((week, wi) => {
+                {mapaActividad.weeks.slice(0, 4).map((week, wi) => {
                   const weekTotal = week.reduce((s, d) => s + d.valor, 0);
                   return (
                     <tr key={wi}>
