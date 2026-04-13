@@ -1324,7 +1324,7 @@ export default function RegistrosPage() {
                             <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>{reg.nombre}</span>
                             {reg.es_re && (
                               <span style={{
-                                fontSize: '8px', fontWeight: 700, padding: '3px 8px', borderRadius: '2px',
+                                fontSize: '10px', fontWeight: 700, padding: '4px 10px', borderRadius: '2px',
                                 background: 'rgba(100, 100, 100, 0.15)', 
                                 color: '#22c55e', border: '1px solid rgba(100, 100, 100, 0.3)', 
                                 letterSpacing: '1.5px', fontStyle: 'italic'
