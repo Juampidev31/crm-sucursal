@@ -16,6 +16,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
 const VERDE = '#4CAF50';
 const ROJO = '#ef4444';
+const AZUL = '#3b82f6';
 
 interface Props {
   filtroMes: string;      // "YYYY-MM"
@@ -129,10 +130,7 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
             letterSpacing: '2px',
             textTransform: 'uppercase',
           }}>
-            ESTACIONALIDAD
-          </div>
-          <div style={{ fontSize: '11px', color: '#444', marginTop: '2px', fontWeight: 600 }}>
-            Patrones por semana
+            EVOLUCION SEMANAL
           </div>
         </div>
 

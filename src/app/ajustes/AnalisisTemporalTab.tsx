@@ -620,16 +620,15 @@ export default function AnalisisTemporalTab({ registros }: Props) {
         </div>
       </div>
 
-      {/* Estacionalidad */}
+      {/* Evolucion semanal */}
       <div id="seccion-estacionalidad" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', marginBottom: '32px' }}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
-                <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estacionalidad</span>
+                <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evolucion semanal</span>
               </div>
-              <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Patrones por semana</div>
             </div>
           </div>
         </div>
