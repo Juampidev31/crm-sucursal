@@ -1083,6 +1083,16 @@ export default function AjustesPage() {
               return formatDateTime(iso);
             };
 
+            const extractNameFromDetails = (reg: any) => {
+              if (reg.nombre) return reg.nombre;
+              if (reg.accion === 'Creación' && reg.valor_nuevo) return reg.valor_nuevo.split(' | ')[0];
+              if (reg.accion === 'Eliminación' && reg.valor_anterior) return reg.valor_anterior.split(' | ')[0];
+              if (reg.accion.includes('Recordatorio') && (reg.valor_nuevo || reg.valor_anterior)) {
+                return (reg.valor_nuevo || reg.valor_anterior).split(' | ')[0];
+              }
+              return null;
+            };
+
             const accionIcon = (accion: string) => {
               switch (accion) {
                 case 'Creación': return <Plus size={12} />;
@@ -1353,14 +1363,17 @@ export default function AjustesPage() {
                                       <div style={{ fontSize: '10px', color: '#444', marginTop: 1 }}>{relativeTime(reg.fecha_hora)}</div>
                                     </td>
                                     <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
-                                      {reg.nombre ? (
-                                        <>
-                                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>{reg.nombre}</div>
-                                          <div style={{ fontSize: '10px', color: '#666', fontFamily: 'monospace', marginTop: 1 }}>{reg.cuil || '—'}</div>
-                                        </>
-                                      ) : (
-                                        <div style={{ fontSize: '12px', color: '#444' }}>— No disponible —</div>
-                                      )}
+                                      {(() => {
+                                        const name = extractNameFromDetails(reg);
+                                        return name ? (
+                                          <>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>{name}</div>
+                                            <div style={{ fontSize: '10px', color: '#666', fontFamily: 'monospace', marginTop: 1 }}>{reg.cuil || '—'}</div>
+                                          </>
+                                        ) : (
+                                          <div style={{ fontSize: '12px', color: '#454545' }}>— No disponible —</div>
+                                        );
+                                      })()}
                                     </td>
                                     <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
