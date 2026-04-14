@@ -1440,8 +1440,8 @@ export default function BulkModifyTab() {
                       const sa = filtered.filter(e => esSA(e.nombre));
                       const srl = filtered.filter(e => esSRL(e.nombre));
                       const otros = filtered.filter(e => !esSA(e.nombre) && !esSRL(e.nombre));
-                      if (sa.length > 0) grupos.push({ titulo: `S.A. (${sa.length})`, color: '#fbbf24', items: sa });
-                      if (srl.length > 0) grupos.push({ titulo: `S.R.L. (${srl.length})`, color: '#60a5fa', items: srl });
+                      if (sa.length > 0) grupos.push({ titulo: `S.A (${sa.length})`, color: '#fbbf24', items: sa });
+                      if (srl.length > 0) grupos.push({ titulo: `S.R.L (${srl.length})`, color: '#60a5fa', items: srl });
                       if (otros.length > 0) grupos.push({ titulo: `Otros (${otros.length})`, color: '#888', items: otros });
                     } else {
                       grupos.push({ titulo: '', color: '', items: filtered });

@@ -114,9 +114,12 @@ const RegistroModal = memo(function RegistroModal({
   const empleadoresLoaded = true; // siempre cargados desde DataContext
 
   const empleadoresAgrupados = useMemo(() => {
-    const sa    = empleadoresDB.filter(e => /\bS\.A\.$/i.test(e));
-    const srl   = empleadoresDB.filter(e => /\bS\.R\.L\.$/i.test(e));
-    const otros = empleadoresDB.filter(e => !/\bS\.A\.$/i.test(e) && !/\bS\.R\.L\.$/i.test(e));
+    const esSA = (e: string) => /\bS\.?A\.?\b/i.test(e);
+    const esSRL = (e: string) => /\bS\.?R\.?L\.?\b/i.test(e);
+
+    const sa    = empleadoresDB.filter(e => esSA(e));
+    const srl   = empleadoresDB.filter(e => esSRL(e));
+    const otros = empleadoresDB.filter(e => !esSA(e) && !esSRL(e));
     return { sa, srl, otros };
   }, [empleadoresDB]);
 
@@ -373,14 +376,14 @@ const RegistroModal = memo(function RegistroModal({
                   >
                     <option value="">— Sin especificar —</option>
                     {empleadoresAgrupados.sa.length > 0 && (
-                      <optgroup label="S.A.">
+                      <optgroup label="S.A">
                         {empleadoresAgrupados.sa.map(emp => (
                           <option key={emp} value={emp}>{emp}</option>
                         ))}
                       </optgroup>
                     )}
                     {empleadoresAgrupados.srl.length > 0 && (
-                      <optgroup label="S.R.L.">
+                      <optgroup label="S.R.L">
                         {empleadoresAgrupados.srl.map(emp => (
                           <option key={emp} value={emp}>{emp}</option>
                         ))}
