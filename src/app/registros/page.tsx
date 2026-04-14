@@ -113,6 +113,13 @@ const RegistroModal = memo(function RegistroModal({
   );
   const empleadoresLoaded = true; // siempre cargados desde DataContext
 
+  const empleadoresAgrupados = useMemo(() => {
+    const sa    = empleadoresDB.filter(e => /\bS\.A\.$/i.test(e));
+    const srl   = empleadoresDB.filter(e => /\bS\.R\.L\.$/i.test(e));
+    const otros = empleadoresDB.filter(e => !/\bS\.A\.$/i.test(e) && !/\bS\.R\.L\.$/i.test(e));
+    return { sa, srl, otros };
+  }, [empleadoresDB]);
+
   // ── Auto-corrección de sufijos legales ──────────────────────────────────
   const normalizarSufijosLegales = useCallback((valor: string): string => {
     if (!valor) return valor;
@@ -365,9 +372,27 @@ const RegistroModal = memo(function RegistroModal({
                     }}
                   >
                     <option value="">— Sin especificar —</option>
-                    {empleadoresDB.map(emp => (
-                      <option key={emp} value={emp}>{emp}</option>
-                    ))}
+                    {empleadoresAgrupados.sa.length > 0 && (
+                      <optgroup label="S.A.">
+                        {empleadoresAgrupados.sa.map(emp => (
+                          <option key={emp} value={emp}>{emp}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {empleadoresAgrupados.srl.length > 0 && (
+                      <optgroup label="S.R.L.">
+                        {empleadoresAgrupados.srl.map(emp => (
+                          <option key={emp} value={emp}>{emp}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {empleadoresAgrupados.otros.length > 0 && (
+                      <optgroup label="Otros">
+                        {empleadoresAgrupados.otros.map(emp => (
+                          <option key={emp} value={emp}>{emp}</option>
+                        ))}
+                      </optgroup>
+                    )}
                     <option value="__custom__">+ Agregar otro...</option>
                   </select>
                 )}
