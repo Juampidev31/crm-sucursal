@@ -135,14 +135,11 @@ export default function BulkModifyTab() {
     // Quitar tipos societarios de forma más robusta
     n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?|INC\.?)\b/gi, '').trim();
     
-    // Quitar conectores y palabras geográficas/institucionales muy comunes que generan falsos positivos
+    // Quitar conectores y palabras geográficas/institucionales/previsionales muy comunes que generan falsos positivos
     // Solo si no es lo único que queda
-    const stopWords = /\b(EL|LA|LOS|LAS|DE|DEL|Y|E|ENTRE|RIOS|PROVINCIA|SANTA|FE|NACION|NACIONAL|CLUB|ATLETICO|ASOCIACION|MUTUAL|CENTRO|SINDICATO|UNION|AGRUPACION)\b/gi;
+    const stopWords = /\b(EL|LA|LOS|LAS|DE|DEL|Y|E|ENTRE|RIOS|PROVINCIA|SANTA|FE|NACION|NACIONAL|CLUB|ATLETICO|ASOCIACION|MUTUAL|CENTRO|SINDICATO|UNION|AGRUPACION|PENSION|JUBILACION|CAJA|MUNICIPALIDAD|COMUNA|ESTADO|GOBIERNO|MINISTERIO|SECRETARIA|DIRECCION|GENERAL|PERSONAL|VIUDEZ|ORDINARIA|GRACIABLE)\b/gi;
     const temp = n.replace(stopWords, ' ').replace(/\s+/g, ' ').trim();
-    if (temp.length >= 3) n = temp;
-    
-    n = n.replace(/\s+/g, ' ').trim();
-    return n || 'Sin dato';
+    return temp || n || 'Sin dato';
   }, []);
 
   // ── Levenshtein distance para similitud entre strings ────────────────────
@@ -173,28 +170,27 @@ export default function BulkModifyTab() {
     const shorter = a.length <= b.length ? a : b;
     const longer = a.length <= b.length ? b : a;
 
-    // Mínimo 4 caracteres para considerar similitud (antes 3)
-    if (shorter.length < 4) return false;
+    // Mínimo 3 caracteres para considerar similitud
+    if (shorter.length < 3) return false;
 
-    // 1) Substring containment - Solo si el corto es suficientemente largo para no ser genérico
-    if (shorter.length >= 10 && longer.includes(shorter)) return true;
+    // 1) Substring containment - Bajamos un poco el umbral para mejor detección
+    if (shorter.length >= 6 && longer.includes(shorter)) return true;
 
-    // 2) Prefijo largo compartido (al menos 80% del más corto, antes 70%)
-    const minPrefixLen = Math.max(4, Math.floor(shorter.length * 0.8));
+    // 2) Prefijo largo compartido
+    const minPrefixLen = Math.max(4, Math.floor(shorter.length * 0.7));
     if (longer.startsWith(shorter.substring(0, minPrefixLen))) return true;
 
     // 3) Tokenizar y comparar
-    const tokensA = a.split(/\s+/).filter(t => t.length >= 3);
-    const tokensB = b.split(/\s+/).filter(t => t.length >= 3);
+    const tokensA = a.split(/\s+/).filter(t => t.length >= 2);
+    const tokensB = b.split(/\s+/).filter(t => t.length >= 2);
     
-    if (tokensA.length >= 2 && tokensB.length >= 2) {
+    if (tokensA.length >= 1 && tokensB.length >= 1) {
       let matched = 0;
       const usedB = new Set<number>();
       for (const ta of tokensA) {
         for (let j = 0; j < tokensB.length; j++) {
           if (usedB.has(j)) continue;
           const tb = tokensB[j];
-          // Token exacto o similitud muy alta entre tokens
           if (ta === tb || ta.includes(tb) || tb.includes(ta) ||
              (Math.min(ta.length, tb.length) >= 4 && levenshtein(ta, tb) <= 1)) {
             matched++;
@@ -203,13 +199,13 @@ export default function BulkModifyTab() {
           }
         }
       }
-      // Aumentamos el ratio requerido a 0.6 (antes 0.5)
       const matchRatio = matched / Math.max(tokensA.length, tokensB.length);
-      if (matchRatio >= 0.6 && matched >= 2) return true;
+      // Umbral más amigable para capturar pviudez vs viudez
+      if (matchRatio >= 0.5 && matched >= 1) return true;
     }
 
-    // 4) Levenshtein global — umbral más estricto
-    const maxDist = shorter.length <= 6 ? 1 : shorter.length <= 12 ? 2 : 3;
+    // 4) Levenshtein global
+    const maxDist = shorter.length <= 6 ? 1 : shorter.length <= 10 ? 2 : 3;
     if (levenshtein(a, b) <= maxDist) return true;
 
     return false;
@@ -226,8 +222,8 @@ export default function BulkModifyTab() {
     const union = (a: string, b: string) => {
       const ra = find(a), rb = find(b);
       if (ra !== rb) {
-        // El más largo es representante (nombre más completo)
-        if (ra.length >= rb.length) parent.set(rb, ra);
+        // CAMBIO: El más CORTO es el representante (nombre más "general" e identificativo)
+        if (ra.length <= rb.length) parent.set(rb, ra);
         else parent.set(ra, rb);
       }
     };
