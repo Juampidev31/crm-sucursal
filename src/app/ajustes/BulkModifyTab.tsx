@@ -100,18 +100,29 @@ export default function BulkModifyTab() {
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
   const [mostrarTodos, setMostrarTodos] = useState(false);
   const [busquedaEmpleador, setBusquedaEmpleador] = useState('');
-  const [gruposDescartados, setGruposDescartados] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
+  const [gruposDescartados, setGruposDescartados] = useState<Map<string, number>>(() => {
+    if (typeof window === 'undefined') return new Map();
     try {
       const saved = localStorage.getItem('empleador_grupos_ok');
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch { return new Set(); }
+      if (!saved) return new Map();
+      const parsed = JSON.parse(saved);
+      // Migrar formato viejo (array de strings) al nuevo (objeto clave→cantidad)
+      if (Array.isArray(parsed)) {
+        return new Map((parsed as string[]).map(k => [k, 0]));
+      }
+      return new Map(Object.entries(parsed) as [string, number][]);
+    } catch { return new Map(); }
   });
   interface VarianteEmpleador {
     normalizado: string;
     variantes: string[];
     cantidad: number;
   }
+
+  const estaDescartado = useCallback((normalizado: string, cantidad: number): boolean => {
+    const savedCount = gruposDescartados.get(normalizado);
+    return savedCount !== undefined && cantidad <= savedCount;
+  }, [gruposDescartados]);
 
   // Estado para el modal de registros
   const [modalRegistros, setModalRegistros] = useState<RegistroVariante[]>([]);
@@ -175,6 +186,15 @@ export default function BulkModifyTab() {
 
     // 1) Substring containment - Máxima sensibilidad para detectar inclusiones
     if (shorter.length >= 3 && longer.includes(shorter)) return true;
+
+    // 1.5) Subsecuencia de caracteres — detecta abreviaturas como PVIUDEZ en PENSION POR VIUDEZ
+    if (shorter.length >= 5) {
+      let si = 0;
+      for (let li = 0; li < longer.length && si < shorter.length; li++) {
+        if (longer[li] === shorter[si]) si++;
+      }
+      if (si === shorter.length) return true;
+    }
 
     // 2) Prefijo largo compartido
     const minPrefixLen = Math.max(4, Math.floor(shorter.length * 0.7));
@@ -267,9 +287,9 @@ export default function BulkModifyTab() {
     // Paso 2: fusionar grupos similares vía fuzzy matching
     const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
 
-    const result = fuzzyGrupos.filter(g => (mostrarTodos || g.cantidad > 1) && !gruposDescartados.has(g.normalizado));
+    const result = fuzzyGrupos.filter(g => (mostrarTodos || g.cantidad > 1) && !estaDescartado(g.normalizado, g.cantidad));
     return result.sort((a, b) => b.cantidad - a.cantidad);
-  }, [allEmpleadores, mostrarTodos, normalizar, agruparFuzzy, gruposDescartados]);
+  }, [allEmpleadores, mostrarTodos, normalizar, agruparFuzzy, gruposDescartados, estaDescartado]);
 
   const variantesFiltradas = useMemo(() => {
     if (!busquedaEmpleador.trim()) return variantesEmpleador;
@@ -289,21 +309,21 @@ export default function BulkModifyTab() {
       map.get(key)!.add(e);
     }
     const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
-    return fuzzyGrupos.filter(g => g.cantidad > 1 && !gruposDescartados.has(g.normalizado)).sort((a, b) => b.cantidad - a.cantidad);
-  }, [allEmpleadores, normalizar, agruparFuzzy, gruposDescartados]);
+    return fuzzyGrupos.filter(g => g.cantidad > 1 && !estaDescartado(g.normalizado, g.cantidad)).sort((a, b) => b.cantidad - a.cantidad);
+  }, [allEmpleadores, normalizar, agruparFuzzy, gruposDescartados, estaDescartado]);
 
   // Helpers para descartar/restaurar grupos
-  const descartarGrupo = useCallback((normalizado: string) => {
+  const descartarGrupo = useCallback((normalizado: string, cantidad: number) => {
     setGruposDescartados(prev => {
-      const next = new Set(prev);
-      next.add(normalizado);
-      try { localStorage.setItem('empleador_grupos_ok', JSON.stringify(Array.from(next))); } catch { }
+      const next = new Map(prev);
+      next.set(normalizado, cantidad);
+      try { localStorage.setItem('empleador_grupos_ok', JSON.stringify(Object.fromEntries(next))); } catch { }
       return next;
     });
   }, []);
 
   const restaurarDescartados = useCallback(() => {
-    setGruposDescartados(new Set());
+    setGruposDescartados(new Map());
     try { localStorage.removeItem('empleador_grupos_ok'); } catch { }
   }, []);
 
@@ -748,7 +768,7 @@ export default function BulkModifyTab() {
                       )}
                       {v.cantidad > 1 && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); descartarGrupo(v.normalizado); }}
+                          onClick={(e) => { e.stopPropagation(); descartarGrupo(v.normalizado, v.cantidad); }}
                           title="Marcar como correcto — no es un duplicado real"
                           style={{
                             background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
