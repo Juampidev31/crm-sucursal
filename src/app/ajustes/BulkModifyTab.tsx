@@ -131,8 +131,16 @@ export default function BulkModifyTab() {
     if (!nombre) return 'Sin dato';
     let n = nombre.toUpperCase().trim();
     n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.\b/gi, '').trim();
-    n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
+    
+    // Quitar tipos societarios de forma más robusta
+    n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?|INC\.?)\b/gi, '').trim();
+    
+    // Quitar conectores y palabras geográficas muy comunes que generan falsos positivos
+    // Solo si no es lo único que queda
+    const stopWords = /\b(EL|LA|LOS|LAS|DE|DEL|Y|E|ENTRE|RIOS|PROVINCIA|SANTA|FE|NACION|NACIONAL)\b/gi;
+    const temp = n.replace(stopWords, ' ').replace(/\s+/g, ' ').trim();
+    if (temp.length > 3) n = temp;
+    
     n = n.replace(/\s+/g, ' ').trim();
     return n || 'Sin dato';
   }, []);
@@ -142,8 +150,7 @@ export default function BulkModifyTab() {
     const la = a.length, lb = b.length;
     if (la === 0) return lb;
     if (lb === 0) return la;
-    // Optimización: si la diferencia de largo es demasiado grande, no calcular
-    if (Math.abs(la - lb) > Math.max(la, lb) * 0.5) return Math.max(la, lb);
+    if (Math.abs(la - lb) > Math.max(la, lb) * 0.4) return Math.max(la, lb);
     const dp: number[] = Array.from({ length: lb + 1 }, (_, i) => i);
     for (let i = 1; i <= la; i++) {
       let prev = i;
@@ -166,42 +173,43 @@ export default function BulkModifyTab() {
     const shorter = a.length <= b.length ? a : b;
     const longer = a.length <= b.length ? b : a;
 
-    // Mínimo 3 caracteres para considerar similitud
-    if (shorter.length < 3) return false;
+    // Mínimo 4 caracteres para considerar similitud (antes 3)
+    if (shorter.length < 4) return false;
 
-    // 1) Substring containment: "ENER" está contenido en "ENERSA"
-    if (longer.includes(shorter)) return true;
+    // 1) Substring containment - Solo si el corto es suficientemente largo para no ser genérico
+    if (shorter.length >= 10 && longer.includes(shorter)) return true;
 
-    // 2) Prefijo largo compartido (al menos 70% del más corto)
-    const minPrefixLen = Math.max(3, Math.floor(shorter.length * 0.7));
-    if (shorter.length >= 3 && longer.startsWith(shorter.substring(0, minPrefixLen))) return true;
+    // 2) Prefijo largo compartido (al menos 80% del más corto, antes 70%)
+    const minPrefixLen = Math.max(4, Math.floor(shorter.length * 0.8));
+    if (longer.startsWith(shorter.substring(0, minPrefixLen))) return true;
 
-    // 3) Tokenizar y comparar: "MUNICIPALIDAD DE PARANA" vs "MUNIC DE PARANA"
-    const tokensA = a.split(/\s+/).filter(t => t.length >= 2);
-    const tokensB = b.split(/\s+/).filter(t => t.length >= 2);
+    // 3) Tokenizar y comparar
+    const tokensA = a.split(/\s+/).filter(t => t.length >= 3);
+    const tokensB = b.split(/\s+/).filter(t => t.length >= 3);
+    
     if (tokensA.length >= 2 && tokensB.length >= 2) {
-      // Contar tokens que hacen match (exacto o parcial)
       let matched = 0;
       const usedB = new Set<number>();
       for (const ta of tokensA) {
         for (let j = 0; j < tokensB.length; j++) {
           if (usedB.has(j)) continue;
           const tb = tokensB[j];
-          // Token exacto, o uno contiene al otro, o Levenshtein cercano
+          // Token exacto o similitud muy alta entre tokens
           if (ta === tb || ta.includes(tb) || tb.includes(ta) ||
-            (Math.min(ta.length, tb.length) >= 3 && levenshtein(ta, tb) <= Math.max(1, Math.floor(Math.min(ta.length, tb.length) * 0.3)))) {
+             (Math.min(ta.length, tb.length) >= 4 && levenshtein(ta, tb) <= 1)) {
             matched++;
             usedB.add(j);
             break;
           }
         }
       }
+      // Aumentamos el ratio requerido a 0.6 (antes 0.5)
       const matchRatio = matched / Math.max(tokensA.length, tokensB.length);
-      if (matchRatio >= 0.5 && matched >= 1) return true;
+      if (matchRatio >= 0.6 && matched >= 2) return true;
     }
 
-    // 4) Levenshtein global — umbral adaptativo según largo
-    const maxDist = shorter.length <= 5 ? 1 : shorter.length <= 10 ? 2 : 3;
+    // 4) Levenshtein global — umbral más estricto
+    const maxDist = shorter.length <= 6 ? 1 : shorter.length <= 12 ? 2 : 3;
     if (levenshtein(a, b) <= maxDist) return true;
 
     return false;
