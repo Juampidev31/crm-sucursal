@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth';
 
 export interface AuditEntry {
   id_registro?: string;
+  nombre?: string;
+  cuil?: string;
   analista?: string;
   accion: string;
   campo_modificado?: string;
@@ -25,6 +27,8 @@ export function logAudit(entry: AuditEntry): void {
   const now = new Date().toISOString();
   const payload = {
     id_registro: entry.id_registro ?? '',
+    nombre: entry.nombre ?? '',
+    cuil: entry.cuil ?? '',
     analista: entry.analista ?? session?.username ?? '',
     accion: entry.accion,
     campo_modificado: entry.campo_modificado ?? '',

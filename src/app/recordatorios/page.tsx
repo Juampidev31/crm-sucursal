@@ -64,7 +64,7 @@ export default function RecordatoriosPage() {
       showToast('Error al actualizar', 'error');
     } else {
       if (rec) pushRecordatorioChange('UPDATE', { ...rec, mostrado: true });
-      logAudit({ id_registro: rec?.registro_id, analista: rec?.analista, accion: 'Recordatorio completado', campo_modificado: 'Recordatorio', valor_nuevo: `${rec?.nombre} | ${rec?.fecha_hora}` });
+      logAudit({ id_registro: rec?.registro_id, nombre: rec?.nombre, cuil: rec?.cuil, analista: rec?.analista, accion: 'Recordatorio completado', campo_modificado: 'Recordatorio', valor_nuevo: `${rec?.nombre} | ${rec?.fecha_hora}` });
     }
   };
 
@@ -82,7 +82,7 @@ export default function RecordatoriosPage() {
       showToast('Error al eliminar', 'error');
     } else {
       if (backup) pushRecordatorioChange('DELETE', backup);
-      logAudit({ id_registro: backup?.registro_id, analista: backup?.analista, accion: 'Eliminación', campo_modificado: 'Recordatorio', valor_anterior: `${backup?.nombre} | ${backup?.fecha_hora}` });
+      logAudit({ id_registro: backup?.registro_id, nombre: backup?.nombre, cuil: backup?.cuil, analista: backup?.analista, accion: 'Eliminación', campo_modificado: 'Recordatorio', valor_anterior: `${backup?.nombre} | ${backup?.fecha_hora}` });
     }
   };
 

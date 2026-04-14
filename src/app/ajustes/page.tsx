@@ -1112,7 +1112,7 @@ export default function AjustesPage() {
               if (reg.fecha_hora && new Date(reg.fecha_hora).getTime() < cutoff) return false;
               if (auditSearch) {
                 const q = auditSearch.toLowerCase();
-                const hay = [reg.analista, reg.accion, reg.campo_modificado, reg.valor_nuevo, reg.valor_anterior, reg.id_registro]
+                const hay = [reg.analista, reg.accion, reg.campo_modificado, reg.valor_nuevo, reg.valor_anterior, reg.id_registro, reg.nombre, reg.cuil]
                   .filter(Boolean).some((v: string) => v.toLowerCase().includes(q));
                 if (!hay) return false;
               }
@@ -1139,11 +1139,11 @@ export default function AjustesPage() {
 
             // — CSV export —
             const exportCSV = () => {
-              const headers = ['Fecha/Hora', 'ID Registro', 'Analista', 'Acción', 'Campo Modificado', 'Valor Anterior', 'Valor Nuevo'];
-              const rows = filtered.map((r: any) => [
-                r.fecha_hora || '', r.id_registro || '', r.analista || '', r.accion || '',
-                r.campo_modificado || '', r.valor_anterior || '', r.valor_nuevo || ''
-              ]);
+                const headers = ['Fecha/Hora', 'Nombre', 'CUIL', 'ID Registro', 'Analista', 'Acción', 'Campo Modificado', 'Valor Anterior', 'Valor Nuevo'];
+                const rows = filtered.map((r: any) => [
+                  r.fecha_hora || '', r.nombre || '', r.cuil || '', r.id_registro || '', r.analista || '', r.accion || '',
+                  r.campo_modificado || '', r.valor_anterior || '', r.valor_nuevo || ''
+                ]);
               const csv = [headers, ...rows].map(r => r.map((c: string) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
               const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
               const url = URL.createObjectURL(blob);
@@ -1322,6 +1322,7 @@ export default function AjustesPage() {
                             <tr>
                               <th style={{ width: 40, textAlign: 'center', padding: '10px 8px' }} />
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Fecha / Hora</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Cliente / Identificación</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Analista</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Acción</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Campo</th>
@@ -1352,6 +1353,16 @@ export default function AjustesPage() {
                                       <div style={{ fontSize: '10px', color: '#444', marginTop: 1 }}>{relativeTime(reg.fecha_hora)}</div>
                                     </td>
                                     <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
+                                      {reg.nombre ? (
+                                        <>
+                                          <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>{reg.nombre}</div>
+                                          <div style={{ fontSize: '10px', color: '#666', fontFamily: 'monospace', marginTop: 1 }}>{reg.cuil || '—'}</div>
+                                        </>
+                                      ) : (
+                                        <div style={{ fontSize: '12px', color: '#444' }}>— No disponible —</div>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                         <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                           <User size={11} color="#666" />
@@ -1378,7 +1389,7 @@ export default function AjustesPage() {
                                   {/* EXPANDED DETAIL ROW */}
                                   {isExpanded && (
                                     <tr style={{ background: 'rgba(255,255,255,0.015)' }}>
-                                      <td colSpan={5} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                      <td colSpan={6} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                         <div style={{
                                           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                                           gap: 16, padding: '16px 20px', background: 'rgba(255,255,255,0.02)',

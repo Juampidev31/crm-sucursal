@@ -205,6 +205,8 @@ const RegistroModal = memo(function RegistroModal({
       if (cambios.length > 0) {
         logAudit({
           id_registro: editingId,
+          nombre: String(payload.nombre ?? ''),
+          cuil: String(payload.cuil ?? ''),
           analista: String(payload.analista ?? ''),
           accion: 'Modificación',
           campo_modificado: cambios.map(f => FIELD_LABELS[f] ?? f).join(', '),
@@ -219,7 +221,7 @@ const RegistroModal = memo(function RegistroModal({
     } else {
       const { data: newReg, error } = await supabase.from('registros').insert(payload).select().single();
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
-      logAudit({ id_registro: (newReg as Registro).id, analista: String(payload.analista ?? ''), accion: 'Creación', campo_modificado: 'Nuevo registro', valor_nuevo: `${payload.nombre} | ${payload.estado} | $${payload.monto}` });
+      logAudit({ id_registro: (newReg as Registro).id, nombre: String(payload.nombre ?? ''), cuil: String(payload.cuil ?? ''), analista: String(payload.analista ?? ''), accion: 'Creación', campo_modificado: 'Nuevo registro', valor_nuevo: `${payload.nombre} | ${payload.estado} | $${payload.monto}` });
       onClose();
       if (agendarRecordatorio && onSavedWithRecordatorio && newReg) onSavedWithRecordatorio(newReg as Registro);
       else onSaved(newReg as Registro);
@@ -533,7 +535,7 @@ const RecordatorioModal = memo(function RecordatorioModal({
       return;
     }
 
-    logAudit({ id_registro: registro.id, analista: registro.analista, accion: 'Recordatorio creado', campo_modificado: 'Recordatorio', valor_nuevo: `${registro.nombre} | ${recForm.fecha} ${recForm.hora}${recForm.nota ? ' | ' + recForm.nota : ''}` });
+    logAudit({ id_registro: registro.id, nombre: registro.nombre, cuil: registro.cuil, analista: registro.analista, accion: 'Recordatorio creado', campo_modificado: 'Recordatorio', valor_nuevo: `${registro.nombre} | ${recForm.fecha} ${recForm.hora}${recForm.nota ? ' | ' + recForm.nota : ''}` });
     // Broadcast a otros usuarios
     pushRecordatorioChange('INSERT', data as Recordatorio);
     setSaving(false); onClose(true, data as Recordatorio);
@@ -994,7 +996,7 @@ export default function RegistrosPage() {
     const reg = deleteTarget;
     setDeleteTarget(null);
     await supabase.from('registros').delete().eq('id', reg.id);
-    logAudit({ id_registro: reg.id, analista: reg.analista, accion: 'Eliminación', campo_modificado: 'Registro', valor_anterior: `${reg.nombre} | ${reg.estado} | $${reg.monto}` });
+    logAudit({ id_registro: reg.id, nombre: reg.nombre, cuil: reg.cuil, analista: reg.analista, accion: 'Eliminación', campo_modificado: 'Registro', valor_anterior: `${reg.nombre} | ${reg.estado} | $${reg.monto}` });
     setRegistros(prev => prev.filter(r => r.id !== reg.id));
     pushRegistroChange('DELETE', reg);
     showToast('Registro eliminado', 'success');
