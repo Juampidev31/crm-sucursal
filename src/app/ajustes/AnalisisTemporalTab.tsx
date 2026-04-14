@@ -324,42 +324,48 @@ export default function AnalisisTemporalTab({ registros }: Props) {
   }, [summary, summaryAnterior]);
 
   const mapaActividad = useMemo(() => {
-    const byDate = new Map<string, number>();
+    const byDate = new Map<string, typeof ventasFiltradas>();
     for (const r of ventasFiltradas) {
       if (!r.fecha) continue;
       const key = r.fecha.slice(0, 10);
-      byDate.set(key, (byDate.get(key) || 0) + (Number(r.monto) || 0));
+      const bucket = byDate.get(key);
+      if (bucket) bucket.push(r);
+      else byDate.set(key, [r]);
     }
     const start = new Date(dateRange.from);
     const dow0 = (start.getDay() + 6) % 7;
+    const weeks: { key: string; valor: number; regs: typeof ventasFiltradas }[][] = [];
+    let week: { key: string; valor: number; regs: typeof ventasFiltradas }[] = [];
+    const cur = new Date(start);
+    const end = new Date(dateRange.to);
     for (let i = 0; i < dow0; i++) {
       const d = new Date(start);
       d.setDate(d.getDate() - (dow0 - i));
-      byDate.set(toLocalKey(d), 0);
+      week.push({ key: toLocalKey(d), valor: 0, regs: [] });
     }
-    const weeks: { key: string; valor: number }[][] = [];
-    let week: { key: string; valor: number }[] = [];
-    const cur = new Date(start);
-    const end = new Date(dateRange.to);
     while (cur <= end) {
       const key = toLocalKey(cur);
-      week.push({ key, valor: byDate.get(key) || 0 });
+      const regs = byDate.get(key) || [];
+      week.push({ key, valor: calcVal(regs), regs });
       if (week.length === 7) { weeks.push(week); week = []; }
       cur.setDate(cur.getDate() + 1);
     }
     if (week.length > 0) {
-      while (week.length < 7) week.push({ key: '', valor: 0 });
+      while (week.length < 7) week.push({ key: '', valor: 0, regs: [] });
       weeks.push(week);
     }
     let maxVal = 0;
     for (const w of weeks) for (const d of w) if (d.valor > maxVal) maxVal = d.valor;
     return { weeks, maxVal };
-  }, [ventasFiltradas, dateRange]);
+  }, [ventasFiltradas, dateRange, calcVal]);
 
   const weeklyStats = useMemo(() => {
     const firstFourWeeks = mapaActividad.weeks.slice(0, 5);
     const totals = firstFourWeeks
-      .map((w, i) => ({ label: `Semana ${i + 1}`, total: w.reduce((s, d) => s + d.valor, 0) }));
+      .map((w, i) => {
+        const weekRegs = w.flatMap(d => d.regs);
+        return { label: `Semana ${i + 1}`, total: calcVal(weekRegs) };
+      });
     const avg = totals.length > 0 ? totals.reduce((s, w) => s + w.total, 0) / totals.length : 1;
     const withVsAvg = totals.map(w => ({ ...w, vsAvg: avg > 0 ? ((w.total - avg) / avg) * 100 : 0 }));
     const best = totals.reduce((a, b) => a.total > b.total ? a : b, totals[0] || { label: '—', total: 0 });
@@ -368,21 +374,20 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       ? withData.reduce((a, b) => a.total < b.total ? a : b, withData[0])
       : totals[0] || { label: '—', total: 0 };
     return { totals, withVsAvg, best, worst };
-  }, [mapaActividad]);
+  }, [mapaActividad, calcVal]);
 
   const dowStats = useMemo(() => {
-    const sums = new Array(7).fill(0);
-    const counts = new Array(7).fill(0);
+    const byDow = new Array(7).fill(null).map(() => [] as typeof ventasFiltradas);
     for (const r of ventasFiltradas) {
       if (!r.fecha) continue;
       const dow = (toLocalDate(r.fecha).getDay() + 6) % 7;
-      sums[dow] += Number(r.monto) || 0;
-      counts[dow]++;
+      byDow[dow].push(r);
     }
+    const sums = byDow.map(regs => calcVal(regs));
     const max = Math.max(...sums);
-    const activeDay = sums.reduce((a, v, i) => v > sums[a] ? i : a, 0);
-    return { sums: sums.slice(0, 6), counts: counts.slice(0, 6), max, activeDay: DIAS_SEMANA[activeDay] || '—' };
-  }, [ventasFiltradas]);
+    const activeDay = sums.reduce((bestIdx, currentVal, currentIdx) => currentVal > sums[bestIdx] ? currentIdx : bestIdx, 0);
+    return { sums: sums.slice(0, 6), max, activeDay: DIAS_SEMANA[activeDay] || '—' };
+  }, [ventasFiltradas, calcVal]);
 
   const heatColor = (val: number, max: number): string => {
     if (val === 0) return 'rgba(34,197,94,0.05)';
