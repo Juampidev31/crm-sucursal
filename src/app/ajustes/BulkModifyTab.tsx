@@ -267,9 +267,9 @@ export default function BulkModifyTab() {
     // Paso 2: fusionar grupos similares vía fuzzy matching
     const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
 
-    const result = fuzzyGrupos.filter(g => mostrarTodos || g.cantidad > 1);
+    const result = fuzzyGrupos.filter(g => (mostrarTodos || g.cantidad > 1) && !gruposDescartados.has(g.normalizado));
     return result.sort((a, b) => b.cantidad - a.cantidad);
-  }, [allEmpleadores, mostrarTodos, normalizar, agruparFuzzy]);
+  }, [allEmpleadores, mostrarTodos, normalizar, agruparFuzzy, gruposDescartados]);
 
   const variantesFiltradas = useMemo(() => {
     if (!busquedaEmpleador.trim()) return variantesEmpleador;
