@@ -111,15 +111,6 @@ const RegistroModal = memo(function RegistroModal({
     Array.from(new Set(allRegistros.map(r => r.empleador).filter(Boolean) as string[])).sort(),
     [allRegistros]
   );
-
-  const empleadoresGrouped = useMemo(() => {
-    const list = empleadoresDB;
-    const sa = list.filter(e => /^S\.A\.?$/i.test(e));
-    const srl = list.filter(e => /^S\.R\.L\.?$/i.test(e));
-    const otros = list.filter(e => !/^S\.A\.?$/i.test(e) && !/^S\.R\.L\.?$/i.test(e));
-    return { sa, srl, otros };
-  }, [empleadoresDB]);
-
   const empleadoresLoaded = true; // siempre cargados desde DataContext
 
   // ── Auto-corrección de sufijos legales ──────────────────────────────────
@@ -374,21 +365,7 @@ const RegistroModal = memo(function RegistroModal({
                     }}
                   >
                     <option value="">— Sin especificar —</option>
-                    {empleadoresGrouped.sa.length > 0 && (
-                      <optgroup label="S.A">
-                        {empleadoresGrouped.sa.map(emp => (
-                          <option key={emp} value={emp}>{emp}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {empleadoresGrouped.srl.length > 0 && (
-                      <optgroup label="S.R.L.">
-                        {empleadoresGrouped.srl.map(emp => (
-                          <option key={emp} value={emp}>{emp}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {empleadoresGrouped.otros.map(emp => (
+                    {empleadoresDB.map(emp => (
                       <option key={emp} value={emp}>{emp}</option>
                     ))}
                     <option value="__custom__">+ Agregar otro...</option>
