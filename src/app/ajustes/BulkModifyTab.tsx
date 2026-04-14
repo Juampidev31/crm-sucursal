@@ -136,8 +136,8 @@ export default function BulkModifyTab() {
     n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?|INC\.?)\b/gi, '').trim();
     
     // Quitar conectores y palabras geográficas/institucionales/previsionales muy comunes que generan falsos positivos
-    // Pero NO quitar palabras que definen la esencia (como VIUDEZ, ORDINARIA)
-    const stopWords = /\b(EL|LA|LOS|LAS|DE|DEL|Y|E|ENTRE|RIOS|PROVINCIA|SANTA|FE|NACION|NACIONAL|CLUB|ATLETICO|ASOCIACION|MUTUAL|CENTRO|SINDICATO|UNION|AGRUPACION|PENSION|JUBILACION|CAJA|MUNICIPALIDAD|COMUNA|ESTADO|GOBIERNO|MINISTERIO|SECRETARIA|DIRECCION|GENERAL|PERSONAL|VIA|TITULAR|COBRO|PAGO)\b/gi;
+    // Se agregan abreviaturas comunes (MUNIC, MUNI, PROV) para mejorar la detección
+    const stopWords = /\b(EL|LA|LOS|LAS|DE|DEL|Y|E|ENTRE|RIOS|PROVINCIA|SANTA|FE|NACION|NACIONAL|CLUB|ATLETICO|ASOCIACION|MUTUAL|CENTRO|SINDICATO|UNION|AGRUPACION|PENSION|JUBILACION|CAJA|MUNICIPALIDAD|MUNIC|MUNI|COMUNA|ESTADO|GOBIERNO|MINISTERIO|SECRETARIA|DIRECCION|GENERAL|PERSONAL|VIA|TITULAR|COBRO|PAGO|PROV|DPTO|DTO|BS|AS)\b/gi;
     const temp = n.replace(stopWords, ' ').replace(/\s+/g, ' ').trim();
     return temp || n || 'Sin dato';
   }, []);
@@ -173,8 +173,8 @@ export default function BulkModifyTab() {
     // Mínimo 3 caracteres para considerar similitud
     if (shorter.length < 3) return false;
 
-    // 1) Substring containment
-    if (shorter.length >= 4 && longer.includes(shorter)) return true;
+    // 1) Substring containment - Máxima sensibilidad para detectar inclusiones
+    if (shorter.length >= 3 && longer.includes(shorter)) return true;
 
     // 2) Prefijo largo compartido
     const minPrefixLen = Math.max(4, Math.floor(shorter.length * 0.7));
