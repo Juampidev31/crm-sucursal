@@ -446,28 +446,24 @@ export default function AnalisisTemporalTab({ registros }: Props) {
               {f.node}
             </div>
           ))}
-          {periodo === -10 && (
-            <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Desde</div>
+                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha desde</div>
                 <input
                   type="date"
                   value={fechaDesde}
-                  onChange={e => setFechaDesde(e.target.value)}
+                  onChange={e => { setFechaDesde(e.target.value); setPeriodo(-10); }}
                   style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Hasta</div>
+                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha hasta</div>
                 <input
                   type="date"
                   value={fechaHasta}
-                  onChange={e => setFechaHasta(e.target.value)}
+                  onChange={e => { setFechaHasta(e.target.value); setPeriodo(-10); }}
                   style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
                 />
               </div>
-            </>
-          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
             <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Comparar</div>
             <button
