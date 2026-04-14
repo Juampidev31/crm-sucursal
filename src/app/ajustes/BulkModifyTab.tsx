@@ -135,11 +135,11 @@ export default function BulkModifyTab() {
     // Quitar tipos societarios de forma más robusta
     n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?|INC\.?)\b/gi, '').trim();
     
-    // Quitar conectores y palabras geográficas muy comunes que generan falsos positivos
+    // Quitar conectores y palabras geográficas/institucionales muy comunes que generan falsos positivos
     // Solo si no es lo único que queda
-    const stopWords = /\b(EL|LA|LOS|LAS|DE|DEL|Y|E|ENTRE|RIOS|PROVINCIA|SANTA|FE|NACION|NACIONAL)\b/gi;
+    const stopWords = /\b(EL|LA|LOS|LAS|DE|DEL|Y|E|ENTRE|RIOS|PROVINCIA|SANTA|FE|NACION|NACIONAL|CLUB|ATLETICO|ASOCIACION|MUTUAL|CENTRO|SINDICATO|UNION|AGRUPACION)\b/gi;
     const temp = n.replace(stopWords, ' ').replace(/\s+/g, ' ').trim();
-    if (temp.length > 3) n = temp;
+    if (temp.length >= 3) n = temp;
     
     n = n.replace(/\s+/g, ' ').trim();
     return n || 'Sin dato';
