@@ -55,6 +55,7 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
 export default function AnalisisTemporalTab({ registros }: Props) {
   const [periodo, setPeriodo] = useState(30);
   const [analistaFil, setAnalistaFil] = useState('todos');
+  const [analistaFil2, setAnalistaFil2] = useState('ninguno');
   const [metrica, setMetrica] = useState('ventas');
   const [compararPeriodo, setCompararPeriodo] = useState(true);
   const [fechaDesde, setFechaDesde] = useState('');
@@ -106,6 +107,11 @@ export default function AnalisisTemporalTab({ registros }: Props) {
 
   const analistaOpts = useMemo(() => [
     { value: 'todos', label: 'Todos' },
+    ...analisisAnalistas.map(a => ({ value: a, label: a })),
+  ], [analisisAnalistas]);
+
+  const analistaOpts2 = useMemo(() => [
+    { value: 'ninguno', label: '---' },
     ...analisisAnalistas.map(a => ({ value: a, label: a })),
   ], [analisisAnalistas]);
 
@@ -313,6 +319,60 @@ export default function AnalisisTemporalTab({ registros }: Props) {
     };
   }, [ventasFiltradasAnterior, tendenciaDataAnterior, dateRangeAnterior, calcVal]);
 
+  const ventasFiltradasAnalista2 = useMemo(() => {
+    if (analistaFil2 === 'ninguno') return [];
+    const { from, to } = dateRange;
+    const fromStr = toLocalKey(from);
+    const toStr = toLocalKey(to);
+    return registros.filter(r => {
+      if (!r.fecha) return false;
+      const estado = (r.estado ?? '').toLowerCase();
+      if (!isVenta(r)) return false;
+      const dateStr = r.fecha.slice(0, 10);
+      if (dateStr < fromStr || dateStr > toStr) return false;
+      if (r.analista !== analistaFil2) return false;
+      return true;
+    });
+  }, [registros, dateRange, analistaFil2]);
+
+  const tendenciaDataAnalista2 = useMemo(() => {
+    if (analistaFil2 === 'ninguno' || ventasFiltradasAnalista2.length === 0) return null;
+    const byDate = new Map<string, typeof ventasFiltradasAnalista2>();
+    for (const r of ventasFiltradasAnalista2) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      const bucket = byDate.get(key);
+      if (bucket) bucket.push(r);
+      else byDate.set(key, [r]);
+    }
+    const labels: string[] = [];
+    const daily: number[] = [];
+    const cur = new Date(dateRange.from);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.to);
+    end.setHours(23, 59, 59, 999);
+    while (cur <= end) {
+      const key = toLocalKey(cur);
+      labels.push(`${cur.getDate()}/${cur.getMonth() + 1}`);
+      daily.push(calcVal(byDate.get(key) ?? []));
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (metrica === 'ventas') {
+      let acc = 0;
+      return { labels, values: daily.map(v => (acc += v)), daily };
+    }
+    return { labels, values: daily, daily };
+  }, [ventasFiltradasAnalista2, dateRange, metrica, calcVal]);
+
+  const summaryAnalista2 = useMemo(() => {
+    if (analistaFil2 === 'ninguno' || !tendenciaDataAnalista2) return null;
+    return {
+      total: calcVal(ventasFiltradasAnalista2),
+      avg: dateRange.nDays > 0 ? calcVal(ventasFiltradasAnalista2) / dateRange.nDays : 0,
+      maxDay: tendenciaDataAnalista2.daily.length ? Math.max(...tendenciaDataAnalista2.daily) : 0,
+    };
+  }, [ventasFiltradasAnalista2, tendenciaDataAnalista2, dateRange.nDays, calcVal]);
+
   const variacion = useMemo(() => {
     if (!summaryAnterior) return null;
     const calc = (act: number, prev: number) => prev > 0 ? ((act - prev) / prev) * 100 : 0;
@@ -444,6 +504,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
           {[
             { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="170px" /> },
             { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} width="160px" /> },
+            { label: 'Comparar c/', node: <CustomSelect options={analistaOpts2} value={analistaFil2} onChange={setAnalistaFil2} width="160px" /> },
             { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} width="160px" /> },
           ].map(f => (
             <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -503,7 +564,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
                 labels: tendenciaData.labels,
                 datasets: [
                   {
-                    label: metrica === 'ventas' ? 'Acumulado' : metrica === 'operaciones' ? 'Operaciones' : 'Ticket Prom.',
+                    label: analistaFil !== 'todos' ? analistaFil : (metrica === 'ventas' ? 'Acumulado' : metrica === 'operaciones' ? 'Operaciones' : 'Ticket Prom.'),
                     data: tendenciaData.values,
                     borderColor: 'rgba(34,197,94,0.8)',
                     backgroundColor: 'rgba(34,197,94,0.1)',
@@ -532,6 +593,21 @@ export default function AnalisisTemporalTab({ registros }: Props) {
                     tension: 0.3,
                     spanGaps: false,
                   }] : []),
+                  ...(analistaFil2 !== 'ninguno' && tendenciaDataAnalista2 ? [{
+                    label: analistaFil2,
+                    data: tendenciaDataAnalista2.values,
+                    borderColor: 'rgba(239,68,68,0.8)',
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgba(239,68,68,0.9)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.3,
+                    spanGaps: false,
+                  }] : []),
                 ],
               }}
               options={{
@@ -539,7 +615,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: {
-                    display: compararPeriodo && !!tendenciaDataAnterior,
+                    display: (compararPeriodo && !!tendenciaDataAnterior) || (analistaFil2 !== 'ninguno' && !!tendenciaDataAnalista2),
                     position: 'top' as const,
                     align: 'end' as const,
                     labels: { color: '#888', boxWidth: 16, padding: 12, font: { size: 10 }, usePointStyle: true },
@@ -559,18 +635,21 @@ export default function AnalisisTemporalTab({ registros }: Props) {
               <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.total)}</div>
               {variacion && <VariacionBadge valor={variacion.total} />}
               {summaryAnterior && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {fmt(summaryAnterior.total)}</div>}
+              {summaryAnalista2 && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>Vs {analistaFil2}: {fmt(summaryAnalista2.total)}</div>}
             </div>
             <div style={{ minWidth: 120 }}>
               <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROMEDIO</div>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{metrica === 'operaciones' ? summary.avg.toFixed(1) : formatCurrency(summary.avg)}</div>
               {variacion && <VariacionBadge valor={variacion.avg} />}
               {summaryAnterior && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {metrica === 'operaciones' ? summaryAnterior.avg.toFixed(1) : formatCurrency(summaryAnterior.avg)}</div>}
+              {summaryAnalista2 && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>Vs {analistaFil2}: {metrica === 'operaciones' ? summaryAnalista2.avg.toFixed(1) : formatCurrency(summaryAnalista2.avg)}</div>}
             </div>
             <div style={{ minWidth: 120 }}>
               <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>MÁXIMO DÍA</div>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.maxDay)}</div>
               {variacion && <VariacionBadge valor={variacion.maxDay} />}
               {summaryAnterior && <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>Anterior: {fmt(summaryAnterior.maxDay)}</div>}
+              {summaryAnalista2 && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>Vs {analistaFil2}: {fmt(summaryAnalista2.maxDay)}</div>}
             </div>
           </div>
         </div>
