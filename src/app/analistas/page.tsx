@@ -1114,14 +1114,63 @@ export default function AnalistasPage() {
       {/* ── Alertas + Curva ── */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: (analista === PDV) ? '1fr' : '350px 1fr', 
+        gridTemplateColumns: '350px 1fr', 
         gap: '16px', 
         marginBottom: '24px', 
         alignItems: 'stretch' 
       }}>
-        {/* Columna Izquierda: Alertas y Equipo (Solo si no es PDV) */}
-        {(analista !== PDV) && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+        {/* Columna Izquierda: Diario y Alertas */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+          
+          {/* Diario */}
+          {(() => {
+            const restanteCapital = Math.max(0, kpis.obj.meta_ventas - kpis.alcanceCapital);
+            const restanteOps = Math.max(0, kpis.obj.meta_operaciones - kpis.alcanceOps);
+            const diasRest = Math.max(0, kpis.dh - kpis.dt);
+            const divDias = Math.max(1, diasRest);
+            
+            return (
+              <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <Activity size={18} color="#38bdf8" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>DIARIO</div>
+                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
+                      Días hábiles: {kpis.dh} • Transcurridos: {kpis.dt}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ fontSize: '11px', color: '#888', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>Dif. 100%</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>(K) {formatCurrency(restanteCapital)}</span>
+                      <span style={{ color: '#333' }}>—</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>(Q) {restanteOps}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'rgba(56, 189, 248, 0.03)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(56, 189, 248, 0.08)' }}>
+                    <div style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+                      Venta diaria <span style={{fontSize: '9px', color: '#444', fontWeight: 500, marginLeft: '4px'}}>(Días rest: {diasRest})</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 900, color: '#fff' }}>
+                        (K) {formatCurrency(restanteCapital / divDias)}
+                      </span>
+                      <span style={{ color: 'rgba(56, 189, 248, 0.3)' }}>—</span>
+                      <span style={{ fontSize: '13px', fontWeight: 900, color: '#fff' }}>
+                        (Q) {Math.round(restanteOps / divDias)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Alertas Premium - Solo Luciana y Victoria, no PDV */}
           {(analista !== PDV) && (
@@ -1176,54 +1225,9 @@ export default function AnalistasPage() {
             </div>
           )}
 
-          {/* Equipo de Trabajo - Solo analistas individuales, no PDV */}
-          {(analista !== PDV) && (
-            <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                  <Users size={18} color="#38bdf8" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>EQUIPO DE TRABAJO</div>
-                  <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-                    Vista global y analistas asignados
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {[{ key: PDV, label: 'VISTA GLOBAL (PDV)' }, ...analistasSel.map(a => ({ key: a, label: a }))].map(a => (
-                  <div key={a.key} onClick={() => setAnalista(a.key)}
-                    className="analista-item"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '10px 14px',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      background: a.key === analista ? 'rgba(255,255,255,0.07)' : 'transparent',
-                      border: `1px solid ${a.key === analista ? 'rgba(255,255,255,0.1)' : 'transparent'}`,
-                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                    }}>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: '50%',
-                      background: a.key === analista ? '#4ade80' : '#444',
-                      boxShadow: a.key === analista ? '0 0 10px rgba(74,222,128,0.5)' : 'none'
-                    }} />
-                    <span style={{
-                      fontSize: '13px',
-                      fontWeight: a.key === analista ? 700 : 500,
-                      color: a.key === analista ? '#fff' : '#666',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>{a.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
-      )}
+
 
         {/* Curva de crecimiento — MÁS ALTA */}
         <div style={{ ...card, height: '100%', minHeight: '620px', display: 'flex', flexDirection: 'column' }}>
