@@ -1134,8 +1134,8 @@ export default function BulkModifyTab() {
                 </div>
               )}
 
-        </div> {/* Fin Columna 3 */}
-        </div> {/* Fin Grid */}
+        </div>
+        </div>
 
         {/* STEP 2: CONFIRMAR - Seleccionar campos a modificar */}
         {step === 'confirm' && (
