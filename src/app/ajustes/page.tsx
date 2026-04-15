@@ -17,6 +17,8 @@ import CustomSelect from '@/components/CustomSelect';
 import ResumenMensualTab from './ResumenMensualTab';
 import BulkModifyTab from './BulkModifyTab';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useFilter, ESTADOS } from '@/context/FilterContext';
 
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
@@ -64,6 +66,9 @@ export default function AjustesPage() {
     objetivos: ctxObjetivos, setObjetivos: setCtxObjetivos, pushObjetivosChange
   } = useData();
 
+  const router = useRouter();
+  const { setFilter, limpiarFiltros, toggleEstado } = useFilter();
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('alertas');
   const [alertasConfig, setAlertasConfig] = useState(CONFIG.ALERTAS_DEFAULT);
   const [diasValues, setDiasValues] = useState<Record<string, DiasEntry>>({});
@@ -98,7 +103,17 @@ export default function AjustesPage() {
   const [auditFilterPeriodo, setAuditFilterPeriodo] = useState<string>('todo');
   const [auditPage, setAuditPage] = useState(1);
   const [auditExpandedRow, setAuditExpandedRow] = useState<string | null>(null);
+  const [auditExpand_Row, setAuditExpandedRow] = useState<string | null>(null); // dummy
   const AUDIT_PAGE_SIZE = 25;
+
+  const [consultaEstado, setConsultaEstado] = useState('proyeccion');
+  const [consultaAnalista, setConsultaAnalista] = useState('Luciana');
+
+  useEffect(() => {
+    if (!isAdmin && activeTab === 'alertas') {
+      setActiveTab('dias');
+    }
+  }, [isAdmin, activeTab]);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -528,7 +543,7 @@ export default function AjustesPage() {
       <div className="toolbar" style={{ justifyContent: 'flex-start', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {[
-            { id: 'alertas', label: 'Alertas', icon: Bell },
+            ...(isAdmin ? [{ id: 'alertas', label: 'Alertas', icon: Bell }] : []),
             { id: 'dias', label: 'Días Hábiles', icon: Clock },
             { id: 'historico', label: 'Histórico', icon: History },
             { id: 'objetivos', label: 'Objetivos', icon: Target },
@@ -637,6 +652,42 @@ export default function AjustesPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', marginTop: '24px' }}>
+                <div className="data-card-header" style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Consulta de Registros por Estado</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Acceso rápido para revisar registros por analista y estado (Ej: Registros sin gestión / proyección)</p>
+                </div>
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: '200px' }}>
+                    <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista</label>
+                    <select className="form-select" value={consultaAnalista} onChange={e => setConsultaAnalista(e.target.value)}>
+                        <option value="todos">Todos</option>
+                        {CONFIG.ANALISTAS_DEFAULT.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1, minWidth: '200px' }}>
+                    <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estado</label>
+                    <select className="form-select" value={consultaEstado} onChange={e => setConsultaEstado(e.target.value)}>
+                        <option value="todos">Todos</option>
+                        {ESTADOS.map(e => <option key={e} value={e}>{e.toUpperCase()}</option>)}
+                    </select>
+                  </div>
+                  <button className="btn-primary" onClick={() => {
+                        limpiarFiltros();
+                        setTimeout(() => {
+                            if (consultaAnalista !== 'todos') setFilter('analista', consultaAnalista);
+                            if (consultaEstado !== 'todos') {
+                                setFilter('estado', consultaEstado);
+                                toggleEstado(consultaEstado); 
+                            }
+                            router.push('/registros');
+                        }, 50);
+                  }}>
+                    <Search size={14} style={{ marginRight: '6px' }} /> Ver Registros
+                  </button>
+                </div>
               </div>
             </div>
           )}
