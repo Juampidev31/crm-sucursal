@@ -1307,6 +1307,33 @@ export default function RegistrosPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
+            {(isAdmin && hayFiltros) && (
+              <div style={{
+                background: 'rgba(30, 60, 250, 0.05)',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                padding: '12px 24px',
+                display: 'flex', gap: '32px', alignItems: 'center',
+              }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#777', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Registros filtrados <span style={{ color: '#fff', fontSize: '14px', marginLeft: '8px' }}>{totales.cantidad}</span>
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#777', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Total acumulado <span style={{ color: '#fff', fontSize: '14px', marginLeft: '8px' }}>
+                    {formatCurrency(totales.monto)}
+                  </span>
+                </span>
+                <div style={{ flex: 1 }} />
+                <button onClick={limpiarFiltros} style={{
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#888', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
+                  cursor: 'pointer', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', transition: '0.2s'
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                >
+                  <X size={12} strokeWidth={3} /> Limpiar Filtros
+                </button>
+              </div>
+            )}
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.005)' }}>
