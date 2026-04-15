@@ -645,7 +645,7 @@ export default function BulkModifyTab() {
         </div>
       )}
 
-      <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', maxWidth: 1200, margin: '0 auto' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', width: '100%', maxWidth: '100%', margin: '0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -713,9 +713,10 @@ export default function BulkModifyTab() {
         {/* ── GRID PRINCIPAL: 2 COLUMNAS (CORRECTOR | FILTROS) ───────────────────────────── */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(400px, 1fr) minmax(500px, 1.2fr)',
+          gridTemplateColumns: '1fr 1fr',
           gap: '24px',
-          alignItems: 'start'
+          alignItems: 'start',
+          width: '100%'
         }}>
           
           {/* COLUMNA 1: CORRECTOR DE EMPLEADOR */}
@@ -911,7 +912,6 @@ export default function BulkModifyTab() {
               </p>
             </div>
           )}
-        </div>
         </div>
 
         {/* COLUMNA 2: FILTROS Y MODIFICACIÓN */}
@@ -1286,6 +1286,7 @@ export default function BulkModifyTab() {
             </button>
           </div>
         )}
+        </div>
         </div>
         </div>
 
