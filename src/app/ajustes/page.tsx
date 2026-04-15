@@ -1383,7 +1383,6 @@ export default function AjustesPage() {
                             <tr>
                               <th style={{ width: 40, textAlign: 'center', padding: '10px 8px' }} />
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Fecha / Hora</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Cliente / Identificación</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Analista</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Acción</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Campo</th>
@@ -1412,19 +1411,6 @@ export default function AjustesPage() {
                                     <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
                                       <div style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{formatDateTime(reg.fecha_hora)}</div>
                                       <div style={{ fontSize: '10px', color: '#444', marginTop: 1 }}>{relativeTime(reg.fecha_hora)}</div>
-                                    </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
-                                      {(() => {
-                                        const name = extractNameFromDetails(reg);
-                                        return name ? (
-                                          <>
-                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#fff' }}>{name}</div>
-                                            <div style={{ fontSize: '10px', color: '#666', fontFamily: 'monospace', marginTop: 1 }}>{reg.cuil || '—'}</div>
-                                          </>
-                                        ) : (
-                                          <div style={{ fontSize: '12px', color: '#454545' }}>— No disponible —</div>
-                                        );
-                                      })()}
                                     </td>
                                     <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
