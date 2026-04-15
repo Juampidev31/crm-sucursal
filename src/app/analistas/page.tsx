@@ -1124,10 +1124,16 @@ export default function AnalistasPage() {
           
           {/* Diario */}
           {(() => {
-            const restanteCapital = Math.max(0, kpis.obj.meta_ventas - kpis.alcanceCapital);
-            const restanteOps = Math.max(0, kpis.obj.meta_operaciones - kpis.alcanceOps);
+            const resCap = kpis.obj.meta_ventas - kpis.alcanceCapital;
+            const resOps = kpis.obj.meta_operaciones - kpis.alcanceOps;
             const diasRest = Math.max(0, kpis.dh - kpis.dt);
             const divDias = Math.max(1, diasRest);
+
+            const fmtVal = (val: number, isK: boolean) => {
+              const sign = val >= 0 ? '+' : '-';
+              const absVal = Math.abs(val);
+              return `${sign} ${isK ? formatCurrency(absVal) : absVal}`;
+            };
             
             return (
               <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -1147,9 +1153,9 @@ export default function AnalistasPage() {
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ fontSize: '11px', color: '#888', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>Dif. 100%</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>(K) {formatCurrency(restanteCapital)}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#ef4444' }}>(K) {fmtVal(resCap, true)}</span>
                       <span style={{ color: '#333' }}>—</span>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>(Q) {restanteOps}</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#ef4444' }}>(Q) {fmtVal(resOps, false)}</span>
                     </div>
                   </div>
 
@@ -1158,12 +1164,12 @@ export default function AnalistasPage() {
                       Venta diaria <span style={{fontSize: '9px', color: '#444', fontWeight: 500, marginLeft: '4px'}}>(Días rest: {diasRest})</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 900, color: '#fff' }}>
-                        (K) {formatCurrency(restanteCapital / divDias)}
+                      <span style={{ fontSize: '13px', fontWeight: 900, color: '#ef4444' }}>
+                        (K) {fmtVal(resCap / divDias, true)}
                       </span>
                       <span style={{ color: 'rgba(56, 189, 248, 0.3)' }}>—</span>
-                      <span style={{ fontSize: '13px', fontWeight: 900, color: '#fff' }}>
-                        (Q) {Math.round(restanteOps / divDias)}
+                      <span style={{ fontSize: '13px', fontWeight: 900, color: '#ef4444' }}>
+                        (Q) {fmtVal(Math.round(resOps / divDias), false)}
                       </span>
                     </div>
                   </div>
