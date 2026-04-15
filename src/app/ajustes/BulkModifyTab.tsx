@@ -8,7 +8,7 @@ import { CONFIG } from '@/types';
 import { useData } from '@/context/DataContext';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
-  Search, ChevronDown, ChevronUp, Loader2
+  Search, ChevronDown, ChevronUp, Loader2, Trash2
 } from 'lucide-react';
 
 const ANALISTAS = CONFIG.ANALISTAS_DEFAULT;
@@ -141,6 +141,7 @@ export default function BulkModifyTab() {
   const [showEmpleadoresHoy, setShowEmpleadoresHoy] = useState(false);
   const [empleadoresHoy, setEmpleadoresHoy] = useState<{ cuil: string; nombre: string; empleador: string; id: string }[]>([]);
   const [loadingEmpleadoresHoy, setLoadingEmpleadoresHoy] = useState(false);
+  const [contadorNuevosHoy, setContadorNuevosHoy] = useState(0);
 
   // ── Normalización base de empleador ──────────────────────────────────────
   const normalizar = useCallback((nombre: string): string => {
@@ -396,6 +397,94 @@ export default function BulkModifyTab() {
     }
   }, []);
 
+  // ── Cargar empleadores nuevos de hoy ─────────────────────────────────────
+  const cargarEmpleadoresHoy = useCallback(async () => {
+    setLoadingEmpleadoresHoy(true);
+    setShowEmpleadoresHoy(true);
+
+    try {
+      // Obtener fecha de hoy en formato YYYY-MM-DD
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Calcular inicio de hoy (00:00:00) y fin de hoy (23:59:59) en UTC
+      const startOfDay = `${todayStr}T00:00:00-03:00`;
+      const endOfDay = `${todayStr}T23:59:59-03:00`;
+
+      const { data, error } = await supabase
+        .from('registros')
+        .select('id, cuil, nombre, empleador, created_at')
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setToast({ message: `Error: ${error.message}`, type: 'error' });
+        setEmpleadoresHoy([]);
+      } else {
+        // Filtrar solo los que tienen empleador definido
+        const conEmpleador = (data || []).filter(r => r.empleador && r.empleador.trim() !== '');
+        setEmpleadoresHoy(conEmpleador);
+        setContadorNuevosHoy(conEmpleador.length);
+      }
+    } catch (err) {
+      setToast({ message: 'Error al cargar registros de hoy', type: 'error' });
+      setEmpleadoresHoy([]);
+    } finally {
+      setLoadingEmpleadoresHoy(false);
+    }
+  }, []);
+
+  // ── Obtener contador de nuevos hoy (sin cargar toda la lista) ────────────
+  const actualizarContadorNuevosHoy = useCallback(async () => {
+    try {
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const startOfDay = `${todayStr}T00:00:00-03:00`;
+      const endOfDay = `${todayStr}T23:59:59-03:00`;
+
+      const { data, error } = await supabase
+        .from('registros')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .not('empleador', 'is', null)
+        .neq('empleador', '');
+
+      if (!error && data) {
+        setContadorNuevosHoy(data.length || 0);
+      }
+    } catch { /* silencioso */ }
+  }, []);
+
+// Actualizar contador cada 5 segundos
+  useEffect(() => {
+    const actualizar = async () => {
+      try {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const startOfDay = `${todayStr}T00:00:00-03:00`;
+        const endOfDay = `${todayStr}T23:59:59-03:00`;
+
+        const { count, error } = await supabase
+          .from('registros')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', startOfDay)
+          .lte('created_at', endOfDay)
+          .not('empleador', 'is', null)
+          .neq('empleador', '');
+
+        if (!error && count !== null) {
+          setContadorNuevosHoy(count);
+        }
+      } catch { /* silencioso */ }
+    };
+
+    actualizar();
+    const interval = setInterval(actualizar, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
 
   const corregirEmpleador = useCallback(async () => {
     if (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) {
@@ -600,6 +689,39 @@ export default function BulkModifyTab() {
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={cargarEmpleadoresHoy}
+              disabled={loadingEmpleadoresHoy}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '6px',
+                fontSize: '10px',
+                fontWeight: 800,
+                color: '#555',
+                textTransform: 'uppercase',
+                cursor: loadingEmpleadoresHoy ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {loadingEmpleadoresHoy ? <Loader2 size={12} className="animate-spin" /> : <Users size={12} />}
+              Nuevos hoy
+              {contadorNuevosHoy > 0 && (
+                <span style={{ 
+                  background: 'rgba(16,185,129,0.15)', 
+                  color: '#34d399', 
+                  padding: '1px 5px', 
+                  borderRadius: 4, 
+                  fontSize: '9px',
+                  marginLeft: 4 
+                }}>
+                  {contadorNuevosHoy}
+                </span>
+              )}
+            </button>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1533,6 +1655,119 @@ export default function BulkModifyTab() {
                     );
                   })()}
                 </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE EMPLEADORES NUEVOS DE HOY */}
+      {showEmpleadoresHoy && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setShowEmpleadoresHoy(false)}
+        >
+          <div
+            style={{
+              background: '#0a0a0a', border: '1px solid rgba(16,185,129,0.2)',
+              borderRadius: 12, width: '100%', maxWidth: 900,
+              maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              padding: '20px 24px', borderBottom: '1px solid rgba(16,185,129,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#34d399', marginBottom: 4 }}>
+                  Registros creados hoy
+                </h3>
+                <p style={{ fontSize: 12, color: '#888' }}>
+                  {empleadoresHoy.length} registro{empleadoresHoy.length !== 1 ? 's' : ''} con empleador
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`¿Eliminar ${empleadoresHoy.length} registros de la base de datos? Esta acción es irreversible.`)) return;
+                    
+                    setLoadingEmpleadoresHoy(true);
+                    try {
+                      const ids = empleadoresHoy.map(r => r.id);
+                      const { error } = await supabase.from('registros').delete().in('id', ids);
+                      if (error) throw error;
+                      
+                      setEmpleadoresHoy([]);
+                      setShowEmpleadoresHoy(false);
+                      setToast({ message: `${ids.length} registros eliminados`, type: 'success' });
+                    } catch (err) {
+                      setToast({ message: 'Error al eliminar registros', type: 'error' });
+                    } finally {
+                      setLoadingEmpleadoresHoy(false);
+                    }
+                  }}
+                  style={{
+                    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                    color: '#f87171', borderRadius: 6, padding: '8px 12px',
+                    fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                    fontWeight: 700,
+                  }}
+                >
+                  <Trash2 size={14} /> Eliminar
+                </button>
+                <button
+                  onClick={() => setShowEmpleadoresHoy(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#888', borderRadius: 6, padding: '8px 12px',
+                    fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  <X size={14} /> Cerrar
+                </button>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px' }}>
+              {loadingEmpleadoresHoy ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+                  <Loader2 size={24} className="animate-spin" style={{ color: '#34d399' }} />
+                </div>
+              ) : empleadoresHoy.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                  <p>No se encontraron registros creados hoy.</p>
+                </div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Apellido y Nombre</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {empleadoresHoy.map((r, idx) => (
+                      <tr
+                        key={r.id}
+                        style={{
+                          borderBottom: '1px solid rgba(255,255,255,0.03)',
+                          background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
+                        }}
+                      >
+                        <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace', fontSize: 12 }}>{r.cuil || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600, fontSize: 12 }}>{r.nombre || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: 600, fontSize: 12 }}>{r.empleador}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>
