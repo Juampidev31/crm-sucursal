@@ -816,7 +816,7 @@ function MultiSelectDropdown({
 
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
-  const { registros, setRegistros, loading, refresh, pushRegistroChange } = useData();
+  const { registros, setRegistros, loading, refresh, pushRegistroChange, alertasConfig } = useData();
   const {
     filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
@@ -934,6 +934,7 @@ export default function RegistrosPage() {
   }, [isCreationModalOpen, setIsCreationModalOpen]);
 
   const filteredRegistros = useMemo(() => {
+    const nowTime = new Date().getTime();
     const list = registros.filter(r => {
       const s = filters.search.toLowerCase();
       const mSearch = !filters.search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s) || r.empleador?.toLowerCase().includes(s) || r.estado?.toLowerCase().includes(s) || r.localidad?.toLowerCase().includes(s) || r.comentarios?.toLowerCase().includes(s);
@@ -946,7 +947,22 @@ export default function RegistrosPage() {
       const mScoreMin = !filters.scoreMin || (r.puntaje != null && Number(r.puntaje) >= Number(filters.scoreMin));
       const mScoreMax = !filters.scoreMax || (r.puntaje != null && Number(r.puntaje) <= Number(filters.scoreMax));
       const mRe = !filters.esRe || (filters.esRe === 'si' ? r.es_re : !r.es_re);
-      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe;
+
+      let mVencido = true;
+      if (filters.soloAlertasVencidas) {
+        const config = alertasConfig?.find(a => a.estado.toLowerCase() === r.estado?.toLowerCase());
+        const diasLimite = config?.dias ?? 0;
+        const dateStr = r.fecha || r.created_at;
+        if (dateStr) {
+          const recordDate = new Date(dateStr).getTime();
+          const daysDiff = Math.floor((nowTime - recordDate) / (1000 * 60 * 60 * 24));
+          if (daysDiff < diasLimite) {
+            mVencido = false;
+          }
+        }
+      }
+
+      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe && mVencido;
     });
 
     return [...list].sort((a, b) => {

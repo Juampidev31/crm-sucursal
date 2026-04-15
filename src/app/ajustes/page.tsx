@@ -681,6 +681,7 @@ export default function AjustesPage() {
                                 setFilter('estado', consultaEstado);
                                 toggleEstado(consultaEstado); 
                             }
+                            setFilter('soloAlertasVencidas', true);
                             router.push('/registros');
                         }, 50);
                   }}>

@@ -22,6 +22,7 @@ interface FilterState {
   scoreMin: string;
   scoreMax: string;
   esRe: string;
+  soloAlertasVencidas: boolean;
 }
 
 const initialState: FilterState = {
@@ -36,11 +37,12 @@ const initialState: FilterState = {
   scoreMin: '',
   scoreMax: '',
   esRe: '',
+  soloAlertasVencidas: false,
 };
 
 interface FilterCtx {
   filters: FilterState;
-  setFilter: (key: keyof FilterState, value: string) => void;
+  setFilter: (key: keyof FilterState, value: any) => void;
   toggleEstado: (estado: string) => void;
   limpiarFiltros: () => void;
   hayFiltros: boolean;
