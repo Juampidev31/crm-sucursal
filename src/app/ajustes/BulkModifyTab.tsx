@@ -973,39 +973,41 @@ export default function BulkModifyTab() {
                 ))}
               </div>
             )}
-
-            {/* Sección: Filtros de selección */}
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
-                <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ESTADO (seleccioná los que querés filtrar)</label>
-                {filtros.estados.length > 0 && (
-                  <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 700 }}>· {filtros.estados.length} seleccionado{filtros.estados.length > 1 ? 's' : ''}</span>
-                )}
+            {/* Sección: Filtros de selección (Estado y Analista side-by-side) */}
+            <div style={{ display: 'flex', gap: '48px', marginBottom: '24px', alignItems: 'flex-start' }}>
+              <div style={{ flex: '1 1 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
+                  <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ESTADO (seleccioná los que querés filtrar)</label>
+                  {filtros.estados.length > 0 && (
+                    <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 700 }}>· {filtros.estados.length} seleccionado{filtros.estados.length > 1 ? 's' : ''}</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {allEstados.map(est => (
+                    <span key={est} onClick={() => toggleFilter('estados', est)} style={chipStyle(filtros.estados.includes(est))}>
+                      {STATUS_LABEL[est] ?? est}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {allEstados.map(est => (
-                  <span key={est} onClick={() => toggleFilter('estados', est)} style={chipStyle(filtros.estados.includes(est))}>
-                    {STATUS_LABEL[est] ?? est}
-                  </span>
-                ))}
+
+              <div style={{ flex: '0 0 auto', minWidth: '240px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
+                  <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ANALISTA</label>
+                  {filtros.analistas.length > 0 && (
+                    <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 700 }}>· {filtros.analistas.length} seleccionado{filtros.analistas.length > 1 ? 's' : ''}</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {allAnalistas.map(an => (
+                    <span key={an} onClick={() => toggleFilter('analistas', an)} style={chipStyle(filtros.analistas.includes(an))}>
+                      {an}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div style={{ marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
-                <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ANALISTA</label>
-                {filtros.analistas.length > 0 && (
-                  <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 700 }}>· {filtros.analistas.length} seleccionado{filtros.analistas.length > 1 ? 's' : ''}</span>
-                )}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {allAnalistas.map(an => (
-                  <span key={an} onClick={() => toggleFilter('analistas', an)} style={chipStyle(filtros.analistas.includes(an))}>
-                    {an}
-                  </span>
-                ))}
-              </div>
-            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
               <div>
