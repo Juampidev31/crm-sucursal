@@ -1169,9 +1169,9 @@ export default function AnalistasPage() {
                     </div>
                   </div>
 
-                  <div style={{ background: 'rgba(56, 189, 248, 0.03)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(56, 189, 248, 0.08)' }}>
-                    <div style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
-                      Venta diaria <span style={{fontSize: '9px', color: '#444', fontWeight: 500, marginLeft: '4px'}}>(Días rest: {diasRest})</span>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <div style={{ fontSize: '11px', color: '#888', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+                      Venta diaria <span style={{fontSize: '9px', color: '#555', fontWeight: 500, marginLeft: '4px'}}>(Días rest: {diasRest})</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {(() => {
