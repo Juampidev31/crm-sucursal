@@ -543,7 +543,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       </div>
 
       {/* Tendencia + Mapa */}
-      <div id="seccion-tendencia-mapa" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
+      <div id="seccion-tendencia-mapa" style={{ display: 'flex', flexDirection: 'column', gap: '32px', marginBottom: '32px' }}>
         {/* Tendencia */}
         <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: 16 }}>
