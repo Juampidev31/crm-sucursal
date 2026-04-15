@@ -103,7 +103,6 @@ export default function AjustesPage() {
   const [auditFilterPeriodo, setAuditFilterPeriodo] = useState<string>('todo');
   const [auditPage, setAuditPage] = useState(1);
   const [auditExpandedRow, setAuditExpandedRow] = useState<string | null>(null);
-  const [auditExpand_Row, setAuditExpandedRow] = useState<string | null>(null); // dummy
   const AUDIT_PAGE_SIZE = 25;
 
   const [consultaEstado, setConsultaEstado] = useState('proyeccion');
