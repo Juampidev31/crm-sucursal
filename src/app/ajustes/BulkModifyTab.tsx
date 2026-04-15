@@ -713,7 +713,7 @@ export default function BulkModifyTab() {
         {/* ── GRID PRINCIPAL: 2 COLUMNAS (CORRECTOR | FILTROS) ───────────────────────────── */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(350px, 0.7fr) 1.3fr',
+          gridTemplateColumns: '380px 1fr 1fr',
           gap: '20px',
           alignItems: 'start',
           width: '100%'
@@ -914,115 +914,122 @@ export default function BulkModifyTab() {
           )}
         </div>
 
-        {/* COLUMNA 2: FILTROS Y MODIFICACIÓN */}
+        {/* COLUMNA 2: FILTROS BÁSICOS */}
         <div style={{
           padding: '24px',
           background: 'rgba(255,255,255,0.015)',
           border: '1px solid rgba(255,255,255,0.04)',
           borderRadius: '12px',
+          height: '100%'
         }}>
           {step === 'filter' && (
             <>
-              {/* Resumen de filtros activos */}
-              {(filtros.estados.length > 0 || filtros.analistas.length > 0 || filtros.scoreMin || filtros.scoreMax) && (
-                <div style={{
-                  padding: '12px 16px', background: 'rgba(96,165,250,0.05)',
-                  border: '1px solid rgba(96,165,250,0.15)', borderRadius: '8px',
-                  marginBottom: '24px', display: 'flex', alignItems: 'center', gap: 8,
-                  flexWrap: 'wrap',
-                }}>
-                  <Filter size={14} style={{ color: '#60a5fa', flexShrink: 0 }} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#888', marginRight: 8 }}>Filtros activos:</span>
-                  {filtros.estados.map(e => (
-                    <span key={e} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{STATUS_LABEL[e] ?? e}</span>
-                  ))}
-                  {(filtros.scoreMin || filtros.scoreMax) && (
-                    <span style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>
-                      Score: {filtros.scoreMin || '0'} - {filtros.scoreMax || '∞'}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '10px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>ESTADO</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {allEstados.map(est => (
+                    <span key={est} onClick={() => toggleFilter('estados', est)} style={chipStyle(filtros.estados.includes(est))}>
+                      {STATUS_LABEL[est] ?? est}
                     </span>
-                  )}
-                  {filtros.analistas.map(a => (
-                    <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{a}</span>
                   ))}
-                </div>
-              )}
-
-              {/* GRID DE FILTROS (2 COLUMNAS INTERNAS) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-                
-                {/* SUB-COLUMNA 1 */}
-                <div>
-                  <div style={{ marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '12px' }}>
-                      <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ESTADO</label>
-                      {filtros.estados.length > 0 && (
-                        <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 700 }}>· {filtros.estados.length}</span>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {allEstados.map(est => (
-                        <span key={est} onClick={() => toggleFilter('estados', est)} style={chipStyle(filtros.estados.includes(est))}>
-                          {STATUS_LABEL[est] ?? est}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '12px' }}>
-                      <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ANALISTA</label>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {allAnalistas.map(an => (
-                        <span key={an} onClick={() => toggleFilter('analistas', an)} style={chipStyle(filtros.analistas.includes(an))}>
-                          {an}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>SCORE MIN</label>
-                      <input className="form-input" type="number" placeholder="0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>SCORE MAX</label>
-                      <input className="form-input" type="number" placeholder="499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* SUB-COLUMNA 2 */}
-                <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>MONTO MÍN</label>
-                      <input className="form-input" type="number" value={filtros.montoMin} onChange={e => setFiltros(p => ({ ...p, montoMin: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>MONTO MÁX</label>
-                      <input className="form-input" type="number" value={filtros.montoMax} onChange={e => setFiltros(p => ({ ...p, montoMax: e.target.value }))} />
-                    </div>
-                  </div>
-
-                  {/* Advanced filters toggle */}
-                  <button
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                      color: '#666', borderRadius: 6, padding: '10px 14px',
-                      fontSize: 10, fontWeight: 800, cursor: 'pointer',
-                      textTransform: 'uppercase', width: '100%',
-                      justifyContent: 'center', transition: 'all 0.2s',
-                    }}
-                  >
-                    {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    Filtros Avanzados
-                  </button>
                 </div>
               </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '10px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>ANALISTA</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {allAnalistas.map(an => (
+                    <span key={an} onClick={() => toggleFilter('analistas', an)} style={chipStyle(filtros.analistas.includes(an))}>
+                      {an}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>SCORE MIN</label>
+                  <input className="form-input" type="number" placeholder="0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>SCORE MAX</label>
+                  <input className="form-input" type="number" placeholder="499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))} />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* COLUMNA 3: MONTOS Y AVANZADOS */}
+        <div style={{
+          padding: '24px',
+          background: 'rgba(255,255,255,0.015)',
+          border: '1px solid rgba(255,255,255,0.04)',
+          borderRadius: '12px',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          {step === 'filter' && (
+            <>
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>MONTO MÍN</label>
+                    <input className="form-input" type="number" value={filtros.montoMin} onChange={e => setFiltros(p => ({ ...p, montoMin: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>MONTO MÁX</label>
+                    <input className="form-input" type="number" value={filtros.montoMax} onChange={e => setFiltros(p => ({ ...p, montoMax: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', fontSize: '10px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>ACUERDO</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {allAcuerdos.slice(0, 8).map(a => (
+                      <span key={a} onClick={() => toggleFilter('acuerdoPrecios', a)} style={chipStyle(filtros.acuerdoPrecios.includes(a))}>{a}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                    color: '#666', borderRadius: 6, padding: '12px',
+                    fontSize: 10, fontWeight: 800, cursor: 'pointer',
+                    textTransform: 'uppercase', width: '100%',
+                    justifyContent: 'center', transition: 'all 0.2s',
+                  }}
+                >
+                  {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  MÁS FILTROS
+                </button>
+              </div>
+
+              {/* Preview action fixed at bottom */}
+              <div style={{ marginTop: 'auto', paddingTop: '24px' }}>
+                <button
+                  onClick={previsualizar}
+                  disabled={loadingCount}
+                  style={{
+                    width: '100%',
+                    background: '#fff', color: '#000', border: 'none',
+                    fontWeight: 900, padding: '16px', borderRadius: '12px',
+                    fontSize: '13px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    boxShadow: '0 4px 15px rgba(255,255,255,0.1)',
+                  }}
+                >
+                  {loadingCount ? <Loader2 className="animate-spin" size={18} /> : <Filter size={18} />}
+                  PREVISUALIZAR REGISTROS
+                </button>
+              </div>
+            </>
+          )}
 
               {showAdvancedFilters && (
                 <div style={{
@@ -1127,22 +1134,8 @@ export default function BulkModifyTab() {
                 </div>
               )}
 
-            {/* Preview button */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
-              <button
-                onClick={previewRecords}
-                style={{
-                  background: '#fff', color: '#000', border: 'none',
-                  fontWeight: 900, padding: '12px 28px', borderRadius: '10px',
-                  fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                }}
-              >
-                <Filter size={14} /> PREVISUALIZAR REGISTROS
-              </button>
-            </div>
-          </>
-        )}
+        </div> {/* Fin Columna 3 */}
+        </div> {/* Fin Grid */}
 
         {/* STEP 2: CONFIRMAR - Seleccionar campos a modificar */}
         {step === 'confirm' && (
