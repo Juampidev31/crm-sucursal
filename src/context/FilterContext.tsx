@@ -87,7 +87,11 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hayFiltros = useMemo(() => {
-    return Object.entries(filters).some(([k, v]) => k === 'estados' ? (v as string[]).length > 0 : v !== '');
+    return Object.entries(filters).some(([k, v]) => {
+      if (k === 'estados') return (v as string[]).length > 0;
+      if (typeof v === 'boolean') return v === true;
+      return v !== '';
+    });
   }, [filters]);
 
   const triggerExport = useCallback(() => {
