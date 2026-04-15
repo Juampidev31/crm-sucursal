@@ -2,14 +2,14 @@ import { supabase } from '@/lib/supabase';
 import { getSession } from '@/lib/auth';
 
 export interface AuditEntry {
-  id_registro?: string;
-  nombre?: string;
-  cuil?: string;
-  analista?: string;
   accion: string;
   campo_modificado?: string;
   valor_anterior?: string;
   valor_nuevo?: string;
+  id_registro?: string;
+  nombre?: string;
+  cuil?: string;
+  analista?: string;
 }
 
 // Canal singleton para broadcast en tiempo real — se suscribe al importar el módulo
@@ -26,10 +26,6 @@ export function logAudit(entry: AuditEntry): void {
   const session = getSession();
   const now = new Date().toISOString();
   const payload = {
-    id_registro: entry.id_registro ?? '',
-    nombre: entry.nombre ?? '',
-    cuil: entry.cuil ?? '',
-    analista: entry.analista ?? session?.username ?? '',
     accion: entry.accion,
     campo_modificado: entry.campo_modificado ?? '',
     valor_anterior: entry.valor_anterior ?? '',
