@@ -713,15 +713,15 @@ export default function BulkModifyTab() {
         {/* ── GRID PRINCIPAL: 2 COLUMNAS (CORRECTOR | FILTROS) ───────────────────────────── */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '24px',
+          gridTemplateColumns: 'minmax(350px, 0.7fr) 1.3fr',
+          gap: '20px',
           alignItems: 'start',
           width: '100%'
         }}>
           
           {/* COLUMNA 1: CORRECTOR DE EMPLEADOR */}
           <div style={{
-            padding: '24px',
+            padding: '20px',
             background: 'rgba(255,255,255,0.02)',
             border: '1px solid rgba(255,255,255,0.06)',
             borderRadius: '12px',
