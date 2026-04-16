@@ -61,7 +61,7 @@ export default function AjustesPage() {
   const {
     registros: ctxRegistros,
     alertasConfig: ctxAlertas, mutateAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
-    diasConfig: ctxDias, mutateDiasConfig: setCtxDias, pushDiasConfigChange,
+    diasConfig: ctxDias, applyDiasConfigChange,
     historicoVentas: ctxHistorico, mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange,
     objetivos: ctxObjetivos, mutateObjetivos: setCtxObjetivos, pushObjetivosChange
   } = useData();
@@ -177,13 +177,8 @@ export default function AjustesPage() {
       const { error } = await supabase.from('dias_habiles_config').upsert(config, { onConflict: 'analista' });
       if (error) throw error;
 
-      // Actualizar contexto y enviar broadcast
-      setCtxDias(prev => {
-        const exists = prev.some(d => d.analista === analista);
-        if (exists) return prev.map(d => d.analista === analista ? config : d);
-        return [...prev, config];
-      });
-      pushDiasConfigChange('UPDATE', config);
+      // Actualizar contexto y enviar broadcast (atómico: local + broadcast)
+      applyDiasConfigChange('UPDATE', config);
 
       showSuccess(`Días guardados para ${analista}`);
     } catch (err: any) { showError(`Error: ${err.message}`); }

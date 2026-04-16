@@ -1037,7 +1037,7 @@ function MultiSelectDropdown({
 
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
-  const { registros, mutateRegistros, loading, refresh, pushRegistroChange, alertasConfig } = useData();
+  const { registros, applyRegistroChange, loading, refresh, alertasConfig } = useData();
   const {
     filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
@@ -1234,34 +1234,23 @@ export default function RegistrosPage() {
     setDeleteTarget(null);
     await supabase.from('registros').delete().eq('id', reg.id);
     logAudit({ id_registro: reg.id, nombre: reg.nombre, cuil: reg.cuil, analista: reg.analista, accion: 'Eliminación', campo_modificado: 'Registro', valor_anterior: `${reg.nombre} | ${reg.estado} | $${reg.monto}` });
-    mutateRegistros(prev => prev.filter(r => r.id !== reg.id));
-    pushRegistroChange('DELETE', reg);
+    applyRegistroChange('DELETE', reg);
     showToast('Registro eliminado', 'success');
-  }, [deleteTarget, pushRegistroChange, showToast, mutateRegistros]);
-
-  const applyOptimistic = useCallback((reg: Registro) => {
-    mutateRegistros(prev => {
-      const idx = prev.findIndex(r => r.id === reg.id);
-      if (idx >= 0) { const next = [...prev]; next[idx] = reg; return next; }
-      return [reg, ...prev];
-    });
-  }, [mutateRegistros]);
+  }, [deleteTarget, applyRegistroChange, showToast]);
 
   const handleSaved = useCallback((reg: Registro) => {
     const isNew = !registros.find(r => r.id === reg.id);
-    applyOptimistic(reg);
-    pushRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
+    applyRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
     refresh(true);
-  }, [applyOptimistic, refresh, pushRegistroChange, registros]);
+  }, [applyRegistroChange, refresh, registros]);
 
   const handleSavedWithRecordatorio = useCallback((reg: Registro) => {
     const isNew = !registros.find(r => r.id === reg.id);
-    applyOptimistic(reg);
-    pushRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
+    applyRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
     showToast('Guardado', 'success');
     refresh(true);
     setRecordatorioTarget(reg);
-  }, [applyOptimistic, refresh, pushRegistroChange, registros, showToast]);
+  }, [applyRegistroChange, refresh, registros, showToast]);
 
   const handleRecordatorioClose = useCallback((saved: boolean, newRec?: Recordatorio) => {
     setRecordatorioTarget(null);
