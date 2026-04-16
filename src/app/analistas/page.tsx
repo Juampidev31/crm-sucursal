@@ -840,7 +840,13 @@ export default function AnalistasPage() {
     scales: {
       x: {
         title: { display: false },
-        ticks: { color: '#666', font: { size: 10, weight: 600 }, maxTicksLimit: 15, autoSkipPadding: 10 },
+        ticks: { 
+          color: '#666', 
+          font: { size: 10, weight: 600 },
+          maxRotation: 0,
+          minRotation: 0,
+          autoSkip: false
+        },
         grid: { display: false }
       },
       y: {
