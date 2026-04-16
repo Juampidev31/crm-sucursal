@@ -59,6 +59,9 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
 
+  if (form.estado === 'derivado / rechazado cc' && !form.comentarios?.trim())
+    errs.comentarios = 'Requerido — ingresá el motivo de rechazo';
+
   if (form.fecha) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const selected = new Date(form.fecha + 'T00:00:00');
@@ -410,13 +413,14 @@ const RegistroModal = memo(function RegistroModal({
               </Field>
             </div>
             <div className="form-row">
-              <Field label="Comentarios">
+              <Field label={`Comentarios${form.estado === 'derivado / rechazado cc' ? ' *' : ''}`} error={errors.comentarios}>
                 <textarea
                   className="form-input"
                   value={form.comentarios || ''}
                   onChange={e => set('comentarios', corregirTildes(e.target.value))}
                   rows={3}
                   style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                  placeholder={form.estado === 'derivado / rechazado cc' ? 'Motivo de rechazo (obligatorio)...' : ''}
                 />
               </Field>
             </div>
