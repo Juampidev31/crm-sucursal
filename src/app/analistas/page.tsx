@@ -714,7 +714,7 @@ export default function AnalistasPage() {
         animations: {
           y: {
             duration: 1000,
-            easing: 'easeInOutQuart',
+            easing: 'easeInOutQuart' as const,
             from: (ctx: any) => ctx.chart.chartArea?.bottom || 500
           }
         }
@@ -762,7 +762,7 @@ export default function AnalistasPage() {
         animations: {
           y: {
             duration: 1000,
-            easing: 'easeInOutQuart',
+            easing: 'easeInOutQuart' as const,
             from: (ctx: any) => ctx.chart.chartArea?.bottom || 500
           }
         }
