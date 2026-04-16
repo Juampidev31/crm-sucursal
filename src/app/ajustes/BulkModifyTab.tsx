@@ -397,13 +397,22 @@ export default function BulkModifyTab() {
     }
   }, []);
 
-  // ── Registros creados hoy (Argentina) derivados del contexto ─────────────
+  // ── Registros cargados hoy (Argentina) derivados del contexto ────────────
+  // Nota: `created_at` puede ser null para registros antiguos (la columna no
+  // siempre tuvo default now()). Usamos el campo `fecha` —que el usuario
+  // completa al cargar el registro— como fuente de verdad, y caemos a
+  // `created_at` como respaldo.
   const registrosNuevosHoy = useMemo(() => {
     const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+    const toArgDateStr = (iso: string) => {
+      // Si viene como 'YYYY-MM-DD' (columna date), comparar directo sin zona.
+      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+      return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+    };
     return registros.filter(r => {
-      if (!r.created_at) return false;
-      const createdStr = new Date(r.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
-      return createdStr === todayStr;
+      const ref = r.fecha ?? r.created_at ?? null;
+      if (!ref) return false;
+      return toArgDateStr(ref) === todayStr;
     });
   }, [registros]);
 
