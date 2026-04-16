@@ -397,82 +397,33 @@ export default function BulkModifyTab() {
     }
   }, []);
 
-  // ── Cargar empleadores nuevos de hoy ─────────────────────────────────────
-  const cargarEmpleadoresHoy = useCallback(async () => {
-    setLoadingEmpleadoresHoy(true);
-    setShowEmpleadoresHoy(true);
+  // ── Registros creados hoy (Argentina) derivados del contexto ─────────────
+  const registrosNuevosHoy = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+    return registros.filter(r => {
+      if (!r.created_at) return false;
+      const createdStr = new Date(r.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
+      return createdStr === todayStr;
+    });
+  }, [registros]);
 
-    try {
-      // Obtener fecha de hoy en zona horaria Argentina (UTC-3, sin DST)
-      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
-      const startOfDay = `${todayStr}T00:00:00-03:00`;
-      const endOfDay = `${todayStr}T23:59:59-03:00`;
-
-      const { data, error } = await supabase
-        .from('registros')
-        .select('id, cuil, nombre, empleador, created_at')
-        .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setToast({ message: `Error: ${error.message}`, type: 'error' });
-        setEmpleadoresHoy([]);
-      } else {
-        setEmpleadoresHoy(data || []);
-        setContadorNuevosHoy((data || []).length);
-      }
-    } catch (err) {
-      setToast({ message: 'Error al cargar registros de hoy', type: 'error' });
-      setEmpleadoresHoy([]);
-    } finally {
-      setLoadingEmpleadoresHoy(false);
-    }
-  }, []);
-
-  // ── Obtener contador de nuevos hoy (sin cargar toda la lista) ────────────
-  const actualizarContadorNuevosHoy = useCallback(async () => {
-    try {
-      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
-      const startOfDay = `${todayStr}T00:00:00-03:00`;
-      const endOfDay = `${todayStr}T23:59:59-03:00`;
-
-      const { count, error } = await supabase
-        .from('registros')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay);
-
-      if (!error && count !== null) {
-        setContadorNuevosHoy(count);
-      }
-    } catch { /* silencioso */ }
-  }, []);
-
-// Actualizar contador cada 5 segundos
+  // Mantener contador sincronizado con el useMemo
   useEffect(() => {
-    const actualizar = async () => {
-      try {
-        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
-        const startOfDay = `${todayStr}T00:00:00-03:00`;
-        const endOfDay = `${todayStr}T23:59:59-03:00`;
+    setContadorNuevosHoy(registrosNuevosHoy.length);
+  }, [registrosNuevosHoy]);
 
-        const { count, error } = await supabase
-          .from('registros')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', startOfDay)
-          .lte('created_at', endOfDay);
-
-        if (!error && count !== null) {
-          setContadorNuevosHoy(count);
-        }
-      } catch { /* silencioso */ }
-    };
-
-    actualizar();
-    const interval = setInterval(actualizar, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  // ── Cargar empleadores nuevos de hoy ─────────────────────────────────────
+  const cargarEmpleadoresHoy = useCallback(() => {
+    setShowEmpleadoresHoy(true);
+    setEmpleadoresHoy(
+      registrosNuevosHoy.map(r => ({
+        id: r.id,
+        cuil: r.cuil,
+        nombre: r.nombre,
+        empleador: r.empleador || '',
+      }))
+    );
+  }, [registrosNuevosHoy]);
 
 
   const corregirEmpleador = useCallback(async () => {
