@@ -11,7 +11,10 @@ import SelectReporte from '@/components/SelectReporte';
 
 
 export default function ReporteVentasPage() {
-  const { registros: todosRegistros, loading } = useData();
+  const { registros: todosRegistros, loading, setRegistrosWindowMonths } = useData();
+
+  // Reportes necesitan historia completa para comparaciones YoY y estacionalidad
+  useEffect(() => { setRegistrosWindowMonths(24); }, [setRegistrosWindowMonths]);
 
   const registros = useMemo(() =>
     todosRegistros.filter(r =>

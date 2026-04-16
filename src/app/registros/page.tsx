@@ -1037,7 +1037,7 @@ function MultiSelectDropdown({
 
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
-  const { registros, applyRegistroChange, loading, refresh, alertasConfig } = useData();
+  const { registros, applyRegistroChange, loading, refresh, alertasConfig, registrosWindowMonths, setRegistrosWindowMonths } = useData();
   const {
     filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
@@ -1476,6 +1476,26 @@ export default function RegistrosPage() {
                   color: '#aaa', outline: 'none',
                 }}
               />
+            </div>
+
+            {/* Ventana de datos (cuánta historia cargar del servidor) */}
+            <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
+              <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>VENTANA DE DATOS</label>
+              <select
+                value={String(registrosWindowMonths)}
+                onChange={e => setRegistrosWindowMonths(Number(e.target.value))}
+                style={{
+                  width: '100%', height: 38, fontSize: '13px', fontWeight: 600,
+                  padding: '0 12px', background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.04)', borderRadius: '6px',
+                  color: '#aaa', outline: 'none',
+                }}
+              >
+                <option value="6">Últimos 6 meses</option>
+                <option value="12">Últimos 12 meses</option>
+                <option value="24">Últimos 24 meses</option>
+                <option value="0">Todo</option>
+              </select>
             </div>
 
             {/* Limpiar */}

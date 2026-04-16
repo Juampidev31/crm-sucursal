@@ -34,6 +34,8 @@ interface DataCtx {
   reminderAlert: ReminderAlertData | null;
   lastError: DataErrorState | null;
   clearError: () => void;
+  registrosWindowMonths: number;
+  setRegistrosWindowMonths: (months: number) => void;
   // Acciones atómicas (local + broadcast) para mutaciones de un item.
   applyRegistroChange: (type: ChangeType, registro: Registro) => void;
   applyObjetivoChange: (type: ChangeType, objetivo: Objetivo) => void;
@@ -60,6 +62,15 @@ interface DataCtx {
   pushBulkRefresh: () => void;
 }
 
+// Ventana default para la query de registros. Evita traer toda la historia
+// en cada refresh. Reportes/analistas que necesiten más pueden llamar a
+// setRegistrosWindowMonths(N).
+const DEFAULT_REGISTROS_WINDOW_MONTHS = 6;
+
+// Cap de seguridad. Con ventana de 6 meses y ritmo actual (~100 rows/mes)
+// esto deja ~8x de margen.
+const REGISTROS_SAFETY_LIMIT = 5000;
+
 const DataContext = createContext<DataCtx | null>(null);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
@@ -72,6 +83,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [pendingReminders, setPendingReminders] = useState(0);
   const [reminderAlert, setReminderAlert] = useState<ReminderAlertData | null>(null);
   const [lastError, setLastError] = useState<DataErrorState | null>(null);
+  const [registrosWindowMonths, setRegistrosWindowMonths] = useState<number>(DEFAULT_REGISTROS_WINDOW_MONTHS);
   const initialized = useRef(false);
   const shownIds = useRef(new Set<string>());
   const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -133,8 +145,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
+    // Ventana: trae registros con fecha >= (hoy - N meses) O fecha nula.
+    // Si months <= 0, se omite el filtro (modo "Todo").
+    const cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,localidad,created_at,updated_at';
+    let registrosQuery = supabase.from('registros').select(cols);
+    if (registrosWindowMonths > 0) {
+      const since = new Date();
+      since.setMonth(since.getMonth() - registrosWindowMonths);
+      const sinceIso = since.toISOString().slice(0, 10);
+      registrosQuery = registrosQuery.or(`fecha.gte.${sinceIso},fecha.is.null`);
+    }
     const [regsR, objsR, diasR, recR, histR, alertasR] = await Promise.all([
-      supabase.from('registros').select('id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,localidad,created_at,updated_at').order('fecha', { ascending: false }).limit(2000),
+      registrosQuery.order('fecha', { ascending: false }).limit(REGISTROS_SAFETY_LIMIT),
       supabase.from('objetivos').select('id,analista,mes,anio,meta_ventas,meta_operaciones'),
       supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
       supabase.from('recordatorios').select('id', { count: 'exact', head: true }).eq('mostrado', false),
@@ -163,13 +185,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (alertasR.error) reportError('refresh:alertas_config', alertasR.error);
     else if (alertasR.data) setAlertasConfig(alertasR.data as AlertaConfig[]);
     setLoading(false);
-  }, [reportError]);
+  }, [reportError, registrosWindowMonths]);
 
   useEffect(() => {
-    if (!initialized.current) {
-      initialized.current = true;
-      refresh();
-    }
+    // Corre en mount y cada vez que cambia la identidad de `refresh`
+    // (lo que pasa cuando cambia registrosWindowMonths).
+    // initialized.current se mantiene por compatibilidad con otros gates si los hay.
+    initialized.current = true;
+    refresh();
   }, [refresh]);
 
   // Refs estables para evitar dependencias cambiantes en el effect
@@ -389,6 +412,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<DataCtx>(() => ({
     registros, objetivos, diasConfig, historicoVentas, alertasConfig,
     loading, pendingReminders, reminderAlert, lastError, clearError,
+    registrosWindowMonths, setRegistrosWindowMonths,
     applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
     mutateRegistros, mutateObjetivos, mutateDiasConfig,
@@ -399,6 +423,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }), [
     registros, objetivos, diasConfig, historicoVentas, alertasConfig,
     loading, pendingReminders, reminderAlert, lastError, clearError,
+    registrosWindowMonths,
     applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
     mutateRegistros, mutateObjetivos, mutateDiasConfig,
