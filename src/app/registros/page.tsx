@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
@@ -85,6 +85,240 @@ const Field = ({ label, error, children }: { label: string; error?: string; chil
         {error && <span style={{ color: 'var(--rojo)', fontWeight: 400, marginLeft: 6 }}>— {error}</span>}
       </label>
       {children}
+    </div>
+  );
+};
+
+// ── PremiumSelect Component ───────────────────────────────────────────────────
+
+const PremiumSelect = ({
+  value,
+  onChange,
+  options,
+  placeholder = "Seleccionar...",
+  isSearchable = false,
+  groups,
+  onAddCustom,
+  error
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options?: string[];
+  placeholder?: string;
+  isSearchable?: boolean;
+  groups?: { label: string; items: string[] }[];
+  onAddCustom?: () => void;
+  error?: string;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const filteredOptions = useMemo(() => {
+    if (!search.trim()) return options || [];
+    const q = search.toLowerCase();
+    return (options || []).filter(opt => opt.toLowerCase().includes(q));
+  }, [options, search]);
+
+  const filteredGroups = useMemo(() => {
+    if (!groups) return null;
+    if (!search.trim()) return groups;
+    const q = search.toLowerCase();
+    return groups.map(g => ({
+      ...g,
+      items: g.items.filter(item => item.toLowerCase().includes(q))
+    })).filter(g => g.items.length > 0);
+  }, [groups, search]);
+
+  const handleSelect = (val: string) => {
+    onChange(val);
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          minHeight: '40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 12px',
+          background: 'var(--surface2, #000)',
+          border: `1px solid ${isOpen ? '#86efac' : (error ? 'var(--rojo)' : 'var(--border-color)')}`,
+          borderRadius: '8px',
+          cursor: 'pointer',
+          color: value ? 'var(--text, #fff)' : 'var(--gris)',
+          fontSize: '13px',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {value || placeholder}
+        </span>
+        <ChevronDown size={14} style={{
+          flexShrink: 0,
+          marginLeft: 8,
+          transition: 'transform 0.3s ease',
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          opacity: 0.5
+        }} />
+      </div>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 6px)',
+          left: 0,
+          right: 0,
+          background: '#0a0a0a',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '10px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+          zIndex: 1000,
+          overflow: 'hidden',
+          animation: 'selectFade 0.2s ease-out'
+        }}>
+          {isSearchable && (
+            <div style={{
+              padding: '8px',
+              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.01)'
+            }}>
+              <div style={{ position: 'relative' }}>
+                <Search size={12} style={{
+                  position: 'absolute',
+                  left: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)'
+                }} />
+                <input
+                  autoFocus
+                  placeholder="Buscar..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  onClick={e => e.stopPropagation()}
+                  style={{
+                    width: '100%',
+                    padding: '8px 8px 8px 28px',
+                    fontSize: '12px',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    color: '#fff',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div style={{ maxHeight: '220px', overflowY: 'auto', padding: '4px' }}>
+            {groups ? (
+              <>
+                {filteredGroups?.map((g, idx) => (
+                  <div key={idx}>
+                    <div style={{
+                      padding: '8px 10px 4px',
+                      fontSize: '9px',
+                      fontWeight: 800,
+                      color: 'var(--gris)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>{g.label}</div>
+                    {g.items.map(opt => (
+                      <div
+                        key={opt}
+                        onClick={(e) => { e.stopPropagation(); handleSelect(opt); }}
+                        style={{
+                          padding: '8px 10px',
+                          fontSize: '13px',
+                          color: value === opt ? '#86efac' : '#fff',
+                          background: value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent',
+                          cursor: 'pointer',
+                          borderRadius: '6px',
+                          margin: '2px 0'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                        onMouseLeave={e => e.currentTarget.style.background = value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent'}
+                      >
+                        {opt}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                {onAddCustom && !search && (
+                  <div
+                    onClick={(e) => { e.stopPropagation(); onAddCustom(); setIsOpen(false); }}
+                    style={{
+                      padding: '10px',
+                      fontSize: '12px',
+                      color: '#86efac',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      marginTop: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.05)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <X size={12} style={{ transform: 'rotate(45deg)' }} /> Agregar otro...
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map(opt => (
+                    <div
+                      key={opt}
+                      onClick={(e) => { e.stopPropagation(); handleSelect(opt); }}
+                      style={{
+                        padding: '8px 10px',
+                        fontSize: '13px',
+                        color: value === opt ? '#86efac' : '#fff',
+                        background: value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent',
+                        cursor: 'pointer',
+                        borderRadius: '6px',
+                        margin: '2px 0'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                      onMouseLeave={e => e.currentTarget.style.background = value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent'}
+                    >
+                      {opt}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '12px', textAlign: 'center', color: 'var(--gris)', fontSize: '12px' }}>
+                    Sin resultados
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes selectFade {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };
@@ -282,16 +516,21 @@ const RegistroModal = memo(function RegistroModal({
                 }} />
               </Field>
               <Field label="Analista *">
-                <select className="form-select" value={form.analista || ANALISTAS[0]} onChange={e => set('analista', e.target.value)}>
-                  {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
+                <PremiumSelect
+                  value={form.analista || ANALISTAS[0]}
+                  onChange={val => set('analista', val)}
+                  options={ANALISTAS}
+                />
               </Field>
             </div>
             <div className="form-row-3">
               <Field label="Estado *">
-                <select className="form-select" value={form.estado || 'proyeccion'} onChange={e => set('estado', e.target.value)}>
-                  {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
-                </select>
+                <PremiumSelect
+                  value={form.estado || 'proyeccion'}
+                  onChange={val => set('estado', val)}
+                  options={ESTADOS}
+                  placeholder="Seleccionar estado..."
+                />
               </Field>
               <Field label="Monto" error={errors.monto}>
                 <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
@@ -308,46 +547,43 @@ const RegistroModal = memo(function RegistroModal({
                 <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
               </Field>
               <Field label={`Tipo de cliente${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.tipo_cliente}>
-                <select className="form-select" value={form.tipo_cliente || ''} onChange={e => set('tipo_cliente', e.target.value)}>
-                  <option value="">— Sin especificar —</option>
-                  <option value="Apertura">Apertura</option>
-                  <option value="Renovacion">Renovación</option>
-                </select>
+                <PremiumSelect
+                  value={form.tipo_cliente || ''}
+                  onChange={val => set('tipo_cliente', val)}
+                  options={['Apertura', 'Renovacion']}
+                  placeholder="— Sin especificar —"
+                />
               </Field>
             </div>
             <div className="form-row-3">
               <Field label={`Acuerdo de precios${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.acuerdo_precios}>
-                <select className="form-select" value={form.acuerdo_precios || ''} onChange={e => set('acuerdo_precios', e.target.value)}>
-                  <option value="">— Sin especificar —</option>
-                  <option value="Riesgo Bajo">Riesgo Bajo</option>
-                  <option value="Riesgo Medio">Riesgo Medio</option>
-                  <option value="Premium">Premium</option>
-                  <option value="No califica">No califica</option>
-                </select>
+                <PremiumSelect
+                  value={form.acuerdo_precios || ''}
+                  onChange={val => set('acuerdo_precios', val)}
+                  options={['Riesgo Bajo', 'Riesgo Medio', 'Premium', 'No califica']}
+                  placeholder="— Sin especificar —"
+                />
               </Field>
               <Field label={`Cuotas${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.cuotas}>
                 <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
               </Field>
               <Field label={`Rango etario${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.rango_etario}>
-                <select className="form-select" value={form.rango_etario || ''} onChange={e => set('rango_etario', e.target.value)}>
-                  <option value="">— Sin especificar —</option>
-                  <option value="18-25">18-25</option>
-                  <option value="26-35">26-35</option>
-                  <option value="36-45">36-45</option>
-                  <option value="46-55">46-55</option>
-                  <option value="56-65">56-65</option>
-                  <option value="65+">65+</option>
-                </select>
+                <PremiumSelect
+                  value={form.rango_etario || ''}
+                  onChange={val => set('rango_etario', val)}
+                  options={['18-25', '26-35', '36-45', '46-55', '56-65', '65+']}
+                  placeholder="— Sin especificar —"
+                />
               </Field>
             </div>
             <div className="form-row-3">
               <Field label={`Sexo${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.sexo}>
-                <select className="form-select" value={form.sexo || ''} onChange={e => set('sexo', e.target.value)}>
-                  <option value="">— Sin especificar —</option>
-                  <option value="Masculino">Masculino</option>
-                  <option value="Femenino">Femenino</option>
-                  <option value="Otro">Otro</option>
-                </select>
+                <PremiumSelect
+                  value={form.sexo || ''}
+                  onChange={val => set('sexo', val)}
+                  options={['Masculino', 'Femenino', 'Otro']}
+                  placeholder="— Sin especificar —"
+                />
               </Field>
               <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
                 {!empleadoresLoaded ? (
@@ -367,49 +603,30 @@ const RegistroModal = memo(function RegistroModal({
                     autoFocus
                   />
                 ) : (
-                  <select
-                    className="form-select"
-                    value={empleadoresDB.includes(form.empleador || '') ? form.empleador : ''}
-                    onChange={e => {
-                      if (e.target.value === '__custom__') {
-                        setEmpleadorCustom(true);
-                        set('empleador', '');
-                      } else {
-                        set('empleador', e.target.value);
-                      }
+                  <PremiumSelect
+                    value={empleadoresDB.includes(form.empleador || '') ? (form.empleador || '') : ''}
+                    onChange={val => set('empleador', val)}
+                    isSearchable={true}
+                    placeholder="— Sin especificar —"
+                    groups={[
+                      { label: 'S.A.', items: empleadoresAgrupados.sa },
+                      { label: 'S.R.L.', items: empleadoresAgrupados.srl },
+                      { label: 'Otros', items: empleadoresAgrupados.otros }
+                    ]}
+                    onAddCustom={() => {
+                      setEmpleadorCustom(true);
+                      set('empleador', '');
                     }}
-                  >
-                    <option value="">— Sin especificar —</option>
-                    {empleadoresAgrupados.sa.length > 0 && (
-                      <optgroup label="S.A">
-                        {empleadoresAgrupados.sa.map(emp => (
-                          <option key={emp} value={emp}>{emp}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {empleadoresAgrupados.srl.length > 0 && (
-                      <optgroup label="S.R.L">
-                        {empleadoresAgrupados.srl.map(emp => (
-                          <option key={emp} value={emp}>{emp}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                    {empleadoresAgrupados.otros.length > 0 && (
-                      <optgroup label="Otros">
-                        {empleadoresAgrupados.otros.map(emp => (
-                          <option key={emp} value={emp}>{emp}</option>
-                        ))}
-                      </optgroup>
-                    )}
-                    <option value="__custom__">+ Agregar otro...</option>
-                  </select>
+                  />
                 )}
               </Field>
               <Field label={`Localidad${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
-                <select className="form-select" value={form.localidad || ''} onChange={e => set('localidad', e.target.value)}>
-                  <option value="">— Sin especificar —</option>
-                  {LOCALIDADES.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-                </select>
+                <PremiumSelect
+                  value={form.localidad || ''}
+                  onChange={val => set('localidad', val)}
+                  options={LOCALIDADES}
+                  placeholder="— Sin especificar —"
+                />
               </Field>
             </div>
             <div className="form-row">
