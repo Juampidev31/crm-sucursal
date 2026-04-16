@@ -30,6 +30,7 @@ export function logAudit(entry: AuditEntry): void {
     campo_modificado: entry.campo_modificado ?? '',
     valor_anterior: entry.valor_anterior ?? '',
     valor_nuevo: entry.valor_nuevo ?? '',
+    analista: entry.analista ?? '',
     id_analista: session?.username ?? '',
     fecha_hora: now,
   };

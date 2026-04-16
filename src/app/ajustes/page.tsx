@@ -1417,7 +1417,7 @@ export default function AjustesPage() {
                                         <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                           <User size={11} color="#666" />
                                         </div>
-                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{reg.analista || '—'}</span>
+                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{reg.analista || reg.id_analista || '—'}</span>
                                       </div>
                                     </td>
                                     <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
