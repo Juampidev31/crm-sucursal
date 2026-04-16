@@ -1105,7 +1105,6 @@ export default function AnalistasPage() {
             <div style={{ ...box, background: 'rgba(74, 222, 128, 0.03)', border: '1px solid rgba(74, 222, 128, 0.1)' }}>
               <div style={{ ...lbl, color: '#4ade80' }}><Activity size={14} color="#4ade80" /> TOTAL ESTIMADO</div>
               <div style={{ ...val, color: '#4ade80' }}>{formatCurrency(kpis.comisiones.comisionTotal)}</div>
-              <div style={{ ...sub, color: 'rgba(74, 222, 128, 0.6)' }}>Sujeto a validación administrativa</div>
             </div>
           </div>
         </div>
