@@ -142,6 +142,12 @@ export default function BulkModifyTab() {
   const [empleadoresHoy, setEmpleadoresHoy] = useState<{ cuil: string; nombre: string; empleador: string; id: string }[]>([]);
   const [loadingEmpleadoresHoy, setLoadingEmpleadoresHoy] = useState(false);
   const [contadorNuevosHoy, setContadorNuevosHoy] = useState(0);
+  const [fechaDesdeHoy, setFechaDesdeHoy] = useState<string>(() =>
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  );
+  const [fechaHastaHoy, setFechaHastaHoy] = useState<string>(() =>
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  );
 
   // ── Normalización base de empleador ──────────────────────────────────────
   const normalizar = useCallback((nombre: string): string => {
@@ -398,23 +404,20 @@ export default function BulkModifyTab() {
   }, []);
 
   // ── Registros cargados hoy (Argentina) derivados del contexto ────────────
-  // Nota: `created_at` puede ser null para registros antiguos (la columna no
-  // siempre tuvo default now()). Usamos el campo `fecha` —que el usuario
-  // completa al cargar el registro— como fuente de verdad, y caemos a
-  // `created_at` como respaldo.
+  // Solo registros con empleador cargado, filtrados por rango de fechas.
   const registrosNuevosHoy = useMemo(() => {
-    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
     const toArgDateStr = (iso: string) => {
-      // Si viene como 'YYYY-MM-DD' (columna date), comparar directo sin zona.
       if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
       return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
     };
     return registros.filter(r => {
+      if (!r.empleador || !r.empleador.trim()) return false;
       const ref = r.fecha ?? r.created_at ?? null;
       if (!ref) return false;
-      return toArgDateStr(ref) === todayStr;
+      const dateStr = toArgDateStr(ref);
+      return dateStr >= fechaDesdeHoy && dateStr <= fechaHastaHoy;
     });
-  }, [registros]);
+  }, [registros, fechaDesdeHoy, fechaHastaHoy]);
 
   // Mantener contador sincronizado con el useMemo
   useEffect(() => {
@@ -424,6 +427,11 @@ export default function BulkModifyTab() {
   // ── Cargar empleadores nuevos de hoy ─────────────────────────────────────
   const cargarEmpleadoresHoy = useCallback(() => {
     setShowEmpleadoresHoy(true);
+  }, []);
+
+  // Sincronizar lista del modal reactivamente con filtros de fecha
+  useEffect(() => {
+    if (!showEmpleadoresHoy) return;
     setEmpleadoresHoy(
       registrosNuevosHoy.map(r => ({
         id: r.id,
@@ -432,7 +440,7 @@ export default function BulkModifyTab() {
         empleador: r.empleador || '',
       }))
     );
-  }, [registrosNuevosHoy]);
+  }, [showEmpleadoresHoy, registrosNuevosHoy]);
 
 
   const corregirEmpleador = useCallback(async () => {
@@ -1633,15 +1641,43 @@ export default function BulkModifyTab() {
           >
             <div style={{
               padding: '20px 24px', borderBottom: '1px solid rgba(16,185,129,0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
             }}>
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: '#34d399', marginBottom: 4 }}>
-                  Registros creados hoy
+                  Registros con Empleador
                 </h3>
                 <p style={{ fontSize: 12, color: '#888' }}>
-                  {empleadoresHoy.length} registro{empleadoresHoy.length !== 1 ? 's' : ''} con empleador
+                  {empleadoresHoy.length} registro{empleadoresHoy.length !== 1 ? 's' : ''} con empleador cargado
                 </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Desde</span>
+                  <input
+                    type="date"
+                    value={fechaDesdeHoy}
+                    onChange={e => setFechaDesdeHoy(e.target.value)}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#ccc', borderRadius: 6, padding: '5px 8px', fontSize: 12,
+                      colorScheme: 'dark',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Hasta</span>
+                  <input
+                    type="date"
+                    value={fechaHastaHoy}
+                    onChange={e => setFechaHastaHoy(e.target.value)}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                      color: '#ccc', borderRadius: 6, padding: '5px 8px', fontSize: 12,
+                      colorScheme: 'dark',
+                    }}
+                  />
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
