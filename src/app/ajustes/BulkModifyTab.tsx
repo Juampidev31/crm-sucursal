@@ -403,11 +403,8 @@ export default function BulkModifyTab() {
     setShowEmpleadoresHoy(true);
 
     try {
-      // Obtener fecha de hoy en formato YYYY-MM-DD
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      
-      // Calcular inicio de hoy (00:00:00) y fin de hoy (23:59:59) en UTC
+      // Obtener fecha de hoy en zona horaria Argentina (UTC-3, sin DST)
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
       const startOfDay = `${todayStr}T00:00:00-03:00`;
       const endOfDay = `${todayStr}T23:59:59-03:00`;
 
@@ -422,10 +419,8 @@ export default function BulkModifyTab() {
         setToast({ message: `Error: ${error.message}`, type: 'error' });
         setEmpleadoresHoy([]);
       } else {
-        // Filtrar solo los que tienen empleador definido
-        const conEmpleador = (data || []).filter(r => r.empleador && r.empleador.trim() !== '');
-        setEmpleadoresHoy(conEmpleador);
-        setContadorNuevosHoy(conEmpleador.length);
+        setEmpleadoresHoy(data || []);
+        setContadorNuevosHoy((data || []).length);
       }
     } catch (err) {
       setToast({ message: 'Error al cargar registros de hoy', type: 'error' });
@@ -438,21 +433,18 @@ export default function BulkModifyTab() {
   // ── Obtener contador de nuevos hoy (sin cargar toda la lista) ────────────
   const actualizarContadorNuevosHoy = useCallback(async () => {
     try {
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
       const startOfDay = `${todayStr}T00:00:00-03:00`;
       const endOfDay = `${todayStr}T23:59:59-03:00`;
 
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('registros')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay)
-        .not('empleador', 'is', null)
-        .neq('empleador', '');
+        .lte('created_at', endOfDay);
 
-      if (!error && data) {
-        setContadorNuevosHoy(data.length || 0);
+      if (!error && count !== null) {
+        setContadorNuevosHoy(count);
       }
     } catch { /* silencioso */ }
   }, []);
@@ -461,8 +453,7 @@ export default function BulkModifyTab() {
   useEffect(() => {
     const actualizar = async () => {
       try {
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
         const startOfDay = `${todayStr}T00:00:00-03:00`;
         const endOfDay = `${todayStr}T23:59:59-03:00`;
 
@@ -470,9 +461,7 @@ export default function BulkModifyTab() {
           .from('registros')
           .select('*', { count: 'exact', head: true })
           .gte('created_at', startOfDay)
-          .lte('created_at', endOfDay)
-          .not('empleador', 'is', null)
-          .neq('empleador', '');
+          .lte('created_at', endOfDay);
 
         if (!error && count !== null) {
           setContadorNuevosHoy(count);
