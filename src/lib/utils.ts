@@ -120,13 +120,14 @@ export const calcularComisiones = (
     comisionCapital = ventasMensuales * coeficiente;
   }
 
+  if (comisionCapital > 0) comisionCapital += 21_742;
+
   let porcentajeAdicional = 0;
   if (pctO >= 1.00) porcentajeAdicional = 0.30;
   else if (pctO >= 0.80) porcentajeAdicional = 0.20;
   const comisionOperaciones = comisionCapital * porcentajeAdicional;
 
-  const base = comisionCapital + comisionOperaciones;
-  const comisionTotal = base > 0 ? Math.min(base, 200_000) + 21_742 : 0;
+  const comisionTotal = comisionCapital > 0 ? Math.min(comisionCapital + comisionOperaciones, 200_000) : 0;
 
   return {
     comisionCapital,
