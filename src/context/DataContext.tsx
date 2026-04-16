@@ -1,10 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig } from '@/types';
 
 export type { Objetivo, DiasConfig, AlertaConfig };
+
+export type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 
 export interface ReminderAlertData {
   id: string;
@@ -24,21 +26,29 @@ interface DataCtx {
   loading: boolean;
   pendingReminders: number;
   reminderAlert: ReminderAlertData | null;
-  setRegistros: React.Dispatch<React.SetStateAction<Registro[]>>;
-  setObjetivos: React.Dispatch<React.SetStateAction<Objetivo[]>>;
-  setDiasConfig: React.Dispatch<React.SetStateAction<DiasConfig[]>>;
-  setAlertasConfig: React.Dispatch<React.SetStateAction<AlertaConfig[]>>;
-  setHistoricoVentas: React.Dispatch<React.SetStateAction<HistoricoVenta[]>>;
-  setPendingReminders: React.Dispatch<React.SetStateAction<number>>;
+  // Acciones atómicas (local + broadcast) para mutaciones de un item.
+  applyRegistroChange: (type: ChangeType, registro: Registro) => void;
+  applyObjetivoChange: (type: ChangeType, objetivo: Objetivo) => void;
+  applyDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
+  applyAlertasConfigChange: (type: ChangeType, config: AlertaConfig) => void;
+  applyHistoricoChange: (type: ChangeType, historico: HistoricoVenta) => void;
+  // Mutadores locales (sin broadcast) para casos bulk/full-replace.
+  mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
+  mutateObjetivos: (mapper: (prev: Objetivo[]) => Objetivo[]) => void;
+  mutateDiasConfig: (mapper: (prev: DiasConfig[]) => DiasConfig[]) => void;
+  mutateAlertasConfig: (mapper: (prev: AlertaConfig[]) => AlertaConfig[]) => void;
+  mutateHistoricoVentas: (mapper: (prev: HistoricoVenta[]) => HistoricoVenta[]) => void;
+  adjustPendingReminders: (delta: number) => void;
+  // Acciones ya existentes
   clearReminderAlert: () => void;
   markReminderCompleted: (id: string) => Promise<void>;
   refresh: (silent?: boolean) => void;
-  pushRegistroChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => void;
-  pushObjetivosChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', objetivo: Objetivo) => void;
-  pushDiasConfigChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', config: DiasConfig) => void;
-  pushAlertasConfigChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', config: AlertaConfig) => void;
-  pushHistoricoChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', historico: HistoricoVenta) => void;
-  pushRecordatorioChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', recordatorio: Recordatorio) => void;
+  pushRegistroChange: (type: ChangeType, registro: Registro) => void;
+  pushObjetivosChange: (type: ChangeType, objetivo: Objetivo) => void;
+  pushDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
+  pushAlertasConfigChange: (type: ChangeType, config: AlertaConfig) => void;
+  pushHistoricoChange: (type: ChangeType, historico: HistoricoVenta) => void;
+  pushRecordatorioChange: (type: ChangeType, recordatorio: Recordatorio) => void;
   pushBulkRefresh: () => void;
 }
 
@@ -154,6 +164,95 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     broadcastRef.current?.send({ type: 'broadcast', event: 'bulk_refresh', payload: {} });
   }, []);
 
+  // ── Mutadores locales (sin broadcast) ──────────────────────────────────────
+
+  const mutateRegistros = useCallback((mapper: (prev: Registro[]) => Registro[]) => {
+    setRegistros(mapper);
+  }, []);
+
+  const mutateObjetivos = useCallback((mapper: (prev: Objetivo[]) => Objetivo[]) => {
+    setObjetivos(mapper);
+  }, []);
+
+  const mutateDiasConfig = useCallback((mapper: (prev: DiasConfig[]) => DiasConfig[]) => {
+    setDiasConfig(mapper);
+  }, []);
+
+  const mutateAlertasConfig = useCallback((mapper: (prev: AlertaConfig[]) => AlertaConfig[]) => {
+    setAlertasConfig(mapper);
+  }, []);
+
+  const mutateHistoricoVentas = useCallback((mapper: (prev: HistoricoVenta[]) => HistoricoVenta[]) => {
+    setHistoricoVentas(mapper);
+  }, []);
+
+  const adjustPendingReminders = useCallback((delta: number) => {
+    setPendingReminders(n => Math.max(0, n + delta));
+  }, []);
+
+  // ── Acciones atómicas: actualizan estado local + broadcastean ──────────────
+
+  const applyRegistroChange = useCallback((type: ChangeType, registro: Registro) => {
+    setRegistros(prev => {
+      switch (type) {
+        case 'INSERT': {
+          const idx = prev.findIndex(r => r.id === registro.id);
+          if (idx >= 0) { const next = [...prev]; next[idx] = registro; return next; }
+          return [registro, ...prev];
+        }
+        case 'UPDATE':
+          return prev.map(r => r.id === registro.id ? registro : r);
+        case 'DELETE':
+          return prev.filter(r => r.id !== registro.id);
+      }
+    });
+    pushRegistroChange(type, registro);
+  }, [pushRegistroChange]);
+
+  const applyObjetivoChange = useCallback((type: ChangeType, objetivo: Objetivo) => {
+    setObjetivos(prev => {
+      if (type === 'DELETE') {
+        return prev.filter(o => !(o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio));
+      }
+      const exists = prev.some(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio);
+      if (exists) return prev.map(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio ? objetivo : o);
+      return [...prev, objetivo];
+    });
+    pushObjetivosChange(type, objetivo);
+  }, [pushObjetivosChange]);
+
+  const applyDiasConfigChange = useCallback((type: ChangeType, config: DiasConfig) => {
+    setDiasConfig(prev => {
+      if (type === 'DELETE') return prev.filter(d => d.analista !== config.analista);
+      return prev.some(d => d.analista === config.analista)
+        ? prev.map(d => d.analista === config.analista ? config : d)
+        : [...prev, config];
+    });
+    pushDiasConfigChange(type, config);
+  }, [pushDiasConfigChange]);
+
+  const applyAlertasConfigChange = useCallback((type: ChangeType, config: AlertaConfig) => {
+    setAlertasConfig(prev => {
+      if (type === 'DELETE') return prev.filter(a => !(a.nombre === config.nombre && a.estado === config.estado));
+      const exists = prev.some(a => a.nombre === config.nombre && a.estado === config.estado);
+      if (exists) return prev.map(a => a.nombre === config.nombre && a.estado === config.estado ? config : a);
+      return [...prev, config];
+    });
+    pushAlertasConfigChange(type, config);
+  }, [pushAlertasConfigChange]);
+
+  const applyHistoricoChange = useCallback((type: ChangeType, historico: HistoricoVenta) => {
+    setHistoricoVentas(prev => {
+      if (type === 'DELETE') {
+        return prev.filter(h => !(h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes));
+      }
+      const exists = prev.some(h => h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes);
+      if (exists) return prev.map(h => h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes ? historico : h);
+      return [...prev, historico];
+    });
+    pushHistoricoChange(type, historico);
+  }, [pushHistoricoChange]);
+
   // ── Canal único de broadcast (reemplaza 6 canales separados) ───────────────
 
   useEffect(() => {
@@ -231,38 +330,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return () => { supabase.removeChannel(bc); };
   }, []);
 
-  // ── Canal único de postgres_changes ────────────────────────────────────────
-  // NOTA: se usa un solo handler * por tabla para evitar doble-disparo.
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('crm-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recordatorios' }, () => {
-        // Recalcular el contador de pendientes consultando directo a la BD
-        supabase
-          .from('recordatorios')
-          .select('*', { count: 'exact', head: true })
-          .eq('mostrado', false)
-          .then(({ count }) => setPendingReminders(count || 0));
-        checkDueRef.current();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'objetivos' }, () => {
-        refreshRef.current(true);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dias_habiles_config' }, () => {
-        refreshRef.current(true);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_ventas' }, () => {
-        refreshRef.current(true);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'alertas_config' }, () => {
-        refreshRef.current(true);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
   // Verificar recordatorios vencidos al cargar y cada 60 segundos
   useEffect(() => {
     checkDueReminders();
@@ -270,18 +337,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [checkDueReminders]);
 
-  return (
-    <DataContext.Provider value={{
-      registros, objetivos, diasConfig, historicoVentas, alertasConfig,
-      loading, pendingReminders, reminderAlert,
-      setRegistros, setObjetivos, setDiasConfig, setAlertasConfig, setHistoricoVentas, setPendingReminders,
-      clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange,
-      pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
-      pushRecordatorioChange, pushBulkRefresh
-    }}>
-      {children}
-    </DataContext.Provider>
-  );
+  const value = useMemo<DataCtx>(() => ({
+    registros, objetivos, diasConfig, historicoVentas, alertasConfig,
+    loading, pendingReminders, reminderAlert,
+    applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
+    applyAlertasConfigChange, applyHistoricoChange,
+    mutateRegistros, mutateObjetivos, mutateDiasConfig,
+    mutateAlertasConfig, mutateHistoricoVentas, adjustPendingReminders,
+    clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange,
+    pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
+    pushRecordatorioChange, pushBulkRefresh,
+  }), [
+    registros, objetivos, diasConfig, historicoVentas, alertasConfig,
+    loading, pendingReminders, reminderAlert,
+    applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
+    applyAlertasConfigChange, applyHistoricoChange,
+    mutateRegistros, mutateObjetivos, mutateDiasConfig,
+    mutateAlertasConfig, mutateHistoricoVentas, adjustPendingReminders,
+    clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange,
+    pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
+    pushRecordatorioChange, pushBulkRefresh,
+  ]);
+
+  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
 export function useData() {

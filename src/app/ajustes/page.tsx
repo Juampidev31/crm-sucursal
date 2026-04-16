@@ -60,10 +60,10 @@ export default function AjustesPage() {
   const { isAdmin } = useAuth();
   const {
     registros: ctxRegistros,
-    alertasConfig: ctxAlertas, setAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
-    diasConfig: ctxDias, setDiasConfig: setCtxDias, pushDiasConfigChange,
-    historicoVentas: ctxHistorico, setHistoricoVentas: setCtxHistorico, pushHistoricoChange,
-    objetivos: ctxObjetivos, setObjetivos: setCtxObjetivos, pushObjetivosChange
+    alertasConfig: ctxAlertas, mutateAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
+    diasConfig: ctxDias, mutateDiasConfig: setCtxDias, pushDiasConfigChange,
+    historicoVentas: ctxHistorico, mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange,
+    objetivos: ctxObjetivos, mutateObjetivos: setCtxObjetivos, pushObjetivosChange
   } = useData();
 
   const router = useRouter();
@@ -150,7 +150,7 @@ export default function AjustesPage() {
       }
 
       // Actualizar contexto y enviar broadcast
-      setCtxAlertas([...alertasConfig]);
+      setCtxAlertas(() => [...alertasConfig]);
       alertasConfig.forEach(a => pushAlertasConfigChange('UPDATE', a));
 
       showSuccess('Configuración de alertas guardada');

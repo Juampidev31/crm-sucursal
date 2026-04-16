@@ -17,7 +17,7 @@ type TabType = 'pendientes' | 'completados';
 
 export default function RecordatoriosPage() {
   const { user } = useAuth();
-  const { setPendingReminders, pushRecordatorioChange } = useData();
+  const { adjustPendingReminders, pushRecordatorioChange } = useData();
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabType>('pendientes');
@@ -55,12 +55,12 @@ export default function RecordatoriosPage() {
   const handleMarcarCompletado = async (id: string) => {
     const rec = recordatorios.find(r => r.id === id);
     setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: true } : r));
-    setPendingReminders(n => Math.max(0, n - 1));
+    adjustPendingReminders(-1);
     showToast('Marcado como completado', 'success');
     const { error } = await supabase.from('recordatorios').update({ mostrado: true }).eq('id', id);
     if (error) {
       setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: false } : r));
-      setPendingReminders(n => n + 1);
+      adjustPendingReminders(1);
       showToast('Error al actualizar', 'error');
     } else {
       if (rec) pushRecordatorioChange('UPDATE', { ...rec, mostrado: true });
@@ -73,12 +73,12 @@ export default function RecordatoriosPage() {
     const backup = recordatorios.find(r => r.id === id);
     const wasPending = backup && !backup.mostrado;
     setRecordatorios(prev => prev.filter(r => r.id !== id));
-    if (wasPending) setPendingReminders(n => Math.max(0, n - 1));
+    if (wasPending) adjustPendingReminders(-1);
     showToast('Eliminado', 'success');
     const { error } = await supabase.from('recordatorios').delete().eq('id', id);
     if (error && backup) {
       setRecordatorios(prev => [...prev, backup].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora)));
-      if (wasPending) setPendingReminders(n => n + 1);
+      if (wasPending) adjustPendingReminders(1);
       showToast('Error al eliminar', 'error');
     } else {
       if (backup) pushRecordatorioChange('DELETE', backup);

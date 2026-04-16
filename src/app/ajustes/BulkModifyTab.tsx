@@ -87,7 +87,7 @@ export default function BulkModifyTab() {
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { registros, setRegistros, pushBulkRefresh } = useData();
+  const { registros, mutateRegistros, pushBulkRefresh } = useData();
 
   // Derivar datos de filtros directamente de registros (reactivo)
   const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);
@@ -471,7 +471,7 @@ export default function BulkModifyTab() {
       setEmpleadorCorreccion('');
 
       // Optimistic update: actualizar registros en DataContext directamente
-      setRegistros(prev => prev.map(r =>
+      mutateRegistros(prev => prev.map(r =>
         oldVariants.includes(r.empleador ?? '') ? { ...r, empleador: correctedName } : r
       ));
 
@@ -496,7 +496,7 @@ export default function BulkModifyTab() {
       // Broadcast para otras pestañas
       pushBulkRefresh();
     }
-  }, [empleadoresSeleccionados, empleadorCorreccion, setRegistros, pushBulkRefresh, modalOpen, modalRegistros, modalGrupo, variantesConDuplicados, cargarRegistrosGrupo]);
+  }, [empleadoresSeleccionados, empleadorCorreccion, mutateRegistros, pushBulkRefresh, modalOpen, modalRegistros, modalGrupo, variantesConDuplicados, cargarRegistrosGrupo]);
 
 
   useEffect(() => {
