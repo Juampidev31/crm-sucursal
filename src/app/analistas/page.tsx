@@ -799,16 +799,16 @@ export default function AnalistasPage() {
           boxWidth: 8,
           boxHeight: 8,
           padding: 20,
-          font: { size: 11, weight: 'bold' },
+          font: { size: 11, weight: 'bold' as const },
           usePointStyle: true,
-          pointStyle: 'circle'
+          pointStyle: 'circle' as const
         }
       },
       tooltip: {
         backgroundColor: 'rgba(10, 10, 10, 0.95)',
         borderColor: 'rgba(255,255,255,0.1)',
         borderWidth: 1,
-        titleFont: { family: 'Outfit', size: 14, weight: '900' as const },
+        titleFont: { family: 'Outfit', size: 14, weight: 'bold' as const },
         bodyFont: { family: 'Outfit', size: 12 },
         padding: 16,
         cornerRadius: 12,
@@ -840,13 +840,13 @@ export default function AnalistasPage() {
     scales: {
       x: {
         title: { display: false },
-        ticks: { color: '#666', font: { size: 10, weight: '600' }, maxTicksLimit: 15, autoSkipPadding: 10 },
+        ticks: { color: '#666', font: { size: 10, weight: 600 }, maxTicksLimit: 15, autoSkipPadding: 10 },
         grid: { display: false }
       },
       y: {
         ticks: {
           color: '#666',
-          font: { size: 10, weight: '600' },
+          font: { size: 10, weight: 600 },
           callback: (v: any) => `$${numFmt.format(Number(v) / 1000)}K`
         },
         grid: { color: 'rgba(255, 255, 255, 0.03)', drawBorder: false }
