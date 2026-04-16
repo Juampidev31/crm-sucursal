@@ -12,15 +12,15 @@ export interface AuditEntry {
   analista?: string;
 }
 
-// Canal singleton para broadcast en tiempo real — se suscribe al importar el módulo
-const auditBroadcastChannel = supabase
-  .channel('auditoria-live', { config: { broadcast: { self: true } } })
-  .subscribe();
-
 /**
  * Escribe una entrada de auditoría en la tabla `auditoria` y la difunde
  * por broadcast para que la tab de Auditoría se actualice en tiempo real.
  * Fire-and-forget: no bloquea la UI (no usar await).
+ *
+ * NOTA: en lugar de un canal singleton (que creaba conflictos de nombre con
+ * el canal receptor en ajustes/page.tsx), se usa el canal efímero de Supabase
+ * que ya está suscripto en ajustes — el evento se transmite al mismo nombre
+ * de canal 'auditoria-live' y Supabase lo rutea correctamente.
  */
 export function logAudit(entry: AuditEntry): void {
   const session = getSession();
@@ -40,10 +40,22 @@ export function logAudit(entry: AuditEntry): void {
       return;
     }
     const inserted = data?.[0] ?? { ...payload, fecha_hora: now };
-    auditBroadcastChannel.send({
-      type: 'broadcast',
-      event: 'auditoria_insert',
-      payload: { entry: inserted },
-    });
+
+    // Emitir el evento por el canal 'auditoria-live'.
+    // Supabase permite enviar a un canal aunque no estés suscripto desde este
+    // cliente — el receptor en ajustes/page.tsx lo capturará.
+    const bc = supabase
+      .channel('auditoria-live', { config: { broadcast: { self: true } } })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          bc.send({
+            type: 'broadcast',
+            event: 'auditoria_insert',
+            payload: { entry: inserted },
+          }).finally(() => {
+            supabase.removeChannel(bc);
+          });
+        }
+      });
   });
 }

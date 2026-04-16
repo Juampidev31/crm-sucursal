@@ -231,18 +231,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return () => { supabase.removeChannel(bc); };
   }, []);
 
-  // ── Canal único de postgres_changes (reemplaza 2 canales separados) ────────
+  // ── Canal único de postgres_changes ────────────────────────────────────────
+  // NOTA: se usa un solo handler * por tabla para evitar doble-disparo.
 
   useEffect(() => {
     const channel = supabase
       .channel('crm-realtime')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'recordatorios' }, (payload) => {
-        const nuevo = payload.new as { mostrado?: boolean };
-        if (nuevo.mostrado) setPendingReminders(n => Math.max(0, n - 1));
-        checkDueRef.current();
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'recordatorios' }, () => {
-        setPendingReminders(n => Math.max(0, n - 1));
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recordatorios' }, () => {
+        // Recalcular el contador de pendientes consultando directo a la BD
+        supabase
+          .from('recordatorios')
+          .select('*', { count: 'exact', head: true })
+          .eq('mostrado', false)
+          .then(({ count }) => setPendingReminders(count || 0));
         checkDueRef.current();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'objetivos' }, () => {
@@ -256,14 +257,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'alertas_config' }, () => {
         refreshRef.current(true);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'recordatorios' }, () => {
-        supabase
-          .from('recordatorios')
-          .select('*', { count: 'exact', head: true })
-          .eq('mostrado', false)
-          .then(({ count }) => setPendingReminders(count || 0));
-        checkDueRef.current();
       })
       .subscribe();
 
