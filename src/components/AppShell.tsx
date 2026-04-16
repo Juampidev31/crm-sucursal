@@ -9,6 +9,46 @@ import Sidebar from './Sidebar';
 import { Bell, X, AlertCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
+// Toast global para errores reportados desde DataContext
+const DataErrorToast = () => {
+  const { lastError, clearError } = useData();
+
+  useEffect(() => {
+    if (!lastError) return;
+    const t = setTimeout(() => clearError(), 6000);
+    return () => clearTimeout(t);
+  }, [lastError, clearError]);
+
+  if (!lastError) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: '24px', left: '24px', zIndex: 1001,
+      background: '#0a0a0a', color: '#fff', padding: '14px 18px',
+      borderRadius: '12px', boxShadow: '0 8px 40px rgba(0,0,0,0.8)',
+      display: 'flex', alignItems: 'flex-start', gap: '14px', maxWidth: '420px',
+      animation: 'slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderLeft: '3px solid var(--rojo)',
+    }}>
+      <div style={{
+        width: '32px', height: '32px', background: 'rgba(220,53,69,0.1)',
+        borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        <AlertCircle size={16} style={{ color: 'var(--rojo)' }} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>Error al sincronizar datos</div>
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '2px', fontFamily: 'monospace' }}>{lastError.scope}</div>
+        <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px', wordBreak: 'break-word' }}>{lastError.message}</div>
+      </div>
+      <button onClick={clearError} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', flexShrink: 0 }}>
+        <X size={16} />
+      </button>
+    </div>
+  );
+};
+
 // Componente para avisos de recordatorios pendientes
 const ReminderAlertPopup = () => {
   const { pendingReminders } = useData();
@@ -143,6 +183,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </main>
           </div>
           <ReminderAlertPopup />
+          <DataErrorToast />
         </div>
       </FilterProvider>
     </DataProvider>

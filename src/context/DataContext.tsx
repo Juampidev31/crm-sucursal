@@ -17,6 +17,12 @@ export interface ReminderAlertData {
   estado?: string;
 }
 
+export interface DataErrorState {
+  scope: string;
+  message: string;
+  ts: number;
+}
+
 interface DataCtx {
   registros: Registro[];
   objetivos: Objetivo[];
@@ -26,6 +32,8 @@ interface DataCtx {
   loading: boolean;
   pendingReminders: number;
   reminderAlert: ReminderAlertData | null;
+  lastError: DataErrorState | null;
+  clearError: () => void;
   // Acciones atómicas (local + broadcast) para mutaciones de un item.
   applyRegistroChange: (type: ChangeType, registro: Registro) => void;
   applyObjetivoChange: (type: ChangeType, objetivo: Objetivo) => void;
@@ -63,9 +71,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [pendingReminders, setPendingReminders] = useState(0);
   const [reminderAlert, setReminderAlert] = useState<ReminderAlertData | null>(null);
+  const [lastError, setLastError] = useState<DataErrorState | null>(null);
   const initialized = useRef(false);
   const shownIds = useRef(new Set<string>());
   const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const reportError = useCallback((scope: string, err: unknown) => {
+    const e = (err && typeof err === 'object') ? err as {
+      message?: string; details?: string; hint?: string; code?: string;
+    } : null;
+    const message = err instanceof Error
+      ? err.message
+      : (e?.message || e?.details || e?.hint || e?.code || 'Error desconocido');
+    // JSON.stringify con getOwnPropertyNames captura props no-enumerables (PostgrestError)
+    let dump = '';
+    try {
+      dump = err && typeof err === 'object'
+        ? JSON.stringify(err, Object.getOwnPropertyNames(err as object))
+        : String(err);
+    } catch { dump = String(err); }
+    console.error(`[DataContext/${scope}] type=${typeof err} ctor=${(err as { constructor?: { name?: string } })?.constructor?.name ?? '?'} dump=${dump}`);
+    setLastError({ scope, message, ts: Date.now() });
+  }, []);
+
+  const clearError = useCallback(() => setLastError(null), []);
 
   const clearReminderAlert = useCallback(() => {
     setReminderAlert(null);
@@ -73,13 +102,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const checkDueReminders = useCallback(async () => {
     const now = new Date().toISOString();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('recordatorios')
       .select('id, nombre, nota, fecha_hora, analista, estado')
       .eq('mostrado', false)
       .lte('fecha_hora', now)
       .order('fecha_hora', { ascending: true });
 
+    if (error) { reportError('checkDueReminders', error); return; }
     if (!data || data.length === 0) return;
     const next = data.find(r => !shownIds.current.has(r.id));
     if (next) {
@@ -89,17 +119,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         fecha_hora: next.fecha_hora, analista: next.analista, estado: next.estado,
       });
     }
-  }, []);
+  }, [reportError]);
 
   const markReminderCompleted = useCallback(async (id: string) => {
     setReminderAlert(null);
     setPendingReminders(n => Math.max(0, n - 1));
-    await supabase.from('recordatorios').update({ mostrado: true }).eq('id', id);
-  }, []);
+    const { error } = await supabase.from('recordatorios').update({ mostrado: true }).eq('id', id);
+    if (error) {
+      setPendingReminders(n => n + 1); // revertir optimista
+      reportError('markReminderCompleted', error);
+    }
+  }, [reportError]);
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
-    const [{ data: regs }, { data: objs }, { data: dias }, { count }, { data: hist }, { data: alertas }] = await Promise.all([
+    const [regsR, objsR, diasR, recR, histR, alertasR] = await Promise.all([
       supabase.from('registros').select('id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,localidad,created_at,updated_at').order('fecha', { ascending: false }).limit(2000),
       supabase.from('objetivos').select('id,analista,mes,anio,meta_ventas,meta_operaciones'),
       supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
@@ -107,14 +141,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       supabase.from('historico_ventas').select('id,analista,anio,mes,capital_real,ops_real'),
       supabase.from('alertas_config').select('id,nombre,estado,dias,mensaje,color'),
     ]);
-    if (regs) setRegistros(regs as Registro[]);
-    if (objs) setObjetivos(objs as Objetivo[]);
-    if (dias) setDiasConfig(dias as DiasConfig[]);
-    if (hist) setHistoricoVentas(hist as HistoricoVenta[]);
-    if (alertas) setAlertasConfig(alertas as AlertaConfig[]);
-    setPendingReminders(count || 0);
+    if (regsR.error) reportError('refresh:registros', regsR.error);
+    else if (regsR.data) setRegistros(regsR.data as Registro[]);
+    if (objsR.error) reportError('refresh:objetivos', objsR.error);
+    else if (objsR.data) setObjetivos(objsR.data as Objetivo[]);
+    if (diasR.error) reportError('refresh:dias_habiles_config', diasR.error);
+    else if (diasR.data) setDiasConfig(diasR.data as DiasConfig[]);
+    if (recR.error) reportError('refresh:recordatorios', recR.error);
+    else setPendingReminders(recR.count || 0);
+    if (histR.error) reportError('refresh:historico_ventas', histR.error);
+    else if (histR.data) setHistoricoVentas(histR.data as HistoricoVenta[]);
+    if (alertasR.error) reportError('refresh:alertas_config', alertasR.error);
+    else if (alertasR.data) setAlertasConfig(alertasR.data as AlertaConfig[]);
     setLoading(false);
-  }, []);
+  }, [reportError]);
 
   useEffect(() => {
     if (!initialized.current) {
@@ -339,7 +379,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<DataCtx>(() => ({
     registros, objetivos, diasConfig, historicoVentas, alertasConfig,
-    loading, pendingReminders, reminderAlert,
+    loading, pendingReminders, reminderAlert, lastError, clearError,
     applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
     mutateRegistros, mutateObjetivos, mutateDiasConfig,
@@ -349,7 +389,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     pushRecordatorioChange, pushBulkRefresh,
   }), [
     registros, objetivos, diasConfig, historicoVentas, alertasConfig,
-    loading, pendingReminders, reminderAlert,
+    loading, pendingReminders, reminderAlert, lastError, clearError,
     applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
     mutateRegistros, mutateObjetivos, mutateDiasConfig,
