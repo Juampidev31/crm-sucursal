@@ -8,6 +8,7 @@ import { FilterProvider } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
 import { Bell, X, AlertCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Toast global para errores reportados desde DataContext
 const DataErrorToast = () => {
@@ -176,10 +177,30 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               style={{
                 height: '100%',
                 overflowY: 'auto',
-                paddingTop: (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined
+                paddingTop: (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
+                position: 'relative'
               }}
             >
-              {children}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={pathname}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    ease: "easeInOut" 
+                  }}
+                  style={{ 
+                    height: '100%', 
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
             </main>
           </div>
           <ReminderAlertPopup />

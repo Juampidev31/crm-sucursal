@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   AlignJustify, BarChart2, PieChart, FileText,
-  DollarSign, Settings, Bell, Lock, LogOut, Plus, Search, X, SlidersHorizontal, Download
+  DollarSign, Settings, Bell, Lock, LogOut, Plus, SlidersHorizontal, Download
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { setSession } from '@/lib/auth';
-import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
+import { useFilter } from '@/context/FilterContext';
 
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
@@ -83,7 +83,6 @@ function SidebarDivider() {
         background: 'rgba(255,255,255,0.1)',
         borderRadius: '50%',
       }} />
-
     </div>
   );
 }
@@ -94,7 +93,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const pathname = usePathname();
   const { isAdmin, logout, refreshUser } = useAuth();
   const { pendingReminders } = useData();
-  const { filters, setFilter, limpiarFiltros, hayFiltros, setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, triggerExport, currentPage, totalResults } = useFilter();
+  const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, triggerExport, totalResults } = useFilter();
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState(false);
@@ -110,7 +109,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
     }
   }, [showAdminModal]);
 
-  // Cerrar selector de página al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (showPageSizeSelector) {
@@ -151,7 +149,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         background: '#070707',
         borderRight: '1px solid rgba(255,255,255,0.02)',
         boxShadow: 'inset -20px 0 40px rgba(0,0,0,0.5)',
-
         display: 'flex', flexDirection: 'column',
         alignItems: 'center',
         paddingTop: 24,
@@ -161,9 +158,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         position: 'relative',
       }}
     >
-
-
-      {/* + Nuevo (only on /registros) */}
       {isRegistros && (
         <>
           <div className="sidebar-icon-btn" data-label="Nuevo Registro">
@@ -203,10 +197,8 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
       <SidebarDivider />
 
-      {/* Paginación y Exportar (only on /registros) */}
       {isRegistros && (
         <>
-          {/* Selector de página */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setShowPageSizeSelector(s => !s)}
@@ -257,18 +249,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
                       cursor: 'pointer', textAlign: 'left',
                       transition: 'all 0.15s',
                     }}
-                    onMouseEnter={e => {
-                      if (pageSize !== size) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-                        e.currentTarget.style.color = '#fff';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (pageSize !== size) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#888';
-                      }
-                    }}
                   >
                     {size} filas
                   </button>
@@ -277,7 +257,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
             )}
           </div>
 
-          {/* Botón Exportar */}
           <div className="sidebar-icon-btn" data-label="Exportar CSV">
             <button
               onClick={triggerExport}
@@ -293,7 +272,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
               <Download size={22} strokeWidth={2} />
             </button>
           </div>
-
         </>
       )}
 
@@ -319,7 +297,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
       <div style={{ flex: 1 }} />
 
-      {/* Bottom: admin toggle */}
       <div style={{ padding: '0 0 32px' }}>
         {isAdmin ? (
           <button
@@ -350,58 +327,55 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         )}
       </div>
 
-      {/* Admin password modal */}
-      {
-        showAdminModal && (
-          <div
-            className="modal-overlay"
-            style={{
-              position: 'fixed', inset: 0, zIndex: 9999,
-              background: 'rgba(0,0,0,0.7)',
-              display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-              overflowY: 'auto', padding: '20px 16px',
-            }}
-            onClick={e => { if (e.target === e.currentTarget) setShowAdminModal(false); }}
-          >
-            <div style={{
-              background: '#111', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12, padding: '32px 28px', width: 320,
-              boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <Lock size={18} style={{ color: '#fff' }} />
-                <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Acceso unico JUAN PABLO</span>
-              </div>
-              <input
-                ref={passwordInputRef}
-                type="password"
-                value={adminPassword}
-                onChange={e => { setAdminPassword(e.target.value); setAdminError(false); }}
-                onKeyDown={e => { if (e.key === 'Enter') handleAdminLogin(); if (e.key === 'Escape') setShowAdminModal(false); }}
-                placeholder="Contraseña"
-                style={{
-                  width: '100%', padding: '10px 14px', borderRadius: 8,
-                  background: '#1a1a1a', border: `1px solid ${adminError ? '#e53e3e' : 'rgba(255,255,255,0.15)'}`,
-                  color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box',
-                }}
-              />
-              {adminError && (
-                <div style={{ color: '#e53e3e', fontSize: 13, marginTop: 8 }}>Contraseña incorrecta</div>
-              )}
-              <button
-                onClick={handleAdminLogin}
-                style={{
-                  marginTop: 16, width: '100%', padding: '10px',
-                  background: '#fff', color: '#000', border: 'none',
-                  borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: 'pointer',
-                }}
-              >
-                Ingresar
-              </button>
+      {showAdminModal && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+            overflowY: 'auto', padding: '20px 16px',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setShowAdminModal(false); }}
+        >
+          <div style={{
+            background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12, padding: '32px 28px', width: 320,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <Lock size={18} style={{ color: '#fff' }} />
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Acceso unico JUAN PABLO</span>
             </div>
+            <input
+              ref={passwordInputRef}
+              type="password"
+              value={adminPassword}
+              onChange={e => { setAdminPassword(e.target.value); setAdminError(false); }}
+              onKeyDown={e => { if (e.key === 'Enter') handleAdminLogin(); if (e.key === 'Escape') setShowAdminModal(false); }}
+              placeholder="Contraseña"
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: 8,
+                background: '#1a1a1a', border: `1px solid ${adminError ? '#e53e3e' : 'rgba(255,255,255,0.15)'}`,
+                color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            {adminError && (
+              <div style={{ color: '#e53e3e', fontSize: 13, marginTop: 8 }}>Contraseña incorrecta</div>
+            )}
+            <button
+              onClick={handleAdminLogin}
+              style={{
+                marginTop: 16, width: '100%', padding: '10px',
+                background: '#fff', color: '#000', border: 'none',
+                borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: 'pointer',
+              }}
+            >
+              Ingresar
+            </button>
           </div>
-        )
-      }
+        </div>
+      )}
     </aside>
   );
 }
