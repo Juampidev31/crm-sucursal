@@ -1,24 +1,46 @@
-export interface Registro {
-  id: string;
-  cuil: string;
-  nombre: string;
-  puntaje: number;
-  es_re: boolean;
-  analista: string;
-  fecha: string | null;
-  fecha_score: string | null;
-  monto: number;
-  estado: string;
-  comentarios: string;
-  tipo_cliente?: string;
-  acuerdo_precios?: string;
-  cuotas?: string;
-  rango_etario?: string;
-  sexo?: string;
-  empleador?: string;
-  localidad?: string;
-  created_at?: string;
-  updated_at?: string;
+import { z } from 'zod';
+
+// Schema runtime-validado (fuente de verdad del tipo Registro)
+// - NUMERIC de Postgres puede llegar como string → usamos z.coerce.number()
+// - Campos opcionales usan .nullish() porque Supabase devuelve null (no undefined) para NULL
+export const registroSchema = z.object({
+  id: z.string(),
+  cuil: z.string(),
+  nombre: z.string(),
+  puntaje: z.coerce.number(),
+  es_re: z.boolean(),
+  analista: z.string(),
+  fecha: z.string().nullable(),
+  fecha_score: z.string().nullable(),
+  monto: z.coerce.number(),
+  estado: z.string(),
+  comentarios: z.string().nullable().transform(v => v ?? ''),
+  tipo_cliente: z.string().nullish().transform(v => v ?? undefined),
+  acuerdo_precios: z.string().nullish().transform(v => v ?? undefined),
+  cuotas: z.string().nullish().transform(v => v ?? undefined),
+  rango_etario: z.string().nullish().transform(v => v ?? undefined),
+  sexo: z.string().nullish().transform(v => v ?? undefined),
+  empleador: z.string().nullish().transform(v => v ?? undefined),
+  localidad: z.string().nullish().transform(v => v ?? undefined),
+  created_at: z.string().nullish().transform(v => v ?? undefined),
+  updated_at: z.string().nullish().transform(v => v ?? undefined),
+});
+
+export type Registro = z.infer<typeof registroSchema>;
+
+// Valida un array de filas. Descarta inválidas e invoca onInvalid por cada falla.
+export function parseRegistros(
+  rows: unknown,
+  onInvalid?: (index: number, error: z.ZodError, row: unknown) => void,
+): Registro[] {
+  if (!Array.isArray(rows)) return [];
+  const valid: Registro[] = [];
+  rows.forEach((row, i) => {
+    const result = registroSchema.safeParse(row);
+    if (result.success) valid.push(result.data);
+    else if (onInvalid) onInvalid(i, result.error, row);
+  });
+  return valid;
 }
 
 export interface Objetivo {

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig } from '@/types';
+import { Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig, parseRegistros } from '@/types';
 
 export type { Objetivo, DiasConfig, AlertaConfig };
 
@@ -142,7 +142,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       supabase.from('alertas_config').select('id,nombre,estado,dias,mensaje,color'),
     ]);
     if (regsR.error) reportError('refresh:registros', regsR.error);
-    else if (regsR.data) setRegistros(regsR.data as Registro[]);
+    else if (regsR.data) {
+      let dropped = 0;
+      const parsed = parseRegistros(regsR.data, (i, err, row) => {
+        dropped++;
+        const rowId = (row && typeof row === 'object' && 'id' in row) ? (row as { id: unknown }).id : '?';
+        console.warn(`[DataContext] registro inválido [${i}] id=${rowId}:`, err.issues);
+      });
+      if (dropped > 0) reportError('refresh:registros', { message: `${dropped} registro(s) descartado(s) por validación — revisá consola` });
+      setRegistros(parsed);
+    }
     if (objsR.error) reportError('refresh:objetivos', objsR.error);
     else if (objsR.data) setObjetivos(objsR.data as Objetivo[]);
     if (diasR.error) reportError('refresh:dias_habiles_config', diasR.error);
