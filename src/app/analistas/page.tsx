@@ -298,6 +298,7 @@ export default function AnalistasPage() {
 
   const [mes, setMes] = useState(now.getMonth());
   const [anio, setAnio] = useState(now.getFullYear());
+  const [compararMesAnterior, setCompararMesAnterior] = useState(false);
 
   const { registros: rawRegs, objetivos: todosObjs, diasConfig: diasCfg, alertasConfig, historicoVentas, loading, setRegistrosWindowMonths } = useData();
   const todosRegs = rawRegs as unknown as Reg[];
@@ -599,6 +600,31 @@ export default function AnalistasPage() {
     });
   }, [regs, objMap, mes, anio]);
 
+  // ── Datos del mes anterior para comparación ───────────────────────
+  const datosMesAnterior = useMemo(() => {
+    const mesAnterior = mes === 0 ? 11 : mes - 1;
+    const anioAnterior = mes === 0 ? anio - 1 : anio;
+    const k = mesStr(anioAnterior, mesAnterior);
+    const lastDay = new Date(anioAnterior, mesAnterior + 1, 0).getDate();
+    
+    const ventasMes = regs.filter(r => r.fecha?.slice(0, 7) === k && esVenta(r.estado || ''));
+    let acum = 0;
+    const dailyData = Array.from({ length: lastDay }, (_, i) => {
+      const d = String(i + 1).padStart(2, '0');
+      const v = ventasMes.filter(r => r.fecha?.slice(8, 10) === d)
+        .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      acum += v;
+      return acum;
+    });
+
+    return {
+      label: CONFIG.MESES_NOMBRES[mesAnterior].substring(0, 3),
+      data: dailyData,
+      total: acum,
+      lastDay
+    };
+  }, [regs, mes, anio]);
+
   // ── Alertas y resumen de gestión ─────────────────────────────────
   const alertas = useMemo(() => {
     const now = new Date();
@@ -658,40 +684,88 @@ export default function AnalistasPage() {
 
   // ── Chart data ────────────────────────────────────────────────────
   const curvaChart = {
-    labels: curva.dias.map(String),
+    labels: curva.dias.map(d => d > 0 ? `${d}/${mes + 1}` : ''),
     datasets: [
       {
-        label: 'Venta Real',
+        label: 'Acumulado',
         data: curva.stats.map(s => s.acum),
-        borderColor: '#fff',
+        borderColor: 'rgba(34, 197, 94, 0.9)',
         backgroundColor: (context: any) => {
           const chart = context.chart;
           const { ctx, chartArea } = chart;
-          if (!chartArea) return null;
+          if (!chartArea) return 'rgba(34, 197, 94, 0.1)';
           const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
-          gradient.addColorStop(0.6, 'rgba(255, 255, 255, 0.15)');
-          gradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+          gradient.addColorStop(0, 'rgba(34, 197, 94, 0.4)');
+          gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.1)');
+          gradient.addColorStop(1, 'rgba(34, 197, 94, 0.01)');
           return gradient;
         },
         fill: true,
-        tension: 0.4,
-        borderWidth: 2,
+        tension: 0.35,
+        borderWidth: 3,
         pointRadius: curva.dias.map(d => d <= curva.diaHoy ? 4 : 0),
-        pointBackgroundColor: curva.stats.map(s => s.hasSale ? '#4ade80' : '#f87171'),
+        pointBackgroundColor: 'rgba(34, 197, 94, 1)',
         pointBorderColor: '#fff',
-        pointBorderWidth: 1.5,
-        pointHoverRadius: 6,
+        pointBorderWidth: 2,
+        pointHoverRadius: 7,
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(34, 197, 94, 1)',
+        pointHoverBorderWidth: 3,
+        animations: {
+          y: {
+            duration: 1000,
+            easing: 'easeInOutQuart',
+            from: (ctx: any) => ctx.chart.chartArea?.bottom || 500
+          }
+        }
       },
       {
         label: 'Venta Ideal',
         data: curva.referencias,
-        borderColor: 'rgba(255,255,255,0.25)',
-        borderDash: [5, 5],
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderDash: [6, 4],
         fill: false,
         tension: 0,
         pointRadius: 0,
-        borderWidth: 1.5,
+        borderWidth: 1,
+        hidden: compararMesAnterior,
+      },
+      {
+        label: 'Período anterior',
+        data: curva.dias.map((_, i) => {
+          const prevDay = i + 1;
+          if (prevDay && datosMesAnterior && prevDay <= datosMesAnterior.data.length) {
+            return datosMesAnterior.data[prevDay - 1];
+          }
+          return datosMesAnterior ? datosMesAnterior.total : 0;
+        }),
+        borderColor: 'rgba(100, 150, 255, 0.6)',
+        backgroundColor: (context: any) => {
+          const chart = context.chart;
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return 'rgba(100, 150, 255, 0.05)';
+          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          gradient.addColorStop(0, 'rgba(100, 150, 255, 0.3)');
+          gradient.addColorStop(0.5, 'rgba(100, 150, 255, 0.08)');
+          gradient.addColorStop(1, 'rgba(100, 150, 255, 0.01)');
+          return gradient;
+        },
+        fill: true,
+        tension: 0.35,
+        pointRadius: 4,
+        pointBackgroundColor: 'rgba(100, 150, 255, 0.8)',
+        pointBorderColor: 'rgba(255, 255, 255, 0.4)',
+        pointBorderWidth: 1.5,
+        pointHoverRadius: 7,
+        borderWidth: 2,
+        hidden: !compararMesAnterior,
+        animations: {
+          y: {
+            duration: 1000,
+            easing: 'easeInOutQuart',
+            from: (ctx: any) => ctx.chart.chartArea?.bottom || 500
+          }
+        }
       },
     ],
   };
@@ -700,14 +774,51 @@ export default function AnalistasPage() {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
+    animation: {
+      duration: 1200,
+      easing: 'easeInOutQuart' as const,
+      delay: (context: any) => {
+        let delay = 0;
+        if (context.type === 'data' && context.mode === 'default') {
+          delay = context.dataIndex * 25 + context.datasetIndex * 150;
+        }
+        return delay;
+      },
+    },
+    transitions: {
+      show: { animations: { y: { from: 0 }, opacity: { from: 0 } } },
+      hide: { animations: { y: { to: 0 }, opacity: { to: 0 } } }
+    },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: 'top' as const,
+        align: 'end' as const,
+        labels: {
+          color: '#aaa',
+          boxWidth: 8,
+          boxHeight: 8,
+          padding: 20,
+          font: { size: 11, weight: 'bold' },
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
       tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.9)',
-        titleFont: { family: 'Outfit', size: 14, weight: 'bold' as const },
+        backgroundColor: 'rgba(10, 10, 10, 0.95)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        titleFont: { family: 'Outfit', size: 14, weight: '900' as const },
         bodyFont: { family: 'Outfit', size: 12 },
-        padding: 12,
-        cornerRadius: 8,
+        padding: 16,
+        cornerRadius: 12,
+        displayColors: true,
+        boxPadding: 6,
+        filter: (tooltipItem: any) => {
+          if (compararMesAnterior && tooltipItem.datasetIndex === 1) return false;
+          if (!compararMesAnterior && tooltipItem.datasetIndex === 2) return false;
+          return true;
+        },
         callbacks: {
           title: (items: any[]) => `Día ${items[0].label}`,
           label: (context: any) => {
@@ -717,6 +828,7 @@ export default function AnalistasPage() {
             const idealVal = curva.referencias[dayIdx];
 
             if (isIdeal) return ` VENTA IDEAL: ${formatCurrency(val)}`;
+            if (context.datasetIndex === 2) return ` MES ANTERIOR: ${formatCurrency(val)}`;
 
             const diff = idealVal > 0 ? ((val - idealVal) / idealVal) * 100 : 0;
             const diffStr = diff >= 0 ? `(+${diff.toFixed(1)}% vs ideal)` : `(${diff.toFixed(1)}% vs ideal)`;
@@ -727,17 +839,17 @@ export default function AnalistasPage() {
     },
     scales: {
       x: {
-        title: { display: true, text: 'Día Calendario', color: '#444', font: { size: 12 } },
-        ticks: { color: '#666', font: { size: 11 } },
+        title: { display: false },
+        ticks: { color: '#666', font: { size: 10, weight: '600' }, maxTicksLimit: 15, autoSkipPadding: 10 },
         grid: { display: false }
       },
       y: {
         ticks: {
           color: '#666',
-          font: { size: 11 },
-          callback: (v: any) => `$${numFmt.format(Number(v) / 1000000)}M`
+          font: { size: 10, weight: '600' },
+          callback: (v: any) => `$${numFmt.format(Number(v) / 1000)}K`
         },
-        grid: { color: 'rgba(255,255,255,0.03)' }
+        grid: { color: 'rgba(255, 255, 255, 0.03)', drawBorder: false }
       },
     },
   };
@@ -1263,6 +1375,29 @@ export default function AnalistasPage() {
                 </div>
               </div>
             </div>
+            <button
+              onClick={() => setCompararMesAnterior(!compararMesAnterior)}
+              style={{
+                background: compararMesAnterior ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                border: `1px solid ${compararMesAnterior ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
+                color: compararMesAnterior ? '#22c55e' : '#666',
+                padding: '8px 16px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                fontWeight: 900,
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                boxShadow: compararMesAnterior ? '0 4px 20px rgba(34, 197, 94, 0.15)' : 'none'
+              }}
+            >
+              <Activity size={14} color={compararMesAnterior ? '#22c55e' : '#444'} />
+              {compararMesAnterior ? 'Comparando' : 'Comparar Mes'}
+            </button>
           </div>
           <div style={{ flex: 1, minHeight: '450px' }}>
             <Line data={curvaChart} options={curvaOpts} />
