@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { STATUS_LABEL } from '@/lib/utils';
 import { ESTADOS } from '@/context/FilterContext';
 import { CONFIG } from '@/types';
-import { useData } from '@/context/DataContext';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
   Search, ChevronDown, ChevronUp, Loader2, Trash2
@@ -87,7 +87,7 @@ export default function BulkModifyTab() {
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { registros, mutateRegistros, pushBulkRefresh } = useData();
+  const { registros, mutateRegistros, pushBulkRefresh } = useRegistros();
 
   // Derivar datos de filtros directamente de registros (reactivo)
   const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);

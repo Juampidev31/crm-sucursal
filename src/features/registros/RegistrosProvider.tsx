@@ -1,15 +1,27 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import { Registro, parseRegistros, registroSchema } from '@/types';
 
-// Schemas de payloads broadcast: wrap cada entidad con el tipo de cambio.
-// Se validan en los handlers para no consumir mensajes malformados
-// (p.ej. de clientes con versión desfasada) y solo loguean en consola.
+type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
+
+interface RegistrosCtx {
+  registros: Registro[];
+  loading: boolean;
+  registrosWindowMonths: number;
+  setRegistrosWindowMonths: (months: number) => void;
+  applyRegistroChange: (type: ChangeType, registro: Registro) => void;
+  mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
+  refresh: (silent?: boolean) => void;
+  pushBulkRefresh: () => void;
+}
+
+const RegistrosContext = createContext<RegistrosCtx | null>(null);
+
 const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
 const registroChangeSchema = z.object({ type: changeType, registro: registroSchema });
 
@@ -22,22 +34,7 @@ function validateBroadcast<T>(event: string, schema: z.ZodType<T>, payload: unkn
   return r.data;
 }
 
-export type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
-
-interface DataCtx {
-  registros: Registro[];
-  loading: boolean;
-  registrosWindowMonths: number;
-  setRegistrosWindowMonths: (months: number) => void;
-  applyRegistroChange: (type: ChangeType, registro: Registro) => void;
-  mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
-  refresh: (silent?: boolean) => void;
-  pushRegistroChange: (type: ChangeType, registro: Registro) => void;
-  pushBulkRefresh: () => void;
-}
-
-// Ventana default para la query de registros. Evita traer toda la historia
-// en cada refresh. Reportes/analistas que necesiten más pueden llamar a
+// Ventana default. Reportes/analistas que necesiten más llaman a
 // setRegistrosWindowMonths(N).
 const DEFAULT_REGISTROS_WINDOW_MONTHS = 6;
 
@@ -45,32 +42,30 @@ const DEFAULT_REGISTROS_WINDOW_MONTHS = 6;
 // esto deja ~8x de margen.
 const REGISTROS_SAFETY_LIMIT = 5000;
 
-const DataContext = createContext<DataCtx | null>(null);
-
-export function DataProvider({ children }: { children: React.ReactNode }) {
+export function RegistrosProvider({ children }: { children: React.ReactNode }) {
+  const { reportError } = useDataError();
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(true);
   const [registrosWindowMonths, setRegistrosWindowMonths] = useState<number>(DEFAULT_REGISTROS_WINDOW_MONTHS);
-  const { reportError } = useDataError();
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     const cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,localidad,created_at,updated_at';
-    let registrosQuery = supabase.from('registros').select(cols);
+    let query = supabase.from('registros').select(cols);
     if (registrosWindowMonths > 0) {
       const since = new Date();
       since.setMonth(since.getMonth() - registrosWindowMonths);
       const sinceIso = since.toISOString().slice(0, 10);
-      registrosQuery = registrosQuery.or(`fecha.gte.${sinceIso},fecha.is.null`);
+      query = query.or(`fecha.gte.${sinceIso},fecha.is.null`);
     }
-    const regsR = await registrosQuery.order('fecha', { ascending: false }).limit(REGISTROS_SAFETY_LIMIT);
-    if (regsR.error) reportError('refresh:registros', regsR.error);
-    else if (regsR.data) {
+    const { data, error } = await query.order('fecha', { ascending: false }).limit(REGISTROS_SAFETY_LIMIT);
+    if (error) reportError('refresh:registros', error);
+    else if (data) {
       let dropped = 0;
-      const parsed = parseRegistros(regsR.data, (i, err, row) => {
+      const parsed = parseRegistros(data, (i, err, row) => {
         dropped++;
         const rowId = (row && typeof row === 'object' && 'id' in row) ? (row as { id: unknown }).id : '?';
-        console.warn(`[DataContext] registro inválido [${i}] id=${rowId}:`, err.issues);
+        console.warn(`[RegistrosProvider] registro inválido [${i}] id=${rowId}:`, err.issues);
       });
       if (dropped > 0) reportError('refresh:registros', { message: `${dropped} registro(s) descartado(s) por validación — revisá consola` });
       setRegistros(parsed);
@@ -128,22 +123,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     pushRegistroChange(type, registro);
   }, [pushRegistroChange]);
 
-  const value = useMemo<DataCtx>(() => ({
-    registros, loading,
-    registrosWindowMonths, setRegistrosWindowMonths,
-    applyRegistroChange, mutateRegistros,
-    refresh, pushRegistroChange, pushBulkRefresh,
+  const value = useMemo<RegistrosCtx>(() => ({
+    registros, loading, registrosWindowMonths, setRegistrosWindowMonths,
+    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh,
   }), [
     registros, loading, registrosWindowMonths,
-    applyRegistroChange, mutateRegistros,
-    refresh, pushRegistroChange, pushBulkRefresh,
+    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh,
   ]);
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return <RegistrosContext.Provider value={value}>{children}</RegistrosContext.Provider>;
 }
 
-export function useData() {
-  const ctx = useContext(DataContext);
-  if (!ctx) throw new Error('useData must be used within DataProvider');
+export function useRegistros() {
+  const ctx = useContext(RegistrosContext);
+  if (!ctx) throw new Error('useRegistros must be used within RegistrosProvider');
   return ctx;
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { logAudit } from '@/lib/audit';
 import { formatCurrency, calcularComisiones, calcularDiasHabilesAutomaticos, getStatusLabel } from '@/lib/utils';
-import { useData } from '@/context/DataContext';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useHistorico } from '@/features/historico/HistoricoProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
@@ -303,7 +303,7 @@ export default function AnalistasPage() {
   const [anio, setAnio] = useState(now.getFullYear());
   const [compararMesAnterior, setCompararMesAnterior] = useState(false);
 
-  const { registros: rawRegs, loading, setRegistrosWindowMonths } = useData();
+  const { registros: rawRegs, loading, setRegistrosWindowMonths } = useRegistros();
   const { objetivos: todosObjs } = useObjetivos();
   const { historicoVentas } = useHistorico();
   const { diasConfig: diasCfg, alertasConfig } = useSettings();

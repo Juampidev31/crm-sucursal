@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { formatCurrency, getStatusLabel } from '@/lib/utils';
-import { useData } from '@/context/DataContext';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
@@ -43,7 +43,7 @@ const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
 export default function DashboardPage() {
   const [analista, setAnalista] = useState('');
   const [mes, setMes] = useState(mesActual);
-  const { registros: regs, loading, setRegistrosWindowMonths } = useData();
+  const { registros: regs, loading, setRegistrosWindowMonths } = useRegistros();
 
   // Métricas agrupa por mes y permite ver meses pasados → necesita 24m
   useEffect(() => { setRegistrosWindowMonths(24); }, [setRegistrosWindowMonths]);

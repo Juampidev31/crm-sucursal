@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { formatCurrency } from '@/lib/utils';
-import { useData } from '@/context/DataContext';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,7 +24,7 @@ interface Props {
 }
 
 export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
-  const { registros, loading } = useData();
+  const { registros, loading } = useRegistros();
   const [collapsed, setCollapsed] = useState(false);
 
   const semanas = useMemo(() => {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useData } from '@/context/DataContext';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useHistorico } from '@/features/historico/HistoricoProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
@@ -61,7 +61,7 @@ const ANALISTAS = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
 
 export default function AjustesPage() {
   const { isAdmin } = useAuth();
-  const { registros: ctxRegistros } = useData();
+  const { registros: ctxRegistros } = useRegistros();
   const {
     alertasConfig: ctxAlertas, mutateAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
     diasConfig: ctxDias, applyDiasConfigChange,

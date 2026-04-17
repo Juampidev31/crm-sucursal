@@ -6,7 +6,7 @@ import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, saniti
 import { Registro, Recordatorio } from '@/types';
 import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
@@ -343,7 +343,7 @@ const RegistroModal = memo(function RegistroModal({
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
   const [showComentariosModal, setShowComentariosModal] = useState(false);
   const [empleadorCustom, setEmpleadorCustom] = useState(false);
-  const { registros: allRegistros } = useData();
+  const { registros: allRegistros } = useRegistros();
 
   // Derivar empleadores reactivamente desde DataContext (se actualiza al corregir en BulkModifyTab)
   const empleadoresDB = useMemo(() =>
@@ -1039,7 +1039,7 @@ function MultiSelectDropdown({
 
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
-  const { registros, applyRegistroChange, loading, refresh, registrosWindowMonths, setRegistrosWindowMonths } = useData();
+  const { registros, applyRegistroChange, loading, refresh, registrosWindowMonths, setRegistrosWindowMonths } = useRegistros();
   const { alertasConfig } = useSettings();
   const {
     filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,

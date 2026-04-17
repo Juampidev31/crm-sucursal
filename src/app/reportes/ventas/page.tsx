@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { displayAnalista, formatCurrency, formatDate } from '@/lib/utils';
 import { CONFIG } from '@/types';
-import { useData } from '@/context/DataContext';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { Download, TrendingUp, Users, DollarSign, Hash } from 'lucide-react';
 import { SeccionEstacionalidad } from '@/components/SeccionEstacionalidad';
 import { corregirTildes } from '@/lib/correccion-tildes';
@@ -11,7 +11,7 @@ import SelectReporte from '@/components/SelectReporte';
 
 
 export default function ReporteVentasPage() {
-  const { registros: todosRegistros, loading, setRegistrosWindowMonths } = useData();
+  const { registros: todosRegistros, loading, setRegistrosWindowMonths } = useRegistros();
 
   // Reportes necesitan historia completa para comparaciones YoY y estacionalidad
   useEffect(() => { setRegistrosWindowMonths(24); }, [setRegistrosWindowMonths]);

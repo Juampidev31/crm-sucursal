@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { DataProvider } from '@/context/DataContext';
 import { ErrorProvider, useDataError } from '@/context/ErrorContext';
+import { RegistrosProvider } from '@/features/registros/RegistrosProvider';
 import { RecordatoriosProvider, useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { ObjetivosProvider } from '@/features/objetivos/ObjetivosProvider';
 import { HistoricoProvider } from '@/features/historico/HistoricoProvider';
@@ -135,7 +135,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <ErrorProvider>
-    <DataProvider>
+    <RegistrosProvider>
     <RecordatoriosProvider>
     <ObjetivosProvider>
     <HistoricoProvider>
@@ -221,7 +221,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </HistoricoProvider>
     </ObjetivosProvider>
     </RecordatoriosProvider>
-    </DataProvider>
+    </RegistrosProvider>
     </ErrorProvider>
   );
 }
