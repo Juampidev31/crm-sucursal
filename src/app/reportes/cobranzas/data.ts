@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import 'server-only';
 import { parseCSV, parsePct } from '@/lib/csv-utils';
 
 const SHEET_ID = '1RcjEoiOM4PN92fNQv0ZUy-soh7Qa98vdvys0rr9_JlM';
@@ -7,20 +7,32 @@ const SHEETS: Record<string, string> = {
   '2026': '666232440',
 };
 
-export async function GET(req: NextRequest) {
-  const year = req.nextUrl.searchParams.get('year') || '2026';
+export interface TramoRow { mes: string; objetivo: string; recupero: string; cumplimiento: string; pct: number | null; }
+export interface MorosidadRow { mes: string; current: string; currentPct: number | null; anterior: string; anteriorPct: number | null; mediaEmp: string; mediaPct: number | null; }
+export interface CobranzasData {
+  tramo90: TramoRow[];
+  tramo120: TramoRow[];
+  refin: TramoRow[];
+  morosidad: MorosidadRow[];
+  mediaEmpGlobal: string;
+  anioCurrent: string;
+  anioAnterior: string;
+}
+
+export const COBRANZAS_YEARS = Object.keys(SHEETS);
+
+export async function getCobranzasData(year: string): Promise<CobranzasData | null> {
   const gid = SHEETS[year];
-  if (!gid) return NextResponse.json({ error: 'Año inválido' }, { status: 400 });
+  if (!gid) return null;
 
   const res = await fetch(
     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`,
-    { cache: 'no-store' }
+    { cache: 'no-store' },
   );
   const text = await res.text();
   const rows = parseCSV(text);
 
-  const tramo90: object[] = [], tramo120: object[] = [], refin: object[] = [];
-
+  const tramo90: TramoRow[] = [], tramo120: TramoRow[] = [], refin: TramoRow[] = [];
   for (let i = 1; i <= 12; i++) {
     const r = rows[i];
     if (!r?.[0]) continue;
@@ -34,7 +46,7 @@ export async function GET(req: NextRequest) {
     if (rows[i][0] === 'MOROSIDAD') { morosidadStart = i; break; }
   }
 
-  const morosidad: object[] = [];
+  const morosidad: MorosidadRow[] = [];
   let mediaEmpGlobal = '', anioCurrent = '', anioAnterior = '';
 
   if (morosidadStart >= 0) {
@@ -53,5 +65,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ tramo90, tramo120, refin, morosidad, mediaEmpGlobal, anioCurrent, anioAnterior });
+  return { tramo90, tramo120, refin, morosidad, mediaEmpGlobal, anioCurrent, anioAnterior };
 }
