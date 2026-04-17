@@ -5,6 +5,7 @@ import { logAudit } from '@/lib/audit';
 import { formatCurrency, calcularComisiones, calcularDiasHabilesAutomaticos, getStatusLabel } from '@/lib/utils';
 import { useData } from '@/context/DataContext';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
+import { useHistorico } from '@/features/historico/HistoricoProvider';
 import { CONFIG, DiasConfig } from '@/types';
 import {
   Chart as ChartJS,
@@ -301,8 +302,9 @@ export default function AnalistasPage() {
   const [anio, setAnio] = useState(now.getFullYear());
   const [compararMesAnterior, setCompararMesAnterior] = useState(false);
 
-  const { registros: rawRegs, diasConfig: diasCfg, alertasConfig, historicoVentas, loading, setRegistrosWindowMonths } = useData();
+  const { registros: rawRegs, diasConfig: diasCfg, alertasConfig, loading, setRegistrosWindowMonths } = useData();
   const { objetivos: todosObjs } = useObjetivos();
+  const { historicoVentas } = useHistorico();
   const todosRegs = rawRegs as unknown as Reg[];
 
   // Analistas usa tendencias YoY y mensuales → necesita 24m de historia

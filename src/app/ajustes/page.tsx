@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useData } from '@/context/DataContext';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
+import { useHistorico } from '@/features/historico/HistoricoProvider';
 import { useToast } from '@/hooks/useToast';
 import { CONFIG, HistoricoVenta } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
@@ -63,9 +64,9 @@ export default function AjustesPage() {
     registros: ctxRegistros,
     alertasConfig: ctxAlertas, mutateAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
     diasConfig: ctxDias, applyDiasConfigChange,
-    historicoVentas: ctxHistorico, mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange,
   } = useData();
   const { objetivos: ctxObjetivos, mutateObjetivos: setCtxObjetivos, pushObjetivosChange } = useObjetivos();
+  const { historicoVentas: ctxHistorico, mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange } = useHistorico();
 
   const router = useRouter();
   const { setFilter, limpiarFiltros, toggleEstado } = useFilter();
