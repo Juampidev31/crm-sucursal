@@ -6,7 +6,7 @@ import { formatDateTime, getStatusLabel } from '@/lib/utils';
 import { logAudit } from '@/lib/audit';
 import { Recordatorio } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
+import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import {
   Bell, Check, Trash2, AlertCircle, Clock, User, Filter, RefreshCw, Calendar,
 } from 'lucide-react';
@@ -17,7 +17,7 @@ type TabType = 'pendientes' | 'completados';
 
 export default function RecordatoriosPage() {
   const { user } = useAuth();
-  const { adjustPendingReminders, pushRecordatorioChange } = useData();
+  const { adjustPendingReminders, pushRecordatorioChange } = useRecordatorios();
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabType>('pendientes');

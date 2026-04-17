@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import {
-  Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig,
+  Registro, HistoricoVenta, Objetivo, AlertaConfig, DiasConfig,
   parseRegistros, parseRows,
   registroSchema, objetivoSchema, diasConfigSchema, historicoVentaSchema, alertaConfigSchema,
 } from '@/types';
@@ -20,7 +20,6 @@ const objetivoChangeSchema = z.object({ type: changeType, objetivo: objetivoSche
 const diasConfigChangeSchema = z.object({ type: changeType, config: diasConfigSchema });
 const alertaConfigChangeSchema = z.object({ type: changeType, config: alertaConfigSchema });
 const historicoChangeSchema = z.object({ type: changeType, historico: historicoVentaSchema });
-const recordatorioChangeSchema = z.object({ type: changeType, mostrado: z.boolean().optional() });
 
 function validateBroadcast<T>(event: string, schema: z.ZodType<T>, payload: unknown): T | null {
   const r = schema.safeParse(payload);
@@ -35,15 +34,6 @@ export type { Objetivo, DiasConfig, AlertaConfig };
 
 export type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 
-export interface ReminderAlertData {
-  id: string;
-  nombre: string;
-  nota?: string;
-  fecha_hora: string;
-  analista?: string;
-  estado?: string;
-}
-
 interface DataCtx {
   registros: Registro[];
   objetivos: Objetivo[];
@@ -51,8 +41,6 @@ interface DataCtx {
   historicoVentas: HistoricoVenta[];
   alertasConfig: AlertaConfig[];
   loading: boolean;
-  pendingReminders: number;
-  reminderAlert: ReminderAlertData | null;
   registrosWindowMonths: number;
   setRegistrosWindowMonths: (months: number) => void;
   // Acciones atómicas (local + broadcast) para mutaciones de un item.
@@ -67,17 +55,12 @@ interface DataCtx {
   mutateDiasConfig: (mapper: (prev: DiasConfig[]) => DiasConfig[]) => void;
   mutateAlertasConfig: (mapper: (prev: AlertaConfig[]) => AlertaConfig[]) => void;
   mutateHistoricoVentas: (mapper: (prev: HistoricoVenta[]) => HistoricoVenta[]) => void;
-  adjustPendingReminders: (delta: number) => void;
-  // Acciones ya existentes
-  clearReminderAlert: () => void;
-  markReminderCompleted: (id: string) => Promise<void>;
   refresh: (silent?: boolean) => void;
   pushRegistroChange: (type: ChangeType, registro: Registro) => void;
   pushObjetivosChange: (type: ChangeType, objetivo: Objetivo) => void;
   pushDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
   pushAlertasConfigChange: (type: ChangeType, config: AlertaConfig) => void;
   pushHistoricoChange: (type: ChangeType, historico: HistoricoVenta) => void;
-  pushRecordatorioChange: (type: ChangeType, recordatorio: Recordatorio) => void;
   pushBulkRefresh: () => void;
 }
 
@@ -99,47 +82,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [historicoVentas, setHistoricoVentas] = useState<HistoricoVenta[]>([]);
   const [alertasConfig, setAlertasConfig] = useState<AlertaConfig[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pendingReminders, setPendingReminders] = useState(0);
-  const [reminderAlert, setReminderAlert] = useState<ReminderAlertData | null>(null);
   const [registrosWindowMonths, setRegistrosWindowMonths] = useState<number>(DEFAULT_REGISTROS_WINDOW_MONTHS);
   const initialized = useRef(false);
-  const shownIds = useRef(new Set<string>());
   const { reportError } = useDataError();
-
-  const clearReminderAlert = useCallback(() => {
-    setReminderAlert(null);
-  }, []);
-
-  const checkDueReminders = useCallback(async () => {
-    const now = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('recordatorios')
-      .select('id, nombre, nota, fecha_hora, analista, estado')
-      .eq('mostrado', false)
-      .lte('fecha_hora', now)
-      .order('fecha_hora', { ascending: true });
-
-    if (error) { reportError('checkDueReminders', error); return; }
-    if (!data || data.length === 0) return;
-    const next = data.find(r => !shownIds.current.has(r.id));
-    if (next) {
-      shownIds.current.add(next.id);
-      setReminderAlert({
-        id: next.id, nombre: next.nombre, nota: next.nota,
-        fecha_hora: next.fecha_hora, analista: next.analista, estado: next.estado,
-      });
-    }
-  }, [reportError]);
-
-  const markReminderCompleted = useCallback(async (id: string) => {
-    setReminderAlert(null);
-    setPendingReminders(n => Math.max(0, n - 1));
-    const { error } = await supabase.from('recordatorios').update({ mostrado: true }).eq('id', id);
-    if (error) {
-      setPendingReminders(n => n + 1); // revertir optimista
-      reportError('markReminderCompleted', error);
-    }
-  }, [reportError]);
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -153,11 +98,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const sinceIso = since.toISOString().slice(0, 10);
       registrosQuery = registrosQuery.or(`fecha.gte.${sinceIso},fecha.is.null`);
     }
-    const [regsR, objsR, diasR, recR, histR, alertasR] = await Promise.all([
+    const [regsR, objsR, diasR, histR, alertasR] = await Promise.all([
       registrosQuery.order('fecha', { ascending: false }).limit(REGISTROS_SAFETY_LIMIT),
       supabase.from('objetivos').select('id,analista,mes,anio,meta_ventas,meta_operaciones'),
       supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
-      supabase.from('recordatorios').select('id', { count: 'exact', head: true }).eq('mostrado', false),
       supabase.from('historico_ventas').select('id,analista,anio,mes,capital_real,ops_real'),
       supabase.from('alertas_config').select('id,nombre,estado,dias,mensaje,color'),
     ]);
@@ -191,8 +135,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     else validateAndSet<Objetivo>('objetivos', objetivoSchema, objsR.data, setObjetivos);
     if (diasR.error) reportError('refresh:dias_habiles_config', diasR.error);
     else validateAndSet<DiasConfig>('dias_habiles_config', diasConfigSchema, diasR.data, setDiasConfig);
-    if (recR.error) reportError('refresh:recordatorios', recR.error);
-    else setPendingReminders(recR.count || 0);
     if (histR.error) reportError('refresh:historico_ventas', histR.error);
     else validateAndSet<HistoricoVenta>('historico_ventas', historicoVentaSchema, histR.data, setHistoricoVentas);
     if (alertasR.error) reportError('refresh:alertas_config', alertasR.error);
@@ -208,11 +150,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
-  // Refs estables para evitar dependencias cambiantes en el effect
+  // Ref estable para evitar dependencias cambiantes en el effect
   const refreshRef = useRef(refresh);
-  const checkDueRef = useRef(checkDueReminders);
   useEffect(() => { refreshRef.current = refresh; }, [refresh]);
-  useEffect(() => { checkDueRef.current = checkDueReminders; }, [checkDueReminders]);
 
   // ── Broadcast: un canal único con 6 eventos + bulk_refresh ─────────────────
   const broadcastRef = useRealtimeBroadcast('crm-broadcast', {
@@ -278,15 +218,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setHistoricoVentas(prev => prev.filter(h => !(h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes)));
       }
     },
-    recordatorio_change: (payload) => {
-      const data = validateBroadcast('recordatorio_change', recordatorioChangeSchema, payload);
-      if (!data) return;
-      const { type, mostrado } = data;
-      if (type === 'INSERT' && !mostrado) setPendingReminders(n => n + 1);
-      else if (type === 'UPDATE' && mostrado) setPendingReminders(n => Math.max(0, n - 1));
-      else if (type === 'DELETE') setPendingReminders(n => Math.max(0, n - 1));
-      checkDueRef.current();
-    },
     bulk_refresh: () => { refreshRef.current(true); },
   });
 
@@ -316,10 +247,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     pushBroadcast('historico_change', { type, historico });
   }, [pushBroadcast]);
 
-  const pushRecordatorioChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', recordatorio: Recordatorio) => {
-    pushBroadcast('recordatorio_change', { type, recordatorio, mostrado: recordatorio.mostrado });
-  }, [pushBroadcast]);
-
   // Bulk refresh trigger - hace que todos los clientes recarguen datos
   const pushBulkRefresh = useCallback(() => {
     broadcastRef.current?.send({ type: 'broadcast', event: 'bulk_refresh', payload: {} });
@@ -345,10 +272,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const mutateHistoricoVentas = useCallback((mapper: (prev: HistoricoVenta[]) => HistoricoVenta[]) => {
     setHistoricoVentas(mapper);
-  }, []);
-
-  const adjustPendingReminders = useCallback((delta: number) => {
-    setPendingReminders(n => Math.max(0, n + delta));
   }, []);
 
   // ── Acciones atómicas: actualizan estado local + broadcastean ──────────────
@@ -414,35 +337,28 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     pushHistoricoChange(type, historico);
   }, [pushHistoricoChange]);
 
-  // Verificar recordatorios vencidos al cargar y cada 60 segundos
-  useEffect(() => {
-    checkDueReminders();
-    const interval = setInterval(checkDueReminders, 60_000);
-    return () => clearInterval(interval);
-  }, [checkDueReminders]);
-
   const value = useMemo<DataCtx>(() => ({
     registros, objetivos, diasConfig, historicoVentas, alertasConfig,
-    loading, pendingReminders, reminderAlert,
+    loading,
     registrosWindowMonths, setRegistrosWindowMonths,
     applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
     mutateRegistros, mutateObjetivos, mutateDiasConfig,
-    mutateAlertasConfig, mutateHistoricoVentas, adjustPendingReminders,
-    clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange,
+    mutateAlertasConfig, mutateHistoricoVentas,
+    refresh, pushRegistroChange,
     pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
-    pushRecordatorioChange, pushBulkRefresh,
+    pushBulkRefresh,
   }), [
     registros, objetivos, diasConfig, historicoVentas, alertasConfig,
-    loading, pendingReminders, reminderAlert,
+    loading,
     registrosWindowMonths,
     applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
     mutateRegistros, mutateObjetivos, mutateDiasConfig,
-    mutateAlertasConfig, mutateHistoricoVentas, adjustPendingReminders,
-    clearReminderAlert, markReminderCompleted, refresh, pushRegistroChange,
+    mutateAlertasConfig, mutateHistoricoVentas,
+    refresh, pushRegistroChange,
     pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
-    pushRecordatorioChange, pushBulkRefresh,
+    pushBulkRefresh,
   ]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -8,7 +8,7 @@ import {
   DollarSign, Settings, Bell, Lock, LogOut, Plus, SlidersHorizontal, Download
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useData } from '@/context/DataContext';
+import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { setSession } from '@/lib/auth';
 import { useFilter } from '@/context/FilterContext';
 
@@ -92,7 +92,7 @@ function SidebarDivider() {
 export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const pathname = usePathname();
   const { isAdmin, logout, refreshUser } = useAuth();
-  const { pendingReminders } = useData();
+  const { pendingReminders } = useRecordatorios();
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, triggerExport, totalResults } = useFilter();
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');

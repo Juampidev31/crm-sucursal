@@ -7,6 +7,7 @@ import { Registro, Recordatorio } from '@/types';
 import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
+import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
 import { corregirTildes } from '@/lib/correccion-tildes';
@@ -725,7 +726,7 @@ const RecordatorioModal = memo(function RecordatorioModal({
 }: { registro: Registro | null; onClose: (saved: boolean, newRec?: Recordatorio) => void }) {
   const [recForm, setRecForm] = useState({ nota: '', fecha: '', hora: '09:00' });
   const [saving, setSaving] = useState(false);
-  const { pushRecordatorioChange } = useData();
+  const { pushRecordatorioChange } = useRecordatorios();
 
   useEffect(() => {
     if (registro) {

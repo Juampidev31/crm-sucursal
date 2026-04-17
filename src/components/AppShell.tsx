@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { DataProvider, useData } from '@/context/DataContext';
+import { DataProvider } from '@/context/DataContext';
 import { ErrorProvider, useDataError } from '@/context/ErrorContext';
+import { RecordatoriosProvider, useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { FilterProvider } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
 import { Bell, X, AlertCircle } from 'lucide-react';
@@ -53,7 +54,7 @@ const DataErrorToast = () => {
 
 // Componente para avisos de recordatorios pendientes
 const ReminderAlertPopup = () => {
-  const { pendingReminders } = useData();
+  const { pendingReminders } = useRecordatorios();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -132,6 +133,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <ErrorProvider>
     <DataProvider>
+    <RecordatoriosProvider>
       <FilterProvider>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
           {/* Top Banner — Full Width — Hidden in Reports/Analysts */}
@@ -209,6 +211,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <DataErrorToast />
         </div>
       </FilterProvider>
+    </RecordatoriosProvider>
     </DataProvider>
     </ErrorProvider>
   );
