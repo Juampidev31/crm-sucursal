@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
+import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import {
   Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig,
   parseRegistros, parseRows,
@@ -91,7 +92,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [registrosWindowMonths, setRegistrosWindowMonths] = useState<number>(DEFAULT_REGISTROS_WINDOW_MONTHS);
   const initialized = useRef(false);
   const shownIds = useRef(new Set<string>());
-  const broadcastRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const reportError = useCallback((scope: string, err: unknown) => {
     const e = (err && typeof err === 'object') ? err as {
@@ -221,11 +221,75 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { refreshRef.current = refresh; }, [refresh]);
   useEffect(() => { checkDueRef.current = checkDueReminders; }, [checkDueReminders]);
 
+  // ── Broadcast: un canal único con 6 eventos + bulk_refresh ─────────────────
+  const broadcastRef = useRealtimeBroadcast('crm-broadcast', {
+    registro_change: (payload) => {
+      const { type, registro } = payload as { type: string; registro: Registro };
+      if (type === 'INSERT') setRegistros(prev => [registro, ...prev]);
+      else if (type === 'UPDATE') setRegistros(prev => prev.map(r => r.id === registro.id ? registro : r));
+      else if (type === 'DELETE') setRegistros(prev => prev.filter(r => r.id !== registro.id));
+    },
+    objetivos_change: (payload) => {
+      const { type, objetivo } = payload as { type: string; objetivo: Objetivo };
+      if (type === 'INSERT' || type === 'UPDATE') {
+        setObjetivos(prev => {
+          const exists = prev.some(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio);
+          if (exists) return prev.map(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio ? objetivo : o);
+          return [...prev, objetivo];
+        });
+      } else if (type === 'DELETE') {
+        setObjetivos(prev => prev.filter(o => !(o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio)));
+      }
+    },
+    dias_config_change: (payload) => {
+      const { type, config } = payload as { type: string; config: DiasConfig };
+      if (type === 'INSERT' || type === 'UPDATE') {
+        setDiasConfig(prev => prev.some(d => d.analista === config.analista)
+          ? prev.map(d => d.analista === config.analista ? config : d)
+          : [...prev, config]);
+      } else if (type === 'DELETE') {
+        setDiasConfig(prev => prev.filter(d => d.analista !== config.analista));
+      }
+    },
+    alertas_config_change: (payload) => {
+      const { type, config } = payload as { type: string; config: AlertaConfig };
+      if (type === 'INSERT' || type === 'UPDATE') {
+        setAlertasConfig(prev => {
+          const exists = prev.some(a => a.nombre === config.nombre && a.estado === config.estado);
+          if (exists) return prev.map(a => a.nombre === config.nombre && a.estado === config.estado ? config : a);
+          return [...prev, config];
+        });
+      } else if (type === 'DELETE') {
+        setAlertasConfig(prev => prev.filter(a => !(a.nombre === config.nombre && a.estado === config.estado)));
+      }
+    },
+    historico_change: (payload) => {
+      const { type, historico } = payload as { type: string; historico: HistoricoVenta };
+      if (type === 'INSERT' || type === 'UPDATE') {
+        setHistoricoVentas(prev => {
+          const exists = prev.some(h => h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes);
+          if (exists) return prev.map(h => h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes ? historico : h);
+          return [...prev, historico];
+        });
+      } else if (type === 'DELETE') {
+        setHistoricoVentas(prev => prev.filter(h => !(h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes)));
+      }
+    },
+    recordatorio_change: (payload) => {
+      const { type, mostrado } = payload as { type: string; mostrado?: boolean };
+      if (type === 'INSERT' && !mostrado) setPendingReminders(n => n + 1);
+      else if (type === 'UPDATE' && mostrado) setPendingReminders(n => Math.max(0, n - 1));
+      else if (type === 'DELETE') setPendingReminders(n => Math.max(0, n - 1));
+      checkDueRef.current();
+    },
+    bulk_refresh: () => { refreshRef.current(true); },
+  });
+
   // ── Push callbacks (envían por broadcast) ──────────────────────────────────
 
   const pushBroadcast = useCallback((event: string, payload: Record<string, unknown>) => {
     broadcastRef.current?.send({ type: 'broadcast', event, payload }).catch(() => { });
-  }, []);
+  }, [broadcastRef]);
 
   const pushRegistroChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', registro: Registro) => {
     pushBroadcast('registro_change', { type, registro });
@@ -254,7 +318,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // Bulk refresh trigger - hace que todos los clientes recarguen datos
   const pushBulkRefresh = useCallback(() => {
     broadcastRef.current?.send({ type: 'broadcast', event: 'bulk_refresh', payload: {} });
-  }, []);
+  }, [broadcastRef]);
 
   // ── Mutadores locales (sin broadcast) ──────────────────────────────────────
 
@@ -344,83 +408,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
     pushHistoricoChange(type, historico);
   }, [pushHistoricoChange]);
-
-  // ── Canal único de broadcast (reemplaza 6 canales separados) ───────────────
-
-  useEffect(() => {
-    const bc = supabase
-      .channel('crm-broadcast', { config: { broadcast: { self: false } } })
-      .on('broadcast', { event: 'registro_change' }, ({ payload }) => {
-        const { type, registro } = payload as { type: string; registro: Registro };
-        if (type === 'INSERT') setRegistros(prev => [registro, ...prev]);
-        else if (type === 'UPDATE') setRegistros(prev => prev.map(r => r.id === registro.id ? registro : r));
-        else if (type === 'DELETE') setRegistros(prev => prev.filter(r => r.id !== registro.id));
-      })
-      .on('broadcast', { event: 'objetivos_change' }, ({ payload }) => {
-        const { type, objetivo } = payload as { type: string; objetivo: Objetivo };
-        if (type === 'INSERT' || type === 'UPDATE') {
-          setObjetivos(prev => {
-            const exists = prev.some(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio);
-            if (exists) return prev.map(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio ? objetivo : o);
-            return [...prev, objetivo];
-          });
-        } else if (type === 'DELETE') {
-          setObjetivos(prev => prev.filter(o => !(o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio)));
-        }
-      })
-      .on('broadcast', { event: 'dias_config_change' }, ({ payload }) => {
-        const { type, config } = payload as { type: string; config: DiasConfig };
-        if (type === 'INSERT' || type === 'UPDATE') {
-          setDiasConfig(prev => prev.some(d => d.analista === config.analista)
-            ? prev.map(d => d.analista === config.analista ? config : d)
-            : [...prev, config]);
-        } else if (type === 'DELETE') {
-          setDiasConfig(prev => prev.filter(d => d.analista !== config.analista));
-        }
-      })
-      .on('broadcast', { event: 'alertas_config_change' }, ({ payload }) => {
-        const { type, config } = payload as { type: string; config: AlertaConfig };
-        if (type === 'INSERT' || type === 'UPDATE') {
-          setAlertasConfig(prev => {
-            const exists = prev.some(a => a.nombre === config.nombre && a.estado === config.estado);
-            if (exists) return prev.map(a => a.nombre === config.nombre && a.estado === config.estado ? config : a);
-            return [...prev, config];
-          });
-        } else if (type === 'DELETE') {
-          setAlertasConfig(prev => prev.filter(a => !(a.nombre === config.nombre && a.estado === config.estado)));
-        }
-      })
-      .on('broadcast', { event: 'historico_change' }, ({ payload }) => {
-        const { type, historico } = payload as { type: string; historico: HistoricoVenta };
-        if (type === 'INSERT' || type === 'UPDATE') {
-          setHistoricoVentas(prev => {
-            const exists = prev.some(h => h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes);
-            if (exists) return prev.map(h => h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes ? historico : h);
-            return [...prev, historico];
-          });
-        } else if (type === 'DELETE') {
-          setHistoricoVentas(prev => prev.filter(h => !(h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes)));
-        }
-      })
-      .on('broadcast', { event: 'recordatorio_change' }, ({ payload }) => {
-        const { type, mostrado } = payload as { type: string; mostrado?: boolean };
-        if (type === 'INSERT' && !mostrado) {
-          setPendingReminders(n => n + 1);
-        } else if (type === 'UPDATE' && mostrado) {
-          setPendingReminders(n => Math.max(0, n - 1));
-        } else if (type === 'DELETE') {
-          setPendingReminders(n => Math.max(0, n - 1));
-        }
-        checkDueRef.current();
-      })
-      .on('broadcast', { event: 'bulk_refresh' }, () => {
-        refreshRef.current(true);
-      })
-      .subscribe();
-
-    broadcastRef.current = bc;
-    return () => { supabase.removeChannel(bc); };
-  }, []);
 
   // Verificar recordatorios vencidos al cargar y cada 60 segundos
   useEffect(() => {
