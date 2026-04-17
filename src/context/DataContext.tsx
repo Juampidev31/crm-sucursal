@@ -6,9 +6,9 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import {
-  Registro, HistoricoVenta, Objetivo, AlertaConfig, DiasConfig,
+  Registro, HistoricoVenta, AlertaConfig, DiasConfig,
   parseRegistros, parseRows,
-  registroSchema, objetivoSchema, diasConfigSchema, historicoVentaSchema, alertaConfigSchema,
+  registroSchema, diasConfigSchema, historicoVentaSchema, alertaConfigSchema,
 } from '@/types';
 
 // Schemas de payloads broadcast: wrap cada entidad con el tipo de cambio.
@@ -16,7 +16,6 @@ import {
 // (p.ej. de clientes con versión desfasada) y solo loguean en consola.
 const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
 const registroChangeSchema = z.object({ type: changeType, registro: registroSchema });
-const objetivoChangeSchema = z.object({ type: changeType, objetivo: objetivoSchema });
 const diasConfigChangeSchema = z.object({ type: changeType, config: diasConfigSchema });
 const alertaConfigChangeSchema = z.object({ type: changeType, config: alertaConfigSchema });
 const historicoChangeSchema = z.object({ type: changeType, historico: historicoVentaSchema });
@@ -30,13 +29,12 @@ function validateBroadcast<T>(event: string, schema: z.ZodType<T>, payload: unkn
   return r.data;
 }
 
-export type { Objetivo, DiasConfig, AlertaConfig };
+export type { DiasConfig, AlertaConfig };
 
 export type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 
 interface DataCtx {
   registros: Registro[];
-  objetivos: Objetivo[];
   diasConfig: DiasConfig[];
   historicoVentas: HistoricoVenta[];
   alertasConfig: AlertaConfig[];
@@ -45,19 +43,16 @@ interface DataCtx {
   setRegistrosWindowMonths: (months: number) => void;
   // Acciones atómicas (local + broadcast) para mutaciones de un item.
   applyRegistroChange: (type: ChangeType, registro: Registro) => void;
-  applyObjetivoChange: (type: ChangeType, objetivo: Objetivo) => void;
   applyDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
   applyAlertasConfigChange: (type: ChangeType, config: AlertaConfig) => void;
   applyHistoricoChange: (type: ChangeType, historico: HistoricoVenta) => void;
   // Mutadores locales (sin broadcast) para casos bulk/full-replace.
   mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
-  mutateObjetivos: (mapper: (prev: Objetivo[]) => Objetivo[]) => void;
   mutateDiasConfig: (mapper: (prev: DiasConfig[]) => DiasConfig[]) => void;
   mutateAlertasConfig: (mapper: (prev: AlertaConfig[]) => AlertaConfig[]) => void;
   mutateHistoricoVentas: (mapper: (prev: HistoricoVenta[]) => HistoricoVenta[]) => void;
   refresh: (silent?: boolean) => void;
   pushRegistroChange: (type: ChangeType, registro: Registro) => void;
-  pushObjetivosChange: (type: ChangeType, objetivo: Objetivo) => void;
   pushDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
   pushAlertasConfigChange: (type: ChangeType, config: AlertaConfig) => void;
   pushHistoricoChange: (type: ChangeType, historico: HistoricoVenta) => void;
@@ -77,7 +72,6 @@ const DataContext = createContext<DataCtx | null>(null);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [registros, setRegistros] = useState<Registro[]>([]);
-  const [objetivos, setObjetivos] = useState<Objetivo[]>([]);
   const [diasConfig, setDiasConfig] = useState<DiasConfig[]>([]);
   const [historicoVentas, setHistoricoVentas] = useState<HistoricoVenta[]>([]);
   const [alertasConfig, setAlertasConfig] = useState<AlertaConfig[]>([]);
@@ -98,9 +92,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const sinceIso = since.toISOString().slice(0, 10);
       registrosQuery = registrosQuery.or(`fecha.gte.${sinceIso},fecha.is.null`);
     }
-    const [regsR, objsR, diasR, histR, alertasR] = await Promise.all([
+    const [regsR, diasR, histR, alertasR] = await Promise.all([
       registrosQuery.order('fecha', { ascending: false }).limit(REGISTROS_SAFETY_LIMIT),
-      supabase.from('objetivos').select('id,analista,mes,anio,meta_ventas,meta_operaciones'),
       supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
       supabase.from('historico_ventas').select('id,analista,anio,mes,capital_real,ops_real'),
       supabase.from('alertas_config').select('id,nombre,estado,dias,mensaje,color'),
@@ -131,8 +124,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (dropped > 0) reportError(`refresh:${scope}`, { message: `${dropped} fila(s) descartada(s) en ${scope} — revisá consola` });
       setter(parsed);
     };
-    if (objsR.error) reportError('refresh:objetivos', objsR.error);
-    else validateAndSet<Objetivo>('objetivos', objetivoSchema, objsR.data, setObjetivos);
     if (diasR.error) reportError('refresh:dias_habiles_config', diasR.error);
     else validateAndSet<DiasConfig>('dias_habiles_config', diasConfigSchema, diasR.data, setDiasConfig);
     if (histR.error) reportError('refresh:historico_ventas', histR.error);
@@ -163,20 +154,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (type === 'INSERT') setRegistros(prev => [registro, ...prev]);
       else if (type === 'UPDATE') setRegistros(prev => prev.map(r => r.id === registro.id ? registro : r));
       else if (type === 'DELETE') setRegistros(prev => prev.filter(r => r.id !== registro.id));
-    },
-    objetivos_change: (payload) => {
-      const data = validateBroadcast('objetivos_change', objetivoChangeSchema, payload);
-      if (!data) return;
-      const { type, objetivo } = data;
-      if (type === 'INSERT' || type === 'UPDATE') {
-        setObjetivos(prev => {
-          const exists = prev.some(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio);
-          if (exists) return prev.map(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio ? objetivo : o);
-          return [...prev, objetivo];
-        });
-      } else if (type === 'DELETE') {
-        setObjetivos(prev => prev.filter(o => !(o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio)));
-      }
     },
     dias_config_change: (payload) => {
       const data = validateBroadcast('dias_config_change', diasConfigChangeSchema, payload);
@@ -231,10 +208,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     pushBroadcast('registro_change', { type, registro });
   }, [pushBroadcast]);
 
-  const pushObjetivosChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', objetivo: Objetivo) => {
-    pushBroadcast('objetivos_change', { type, objetivo });
-  }, [pushBroadcast]);
-
   const pushDiasConfigChange = useCallback((type: 'INSERT' | 'UPDATE' | 'DELETE', config: DiasConfig) => {
     pushBroadcast('dias_config_change', { type, config });
   }, [pushBroadcast]);
@@ -256,10 +229,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const mutateRegistros = useCallback((mapper: (prev: Registro[]) => Registro[]) => {
     setRegistros(mapper);
-  }, []);
-
-  const mutateObjetivos = useCallback((mapper: (prev: Objetivo[]) => Objetivo[]) => {
-    setObjetivos(mapper);
   }, []);
 
   const mutateDiasConfig = useCallback((mapper: (prev: DiasConfig[]) => DiasConfig[]) => {
@@ -292,18 +261,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
     pushRegistroChange(type, registro);
   }, [pushRegistroChange]);
-
-  const applyObjetivoChange = useCallback((type: ChangeType, objetivo: Objetivo) => {
-    setObjetivos(prev => {
-      if (type === 'DELETE') {
-        return prev.filter(o => !(o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio));
-      }
-      const exists = prev.some(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio);
-      if (exists) return prev.map(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio ? objetivo : o);
-      return [...prev, objetivo];
-    });
-    pushObjetivosChange(type, objetivo);
-  }, [pushObjetivosChange]);
 
   const applyDiasConfigChange = useCallback((type: ChangeType, config: DiasConfig) => {
     setDiasConfig(prev => {
@@ -338,26 +295,26 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [pushHistoricoChange]);
 
   const value = useMemo<DataCtx>(() => ({
-    registros, objetivos, diasConfig, historicoVentas, alertasConfig,
+    registros, diasConfig, historicoVentas, alertasConfig,
     loading,
     registrosWindowMonths, setRegistrosWindowMonths,
-    applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
+    applyRegistroChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
-    mutateRegistros, mutateObjetivos, mutateDiasConfig,
+    mutateRegistros, mutateDiasConfig,
     mutateAlertasConfig, mutateHistoricoVentas,
     refresh, pushRegistroChange,
-    pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
+    pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
     pushBulkRefresh,
   }), [
-    registros, objetivos, diasConfig, historicoVentas, alertasConfig,
+    registros, diasConfig, historicoVentas, alertasConfig,
     loading,
     registrosWindowMonths,
-    applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
+    applyRegistroChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
-    mutateRegistros, mutateObjetivos, mutateDiasConfig,
+    mutateRegistros, mutateDiasConfig,
     mutateAlertasConfig, mutateHistoricoVentas,
     refresh, pushRegistroChange,
-    pushObjetivosChange, pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
+    pushDiasConfigChange, pushAlertasConfigChange, pushHistoricoChange,
     pushBulkRefresh,
   ]);
 

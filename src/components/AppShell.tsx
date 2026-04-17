@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { DataProvider } from '@/context/DataContext';
 import { ErrorProvider, useDataError } from '@/context/ErrorContext';
 import { RecordatoriosProvider, useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
+import { ObjetivosProvider } from '@/features/objetivos/ObjetivosProvider';
 import { FilterProvider } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
 import { Bell, X, AlertCircle } from 'lucide-react';
@@ -134,6 +135,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <ErrorProvider>
     <DataProvider>
     <RecordatoriosProvider>
+    <ObjetivosProvider>
       <FilterProvider>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
           {/* Top Banner — Full Width — Hidden in Reports/Analysts */}
@@ -211,6 +213,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <DataErrorToast />
         </div>
       </FilterProvider>
+    </ObjetivosProvider>
     </RecordatoriosProvider>
     </DataProvider>
     </ErrorProvider>
