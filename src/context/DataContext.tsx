@@ -7,8 +7,28 @@ import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import {
   Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig,
   parseRegistros, parseRows,
-  objetivoSchema, diasConfigSchema, historicoVentaSchema, alertaConfigSchema,
+  registroSchema, objetivoSchema, diasConfigSchema, historicoVentaSchema, alertaConfigSchema,
 } from '@/types';
+
+// Schemas de payloads broadcast: wrap cada entidad con el tipo de cambio.
+// Se validan en los handlers para no consumir mensajes malformados
+// (p.ej. de clientes con versión desfasada) y solo loguean en consola.
+const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
+const registroChangeSchema = z.object({ type: changeType, registro: registroSchema });
+const objetivoChangeSchema = z.object({ type: changeType, objetivo: objetivoSchema });
+const diasConfigChangeSchema = z.object({ type: changeType, config: diasConfigSchema });
+const alertaConfigChangeSchema = z.object({ type: changeType, config: alertaConfigSchema });
+const historicoChangeSchema = z.object({ type: changeType, historico: historicoVentaSchema });
+const recordatorioChangeSchema = z.object({ type: changeType, mostrado: z.boolean().optional() });
+
+function validateBroadcast<T>(event: string, schema: z.ZodType<T>, payload: unknown): T | null {
+  const r = schema.safeParse(payload);
+  if (!r.success) {
+    console.warn(`[broadcast] ${event} payload inválido:`, r.error.issues);
+    return null;
+  }
+  return r.data;
+}
 
 export type { Objetivo, DiasConfig, AlertaConfig };
 
@@ -224,13 +244,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // ── Broadcast: un canal único con 6 eventos + bulk_refresh ─────────────────
   const broadcastRef = useRealtimeBroadcast('crm-broadcast', {
     registro_change: (payload) => {
-      const { type, registro } = payload as { type: string; registro: Registro };
+      const data = validateBroadcast('registro_change', registroChangeSchema, payload);
+      if (!data) return;
+      const { type, registro } = data;
       if (type === 'INSERT') setRegistros(prev => [registro, ...prev]);
       else if (type === 'UPDATE') setRegistros(prev => prev.map(r => r.id === registro.id ? registro : r));
       else if (type === 'DELETE') setRegistros(prev => prev.filter(r => r.id !== registro.id));
     },
     objetivos_change: (payload) => {
-      const { type, objetivo } = payload as { type: string; objetivo: Objetivo };
+      const data = validateBroadcast('objetivos_change', objetivoChangeSchema, payload);
+      if (!data) return;
+      const { type, objetivo } = data;
       if (type === 'INSERT' || type === 'UPDATE') {
         setObjetivos(prev => {
           const exists = prev.some(o => o.analista === objetivo.analista && o.mes === objetivo.mes && o.anio === objetivo.anio);
@@ -242,7 +266,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
     },
     dias_config_change: (payload) => {
-      const { type, config } = payload as { type: string; config: DiasConfig };
+      const data = validateBroadcast('dias_config_change', diasConfigChangeSchema, payload);
+      if (!data) return;
+      const { type, config } = data;
       if (type === 'INSERT' || type === 'UPDATE') {
         setDiasConfig(prev => prev.some(d => d.analista === config.analista)
           ? prev.map(d => d.analista === config.analista ? config : d)
@@ -252,7 +278,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
     },
     alertas_config_change: (payload) => {
-      const { type, config } = payload as { type: string; config: AlertaConfig };
+      const data = validateBroadcast('alertas_config_change', alertaConfigChangeSchema, payload);
+      if (!data) return;
+      const { type, config } = data;
       if (type === 'INSERT' || type === 'UPDATE') {
         setAlertasConfig(prev => {
           const exists = prev.some(a => a.nombre === config.nombre && a.estado === config.estado);
@@ -264,7 +292,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
     },
     historico_change: (payload) => {
-      const { type, historico } = payload as { type: string; historico: HistoricoVenta };
+      const data = validateBroadcast('historico_change', historicoChangeSchema, payload);
+      if (!data) return;
+      const { type, historico } = data;
       if (type === 'INSERT' || type === 'UPDATE') {
         setHistoricoVentas(prev => {
           const exists = prev.some(h => h.analista === historico.analista && h.anio === historico.anio && h.mes === historico.mes);
@@ -276,7 +306,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       }
     },
     recordatorio_change: (payload) => {
-      const { type, mostrado } = payload as { type: string; mostrado?: boolean };
+      const data = validateBroadcast('recordatorio_change', recordatorioChangeSchema, payload);
+      if (!data) return;
+      const { type, mostrado } = data;
       if (type === 'INSERT' && !mostrado) setPendingReminders(n => n + 1);
       else if (type === 'UPDATE' && mostrado) setPendingReminders(n => Math.max(0, n - 1));
       else if (type === 'DELETE') setPendingReminders(n => Math.max(0, n - 1));
