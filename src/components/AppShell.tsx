@@ -4,15 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { DataProvider, useData } from '@/context/DataContext';
+import { ErrorProvider, useDataError } from '@/context/ErrorContext';
 import { FilterProvider } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
 import { Bell, X, AlertCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Toast global para errores reportados desde DataContext
+// Toast global para errores reportados desde cualquier feature/context
 const DataErrorToast = () => {
-  const { lastError, clearError } = useData();
+  const { lastError, clearError } = useDataError();
 
   useEffect(() => {
     if (!lastError) return;
@@ -129,6 +130,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <ErrorProvider>
     <DataProvider>
       <FilterProvider>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
@@ -208,5 +210,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </FilterProvider>
     </DataProvider>
+    </ErrorProvider>
   );
 }

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
+import { useDataError } from '@/context/ErrorContext';
 import {
   Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig,
   parseRegistros, parseRows,
@@ -43,12 +44,6 @@ export interface ReminderAlertData {
   estado?: string;
 }
 
-export interface DataErrorState {
-  scope: string;
-  message: string;
-  ts: number;
-}
-
 interface DataCtx {
   registros: Registro[];
   objetivos: Objetivo[];
@@ -58,8 +53,6 @@ interface DataCtx {
   loading: boolean;
   pendingReminders: number;
   reminderAlert: ReminderAlertData | null;
-  lastError: DataErrorState | null;
-  clearError: () => void;
   registrosWindowMonths: number;
   setRegistrosWindowMonths: (months: number) => void;
   // Acciones atómicas (local + broadcast) para mutaciones de un item.
@@ -108,30 +101,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [pendingReminders, setPendingReminders] = useState(0);
   const [reminderAlert, setReminderAlert] = useState<ReminderAlertData | null>(null);
-  const [lastError, setLastError] = useState<DataErrorState | null>(null);
   const [registrosWindowMonths, setRegistrosWindowMonths] = useState<number>(DEFAULT_REGISTROS_WINDOW_MONTHS);
   const initialized = useRef(false);
   const shownIds = useRef(new Set<string>());
-
-  const reportError = useCallback((scope: string, err: unknown) => {
-    const e = (err && typeof err === 'object') ? err as {
-      message?: string; details?: string; hint?: string; code?: string;
-    } : null;
-    const message = err instanceof Error
-      ? err.message
-      : (e?.message || e?.details || e?.hint || e?.code || 'Error desconocido');
-    // JSON.stringify con getOwnPropertyNames captura props no-enumerables (PostgrestError)
-    let dump = '';
-    try {
-      dump = err && typeof err === 'object'
-        ? JSON.stringify(err, Object.getOwnPropertyNames(err as object))
-        : String(err);
-    } catch { dump = String(err); }
-    console.error(`[DataContext/${scope}] type=${typeof err} ctor=${(err as { constructor?: { name?: string } })?.constructor?.name ?? '?'} dump=${dump}`);
-    setLastError({ scope, message, ts: Date.now() });
-  }, []);
-
-  const clearError = useCallback(() => setLastError(null), []);
+  const { reportError } = useDataError();
 
   const clearReminderAlert = useCallback(() => {
     setReminderAlert(null);
@@ -450,7 +423,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<DataCtx>(() => ({
     registros, objetivos, diasConfig, historicoVentas, alertasConfig,
-    loading, pendingReminders, reminderAlert, lastError, clearError,
+    loading, pendingReminders, reminderAlert,
     registrosWindowMonths, setRegistrosWindowMonths,
     applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
@@ -461,7 +434,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     pushRecordatorioChange, pushBulkRefresh,
   }), [
     registros, objetivos, diasConfig, historicoVentas, alertasConfig,
-    loading, pendingReminders, reminderAlert, lastError, clearError,
+    loading, pendingReminders, reminderAlert,
     registrosWindowMonths,
     applyRegistroChange, applyObjetivoChange, applyDiasConfigChange,
     applyAlertasConfigChange, applyHistoricoChange,
