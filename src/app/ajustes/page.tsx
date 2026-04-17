@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useData } from '@/context/DataContext';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useHistorico } from '@/features/historico/HistoricoProvider';
+import { useSettings } from '@/features/settings/SettingsProvider';
 import { useToast } from '@/hooks/useToast';
 import { CONFIG, HistoricoVenta } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
@@ -60,11 +61,11 @@ const ANALISTAS = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
 
 export default function AjustesPage() {
   const { isAdmin } = useAuth();
+  const { registros: ctxRegistros } = useData();
   const {
-    registros: ctxRegistros,
     alertasConfig: ctxAlertas, mutateAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
     diasConfig: ctxDias, applyDiasConfigChange,
-  } = useData();
+  } = useSettings();
   const { objetivos: ctxObjetivos, mutateObjetivos: setCtxObjetivos, pushObjetivosChange } = useObjetivos();
   const { historicoVentas: ctxHistorico, mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange } = useHistorico();
 

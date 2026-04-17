@@ -8,6 +8,7 @@ import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, 
 import { useAuth } from '@/context/AuthContext';
 import { useData } from '@/context/DataContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
+import { useSettings } from '@/features/settings/SettingsProvider';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
 import { corregirTildes } from '@/lib/correccion-tildes';
@@ -1038,7 +1039,8 @@ function MultiSelectDropdown({
 
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
-  const { registros, applyRegistroChange, loading, refresh, alertasConfig, registrosWindowMonths, setRegistrosWindowMonths } = useData();
+  const { registros, applyRegistroChange, loading, refresh, registrosWindowMonths, setRegistrosWindowMonths } = useData();
+  const { alertasConfig } = useSettings();
   const {
     filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
