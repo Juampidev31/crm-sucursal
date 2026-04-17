@@ -28,68 +28,89 @@ export const registroSchema = z.object({
 
 export type Registro = z.infer<typeof registroSchema>;
 
-// Valida un array de filas. Descarta inválidas e invoca onInvalid por cada falla.
-export function parseRegistros(
+// Helper genérico: valida un array de filas contra un schema, descarta inválidas.
+export function parseRows<T>(
+  schema: z.ZodType<T>,
   rows: unknown,
   onInvalid?: (index: number, error: z.ZodError, row: unknown) => void,
-): Registro[] {
+): T[] {
   if (!Array.isArray(rows)) return [];
-  const valid: Registro[] = [];
+  const valid: T[] = [];
   rows.forEach((row, i) => {
-    const result = registroSchema.safeParse(row);
+    const result = schema.safeParse(row);
     if (result.success) valid.push(result.data);
     else if (onInvalid) onInvalid(i, result.error, row);
   });
   return valid;
 }
 
-export interface Objetivo {
-  id?: string;
-  analista: string;
-  mes: number;
-  anio: number;
-  meta_ventas: number;
-  meta_operaciones: number;
+// Mantenido como alias por retrocompatibilidad con callers existentes.
+export function parseRegistros(
+  rows: unknown,
+  onInvalid?: (index: number, error: z.ZodError, row: unknown) => void,
+): Registro[] {
+  return parseRows(registroSchema, rows, onInvalid);
 }
 
-export interface AlertaConfig {
-  id?: string;
-  nombre: string;
-  estado: string;
-  dias: number;
-  mensaje: string;
-  color: string;
-}
+// ── Objetivos ─────────────────────────────────────────────────────────────────
+export const objetivoSchema = z.object({
+  id: z.string().optional(),
+  analista: z.string(),
+  mes: z.coerce.number().int(),
+  anio: z.coerce.number().int(),
+  meta_ventas: z.coerce.number(),
+  meta_operaciones: z.coerce.number(),
+});
+export type Objetivo = z.infer<typeof objetivoSchema>;
 
-export interface DiasConfig {
-  analista: string;
-  dias_habiles: number;
-  dias_transcurridos: number;
-}
+// ── AlertaConfig ──────────────────────────────────────────────────────────────
+export const alertaConfigSchema = z.object({
+  id: z.string().optional(),
+  nombre: z.string(),
+  estado: z.string(),
+  dias: z.coerce.number().int(),
+  mensaje: z.string(),
+  color: z.string(),
+});
+export type AlertaConfig = z.infer<typeof alertaConfigSchema>;
 
-export interface Recordatorio {
-  id: string;
-  registro_id: string;
-  nombre: string;
-  cuil: string;
-  analista: string;
-  estado: string;
-  nota: string;
-  fecha_hora: string;
-  creado_por: string;
-  creado_en: string;
-  mostrado: boolean;
-  comentario_registro: string;
-}
+// ── DiasConfig ────────────────────────────────────────────────────────────────
+export const diasConfigSchema = z.object({
+  analista: z.string(),
+  dias_habiles: z.coerce.number().int(),
+  dias_transcurridos: z.coerce.number().int(),
+});
+export type DiasConfig = z.infer<typeof diasConfigSchema>;
 
-export interface HistoricoVenta {
-  id?: string;
-  analista: string;
-  anio: number;
-  mes: number; // 0-11
-  capital_real: number;
-  ops_real: number;
-}
+// ── Recordatorio ──────────────────────────────────────────────────────────────
+// Campos de texto con .nullish + transform a '' para tolerar NULLs de Postgres
+// sin romper consumidores que esperan string.
+export const recordatorioSchema = z.object({
+  id: z.string(),
+  registro_id: z.string(),
+  nombre: z.string(),
+  cuil: z.string(),
+  analista: z.string(),
+  estado: z.string(),
+  nota: z.string().nullish().transform(v => v ?? ''),
+  fecha_hora: z.string(),
+  creado_por: z.string().nullish().transform(v => v ?? ''),
+  creado_en: z.string().nullish().transform(v => v ?? ''),
+  mostrado: z.boolean(),
+  comentario_registro: z.string().nullish().transform(v => v ?? ''),
+});
+export type Recordatorio = z.infer<typeof recordatorioSchema>;
+
+// ── HistoricoVenta ────────────────────────────────────────────────────────────
+export const historicoVentaSchema = z.object({
+  id: z.string().optional(),
+  analista: z.string(),
+  anio: z.coerce.number().int(),
+  mes: z.coerce.number().int(), // 0-11
+  capital_real: z.coerce.number(),
+  ops_real: z.coerce.number(),
+});
+export type HistoricoVenta = z.infer<typeof historicoVentaSchema>;
 
 export interface DiasHabilesConfig {
   id: string;

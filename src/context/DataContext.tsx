@@ -1,8 +1,13 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
-import { Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig, parseRegistros } from '@/types';
+import {
+  Registro, HistoricoVenta, Recordatorio, Objetivo, AlertaConfig, DiasConfig,
+  parseRegistros, parseRows,
+  objetivoSchema, diasConfigSchema, historicoVentaSchema, alertaConfigSchema,
+} from '@/types';
 
 export type { Objetivo, DiasConfig, AlertaConfig };
 
@@ -174,16 +179,31 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (dropped > 0) reportError('refresh:registros', { message: `${dropped} registro(s) descartado(s) por validación — revisá consola` });
       setRegistros(parsed);
     }
+    const validateAndSet = <T,>(
+      scope: string,
+      schema: z.ZodType<T>,
+      rows: unknown,
+      setter: (rows: T[]) => void,
+    ) => {
+      let dropped = 0;
+      const parsed = parseRows<T>(schema, rows, (i, err, row) => {
+        dropped++;
+        const rowId = (row && typeof row === 'object' && 'id' in row) ? (row as { id: unknown }).id : '?';
+        console.warn(`[DataContext] ${scope} inválido [${i}] id=${rowId}:`, err.issues);
+      });
+      if (dropped > 0) reportError(`refresh:${scope}`, { message: `${dropped} fila(s) descartada(s) en ${scope} — revisá consola` });
+      setter(parsed);
+    };
     if (objsR.error) reportError('refresh:objetivos', objsR.error);
-    else if (objsR.data) setObjetivos(objsR.data as Objetivo[]);
+    else validateAndSet<Objetivo>('objetivos', objetivoSchema, objsR.data, setObjetivos);
     if (diasR.error) reportError('refresh:dias_habiles_config', diasR.error);
-    else if (diasR.data) setDiasConfig(diasR.data as DiasConfig[]);
+    else validateAndSet<DiasConfig>('dias_habiles_config', diasConfigSchema, diasR.data, setDiasConfig);
     if (recR.error) reportError('refresh:recordatorios', recR.error);
     else setPendingReminders(recR.count || 0);
     if (histR.error) reportError('refresh:historico_ventas', histR.error);
-    else if (histR.data) setHistoricoVentas(histR.data as HistoricoVenta[]);
+    else validateAndSet<HistoricoVenta>('historico_ventas', historicoVentaSchema, histR.data, setHistoricoVentas);
     if (alertasR.error) reportError('refresh:alertas_config', alertasR.error);
-    else if (alertasR.data) setAlertasConfig(alertasR.data as AlertaConfig[]);
+    else validateAndSet<AlertaConfig>('alertas_config', alertaConfigSchema, alertasR.data, setAlertasConfig);
     setLoading(false);
   }, [reportError, registrosWindowMonths]);
 
