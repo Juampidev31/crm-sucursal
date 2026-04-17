@@ -77,8 +77,8 @@ export type AlertaConfig = z.infer<typeof alertaConfigSchema>;
 // ── DiasConfig ────────────────────────────────────────────────────────────────
 export const diasConfigSchema = z.object({
   analista: z.string(),
-  dias_habiles: z.coerce.number().int(),
-  dias_transcurridos: z.coerce.number().int(),
+  dias_habiles: z.coerce.number(),
+  dias_transcurridos: z.coerce.number(),
 });
 export type DiasConfig = z.infer<typeof diasConfigSchema>;
 
