@@ -98,7 +98,7 @@ export default function BulkModifyTab() {
   const allEmpleadores = useMemo(() => Array.from(new Set(registros.map(r => r.empleador).filter(Boolean))).sort() as string[], [registros]);
   const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
-  const [mostrarTodos, setMostrarTodos] = useState(false);
+  const [mostrarTodos, setMostrarTodos] = useState(true);
   const [busquedaEmpleador, setBusquedaEmpleador] = useState('');
   const [gruposDescartados, setGruposDescartados] = useState<Map<string, number>>(() => {
     if (typeof window === 'undefined') return new Map();
@@ -743,15 +743,6 @@ export default function BulkModifyTab() {
                   Restaurar {gruposDescartados.size} descartado{gruposDescartados.size > 1 ? 's' : ''}
                 </button>
               )}
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', color: '#666', cursor: 'pointer', fontWeight: 700 }}>
-                <input
-                  type="checkbox"
-                  checked={mostrarTodos}
-                  onChange={e => setMostrarTodos(e.target.checked)}
-                  style={{ cursor: 'pointer' }}
-                />
-                Mostrar todos
-              </label>
               <button
                 onClick={cargarTodosEmpleadores}
                 style={{
@@ -898,9 +889,11 @@ export default function BulkModifyTab() {
           ) : (
             <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
               <p>{busquedaEmpleador ? 'No se encontraron resultados.' : 'No se detectaron empleadores con múltiples variantes.'}</p>
-              <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
-                {busquedaEmpleador ? 'Intentá con otro término.' : 'Activá <strong>"Mostrar todos"</strong> para ver la lista completa de empleadores.'}
-              </p>
+              {busquedaEmpleador && (
+                <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
+                  Intentá con otro término.
+                </p>
+              )}
             </div>
           )}
         </div>
