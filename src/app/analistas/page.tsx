@@ -738,12 +738,12 @@ export default function AnalistasPage() {
       },
       {
         label: 'Período anterior',
-        data: curva.dias.map((_, i) => {
-          const prevDay = i + 1;
-          if (prevDay && datosMesAnterior && prevDay <= datosMesAnterior.data.length) {
-            return datosMesAnterior.data[prevDay - 1];
+        data: curva.dias.map((dia) => {
+          if (!datosMesAnterior || dia === 0) return 0;
+          if (dia <= datosMesAnterior.data.length) {
+            return datosMesAnterior.data[dia - 1];
           }
-          return datosMesAnterior ? datosMesAnterior.total : 0;
+          return datosMesAnterior.total;
         }),
         borderColor: 'rgba(100, 150, 255, 0.6)',
         backgroundColor: (context: any) => {
