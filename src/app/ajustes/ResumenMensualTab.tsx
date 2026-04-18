@@ -1018,14 +1018,14 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       porAnalista: CONFIG.ANALISTAS_DEFAULT.map(analista => {
         const v = allVentas.filter(r => r.analista === analista);
-        return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
+        return { analista, aperturas: v.filter(r => (r.estado ?? '').toLowerCase() === 'venta').length, renovaciones: v.filter(r => (r.estado ?? '').toLowerCase().includes('aprobado cc')).length };
       }),
       porAnalistaAnt: CONFIG.ANALISTAS_DEFAULT.map(analista => {
         const v = allAnt.filter(r => r.analista === analista);
-        return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
+        return { analista, aperturas: v.filter(r => (r.estado ?? '').toLowerCase() === 'venta').length, renovaciones: v.filter(r => (r.estado ?? '').toLowerCase().includes('aprobado cc')).length };
       }),
-      total: { aperturas: allVentas.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allVentas.filter(r => r.tipo_cliente === 'Renovacion').length },
-      ant: { aperturas: allAnt.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allAnt.filter(r => r.tipo_cliente === 'Renovacion').length },
+      total: { aperturas: allVentas.filter(r => (r.estado ?? '').toLowerCase() === 'venta').length, renovaciones: allVentas.filter(r => (r.estado ?? '').toLowerCase().includes('aprobado cc')).length },
+      ant: { aperturas: allAnt.filter(r => (r.estado ?? '').toLowerCase() === 'venta').length, renovaciones: allAnt.filter(r => (r.estado ?? '').toLowerCase().includes('aprobado cc')).length },
     };
   }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
 
