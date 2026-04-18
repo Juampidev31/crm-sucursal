@@ -527,18 +527,11 @@ export default function AjustesPage() {
         </div>
       )}
 
-      <header className="dashboard-header" style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--gris)', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
-            <Settings size={14} /> Sistema
-          </div>
-          <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#fff' }}>Ajustes</h1>
-        </div>
-      </header>
+      {/* Header removed to gain space */}
 
       {/* Nav Tabs */}
-      <div className="toolbar" style={{ justifyContent: 'flex-start', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <div className="toolbar" style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {[
             ...(isAdmin ? [{ id: 'alertas', label: 'Alertas', icon: Bell }] : []),
             { id: 'dias', label: 'Días Hábiles', icon: Clock },

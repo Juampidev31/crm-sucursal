@@ -154,7 +154,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               padding: '0 32px',
               zIndex: 10,
               flexShrink: 0,
-              position: 'relative'
+              position: 'relative',
+              marginBottom: '24px'
             }}>
               <div style={{
                 display: 'flex',
