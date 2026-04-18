@@ -1008,10 +1008,14 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       porAnalista: CONFIG.ANALISTAS_DEFAULT.map(analista => {
         const v = allVentas.filter(r => r.analista === analista);
-        return { analista, aperturas: v.filter(r => !r.es_re).length, renovaciones: v.filter(r => r.es_re).length };
+        return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
       }),
-      total: { aperturas: allVentas.filter(r => !r.es_re).length, renovaciones: allVentas.filter(r => r.es_re).length },
-      ant: { aperturas: allAnt.filter(r => !r.es_re).length, renovaciones: allAnt.filter(r => r.es_re).length },
+      porAnalistaAnt: CONFIG.ANALISTAS_DEFAULT.map(analista => {
+        const v = allAnt.filter(r => r.analista === analista);
+        return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
+      }),
+      total: { aperturas: allVentas.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allVentas.filter(r => r.tipo_cliente === 'Renovacion').length },
+      ant: { aperturas: allAnt.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allAnt.filter(r => r.tipo_cliente === 'Renovacion').length },
     };
   }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
 
@@ -1021,7 +1025,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => Math.round(apertVsRenData.ant.aperturas / CONFIG.ANALISTAS_DEFAULT.length)), apertVsRenData.ant.aperturas], backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: [...apertVsRenData.porAnalistaAnt.map(d => d.aperturas), apertVsRenData.ant.aperturas], backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, maxBarThickness: 50 },
       ],
     };
   }, [apertVsRenData, mesActualLabel, mesAntLabel]);
@@ -1032,7 +1036,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels,
       datasets: [
         { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], backgroundColor: '#a78bfa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: [...apertVsRenData.porAnalista.map(() => Math.round(apertVsRenData.ant.renovaciones / CONFIG.ANALISTAS_DEFAULT.length)), apertVsRenData.ant.renovaciones], backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: [...apertVsRenData.porAnalistaAnt.map(d => d.renovaciones), apertVsRenData.ant.renovaciones], backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, maxBarThickness: 50 },
       ],
     };
   }, [apertVsRenData, mesActualLabel, mesAntLabel]);
