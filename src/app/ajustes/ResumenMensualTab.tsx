@@ -557,7 +557,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       const metaCapital = obj?.meta_ventas ?? 0;
       const metaOps = obj?.meta_operaciones ?? 0;
       const cumplCapital = metaCapital > 0 ? (capital / metaCapital) * 100 : null;
+      const restanteCapital = metaCapital > 0 ? Math.max(0, 100 - (capital / metaCapital) * 100) : null;
       const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
+      const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
 
       const ventasAnt = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === analista).filter(isVenta);
       const capitalAnt = ventasAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0);
@@ -565,7 +567,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
       const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
 
-      return { analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, cumplOps, tendCapital, tendOps, clientesIngresados: regsAnalista.length };
+      return { analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps, clientesIngresados: regsAnalista.length };
     });
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
 
@@ -589,9 +591,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const metaCapital = obj?.meta_ventas ?? 0;
     const metaOps = obj?.meta_operaciones ?? 0;
     const cumplCapital = metaCapital > 0 ? (capital / metaCapital) * 100 : null;
+    const restanteCapital = metaCapital > 0 ? Math.max(0, 100 - (capital / metaCapital) * 100) : null;
     const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
+    const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
 
-    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, metaCapital, metaOps, cumplCapital, cumplOps };
+    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
@@ -1315,7 +1319,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                 analista: 'Total PDV',
                 capital: kpiTotal.capital, ops: kpiTotal.ops, ticket: kpiTotal.ticket,
                 conversion: kpiTotal.conversion, clientesIngresados: kpiTotal.clientes,
-                cumplCapital: kpiTotal.cumplCapital, cumplOps: kpiTotal.cumplOps,
+                cumplCapital: kpiTotal.cumplCapital, restanteCapital: kpiTotal.restanteCapital, cumplOps: kpiTotal.cumplOps, restanteOps: kpiTotal.restanteOps,
                 tendCapital: kpiTotal.tendCapital, tendOps: kpiTotal.tendOps,
                 metaCapital: kpiTotal.metaCapital, metaOps: kpiTotal.metaOps,
               }].map((k, idx) => {
@@ -1337,7 +1341,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                       <div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
                         <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
-                        {k.cumplCapital !== null && (
+                        {k.restanteCapital !== null && k.restanteCapital > 0 ? (
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: '#f87171', whiteSpace: 'nowrap' as const }}>Falta {k.restanteCapital.toFixed(0)}%</span>
+                          </div>
+                        ) : k.cumplCapital !== null && (
                           <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
@@ -1350,7 +1358,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                       <div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
                         <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
-                        {k.cumplOps !== null && (
+                        {k.restanteOps !== null && k.restanteOps > 0 ? (
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: '#f87171', whiteSpace: 'nowrap' as const }}>Falta {k.restanteOps.toFixed(0)}%</span>
+                          </div>
+                        ) : k.cumplOps !== null && (
                           <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
