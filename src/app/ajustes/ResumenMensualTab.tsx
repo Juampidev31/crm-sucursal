@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Registro, Objetivo, CONFIG } from '@/types';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Download, Briefcase, PieChart, Tag } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
@@ -140,6 +141,7 @@ const ManualTextarea = ({ label, value, onChange, placeholder }: {
 );
 
 export default function ResumenMensualTab({ registros, objetivos, onSuccess, onError }: Props) {
+  const { setRegistrosWindowMonths } = useRegistros();
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
   const [resumen, setResumen] = useState<ResumenMensual>(EMPTY_RESUMEN());
@@ -147,6 +149,14 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const [loadingData, setLoadingData] = useState(false);
   const [lastSnapshot, setLastSnapshot] = useState(''); // Estado para el HTML
   const [saving, setSaving] = useState(false);
+
+  // ── Expandir ventana de registros según mes seleccionado ─────────────────
+  useEffect(() => {
+    const nowMonth = now.getMonth() + 1;
+    const nowYear = now.getFullYear();
+    const monthsBack = (nowYear - selectedAnio) * 12 + (nowMonth - selectedMes) + 2;
+    setRegistrosWindowMonths(Math.max(6, monthsBack));
+  }, [selectedMes, selectedAnio, setRegistrosWindowMonths]);
 
   // ── Fetch al cambiar mes/año ──────────────────────────────────────────────
   useEffect(() => {
