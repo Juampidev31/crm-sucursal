@@ -253,7 +253,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       daily.push(calcVal(byDate.get(key) ?? []));
       cur.setDate(cur.getDate() + 1);
     }
-    if (metrica === 'ventas') {
+    if (metrica !== 'ticket') {
       let acc = 0;
       return { labels, values: daily.map(v => (acc += v)), daily };
     }
@@ -297,7 +297,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       daily.push(calcVal(byDate.get(key) ?? []));
       cur.setDate(cur.getDate() + 1);
     }
-    if (metrica === 'ventas') {
+    if (metrica !== 'ticket') {
       let acc = 0;
       return { labels, values: daily.map(v => (acc += v)), daily };
     }
@@ -357,7 +357,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       daily.push(calcVal(byDate.get(key) ?? []));
       cur.setDate(cur.getDate() + 1);
     }
-    if (metrica === 'ventas') {
+    if (metrica !== 'ticket') {
       let acc = 0;
       return { labels, values: daily.map(v => (acc += v)), daily };
     }
@@ -797,7 +797,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
                       <td key={di} title={`${day.key}: ${fmt(day.valor)}`}
                         style={{
                           background: heatColor(day.valor, mapaActividad.maxVal),
-                          borderRadius: 4, height: 64, textAlign: 'center', fontSize: 10,
+                          borderRadius: 4, height: 85, textAlign: 'center', fontSize: 10,
                           color: day.valor > 0 ? '#86efac' : '#333', fontWeight: day.valor > 0 ? 600 : 400,
                           border: 'none', padding: '0 4px', cursor: 'default', minWidth: 44,
                         }}
