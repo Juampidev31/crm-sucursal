@@ -242,7 +242,8 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       else byDate.set(key, [r]);
     }
     const labels: string[] = [];
-    const daily: number[] = [];
+    const dailyS: number[] = [];
+    const dailyO: number[] = [];
     const cur = new Date(dateRange.from);
     cur.setHours(0, 0, 0, 0);
     const end = new Date(dateRange.to);
@@ -250,15 +251,30 @@ export default function AnalisisTemporalTab({ registros }: Props) {
     while (cur <= end) {
       const key = toLocalKey(cur);
       labels.push(`${cur.getDate()}/${cur.getMonth() + 1}`);
-      daily.push(calcVal(byDate.get(key) ?? []));
+      const regs = byDate.get(key) ?? [];
+      dailyS.push(regs.reduce((s, r) => s + (Number(r.monto) || 0), 0));
+      dailyO.push(regs.length);
       cur.setDate(cur.getDate() + 1);
     }
-    if (metrica !== 'ticket') {
-      let acc = 0;
-      return { labels, values: daily.map(v => (acc += v)), daily };
-    }
-    return { labels, values: daily, daily };
-  }, [ventasFiltradas, dateRange, metrica, calcVal]);
+
+    let accS = 0;
+    let accO = 0;
+    const values = dailyS.map((s, i) => {
+      accS += s;
+      accO += dailyO[i];
+      if (metrica === 'ventas') return accS;
+      if (metrica === 'operaciones') return accO;
+      return accO > 0 ? accS / accO : 0;
+    });
+
+    const daily = dailyS.map((s, i) => {
+      if (metrica === 'ventas') return s;
+      if (metrica === 'operaciones') return dailyO[i];
+      return dailyO[i] > 0 ? s / dailyO[i] : 0;
+    });
+
+    return { labels, values, daily };
+  }, [ventasFiltradas, dateRange, metrica]);
 
   const ventasFiltradasAnterior = useMemo(() => {
     if (!dateRangeAnterior) return [];
@@ -286,7 +302,8 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       else byDate.set(key, [r]);
     }
     const labels: string[] = [];
-    const daily: number[] = [];
+    const dailyS: number[] = [];
+    const dailyO: number[] = [];
     const cur = new Date(dateRangeAnterior.from);
     cur.setHours(0, 0, 0, 0);
     const end = new Date(dateRangeAnterior.to);
@@ -294,15 +311,30 @@ export default function AnalisisTemporalTab({ registros }: Props) {
     while (cur <= end) {
       const key = toLocalKey(cur);
       labels.push(`${cur.getDate()}/${cur.getMonth() + 1}`);
-      daily.push(calcVal(byDate.get(key) ?? []));
+      const regs = byDate.get(key) ?? [];
+      dailyS.push(regs.reduce((s, r) => s + (Number(r.monto) || 0), 0));
+      dailyO.push(regs.length);
       cur.setDate(cur.getDate() + 1);
     }
-    if (metrica !== 'ticket') {
-      let acc = 0;
-      return { labels, values: daily.map(v => (acc += v)), daily };
-    }
-    return { labels, values: daily, daily };
-  }, [ventasFiltradasAnterior, dateRangeAnterior, metrica, calcVal]);
+
+    let accS = 0;
+    let accO = 0;
+    const values = dailyS.map((s, i) => {
+      accS += s;
+      accO += dailyO[i];
+      if (metrica === 'ventas') return accS;
+      if (metrica === 'operaciones') return accO;
+      return accO > 0 ? accS / accO : 0;
+    });
+
+    const daily = dailyS.map((s, i) => {
+      if (metrica === 'ventas') return s;
+      if (metrica === 'operaciones') return dailyO[i];
+      return dailyO[i] > 0 ? s / dailyO[i] : 0;
+    });
+
+    return { labels, values, daily };
+  }, [ventasFiltradasAnterior, dateRangeAnterior, metrica]);
 
   const summary = useMemo(() => ({
     total: calcVal(ventasFiltradas),
@@ -346,7 +378,8 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       else byDate.set(key, [r]);
     }
     const labels: string[] = [];
-    const daily: number[] = [];
+    const dailyS: number[] = [];
+    const dailyO: number[] = [];
     const cur = new Date(dateRange.from);
     cur.setHours(0, 0, 0, 0);
     const end = new Date(dateRange.to);
@@ -354,15 +387,30 @@ export default function AnalisisTemporalTab({ registros }: Props) {
     while (cur <= end) {
       const key = toLocalKey(cur);
       labels.push(`${cur.getDate()}/${cur.getMonth() + 1}`);
-      daily.push(calcVal(byDate.get(key) ?? []));
+      const regs = byDate.get(key) ?? [];
+      dailyS.push(regs.reduce((s, r) => s + (Number(r.monto) || 0), 0));
+      dailyO.push(regs.length);
       cur.setDate(cur.getDate() + 1);
     }
-    if (metrica !== 'ticket') {
-      let acc = 0;
-      return { labels, values: daily.map(v => (acc += v)), daily };
-    }
-    return { labels, values: daily, daily };
-  }, [ventasFiltradasAnalista2, dateRange, metrica, calcVal]);
+
+    let accS = 0;
+    let accO = 0;
+    const values = dailyS.map((s, i) => {
+      accS += s;
+      accO += dailyO[i];
+      if (metrica === 'ventas') return accS;
+      if (metrica === 'operaciones') return accO;
+      return accO > 0 ? accS / accO : 0;
+    });
+
+    const daily = dailyS.map((s, i) => {
+      if (metrica === 'ventas') return s;
+      if (metrica === 'operaciones') return dailyO[i];
+      return dailyO[i] > 0 ? s / dailyO[i] : 0;
+    });
+
+    return { labels, values, daily };
+  }, [ventasFiltradasAnalista2, dateRange, metrica]);
 
   const summaryAnalista2 = useMemo(() => {
     if (analistaFil2 === 'ninguno' || !tendenciaDataAnalista2) return null;
@@ -630,7 +678,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
             },
           ].map(s => {
             const isAvg = s.id === 'avg';
-            const displayVal = (v: number) => metrica === 'operaciones' && isAvg ? v.toFixed(1) : (isAvg ? formatCurrency(v) : fmt(v));
+            const displayVal = (v: number) => metrica === 'operaciones' && isAvg ? Math.round(v).toString() : (isAvg ? formatCurrency(v) : fmt(v));
             
             return (
               <div key={s.id} style={{ 
