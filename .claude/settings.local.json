@@ -5,7 +5,11 @@
       "Bash(ls \"c:/Users/HP/.gemini/antigravity/scratch/Proyeccion y ventas ORIGINAL/next-ventas/.env\"*)",
       "Bash(ls \"c:/Users/HP/.gemini/antigravity/scratch/Proyeccion y ventas ORIGINAL/next-ventas/.env.local\"*)",
       "Bash(ls \"c:/Users/HP/.gemini/antigravity/scratch/Proyeccion y ventas ORIGINAL/next-ventas/.env.example\"*)",
-      "mcp__plugin_context-mode_context-mode__ctx_batch_execute"
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__execute_sql"
     ]
   }
 }

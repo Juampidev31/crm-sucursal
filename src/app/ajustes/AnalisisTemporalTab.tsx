@@ -373,6 +373,57 @@ export default function AnalisisTemporalTab({ registros }: Props) {
     };
   }, [ventasFiltradasAnalista2, tendenciaDataAnalista2, dateRange.nDays, calcVal]);
 
+  const summaryAnalista2Anterior = useMemo(() => {
+    if (analistaFil2 === 'ninguno' || !dateRangeAnterior) return null;
+    const { from, to } = dateRangeAnterior;
+    const fromStr = toLocalKey(from);
+    const toStr = toLocalKey(to);
+    const regsAnterior = registros.filter(r => {
+      if (!r.fecha) return false;
+      if (!isVenta(r)) return false;
+      const dateStr = r.fecha.slice(0, 10);
+      if (dateStr < fromStr || dateStr > toStr) return false;
+      if (r.analista !== analistaFil2) return false;
+      return true;
+    });
+    
+    if (regsAnterior.length === 0) return null;
+
+    const byDate = new Map<string, typeof regsAnterior>();
+    for (const r of regsAnterior) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      const bucket = byDate.get(key);
+      if (bucket) bucket.push(r);
+      else byDate.set(key, [r]);
+    }
+
+    const daily: number[] = [];
+    const cur = new Date(from);
+    const end_d = new Date(to);
+    while (cur <= end_d) {
+      const key = toLocalKey(cur);
+      daily.push(calcVal(byDate.get(key) ?? []));
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    return {
+      total: calcVal(regsAnterior),
+      avg: dateRangeAnterior.nDays > 0 ? calcVal(regsAnterior) / dateRangeAnterior.nDays : 0,
+      maxDay: daily.length ? Math.max(...daily) : 0,
+    };
+  }, [registros, dateRangeAnterior, analistaFil2, calcVal]);
+
+  const variacionAnalista2 = useMemo(() => {
+    if (!summaryAnalista2 || !summaryAnalista2Anterior) return null;
+    const calc = (act: number, prev: number) => prev > 0 ? ((act - prev) / prev) * 100 : 0;
+    return {
+      total: calc(summaryAnalista2.total, summaryAnalista2Anterior.total),
+      avg: calc(summaryAnalista2.avg, summaryAnalista2Anterior.avg),
+      maxDay: calc(summaryAnalista2.maxDay, summaryAnalista2Anterior.maxDay),
+    };
+  }, [summaryAnalista2, summaryAnalista2Anterior]);
+
   const variacion = useMemo(() => {
     if (!summaryAnterior) return null;
     const calc = (act: number, prev: number) => prev > 0 ? ((act - prev) / prev) * 100 : 0;
@@ -482,13 +533,13 @@ export default function AnalisisTemporalTab({ registros }: Props) {
         background: '#0a0a0a',
         border: '1px solid rgba(255,255,255,0.03)',
         borderRadius: '8px',
-        padding: '24px 32px',
+        padding: '12px 24px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '24px',
+        marginBottom: '16px',
         flexWrap: 'wrap',
-        gap: '40px'
+        gap: '24px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '4px', height: '24px', borderRadius: '2px', background: '#fff' }} />
@@ -543,24 +594,89 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       </div>
 
       {/* Rendimiento + Tendencia row */}
-      <div id="seccion-rendimiento-tendencia" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '32px', marginBottom: '32px' }}>
+      <div id="seccion-rendimiento-tendencia" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '32px', marginBottom: '32px' }}>
         {/* Rendimiento (Stats) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {[
-            { label: analistaFil === 'todos' ? 'TOTAL' : analistaFil, value: fmt(summary.total), var: variacion?.total, prev: summaryAnterior?.total, vs: summaryAnalista2?.total },
-            { label: 'PROMEDIO', value: metrica === 'operaciones' ? summary.avg.toFixed(1) : formatCurrency(summary.avg), var: variacion?.avg, prev: summaryAnterior?.avg, vs: summaryAnalista2?.avg },
-            { label: 'MÁXIMO DÍA', value: fmt(summary.maxDay), var: variacion?.maxDay, prev: summaryAnterior?.maxDay, vs: summaryAnalista2?.maxDay },
-          ].map(s => (
-            <div key={s.label} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginTop: 8 }}>{s.value}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
-                {s.var !== undefined && <VariacionBadge valor={s.var} />}
-                {s.prev !== undefined && <div style={{ fontSize: 12, color: '#888' }}>Anterior: {metrica === 'operaciones' && s.label === 'PROMEDIO' ? s.prev.toFixed(1) : (s.label === 'PROMEDIO' ? formatCurrency(s.prev) : fmt(s.prev))}</div>}
-                {s.vs !== undefined && <div style={{ fontSize: 14, fontWeight: 700, color: '#ef4444' }}>Vs {analistaFil2}: {metrica === 'operaciones' && s.label === 'PROMEDIO' ? s.vs.toFixed(1) : (s.label === 'PROMEDIO' ? formatCurrency(s.vs) : fmt(s.vs))}</div>}
+            { 
+              id: 'total', 
+              title: metrica === 'ventas' ? 'VENTA TOTAL' : (metrica === 'operaciones' ? 'OPERACIONES' : 'TICKET TOTAL'), 
+              val1: summary.total, 
+              var1: variacion?.total, 
+              prev1: summaryAnterior?.total,
+              val2: summaryAnalista2?.total,
+              var2: variacionAnalista2?.total,
+              prev2: summaryAnalista2Anterior?.total
+            },
+            { 
+              id: 'avg', 
+              title: 'PROMEDIO DIARIO', 
+              val1: summary.avg, 
+              var1: variacion?.avg, 
+              prev1: summaryAnterior?.avg,
+              val2: summaryAnalista2?.avg,
+              var2: variacionAnalista2?.avg,
+              prev2: summaryAnalista2Anterior?.avg
+            },
+            { 
+              id: 'max', 
+              title: 'MÁXIMO DÍA', 
+              val1: summary.maxDay, 
+              var1: variacion?.maxDay, 
+              prev1: summaryAnterior?.maxDay,
+              val2: summaryAnalista2?.maxDay,
+              var2: variacionAnalista2?.maxDay,
+              prev2: summaryAnalista2Anterior?.maxDay
+            },
+          ].map(s => {
+            const isAvg = s.id === 'avg';
+            const displayVal = (v: number) => metrica === 'operaciones' && isAvg ? v.toFixed(1) : (isAvg ? formatCurrency(v) : fmt(v));
+            
+            return (
+              <div key={s.id} style={{ 
+                background: '#0a0a0a', 
+                border: '1px solid rgba(255,255,255,0.03)', 
+                borderRadius: '12px', 
+                padding: '24px', 
+                flex: 1, 
+                display: 'flex', 
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}>
+                <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 20 }}>
+                  {s.title}
+                </div>
+                
+                {/* Analista 1 */}
+                <div style={{ marginBottom: s.val2 !== undefined ? 20 : 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+                    <div style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase' }}>{analistaFil}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{displayVal(s.val1)}</div>
+                    {s.var1 !== undefined && <VariacionBadge valor={s.var1} />}
+                  </div>
+                  {s.prev1 !== undefined && <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev1)}</div>}
+                </div>
+
+                {/* Analista 2 (Comparación) */}
+                {s.val2 !== undefined && (
+                  <div style={{ marginTop: 10, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />
+                      <div style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase' }}>{analistaFil2}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{displayVal(s.val2)}</div>
+                      {s.var2 !== undefined && <VariacionBadge valor={s.var2} />}
+                    </div>
+                    {s.prev2 !== undefined && <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev2)}</div>}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Tendencia (Chart) */}
@@ -577,7 +693,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
               }
             </div>
           </div>
-          <div id="chart-at-tendencia" style={{ height: '100%', minHeight: 450, flex: 1 }}>
+          <div id="chart-at-tendencia" style={{ height: '100%', minHeight: 400, flex: 1 }}>
             <Line
               data={{
                 labels: tendenciaData.labels,

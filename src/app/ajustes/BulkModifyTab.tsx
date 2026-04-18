@@ -87,7 +87,7 @@ export default function BulkModifyTab() {
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { registros, mutateRegistros, pushBulkRefresh } = useRegistros();
+  const { registros, mutateRegistros, pushBulkRefresh, refresh } = useRegistros();
 
   // Derivar datos de filtros directamente de registros (reactivo)
   const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);
@@ -588,7 +588,8 @@ export default function BulkModifyTab() {
     setUpdating(false);
     setUpdatedCount(updated);
     setStep('done');
-    // Notificar a todos los clientes que refresquen sus datos
+    // Actualizar estado local y notificar a otros tabs
+    refresh(true);
     pushBulkRefresh();
   };
 

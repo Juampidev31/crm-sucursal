@@ -186,26 +186,28 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               className="content-wrapper"
               style={{
                 height: '100%',
-                overflowY: 'auto',
-                paddingTop: (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
+                overflow: 'hidden',
                 position: 'relative'
               }}
             >
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync" initial={false}>
                 <motion.div
                   key={pathname}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ 
-                    duration: 0.5, 
-                    ease: "easeInOut" 
+                  transition={{
+                    duration: 0.18,
+                    ease: [0.4, 0, 0.2, 1]
                   }}
-                  style={{ 
-                    height: '100%', 
-                    width: '100%',
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
                     display: 'flex',
-                    flexDirection: 'column'
+                    flexDirection: 'column',
+                    overflowY: 'auto',
+                    paddingTop: (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
+                    willChange: 'opacity'
                   }}
                 >
                   {children}
