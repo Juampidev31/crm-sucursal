@@ -5,7 +5,7 @@ import { Registro, CONFIG } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import CustomSelect from '@/components/CustomSelect';
 import { Line, Bar } from 'react-chartjs-2';
-import { BarChart2 } from 'lucide-react';
+import { BarChart2, ChevronDown } from 'lucide-react';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement,
   BarElement, Tooltip, Legend, Filler,
@@ -60,6 +60,51 @@ export default function AnalisisTemporalTab({ registros }: Props) {
   const [compararPeriodo, setCompararPeriodo] = useState(true);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
+    11: false
+  });
+
+  const toggleSection = (id: number) => {
+    setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
+    const isCollapsed = !!collapsedSections[id];
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        marginBottom: isCollapsed ? 0 : 16, 
+        paddingBottom: 10, 
+        borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)',
+        width: '100%'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {icon}
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+        </div>
+        <button 
+          onClick={() => toggleSection(id)}
+          style={{ 
+            background: 'rgba(255,255,255,0.04)', 
+            border: '1px solid rgba(255,255,255,0.06)', 
+            borderRadius: '6px', 
+            width: 24, 
+            height: 24, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            cursor: 'pointer', 
+            color: '#666',
+            transition: 'all 0.2s'
+          }}
+        >
+          <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }} />
+        </button>
+      </div>
+    );
+  };
 
   const isVenta = (r: { estado: string }) => {
     const e = (r.estado ?? '').toLowerCase();
@@ -583,63 +628,57 @@ export default function AnalisisTemporalTab({ registros }: Props) {
         borderRadius: '8px',
         padding: '12px 24px',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        flexDirection: 'column',
         marginBottom: '16px',
-        flexWrap: 'wrap',
-        gap: '24px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '4px', height: '24px', borderRadius: '2px', background: '#fff' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BarChart2 size={18} color="#fff" />
-            <h2 style={{ fontSize: '14px', fontWeight: 800, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-              11. Rendimiento y Tendencias
-            </h2>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {[
-            { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="170px" /> },
-            { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} width="160px" /> },
-            { label: 'Comparar c/', node: <CustomSelect options={analistaOpts2} value={analistaFil2} onChange={setAnalistaFil2} width="160px" /> },
-            { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} width="160px" /> },
-          ].map(f => (
-            <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</div>
-              {f.node}
+        {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart2 size={18} color="#fff" />)}
+        
+        {!collapsedSections[11] && (
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
+            {[
+              { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="170px" /> },
+              { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} width="160px" /> },
+              { label: 'Comparar c/', node: <CustomSelect options={analistaOpts2} value={analistaFil2} onChange={setAnalistaFil2} width="160px" /> },
+              { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} width="160px" /> },
+            ].map(f => (
+              <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</div>
+                {f.node}
+              </div>
+            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha desde</div>
+              <input
+                type="date"
+                value={fechaDesde}
+                onChange={e => { setFechaDesde(e.target.value); setPeriodo(-10); }}
+                style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
+              />
             </div>
-          ))}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha desde</div>
-                <input
-                  type="date"
-                  value={fechaDesde}
-                  onChange={e => { setFechaDesde(e.target.value); setPeriodo(-10); }}
-                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
-                />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha hasta</div>
-                <input
-                  type="date"
-                  value={fechaHasta}
-                  onChange={e => { setFechaHasta(e.target.value); setPeriodo(-10); }}
-                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
-                />
-              </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
-            <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Comparar</div>
-            <button
-              onClick={() => setCompararPeriodo(v => !v)}
-              style={{ width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', background: compararPeriodo ? 'rgba(34,197,94,0.8)' : '#333', position: 'relative', transition: 'background 0.2s' }}
-            >
-              <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: compararPeriodo ? 25 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha hasta</div>
+              <input
+                type="date"
+                value={fechaHasta}
+                onChange={e => { setFechaHasta(e.target.value); setPeriodo(-10); }}
+                style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Comparar</div>
+              <button
+                onClick={() => setCompararPeriodo(v => !v)}
+                style={{ width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', background: compararPeriodo ? 'rgba(34,197,94,0.8)' : '#333', position: 'relative', transition: 'background 0.2s' }}
+              >
+                <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: compararPeriodo ? 25 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {!collapsedSections[11] && (
+        <>
 
       {/* Rendimiento + Tendencia row */}
       <div id="seccion-rendimiento-tendencia" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '32px', marginBottom: '32px' }}>
@@ -1041,6 +1080,8 @@ export default function AnalisisTemporalTab({ registros }: Props) {
           })()}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -48,32 +48,54 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
   const shownIds = useRef(new Set<string>());
 
   const fetchCount = useCallback(async () => {
-    const { count, error } = await supabase
-      .from('recordatorios')
-      .select('id', { count: 'exact', head: true })
-      .eq('mostrado', false);
-    if (error) { reportError('recordatorios:count', error); return; }
-    setPendingReminders(count || 0);
+    try {
+      const { count, error } = await supabase
+        .from('recordatorios')
+        .select('id', { count: 'exact', head: true })
+        .eq('mostrado', false);
+      if (error) {
+        if (error.message?.includes('fetch')) {
+          console.warn('[RecordatoriosProvider] Error de red en fetchCount:', error.message);
+          return;
+        }
+        reportError('recordatorios:count', error);
+        return;
+      }
+      setPendingReminders(count || 0);
+    } catch (err) {
+      console.warn('[RecordatoriosProvider] Error inesperado en fetchCount:', err);
+    }
   }, [reportError]);
 
   const checkDueReminders = useCallback(async () => {
-    const now = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('recordatorios')
-      .select('id, nombre, nota, fecha_hora, analista, estado')
-      .eq('mostrado', false)
-      .lte('fecha_hora', now)
-      .order('fecha_hora', { ascending: true });
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('recordatorios')
+        .select('id, nombre, nota, fecha_hora, analista, estado')
+        .eq('mostrado', false)
+        .lte('fecha_hora', now)
+        .order('fecha_hora', { ascending: true });
 
-    if (error) { reportError('checkDueReminders', error); return; }
-    if (!data || data.length === 0) return;
-    const next = data.find(r => !shownIds.current.has(r.id));
-    if (next) {
-      shownIds.current.add(next.id);
-      setReminderAlert({
-        id: next.id, nombre: next.nombre, nota: next.nota,
-        fecha_hora: next.fecha_hora, analista: next.analista, estado: next.estado,
-      });
+      if (error) {
+        if (error.message?.includes('fetch')) {
+          console.warn('[RecordatoriosProvider] Error de red en checkDueReminders:', error.message);
+          return;
+        }
+        reportError('checkDueReminders', error);
+        return;
+      }
+      if (!data || data.length === 0) return;
+      const next = data.find(r => !shownIds.current.has(r.id));
+      if (next) {
+        shownIds.current.add(next.id);
+        setReminderAlert({
+          id: next.id, nombre: next.nombre, nota: next.nota,
+          fecha_hora: next.fecha_hora, analista: next.analista, estado: next.estado,
+        });
+      }
+    } catch (err) {
+      console.warn('[RecordatoriosProvider] Error inesperado en checkDueReminders:', err);
     }
   }, [reportError]);
 

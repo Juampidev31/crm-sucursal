@@ -13,6 +13,99 @@ import {
 } from 'chart.js';
 import AnalisisTemporalTab from './AnalisisTemporalTab';
 
+// ── Componente auxiliar para bloques de distribución ──────────────────────
+// ── Componente auxiliar para bloques de distribución ──────────────────────
+const DistBlock = ({ 
+  titulo, icon, datos, color, totalMes, maxItems = 7, 
+  isExpanded = false, onExpand, scrollable = false
+}: { 
+  titulo: string; icon: React.ReactNode; 
+  datos: { label: string; monto: number; cantidad: number }[]; 
+  color: string; totalMes: number; maxItems?: number;
+  isExpanded?: boolean;
+  onExpand?: () => void;
+  scrollable?: boolean;
+}) => {
+  const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
+  const isSlice = !isExpanded && !scrollable;
+  const displayData = isSlice ? datos.slice(0, maxItems) : datos;
+  const hasMore = datos.length > maxItems;
+
+  return (
+    <div style={{ 
+      flex: 1, 
+      minWidth: 220, 
+      maxHeight: (isExpanded || scrollable) ? 'none' : 320, 
+      display: 'flex', 
+      flexDirection: 'column',
+      transition: 'all 0.3s ease'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
+        <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
+      </div>
+      <div style={{ 
+        background: '#0d0d0d', 
+        borderRadius: 10, 
+        border: '1px solid rgba(255,255,255,0.04)', 
+        overflow: 'hidden', 
+        flex: 1, 
+        overflowY: (isExpanded && !scrollable) ? 'visible' : 'auto',
+        maxHeight: (isExpanded && !scrollable) ? 'none' : 280,
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'rgba(255,255,255,0.1) transparent'
+      }}>
+        {displayData.map((d, i) => {
+          const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
+          const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
+          return (
+            <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' as const }}>{pct.toFixed(0)}%</span>
+                </div>
+              </div>
+              <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${pctMonto}%`, background: color, opacity: 0.6, borderRadius: 2 }} />
+              </div>
+            </div>
+          );
+        })}
+        {isSlice && hasMore && onExpand && (
+          <button 
+            onClick={onExpand}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.03)',
+              border: 'none',
+              color: color,
+              fontSize: '10px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+          >
+            Ver todos ({datos.length})
+            <ChevronDown size={12} style={{ transition: 'transform 0.3s' }} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
 // ── Plugin inline: data labels on bars ───────────────────────────────────
@@ -149,7 +242,13 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const [loadingData, setLoadingData] = useState(false);
   const [lastSnapshot, setLastSnapshot] = useState(''); // Estado para el HTML
   const [saving, setSaving] = useState(false);
-  const [empleadorExpandido, setEmpleadorExpandido] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
+    10: true, // Analisis Temporal inicia cerrado por ser muy largo
+  });
+
+  const toggleSection = (id: number) => {
+    setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // ── Expandir ventana de registros según mes seleccionado ─────────────────
   useEffect(() => {
@@ -533,12 +632,42 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     );
   };
 
-  const sectionHeader = (title: string, icon: React.ReactNode) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-      {icon}
-      <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
-    </div>
-  );
+  const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
+    const isCollapsed = !!collapsedSections[id];
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        marginBottom: isCollapsed ? 0 : 16, 
+        paddingBottom: 10, 
+        borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)' 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {icon}
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+        </div>
+        <button 
+          onClick={() => toggleSection(id)}
+          style={{ 
+            background: 'rgba(255,255,255,0.04)', 
+            border: '1px solid rgba(255,255,255,0.06)', 
+            borderRadius: '6px', 
+            width: 24, 
+            height: 24, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            cursor: 'pointer', 
+            color: '#666',
+            transition: 'all 0.2s'
+          }}
+        >
+          <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }} />
+        </button>
+      </div>
+    );
+  };
 
   const mesPrev = selectedMes === 1 ? 12 : selectedMes - 1;
   const anioPrev = selectedMes === 1 ? selectedAnio - 1 : selectedAnio;
@@ -1198,540 +1327,473 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
-                <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}</div>
-                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  {kpiTotal.cumplCapital !== null && (
-                    <span style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
-                      {kpiTotal.cumplCapital.toFixed(1)}% cumpl.
-                    </span>
-                  )}
-                </div>
-                <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
+            {!collapsedSections[1] && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
+                  <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}</div>
+                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    {kpiTotal.cumplCapital !== null && (
+                      <span style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
+                        {kpiTotal.cumplCapital.toFixed(1)}% cumpl.
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                    </div>
+                    <div id="chart-capital-objetivo" style={{ height: 180 }}>
+                      <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
+                  <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}</div>
+                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    {kpiTotal.cumplOps !== null && (
+                      <span style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
+                        {kpiTotal.cumplOps.toFixed(1)}% cumpl.
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
+                        <div id="chart-aperturas" style={{ height: 140, position: 'relative', width: '100%' }}>
+                          <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                        </div>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
+                        <div id="chart-renovaciones" style={{ height: 140, position: 'relative', width: '100%' }}>
+                          <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div id="chart-capital-objetivo" style={{ height: 180 }}>
-                    <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
+                  <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
+                  <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>{kpiTotal.clientes} clientes ingresados</div>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="chart-ticket-promedio" style={{ height: 180 }}>
+                      <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
-                <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}</div>
-                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  {kpiTotal.cumplOps !== null && (
-                    <span style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
-                      {kpiTotal.cumplOps.toFixed(1)}% cumpl.
-                    </span>
-                  )}
-                </div>
-                <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
-                      <div id="chart-aperturas" style={{ height: 140, position: 'relative', width: '100%' }}>
-                        <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-                      </div>
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
-                      <div id="chart-renovaciones" style={{ height: 140, position: 'relative', width: '100%' }}>
-                        <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
-                <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
-                <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>{kpiTotal.clientes} clientes ingresados</div>
-                <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="chart-ticket-promedio" style={{ height: 180 }}>
-                    <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
+            )}
           </div>
 
           {/* ── SECCIÓN 2: INDICADORES CLAVE ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
-
-            {/* Tarjetas por analista */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
-              {[...kpiPorAnalista, {
-                analista: 'Total PDV',
-                capital: kpiTotal.capital, ops: kpiTotal.ops, ticket: kpiTotal.ticket,
-                conversion: kpiTotal.conversion, clientesIngresados: kpiTotal.clientes,
-                cumplCapital: kpiTotal.cumplCapital, restanteCapital: kpiTotal.restanteCapital, cumplOps: kpiTotal.cumplOps, restanteOps: kpiTotal.restanteOps,
-                tendCapital: kpiTotal.tendCapital, tendOps: kpiTotal.tendOps,
-                metaCapital: kpiTotal.metaCapital, metaOps: kpiTotal.metaOps,
-              }].map((k, idx) => {
-                const isTotal = idx === kpiPorAnalista.length;
-                return (
-                  <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
-                    {/* Header de la tarjeta */}
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, background: isTotal ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Users size={13} color={isTotal ? '#a78bfa' : '#666'} />
+            {sectionHeader(2, '2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
+            {!collapsedSections[2] && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
+                  {[...kpiPorAnalista, {
+                    analista: 'Total PDV',
+                    capital: kpiTotal.capital, ops: kpiTotal.ops, ticket: kpiTotal.ticket,
+                    conversion: kpiTotal.conversion, clientesIngresados: kpiTotal.clientes,
+                    cumplCapital: kpiTotal.cumplCapital, restanteCapital: kpiTotal.restanteCapital, cumplOps: kpiTotal.cumplOps, restanteOps: kpiTotal.restanteOps,
+                    tendCapital: kpiTotal.tendCapital, tendOps: kpiTotal.tendOps,
+                    metaCapital: kpiTotal.metaCapital, metaOps: kpiTotal.metaOps,
+                  }].map((k, idx) => {
+                    const isTotal = idx === kpiPorAnalista.length;
+                    return (
+                      <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
+                        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 8, background: isTotal ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Users size={13} color={isTotal ? '#a78bfa' : '#666'} />
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: isTotal ? '#a78bfa' : '#ccc' }}>{k.analista}</span>
+                          </div>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: isTotal ? '#a78bfa' : '#ccc' }}>{k.analista}</span>
-                      </div>
-                    </div>
-                    {/* Métricas */}
-                    <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                      <div>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
-                        {k.cumplCapital !== null && (
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
-                            </div>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplCapital), whiteSpace: 'nowrap' as const }}>{k.cumplCapital.toFixed(0)}%</span>
+                        <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
+                            <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
+                            {k.cumplCapital !== null && (
+                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
+                                </div>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplCapital), whiteSpace: 'nowrap' as const }}>{k.cumplCapital.toFixed(0)}%</span>
+                              </div>
+                            )}
+                            {k.metaCapital > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {formatCurrency(k.metaCapital)}</div>}
                           </div>
-                        )}
-                        {k.metaCapital > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {formatCurrency(k.metaCapital)}</div>}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
-                        {k.cumplOps !== null && (
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
-                            </div>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplOps), whiteSpace: 'nowrap' as const }}>{k.cumplOps.toFixed(0)}%</span>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
+                            <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
+                            {k.cumplOps !== null && (
+                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
+                                </div>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplOps), whiteSpace: 'nowrap' as const }}>{k.cumplOps.toFixed(0)}%</span>
+                              </div>
+                            )}
+                            {k.metaOps > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {k.metaOps}</div>}
                           </div>
-                        )}
-                        {k.metaOps > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {k.metaOps}</div>}
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ticket Prom.</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{formatCurrency(k.ticket)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Conversión</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}% <span style={{ fontSize: 10, color: '#444' }}>({k.clientesIngresados} ing.)</span></div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ticket Prom.</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{formatCurrency(k.ticket)}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Conversión</div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}% <span style={{ fontSize: 10, color: '#444' }}>({k.clientesIngresados} ing.)</span></div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
 
-            {/* ── GRÁFICOS PRINCIPALES ── */}
-            <div style={{ marginBottom: 28 }}>
-              {/* Fila 1: Eliminada y movidos a KPIs */}
-
-              {/* Fila 2: % Cumplimiento + Variación % + Embudo Comercial */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                <div style={{ marginBottom: 28 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                      <div id="chart-cumplimiento" style={{ height: 280 }}>
+                        <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Positivo</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(248,113,113,0.7)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Negativo</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="chart-variacion" style={{ height: 280 }}>
+                        <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Embudo Comercial por Analista</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Atendidos</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(167,139,250,0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Op. Cerradas</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="chart-embudo" style={{ height: 280 }}>
+                        <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
                   </div>
-                  <div id="chart-cumplimiento" style={{ height: 280 }}>
-                    <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Positivo</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Total Conversión</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(124, 45, 18, 0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(248,113,113,0.7)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Negativo</span>
+                      <div id="chart-conversion-total" style={{ height: 280 }}>
+                        <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                        <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
+                      </div>
+                      <div id="chart-empleo-publico-privado" style={{ height: 280 }}>
+                        <Bar data={chartEmpleoPublPriv} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Resumen de acuerdos por analista</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Luciana</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Victoria</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="chart-acuerdos" style={{ height: 280 }}>
+                        <Bar data={chartAcuerdos} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
                   </div>
-                  <div id="chart-variacion" style={{ height: 280 }}>
-                    <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
-                  </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Embudo Comercial por Analista</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Atendidos</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(167,139,250,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Op. Cerradas</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="chart-embudo" style={{ height: 280 }}>
-                    <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
-                  </div>
-                </div>
-              </div>
-              {/* Fila 3: % Total Conversión + % Empleo Público/Privado + Resumen Acuerdos */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Total Conversión</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(124, 45, 18, 0.8)' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="chart-conversion-total" style={{ height: 280 }}>
-                    <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                    <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-                    <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
-                  </div>
-                  <div id="chart-empleo-publico-privado" style={{ height: 280 }}>
-                    <Bar data={chartEmpleoPublPriv} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Resumen de acuerdos por analista</div>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Luciana</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Victoria</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="chart-acuerdos" style={{ height: 280 }}>
-                    <Bar data={chartAcuerdos} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-                  </div>
-                </div>
-              </div>
-
-            </div>
+              </>
+            )}
           </div>
 
 
 
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
-          {ventasMes.length > 0 && (() => {
-            const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-            const DistBlock = ({ 
-              titulo, icon, datos, color, maxItems = 7, 
-              isExpanded = false, onExpand 
-            }: { 
-              titulo: string; icon: React.ReactNode; 
-              datos: { label: string; monto: number; cantidad: number }[]; 
-              color: string; maxItems?: number;
-              isExpanded?: boolean;
-              onExpand?: () => void;
-            }) => {
-              const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
-              const displayData = isExpanded ? datos : datos.slice(0, maxItems);
-              const hasMore = datos.length > maxItems;
-
-              return (
-                <div style={{ 
-                  flex: 1, 
-                  minWidth: 220, 
-                  maxHeight: isExpanded ? 'none' : 320, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
-                  </div>
-                  <div style={{ 
-                    background: '#0d0d0d', 
-                    borderRadius: 10, 
-                    border: '1px solid rgba(255,255,255,0.04)', 
-                    overflow: 'hidden', 
-                    flex: 1, 
-                    overflowY: isExpanded ? 'visible' : 'auto',
-                    maxHeight: isExpanded ? 'none' : 280
-                  }}>
-                    {displayData.map((d, i) => {
-                      const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
-                      const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
-                      return (
-                        <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 || (!isExpanded && hasMore) ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                            <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
-                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                              <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
-                              <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
-                              <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' as const }}>{pct.toFixed(0)}%</span>
-                            </div>
-                          </div>
-                          <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${pctMonto}%`, background: color, opacity: 0.6, borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {!isExpanded && hasMore && onExpand && (
-                      <button 
-                        onClick={onExpand}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          background: 'rgba(255,255,255,0.03)',
-                          border: 'none',
-                          color: color,
-                          fontSize: '10px',
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
-                          transition: 'background 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                      >
-                        Ver todos ({datos.length})
-                        <ChevronDown size={12} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            };
-            return (
-              <div className="data-card" style={{ background: '#0a0a0a' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
-                  <div style={{ flex: 1 }}>{sectionHeader('3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
-                  <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(totalMes)}</span>
-                </div>
-                {/* Cuotas + Rango Etario — horizontales */}
-                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-                  <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" />
-                  <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" />
-                  <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" />
-                  <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" />
-                  <DistBlock 
-                    titulo="Empleador" 
-                    icon={<Shield size={12} color="#fbbf24" />} 
-                    datos={distEmpleador} 
-                    color="#fbbf24" 
-                    maxItems={5} 
-                    isExpanded={empleadorExpandido}
-                    onExpand={() => setEmpleadorExpandido(true)}
-                  />
-                  <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" />
-                </div>
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
+              <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+              {!collapsedSections[3] && <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>}
+            </div>
+            {!collapsedSections[3] && ventasMes.length > 0 && (
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+                {(() => {
+                  const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+                  return (
+                    <>
+                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" totalMes={totalMes} />
+                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalMes} />
+                      <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" totalMes={totalMes} />
+                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalMes} />
+                      <DistBlock 
+                        titulo="Empleador" 
+                        icon={<Shield size={12} color="#fbbf24" />} 
+                        datos={distEmpleador} 
+                        color="#fbbf24" 
+                        totalMes={totalMes}
+                        scrollable={true}
+                      />
+                      <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" totalMes={totalMes} />
+                    </>
+                  );
+                })()}
               </div>
-            );
-          })()}
+            )}
+          </div>
           {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
-            <ManualTextarea
-              label="Interpretación del Período"
-              value={resumen.analisis_comercial}
-              onChange={v => setResumen(p => ({ ...p, analisis_comercial: v }))}
-              placeholder="¿Por qué se vendió más o menos? Impacto de campañas, comportamiento del cliente, factores externos..."
-            />
+            {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+            {!collapsedSections[4] && (
+              <ManualTextarea
+                label="Interpretación del Período"
+                value={resumen.analisis_comercial}
+                onChange={v => setResumen(p => ({ ...p, analisis_comercial: v }))}
+                placeholder="¿Por qué se vendió más o menos? Impacto de campañas, comportamiento del cliente, factores externos..."
+              />
+            )}
           </div>
 
           {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-            <ManualTextarea
-              label="Cumplimiento de Procedimientos / Tiempos / Stock"
-              value={resumen.operacion_procesos}
-              onChange={v => setResumen(p => ({ ...p, operacion_procesos: v }))}
-              placeholder="Cumplimiento de procedimientos, tiempos de atención, stock de merchandising y flyers..."
-            />
+            {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+            {!collapsedSections[5] && (
+              <ManualTextarea
+                label="Cumplimiento de Procedimientos / Tiempos / Stock"
+                value={resumen.operacion_procesos}
+                onChange={v => setResumen(p => ({ ...p, operacion_procesos: v }))}
+                placeholder="Cumplimiento de procedimientos, tiempos de atención, stock de merchandising y flyers..."
+              />
+            )}
           </div>
 
           {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-              <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
-              <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} placeholder="Salidas al campo, visitas programadas..." />
-              <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen(p => ({ ...p, empresas_estrategicas: v }))} placeholder="Empresas clave contactadas o visitadas..." />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginTop: 16 }}>
-              <ManualTextarea label="Principales Logros" value={resumen.logros} onChange={v => setResumen(p => ({ ...p, logros: v }))} placeholder="Describí los principales logros del período..." />
-              <ManualTextarea label="Principales Desvíos / Problemas" value={resumen.desvios} onChange={v => setResumen(p => ({ ...p, desvios: v }))} placeholder="Describí los desvíos o problemas detectados..." />
-              <ManualTextarea label="Acciones Clave a Seguir" value={resumen.acciones_clave} onChange={v => setResumen(p => ({ ...p, acciones_clave: v }))} placeholder="Acciones prioritarias para el próximo período..." />
-            </div>
+            {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+            {!collapsedSections[6] && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+                  <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
+                  <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} placeholder="Salidas al campo, visitas programadas..." />
+                  <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen(p => ({ ...p, empresas_estrategicas: v }))} placeholder="Empresas clave contactadas o visitadas..." />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginTop: 16 }}>
+                  <ManualTextarea label="Principales Logros" value={resumen.logros} onChange={v => setResumen(p => ({ ...p, logros: v }))} placeholder="Describí los principales logros del período..." />
+                  <ManualTextarea label="Principales Desvíos / Problemas" value={resumen.desvios} onChange={v => setResumen(p => ({ ...p, desvios: v }))} placeholder="Describí los desvíos o problemas detectados..." />
+                  <ManualTextarea label="Acciones Clave a Seguir" value={resumen.acciones_clave} onChange={v => setResumen(p => ({ ...p, acciones_clave: v }))} placeholder="Acciones prioritarias para el próximo período..." />
+                </div>
+              </>
+            )}
           </div>
 
           {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-            <ManualTextarea
-              label="Reclamos y Satisfacción"
-              value={resumen.experiencia_cliente}
-              onChange={v => setResumen(p => ({ ...p, experiencia_cliente: v }))}
-              placeholder="Cantidad y tipo de reclamos, nivel de satisfacción, problemas recurrentes..."
-            />
+            {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+            {!collapsedSections[7] && (
+              <ManualTextarea
+                label="Reclamos y Satisfacción"
+                value={resumen.experiencia_cliente}
+                onChange={v => setResumen(p => ({ ...p, experiencia_cliente: v }))}
+                placeholder="Cantidad y tipo de reclamos, nivel de satisfacción, problemas recurrentes..."
+              />
+            )}
           </div>
 
           {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
-            {auditoriaData.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  {CONFIG.ANALISTAS_DEFAULT.map(analista => {
-                    const count = auditoriaData.filter(a => a.analista === analista).length;
-                    return (
-                      <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 4 }}>{analista}</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{count}</div>
-                        <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
-                      </div>
-                    );
-                  })}
+            {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+            {!collapsedSections[8] && (
+              <>
+                {auditoriaData.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      {CONFIG.ANALISTAS_DEFAULT.map(analista => {
+                        const count = auditoriaData.filter(a => a.analista === analista).length;
+                        return (
+                          <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 4 }}>{analista}</div>
+                            <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{count}</div>
+                            <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <ManualTextarea label="Dotación Actual" value={resumen.dotacion} onChange={v => setResumen(p => ({ ...p, dotacion: v }))} />
+                  <ManualTextarea label="Ausentismo / Tardanzas" value={resumen.ausentismo} onChange={v => setResumen(p => ({ ...p, ausentismo: v }))} />
+                  <ManualTextarea label="Capacitación Realizada" value={resumen.capacitacion} onChange={v => setResumen(p => ({ ...p, capacitacion: v }))} />
+                  <ManualTextarea label="Evaluación de Desempeño" value={resumen.evaluacion_desempeno} onChange={v => setResumen(p => ({ ...p, evaluacion_desempeno: v }))} />
                 </div>
-              </div>
+              </>
             )}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <ManualTextarea label="Dotación Actual" value={resumen.dotacion} onChange={v => setResumen(p => ({ ...p, dotacion: v }))} />
-              <ManualTextarea label="Ausentismo / Tardanzas" value={resumen.ausentismo} onChange={v => setResumen(p => ({ ...p, ausentismo: v }))} />
-              <ManualTextarea label="Capacitación Realizada" value={resumen.capacitacion} onChange={v => setResumen(p => ({ ...p, capacitacion: v }))} />
-              <ManualTextarea label="Evaluación de Desempeño" value={resumen.evaluacion_desempeno} onChange={v => setResumen(p => ({ ...p, evaluacion_desempeno: v }))} />
-            </div>
           </div>
 
           {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('9. Plan de Acción', <Target size={15} color="#fb923c" />)}
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
-              <thead>
-                <tr>
-                  {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución', ''].map(h => (
-                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {resumen.plan_acciones.map((fila, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                    {(['problema', 'accion', 'responsable'] as const).map(campo => (
-                      <td key={campo} style={{ padding: '6px 8px' }}>
-                        <input
-                          value={fila[campo]}
-                          onChange={e => {
-                            const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, [campo]: e.target.value } : f);
-                            setResumen(p => ({ ...p, plan_acciones: updated }));
-                          }}
-                          placeholder={campo === 'problema' ? 'Describí el problema...' : campo === 'accion' ? 'Acción concreta...' : 'Responsable'}
-                          style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
-                        />
-                      </td>
+            {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
+            {!collapsedSections[9] && (
+              <>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
+                  <thead>
+                    <tr>
+                      {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución', ''].map(h => (
+                        <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resumen.plan_acciones.map((fila, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                        {(['problema', 'accion', 'responsable'] as const).map(campo => (
+                          <td key={campo} style={{ padding: '6px 8px' }}>
+                            <input
+                              value={fila[campo]}
+                              onChange={e => {
+                                const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, [campo]: e.target.value } : f);
+                                setResumen(p => ({ ...p, plan_acciones: updated }));
+                              }}
+                              placeholder={campo === 'problema' ? 'Describí el problema...' : campo === 'accion' ? 'Acción concreta...' : 'Responsable'}
+                              style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
+                            />
+                          </td>
+                        ))}
+                        <td style={{ padding: '6px 8px' }}>
+                          <input
+                            type="date"
+                            value={fila.fecha}
+                            onChange={e => {
+                              const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, fecha: e.target.value } : f);
+                              setResumen(p => ({ ...p, plan_acciones: updated }));
+                            }}
+                            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', colorScheme: 'dark' as const }}
+                          />
+                        </td>
+                        <td style={{ padding: '6px 8px' }}>
+                          <button
+                            onClick={() => setResumen(p => ({ ...p, plan_acciones: p.plan_acciones.filter((_, i) => i !== idx) }))}
+                            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, color: '#f87171', cursor: 'pointer', padding: '7px 10px', display: 'flex', alignItems: 'center' }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      </tr>
                     ))}
-                    <td style={{ padding: '6px 8px' }}>
-                      <input
-                        type="date"
-                        value={fila.fecha}
-                        onChange={e => {
-                          const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, fecha: e.target.value } : f);
-                          setResumen(p => ({ ...p, plan_acciones: updated }));
-                        }}
-                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', colorScheme: 'dark' as const }}
-                      />
-                    </td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <button
-                        onClick={() => setResumen(p => ({ ...p, plan_acciones: p.plan_acciones.filter((_, i) => i !== idx) }))}
-                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, color: '#f87171', cursor: 'pointer', padding: '7px 10px', display: 'flex', alignItems: 'center' }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button
-              onClick={() => setResumen(p => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#888', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '8px 14px' }}
-            >
-              <Plus size={13} /> Agregar fila
-            </button>
+                  </tbody>
+                </table>
+                <button
+                  onClick={() => setResumen(p => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#888', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '8px 14px' }}
+                >
+                  <Plus size={13} /> Agregar fila
+                </button>
+              </>
+            )}
           </div>
 
           {/* ── SECCIÓN 10: ANÁLISIS TEMPORAL ── */}
-          <AnalisisTemporalTab registros={registros} />
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader(10, '10. Análisis Temporal', <Activity size={15} color="#60a5fa" />)}
+            {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} />}
+          </div>
 
           {/* ── BOTONES ── */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 0, paddingBottom: 0 }}>
