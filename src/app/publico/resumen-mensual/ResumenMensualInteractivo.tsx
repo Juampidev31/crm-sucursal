@@ -368,7 +368,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         {!collapsed[2] && (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
-              {allAnalistas.map((k, idx) => {
+              {allAnalistas.map((k: any, idx: number) => {
                 const isTotal = idx === kpiPorAnalista.length;
                 return (
                   <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
@@ -587,13 +587,13 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
               <thead>
                 <tr>
-                  {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución'].map(h => (
+                  {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución'].map((h: string) => (
                     <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {planAcciones.map((fila, idx) => (
+                {planAcciones.map((fila: any, idx: number) => (
                   <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                     <td style={{ padding: '6px 8px', color: '#ccc' }}>{fila.problema || '—'}</td>
                     <td style={{ padding: '6px 8px', color: '#ccc' }}>{fila.accion || '—'}</td>

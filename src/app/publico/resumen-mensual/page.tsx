@@ -13,6 +13,19 @@ const parsePeriodo = (params: { anio?: string; mes?: string }) => {
   return { anio, mes };
 };
 
+const ErrorScreen = ({ message }: { message: string }) => (
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', padding: '20px' }}>
+    <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '12px', padding: '40px', maxWidth: '500px', textAlign: 'center' }}>
+      <div style={{ width: '48px', height: '48px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+        <AlertTriangle color="#ef4444" size={24} />
+      </div>
+      <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, marginBottom: '12px' }}>Error al cargar el reporte</h2>
+      <p style={{ color: '#999', fontSize: '14px', lineHeight: '1.6' }}>{message}</p>
+      <button onClick={() => window.location.reload()} style={{ marginTop: '24px', background: '#fff', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Reintentar</button>
+    </div>
+  </div>
+);
+
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const { anio, mes } = parsePeriodo(await searchParams);
   return { title: `Resumen Mensual — ${MESES_NOMBRES[mes - 1]} ${anio}` };
@@ -53,7 +66,7 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
   const { anio, mes } = parsePeriodo(await searchParams);
   const result = await fetchSnapshot(anio, mes);
 
-  if ('error' in result) return <ErrorScreen message={result.error} />;
+  if ('error' in result) return <ErrorScreen message={result.error || 'Error desconocido'} />;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#ccc', fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>

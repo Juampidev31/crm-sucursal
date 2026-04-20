@@ -69,7 +69,7 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' }}>{title}</span>
       </div>
       <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', padding: 10 }}>
-        {data.slice(0,7).map((d,i) => {
+        {data.slice(0,7).map((d: any, i: number) => {
           const pct = totalCant ? (d.cantidad/totalCant)*100 : 0;
           const pctM = total ? (d.monto/total)*100 : 0;
           return (
@@ -100,29 +100,29 @@ export default function ResumenHTML({ datos }: { datos: any }) {
   const chartCapital = {
     labels: [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'],
     datasets: [
-      { label: `Capital ${mesActual}`, data: [...kpiPorAnalista.map(k=>k.capital), kpiTotal.capital], backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4 },
-      { type: 'line' as const, label: 'Objetivo', data: [...kpiPorAnalista.map(k=>k.metaCapital||0), kpiTotal.metaCapital||0], borderColor: '#f87171', borderWidth: 2, borderDash: [5,4], pointRadius: 4, fill: false },
+      { label: `Capital ${mesActual}`, data: [...kpiPorAnalista.map((k: any)=>k.capital), kpiTotal.capital], backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4 },
+      { type: 'line' as const, label: 'Objetivo', data: [...kpiPorAnalista.map((k: any)=>k.metaCapital||0), kpiTotal.metaCapital||0], borderColor: '#f87171', borderWidth: 2, borderDash: [5,4], pointRadius: 4, fill: false },
     ],
   };
 
   const chartTicket = {
     labels: [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'],
-    datasets: [{ label: `Ticket ${mesActual}`, data: [...kpiPorAnalista.map(k=>k.ticket), kpiTotal.ticket], backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4 }],
+    datasets: [{ label: `Ticket ${mesActual}`, data: [...kpiPorAnalista.map((k: any)=>k.ticket), kpiTotal.ticket], backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4 }],
   };
 
   const chartVar = {
     labels: [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'],
     datasets: [
-      { label: 'Var. Capital %', data: [...kpiPorAnalista.map(k=>k.tendCapital??0), kpiTotal.tendCapital??0], backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4 },
-      { label: 'Var. Ops %', data: [...kpiPorAnalista.map(k=>k.tendOps??0), kpiTotal.tendOps??0], backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4 },
+      { label: 'Var. Capital %', data: [...kpiPorAnalista.map((k: any)=>k.tendCapital??0), kpiTotal.tendCapital??0], backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4 },
+      { label: 'Var. Ops %', data: [...kpiPorAnalista.map((k: any)=>k.tendOps??0), kpiTotal.tendOps??0], backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4 },
     ],
   };
 
   const chartCumpl = {
     labels: CONFIG.ANALISTAS_DEFAULT,
     datasets: [
-      { label: 'Cumpl. Capital', data: kpiPorAnalista.map(k=>k.cumplCapital??0), backgroundColor: 'rgba(96,165,250,0.7)', borderRadius: 4 },
-      { label: 'Cumpl. Ops', data: kpiPorAnalista.map(k=>k.cumplOps??0), backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4 },
+      { label: 'Cumpl. Capital', data: kpiPorAnalista.map((k: any)=>k.cumplCapital??0), backgroundColor: 'rgba(96,165,250,0.7)', borderRadius: 4 },
+      { label: 'Cumpl. Ops', data: kpiPorAnalista.map((k: any)=>k.cumplOps??0), backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4 },
     ],
   };
 
@@ -158,7 +158,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
       <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
         {sectionHeader('2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12,marginBottom:24}}>
-          {allAnalistas.map((k,i) => {
+          {allAnalistas.map((k: any, i: number) => {
             const isT = i === kpiPorAnalista.length;
             return (
               <div key={i} style={{background:isT?'rgba(167,139,250,0.06)':'rgba(255,255,255,0.02)',borderRadius:12,border:`1px solid ${isT?'rgba(167,139,250,0.2)':'rgba(255,255,255,0.05)'}`,overflow:'hidden'}}>
@@ -241,7 +241,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
             <thead><tr><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Problema</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Acción</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Responsable</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Fecha</th></tr></thead>
             <tbody>
-              {planAcciones.map((f,i) => (
+              {planAcciones.map((f: any, i: number) => (
                 <tr key={i}><td style={{padding:6,color:'#ccc'}}>{f.problema}</td><td style={{padding:6,color:'#ccc'}}>{f.accion}</td><td style={{padding:6,color:'#ccc'}}>{f.responsable}</td><td style={{padding:6,color:'#ccc'}}>{f.fecha}</td></tr>
               ))}
             </tbody>
