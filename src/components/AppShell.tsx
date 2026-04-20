@@ -155,15 +155,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               zIndex: 10,
               flexShrink: 0,
               position: 'relative',
-              marginBottom: '24px'
+              marginBottom: '24px',
+              justifyContent: 'space-between'
             }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1 }}>
+                {/* Brand or other left content could go here */}
+              </div>
+
               <div style={{
                 display: 'flex',
                 alignItems: 'baseline',
                 gap: '8px',
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)'
+                flex: 1,
+                justifyContent: 'center'
               }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#555', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sistema de</span>
                 <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
@@ -171,9 +175,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
               </div>
 
-              <div style={{ flex: 1 }} />
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, justifyContent: 'flex-end' }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '1px' }}>
                   {formatDate(new Date().toISOString())}
                 </div>

@@ -4,8 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 
 export const ESTADOS = [
   'proyeccion', 'venta', 'en seguimiento', 'score bajo',
-  'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc',
-  'no califica'
+  'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc'
 ];
 
 export const ANALISTAS = ['Luciana', 'Victoria'];

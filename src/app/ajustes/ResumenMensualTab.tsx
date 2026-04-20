@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
-import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Download, Briefcase, PieChart, Tag } from 'lucide-react';
+import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Download, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -149,6 +149,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const [loadingData, setLoadingData] = useState(false);
   const [lastSnapshot, setLastSnapshot] = useState(''); // Estado para el HTML
   const [saving, setSaving] = useState(false);
+  const [empleadorExpandido, setEmpleadorExpandido] = useState(false);
 
   // ── Expandir ventana de registros según mes seleccionado ─────────────────
   useEffect(() => {
@@ -1484,21 +1485,47 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
           {ventasMes.length > 0 && (() => {
             const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-            const DistBlock = ({ titulo, icon, datos, color, maxItems = 7 }: { titulo: string; icon: React.ReactNode; datos: { label: string; monto: number; cantidad: number }[]; color: string; maxItems?: number }) => {
+            const DistBlock = ({ 
+              titulo, icon, datos, color, maxItems = 7, 
+              isExpanded = false, onExpand 
+            }: { 
+              titulo: string; icon: React.ReactNode; 
+              datos: { label: string; monto: number; cantidad: number }[]; 
+              color: string; maxItems?: number;
+              isExpanded?: boolean;
+              onExpand?: () => void;
+            }) => {
               const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
-              const displayData = datos.slice(0, maxItems);
+              const displayData = isExpanded ? datos : datos.slice(0, maxItems);
+              const hasMore = datos.length > maxItems;
+
               return (
-                <div style={{ flex: 1, minWidth: 220, maxHeight: 320, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ 
+                  flex: 1, 
+                  minWidth: 220, 
+                  maxHeight: isExpanded ? 'none' : 320, 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease'
+                }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
                     <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
                   </div>
-                  <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden', flex: 1, overflowY: 'auto' }}>
+                  <div style={{ 
+                    background: '#0d0d0d', 
+                    borderRadius: 10, 
+                    border: '1px solid rgba(255,255,255,0.04)', 
+                    overflow: 'hidden', 
+                    flex: 1, 
+                    overflowY: isExpanded ? 'visible' : 'auto',
+                    maxHeight: isExpanded ? 'none' : 280
+                  }}>
                     {displayData.map((d, i) => {
                       const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
                       const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
                       return (
-                        <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                        <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 || (!isExpanded && hasMore) ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                             <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{d.label}</span>
                             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1513,6 +1540,32 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         </div>
                       );
                     })}
+                    {!isExpanded && hasMore && onExpand && (
+                      <button 
+                        onClick={onExpand}
+                        style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'rgba(255,255,255,0.03)',
+                          border: 'none',
+                          color: color,
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                      >
+                        Ver todos ({datos.length})
+                        <ChevronDown size={12} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -1529,7 +1582,15 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                   <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" />
                   <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" />
                   <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" />
-                  <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" maxItems={Infinity} />
+                  <DistBlock 
+                    titulo="Empleador" 
+                    icon={<Shield size={12} color="#fbbf24" />} 
+                    datos={distEmpleador} 
+                    color="#fbbf24" 
+                    maxItems={5} 
+                    isExpanded={empleadorExpandido}
+                    onExpand={() => setEmpleadorExpandido(true)}
+                  />
                   <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" />
                 </div>
               </div>

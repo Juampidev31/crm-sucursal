@@ -522,7 +522,8 @@ const FiltersContent = () => {
           </div>
         </FilterAccordion>
 
-        <FilterAccordion title="Período">
+        <div style={{ marginBottom: 12, background: 'rgba(255,255,255,0.01)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.02)', padding: '16px' }}>
+          <label style={{ display: 'block', fontSize: '10px', color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>PERÍODO</label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA DESDE</label>
@@ -533,7 +534,7 @@ const FiltersContent = () => {
               <input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
             </div>
           </div>
-        </FilterAccordion>
+        </div>
       </div>
 
       {hayFiltros && (
