@@ -18,7 +18,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   return { title: `Resumen Mensual — ${MESES_NOMBRES[mes - 1]} ${anio}` };
 }
 
-async function fetchSnapshot(anio: number, mes: number): Promise<{ html: string } | { error: string }> {
+async function fetchSnapshot(anio: number, mes: number): Promise<{ html?: string, datos?: any, error?: string }> {
   const { data, error } = await supabase
     .from('resumen_mensual')
     .select('experiencia_cliente')
@@ -36,6 +36,7 @@ async function fetchSnapshot(anio: number, mes: number): Promise<{ html: string 
   if (raw.startsWith('{')) {
     try {
       const parsed = JSON.parse(raw);
+      if (parsed.datos) return { datos: parsed.datos, html: parsed.html };
       if (parsed.html) return { html: parsed.html };
     } catch {
       return { html: raw };
@@ -46,15 +47,7 @@ async function fetchSnapshot(anio: number, mes: number): Promise<{ html: string 
   return { error: 'No hay una captura visual guardada para este reporte.' };
 }
 
-const ErrorScreen = ({ message }: { message: string }) => (
-  <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <div style={{ textAlign: 'center', padding: 40 }}>
-      <AlertTriangle size={48} style={{ color: '#f87171', margin: '0 auto 16px' }} />
-      <h2 style={{ color: '#fff', fontSize: 20, marginBottom: 8 }}>Reporte no disponible</h2>
-      <p style={{ color: '#666', fontSize: 14 }}>{message}</p>
-    </div>
-  </div>
-);
+import ResumenMensualInteractivo from './ResumenMensualInteractivo';
 
 export default async function ResumenMensualPublico({ searchParams }: { searchParams: SearchParams }) {
   const { anio, mes } = parsePeriodo(await searchParams);
@@ -65,7 +58,7 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#ccc', fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <header style={{
-        padding: '24px 32px',
+        padding: '24px 40px',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
         background: 'rgba(0,0,0,0.8)',
         backdropFilter: 'blur(10px)',
@@ -73,7 +66,7 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
         top: 0,
         zIndex: 100,
       }}>
-        <div style={{ margin: '0 auto' }}>
+        <div style={{ margin: '0' }}>
           <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>
             Sistema de Proyecciones y Ventas
           </div>
@@ -83,11 +76,15 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
         </div>
       </header>
 
-      <main style={{ padding: '32px 24px' }}>
-        <div
-          dangerouslySetInnerHTML={{ __html: result.html }}
-          style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
-        />
+      <main style={{ padding: '32px 40px', width: '100%', maxWidth: 'none', margin: '0' }}>
+        {result.datos ? (
+          <ResumenMensualInteractivo datos={result.datos} />
+        ) : (
+          <div
+            dangerouslySetInnerHTML={{ __html: result.html || '' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+          />
+        )}
       </main>
     </div>
   );

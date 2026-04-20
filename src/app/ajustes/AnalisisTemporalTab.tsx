@@ -15,6 +15,7 @@ ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, BarEleme
 
 interface Props {
   registros: Registro[];
+  isPublic?: boolean;
 }
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -52,7 +53,7 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
   );
 };
 
-export default function AnalisisTemporalTab({ registros }: Props) {
+export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
   const [periodo, setPeriodo] = useState(30);
   const [analistaFil, setAnalistaFil] = useState('Luciana');
   const [analistaFil2, setAnalistaFil2] = useState('Victoria');
@@ -633,7 +634,7 @@ export default function AnalisisTemporalTab({ registros }: Props) {
       }}>
         {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart2 size={18} color="#fff" />)}
         
-        {!collapsedSections[11] && (
+        {!collapsedSections[11] && !isPublic && (
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
             {[
               { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="170px" /> },

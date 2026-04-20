@@ -336,7 +336,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       // 1. Esperar render de gráficos
       await new Promise(r => setTimeout(r, 300));
 
-      // 2. Capturar canvas como imágenes
+      // 2. Capturar canvas como imágenes (para fallback HTML)
       const canvasImages = new Map<HTMLCanvasElement, string>();
       root.querySelectorAll('canvas').forEach(canvas => {
         try { canvasImages.set(canvas as HTMLCanvasElement, (canvas as HTMLCanvasElement).toDataURL('image/png')); } catch { /* ignorar */ }
@@ -400,14 +400,73 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         .replace(/var\(--gris\)/g, '#666')
         .replace(/var\(--rojo\)/g, '#f87171');
 
-      // 8. Guardar snapshot en columna existente (Preservando el texto del usuario)
+      // 8. Preparar datos para interactividad
+      const auditCounts: Record<string, number> = {};
+      CONFIG.ANALISTAS_DEFAULT.forEach(a => {
+        auditCounts[a] = auditoriaData.filter(ad => ad.analista === a).length;
+      });
+
+      // Preparar registros "seguros" para el análisis temporal público (sin datos sensibles)
+      const safeRecords = registros.map(r => ({
+        fecha: r.fecha,
+        monto: r.monto,
+        analista: r.analista,
+        estado: r.estado,
+        acuerdo_precios: r.acuerdo_precios
+      }));
+
+      const datosParaCompartir = {
+        kpiTotal,
+        kpiPorAnalista,
+        registros: safeRecords,
+        mesActual: CONFIG.MESES_NOMBRES[selectedMes - 1],
+        mesAnterior: CONFIG.MESES_NOMBRES[mesPrev - 1],
+        year: selectedAnio,
+        month: selectedMes,
+        experienciaCliente: resumen.experiencia_cliente,
+        analisisComercial: resumen.analisis_comercial,
+        operacionProcesos: resumen.operacion_procesos,
+        gestionesRealizadas: resumen.gestiones_realizadas,
+        coordinacionSalidas: resumen.coordinacion_salidas,
+        empresasEstrategicas: resumen.empresas_estrategicas,
+        logros: resumen.logros,
+        desvios: resumen.desvios,
+        accionesClave: resumen.acciones_clave,
+        dotacion: resumen.dotacion,
+        ausentismo: resumen.ausentismo,
+        capacitacion: resumen.capacitacion,
+        evaluacionDesempeno: resumen.evaluacion_desempeno,
+        planAcciones: resumen.plan_acciones,
+        auditCounts,
+        collapsedSections,
+        chartCapitalVsObjetivo,
+        chartTicketPromedio,
+        chartVariacion,
+        chartEmbudo,
+        chartAperturas,
+        chartRenovaciones,
+        chartEmpleoPublPriv,
+        chartConversionTotal,
+        chartConversionPresupuesto,
+        chartCumplimiento,
+        chartAcuerdos,
+        distSexo,
+        distCuotas,
+        distRangoEtario,
+        distLocalidad,
+        distEmpleador,
+        distAcuerdos,
+      };
+
+      // 9. Guardar snapshot y datos
       const snapshotHtml = clone.innerHTML;
       const { error: saveError } = await supabase
         .from('resumen_mensual')
         .update({
           experiencia_cliente: JSON.stringify({
-            text: resumen.experiencia_cliente, // Guardamos el texto actual
-            html: snapshotHtml // Guardamos el nuevo diseño visual
+            text: resumen.experiencia_cliente,
+            html: snapshotHtml,
+            datos: datosParaCompartir
           })
         })
         .eq('anio', selectedAnio)
@@ -421,7 +480,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       const baseUrl = window.location.origin;
       const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}`;
 
-      // 9. Copiar link
+      // 10. Copiar link
       try {
         await navigator.clipboard.writeText(publicUrl);
       } catch {
@@ -442,21 +501,78 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleGuardar = async () => {
     setSaving(true);
-    // Enriquecer con KPIs calculadas antes de guardar
     const gestionesMap: Record<string, number> = {};
     const presupuestosMap: Record<string, number> = {};
     kpiPorAnalista.forEach(k => {
       gestionesMap[k.analista] = k.clientesIngresados;
       presupuestosMap[k.analista] = k.ops;
     });
+
+    const auditCounts: Record<string, number> = {};
+    CONFIG.ANALISTAS_DEFAULT.forEach(a => {
+      auditCounts[a] = auditoriaData.filter(ad => ad.analista === a).length;
+    });
+
+    // Preparar registros "seguros" para el análisis temporal público (sin datos sensibles)
+    const safeRecords = registros.map(r => ({
+      fecha: r.fecha,
+      monto: r.monto,
+      analista: r.analista,
+      estado: r.estado,
+      acuerdo_precios: r.acuerdo_precios
+    }));
+
+    const datosParaCompartir = {
+      kpiTotal,
+      kpiPorAnalista,
+      registros: safeRecords,
+      mesActual: CONFIG.MESES_NOMBRES[selectedMes - 1],
+      mesAnterior: CONFIG.MESES_NOMBRES[mesPrev - 1],
+      year: selectedAnio,
+      month: selectedMes,
+      experienciaCliente: resumen.experiencia_cliente,
+      analisisComercial: resumen.analisis_comercial,
+      operacionProcesos: resumen.operacion_procesos,
+      gestionesRealizadas: resumen.gestiones_realizadas,
+      coordinacionSalidas: resumen.coordinacion_salidas,
+      empresasEstrategicas: resumen.empresas_estrategicas,
+      logros: resumen.logros,
+      desvios: resumen.desvios,
+      accionesClave: resumen.acciones_clave,
+      dotacion: resumen.dotacion,
+      ausentismo: resumen.ausentismo,
+      capacitacion: resumen.capacitacion,
+      evaluacionDesempeno: resumen.evaluacion_desempeno,
+      planAcciones: resumen.plan_acciones,
+      auditCounts,
+      collapsedSections,
+      chartCapitalVsObjetivo,
+      chartTicketPromedio,
+      chartVariacion,
+      chartEmbudo,
+      chartAperturas,
+      chartRenovaciones,
+      chartEmpleoPublPriv,
+      chartConversionTotal,
+      chartConversionPresupuesto,
+      chartCumplimiento,
+      chartAcuerdos,
+      distSexo,
+      distCuotas,
+      distRangoEtario,
+      distLocalidad,
+      distEmpleador,
+      distAcuerdos,
+    };
+
     const payload = {
       anio: selectedAnio,
       mes: selectedMes,
       ...resumen,
-      // Guardamos como JSON para no perder el snapshot si existe
       experiencia_cliente: JSON.stringify({
         text: resumen.experiencia_cliente,
-        html: lastSnapshot // Mantenemos el HTML previo cargado en el useEffect
+        html: lastSnapshot,
+        datos: datosParaCompartir
       }),
       gestiones_por_analista: gestionesMap,
       presupuestos_por_analista: presupuestosMap,
