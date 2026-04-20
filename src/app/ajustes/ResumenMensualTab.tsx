@@ -607,19 +607,27 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       'No califica': { monto: 0, cantidad: 0 },
     };
     // Mapeo para match con DB
-    const matchTipo = (acuerdo: string): string | null => {
-      const a = acuerdo.toLowerCase();
-      if (a === 'riesgo bajo') return 'Riesgo BAJO';
-      if (a === 'riesgo medio') return 'Riesgo MEDIO';
-      if (a === 'premium') return 'PREMIUM';
-      if (a === 'no califica') return 'No califica';
+    const matchTipo = (acuerdo: string, estado: string): string | null => {
+      const ac = (acuerdo || '').toLowerCase().trim();
+      const es = (estado || '').toLowerCase().trim();
+      // Prioridad a estados de no calificación
+      const esRechazo = ac.includes('no califica') || ac === 'n/c' || 
+                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+      if (esRechazo) return 'No califica';
+
+      if (ac.includes('bajo')) return 'Riesgo BAJO';
+      if (ac.includes('medio')) return 'Riesgo MEDIO';
+      if (ac.includes('premium')) return 'PREMIUM';
       return null;
     };
-    for (const r of filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta)) {
-      const matched = matchTipo(r.acuerdo_precios ?? '');
-      if (matched) {
-        tipos[matched].monto += Number(r.monto) || 0;
-        tipos[matched].cantidad += 1;
+    for (const r of filterByMonth(registros, selectedMes, selectedAnio)) {
+      const isV = isVenta(r);
+      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '');
+      if (isV || (matched === 'No califica')) {
+        if (matched) {
+          tipos[matched].monto += Number(r.monto) || 0;
+          tipos[matched].cantidad += 1;
+        }
       }
     }
     return tipos;
@@ -875,12 +883,17 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const analistas = CONFIG.ANALISTAS_DEFAULT;
     const colores = ['#60a5fa', '#a78bfa'];
 
-    const matchAcuerdo = (acuerdo: string): string | null => {
-      const a = (acuerdo || '').toLowerCase();
-      if (a === 'riesgo bajo') return 'Riesgo BAJO';
-      if (a === 'riesgo medio') return 'Riesgo MEDIO';
-      if (a === 'premium') return 'PREMIUM';
-      if (a === 'no califica') return 'No califica';
+    const matchAcuerdo = (acuerdo: string, estado: string): string | null => {
+      const ac = (acuerdo || '').toLowerCase().trim();
+      const es = (estado || '').toLowerCase().trim();
+      // Prioridad a estados de no calificación
+      const esRechazo = ac.includes('no califica') || ac === 'n/c' || 
+                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+      if (esRechazo) return 'No califica';
+
+      if (ac.includes('bajo')) return 'Riesgo BAJO';
+      if (ac.includes('medio')) return 'Riesgo MEDIO';
+      if (ac.includes('premium')) return 'PREMIUM';
       return null;
     };
 
@@ -889,10 +902,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       datasets: analistas.map((an, idx) => ({
         label: an,
         data: tiposDisplay.map(t => {
-          return filterByMonth(registros, selectedMes, selectedAnio)
-            .filter(isVenta)
-            .filter(r => r.analista === an && matchAcuerdo(r.acuerdo_precios ?? '') === t)
-            .length;
+          return filterByMonth(registros, selectedMes, selectedAnio).filter(r => {
+            const isV = isVenta(r);
+            const matched = matchAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '');
+            return r.analista === an && matched === t && (isV || t === 'No califica');
+          }).length;
         }),
         backgroundColor: colores[idx] || '#555',
         borderRadius: 4,
