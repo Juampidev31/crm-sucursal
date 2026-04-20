@@ -1042,12 +1042,20 @@ export default function RegistrosPage() {
   const { registros, applyRegistroChange, loading, refresh, registrosWindowMonths, setRegistrosWindowMonths } = useRegistros();
   const { alertasConfig } = useSettings();
   const {
-    filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,
+    filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
     pageSize, triggerExport, exportTick,
     currentPage, setCurrentPage, setTotalResults,
     showFilters, setShowFilters,
   } = useFilter();
+
+  const allAcuerdos = useMemo(() => {
+    const set = new Set<string>();
+    registros.forEach(r => {
+      if (r.acuerdo_precios) set.add(r.acuerdo_precios);
+    });
+    return Array.from(set).sort();
+  }, [registros]);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -1171,6 +1179,7 @@ export default function RegistrosPage() {
       const mScoreMin = !filters.scoreMin || (r.puntaje != null && Number(r.puntaje) >= Number(filters.scoreMin));
       const mScoreMax = !filters.scoreMax || (r.puntaje != null && Number(r.puntaje) <= Number(filters.scoreMax));
       const mRe = !filters.esRe || (filters.esRe === 'si' ? r.es_re : !r.es_re);
+      const mAcuerdo = filters.acuerdoPrecios.length === 0 || (r.acuerdo_precios && filters.acuerdoPrecios.includes(r.acuerdo_precios));
 
       let mVencido = true;
       if (filters.soloAlertasVencidas) {
@@ -1186,7 +1195,7 @@ export default function RegistrosPage() {
         }
       }
 
-      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe && mVencido;
+      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe && mVencido && mAcuerdo;
     });
 
     return [...list].sort((a, b) => {
@@ -1306,8 +1315,8 @@ export default function RegistrosPage() {
         </div>
       )}
 
-      {/* Barra de Filtros */}
-      {showFilters && (
+      {/* Filtros movidos a la Sidebar */}
+      {false && (
         <div style={{
           background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)',
           borderRadius: '12px', padding: '16px 20px', marginBottom: '16px',
@@ -1481,24 +1490,16 @@ export default function RegistrosPage() {
               />
             </div>
 
-            {/* Ventana de datos (cuánta historia cargar del servidor) */}
+            {/* Acuerdo de precios */}
             <div style={{ flex: '1 1 160px', minWidth: '150px' }}>
-              <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>VENTANA DE DATOS</label>
-              <select
-                value={String(registrosWindowMonths)}
-                onChange={e => setRegistrosWindowMonths(Number(e.target.value))}
-                style={{
-                  width: '100%', height: 38, fontSize: '13px', fontWeight: 600,
-                  padding: '0 12px', background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.04)', borderRadius: '6px',
-                  color: '#aaa', outline: 'none',
-                }}
-              >
-                <option value="6">Últimos 6 meses</option>
-                <option value="12">Últimos 12 meses</option>
-                <option value="24">Últimos 24 meses</option>
-                <option value="0">Todo</option>
-              </select>
+              <label style={{ display: 'block', fontSize: '9px', color: '#555', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>ACUERDO DE PRECIOS</label>
+              <MultiSelectDropdown
+                items={allAcuerdos}
+                labels={Object.fromEntries(allAcuerdos.map(a => [a, a]))}
+                selected={filters.acuerdoPrecios}
+                onToggle={toggleAcuerdoPrecios}
+                onClear={() => { filters.acuerdoPrecios.forEach(toggleAcuerdoPrecios); }}
+              />
             </div>
 
             {/* Limpiar */}

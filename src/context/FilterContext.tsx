@@ -23,6 +23,7 @@ interface FilterState {
   scoreMax: string;
   esRe: string;
   soloAlertasVencidas: boolean;
+  acuerdoPrecios: string[];
 }
 
 const initialState: FilterState = {
@@ -38,12 +39,14 @@ const initialState: FilterState = {
   scoreMax: '',
   esRe: '',
   soloAlertasVencidas: false,
+  acuerdoPrecios: [],
 };
 
 interface FilterCtx {
   filters: FilterState;
   setFilter: (key: keyof FilterState, value: any) => void;
   toggleEstado: (estado: string) => void;
+  toggleAcuerdoPrecios: (acuerdo: string) => void;
   limpiarFiltros: () => void;
   hayFiltros: boolean;
   isCreationModalOpen: boolean;
@@ -82,6 +85,13 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const toggleAcuerdoPrecios = useCallback((acuerdo: string) => {
+    setFilters(prev => {
+      const cur = prev.acuerdoPrecios;
+      return { ...prev, acuerdoPrecios: cur.includes(acuerdo) ? cur.filter(a => a !== acuerdo) : [...cur, acuerdo] };
+    });
+  }, []);
+
   const limpiarFiltros = useCallback(() => {
     setFilters(initialState);
   }, []);
@@ -89,6 +99,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const hayFiltros = useMemo(() => {
     return Object.entries(filters).some(([k, v]) => {
       if (k === 'estados') return (v as string[]).length > 0;
+      if (k === 'acuerdoPrecios') return (v as string[]).length > 0;
       if (typeof v === 'boolean') return v === true;
       return v !== '';
     });
@@ -105,7 +116,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <FilterContext.Provider value={{
-      filters, setFilter, toggleEstado, limpiarFiltros, hayFiltros,
+      filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
       isCreationModalOpen, setIsCreationModalOpen,
       pageSize, setPageSize, triggerExport, exportTick,
       currentPage, setCurrentPage, totalResults, setTotalResults,

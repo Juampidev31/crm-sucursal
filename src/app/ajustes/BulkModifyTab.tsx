@@ -8,7 +8,7 @@ import { CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
-  Search, ChevronDown, ChevronUp, Loader2, Trash2
+  Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck
 } from 'lucide-react';
 
 const ANALISTAS = CONFIG.ANALISTAS_DEFAULT;
@@ -77,7 +77,7 @@ const EMPTY_CAMPOS: CamposAModificar = {
   es_re: '', comentarios: '',
 };
 
-export default function BulkModifyTab() {
+export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'corrector' | 'bulk' }) {
   const [filtros, setFiltros] = useState<Filtros>(EMPTY_FILTROS);
   const [campos, setCampos] = useState<CamposAModificar>(EMPTY_CAMPOS);
   const [previewCount, setPreviewCount] = useState(0);
@@ -306,11 +306,22 @@ export default function BulkModifyTab() {
   const variantesFiltradas = useMemo(() => {
     if (!busquedaEmpleador.trim()) return variantesEmpleador;
     const q = busquedaEmpleador.toLowerCase();
-    return variantesEmpleador.filter(v =>
-      v.normalizado.toLowerCase().includes(q) ||
-      v.variantes.some(variant => variant.toLowerCase().includes(q))
-    );
-  }, [variantesEmpleador, busquedaEmpleador]);
+    
+    // Cuando hay búsqueda, mostrar TODOS los empleadores que coincidan (no solo los que tienen duplicados)
+    const map = new Map<string, Set<string>>();
+    for (const e of allEmpleadores) {
+      const key = normalizar(e);
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key)!.add(e);
+    }
+    const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
+    
+    return fuzzyGrupos.filter(g => 
+      !estaDescartado(g.normalizado, g.cantidad) &&
+      (g.normalizado.toLowerCase().includes(q) ||
+       g.variantes.some(variant => variant.toLowerCase().includes(q)))
+    ).sort((a, b) => b.cantidad - a.cantidad);
+  }, [allEmpleadores, busquedaEmpleador, normalizar, agruparFuzzy, gruposDescartados, estaDescartado]);
 
   // Grupos con duplicados reales (más de 1 variante) — independiente de mostrarTodos
   const variantesConDuplicados = useMemo(() => {
@@ -635,15 +646,20 @@ export default function BulkModifyTab() {
         </div>
       )}
 
-      <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', width: '100%' }}>
+      <div className="data-card" style={{ 
+        background: '#0a0a0a', 
+        border: '1px solid rgba(255,255,255,0.03)', 
+        width: '100%',
+        minHeight: 'calc(100vh - 200px)'
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Users size={20} style={{ color: '#888' }} />
-              Modificación Masiva
+              {mode === 'bulk' ? <Users size={20} style={{ color: '#888' }} /> : <ShieldCheck size={20} style={{ color: '#fbbf24' }} />}
+              {mode === 'bulk' ? 'Calif. x SCORE' : 'Corrector de Empleadores'}
             </h3>
             <p style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>
-              Filtra registros por cualquier condición y actualiza campos masivamente
+              {mode === 'bulk' ? 'Filtra registros por cualquier condición y actualiza campos masivamente' : 'Detecta y corrige variantes de nombres de empleadores para unificar la base'}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -714,7 +730,8 @@ export default function BulkModifyTab() {
         </div>
 
         {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
-        <div style={{
+        {(mode === 'all' || mode === 'corrector') && (
+          <div style={{
           marginBottom: '28px', padding: '20px',
           background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.02)',
           border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)'}`,
@@ -812,7 +829,7 @@ export default function BulkModifyTab() {
 
           {/* Lista de variantes detectadas */}
           {variantesFiltradas.length > 0 ? (
-            <div style={{ marginTop: '20px', maxHeight: 200, overflowY: 'auto' }}>
+            <div style={{ marginTop: '20px', maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
               {variantesFiltradas.map((v, i) => (
                 <div key={i} style={{
                   marginBottom: 12, padding: '12px 14px',
@@ -896,13 +913,14 @@ export default function BulkModifyTab() {
               )}
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* STEP 1: FILTROS */}
-        {step === 'filter' && (
+        {(mode === 'all' || mode === 'bulk') && step === 'filter' && (
           <>
             {/* Resumen de filtros activos */}
-            {(filtros.estados.length > 0 || filtros.analistas.length > 0 || filtros.scoreMin || filtros.scoreMax) && (
+            {(filtros.estados.length > 0 || filtros.analistas.length > 0 || filtros.scoreMin || filtros.scoreMax || filtros.acuerdoPrecios.length > 0) && (
               <div style={{
                 padding: '12px 16px', background: 'rgba(96,165,250,0.05)',
                 border: '1px solid rgba(96,165,250,0.15)', borderRadius: '8px',
@@ -919,6 +937,9 @@ export default function BulkModifyTab() {
                     Score: {filtros.scoreMin || '0'} - {filtros.scoreMax || '∞'}
                   </span>
                 )}
+                {filtros.acuerdoPrecios.map(a => (
+                  <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(251,191,36,0.15)', borderRadius: '4px', color: '#fbbf24', fontWeight: 600 }}>{a}</span>
+                ))}
                 {filtros.analistas.map(a => (
                   <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{a}</span>
                 ))}
@@ -971,6 +992,18 @@ export default function BulkModifyTab() {
               </div>
             </div>
 
+            {/* Acuerdo de precios en filtros principales */}
+            {allAcuerdos.length > 0 && (
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ACUERDO DE PRECIOS</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {allAcuerdos.map(a => (
+                    <span key={a} onClick={() => toggleFilter('acuerdoPrecios', a)} style={chipStyle(filtros.acuerdoPrecios.includes(a))}>{a}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Advanced filters toggle */}
             <button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -1000,33 +1033,10 @@ export default function BulkModifyTab() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>FECHA DESDE</label>
-                    <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>FECHA HASTA</label>
-                    <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} />
-                  </div>
-                </div>
-
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>BÚSQUEDA (cualquier campo)</label>
                   <input className="form-input" placeholder="Buscar..." value={filtros.search} onChange={e => setFiltros(p => ({ ...p, search: e.target.value }))} />
                 </div>
-
-                {/* Acuerdo de precios */}
-                {allAcuerdos.length > 0 && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ACUERDO DE PRECIOS</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {allAcuerdos.map(a => (
-                        <span key={a} onClick={() => toggleFilter('acuerdoPrecios', a)} style={chipStyle(filtros.acuerdoPrecios.includes(a))}>{a}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Tipo cliente */}
                 {allTipos.length > 0 && (
@@ -1189,7 +1199,7 @@ export default function BulkModifyTab() {
         )}
 
         {/* STEP 2: CONFIRMAR - Seleccionar campos a modificar */}
-        {step === 'confirm' && (
+        {(mode === 'all' || mode === 'bulk') && step === 'confirm' && (
           <>
             <div style={{
               padding: '16px 20px', background: 'rgba(250,204,21,0.06)',
@@ -1309,7 +1319,7 @@ export default function BulkModifyTab() {
         )}
 
         {/* STEP 3: DONE */}
-        {step === 'done' && (
+        {(mode === 'all' || mode === 'bulk') && step === 'done' && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px' }} />
             <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: 8 }}>

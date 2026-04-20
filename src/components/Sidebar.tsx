@@ -3,14 +3,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
+import { useFilter } from '@/context/FilterContext';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
+import { ESTADOS, ANALISTAS } from '@/context/FilterContext';
+import { STATUS_LABEL } from '@/lib/utils';
+import { 
   AlignJustify, BarChart2, PieChart, FileText,
-  DollarSign, Settings, Bell, Lock, LogOut, Plus, SlidersHorizontal, Download
+  DollarSign, Settings, Bell, Lock, LogOut, Plus, 
+  SlidersHorizontal, Download, ChevronDown, ChevronUp, X 
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { setSession } from '@/lib/auth';
-import { useFilter } from '@/context/FilterContext';
 
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
@@ -144,188 +148,224 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   };
 
   return (
-    <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''}`}
+    <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showFilters ? 'sidebar-expanded-filters' : ''}`}
       style={{
         background: '#070707',
         borderRight: '1px solid rgba(255,255,255,0.02)',
         boxShadow: 'inset -20px 0 40px rgba(0,0,0,0.5)',
+        display: 'flex', flexDirection: 'row', // Change to row to support side panel
+        alignItems: 'stretch',
+        width: showFilters ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
+        zIndex: 150,
+        position: 'relative',
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
+    >
+      {/* Icon Column */}
+      <div style={{
+        width: 'var(--sidebar-width)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center',
         paddingTop: 24,
         gap: 10,
-        width: 'var(--sidebar-width)',
-        zIndex: 150,
-        position: 'relative',
-      }}
-    >
-      {isRegistros && (
-        <>
-          <div className="sidebar-icon-btn" data-label="Nuevo Registro">
-            <button
-              onClick={() => setIsCreationModalOpen(true)}
-              className="green-hover-btn"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 52, height: 52,
-                borderRadius: 13,
-                background: 'rgba(255,255,255,0.04)',
-                color: '#fff',
-                border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
-              }}
-            >
-              <Plus size={26} strokeWidth={3} />
-            </button>
-          </div>
-          <SidebarDivider />
-        </>
-      )}
-
-      <NavItem
-        href="/registros"
-        icon={AlignJustify}
-        label="Registros"
-        active={pathname === '/registros'}
-      />
-      <NavItem href="/analistas" icon={BarChart2} label="Reportes" active={pathname === '/analistas'} />
-      <NavItem href="/metricas" icon={PieChart} label="Métricas" active={pathname === '/metricas'} />
-      <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
-
-      <SidebarDivider />
-
-      <NavItem href="/reportes/ventas" icon={FileText} label="Ventas" active={pathname === '/reportes/ventas'} />
-      <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} />
-
-      <SidebarDivider />
-
-      {isRegistros && (
-        <>
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowPageSizeSelector(s => !s)}
-              className="green-hover-btn"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 52, height: 52,
-                borderRadius: 13,
-                background: showPageSizeSelector ? 'rgba(134, 239, 172, 0.15)' : 'rgba(255,255,255,0.04)',
-                color: showPageSizeSelector ? '#86efac' : '#888',
-                border: `1px solid ${showPageSizeSelector ? 'rgba(134, 239, 172, 0.2)' : 'rgba(255,255,255,0.05)'}`,
-                cursor: 'pointer',
-              }}
-              title={`Filas por página: ${totalResults} registros`}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>Ver</span>
-                <span style={{ fontSize: 14, fontWeight: 900 }}>{pageSize}</span>
-              </div>
-            </button>
-            {showPageSizeSelector && (
-              <div style={{
-                position: 'absolute', left: '60px', bottom: 0,
-                background: '#111', border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: 10, padding: 8, zIndex: 1000,
-                boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
-                display: 'flex', flexDirection: 'column', gap: 4,
-                minWidth: 120,
-              }}>
-                <div style={{
-                  fontSize: 9, fontWeight: 800, color: '#555',
-                  textTransform: 'uppercase', letterSpacing: '0.5px',
-                  padding: '4px 8px', marginBottom: 4,
-                }}>
-                  {totalResults} registros
-                </div>
-                <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 8px 4px' }} />
-                {[25, 50, 100, 200].map(size => (
-                  <button
-                    key={size}
-                    onClick={() => { setPageSize(size); setShowPageSizeSelector(false); }}
-                    style={{
-                      padding: '8px 16px',
-                      background: pageSize === size ? 'rgba(255,255,255,0.15)' : 'transparent',
-                      border: 'none', borderRadius: 6,
-                      color: pageSize === size ? '#fff' : '#888',
-                      fontSize: 12, fontWeight: 700,
-                      cursor: 'pointer', textAlign: 'left',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {size} filas
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="sidebar-icon-btn" data-label="Exportar CSV">
-            <button
-              onClick={triggerExport}
-              className="green-hover-btn"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 52, height: 52,
-                borderRadius: 13,
-                background: 'rgba(255,255,255,0.04)', color: '#888',
-                border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
-              }}
-            >
-              <Download size={22} strokeWidth={2} />
-            </button>
-          </div>
-        </>
-      )}
-
-      <SidebarDivider />
-
-      <NavItem
-        href="#"
-        icon={SlidersHorizontal}
-        label="Filtros Avanzados"
-        active={showFilters}
-        onClick={(e) => {
-          e.preventDefault();
-          setShowFilters(f => !f);
-        }}
-      />
-
-      {isAdmin && (
-        <>
-          <SidebarDivider />
-          <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname === '/ajustes'} />
-        </>
-      )}
-
-      <div style={{ flex: 1 }} />
-
-      <div style={{ padding: '0 0 32px' }}>
-        {isAdmin ? (
-          <button
-            onClick={() => { logout(); }}
-            title="Salir del modo admin"
-            className="green-hover-btn"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#333', width: '100%', height: 40,
-            }}
-          >
-            <LogOut size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
-          </button>
-        ) : (
-          <button
-            onClick={() => setShowAdminModal(true)}
-            title="Acceso unico JUAN PABLO"
-            className="green-hover-btn"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#333', width: '100%', height: 40,
-            }}
-          >
-            <Lock size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
-          </button>
+        flexShrink: 0,
+        borderRight: showFilters ? '1px solid rgba(255,255,255,0.03)' : 'none',
+      }}>
+        {isRegistros && (
+          <>
+            <div className="sidebar-icon-btn" data-label="Nuevo Registro">
+              <button
+                onClick={() => setIsCreationModalOpen(true)}
+                className="green-hover-btn"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 52, height: 52,
+                  borderRadius: 13,
+                  background: 'rgba(255,255,255,0.04)',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
+                }}
+              >
+                <Plus size={26} strokeWidth={3} />
+              </button>
+            </div>
+            <SidebarDivider />
+          </>
         )}
+
+        <NavItem
+          href="/registros"
+          icon={AlignJustify}
+          label="Registros"
+          active={pathname === '/registros'}
+        />
+        <NavItem href="/analistas" icon={BarChart2} label="Reportes" active={pathname === '/analistas'} />
+        <NavItem href="/metricas" icon={PieChart} label="Métricas" active={pathname === '/metricas'} />
+        <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
+
+        <SidebarDivider />
+
+        <NavItem href="/reportes/ventas" icon={FileText} label="Ventas" active={pathname === '/reportes/ventas'} />
+        <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} />
+
+        <SidebarDivider />
+
+        {isRegistros && (
+          <>
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowPageSizeSelector(s => !s)}
+                className="green-hover-btn"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 52, height: 52,
+                  borderRadius: 13,
+                  background: showPageSizeSelector ? 'rgba(134, 239, 172, 0.15)' : 'rgba(255,255,255,0.04)',
+                  color: showPageSizeSelector ? '#86efac' : '#888',
+                  border: `1px solid ${showPageSizeSelector ? 'rgba(134, 239, 172, 0.2)' : 'rgba(255,255,255,0.05)'}`,
+                  cursor: 'pointer',
+                }}
+                title={`Filas por página: ${totalResults} registros`}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>Ver</span>
+                  <span style={{ fontSize: 14, fontWeight: 900 }}>{pageSize}</span>
+                </div>
+              </button>
+              {showPageSizeSelector && (
+                <div style={{
+                  position: 'absolute', left: '60px', bottom: 0,
+                  background: '#111', border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: 10, padding: 8, zIndex: 1000,
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
+                  display: 'flex', flexDirection: 'column', gap: 4,
+                  minWidth: 120,
+                }}>
+                  <div style={{
+                    fontSize: 9, fontWeight: 800, color: '#555',
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                    padding: '4px 8px', marginBottom: 4,
+                  }}>
+                    {totalResults} registros
+                  </div>
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 8px 4px' }} />
+                  {[25, 50, 100, 200].map(size => (
+                    <button
+                      key={size}
+                      onClick={() => { setPageSize(size); setShowPageSizeSelector(false); }}
+                      style={{
+                        padding: '8px 16px',
+                        background: pageSize === size ? 'rgba(255,255,255,0.15)' : 'transparent',
+                        border: 'none', borderRadius: 6,
+                        color: pageSize === size ? '#fff' : '#888',
+                        fontSize: 12, fontWeight: 700,
+                        cursor: 'pointer', textAlign: 'left',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {size} filas
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="sidebar-icon-btn" data-label="Exportar CSV">
+              <button
+                onClick={triggerExport}
+                className="green-hover-btn"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 52, height: 52,
+                  borderRadius: 13,
+                  background: 'rgba(255,255,255,0.04)', color: '#888',
+                  border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
+                }}
+              >
+                <Download size={22} strokeWidth={2} />
+              </button>
+            </div>
+          </>
+        )}
+
+        <SidebarDivider />
+
+        <NavItem
+          href="#"
+          icon={SlidersHorizontal}
+          label="Filtros Avanzados"
+          active={showFilters}
+          onClick={(e) => {
+            e.preventDefault();
+            setShowFilters(f => !f);
+          }}
+        />
+
+        {isAdmin && (
+          <>
+            <SidebarDivider />
+            <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname === '/ajustes'} />
+          </>
+        )}
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ padding: '0 0 32px' }}>
+          {isAdmin ? (
+            <button
+              onClick={() => { logout(); }}
+              title="Salir del modo admin"
+              className="green-hover-btn"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#333', width: '100%', height: 40,
+              }}
+            >
+              <LogOut size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAdminModal(true)}
+              title="Acceso unico JUAN PABLO"
+              className="green-hover-btn"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#333', width: '100%', height: 40,
+              }}
+            >
+              <Lock size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Expanded Filters Panel */}
+      {showFilters && (
+        <div style={{
+          flex: 1,
+          display: 'flex', flexDirection: 'column',
+          background: 'rgba(255,255,255,0.005)',
+          overflow: 'hidden',
+          animation: 'fadeIn 0.4s ease-out'
+        }}>
+          <div style={{
+            padding: '28px 24px 20px',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          }}>
+            <span style={{ fontSize: '13px', fontWeight: 900, color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>Filtros Avanzados</span>
+            <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer' }}>
+              <SlidersHorizontal size={16} />
+            </button>
+          </div>
+
+          <div style={{ flex: 1, overflow: 'hidden', padding: '16px 20px' }}>
+            <FiltersContent />
+          </div>
+        </div>
+      )}
 
       {showAdminModal && (
         <div
@@ -379,3 +419,140 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
     </aside>
   );
 }
+
+// ── Components for expanded filters ──────────────────────────────────────────
+
+const FilterAccordion = ({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  return (
+    <div style={{ marginBottom: 12, background: 'rgba(255,255,255,0.01)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.02)', overflow: 'hidden' }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: isOpen ? 'rgba(255,255,255,0.02)' : 'transparent', border: 'none', color: isOpen ? '#fff' : '#666',
+          fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', cursor: 'pointer', transition: 'all 0.2s'
+        }}
+      >
+        {title}
+        {isOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </button>
+      {isOpen && <div style={{ padding: '16px' }}>{children}</div>}
+    </div>
+  );
+};
+
+const FiltersContent = () => {
+  const { filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros } = useFilter();
+  const { registros } = useRegistros();
+  const allAcuerdos = React.useMemo(() => {
+    const set = new Set<string>();
+    registros.forEach(r => { if (r.acuerdo_precios) set.add(r.acuerdo_precios); });
+    return Array.from(set).sort();
+  }, [registros]);
+
+  const chipStyle = (active: boolean) => ({
+    padding: '8px 14px', borderRadius: '10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+    background: active ? '#fff' : 'rgba(255,255,255,0.03)',
+    color: active ? '#000' : '#666',
+    border: `1px solid ${active ? '#fff' : 'rgba(255,255,255,0.06)'}`,
+    transition: 'all 0.2s', whiteSpace: 'nowrap'
+  } as React.CSSProperties);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '16px' }}>
+      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.02)' }}>
+        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>BÚSQUEDA GENERAL</label>
+        <input
+          className="form-input"
+          placeholder="Nombre, CUIL..."
+          value={filters.search}
+          onChange={e => setFilter('search', e.target.value)}
+          style={{ width: '100%', height: 42, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}
+        />
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <FilterAccordion title="Gestión" defaultOpen>
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ANALISTA</label>
+            <select
+              value={filters.analista}
+              onChange={e => setFilter('analista', e.target.value)}
+              style={{ width: '100%', height: 40, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: '#888', outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="">Todos los analistas</option>
+              {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ESTADOS</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {ESTADOS.map(st => (
+                <span key={st} onClick={() => toggleEstado(st)} style={chipStyle(filters.estados.includes(st))}>{STATUS_LABEL[st] || st}</span>
+              ))}
+            </div>
+          </div>
+        </FilterAccordion>
+
+        <FilterAccordion title="Sistema" defaultOpen>
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ACUERDO DE PRECIOS</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {allAcuerdos.length > 0 ? allAcuerdos.map(a => (
+                <span key={a} onClick={() => toggleAcuerdoPrecios(a)} style={chipStyle(filters.acuerdoPrecios.includes(a))}>{a}</span>
+              )) : <span style={{ fontSize: '11px', color: '#333' }}>Sin acuerdos registrados</span>}
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>SCORE MIN/MAX</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input type="number" placeholder="Mín" className="form-input" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+                <input type="number" placeholder="Máx" className="form-input" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+              </div>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>MONTO MIN/MAX</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input type="number" placeholder="Mín" className="form-input" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+                <input type="number" placeholder="Máx" className="form-input" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+              </div>
+            </div>
+          </div>
+        </FilterAccordion>
+
+        <FilterAccordion title="Período">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA DESDE</label>
+              <input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA HASTA</label>
+              <input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+            </div>
+          </div>
+        </FilterAccordion>
+      </div>
+
+      {hayFiltros && (
+        <button
+          onClick={limpiarFiltros}
+          style={{
+            width: '100%', padding: '14px', background: 'rgba(248,113,113,0.06)',
+            border: '1px solid rgba(248,113,113,0.12)', color: '#f87171', borderRadius: '12px',
+            fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px',
+            cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(248,113,113,0.12)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(248,113,113,0.06)'}
+        >
+          <X size={14} strokeWidth={3} /> Limpiar Filtros
+        </button>
+      )}
+    </div>
+  );
+};
+
+
