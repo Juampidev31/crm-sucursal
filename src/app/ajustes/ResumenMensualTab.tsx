@@ -687,6 +687,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const distRangoEtario = useMemo(() => distPor('rango_etario'), [ventasMes]);
   const distSexo = useMemo(() => distPor('sexo'), [ventasMes]);
   const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
+  const distAcuerdos = useMemo(() => {
+    return Object.entries(distribucionAcuerdos)
+      .map(([label, data]) => ({ label, ...data }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }, [distribucionAcuerdos]);
 
   // ── Distribuciones mes anterior ───────────────────────────────────────────
   const ventasMesAnt = useMemo(() =>
@@ -871,7 +876,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const colores = ['#60a5fa', '#a78bfa'];
 
     const matchAcuerdo = (acuerdo: string): string | null => {
-      const a = acuerdo.toLowerCase();
+      const a = (acuerdo || '').toLowerCase();
       if (a === 'riesgo bajo') return 'Riesgo BAJO';
       if (a === 'riesgo medio') return 'Riesgo MEDIO';
       if (a === 'premium') return 'PREMIUM';
@@ -879,43 +884,15 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       return null;
     };
 
-    // DEBUG: Log acuerdo_precios values and match results
-    const monthData = filterByMonth(registros, selectedMes, selectedAnio);
-    const uniqueValues = [...new Set(monthData.map(r => r.acuerdo_precios ?? ''))];
-    const valueCounts: Record<string, number> = {};
-    const matchResults: Record<string, string | null> = {};
-    uniqueValues.forEach(v => {
-      valueCounts[v] = monthData.filter(r => (r.acuerdo_precios ?? '') === v).length;
-      matchResults[v] = matchAcuerdo(v);
-    });
-
-    // Debug: breakdown by analyst for "No califica"
-    const noCalificaRecords = monthData.filter(r => matchAcuerdo(r.acuerdo_precios ?? '') === 'No califica');
-    const noCalificaByAnalyst = CONFIG.ANALISTAS_DEFAULT.map(an => ({
-      analyst: an,
-      total: noCalificaRecords.filter(r => r.analista === an).length,
-    }));
-
-    console.log('DEBUG chartAcuerdos - acuerdo_precios values:', {
-      uniqueValues,
-      valueCounts,
-      matchResults,
-      totalRecords: monthData.length,
-      noCalificaDetail: {
-        total: noCalificaRecords.length,
-        byAnalyst: noCalificaByAnalyst,
-        estados: [...new Set(noCalificaRecords.map(r => r.estado))],
-      },
-    });
-
     return {
       labels: tiposDisplay,
       datasets: analistas.map((an, idx) => ({
         label: an,
         data: tiposDisplay.map(t => {
-          return filterByMonth(registros, selectedMes, selectedAnio).filter(r =>
-            r.analista === an && matchAcuerdo(r.acuerdo_precios ?? '') === t
-          ).length;
+          return filterByMonth(registros, selectedMes, selectedAnio)
+            .filter(isVenta)
+            .filter(r => r.analista === an && matchAcuerdo(r.acuerdo_precios ?? '') === t)
+            .length;
         }),
         backgroundColor: colores[idx] || '#555',
         borderRadius: 4,
@@ -1218,7 +1195,6 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                       {kpiTotal.cumplCapital.toFixed(1)}% cumpl.
                     </span>
                   )}
-                  {tendBadge(kpiTotal.tendCapital)}
                 </div>
                 <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -1249,7 +1225,6 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                       {kpiTotal.cumplOps.toFixed(1)}% cumpl.
                     </span>
                   )}
-                  {tendBadge(kpiTotal.tendOps)}
                 </div>
                 <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -1334,18 +1309,13 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         </div>
                         <span style={{ fontSize: 13, fontWeight: 800, color: isTotal ? '#a78bfa' : '#ccc' }}>{k.analista}</span>
                       </div>
-                      {tendBadge(k.tendCapital)}
                     </div>
                     {/* Métricas */}
                     <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       <div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
                         <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
-                        {k.restanteCapital !== null && k.restanteCapital > 0 ? (
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: '#f87171', whiteSpace: 'nowrap' as const }}>Falta {k.restanteCapital.toFixed(0)}%</span>
-                          </div>
-                        ) : k.cumplCapital !== null && (
+                        {k.cumplCapital !== null && (
                           <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
@@ -1358,11 +1328,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                       <div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
                         <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
-                        {k.restanteOps !== null && k.restanteOps > 0 ? (
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: '#f87171', whiteSpace: 'nowrap' as const }}>Falta {k.restanteOps.toFixed(0)}%</span>
-                          </div>
-                        ) : k.cumplOps !== null && (
+                        {k.cumplOps !== null && (
                           <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
@@ -1499,63 +1465,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             </div>
           </div>
 
-          {/* ── SECCIÓN 3: DISTRIBUCIÓN POR ACUERDO ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('3. Distribución por Acuerdo de Precios', <PieChart size={15} color="#60a5fa" />)}
-            {(() => {
-              const totalOps = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.cantidad, 0);
-              const totalMonto = Object.values(distribucionAcuerdos).reduce((s, d) => s + d.monto, 0);
-              const colores: Record<string, string> = { 'Riesgo BAJO': '#34d399', 'Riesgo MEDIO': '#fbbf24', 'PREMIUM': '#a78bfa', 'No califica': '#f97316' };
-              return (
-                <>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                    {Object.entries(distribucionAcuerdos).map(([tipo, data]) => {
-                      const pctOps = totalOps > 0 ? (data.cantidad / totalOps) * 100 : 0;
-                      const pctMonto = totalMonto > 0 ? (data.monto / totalMonto) * 100 : 0;
-                      const color = colores[tipo] ?? '#555';
 
-                      // Desglose por analista
-                      const desglose = CONFIG.ANALISTAS_DEFAULT.map(an => ({
-                        nombre: an,
-                        ops: ventasMes.filter(r => {
-                          const val = (r.acuerdo_precios ?? '').toLowerCase();
-                          const mapVal: Record<string, string> = { 'riesgo bajo': 'Riesgo BAJO', 'riesgo medio': 'Riesgo MEDIO', 'premium': 'PREMIUM', 'no califica': 'No califica' };
-                          return mapVal[val] === tipo && r.analista === an;
-                        }).length
-                      }));
-
-                      return (
-                        <div key={tipo} style={{ background: `${color}0d`, borderRadius: 10, padding: '14px 16px', border: `1px solid ${color}22` }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                              <span style={{ fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{tipo}</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              {desglose.map((d, i) => (
-                                <div key={d.nombre} style={{ fontSize: 9, fontWeight: 800, color: i === 0 ? '#60a5fa' : '#a78bfa', background: 'rgba(255,255,255,0.03)', padding: '1px 4px', borderRadius: 3 }}>
-                                  {d.nombre.slice(0, 1)}: {d.ops}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', marginBottom: 2 }}>{data.cantidad}</div>
-                          <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>{formatCurrency(data.monto)}</div>
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color, background: `${color}18`, padding: '2px 7px', borderRadius: 4 }}>{pctOps.toFixed(0)}% ops</span>
-                            <span style={{ fontSize: 11, color: '#444' }}>{pctMonto.toFixed(0)}% $</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-
-          {/* ── SECCIÓN 4: VENTAS POR CATEGORÍA ── */}
+          {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
           {ventasMes.length > 0 && (() => {
             const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
             const DistBlock = ({ titulo, icon, datos, color, maxItems = 7 }: { titulo: string; icon: React.ReactNode; datos: { label: string; monto: number; cantidad: number }[]; color: string; maxItems?: number }) => {
@@ -1594,11 +1506,12 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             return (
               <div className="data-card" style={{ background: '#0a0a0a' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
-                  <div style={{ flex: 1 }}>{sectionHeader('4. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+                  <div style={{ flex: 1 }}>{sectionHeader('3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
                   <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(totalMes)}</span>
                 </div>
                 {/* Cuotas + Rango Etario — horizontales */}
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+                  <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" />
                   <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" />
                   <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" />
                   <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" />
@@ -1608,9 +1521,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               </div>
             );
           })()}
-          {/* ── SECCIÓN 5: ANÁLISIS COMERCIAL ── */}
+          {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+            {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
             <ManualTextarea
               label="Interpretación del Período"
               value={resumen.analisis_comercial}
@@ -1619,9 +1532,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             />
           </div>
 
-          {/* ── SECCIÓN 6: OPERACIÓN Y PROCESOS ── */}
+          {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+            {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
             <ManualTextarea
               label="Cumplimiento de Procedimientos / Tiempos / Stock"
               value={resumen.operacion_procesos}
@@ -1630,9 +1543,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             />
           </div>
 
-          {/* ── SECCIÓN 7: GESTIÓN COMERCIAL ── */}
+          {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+            {sectionHeader('6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
               <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
               <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} placeholder="Salidas al campo, visitas programadas..." />
@@ -1645,9 +1558,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             </div>
           </div>
 
-          {/* ── SECCIÓN 8: EXPERIENCIA DEL CLIENTE ── */}
+          {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+            {sectionHeader('7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
             <ManualTextarea
               label="Reclamos y Satisfacción"
               value={resumen.experiencia_cliente}
@@ -1656,9 +1569,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             />
           </div>
 
-          {/* ── SECCIÓN 9: GESTIÓN DEL EQUIPO ── */}
+          {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+            {sectionHeader('8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
             {auditoriaData.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
@@ -1684,9 +1597,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             </div>
           </div>
 
-          {/* ── SECCIÓN 10: PLAN DE ACCIÓN ── */}
+          {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader('10. Plan de Acción', <Target size={15} color="#fb923c" />)}
+            {sectionHeader('9. Plan de Acción', <Target size={15} color="#fb923c" />)}
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
               <thead>
                 <tr>
@@ -1742,7 +1655,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             </button>
           </div>
 
-          {/* ── SECCIÓN 11: ANÁLISIS TEMPORAL ── */}
+          {/* ── SECCIÓN 10: ANÁLISIS TEMPORAL ── */}
           <AnalisisTemporalTab registros={registros} />
 
           {/* ── BOTONES ── */}
