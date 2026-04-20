@@ -307,21 +307,22 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
     if (!busquedaEmpleador.trim()) return variantesEmpleador;
     const q = busquedaEmpleador.toLowerCase();
     
-    // Cuando hay búsqueda, mostrar TODOS los empleadores que coincidan (no solo los que tienen duplicados)
-    const map = new Map<string, Set<string>>();
-    for (const e of allEmpleadores) {
-      const key = normalizar(e);
-      if (!map.has(key)) map.set(key, new Set());
-      map.get(key)!.add(e);
-    }
-    const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
+    // Buscar directamente en todos los empleadores sin pasar por normalización
+    // para que cualquier coincidencia sea encontrada
+    const matchingEmpleadores = allEmpleadores.filter(e => 
+      e.toLowerCase().includes(q)
+    );
     
-    return fuzzyGrupos.filter(g => 
-      !estaDescartado(g.normalizado, g.cantidad) &&
-      (g.normalizado.toLowerCase().includes(q) ||
-       g.variantes.some(variant => variant.toLowerCase().includes(q)))
-    ).sort((a, b) => b.cantidad - a.cantidad);
-  }, [allEmpleadores, busquedaEmpleador, normalizar, agruparFuzzy, gruposDescartados, estaDescartado]);
+    // Si no hay empleadores que coincidan, devolver vacío
+    if (matchingEmpleadores.length === 0) return [];
+    
+    // Crear grupos para显示 (cada empleador como su propio grupo)
+    return matchingEmpleadores.map(e => ({
+      normalizado: normalizar(e),
+      variantes: [e],
+      cantidad: 1,
+    })).sort((a, b) => b.normalizado.localeCompare(a.normalizado));
+  }, [allEmpleadores, busquedaEmpleador, normalizar]);
 
   // Grupos con duplicados reales (más de 1 variante) — independiente de mostrarTodos
   const variantesConDuplicados = useMemo(() => {
