@@ -1735,7 +1735,8 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                             <tbody>
                               {items.map((emp, idx) => {
                                 const isMaster = emp.masterName === emp.nombre;
-                                const hasMasterSuggestion = emp.masterName && emp.masterName !== emp.nombre;
+                                const totalGeneral = items.reduce((acc, curr) => acc + curr.cantidad, 0);
+                                const porcentaje = totalGeneral > 0 ? ((emp.cantidad / totalGeneral) * 100).toFixed(1) : '0';
                                 
                                 return (
                                   <tr key={idx} style={{ 
