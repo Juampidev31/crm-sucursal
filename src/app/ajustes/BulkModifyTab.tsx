@@ -1580,8 +1580,9 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
           <div
             style={{
               background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12, width: '100%', maxWidth: 900,
-              maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+              borderRadius: 12, width: '100%', maxWidth: 1200,
+              maxHeight: '92vh', display: 'flex', flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
