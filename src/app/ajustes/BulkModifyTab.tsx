@@ -233,7 +233,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   // Estado para el modal de todos los empleadores
   const [modalEmpleadoresOpen, setModalEmpleadoresOpen] = useState(false);
   const [busquedaEmpleadorModal, setBusquedaEmpleadorModal] = useState('');
-  const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'sa' | 'srl' | 'otros' | 'maestros'>('todos');
+  const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'publico' | 'privada' | 'fisica' | 'maestros' | 'otros'>('todos');
   const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number; tipo: string; categoria: string; masterName?: string }[]>([]);
   const [empleadoresLoading, setEmpleadoresLoading] = useState(false);
 
@@ -1625,11 +1625,12 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
               />
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {([
-                   { key: 'todos', label: 'Todos' },
-                   { key: 'sa', label: 'S.A.' },
-                   { key: 'srl', label: 'S.R.L.' },
-                   { key: 'maestros', label: 'Maestros' },
-                   { key: 'otros', label: 'Otros' },
+                 { key: 'todos', label: 'Todos' },
+                 { key: 'publico', label: 'Público' },
+                 { key: 'privada', label: 'Privada' },
+                 { key: 'fisica', label: 'P. Física' },
+                 { key: 'maestros', label: 'Maestros' },
+                 { key: 'otros', label: 'Otros' },
                 ] as const).map(({ key, label }) => {
                   const activo = filtroTipoModal === key;
                   return (
@@ -1673,10 +1674,11 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                         )
                       : empleadoresConConteo;
 
-                    if (filtroTipoModal === 'sa') filtered = filtered.filter(e => esSA(e.nombre));
-                    else if (filtroTipoModal === 'srl') filtered = filtered.filter(e => esSRL(e.nombre));
+                    if (filtroTipoModal === 'publico') filtered = filtered.filter(e => e.tipo === 'Público');
+                    else if (filtroTipoModal === 'privada') filtered = filtered.filter(e => e.tipo === 'S.A' || e.tipo === 'S.R.L' || e.tipo === 'Privada');
+                    else if (filtroTipoModal === 'fisica') filtered = filtered.filter(e => e.tipo === 'Persona Física');
                     else if (filtroTipoModal === 'maestros') filtered = filtered.filter(e => e.masterName === e.nombre);
-                    else if (filtroTipoModal === 'otros') filtered = filtered.filter(e => !esSA(e.nombre) && !esSRL(e.nombre));
+                    else if (filtroTipoModal === 'otros') filtered = filtered.filter(e => !['S.A', 'S.R.L', 'Público', 'Persona Física', 'Privada'].includes(e.tipo));
 
                     return filtered.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
