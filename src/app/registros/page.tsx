@@ -61,6 +61,21 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
 
+  // Validación de Score vs Acuerdo de precios
+  if (form.puntaje !== undefined && form.acuerdo_precios) {
+    const score = Number(form.puntaje);
+    const acuerdo = form.acuerdo_precios;
+    if (score < 500 && acuerdo !== 'No califica') {
+      errs.acuerdo_precios = 'Debe ser No califica (0-499)';
+    } else if (score >= 500 && score < 600 && acuerdo !== 'Riesgo Medio') {
+      errs.acuerdo_precios = 'Debe ser Riesgo MEDIO (500-599)';
+    } else if (score >= 600 && score < 700 && acuerdo !== 'Riesgo Bajo') {
+      errs.acuerdo_precios = 'Debe ser Riesgo BAJO (600-699)';
+    } else if (score >= 700 && acuerdo !== 'Premium') {
+      errs.acuerdo_precios = 'Debe ser PREMIUM (700-999)';
+    }
+  }
+
   if (form.estado === 'derivado / rechazado cc' && !form.comentarios?.trim())
     errs.comentarios = 'Requerido — ingresá el motivo de rechazo';
 
@@ -399,8 +414,25 @@ const RegistroModal = memo(function RegistroModal({
   }, [isOpen, showDupModal, onClose]);
 
   const set = (field: keyof Registro, value: unknown) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+    setForm(prev => {
+      const next = { ...prev, [field]: value };
+
+      // Auto-actualizar acuerdo_precios según el score
+      if (field === 'puntaje' && value !== undefined && value !== '') {
+        const score = Number(value);
+        if (score < 500) next.acuerdo_precios = 'No califica';
+        else if (score < 600) next.acuerdo_precios = 'Riesgo Medio';
+        else if (score < 700) next.acuerdo_precios = 'Riesgo Bajo';
+        else next.acuerdo_precios = 'Premium';
+      }
+
+      return next;
+    });
+
     if (errors[field]) setErrors(prev => { const e = { ...prev }; delete e[field]; return e; });
+    if (field === 'puntaje' && errors.acuerdo_precios) {
+      setErrors(prev => { const e = { ...prev }; delete e.acuerdo_precios; return e; });
+    }
   };
 
   const guardar = async (bypassDupCheck = false) => {
