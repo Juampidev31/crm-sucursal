@@ -549,13 +549,16 @@ export default function AjustesPage() {
               key={t.id}
               onClick={() => setActiveTab(t.id as ActiveTab)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '8px 16px', border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                padding: '10px 16px', border: 'none',
                 background: activeTab === t.id ? '#fff' : 'transparent',
                 borderRadius: '6px',
                 fontFamily: "'Outfit', sans-serif", fontSize: '13px', fontWeight: activeTab === t.id ? 700 : 500,
                 cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 color: activeTab === t.id ? '#000' : 'var(--gris)',
+                flex: '1 0 160px',
+                maxWidth: '200px',
+                whiteSpace: 'nowrap'
               }}
             >
               <t.icon size={15} style={{ opacity: activeTab === t.id ? 1 : 0.7 }} />
