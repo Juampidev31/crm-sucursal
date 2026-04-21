@@ -1728,6 +1728,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                                 <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Tipo</th>
                                 <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Categoría</th>
                                 <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Cant.</th>
+                                <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>%</th>
                                 <th style={{ textAlign: 'right', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Acciones</th>
                               </tr>
                             </thead>
@@ -1764,6 +1765,14 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                                     </td>
                                     <td style={{ padding: '12px', textAlign: 'center' }}>
                                       <span style={{ fontWeight: 800, color: '#555' }}>{emp.cantidad}</span>
+                                    </td>
+                                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                                      <span style={{ 
+                                        fontWeight: 800, color: '#34d399', fontSize: '11px',
+                                        background: 'rgba(52,211,153,0.1)', padding: '2px 6px', borderRadius: 4
+                                      }}>
+                                        {porcentaje}%
+                                      </span>
                                     </td>
                                     <td style={{ padding: '12px', textAlign: 'right' }}>
                                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
