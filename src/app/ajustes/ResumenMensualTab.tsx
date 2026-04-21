@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
-import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Download, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
+import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -79,25 +79,33 @@ const DistBlock = ({
             onClick={onExpand}
             style={{
               width: '100%',
-              padding: '12px',
-              background: 'rgba(255,255,255,0.03)',
+              padding: '14px',
+              background: 'rgba(255,255,255,0.02)',
               border: 'none',
+              borderTop: '1px solid rgba(255,255,255,0.04)',
               color: color,
               fontSize: '10px',
-              fontWeight: 800,
+              fontWeight: 900,
               textTransform: 'uppercase',
+              letterSpacing: '1.5px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              transition: 'background 0.2s'
+              gap: 8,
+              transition: 'all 0.3s ease'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+              e.currentTarget.style.color = color;
+            }}
           >
             Ver todos ({datos.length})
-            <ChevronDown size={12} style={{ transition: 'transform 0.3s' }} />
+            <ChevronDown size={12} style={{ transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
           </button>
         )}
       </div>
@@ -243,7 +251,16 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const [lastSnapshot, setLastSnapshot] = useState(''); // Estado para el HTML
   const [saving, setSaving] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
-    10: true, // Analisis Temporal inicia cerrado por ser muy largo
+    1: true,
+    2: true,
+    3: true,
+    4: true,
+    5: true,
+    6: true,
+    7: true,
+    8: true,
+    9: true,
+    10: true,
   });
 
   const toggleSection = (id: number) => {
@@ -766,20 +783,31 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         <button 
           onClick={() => toggleSection(id)}
           style={{ 
-            background: 'rgba(255,255,255,0.04)', 
-            border: '1px solid rgba(255,255,255,0.06)', 
-            borderRadius: '6px', 
-            width: 24, 
-            height: 24, 
+            background: isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', 
+            border: '1px solid rgba(255,255,255,0.08)', 
+            borderRadius: '8px', 
+            width: 28, 
+            height: 28, 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
             cursor: 'pointer', 
-            color: '#666',
-            transition: 'all 0.2s'
+            color: isCollapsed ? '#555' : '#fff',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: isCollapsed ? 'none' : '0 0 15px rgba(255,255,255,0.05)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+            e.currentTarget.style.color = isCollapsed ? '#555' : '#fff';
           }}
         >
-          <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }} />
+          <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
         </button>
       </div>
     );
@@ -1350,20 +1378,20 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     };
   }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, mesActualLabel, mesAntLabel]);
 
-  // ── Chart 5: Embudo Comercial ─────────────────────────────────────────────
+  // ── Chart 5: Embudo Comercial ────────────────────────────────────────────
   const chartEmbudo = useMemo(() => {
     const labels = CONFIG.ANALISTAS_DEFAULT;
     const regsMes = filterByMonth(registros, selectedMes, selectedAnio);
 
     // Todos los estados que cuentan como "clientes ingresados"
     const matchIngresado = (estado: string) => {
-      const e = estado.toLowerCase();
+      const e = (estado || '').toLowerCase();
       return ['proyeccion', 'score bajo', 'en seguimiento', 'no califica', 'afectaciones', 'aprobado cc', 'rechazado cc', 'venta'].some(est => e.includes(est));
     };
 
     const ingresados = labels.map(a => {
       const regsAnalista = regsMes.filter(r => r.analista === a);
-      return regsAnalista.filter(r => matchIngresado(r.estado)).length;
+      return regsAnalista.filter(r => matchIngresado(r.estado ?? '')).length;
     });
     const cerradas = labels.map(a => {
       const regsAnalista = regsMes.filter(r => r.analista === a);
@@ -1385,9 +1413,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         },
       ],
     };
-  }, [registros, selectedMes, selectedAnio]);
+  }, [registros, selectedMes, selectedAnio, isVenta]);
 
-  // ── Chart 6: % Conversión de Presupuesto ─────────────────────────────────
+  // ── Chart 6: % Conversión de Presupuesto ──────────────────────────────────
   const chartConversionPresupuesto = useMemo(() => {
     const labels = CONFIG.ANALISTAS_DEFAULT;
     const data = labels.map((a, i) => {
@@ -1402,45 +1430,188 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         refLine100(labels.length),
       ],
     };
-  }, [resumen.presupuestos_por_analista, kpiPorAnalista]);
+  }, [resumen.presupuestos_por_analista, kpiPorAnalista, refLine100]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', paddingTop: '32px' }}>
 
-      {/* Selector mes/año */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '3px', display: 'flex', flexWrap: 'wrap' }}>
-          {CONFIG.MESES_NOMBRES.map((nombre, i) => (
-            <button key={i} onClick={() => setSelectedMes(i + 1)} style={{
-              padding: '6px 14px', borderRadius: '5px', border: 'none',
-              background: selectedMes === i + 1 ? '#fff' : 'transparent',
-              color: selectedMes === i + 1 ? '#000' : '#555',
-              fontFamily: "'Outfit', sans-serif", fontSize: '12px',
-              fontWeight: selectedMes === i + 1 ? 700 : 500, cursor: 'pointer',
-            }}>{nombre.slice(0, 3)}</button>
-          ))}
+      {/* Toolbar Superior: Control de Reporte */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.01)',
+        border: '1px solid rgba(255,255,255,0.04)',
+        borderRadius: '24px',
+        padding: '24px 32px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
+      }}>
+        {/* Fila 1: Título y Acciones */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div style={{ 
+              width: 48, height: 48, background: 'rgba(255,255,255,0.02)', 
+              borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              border: '1px solid rgba(255,255,255,0.08)' 
+            }}>
+              <BarChart3 size={24} color="#fff" />
+            </div>
+            <div>
+              <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', letterSpacing: '-1px', margin: 0 }}>
+                Resumen Mensual
+              </h1>
+              <div style={{ fontSize: '11px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', marginTop: 4 }}>
+                Panel de Gestión Estratégica
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 16 }}>
+            <button
+              onClick={handleGenerarLink}
+              style={{ 
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, 
+                border: '1px solid rgba(52,211,153,0.2)', background: 'rgba(16, 185, 129, 0.04)', 
+                color: '#10b981', fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 800, 
+                cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                textTransform: 'uppercase', letterSpacing: '1px'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
+                e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(16, 185, 129, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.04)';
+                e.currentTarget.style.borderColor = 'rgba(52,211,153,0.2)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+              Generar Link
+            </button>
+            <button
+              onClick={handleGuardar}
+              disabled={saving}
+              style={{ 
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 24px', borderRadius: 12, 
+                border: 'none', background: '#fff', 
+                color: '#000', fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 900, 
+                cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                textTransform: 'uppercase', letterSpacing: '1.2px',
+                opacity: saving ? 0.7 : 1,
+                boxShadow: '0 4px 20px rgba(255,255,255,0.15)'
+              }}
+              onMouseEnter={(e) => {
+                if (!saving) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 50px rgba(255,255,255,0.3)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(255,255,255,0.15)';
+              }}
+            >
+              <Save size={16} strokeWidth={2.5} />
+              {saving ? 'Guardando...' : `Guardar Resumen`}
+            </button>
+          </div>
         </div>
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '3px', display: 'flex' }}>
-          {[now.getFullYear() - 1, now.getFullYear()].map(y => (
-            <button key={y} onClick={() => setSelectedAnio(y)} style={{
-              padding: '6px 14px', borderRadius: '5px', border: 'none',
-              background: selectedAnio === y ? '#fff' : 'transparent',
-              color: selectedAnio === y ? '#000' : '#555',
-              fontFamily: "'Outfit', sans-serif", fontSize: '12px',
-              fontWeight: selectedAnio === y ? 700 : 500, cursor: 'pointer',
-            }}>{y}</button>
-          ))}
+
+        {/* Divisor Interno */}
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
+
+        {/* Fila 2: Selectores de Período */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '30px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ fontSize: '11px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px' }}>
+              Seleccionar Período:
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              background: 'rgba(0,0,0,0.3)', 
+              border: '1px solid rgba(255,255,255,0.05)', 
+              borderRadius: '12px', 
+              padding: '4px' 
+            }}>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {CONFIG.MESES_NOMBRES.map((nombre, i) => (
+                  <button key={i} onClick={() => setSelectedMes(i + 1)} style={{
+                    padding: '6px 14px', borderRadius: '8px', border: 'none',
+                    background: selectedMes === i + 1 ? '#fff' : 'transparent',
+                    color: selectedMes === i + 1 ? '#000' : '#444',
+                    fontFamily: "'Outfit', sans-serif", fontSize: '10px',
+                    fontWeight: selectedMes === i + 1 ? 900 : 700, cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    textTransform: 'uppercase'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedMes !== i + 1) {
+                      e.currentTarget.style.color = '#888';
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedMes !== i + 1) {
+                      e.currentTarget.style.color = '#444';
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                  >{nombre.slice(0, 3)}</button>
+                ))}
+              </div>
+              
+              <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', margin: '0 12px' }} />
+              
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {[now.getFullYear() - 1, now.getFullYear()].map(y => (
+                  <button key={y} onClick={() => setSelectedAnio(y)} style={{
+                    padding: '6px 14px', borderRadius: '8px', border: 'none',
+                    background: selectedAnio === y ? '#fff' : 'transparent',
+                    color: selectedAnio === y ? '#000' : '#444',
+                    fontFamily: "'Outfit', sans-serif", fontSize: '10px',
+                    fontWeight: selectedAnio === y ? 900 : 700, cursor: 'pointer',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    textTransform: 'uppercase'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedAnio !== y) {
+                      e.currentTarget.style.color = '#888';
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedAnio !== y) {
+                      e.currentTarget.style.color = '#444';
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                  >{y}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(16,185,129,0.03)', padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(16,185,129,0.1)' }}>
+             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 15px rgba(16,185,129,0.6)' }} />
+             <span style={{ fontSize: '13px', fontWeight: 800, color: '#fff', letterSpacing: '0.5px' }}>
+               Periodo Activo: <span style={{ color: '#10b981', marginLeft: 4 }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]} {selectedAnio}</span>
+             </span>
+          </div>
         </div>
       </div>
 
       {loadingData ? (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px', gap: 12 }}>
-          <div className="spinner" style={{ width: 24, height: 24 }} />
-          <span style={{ color: '#555', fontSize: 13 }}>Cargando resumen...</span>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '100px', flexDirection: 'column', gap: 20 }}>
+          <div className="spinner" style={{ width: 40, height: 40, border: '3px solid rgba(255,255,255,0.05)', borderTopColor: '#fff' }} />
+          <span style={{ color: '#444', fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2 }}>Cargando Datos del Reporte...</span>
         </div>
       ) : (
-        <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
@@ -1668,59 +1839,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Total Conversión</div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(124, 45, 18, 0.8)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div id="chart-conversion-total" style={{ height: 280 }}>
-                        <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
-                      </div>
-                    </div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                        <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-                        <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
-                      </div>
-                      <div id="chart-empleo-publico-privado" style={{ height: 280 }}>
-                        <Bar data={chartEmpleoPublPriv} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />
-                      </div>
-                    </div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Resumen de acuerdos por analista</div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Luciana</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Victoria</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div id="chart-acuerdos" style={{ height: 280 }}>
-                        <Bar data={chartAcuerdos} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </>
             )}
           </div>
-
-
 
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
@@ -1886,9 +2008,26 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         <td style={{ padding: '6px 8px' }}>
                           <button
                             onClick={() => setResumen(p => ({ ...p, plan_acciones: p.plan_acciones.filter((_, i) => i !== idx) }))}
-                            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 6, color: '#f87171', cursor: 'pointer', padding: '7px 10px', display: 'flex', alignItems: 'center' }}
+                            style={{ 
+                              background: 'rgba(239,68,68,0.06)', 
+                              border: '1px solid rgba(239,68,68,0.12)', 
+                              borderRadius: 8, color: '#f87171', 
+                              cursor: 'pointer', padding: '8px', 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
+                              e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)';
+                              e.currentTarget.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(239,68,68,0.06)';
+                              e.currentTarget.style.borderColor = 'rgba(239,68,68,0.12)';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }}
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={13} strokeWidth={2.5} />
                           </button>
                         </td>
                       </tr>
@@ -1897,9 +2036,30 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                 </table>
                 <button
                   onClick={() => setResumen(p => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#888', fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: '8px 14px' }}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: 8, 
+                    background: 'rgba(255,255,255,0.03)', 
+                    border: '1px solid rgba(255,255,255,0.08)', 
+                    borderRadius: 8, color: '#666', 
+                    fontFamily: "'Outfit', sans-serif", fontSize: '11px', fontWeight: 800, 
+                    cursor: 'pointer', padding: '10px 18px',
+                    textTransform: 'uppercase', letterSpacing: '1px',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                    e.currentTarget.style.color = '#fff';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.color = '#666';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
                 >
-                  <Plus size={13} /> Agregar fila
+                  <Plus size={14} strokeWidth={2.5} /> Agregar fila
                 </button>
               </>
             )}
@@ -1911,32 +2071,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} />}
           </div>
 
-          {/* ── BOTONES ── */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, marginTop: 0, paddingBottom: 0 }}>
-            <button
-              onClick={handleGenerarLink}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(52,211,153,0.2)', background: 'rgba(52,211,153,0.08)', color: '#34d399', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-              Generar Link
-            </button>
-            <button
-              onClick={handleDescargarPDF}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#aaa', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-            >
-              <Download size={14} />
-              Descargar PDF
-            </button>
-            <button
-              className="btn-primary"
-              onClick={handleGuardar}
-              disabled={saving}
-              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              <Save size={14} />
-              {saving ? 'Guardando...' : `Guardar Resumen — ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio}`}
-            </button>
-          </div>
+
         </div>
       )}
     </div>
