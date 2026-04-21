@@ -1744,11 +1744,6 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                                     <td style={{ padding: '12px' }}>
                                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ color: isMaster ? '#34d399' : '#ccc', fontWeight: 600 }}>{emp.nombre}</span>
-                                        {hasMasterSuggestion && (
-                                          <span style={{ fontSize: '10px', color: '#fbbf24', marginTop: 2 }}>
-                                            Sugerencia: {emp.masterName}
-                                          </span>
-                                        )}
                                       </div>
                                     </td>
                                     <td style={{ padding: '12px' }}>
@@ -1772,22 +1767,6 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                                     </td>
                                     <td style={{ padding: '12px', textAlign: 'right' }}>
                                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                                        {hasMasterSuggestion && (
-                                          <button
-                                            onClick={() => {
-                                              setEmpleadoresSeleccionados([emp.nombre]);
-                                              setEmpleadorCorreccion(emp.masterName!);
-                                              setModalEmpleadoresOpen(false);
-                                            }}
-                                            style={{
-                                              padding: '4px 8px', borderRadius: 4, background: 'rgba(251,191,36,0.1)',
-                                              border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24',
-                                              fontSize: '10px', fontWeight: 800, cursor: 'pointer'
-                                            }}
-                                          >
-                                            Unificar
-                                          </button>
-                                        )}
                                         <button
                                           onClick={() => {
                                             setEmpleadoresSeleccionados([emp.nombre]);
