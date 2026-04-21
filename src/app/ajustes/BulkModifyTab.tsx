@@ -13,6 +13,106 @@ import {
 
 const ANALISTAS = CONFIG.ANALISTAS_DEFAULT;
 
+const EMPLEADORES_MAESTROS: Record<string, { tipo: string, categoria: string }> = {
+  "ENERGÍA DE ENTRE RÍOS S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "INC S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "PETROPACK S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "SELPLAST S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "NUEVA TORNERÍA AVENIDA S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "CORRER S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "FRIGORÍFICO ALBERDI S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "RAPILIM S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "EMPRESA HOTELERA YAÑEZ MARTIN S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "ITA S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "SZCZECH S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "LUIS LOSI S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "LABORATORIOS FABRA S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "ELIOVAC S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "MERCADO DE SOLUCIONES S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "ESTACIÓN DE SERVICIO YPF 25 DE JUNIO S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "DIA S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "LADISLAO POPELKA Y CIA S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "AGUA NUESTRA S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "INSTITUTO PRIVADO DE PEDIATRÍA S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "IMADEX S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "DISTRIBUIDORA GUADALUPE S.A": { "tipo": "S.A", "categoria": "Privada" },
+  "RESIDENCIA GERONTOLÓGICA PRIVADA S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "ZENIT TRANSPORTE S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "DROGUERÍA D'EM S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "PAULINA CASTRO DEMARTIN E HIJOS S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "CEMYC S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "AFFIDARE S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "FLOR DE LIS S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "SANTIAGO EICHHORN E HIJOS S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "FELLER S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "CLÍNICA DE PSICOPATOLOGÍA S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "CIANCROK S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "INSTITUTO RAWSON DE DIAGNÓSTICO Y TRATAMIENTO S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "COCINOVA MUEBLES S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "ORO NEGRO S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "ELECTRO BOVRIL S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "ECOPLAST S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "J Y H DISTRIBUCIONES S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "DORINKA S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "CLÍNICA GERONTOLÓGICA ALMAFUERTE S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "MENGHI S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "BAZURCO FACILITY SERVICES S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "LA PICADA HNOS S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "PATRYLAN S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "PROMO BURGUER S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "TRIMAR S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "CASA QUINTA S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "MCO NEXO LABORAL S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "SUSTENTA S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
+  "JUBILADO": { "tipo": "Persona Física", "categoria": "Otros" },
+  "MUNICIPALIDAD DE PARANÁ": { "tipo": "Público", "categoria": "Estado" },
+  "CONSEJO GENERAL DE EDUCACIÓN": { "tipo": "Público", "categoria": "Estado" },
+  "MINISTERIO DE SALUD DE ENTRE RÍOS": { "tipo": "Público", "categoria": "Estado" },
+  "GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS": { "tipo": "Público", "categoria": "Estado" },
+  "JEFATURA DE POLICÍA DE LA PROVINCIA DE ENTRE RÍOS": { "tipo": "Público", "categoria": "Estado" },
+  "PENSIÓN POR VIUDEZ": { "tipo": "Persona Física", "categoria": "Otros" },
+  "DIRECCIÓN PROVINCIAL DE VIALIDAD": { "tipo": "Público", "categoria": "Estado" },
+  "INSTITUTO DE AYUDA FINANCIERA A LA ACCIÓN SOCIAL": { "tipo": "Público", "categoria": "Estado" },
+  "CONTADURÍA GENERAL DEL EJÉRCITO": { "tipo": "Público", "categoria": "Estado" },
+  "MINISTERIO DE EDUCACIÓN": { "tipo": "Público", "categoria": "Estado" },
+  "UNIVERSIDAD AUTÓNOMA DE ENTRE RÍOS": { "tipo": "Público", "categoria": "Estado" },
+  "CLUB ATLÉTICO ESTUDIANTES": { "tipo": "Asociación", "categoria": "Otros" },
+  "SERVICIO PENITENCIARIO DE ENTRE RÍOS": { "tipo": "Público", "categoria": "Estado" },
+  "COTO CICSA": { "tipo": "S.A", "categoria": "Privada" },
+  "SINDICATO DE EMPLEADOS DE COMERCIO DE PARANÁ": { "tipo": "Asociación", "categoria": "Otros" },
+  "MINISTERIO DE DESARROLLO HUMANO": { "tipo": "Público", "categoria": "Estado" },
+  "CORREO OFICIAL DE LA REPÚBLICA ARGENTINA": { "tipo": "Público", "categoria": "Estado" },
+  "INSTITUTO EDUCATIVO SIGLO XXI": { "tipo": "Privada", "categoria": "Otros" },
+  "RAVERA, ROSA VIVIANA": { "tipo": "Persona Física", "categoria": "Otros" },
+  "FAMEA, HÉCTOR EMANUEL": { "tipo": "Persona Física", "categoria": "Otros" },
+  "FRIGORÍFICO SANTA ISABEL": { "tipo": "Privada", "categoria": "Otros" },
+  "AGENCIA DE RECAUDACIÓN Y CONTROL ADUANERO": { "tipo": "Público", "categoria": "Estado" },
+  "DIRECCIÓN GENERAL ADMINISTRATIVO CONTABLE": { "tipo": "Público", "categoria": "Estado" },
+  "MARIZZA, MIRIAM MARIELA": { "tipo": "Persona Física", "categoria": "Otros" },
+  "CONSEJO PROVINCIAL DEL NIÑO, EL ADOLESCENTE Y LA FAMILIA": { "tipo": "Público", "categoria": "Estado" },
+  "HETZER, RAÚL": { "tipo": "Persona Física", "categoria": "Otros" },
+  "ARRIAS, ALEJANDRO EDUARDO": { "tipo": "Persona Física", "categoria": "Otros" },
+  "CANCIO, EDUARDO HÉCTOR": { "tipo": "Persona Física", "categoria": "Otros" },
+  "ASOCIACIÓN MUTUAL MÉDICA DE ENTRE RÍOS": { "tipo": "Asociación", "categoria": "Otros" },
+  "MUNICIPALIDAD DE VILLA URQUIZA": { "tipo": "Público", "categoria": "Estado" },
+  "WAGNER, RICARDO FABIÁN": { "tipo": "Persona Física", "categoria": "Otros" },
+  "GODOY, HUMBERTO DANIEL": { "tipo": "Persona Física", "categoria": "Otros" },
+  "INSTITUTO AUTARQUICO DE PLANEAMIENTO Y VIVIENDA": { "tipo": "Público", "categoria": "Estado" },
+  "UNIVERSIDAD NACIONAL DE ENTRE RÍOS": { "tipo": "Público", "categoria": "Estado" },
+  "EMPRESA PROVINCIAL DE LA ENERGÍA DE SANTA FE": { "tipo": "Público", "categoria": "Estado" },
+  "ÁLVAREZ, ANTONIO ALBERTO": { "tipo": "Persona Física", "categoria": "Otros" },
+  "SARLI SCESA, GERARDO DANIEL": { "tipo": "Persona Física", "categoria": "Otros" },
+  "CAJA DE RETIROS JUBILACIONES Y PENSIONES DE LA POLICIA FEDERAL": { "tipo": "Público", "categoria": "Estado" },
+  "JACOB, JUAN CARLOS": { "tipo": "Persona Física", "categoria": "Otros" },
+  "SERVICIO ADMINISTRATIVO CONTABLE": { "tipo": "Público", "categoria": "Estado" },
+  "CENCI, MARGARITA DEL CARMEN": { "tipo": "Persona Física", "categoria": "Otros" },
+  "CENTRO DE GINECOLOGÍA Y OBSTETRICIA": { "tipo": "Privada", "categoria": "Otros" },
+  "HONORABLE CÁMARA DE SENADORES DE ENTRE RÍOS": { "tipo": "Público", "categoria": "Estado" },
+  "CLUB ATLÉTICO PARACAO": { "tipo": "Asociación", "categoria": "Otros" },
+  "SPAHN, JORGE ANTONIO": { "tipo": "Persona Física", "categoria": "Otros" },
+  "GENDARMERÍA NACIONAL": { "tipo": "Público", "categoria": "Estado" }
+};
+
 // Interface para registro con variantes
 interface RegistroVariante {
   id: string;
@@ -133,8 +233,8 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   // Estado para el modal de todos los empleadores
   const [modalEmpleadoresOpen, setModalEmpleadoresOpen] = useState(false);
   const [busquedaEmpleadorModal, setBusquedaEmpleadorModal] = useState('');
-  const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'sa' | 'srl' | 'otros'>('todos');
-  const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number }[]>([]);
+  const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'sa' | 'srl' | 'otros' | 'maestros'>('todos');
+  const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number; tipo: string; categoria: string; masterName?: string }[]>([]);
   const [empleadoresLoading, setEmpleadoresLoading] = useState(false);
 
   // Estado para "Nuevos hoy" - empleadores creados hoy
@@ -242,6 +342,21 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
 
     return false;
   }, [levenshtein]);
+
+  // ── Helper para obtener info del maestro (normalizado) ──────────────────
+  const getMaestroInfo = useCallback((nombre: string) => {
+    const n = nombre.toUpperCase().trim();
+    // Búsqueda exacta
+    if (EMPLEADORES_MAESTROS[n]) return { masterName: n, ...EMPLEADORES_MAESTROS[n], matchType: 'exact' as const };
+    
+    // Búsqueda por normalización básica (sin SRL/SA/Stopwords)
+    const normNombre = normalizar(nombre);
+    for (const [mName, mInfo] of Object.entries(EMPLEADORES_MAESTROS)) {
+      if (normalizar(mName) === normNombre) return { masterName: mName, ...mInfo, matchType: 'fuzzy' as const };
+    }
+    
+    return null;
+  }, [normalizar]);
 
   // ── Union-Find para agrupar empleadores similares transitivamente ────────
   const agruparFuzzy = useCallback((keys: string[], variantesMap: Map<string, Set<string>>): VarianteEmpleador[] => {
@@ -400,9 +515,18 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
           conteo.set(emp, (conteo.get(emp) || 0) + 1);
         });
 
-        // Convertir a array y ordenar por cantidad
+        // Convertir a array y enriquecer con info de maestro
         const empleadosArray = Array.from(conteo.entries())
-          .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+          .map(([nombre, cantidad]) => {
+            const maestro = getMaestroInfo(nombre);
+            return {
+              nombre,
+              cantidad,
+              tipo: maestro?.tipo || 'Privada', // Default a Privada si no se conoce, pero tratamos de buscar
+              categoria: maestro?.categoria || 'Otros',
+              masterName: maestro?.masterName
+            };
+          })
           .sort((a, b) => b.cantidad - a.cantidad);
 
         setEmpleadoresConConteo(empleadosArray);
@@ -413,7 +537,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
     } finally {
       setEmpleadoresLoading(false);
     }
-  }, []);
+  }, [getMaestroInfo]);
 
   // ── Registros cargados hoy (Argentina) derivados del contexto ────────────
   // Solo registros con empleador cargado, filtrados por rango de fechas.
@@ -1500,10 +1624,11 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
               />
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {([
-                  { key: 'todos', label: 'Todos' },
-                  { key: 'sa', label: 'S.A.' },
-                  { key: 'srl', label: 'S.R.L.' },
-                  { key: 'otros', label: 'Otros' },
+                   { key: 'todos', label: 'Todos' },
+                   { key: 'sa', label: 'S.A.' },
+                   { key: 'srl', label: 'S.R.L.' },
+                   { key: 'maestros', label: 'Maestros' },
+                   { key: 'otros', label: 'Otros' },
                 ] as const).map(({ key, label }) => {
                   const activo = filtroTipoModal === key;
                   return (
@@ -1541,80 +1666,111 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
 
                     let filtered = busquedaEmpleadorModal.trim()
                       ? empleadoresConConteo.filter(e =>
-                          e.nombre.toLowerCase().includes(busquedaEmpleadorModal.toLowerCase())
+                          e.nombre.toLowerCase().includes(busquedaEmpleadorModal.toLowerCase()) ||
+                          e.tipo.toLowerCase().includes(busquedaEmpleadorModal.toLowerCase()) ||
+                          e.categoria.toLowerCase().includes(busquedaEmpleadorModal.toLowerCase())
                         )
                       : empleadoresConConteo;
 
                     if (filtroTipoModal === 'sa') filtered = filtered.filter(e => esSA(e.nombre));
                     else if (filtroTipoModal === 'srl') filtered = filtered.filter(e => esSRL(e.nombre));
+                    else if (filtroTipoModal === 'maestros') filtered = filtered.filter(e => e.masterName === e.nombre);
                     else if (filtroTipoModal === 'otros') filtered = filtered.filter(e => !esSA(e.nombre) && !esSRL(e.nombre));
-
-                    // Agrupar S.A. y S.R.L. juntos cuando se muestra "todos"
-                    const grupos: { titulo: string; color: string; items: typeof filtered }[] = [];
-                    if (filtroTipoModal === 'todos' && !busquedaEmpleadorModal.trim()) {
-                      const sa = filtered.filter(e => esSA(e.nombre));
-                      const srl = filtered.filter(e => esSRL(e.nombre));
-                      const otros = filtered.filter(e => !esSA(e.nombre) && !esSRL(e.nombre));
-                      if (sa.length > 0) grupos.push({ titulo: `S.A (${sa.length})`, color: '#fbbf24', items: sa });
-                      if (srl.length > 0) grupos.push({ titulo: `S.R.L (${srl.length})`, color: '#60a5fa', items: srl });
-                      if (otros.length > 0) grupos.push({ titulo: `Otros (${otros.length})`, color: '#888', items: otros });
-                    } else {
-                      grupos.push({ titulo: '', color: '', items: filtered });
-                    }
 
                     return filtered.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
                         <p>No se encontraron empleadores</p>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                        {grupos.map((grupo, gi) => (
-                          <div key={gi}>
-                            {grupo.titulo && (
-                              <div style={{
-                                fontSize: '10px', fontWeight: 900, color: grupo.color,
-                                textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 10,
-                                paddingBottom: 6, borderBottom: `1px solid rgba(255,255,255,0.05)`,
-                              }}>
-                                {grupo.titulo}
-                              </div>
-                            )}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-                              {grupo.items.map((emp, idx) => (
-                                <div
-                                  key={idx}
-                                  style={{
-                                    padding: '12px 14px',
-                                    background: 'rgba(255,255,255,0.02)',
-                                    border: '1px solid rgba(255,255,255,0.06)',
-                                    borderRadius: 8,
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                  }}
-                                >
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <p style={{
-                                      fontSize: 12, color: '#ccc', fontWeight: 600,
-                                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                              <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Empresa</th>
+                              <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Tipo</th>
+                              <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Categoría</th>
+                              <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Cant.</th>
+                              <th style={{ textAlign: 'right', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filtered.map((emp, idx) => {
+                              const isMaster = emp.masterName === emp.nombre;
+                              const hasMasterSuggestion = emp.masterName && emp.masterName !== emp.nombre;
+                              
+                              return (
+                                <tr key={idx} style={{ 
+                                  borderBottom: '1px solid rgba(255,255,255,0.02)',
+                                  background: isMaster ? 'rgba(52,211,153,0.02)' : 'transparent'
+                                }}>
+                                  <td style={{ padding: '12px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                      <span style={{ color: isMaster ? '#34d399' : '#ccc', fontWeight: 600 }}>{emp.nombre}</span>
+                                      {hasMasterSuggestion && (
+                                        <span style={{ fontSize: '10px', color: '#fbbf24', marginTop: 2 }}>
+                                          Sugerencia: {emp.masterName}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '12px' }}>
+                                    <span style={{ 
+                                      padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
+                                      color: '#888', fontSize: '10px', fontWeight: 700 
                                     }}>
-                                      {emp.nombre}
-                                    </p>
-                                  </div>
-                                  <div style={{
-                                    padding: '4px 10px',
-                                    background: 'rgba(96,165,250,0.1)',
-                                    border: '1px solid rgba(96,165,250,0.2)',
-                                    borderRadius: 4, fontSize: 11, color: '#60a5fa',
-                                    fontWeight: 700, flexShrink: 0, marginLeft: 12,
-                                  }}>
-                                    {emp.cantidad}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                                      {emp.tipo}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '12px' }}>
+                                    <span style={{ 
+                                      color: emp.categoria === 'Estado' ? '#60a5fa' : '#888',
+                                      fontSize: '11px', fontWeight: 600 
+                                    }}>
+                                      {emp.categoria}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                                    <span style={{ fontWeight: 800, color: '#555' }}>{emp.cantidad}</span>
+                                  </td>
+                                  <td style={{ padding: '12px', textAlign: 'right' }}>
+                                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                      {hasMasterSuggestion && (
+                                        <button
+                                          onClick={() => {
+                                            setEmpleadoresSeleccionados([emp.nombre]);
+                                            setEmpleadorCorreccion(emp.masterName!);
+                                            setModalEmpleadoresOpen(false);
+                                          }}
+                                          style={{
+                                            padding: '4px 8px', borderRadius: 4, background: 'rgba(251,191,36,0.1)',
+                                            border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24',
+                                            fontSize: '10px', fontWeight: 800, cursor: 'pointer'
+                                          }}
+                                        >
+                                          Unificar
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => {
+                                          setEmpleadoresSeleccionados([emp.nombre]);
+                                          setEmpleadorCorreccion(emp.nombre);
+                                          setModalEmpleadoresOpen(false);
+                                        }}
+                                        style={{
+                                          padding: '4px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
+                                          border: '1px solid rgba(255,255,255,0.1)', color: '#aaa',
+                                          fontSize: '10px', fontWeight: 800, cursor: 'pointer'
+                                        }}
+                                      >
+                                        Seleccionar
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     );
                   })()}
