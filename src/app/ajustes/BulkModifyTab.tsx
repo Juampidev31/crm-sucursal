@@ -106,7 +106,7 @@ const EMPLEADORES_MAESTROS: Record<string, { tipo: string, categoria: string }> 
   "JACOB, JUAN CARLOS": { "tipo": "Persona Física", "categoria": "Otros" },
   "SERVICIO ADMINISTRATIVO CONTABLE": { "tipo": "Público", "categoria": "Estado" },
   "CENCI, MARGARITA DEL CARMEN": { "tipo": "Persona Física", "categoria": "Otros" },
-  "CENTRO DE GINECOLOGÍA Y OBSTETRICIA": { "tipo": "Privada", "categoria": "Otros" },
+  "CENTRO DE GINECOLOGÍA Y OBSTETRICIA S.R.L": { "tipo": "S.R.L", "categoria": "Privada" },
   "HONORABLE CÁMARA DE SENADORES DE ENTRE RÍOS": { "tipo": "Público", "categoria": "Estado" },
   "CLUB ATLÉTICO PARACAO": { "tipo": "Asociación", "categoria": "Otros" },
   "SPAHN, JORGE ANTONIO": { "tipo": "Persona Física", "categoria": "Otros" },
