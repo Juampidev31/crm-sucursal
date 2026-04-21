@@ -1807,8 +1807,8 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                           {sa.length > 0 && renderTable(sa, 'Sociedades Anónimas (S.A.)', '#fbbf24')}
-                          {srl.length > 0 && renderTable(srl, 'Sociedades de Resp. Limitada (S.R.L.)', '#60a5fa')}
-                          {otras.length > 0 && renderTable(otras, 'Otras Entidades Privadas', '#a855f7')}
+                          {srl.length > 0 && renderTable(srl, 'Sociedades de Resp. Limitada (S.R.L.)', '#fbbf24')}
+                          {otras.length > 0 && renderTable(otras, 'Otras Entidades Privadas', '#fbbf24')}
                         </div>
                       );
                     }
