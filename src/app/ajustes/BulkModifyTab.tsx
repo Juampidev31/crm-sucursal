@@ -1627,7 +1627,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                 {([
                  { key: 'todos', label: 'Todos' },
                  { key: 'publico', label: 'Público' },
-                 { key: 'privada', label: 'Privada' },
+                 { key: 'privada', label: 'Privado' },
                  { key: 'fisica', label: 'P. Física' },
                  { key: 'maestros', label: 'Maestros' },
                  { key: 'otros', label: 'Otros' },
@@ -1680,102 +1680,134 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
                     else if (filtroTipoModal === 'maestros') filtered = filtered.filter(e => e.masterName === e.nombre);
                     else if (filtroTipoModal === 'otros') filtered = filtered.filter(e => !['S.A', 'S.R.L', 'Público', 'Persona Física', 'Privada'].includes(e.tipo));
 
-                    return filtered.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
-                        <p>No se encontraron empleadores</p>
-                      </div>
-                    ) : (
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                              <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Empresa</th>
-                              <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Tipo</th>
-                              <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Categoría</th>
-                              <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Cant.</th>
-                              <th style={{ textAlign: 'right', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Acciones</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filtered.map((emp, idx) => {
-                              const isMaster = emp.masterName === emp.nombre;
-                              const hasMasterSuggestion = emp.masterName && emp.masterName !== emp.nombre;
-                              
-                              return (
-                                <tr key={idx} style={{ 
-                                  borderBottom: '1px solid rgba(255,255,255,0.02)',
-                                  background: isMaster ? 'rgba(52,211,153,0.02)' : 'transparent'
-                                }}>
-                                  <td style={{ padding: '12px' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                      <span style={{ color: isMaster ? '#34d399' : '#ccc', fontWeight: 600 }}>{emp.nombre}</span>
-                                      {hasMasterSuggestion && (
-                                        <span style={{ fontSize: '10px', color: '#fbbf24', marginTop: 2 }}>
-                                          Sugerencia: {emp.masterName}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td style={{ padding: '12px' }}>
-                                    <span style={{ 
-                                      padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
-                                      color: '#888', fontSize: '10px', fontWeight: 700 
-                                    }}>
-                                      {emp.tipo}
-                                    </span>
-                                  </td>
-                                  <td style={{ padding: '12px' }}>
-                                    <span style={{ 
-                                      color: emp.categoria === 'Estado' ? '#60a5fa' : '#888',
-                                      fontSize: '11px', fontWeight: 600 
-                                    }}>
-                                      {emp.categoria}
-                                    </span>
-                                  </td>
-                                  <td style={{ padding: '12px', textAlign: 'center' }}>
-                                    <span style={{ fontWeight: 800, color: '#555' }}>{emp.cantidad}</span>
-                                  </td>
-                                  <td style={{ padding: '12px', textAlign: 'right' }}>
-                                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                                      {hasMasterSuggestion && (
+                    const renderTable = (items: typeof filtered, title?: string, color?: string) => (
+                      <div style={{ marginBottom: title ? 24 : 0 }}>
+                        {title && (
+                          <div style={{
+                            fontSize: '10px', fontWeight: 900, color: color || '#888',
+                            textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12,
+                            paddingBottom: 6, borderBottom: `1px solid rgba(255,255,255,0.05)`,
+                            display: 'flex', alignItems: 'center', gap: 8
+                          }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: color || '#888' }} />
+                            {title} ({items.length})
+                          </div>
+                        )}
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Empresa</th>
+                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Tipo</th>
+                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Categoría</th>
+                                <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Cant.</th>
+                                <th style={{ textAlign: 'right', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {items.map((emp, idx) => {
+                                const isMaster = emp.masterName === emp.nombre;
+                                const hasMasterSuggestion = emp.masterName && emp.masterName !== emp.nombre;
+                                
+                                return (
+                                  <tr key={idx} style={{ 
+                                    borderBottom: '1px solid rgba(255,255,255,0.02)',
+                                    background: isMaster ? 'rgba(52,211,153,0.02)' : 'transparent'
+                                  }}>
+                                    <td style={{ padding: '12px' }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ color: isMaster ? '#34d399' : '#ccc', fontWeight: 600 }}>{emp.nombre}</span>
+                                        {hasMasterSuggestion && (
+                                          <span style={{ fontSize: '10px', color: '#fbbf24', marginTop: 2 }}>
+                                            Sugerencia: {emp.masterName}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: '12px' }}>
+                                      <span style={{ 
+                                        padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
+                                        color: '#888', fontSize: '10px', fontWeight: 700 
+                                      }}>
+                                        {emp.tipo}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '12px' }}>
+                                      <span style={{ 
+                                        color: emp.categoria === 'Estado' ? '#60a5fa' : '#888',
+                                        fontSize: '11px', fontWeight: 600 
+                                      }}>
+                                        {emp.categoria}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                                      <span style={{ fontWeight: 800, color: '#555' }}>{emp.cantidad}</span>
+                                    </td>
+                                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                        {hasMasterSuggestion && (
+                                          <button
+                                            onClick={() => {
+                                              setEmpleadoresSeleccionados([emp.nombre]);
+                                              setEmpleadorCorreccion(emp.masterName!);
+                                              setModalEmpleadoresOpen(false);
+                                            }}
+                                            style={{
+                                              padding: '4px 8px', borderRadius: 4, background: 'rgba(251,191,36,0.1)',
+                                              border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24',
+                                              fontSize: '10px', fontWeight: 800, cursor: 'pointer'
+                                            }}
+                                          >
+                                            Unificar
+                                          </button>
+                                        )}
                                         <button
                                           onClick={() => {
                                             setEmpleadoresSeleccionados([emp.nombre]);
-                                            setEmpleadorCorreccion(emp.masterName!);
+                                            setEmpleadorCorreccion(emp.nombre);
                                             setModalEmpleadoresOpen(false);
                                           }}
                                           style={{
-                                            padding: '4px 8px', borderRadius: 4, background: 'rgba(251,191,36,0.1)',
-                                            border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24',
+                                            padding: '4px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
+                                            border: '1px solid rgba(255,255,255,0.1)', color: '#aaa',
                                             fontSize: '10px', fontWeight: 800, cursor: 'pointer'
                                           }}
                                         >
-                                          Unificar
+                                          Seleccionar
                                         </button>
-                                      )}
-                                      <button
-                                        onClick={() => {
-                                          setEmpleadoresSeleccionados([emp.nombre]);
-                                          setEmpleadorCorreccion(emp.nombre);
-                                          setModalEmpleadoresOpen(false);
-                                        }}
-                                        style={{
-                                          padding: '4px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
-                                          border: '1px solid rgba(255,255,255,0.1)', color: '#aaa',
-                                          fontSize: '10px', fontWeight: 800, cursor: 'pointer'
-                                        }}
-                                      >
-                                        Seleccionar
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     );
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                          <p>No se encontraron empleadores</p>
+                        </div>
+                      );
+                    }
+
+                    if (filtroTipoModal === 'privada') {
+                      const sa = filtered.filter(e => e.tipo === 'S.A');
+                      const srl = filtered.filter(e => e.tipo === 'S.R.L');
+                      const otras = filtered.filter(e => e.tipo === 'Privada');
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          {sa.length > 0 && renderTable(sa, 'Sociedades Anónimas (S.A.)', '#fbbf24')}
+                          {srl.length > 0 && renderTable(srl, 'Sociedades de Resp. Limitada (S.R.L.)', '#60a5fa')}
+                          {otras.length > 0 && renderTable(otras, 'Otras Entidades Privadas', '#a855f7')}
+                        </div>
+                      );
+                    }
+
+                    return renderTable(filtered);
                   })()}
                 </>
               )}
