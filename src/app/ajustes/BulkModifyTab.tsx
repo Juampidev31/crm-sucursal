@@ -382,7 +382,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
     
     // Si no está en el maestro, intentar detección automática
     const auto = detectarTipoAutomatico(nombre);
-    return { ...auto, matchType: 'auto' as const };
+    return { ...auto, matchType: 'auto' as const, masterName: undefined as string | undefined };
   }, [normalizar, detectarTipoAutomatico]);
 
   // ── Union-Find para agrupar empleadores similares transitivamente ────────
