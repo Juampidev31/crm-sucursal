@@ -343,6 +343,31 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
     return false;
   }, [levenshtein]);
 
+  // ── Helper para detectar tipo automáticamente si no está en el maestro ──
+  const detectarTipoAutomatico = useCallback((nombre: string): { tipo: string, categoria: string } => {
+    const n = nombre.toUpperCase().trim();
+    
+    // 1. Detectar Público por palabras clave
+    if (/\b(MUNICIPALIDAD|MUNIC|MUNI|COMUNA|GOBIERNO|MINISTERIO|SECRETARIA|DIRECCION|GENERAL|PERSONAL|PROVINCIA|PROV|NACION|NACIONAL|CONSEJO|JUZGADO|TRIBUNAL|CONGRESO|CAMARA|SENADO|POLICIA|PENITENCIARIO|VIALIDAD|EDUCACION|SALUD|AFIP|ARCA|ANSES|IOSPER|PAMI)\b/i.test(n)) {
+      return { tipo: 'Público', categoria: 'Estado' };
+    }
+    
+    // 2. Detectar Persona Física (Patrón: Apellido, Nombre)
+    if (n.includes(',') || (n.split(' ').length >= 2 && !/\b(S\.?A\.?|S\.?R\.?L\.?|INC|S\.A\.S|LTDA|CIA)\b/i.test(n) && n.length < 30)) {
+      // Si tiene coma o es corto y no tiene siglas de empresa, es probable que sea persona
+      return { tipo: 'Persona Física', categoria: 'Otros' };
+    }
+    
+    // 3. Detectar Privado por siglas societarias
+    if (/\b(S\.?A\.?|S\.?R\.?L\.?|S\.A\.S|INC|CORP|LTDA|CIA|CONSULTORA|GRUPO|LOGISTICA|TRANSPORTE|SERVICIOS|ESTACION|SUPERMERCADO|DISTRIBUIDORA)\b/i.test(n)) {
+      if (/\bS\.?A\.?\b/i.test(n)) return { tipo: 'S.A', categoria: 'Privada' };
+      if (/\bS\.?R\.?L\.?\b/i.test(n)) return { tipo: 'S.R.L', categoria: 'Privada' };
+      return { tipo: 'Privada', categoria: 'Privada' };
+    }
+
+    return { tipo: 'Privada', categoria: 'Otros' }; // Default a privada/otros
+  }, []);
+
   // ── Helper para obtener info del maestro (normalizado) ──────────────────
   const getMaestroInfo = useCallback((nombre: string) => {
     const n = nombre.toUpperCase().trim();
@@ -355,8 +380,10 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
       if (normalizar(mName) === normNombre) return { masterName: mName, ...mInfo, matchType: 'fuzzy' as const };
     }
     
-    return null;
-  }, [normalizar]);
+    // Si no está en el maestro, intentar detección automática
+    const auto = detectarTipoAutomatico(nombre);
+    return { ...auto, matchType: 'auto' as const };
+  }, [normalizar, detectarTipoAutomatico]);
 
   // ── Union-Find para agrupar empleadores similares transitivamente ────────
   const agruparFuzzy = useCallback((keys: string[], variantesMap: Map<string, Set<string>>): VarianteEmpleador[] => {
@@ -522,9 +549,9 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
             return {
               nombre,
               cantidad,
-              tipo: maestro?.tipo || 'Privada', // Default a Privada si no se conoce, pero tratamos de buscar
-              categoria: maestro?.categoria || 'Otros',
-              masterName: maestro?.masterName
+              tipo: maestro.tipo,
+              categoria: maestro.categoria,
+              masterName: maestro.masterName
             };
           })
           .sort((a, b) => b.cantidad - a.cantidad);
