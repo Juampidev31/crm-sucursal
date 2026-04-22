@@ -475,33 +475,6 @@ const FiltersContent = () => {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <FilterAccordion title="Gestión" defaultOpen>
-          {isAdmin && (
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>CALIDAD DE DATOS</label>
-              <div
-                onClick={() => setFilter('soloConEmpleadorInconsistente', !filters.soloConEmpleadorInconsistente)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
-                  borderRadius: '10px', cursor: 'pointer',
-                  background: filters.soloConEmpleadorInconsistente ? 'rgba(245,158,11,0.1)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${filters.soloConEmpleadorInconsistente ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'}`,
-                  transition: '0.2s'
-                }}
-              >
-                <div style={{
-                  width: 14, height: 14, borderRadius: 3,
-                  border: filters.soloConEmpleadorInconsistente ? '1.5px solid #fbbf24' : '1.5px solid rgba(255,255,255,0.2)',
-                  background: filters.soloConEmpleadorInconsistente ? '#fbbf24' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  {filters.soloConEmpleadorInconsistente && <X size={10} color="#000" strokeWidth={4} />}
-                </div>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: filters.soloConEmpleadorInconsistente ? '#fbbf24' : '#666' }}>
-                  Ver inconsistencias de empleador
-                </span>
-              </div>
-            </div>
-          )}
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ANALISTA</label>
             <select

@@ -451,15 +451,7 @@ const RegistroModal = memo(function RegistroModal({
         else next.acuerdo_precios = 'Premium';
       }
 
-      // Limpiar empleador si el estado no permite ingreso (Venta o Aprob. CC), a menos que sea admin
-      if (field === 'estado') {
-        const puedeIngresar = value === 'venta' || value === 'derivado / aprobado cc' || isAdmin;
-        if (!puedeIngresar) {
-          next.empleador = '';
-          setEmpleadorCustom(false);
-        }
-      }
-
+      // Ya no limpiamos el empleador automáticamente al cambiar de estado
       return next;
     });
 
@@ -656,8 +648,6 @@ const RegistroModal = memo(function RegistroModal({
               <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
                 {!empleadoresLoaded ? (
                   <input className="form-input" value={form.empleador || ''} disabled placeholder="Cargando empleadores..." />
-                ) : (form.estado !== 'venta' && form.estado !== 'derivado / aprobado cc' && !isAdmin) ? (
-                  <input className="form-input" value={form.empleador || ''} disabled placeholder="No disponible para este estado" />
                 ) : empleadorCustom ? (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input
@@ -699,7 +689,6 @@ const RegistroModal = memo(function RegistroModal({
                       setEmpleadorCustom(true);
                       set('empleador', '');
                     }}
-                    disabled={form.estado !== 'venta' && form.estado !== 'derivado / aprobado cc' && !isAdmin}
                   />
                 )}
               </Field>
@@ -1276,16 +1265,7 @@ export default function RegistrosPage() {
         }
       }
 
-      let mInconsistente = true;
-      if (filters.soloConEmpleadorInconsistente) {
-        const tieneEmpleador = !!(r.empleador && r.empleador.trim());
-        const esEstadoInvalido = r.estado !== 'venta' && r.estado !== 'derivado / aprobado cc';
-        if (!(tieneEmpleador && esEstadoInvalido)) {
-          mInconsistente = false;
-        }
-      }
-
-      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe && mVencido && mAcuerdo && mInconsistente;
+      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe && mVencido && mAcuerdo;
     });
 
     return [...list].sort((a, b) => {
