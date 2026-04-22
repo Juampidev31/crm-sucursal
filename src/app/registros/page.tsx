@@ -116,7 +116,8 @@ const PremiumSelect = ({
   isSearchable = false,
   groups,
   onAddCustom,
-  error
+  error,
+  disabled = false
 }: {
   value: string;
   onChange: (val: string) => void;
@@ -126,6 +127,7 @@ const PremiumSelect = ({
   groups?: { label: string; items: string[] }[];
   onAddCustom?: () => void;
   error?: string;
+  disabled?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -164,7 +166,7 @@ const PremiumSelect = ({
   return (
     <div ref={ref} style={{ position: 'relative', width: '100%' }}>
       <div
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
         style={{
           width: '100%',
           minHeight: '40px',
@@ -172,13 +174,14 @@ const PremiumSelect = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '8px 12px',
-          background: 'var(--surface2, #000)',
+          background: disabled ? 'rgba(255,255,255,0.02)' : 'var(--surface2, #000)',
           border: `1px solid ${isOpen ? '#86efac' : (error ? 'var(--rojo)' : 'var(--border-color)')}`,
           borderRadius: '8px',
-          cursor: 'pointer',
-          color: value ? 'var(--text, #fff)' : 'var(--gris)',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          color: disabled ? 'var(--text-muted)' : (value ? 'var(--text, #fff)' : 'var(--gris)'),
           fontSize: '13px',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          opacity: disabled ? 0.6 : 1,
         }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -243,6 +246,28 @@ const PremiumSelect = ({
           )}
 
           <div style={{ maxHeight: '220px', overflowY: 'auto', padding: '4px' }}>
+            {!search && (
+              <div
+                onClick={(e) => { e.stopPropagation(); handleSelect(""); }}
+                style={{
+                  padding: '8px 10px',
+                  fontSize: '13px',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  borderRadius: '6px',
+                  marginBottom: '4px',
+                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontStyle: 'italic'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <X size={12} /> Sin especificar
+              </div>
+            )}
             {groups ? (
               <>
                 {filteredGroups?.map((g, idx) => (
@@ -424,6 +449,15 @@ const RegistroModal = memo(function RegistroModal({
         else if (score < 600) next.acuerdo_precios = 'Riesgo Medio';
         else if (score < 700) next.acuerdo_precios = 'Riesgo Bajo';
         else next.acuerdo_precios = 'Premium';
+      }
+
+      // Limpiar empleador si el estado no permite ingreso (Venta o Aprob. CC), a menos que sea admin
+      if (field === 'estado') {
+        const puedeIngresar = value === 'venta' || value === 'derivado / aprobado cc' || isAdmin;
+        if (!puedeIngresar) {
+          next.empleador = '';
+          setEmpleadorCustom(false);
+        }
       }
 
       return next;
@@ -622,20 +656,34 @@ const RegistroModal = memo(function RegistroModal({
               <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
                 {!empleadoresLoaded ? (
                   <input className="form-input" value={form.empleador || ''} disabled placeholder="Cargando empleadores..." />
+                ) : (form.estado !== 'venta' && form.estado !== 'derivado / aprobado cc' && !isAdmin) ? (
+                  <input className="form-input" value={form.empleador || ''} disabled placeholder="No disponible para este estado" />
                 ) : empleadorCustom ? (
-                  <input
-                    className="form-input"
-                    value={form.empleador || ''}
-                    onChange={e => set('empleador', corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
-                    onBlur={e => set('empleador', normalizarSufijosLegales(e.target.value.trim()))}
-                    onPaste={e => {
-                      e.preventDefault();
-                      const pasted = e.clipboardData.getData('text').trim();
-                      set('empleador', corregirTildes(normalizarSufijosLegales(pasted.charAt(0).toUpperCase() + pasted.slice(1).toLowerCase())));
-                    }}
-                    placeholder="Nombre del empleador"
-                    autoFocus
-                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      className="form-input"
+                      style={{ flex: 1 }}
+                      value={form.empleador || ''}
+                      onChange={e => set('empleador', corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
+                      onBlur={e => set('empleador', normalizarSufijosLegales(e.target.value.trim()))}
+                      onPaste={e => {
+                        e.preventDefault();
+                        const pasted = e.clipboardData.getData('text').trim();
+                        set('empleador', corregirTildes(normalizarSufijosLegales(pasted.charAt(0).toUpperCase() + pasted.slice(1).toLowerCase())));
+                      }}
+                      placeholder="Nombre del empleador"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setEmpleadorCustom(false); set('empleador', ''); }}
+                      title="Volver a la lista / No especificar"
+                      className="btn-icon"
+                      style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
                 ) : (
                   <PremiumSelect
                     value={empleadoresDB.includes(form.empleador || '') ? (form.empleador || '') : ''}
@@ -651,6 +699,7 @@ const RegistroModal = memo(function RegistroModal({
                       setEmpleadorCustom(true);
                       set('empleador', '');
                     }}
+                    disabled={form.estado !== 'venta' && form.estado !== 'derivado / aprobado cc' && !isAdmin}
                   />
                 )}
               </Field>
@@ -1227,7 +1276,16 @@ export default function RegistrosPage() {
         }
       }
 
-      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe && mVencido && mAcuerdo;
+      let mInconsistente = true;
+      if (filters.soloConEmpleadorInconsistente) {
+        const tieneEmpleador = !!(r.empleador && r.empleador.trim());
+        const esEstadoInvalido = r.estado !== 'venta' && r.estado !== 'derivado / aprobado cc';
+        if (!(tieneEmpleador && esEstadoInvalido)) {
+          mInconsistente = false;
+        }
+      }
+
+      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe && mVencido && mAcuerdo && mInconsistente;
     });
 
     return [...list].sort((a, b) => {

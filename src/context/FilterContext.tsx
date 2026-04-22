@@ -23,6 +23,7 @@ interface FilterState {
   esRe: string;
   soloAlertasVencidas: boolean;
   acuerdoPrecios: string[];
+  soloConEmpleadorInconsistente: boolean;
 }
 
 const initialState: FilterState = {
@@ -39,6 +40,7 @@ const initialState: FilterState = {
   esRe: '',
   soloAlertasVencidas: false,
   acuerdoPrecios: [],
+  soloConEmpleadorInconsistente: false,
 };
 
 interface FilterCtx {
