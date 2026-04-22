@@ -1022,29 +1022,29 @@ export default function AjustesPage() {
                       </div>
 
                       <div style={{ overflowX: 'auto' }}>
-                        <table className="data-table">
+                        <table className="data-table" style={{ tableLayout: 'fixed' }}>
                           <thead>
                             <tr>
-                              <th style={{ textAlign: 'left' }}>Cliente / Identificación</th>
-                              <th style={{ textAlign: 'left' }}>Analista</th>
-                              <th style={{ textAlign: 'left' }}>Estado</th>
-                              <th style={{ textAlign: 'right' }}>Monto</th>
-                              <th style={{ textAlign: 'center' }}>Fecha</th>
+                              <th style={{ textAlign: 'left', width: '35%', fontSize: '10px', color: '#555' }}>Cliente / Identificación</th>
+                              <th style={{ textAlign: 'left', width: '15%', fontSize: '10px', color: '#555' }}>Analista</th>
+                              <th style={{ textAlign: 'left', width: '20%', fontSize: '10px', color: '#555' }}>Estado</th>
+                              <th style={{ textAlign: 'right', width: '15%', fontSize: '10px', color: '#555' }}>Monto</th>
+                              <th style={{ textAlign: 'center', width: '15%', fontSize: '10px', color: '#555' }}>Fecha</th>
                             </tr>
                           </thead>
                           <tbody>
                             {grupo.registros.map((r: any) => (
                               <tr key={r.id}>
-                                <td style={{ padding: '8px 16px' }}>
-                                  <div style={{ fontWeight: 700, color: '#fff' }}>{r.nombre}</div>
+                                <td style={{ padding: '8px 16px', overflow: 'hidden' }}>
+                                  <div style={{ fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{r.nombre}</div>
                                   <div style={{ fontSize: '10px', color: '#666', fontFamily: 'monospace', marginTop: '2px' }}>{r.cuil}</div>
                                 </td>
-                                <td style={{ color: 'var(--gris)', fontSize: '12px', fontWeight: 500 }}>{displayAnalista(r.analista)}</td>
-                                <td>
+                                <td style={{ color: 'var(--gris)', fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{displayAnalista(r.analista)}</td>
+                                <td style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
                                   <span className="status-badge" style={{ fontSize: '9px', padding: '2px 8px' }}>{r.estado}</span>
                                 </td>
-                                <td style={{ textAlign: 'right', fontWeight: 800, color: '#fff' }}>{formatCurrency(r.monto)}</td>
-                                <td style={{ textAlign: 'center', color: '#888', fontSize: '11px', fontWeight: 500 }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
+                                <td style={{ textAlign: 'right', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>{formatCurrency(r.monto)}</td>
+                                <td style={{ textAlign: 'center', color: '#888', fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1375,14 +1375,14 @@ export default function AjustesPage() {
                   ) : (
                     <>
                       <div style={{ overflowX: 'auto' }}>
-                        <table className="data-table" style={{ marginBottom: 0 }}>
+                        <table className="data-table" style={{ marginBottom: 0, tableLayout: 'fixed' }}>
                           <thead>
                             <tr>
-                              <th style={{ width: 40, textAlign: 'center', padding: '10px 8px' }} />
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Fecha / Hora</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Analista</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Acción</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px' }}>Campo</th>
+                              <th style={{ width: 45, textAlign: 'center', padding: '10px 8px' }} />
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '20%' }}>Fecha / Hora</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '20%' }}>Analista</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '25%' }}>Acción</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '35%' }}>Campo</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1402,33 +1402,33 @@ export default function AjustesPage() {
                                     onMouseEnter={e => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)'; }}
                                     onMouseLeave={e => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                   >
-                                    <td style={{ textAlign: 'center', padding: '10px 8px', verticalAlign: 'middle' }}>
+                                    <td style={{ textAlign: 'center', padding: '10px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
                                       <ChevronRight size={12} color="#444" style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }} />
                                     </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
-                                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{formatDateTime(reg.fecha_hora)}</div>
-                                      <div style={{ fontSize: '10px', color: '#444', marginTop: 1 }}>{relativeTime(reg.fecha_hora)}</div>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#ccc', whiteSpace: 'nowrap' }}>{formatDateTime(reg.fecha_hora)}</div>
+                                      <div style={{ fontSize: '10px', color: '#444', marginTop: 1, whiteSpace: 'nowrap' }}>{relativeTime(reg.fecha_hora)}</div>
                                     </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                           <User size={11} color="#666" />
                                         </div>
-                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#ccc' }}>{reg.analista || reg.id_analista || '—'}</span>
+                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#ccc', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{reg.analista || reg.id_analista || '—'}</span>
                                       </div>
                                     </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
                                       <span style={{
                                         display: 'inline-flex', alignItems: 'center', gap: 5,
                                         padding: '4px 10px', borderRadius: 4, fontSize: '10px', fontWeight: 700,
                                         background: ac.bg, color: ac.color, border: `1px solid ${ac.border}`,
-                                        letterSpacing: '0.3px',
+                                        letterSpacing: '0.3px', whiteSpace: 'nowrap'
                                       }}>
                                         {accionIcon(reg.accion)}
                                         {reg.accion}
                                       </span>
                                     </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', fontSize: '12px', color: '#888' }}>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', fontSize: '12px', color: '#888', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                                       {reg.campo_modificado || '—'}
                                     </td>
                                   </tr>
@@ -1436,25 +1436,15 @@ export default function AjustesPage() {
                                   {/* EXPANDED DETAIL ROW */}
                                   {isExpanded && (
                                     <tr style={{ background: 'rgba(255,255,255,0.015)' }}>
-                                      <td colSpan={6} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                      <td colSpan={5} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                         <div style={{
                                           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                                           gap: 16, padding: '16px 20px', background: 'rgba(255,255,255,0.02)',
                                           borderRadius: 6, border: '1px solid rgba(255,255,255,0.04)',
                                         }}>
-                                          {/* ID Completo - Hidden */}
-                                          <div style={{ display: 'none' }}>
-                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>ID Completo</div>
-                                            <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#888', wordBreak: 'break-all' }}>{reg.id_registro || '—'}</div>
-                                          </div>
                                           <div>
                                             <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista (ID)</div>
                                             <div style={{ fontSize: '11px', color: '#888' }}>{reg.id_analista || reg.analista || '—'}</div>
-                                          </div>
-                                          {/* Timestamp - Hidden */}
-                                          <div style={{ display: 'none' }}>
-                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Timestamp</div>
-                                            <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#888' }}>{reg.fecha_hora || '—'}</div>
                                           </div>
                                           {reg.valor_anterior && (
                                             <div style={{ gridColumn: '1 / -1' }}>
