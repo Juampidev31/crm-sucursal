@@ -8,7 +8,7 @@ import { Recordatorio } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import {
-  Bell, Check, Trash2, AlertCircle, Clock, User, Filter, RefreshCw, Calendar,
+  Bell, Check, Trash2, AlertCircle, Clock, User, Filter, RefreshCw, Calendar, RotateCcw
 } from 'lucide-react';
 import { ANALISTAS } from '@/context/FilterContext';
 import { useToast } from '@/hooks/useToast';
@@ -16,12 +16,13 @@ import { useToast } from '@/hooks/useToast';
 type TabType = 'pendientes' | 'completados';
 
 export default function RecordatoriosPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { adjustPendingReminders, pushRecordatorioChange } = useRecordatorios();
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabType>('pendientes');
   const { toast, showToast } = useToast();
+  const [lastAction, setLastAction] = useState<{ type: 'COMPLETE' | 'DELETE', data: Recordatorio } | null>(null);
 
   const fetchRecordatorios = useCallback(async () => {
     setLoading(true);
@@ -54,35 +55,108 @@ export default function RecordatoriosPage() {
 
   const handleMarcarCompletado = async (id: string) => {
     const rec = recordatorios.find(r => r.id === id);
+    if (!rec) return;
+
+    // Optimistic update
     setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: true } : r));
     adjustPendingReminders(-1);
-    showToast('Marcado como completado', 'success');
+
     const { error } = await supabase.from('recordatorios').update({ mostrado: true }).eq('id', id);
+
     if (error) {
       setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: false } : r));
       adjustPendingReminders(1);
       showToast('Error al actualizar', 'error');
     } else {
+      setLastAction({ type: 'COMPLETE', data: { ...rec } });
+      showToast('Marcado como completado', 'success');
       if (rec) pushRecordatorioChange('UPDATE', { ...rec, mostrado: true });
-      logAudit({ id_registro: rec?.registro_id, nombre: rec?.nombre, cuil: rec?.cuil, analista: rec?.analista, accion: 'Recordatorio completado', campo_modificado: 'Recordatorio', valor_nuevo: `${rec?.nombre} | ${rec?.fecha_hora}` });
+      logAudit({ id_registro: rec.registro_id, nombre: rec.nombre, cuil: rec.cuil, analista: rec.analista, accion: 'Recordatorio completado', campo_modificado: 'Recordatorio', valor_nuevo: `${rec.nombre} | ${rec.fecha_hora}` });
     }
   };
 
   const handleEliminar = async (id: string, nombre: string) => {
     if (!confirm(`¿Eliminar recordatorio de ${nombre}?`)) return;
     const backup = recordatorios.find(r => r.id === id);
-    const wasPending = backup && !backup.mostrado;
+    if (!backup) return;
+
+    const wasPending = !backup.mostrado;
     setRecordatorios(prev => prev.filter(r => r.id !== id));
     if (wasPending) adjustPendingReminders(-1);
-    showToast('Eliminado', 'success');
+
     const { error } = await supabase.from('recordatorios').delete().eq('id', id);
-    if (error && backup) {
+
+    if (error) {
       setRecordatorios(prev => [...prev, backup].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora)));
       if (wasPending) adjustPendingReminders(1);
       showToast('Error al eliminar', 'error');
     } else {
-      if (backup) pushRecordatorioChange('DELETE', backup);
-      logAudit({ id_registro: backup?.registro_id, nombre: backup?.nombre, cuil: backup?.cuil, analista: backup?.analista, accion: 'Eliminación', campo_modificado: 'Recordatorio', valor_anterior: `${backup?.nombre} | ${backup?.fecha_hora}` });
+      setLastAction({ type: 'DELETE', data: { ...backup } });
+      showToast('Eliminado', 'success');
+      pushRecordatorioChange('DELETE', backup);
+      logAudit({ id_registro: backup.registro_id, nombre: backup.nombre, cuil: backup.cuil, analista: backup.analista, accion: 'Eliminación', campo_modificado: 'Recordatorio', valor_anterior: `${backup.nombre} | ${backup.fecha_hora}` });
+    }
+  };
+
+  const handleRevertirCompletado = async (id: string) => {
+    const rec = recordatorios.find(r => r.id === id);
+    if (!rec) return;
+
+    // Optimistic update
+    setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: false } : r));
+    adjustPendingReminders(1);
+
+    const { error } = await supabase.from('recordatorios').update({ mostrado: false }).eq('id', id);
+
+    if (error) {
+      setRecordatorios(prev => prev.map(r => r.id === id ? { ...r, mostrado: true } : r));
+      adjustPendingReminders(-1);
+      showToast('Error al revertir', 'error');
+    } else {
+      showToast('Recordatorio devuelto a pendientes', 'success');
+      pushRecordatorioChange('UPDATE', { ...rec, mostrado: false });
+      logAudit({ 
+        id_registro: rec.registro_id, 
+        nombre: rec.nombre, 
+        cuil: rec.cuil, 
+        analista: rec.analista, 
+        accion: 'Revertir completado', 
+        campo_modificado: 'Recordatorio', 
+        valor_nuevo: 'Pendiente' 
+      });
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!lastAction) return;
+    const { type, data } = lastAction;
+
+    try {
+      if (type === 'COMPLETE') {
+        const { error } = await supabase.from('recordatorios').update({ mostrado: false }).eq('id', data.id);
+        if (error) throw error;
+
+        setRecordatorios(prev => prev.map(r => r.id === data.id ? { ...r, mostrado: false } : r));
+        adjustPendingReminders(1);
+        pushRecordatorioChange('UPDATE', { ...data, mostrado: false });
+        showToast('Acción deshecha', 'success');
+        logAudit({ id_registro: data.registro_id, nombre: data.nombre, cuil: data.cuil, analista: data.analista, accion: 'Undo Completado', campo_modificado: 'Recordatorio', valor_nuevo: 'Pendiente' });
+      } else if (type === 'DELETE') {
+        // Para insertar, quitamos campos autogenerados si existen o confiamos en que Supabase los maneje
+        const { error } = await supabase.from('recordatorios').insert([data]);
+        if (error) throw error;
+
+        setRecordatorios(prev => [...prev, data].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora)));
+        if (!data.mostrado) adjustPendingReminders(1);
+        pushRecordatorioChange('INSERT', data);
+        showToast('Acción deshecha', 'success');
+        logAudit({ id_registro: data.registro_id, nombre: data.nombre, cuil: data.cuil, analista: data.analista, accion: 'Undo Eliminación', campo_modificado: 'Recordatorio', valor_nuevo: 'Restaurado' });
+      }
+    } catch (err: any) {
+      console.error('Error al deshacer:', err);
+      showToast('Error al deshacer la acción', 'error');
+    } finally {
+      setLastAction(null);
     }
   };
 
@@ -115,7 +189,7 @@ export default function RecordatoriosPage() {
     return 'rgba(255,255,255,0.06)';
   };
 
-  const canDelete = user?.rol === 'admin';
+  const canDelete = isAdmin;
 
   return (
     <div className="dashboard-container">
@@ -133,13 +207,31 @@ export default function RecordatoriosPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Recordatorios</h1>
         </div>
-        <button
-          className="btn-secondary"
-          onClick={fetchRecordatorios}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
-          <RefreshCw size={15} /> Actualizar
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {canDelete && lastAction && (
+            <button
+              className="btn-secondary"
+              onClick={handleUndo}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                color: '#60a5fa',
+                background: 'rgba(96, 165, 250, 0.1)',
+                border: '1px solid rgba(96, 165, 250, 0.2)'
+              }}
+            >
+              <RotateCcw size={15} /> Deshacer cambio
+            </button>
+          )}
+          <button
+            className="btn-secondary"
+            onClick={fetchRecordatorios}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <RefreshCw size={15} /> Actualizar
+          </button>
+        </div>
       </header>
 
       {/* Stats rápidas */}
@@ -309,6 +401,16 @@ export default function RecordatoriosPage() {
                       style={{ color: 'var(--verde)' }}
                     >
                       <Check size={16} />
+                    </button>
+                  )}
+                  {rec.mostrado && isAdmin && (
+                    <button
+                      className="btn-icon"
+                      onClick={() => handleRevertirCompletado(rec.id)}
+                      title="Devolver a pendientes"
+                      style={{ color: '#60a5fa' }}
+                    >
+                      <RotateCcw size={16} />
                     </button>
                   )}
                   {canDelete && (
