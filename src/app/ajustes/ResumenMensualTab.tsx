@@ -898,7 +898,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       'PREMIUM': { monto: 0, cantidad: 0 },
       'Riesgo MEDIO': { monto: 0, cantidad: 0 },
       'Riesgo BAJO': { monto: 0, cantidad: 0 },
-      'No califica/aprobado por excepcion': { monto: 0, cantidad: 0 },
+      'No califica/Excepcion': { monto: 0, cantidad: 0 },
       'No califica': { monto: 0, cantidad: 0 },
     };
     // Mapeo para match con DB
@@ -910,7 +910,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
       
       if (esRechazo) {
-        return isV ? 'No califica/aprobado por excepcion' : 'No califica';
+        return isV ? 'No califica/Excepcion' : 'No califica';
       }
 
       if (ac.includes('bajo')) return 'Riesgo BAJO';
@@ -1178,7 +1178,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
   // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
   const chartAcuerdos = useMemo(() => {
-    const tiposDisplay = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/aprobado por excepcion', 'No califica'];
+    const tiposDisplay = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/Excepcion', 'No califica'];
     const analistas = CONFIG.ANALISTAS_DEFAULT;
     const colores = ['#60a5fa', '#a78bfa'];
 
@@ -1190,7 +1190,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
       
       if (esRechazo) {
-        return isV ? 'No califica/aprobado por excepcion' : 'No califica';
+        return isV ? 'No califica/Excepcion' : 'No califica';
       }
 
       if (ac.includes('bajo')) return 'Riesgo BAJO';
