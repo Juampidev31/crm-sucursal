@@ -210,6 +210,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           </div>
         </div>
       </div>
+    </div>
 
       {/* 2. INDICADORES */}
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
@@ -245,6 +246,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           </div>
         </div>
       </div>
+    </div>
 
       {/* 3. VENTAS POR CATEGORÍA */}
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
