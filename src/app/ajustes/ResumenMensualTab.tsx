@@ -826,6 +826,14 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       const ticket = ops > 0 ? capital / ops : 0;
       const conversion = regsAnalista.length > 0 ? (ops / regsAnalista.length) * 100 : 0;
 
+      // Monto venta y Aprob CC por separado
+      const montoVenta = regsAnalista
+        .filter(r => (r.estado ?? '').toLowerCase() === 'venta')
+        .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      const montoAprobCC = regsAnalista
+        .filter(r => (r.estado ?? '').toLowerCase().includes('aprobado cc'))
+        .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+
       // Objetivo.mes es 0-indexed (0 = Enero)
       const obj = objetivos.find(o => o.analista === analista && o.mes === selectedMes - 1 && o.anio === selectedAnio);
       const metaCapital = obj?.meta_ventas ?? 0;
@@ -841,7 +849,12 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
       const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
 
-      return { analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps, clientesIngresados: regsAnalista.length };
+      return { 
+        analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps, 
+        clientesIngresados: regsAnalista.length,
+        montoVenta,
+        montoAprobCC
+      };
     });
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
 
@@ -854,6 +867,13 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const ticket = ops > 0 ? capital / ops : 0;
     const clientes = regs.length;
     const conversion = clientes > 0 ? (ops / clientes) * 100 : 0;
+
+    const montoVenta = regs
+      .filter(r => (r.estado ?? '').toLowerCase() === 'venta')
+      .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    const montoAprobCC = regs
+      .filter(r => (r.estado ?? '').toLowerCase().includes('aprobado cc'))
+      .reduce((s, r) => s + (Number(r.monto) || 0), 0);
 
     const ventasAnt = filterByMonth(registros, mesPrev, anioPrev).filter(isVenta);
     const capitalAnt = ventasAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0);
@@ -869,7 +889,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
     const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
 
-    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps };
+    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
@@ -1737,6 +1757,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     cumplCapital: kpiTotal.cumplCapital, restanteCapital: kpiTotal.restanteCapital, cumplOps: kpiTotal.cumplOps, restanteOps: kpiTotal.restanteOps,
                     tendCapital: kpiTotal.tendCapital, tendOps: kpiTotal.tendOps,
                     metaCapital: kpiTotal.metaCapital, metaOps: kpiTotal.metaOps,
+                    montoVenta: kpiTotal.montoVenta,
+                    montoAprobCC: kpiTotal.montoAprobCC,
                   }].map((k, idx) => {
                     const isTotal = idx === kpiPorAnalista.length;
                     return (
@@ -1782,7 +1804,21 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                           </div>
                           <div>
                             <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Conversión</div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}% <span style={{ fontSize: 10, color: '#444' }}>({k.clientesIngresados} ing.)</span></div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}%</div>
+                          </div>
+
+                          {/* Nuevos indicadores solicitados */}
+                          <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Monto de Venta</div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoVenta)}</div>
+                          </div>
+                          <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Aprob. CC</div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoAprobCC)}</div>
+                          </div>
+                          <div style={{ gridColumn: 'span 2', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Cantidad de operaciones</div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#888' }}>{k.clientesIngresados} <span style={{ fontSize: 10, fontWeight: 500, color: '#444' }}>registros totales</span></div>
                           </div>
                         </div>
                       </div>

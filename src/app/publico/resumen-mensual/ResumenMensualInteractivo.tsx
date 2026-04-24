@@ -80,6 +80,8 @@ interface KPITotal {
   tendOps: number | null;
   restanteCapital: number | null;
   restanteOps: number | null;
+  montoVenta?: number;
+  montoAprobCC?: number;
 }
 
 interface KPIPorAnalista {
@@ -97,6 +99,8 @@ interface KPIPorAnalista {
   clientesIngresados: number;
   restanteCapital: number | null;
   restanteOps: number | null;
+  montoVenta?: number;
+  montoAprobCC?: number;
 }
 
 interface DatosGraficos {
@@ -412,6 +416,20 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
                       <div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>Conversión</div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}%</div>
+                      </div>
+
+                      {/* Nuevos indicadores */}
+                      <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>Monto de Venta</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoVenta || 0)}</div>
+                      </div>
+                      <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>Aprob. CC</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoAprobCC || 0)}</div>
+                      </div>
+                      <div style={{ gridColumn: 'span 2', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>Cantidad de operaciones</div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: '#888' }}>{k.clientesIngresados} <span style={{ fontSize: 10, fontWeight: 500, color: '#444' }}>registros totales</span></div>
                       </div>
                     </div>
                   </div>
