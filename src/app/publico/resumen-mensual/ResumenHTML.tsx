@@ -92,7 +92,7 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
   const hasMore = data.length > 5;
 
   return (
-    <div style={{ flex: 1, minWidth: 220 }}>
+    <div style={{ flex: 1, minWidth: 240 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
         <div style={{ width: 24, height: 24, borderRadius: 6, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' }}>{title}</span>
@@ -105,7 +105,7 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
             return (
               <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
-                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap' }}>{(d.label?.trim() === 'Sin dato' ? 'No especificado' : d.label?.trim()) || 'No especificado'}</span>
+                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(d.label?.trim() === 'Sin dato' ? 'No especificado' : d.label?.trim()) || 'No especificado'}</span>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                     <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
                     <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
