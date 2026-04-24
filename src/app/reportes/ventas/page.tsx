@@ -147,7 +147,7 @@ export default function ReporteVentasPage() {
                 icon="calendar"
                 value={filtroMes}
                 options={mesesDisponibles.map(m => ({ value: m.key, label: m.label }))}
-                onChange={setFiltroMes}
+                onChange={(v) => setFiltroMes(String(v))}
                 width="180px"
               />
             </div>
@@ -159,7 +159,7 @@ export default function ReporteVentasPage() {
                 icon="user"
                 value={filtroAnalista}
                 options={[{ value: '', label: 'VISTA GLOBAL' }, ...analistas.map(a => ({ value: a, label: displayAnalista(a) }))]}
-                onChange={setFiltroAnalista}
+                onChange={(v) => setFiltroAnalista(String(v))}
                 width="180px"
               />
             </div>

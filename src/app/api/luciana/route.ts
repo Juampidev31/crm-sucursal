@@ -4,7 +4,7 @@ import { parseCSV, clean, parsePct } from '@/lib/csv-utils';
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1ixuDCB2G5i-eDVP1TvVPylHBaxcoTODnRlizNkJqsfw/export?format=csv&gid=862186907';
 
 export async function GET() {
-  const res = await fetch(CSV_URL, { cache: 'no-store' });
+  const res = await fetch(CSV_URL, { next: { revalidate: 300 } });
   const text = await res.text();
   const rows = parseCSV(text);
 

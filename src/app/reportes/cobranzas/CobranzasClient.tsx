@@ -130,7 +130,7 @@ export default function CobranzasClient({ data, year, years }: Props) {
         <SelectReporte
           icon="calendar"
           value={year}
-          onChange={onYearChange}
+          onChange={(v) => onYearChange(String(v))}
           options={years.map(y => ({ label: `AÑO ${y}`, value: y }))}
           width="140px"
         />

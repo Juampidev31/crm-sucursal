@@ -1,8 +1,6 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
-import { TrendingUp, CreditCard, ChevronRight, BarChart3, PieChart } from 'lucide-react';
+import { TrendingUp, CreditCard, ChevronRight, PieChart } from 'lucide-react';
 
 export default function ReportesHubPage() {
   const reports = [
@@ -30,7 +28,7 @@ export default function ReportesHubPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         {reports.map((report) => (
           <Link key={report.id} href={report.path} style={{ textDecoration: 'none' }}>
-            <div className="data-card" style={{ 
+            <div className="report-card data-card" style={{ 
               padding: '32px', 
               background: '#0a0a0a', 
               border: '1px solid rgba(255,255,255,0.03)',
@@ -40,16 +38,7 @@ export default function ReportesHubPage() {
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.transform = 'translateY(-4px)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-            >
+            }}>
               <div>
                 <div style={{ 
                   width: '48px', 

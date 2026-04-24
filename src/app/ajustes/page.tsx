@@ -892,13 +892,13 @@ export default function AjustesPage() {
                   <CustomSelect
                     options={[2024, 2025, 2026, 2027].map(y => ({ label: String(y), value: y }))}
                     value={objetivosAnio}
-                    onChange={setObjetivosAnio}
+                    onChange={(v) => setObjetivosAnio(Number(v))}
                     width="110px"
                   />
                   <CustomSelect
                     options={ANALISTAS.map(a => ({ label: a === 'PDV' ? 'Punto de Venta' : a, value: a }))}
                     value={objetivosAnalista}
-                    onChange={setObjetivosAnalista}
+                    onChange={(v) => setObjetivosAnalista(String(v))}
                     width="140px"
                   />
                   <button className="btn-primary" style={{ height: '38px', padding: '0 20px' }} onClick={saveObjetivos} disabled={savingObj}>

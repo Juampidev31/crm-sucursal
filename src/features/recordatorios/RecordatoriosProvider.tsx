@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import { Recordatorio } from '@/types';
+import { validateBroadcast } from '@/lib/broadcast-utils';
 
 export interface ReminderAlertData {
   id: string;
@@ -32,14 +33,7 @@ const RecordatoriosContext = createContext<RecordatoriosCtx | null>(null);
 const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
 const recordatorioChangeSchema = z.object({ type: changeType, mostrado: z.boolean().optional() });
 
-function validateBroadcast<T>(event: string, schema: z.ZodType<T>, payload: unknown): T | null {
-  const r = schema.safeParse(payload);
-  if (!r.success) {
-    console.warn(`[broadcast] ${event} payload inválido:`, r.error.issues);
-    return null;
-  }
-  return r.data;
-}
+
 
 export function RecordatoriosProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();

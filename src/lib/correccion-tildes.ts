@@ -144,34 +144,18 @@ const ACCENT_MAP: Record<string, string> = {
   'zalazar': 'Zalazar',
 
   // Palabras con tilde diacrítica
-  'el': 'él',
-  'mi': 'mí',
-  'si': 'sí',
-  'te': 'té',
-  'tu': 'tú',
-  'de': 'dé',
-  'se': 'sé',
+  // NOTA: palabras monosílabas como el/él, mi/mí, de/dé, se/sé, tu/tú, te/té, si/sí
+  // se omiten porque la tilde es contextual y la corrección automática
+  // genera más errores de los que resuelve.
   'mas': 'más',
   'aun': 'aún',
-  'solo': 'sólo',
   'tambien': 'también',
   'despues': 'después',
-  'antes': 'Antes',
-  'ahora': 'Ahora',
-  'hoy': 'Hoy',
-  'ayer': 'Ayer',
   'manana': 'mañana',
-  'tarde': 'Tarde',
-  'noche': 'Noche',
   'dia': 'día',
   'dias': 'días',
-  'semana': 'Semana',
-  'mes': 'Mes',
-  'meses': 'Meses',
   'anio': 'año',
   'anios': 'años',
-  'vez': 'Vez',
-  'veces': 'Veces',
 
   // Verbos comunes
   'tiene': 'tiene',
@@ -340,15 +324,11 @@ export function corregirTildes(texto: string): string {
 }
 
 /**
- * Hook para corregir tildes automáticamente en inputs
- * Retorna el valor corregido y una función para aplicar la corrección
+ * Aplica corregirTildes al texto.
+ * (Antes era un "hook" pero no usa ninguna API de React — es una función pura.)
  */
-export function useCorreccionTildes(valor: string): [string, (valorCorregido: string) => string] {
-  const corregir = (valorCorregido: string): string => {
-    return corregirTildes(valorCorregido);
-  };
-
-  return [valor, corregir];
+export function aplicarCorreccionTildes(valor: string): string {
+  return corregirTildes(valor);
 }
 
 /**

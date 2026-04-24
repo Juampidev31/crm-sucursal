@@ -51,7 +51,7 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     let filtered = regs;
     if (analista) filtered = filtered.filter(r => r.analista === analista);
-    if (mes) filtered = filtered.filter(r => r.fecha && r.fecha.includes(`-${mes}-`));
+    if (mes) filtered = filtered.filter(r => r.fecha && r.fecha.slice(5, 7) === mes);
 
     const result = ESTADOS.map(st => {
       const match = filtered.filter(r => r.estado?.toLowerCase() === st);
@@ -60,7 +60,7 @@ export default function DashboardPage() {
         label: getStatusLabel(st),
         monto: match.reduce((acc, r) => acc + Number(r.monto || 0), 0),
         ops: match.length,
-        color: (CHART_COLORS as any)[st] || '#888'
+        color: (CHART_COLORS as Record<string, string>)[st] || '#888'
       };
     });
     return result;
@@ -85,7 +85,7 @@ export default function DashboardPage() {
       },
       tooltip: {
         callbacks: {
-          label: (ctx: any) => `${ctx.label}: ${formatCurrency(ctx.raw)}`
+          label: (ctx: { label?: string; raw: unknown }) => `${ctx.label}: ${formatCurrency(Number(ctx.raw))}`
         }
       }
     },

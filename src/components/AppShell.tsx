@@ -11,7 +11,7 @@ import { HistoricoProvider } from '@/features/historico/HistoricoProvider';
 import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { FilterProvider } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
-import { Bell, X, AlertCircle, Columns, Layout, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, X, AlertCircle, Columns } from 'lucide-react';
 import SplitLayout from './SplitLayout';
 import { formatDate } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';

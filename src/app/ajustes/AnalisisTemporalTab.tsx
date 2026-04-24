@@ -637,10 +637,10 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
         {!collapsedSections[11] && !isPublic && (
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
             {[
-              { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={setPeriodo} width="170px" /> },
-              { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={setAnalistaFil} width="160px" /> },
-              { label: 'Comparar c/', node: <CustomSelect options={analistaOpts2} value={analistaFil2} onChange={setAnalistaFil2} width="160px" /> },
-              { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={setMetrica} width="160px" /> },
+              { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={(v) => setPeriodo(Number(v))} width="170px" /> },
+              { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={(v) => setAnalistaFil(String(v))} width="160px" /> },
+              { label: 'Comparar c/', node: <CustomSelect options={analistaOpts2} value={analistaFil2} onChange={(v) => setAnalistaFil2(String(v))} width="160px" /> },
+              { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={(v) => setMetrica(String(v))} width="160px" /> },
             ].map(f => (
               <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</div>

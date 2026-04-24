@@ -11,7 +11,7 @@ interface Option {
 interface SelectReporteProps {
   options: Option[];
   value: string | number;
-  onChange: (val: any) => void;
+  onChange: (val: string | number) => void;
   icon?: 'user' | 'calendar';
   width?: string;
 }
@@ -156,15 +156,12 @@ export default function SelectReporte({ options, value, onChange, icon, width = 
           ))}
         </div>
       )}
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes elegantIn {
           from { opacity: 0; transform: translateY(-10px) scale(0.95); filter: blur(10px); }
           to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
-        div::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+      ` }} />
     </div>
   );
 }

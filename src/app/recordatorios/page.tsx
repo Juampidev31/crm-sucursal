@@ -8,9 +8,9 @@ import { Recordatorio } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import {
-  Bell, Check, Trash2, AlertCircle, Clock, User, Filter, RefreshCw, Calendar, RotateCcw
+  Bell, Check, Trash2, AlertCircle, Clock, User, RefreshCw, Calendar, RotateCcw
 } from 'lucide-react';
-import { ANALISTAS } from '@/context/FilterContext';
+
 import { useToast } from '@/hooks/useToast';
 
 type TabType = 'pendientes' | 'completados';
@@ -42,8 +42,7 @@ export default function RecordatoriosPage() {
     // Usar BroadcastChannel para actualizaciones inmediatas
     const bc = supabase
       .channel('recordatorios-broadcast-client', { config: { broadcast: { self: false } } })
-      .on('broadcast', { event: 'recordatorio_change' }, async ({ payload }) => {
-        const { type } = payload as { type: string };
+      .on('broadcast', { event: 'recordatorio_change' }, async () => {
         // Refetch para obtener los datos actualizados
         await fetchRecordatorios();
       })

@@ -9,6 +9,7 @@ import {
   AlertaConfig, DiasConfig,
   alertaConfigSchema, diasConfigSchema, parseRows,
 } from '@/types';
+import { validateBroadcast } from '@/lib/broadcast-utils';
 
 type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 
@@ -26,14 +27,7 @@ const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
 const alertaConfigChangeSchema = z.object({ type: changeType, config: alertaConfigSchema });
 const diasConfigChangeSchema = z.object({ type: changeType, config: diasConfigSchema });
 
-function validateBroadcast<T>(event: string, schema: z.ZodType<T>, payload: unknown): T | null {
-  const r = schema.safeParse(payload);
-  if (!r.success) {
-    console.warn(`[broadcast] ${event} payload inválido:`, r.error.issues);
-    return null;
-  }
-  return r.data;
-}
+
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();

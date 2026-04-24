@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Layout, ChevronLeft, ChevronRight, Maximize2, ExternalLink } from 'lucide-react';
+import { X, ExternalLink, Layout } from 'lucide-react';
 
 interface SplitLayoutProps {
   leftPath: string;
@@ -186,13 +186,13 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
         </div>
       </div>
       
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         /* Ocultar scrollbars en los iframes si es posible */
         iframe::-webkit-scrollbar {
           width: 0;
           height: 0;
         }
-      `}</style>
+      ` }} />
     </div>
   );
 }

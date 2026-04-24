@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import { Registro, parseRegistros, registroSchema } from '@/types';
+import { validateBroadcast } from '@/lib/broadcast-utils';
 
 type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 
@@ -25,14 +26,7 @@ const RegistrosContext = createContext<RegistrosCtx | null>(null);
 const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
 const registroChangeSchema = z.object({ type: changeType, registro: registroSchema });
 
-function validateBroadcast<T>(event: string, schema: z.ZodType<T>, payload: unknown): T | null {
-  const r = schema.safeParse(payload);
-  if (!r.success) {
-    console.warn(`[broadcast] ${event} payload inválido:`, r.error.issues);
-    return null;
-  }
-  return r.data;
-}
+
 
 // Ventana default. Reportes/analistas que necesiten más llaman a
 // setRegistrosWindowMonths(N).

@@ -43,7 +43,7 @@ const initialState: FilterState = {
 
 interface FilterCtx {
   filters: FilterState;
-  setFilter: (key: keyof FilterState, value: any) => void;
+  setFilter: (key: keyof FilterState, value: FilterState[keyof FilterState]) => void;
   toggleEstado: (estado: string) => void;
   toggleAcuerdoPrecios: (acuerdo: string) => void;
   limpiarFiltros: () => void;
@@ -73,7 +73,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [totalResults, setTotalResults] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
-  const setFilter = useCallback((key: keyof FilterState, value: string) => {
+  const setFilter = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 

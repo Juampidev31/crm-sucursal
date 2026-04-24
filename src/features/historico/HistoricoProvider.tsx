@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import { HistoricoVenta, historicoVentaSchema, parseRows } from '@/types';
+import { validateBroadcast } from '@/lib/broadcast-utils';
 
 type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 
@@ -20,14 +21,7 @@ const HistoricoContext = createContext<HistoricoCtx | null>(null);
 const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
 const historicoChangeSchema = z.object({ type: changeType, historico: historicoVentaSchema });
 
-function validateBroadcast<T>(event: string, schema: z.ZodType<T>, payload: unknown): T | null {
-  const r = schema.safeParse(payload);
-  if (!r.success) {
-    console.warn(`[broadcast] ${event} payload inválido:`, r.error.issues);
-    return null;
-  }
-  return r.data;
-}
+
 
 export function HistoricoProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();

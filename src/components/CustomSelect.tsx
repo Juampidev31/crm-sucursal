@@ -11,7 +11,7 @@ interface Option {
 interface CustomSelectProps {
   options: Option[];
   value: string | number;
-  onChange: (val: any) => void;
+  onChange: (val: string | number) => void;
   width?: string;
 }
 
@@ -114,12 +114,12 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
           ))}
         </div>
       )}
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes dropdownIn {
           from { opacity: 0; transform: translateY(-4px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-      `}</style>
+      ` }} />
     </div>
   );
 }

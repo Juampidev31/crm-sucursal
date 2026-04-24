@@ -20,12 +20,25 @@ async function buildProyeccion() {
   const ultimoDiaMes = new Date(anioActual, mesActual + 1, 0).getDate();
   const maxDiaCalculo = Math.min(diaActual, ultimoDiaMes);
 
-  const [{ data: registros }, { data: objetivos }] = await Promise.all([
-    supabase.from('registros').select('*'),
+  const fromDate = new Date(anioActual, mesActual, 1).toISOString().split('T')[0];
+  const toDate = new Date(anioActual, mesActual + 1, 0).toISOString().split('T')[0];
+
+  const [regResult, objResult] = await Promise.all([
+    supabase.from('registros').select('*')
+      .or(`fecha.gte.${fromDate},fecha.is.null`)
+      .lte('fecha', toDate),
     supabase.from('objetivos').select('*').eq('anio', anioActual).eq('mes', mesActual),
   ]);
 
-  const regs = registros || [];
+  if (regResult.error) {
+    console.error('[Proyección] Error fetching registros:', regResult.error.message);
+  }
+  if (objResult.error) {
+    console.error('[Proyección] Error fetching objetivos:', objResult.error.message);
+  }
+
+  const regs = regResult.data || [];
+  const objetivos = objResult.data || [];
   const estadosActivos = ['proyeccion', 'en seguimiento', 'score bajo', 'afectaciones', 'derivado / rechazado cc'];
 
   const mkEntry = (metaV: number, metaO: number): ProyeccionData => ({
@@ -40,7 +53,7 @@ async function buildProyeccion() {
     diasDelMes: ultimoDiaMes, diasTranscurridos: maxDiaCalculo, alcanceActual: 0,
   });
 
-  const objPDV = (objetivos || []).find(o => o.analista === 'PDV');
+  const objPDV = objetivos.find(o => o.analista === 'PDV');
   const metaVPDV = Number(objPDV?.meta_ventas) || 0;
   const metaOPDV = Number(objPDV?.meta_operaciones) || 0;
   const result: Record<string, ProyeccionData> = { 'PDV': mkEntry(metaVPDV, metaOPDV) };
@@ -48,7 +61,7 @@ async function buildProyeccion() {
   const datosDiariosOps: Record<string, number[]> = { 'PDV': Array(ultimoDiaMes).fill(0) };
 
   CONFIG.ANALISTAS_DEFAULT.forEach(a => {
-    const obj = (objetivos || []).find(o => o.analista === a);
+    const obj = objetivos.find(o => o.analista === a);
     const metaV = Number(obj?.meta_ventas) || 0;
     const metaO = Number(obj?.meta_operaciones) || 0;
     result[a] = mkEntry(metaV, metaO);

@@ -1044,7 +1044,7 @@ export default function AnalistasPage() {
         <SelectReporte
           icon="user"
           value={analista}
-          onChange={v => setAnalista(v)}
+          onChange={v => setAnalista(String(v))}
           options={[
             { label: 'Vista Global (PDV)', value: PDV },
             ...analistasSel.map(a => ({ label: a.toUpperCase(), value: a }))
@@ -1056,7 +1056,7 @@ export default function AnalistasPage() {
           icon="calendar"
           value={`${anio}-${mes}`}
           onChange={v => {
-            const [a, m] = v.split('-');
+            const [a, m] = String(v).split('-');
             setAnio(Number(a)); 
             setMes(Number(m));
           }}

@@ -817,3 +817,13 @@ input:checked+.toggle-slider:before {
 ::-webkit-scrollbar-thumb:hover {
   background: #2a2a2a;
 }
+
+/* ============ REPORT CARDS ============ */
+.report-card {
+  transition: all 0.3s ease;
+}
+
+.report-card:hover {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  transform: translateY(-4px);
+}

@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
   const res = await fetch(
     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`,
-    { cache: 'no-store' }
+    { next: { revalidate: 300 } }
   );
   const text = await res.text();
   const rows = parseCSV(text);
