@@ -144,6 +144,7 @@ interface DatosGraficos {
   distLocalidad?: Array<{ label: string; monto: number; cantidad: number }>;
   distEmpleador?: Array<{ label: string; monto: number; cantidad: number }>;
   distAcuerdos?: Array<{ label: string; monto: number; cantidad: number }>;
+  distEstados?: Array<{ label: string; monto: number; cantidad: number }>;
 }
 
 const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, showLegend = false, stacked = false): any => ({
@@ -255,7 +256,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
     planAcciones, auditCounts, collapsedSections, registros, chartCapitalVsObjetivo, chartTicketPromedio, chartVariacion, 
     chartCumplimiento, chartEmbudo, chartAperturas, chartRenovaciones, chartConversionTotal, 
     chartConversionPresupuesto, chartEmpleoPublPriv, chartAcuerdos, distSexo, distCuotas, 
-    distRangoEtario, distLocalidad, distEmpleador, distAcuerdos 
+    distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, distEstados 
   } = datos;
 
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>(collapsedSections || { 10: true });
@@ -521,6 +522,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
             </div>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               {distAcuerdos && <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" totalMes={totalMes} />}
+              {distEstados && <DistBlock titulo="Estados" icon={<BarChart3 size={12} color="#f87171" />} datos={distEstados} color="#f87171" totalMes={totalMes} />}
               {distCuotas && <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalMes} />}
               {distRangoEtario && <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" totalMes={totalMes} />}
               {distSexo && <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalMes} />}

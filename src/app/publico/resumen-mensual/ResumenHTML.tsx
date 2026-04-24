@@ -92,7 +92,7 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
 export default function ResumenHTML({ datos }: { datos: any }) {
   if (!datos?.kpiTotal) return <div style={{color:'#666'}}>Cargando...</div>;
 
-  const { kpiTotal, kpiPorAnalista, mesActual, mesAnterior, experienciaCliente, analisisComercial, operacionProcesos, gestionesRealizadas, coordinacionSalidas, empresasEstrategicas, logros, desvios, accionesClave, dotacion, ausentismo, capacitacion, evaluacionDesempeno, planAcciones, distSexo, distCuotas, distRangoEtario, distLocalidad, distEmpleador, distAcuerdos } = datos;
+  const { kpiTotal, kpiPorAnalista, mesActual, mesAnterior, experienciaCliente, analisisComercial, operacionProcesos, gestionesRealizadas, coordinacionSalidas, empresasEstrategicas, logros, desvios, accionesClave, dotacion, ausentismo, capacitacion, evaluacionDesempeno, planAcciones, distSexo, distCuotas, distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, distEstados } = datos;
 
   const allAnalistas = [...kpiPorAnalista, {analista:'Total PDV', ...kpiTotal}];
   const total = kpiTotal.capital;
@@ -197,6 +197,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
         <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
           {distAcuerdos?.length && <DistBlock title="Acuerdo" icon={<PieChart size={12} color="#f97316" />} data={distAcuerdos} color="#f97316" total={total} />}
+          {distEstados?.length && <DistBlock title="Estados" icon={<BarChart3 size={12} color="#f87171" />} data={distEstados} color="#f87171" total={total} />}
           {distCuotas?.length && <DistBlock title="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} data={distCuotas} color="#60a5fa" total={total} />}
           {distRangoEtario?.length && <DistBlock title="Rango Etario" icon={<Users size={12} color="#34d399" />} data={distRangoEtario} color="#34d399" total={total} />}
           {distSexo?.length && <DistBlock title="Sexo" icon={<Users size={12} color="#f472b6" />} data={distSexo} color="#f472b6" total={total} />}
