@@ -105,7 +105,7 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
             return (
               <div key={i} style={{ padding: '6px 0', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontSize: 11, color: '#888' }}>{d.label || 'No especificado'}</span>
+                  <span style={{ fontSize: 11, color: '#888' }}>{d.label?.trim() || 'No especificado'}</span>
                   <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)} <span style={{color:'#aaa'}}>{d.cantidad}</span> <b style={{color}}>{pct.toFixed(0)}%</b></span>
                 </div>
                 <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
