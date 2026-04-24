@@ -922,11 +922,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     for (const r of filterByMonth(registros, selectedMes, selectedAnio)) {
       const isV = isVenta(r);
       const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
-      if (isV || (matched === 'No califica')) {
-        if (matched) {
-          tipos[matched].monto += Number(r.monto) || 0;
-          tipos[matched].cantidad += 1;
-        }
+      if (matched) {
+        tipos[matched].monto += Number(r.monto) || 0;
+        tipos[matched].cantidad += 1;
       }
     }
     return tipos;
@@ -934,7 +932,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
   // ── Distribuciones demográficas (ventas del mes) ─────────────────────────
   const ventasMes = useMemo(() =>
-    filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta),
+    filterByMonth(registros, selectedMes, selectedAnio),
     [registros, selectedMes, selectedAnio]
   );
 
@@ -994,6 +992,39 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const distRangoEtario = useMemo(() => distPor('rango_etario'), [ventasMes]);
   const distSexo = useMemo(() => distPor('sexo'), [ventasMes]);
   const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
+  const distEstados = useMemo(() => {
+    const map = new Map<string, { monto: number; cantidad: number }>();
+    for (const r of ventasMes) {
+      let raw = (r.estado || '').toLowerCase().trim();
+      let label = '';
+
+      if (raw.includes('derivado') || raw.includes('aprobado cc')) {
+        label = 'Aprob. CC';
+      } else if (raw.includes('rechazado')) {
+        label = 'Rechaz. CC';
+      } else if (raw === 'venta') {
+        label = 'Venta';
+      } else if (raw === 'proyeccion') {
+        label = 'Proyección';
+      } else if (raw === 'en seguimiento') {
+        label = 'En Seguimiento';
+      } else if (raw === 'no califica') {
+        label = 'No califica';
+      } else if (raw === 'score bajo') {
+        label = 'Score Bajo';
+      } else if (raw === 'afectaciones') {
+        label = 'Afectaciones';
+      } else {
+        label = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'Sin dato';
+      }
+
+      const prev = map.get(label) ?? { monto: 0, cantidad: 0 };
+      map.set(label, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([label, data]) => ({ label, ...data }));
+  }, [ventasMes]);
   const distAcuerdos = useMemo(() => {
     return Object.entries(distribucionAcuerdos)
       .map(([label, data]) => ({ label, ...data }))
@@ -1002,7 +1033,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
   // ── Distribuciones mes anterior ───────────────────────────────────────────
   const ventasMesAnt = useMemo(() =>
-    filterByMonth(registros, mesPrev, anioPrev).filter(isVenta),
+    filterByMonth(registros, mesPrev, anioPrev),
     [registros, mesPrev, anioPrev]
   );
 
@@ -1207,7 +1238,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           return filterByMonth(registros, selectedMes, selectedAnio).filter(r => {
             const isV = isVenta(r);
             const matched = matchAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
-            return r.analista === an && matched === t && (isV || t === 'No califica');
+            return r.analista === an && matched === t;
           }).length;
         }),
         backgroundColor: colores[idx] || '#555',
@@ -1901,6 +1932,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                   return (
                     <>
                       <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" totalMes={totalMes} />
+                      <DistBlock titulo="Estados" icon={<BarChart3 size={12} color="#f87171" />} datos={distEstados} color="#f87171" totalMes={totalMes} />
                       <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalMes} />
                       <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" totalMes={totalMes} />
                       <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalMes} />
