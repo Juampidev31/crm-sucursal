@@ -98,8 +98,7 @@ const ReminderAlertPopup = () => {
   );
 };
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+function AppShellInner({ children, pathname }: { children: React.ReactNode, pathname: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loading, isAdmin } = useAuth();
@@ -143,9 +142,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('keydown', handleGlobalEscape, { capture: false });
     return () => window.removeEventListener('keydown', handleGlobalEscape);
-  }, [pathname, router]);
-
-  if (isPublicRoute || isLoginPage) return <>{children}</>;
+  }, [pathname, router, isPublicRoute, isLoginPage]);
 
   if (loading) {
     return (
@@ -159,132 +156,148 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
+      {/* Top Banner — Full Width — Hidden in Reports/Analysts or Minimal Mode */}
+      {!isMinimal && !pathname.startsWith('/reportes') && pathname !== '/analistas' && (
+        <header style={{
+          height: '60px',
+          width: '100%',
+          background: '#000',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 32px',
+          zIndex: 10,
+          flexShrink: 0,
+          position: 'relative',
+          marginBottom: '24px',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1 }}>
+            {/* Brand or other left content could go here */}
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '8px',
+            flex: 1,
+            justifyContent: 'center'
+          }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#555', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sistema de</span>
+            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#333', letterSpacing: '1px' }}>y</span>
+            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, justifyContent: 'flex-end' }}>
+            {isAdmin && !isSplitView && (
+              <button 
+                onClick={toggleSplitView}
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  color: '#aaa',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#aaa'; }}
+              >
+                <Columns size={14} />
+                MODO SPLIT
+              </button>
+            )}
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {formatDate(new Date().toISOString())}
+            </div>
+          </div>
+        </header>
+      )}
+
+      <div className="wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+        {!isMinimal && <Sidebar />}
+        <main
+          className="content-wrapper"
+          style={{
+            height: '100%',
+            overflow: 'hidden',
+            position: 'relative'
+          }}
+        >
+          <AnimatePresence mode="sync" initial={false}>
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: 0.18,
+                ease: [0.4, 0, 0.2, 1]
+              }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                overflowY: 'auto',
+                paddingTop: isMinimal ? 0 : (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
+                willChange: 'opacity'
+              }}
+            >
+              {isSplitView && isAdmin && !isMinimal ? (
+                <SplitLayout 
+                  leftPath={leftPath} 
+                  rightPath={rightPath} 
+                  onClose={toggleSplitView}
+                  onPathsChange={(l, r) => {
+                    setLeftPath(l);
+                    setRightPath(r);
+                    localStorage.setItem('admin_split_left', l);
+                    localStorage.setItem('admin_split_right', r);
+                  }}
+                />
+              ) : (
+                children
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+      <ReminderAlertPopup />
+      <DataErrorToast />
+    </div>
+  );
+}
+
+export default function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/login';
+  const isPublicRoute = pathname.startsWith('/publico');
+
+  if (isPublicRoute || isLoginPage) return <>{children}</>;
+
+  return (
     <ErrorProvider>
     <RegistrosProvider>
     <RecordatoriosProvider>
     <ObjetivosProvider>
     <HistoricoProvider>
     <SettingsProvider>
-      <FilterProvider>
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
-          {/* Top Banner — Full Width — Hidden in Reports/Analysts or Minimal Mode */}
-          {!isMinimal && !pathname.startsWith('/reportes') && pathname !== '/analistas' && (
-            <header style={{
-              height: '60px',
-              width: '100%',
-              background: '#000',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 32px',
-              zIndex: 10,
-              flexShrink: 0,
-              position: 'relative',
-              marginBottom: '24px',
-              justifyContent: 'space-between'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1 }}>
-                {/* Brand or other left content could go here */}
-              </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: '8px',
-                flex: 1,
-                justifyContent: 'center'
-              }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#555', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sistema de</span>
-                <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#333', letterSpacing: '1px' }}>y</span>
-                <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, justifyContent: 'flex-end' }}>
-                {isAdmin && !isSplitView && (
-                  <button 
-                    onClick={toggleSplitView}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px',
-                      padding: '6px 12px',
-                      color: '#aaa',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#aaa'; }}
-                  >
-                    <Columns size={14} />
-                    MODO SPLIT
-                  </button>
-                )}
-                <div style={{ fontSize: '10px', fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  {formatDate(new Date().toISOString())}
-                </div>
-              </div>
-            </header>
-          )}
-
-          <div className="wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
-            {!isMinimal && <Sidebar />}
-            <main
-              className="content-wrapper"
-              style={{
-                height: '100%',
-                overflow: 'hidden',
-                position: 'relative'
-              }}
-            >
-              <AnimatePresence mode="sync" initial={false}>
-                <motion.div
-                  key={pathname}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    duration: 0.18,
-                    ease: [0.4, 0, 0.2, 1]
-                  }}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflowY: 'auto',
-                    paddingTop: isMinimal ? 0 : (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
-                    willChange: 'opacity'
-                  }}
-                >
-                  {isSplitView && isAdmin && !isMinimal ? (
-                    <SplitLayout 
-                      leftPath={leftPath} 
-                      rightPath={rightPath} 
-                      onClose={toggleSplitView}
-                      onPathsChange={(l, r) => {
-                        setLeftPath(l);
-                        setRightPath(r);
-                        localStorage.setItem('admin_split_left', l);
-                        localStorage.setItem('admin_split_right', r);
-                      }}
-                    />
-                  ) : (
-                    children
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </main>
-          </div>
-          <ReminderAlertPopup />
-          <DataErrorToast />
-        </div>
-      </FilterProvider>
+    <FilterProvider>
+      <React.Suspense fallback={null}>
+        <AppShellInner pathname={pathname}>
+          {children}
+        </AppShellInner>
+      </React.Suspense>
+    </FilterProvider>
     </SettingsProvider>
     </HistoricoProvider>
     </ObjetivosProvider>
