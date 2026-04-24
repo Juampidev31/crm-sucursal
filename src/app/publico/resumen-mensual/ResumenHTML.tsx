@@ -8,7 +8,7 @@ import {
 } from 'chart.js';
 import { formatCurrency } from '@/lib/utils';
 import { CONFIG } from '@/types';
-import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart } from 'lucide-react';
+import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
@@ -61,29 +61,59 @@ const TextView = ({ label, value }: { label: string; value: string }) => (
 );
 
 const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: React.ReactNode; data: {label:string,monto:number,cantidad:number}[]; color: string; total: number }) => {
+  const [expanded, setExpanded] = React.useState(false);
   const totalCant = data.reduce((s, d) => s + d.cantidad, 0);
+  const displayData = expanded ? data : data.slice(0, 5);
+  const hasMore = data.length > 5;
+
   return (
     <div style={{ flex: 1, minWidth: 220 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
         <div style={{ width: 24, height: 24, borderRadius: 6, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' }}>{title}</span>
       </div>
-      <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', padding: 10 }}>
-        {data.slice(0,7).map((d: any, i: number) => {
-          const pct = totalCant ? (d.cantidad/totalCant)*100 : 0;
-          const pctM = total ? (d.monto/total)*100 : 0;
-          return (
-            <div key={i} style={{ padding: '6px 0', borderBottom: i<6?'1px solid rgba(255,255,255,0.03)':'none' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                <span style={{ fontSize: 11, color: '#888' }}>{d.label}</span>
-                <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)} <span style={{color:'#aaa'}}>{d.cantidad}</span> <b style={{color}}>{pct.toFixed(0)}%</b></span>
+      <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden' }}>
+        <div style={{ padding: 10 }}>
+          {displayData.map((d: any, i: number) => {
+            const pct = totalCant ? (d.cantidad/totalCant)*100 : 0;
+            const pctM = total ? (d.monto/total)*100 : 0;
+            return (
+              <div key={i} style={{ padding: '6px 0', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ fontSize: 11, color: '#888' }}>{d.label}</span>
+                  <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)} <span style={{color:'#aaa'}}>{d.cantidad}</span> <b style={{color}}>{pct.toFixed(0)}%</b></span>
+                </div>
+                <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
+                  <div style={{ height: '100%', width: pctM+'%', background: color, opacity: 0.6 }} />
+                </div>
               </div>
-              <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
-                <div style={{ height: '100%', width: pctM+'%', background: color, opacity: 0.6 }} />
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+        {hasMore && (
+          <button 
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              background: 'rgba(255,255,255,0.02)',
+              border: 'none',
+              borderTop: '1px solid rgba(255,255,255,0.04)',
+              color: color,
+              fontSize: '10px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4
+            }}
+          >
+            {expanded ? 'Ver menos' : `Ver todos (${data.length})`}
+            <ChevronDown size={12} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+          </button>
+        )}
       </div>
     </div>
   );

@@ -199,12 +199,27 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
 const cumplColor = (pct: number | null) =>
   pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
 
-const DistBlock = ({ titulo, icon, datos, color, totalMes, scrollable = false }: { titulo: string; icon: React.ReactNode; datos: { label: string; monto: number; cantidad: number }[]; color: string; totalMes: number; scrollable?: boolean }) => {
+const DistBlock = ({ 
+  titulo, icon, datos, color, totalMes, maxItems = 5
+}: { 
+  titulo: string; icon: React.ReactNode; 
+  datos: { label: string; monto: number; cantidad: number }[]; 
+  color: string; totalMes: number; maxItems?: number;
+}) => {
+  const [expanded, setExpanded] = useState(false);
   const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
-  const displayData = datos;
+  const displayData = expanded ? datos : datos.slice(0, maxItems);
+  const hasMore = datos.length > maxItems;
 
   return (
-    <div style={{ flex: 1, minWidth: 220, maxHeight: 320, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ 
+      flex: 1, 
+      minWidth: 220, 
+      maxHeight: expanded ? 'none' : 320, 
+      display: 'flex', 
+      flexDirection: 'column',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
         <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: 0.8 }}>{titulo}</span>
@@ -213,10 +228,12 @@ const DistBlock = ({ titulo, icon, datos, color, totalMes, scrollable = false }:
         background: '#0d0d0d', 
         borderRadius: 10, 
         border: '1px solid rgba(255,255,255,0.04)', 
-        overflowY: scrollable ? 'auto' as const : 'hidden' as const, 
+        overflow: 'hidden', 
         flex: 1, 
-        maxHeight: 280 
-      }} className={scrollable ? 'custom-scroll' : ''}>
+        overflowY: 'hidden',
+        maxHeight: expanded ? 'none' : 280,
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
         {displayData.map((d, i) => {
           const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
           const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
@@ -236,6 +253,32 @@ const DistBlock = ({ titulo, icon, datos, color, totalMes, scrollable = false }:
             </div>
           );
         })}
+        {hasMore && (
+          <button 
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.02)',
+              border: 'none',
+              borderTop: '1px solid rgba(255,255,255,0.04)',
+              color: color,
+              fontSize: '10px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '1.2px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {expanded ? 'Ver menos' : `Ver todos (${datos.length})`}
+            <ChevronDown size={12} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -526,7 +569,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
               {distCuotas && <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalMes} />}
               {distRangoEtario && <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" totalMes={totalMes} />}
               {distSexo && <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalMes} />}
-              {distEmpleador && <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" totalMes={totalMes} scrollable={true} />}
+              {distEmpleador && <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" totalMes={totalMes} />}
               {distLocalidad && <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" totalMes={totalMes} />}
             </div>
           </>

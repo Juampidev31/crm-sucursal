@@ -16,29 +16,25 @@ import AnalisisTemporalTab from './AnalisisTemporalTab';
 // ── Componente auxiliar para bloques de distribución ──────────────────────
 // ── Componente auxiliar para bloques de distribución ──────────────────────
 const DistBlock = ({ 
-  titulo, icon, datos, color, totalMes, maxItems = 7, 
-  isExpanded = false, onExpand, scrollable = false
+  titulo, icon, datos, color, totalMes, maxItems = 5
 }: { 
   titulo: string; icon: React.ReactNode; 
   datos: { label: string; monto: number; cantidad: number }[]; 
   color: string; totalMes: number; maxItems?: number;
-  isExpanded?: boolean;
-  onExpand?: () => void;
-  scrollable?: boolean;
 }) => {
+  const [expanded, setExpanded] = useState(false);
   const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
-  const isSlice = !isExpanded && !scrollable;
-  const displayData = isSlice ? datos.slice(0, maxItems) : datos;
+  const displayData = expanded ? datos : datos.slice(0, maxItems);
   const hasMore = datos.length > maxItems;
 
   return (
     <div style={{ 
       flex: 1, 
       minWidth: 220, 
-      maxHeight: (isExpanded || scrollable) ? 'none' : 320, 
+      maxHeight: expanded ? 'none' : 320, 
       display: 'flex', 
       flexDirection: 'column',
-      transition: 'all 0.3s ease'
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
         <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
@@ -50,10 +46,9 @@ const DistBlock = ({
         border: '1px solid rgba(255,255,255,0.04)', 
         overflow: 'hidden', 
         flex: 1, 
-        overflowY: (isExpanded && !scrollable) ? 'visible' : 'auto',
-        maxHeight: (isExpanded && !scrollable) ? 'none' : 280,
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'rgba(255,255,255,0.1) transparent'
+        overflowY: 'hidden',
+        maxHeight: expanded ? 'none' : 280,
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
         {displayData.map((d, i) => {
           const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
@@ -74,9 +69,9 @@ const DistBlock = ({
             </div>
           );
         })}
-        {isSlice && hasMore && onExpand && (
+        {hasMore && (
           <button 
-            onClick={onExpand}
+            onClick={() => setExpanded(!expanded)}
             style={{
               width: '100%',
               padding: '14px',
@@ -95,17 +90,9 @@ const DistBlock = ({
               gap: 8,
               transition: 'all 0.3s ease'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-              e.currentTarget.style.color = '#fff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-              e.currentTarget.style.color = color;
-            }}
           >
-            Ver todos ({datos.length})
-            <ChevronDown size={12} style={{ transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
+            {expanded ? 'Ver menos' : `Ver todos (${datos.length})`}
+            <ChevronDown size={12} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
           </button>
         )}
       </div>
@@ -1943,7 +1930,6 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         datos={distEmpleador} 
                         color="#fbbf24" 
                         totalMes={totalMes}
-                        scrollable={true}
                       />
                       <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" totalMes={totalMes} />
                     </>
