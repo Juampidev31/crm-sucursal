@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ErrorProvider, useDataError } from '@/context/ErrorContext';
 import { RegistrosProvider } from '@/features/registros/RegistrosProvider';
@@ -11,7 +11,8 @@ import { HistoricoProvider } from '@/features/historico/HistoricoProvider';
 import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { FilterProvider } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
-import { Bell, X, AlertCircle } from 'lucide-react';
+import { Bell, X, AlertCircle, Columns, Layout, ChevronLeft, ChevronRight } from 'lucide-react';
+import SplitLayout from './SplitLayout';
 import { formatDate } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -100,9 +101,33 @@ const ReminderAlertPopup = () => {
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { loading } = useAuth();
+  const searchParams = useSearchParams();
+  const { loading, isAdmin } = useAuth();
+  
   const isLoginPage = pathname === '/login';
   const isPublicRoute = pathname.startsWith('/publico');
+  const isMinimal = searchParams.get('minimal') === 'true';
+
+  // Estados para Split View
+  const [isSplitView, setIsSplitView] = useState(false);
+  const [leftPath, setLeftPath] = useState('/registros');
+  const [rightPath, setRightPath] = useState('/ajustes');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('admin_split_view');
+    if (saved === 'true') setIsSplitView(true);
+    
+    const savedLeft = localStorage.getItem('admin_split_left');
+    const savedRight = localStorage.getItem('admin_split_right');
+    if (savedLeft) setLeftPath(savedLeft);
+    if (savedRight) setRightPath(savedRight);
+  }, []);
+
+  const toggleSplitView = () => {
+    const newVal = !isSplitView;
+    setIsSplitView(newVal);
+    localStorage.setItem('admin_split_view', newVal.toString());
+  };
 
   // Manejador global de Escape — vuelve a Registros si no hay modales abiertos
   useEffect(() => {
@@ -142,8 +167,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <SettingsProvider>
       <FilterProvider>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
-          {/* Top Banner — Full Width — Hidden in Reports/Analysts */}
-          {!pathname.startsWith('/reportes') && pathname !== '/analistas' && (
+          {/* Top Banner — Full Width — Hidden in Reports/Analysts or Minimal Mode */}
+          {!isMinimal && !pathname.startsWith('/reportes') && pathname !== '/analistas' && (
             <header style={{
               height: '60px',
               width: '100%',
@@ -176,6 +201,30 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, justifyContent: 'flex-end' }}>
+                {isAdmin && !isSplitView && (
+                  <button 
+                    onClick={toggleSplitView}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      color: '#aaa',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#aaa'; }}
+                  >
+                    <Columns size={14} />
+                    MODO SPLIT
+                  </button>
+                )}
                 <div style={{ fontSize: '10px', fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '1px' }}>
                   {formatDate(new Date().toISOString())}
                 </div>
@@ -183,8 +232,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </header>
           )}
 
-          <div className="wrapper" style={{ flex: 1, overflow: 'hidden' }}>
-            <Sidebar />
+          <div className="wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
+            {!isMinimal && <Sidebar />}
             <main
               className="content-wrapper"
               style={{
@@ -209,11 +258,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     display: 'flex',
                     flexDirection: 'column',
                     overflowY: 'auto',
-                    paddingTop: (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
+                    paddingTop: isMinimal ? 0 : (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
                     willChange: 'opacity'
                   }}
                 >
-                  {children}
+                  {isSplitView && isAdmin && !isMinimal ? (
+                    <SplitLayout 
+                      leftPath={leftPath} 
+                      rightPath={rightPath} 
+                      onClose={toggleSplitView}
+                      onPathsChange={(l, r) => {
+                        setLeftPath(l);
+                        setRightPath(r);
+                        localStorage.setItem('admin_split_left', l);
+                        localStorage.setItem('admin_split_right', r);
+                      }}
+                    />
+                  ) : (
+                    children
+                  )}
                 </motion.div>
               </AnimatePresence>
             </main>
