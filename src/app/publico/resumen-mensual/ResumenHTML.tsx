@@ -98,18 +98,22 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' }}>{title}</span>
       </div>
       <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflowX: 'hidden', overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: 10, flex: 1, overflowX: 'hidden', overflowY: 'hidden' }}>
+        <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'hidden' }}>
           {displayData.map((d: any, i: number) => {
             const pct = totalCant ? (d.cantidad/totalCant)*100 : 0;
             const pctM = total ? (d.monto/total)*100 : 0;
             return (
-              <div key={i} style={{ padding: '6px 0', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontSize: 11, color: '#888' }}>{(d.label?.trim() === 'Sin dato' ? 'No especificado' : d.label?.trim()) || 'No especificado'}</span>
-                  <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)} <span style={{color:'#aaa'}}>{d.cantidad}</span> <b style={{color}}>{pct.toFixed(0)}%</b></span>
+              <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
+                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap' }}>{(d.label?.trim() === 'Sin dato' ? 'No especificado' : d.label?.trim()) || 'No especificado'}</span>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
+                  </div>
                 </div>
-                <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 1 }}>
-                  <div style={{ height: '100%', width: pctM+'%', background: color, opacity: 0.6 }} />
+                <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: pctM+'%', background: color, opacity: 0.6, borderRadius: 2 }} />
                 </div>
               </div>
             );

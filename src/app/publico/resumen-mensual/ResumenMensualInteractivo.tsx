@@ -242,9 +242,9 @@ const DistBlock = ({
             const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
             return (
               <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{(d.label?.trim() === 'Sin dato' ? 'No especificado' : d.label?.trim()) || 'No especificado'}</span>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
+                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap' }}>{(d.label?.trim() === 'Sin dato' ? 'No especificado' : d.label?.trim()) || 'No especificado'}</span>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                     <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
                     <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
