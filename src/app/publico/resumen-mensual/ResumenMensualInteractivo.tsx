@@ -314,14 +314,32 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
   const sectionHeader = (id: number, title: string, icon: React.ReactNode) => (
     <div 
       style={{ 
-        display: 'flex', alignItems: 'center', gap: 8, marginBottom: collapsed[id] ? 0 : 16, 
-        paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.05)', 
-        userSelect: 'none' 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 12, 
+        padding: '16px 20px',
+        background: 'rgba(255,255,255,0.01)',
+        userSelect: 'none',
+        borderBottom: collapsed[id] ? 'none' : '1px solid rgba(255,255,255,0.05)',
+        cursor: 'default'
       }}
     >
-      <div style={{ width: 14 }} /> {/* Espacio para el chevron removido */}
-      {icon}
-      <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1px', flex: 1 }}>{title}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20 }}>
+        {icon}
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 800, color: '#eee', textTransform: 'uppercase', letterSpacing: '1px', flex: 1 }}>{title}</span>
+      <div style={{ 
+        width: 24, 
+        height: 24, 
+        borderRadius: '50%', 
+        background: 'rgba(255,255,255,0.03)', 
+        border: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <ChevronRight size={14} color="#555" />
+      </div>
     </div>
   );
 
@@ -340,9 +358,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       
       {/* SECCIÓN 1: TABLERO */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
         {!collapsed[1] && (
+          <div style={{ padding: '24px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginBottom: 24 }}>
             <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
@@ -412,14 +431,15 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
               </div>
             </div>
           </div>
+          </div>
         )}
       </div>
 
       {/* SECCIÓN 2: INDICADORES POR ANALISTA */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(2, '2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
         {!collapsed[2] && (
-          <>
+          <div style={{ padding: '24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
               {allAnalistas.map((k: any, idx: number) => {
                 const isTotal = idx === kpiPorAnalista.length;
@@ -556,15 +576,15 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {/* SECCIÓN 3: VENTAS POR CATEGORÍA */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}
         {!collapsed[3] && (
-          <>
+          <div style={{ padding: '24px' }}>
             <div style={{ marginBottom: 16 }}>
               <span style={{ fontSize: 11, color: '#444' }}>{ventasCount} ops · {formatCurrency(totalMes)}</span>
             </div>
@@ -577,27 +597,35 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
               {distEmpleador && <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" totalMes={totalMes} />}
               {distLocalidad && <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" totalMes={totalMes} />}
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {/* SECCIÓN 4: ANÁLISIS COMERCIAL */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
-        {!collapsed[4] && <ManualTextareaView label="Interpretación del Período" value={analisisComercial || ''} />}
+        {!collapsed[4] && (
+          <div style={{ padding: '24px' }}>
+            <ManualTextareaView label="Interpretación del Período" value={analisisComercial || ''} />
+          </div>
+        )}
       </div>
 
       {/* SECCIÓN 5: OPERACIÓN Y PROCESOS */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-        {!collapsed[5] && <ManualTextareaView label="Cumplimiento de Procedimientos / Tiempos / Stock" value={operacionProcesos || ''} />}
+        {!collapsed[5] && (
+          <div style={{ padding: '24px' }}>
+            <ManualTextareaView label="Cumplimiento de Procedimientos / Tiempos / Stock" value={operacionProcesos || ''} />
+          </div>
+        )}
       </div>
 
       {/* SECCIÓN 6: GESTIÓN COMERCIAL */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
         {!collapsed[6] && (
-          <>
+          <div style={{ padding: '24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
               <ManualTextareaView label="Gestiones Realizadas" value={gestionesRealizadas || ''} />
               <ManualTextareaView label="Coordinación de Salidas" value={coordinacionSalidas || ''} />
@@ -608,21 +636,25 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
               <ManualTextareaView label="Principales Desvíos / Problemas" value={desvios || ''} />
               <ManualTextareaView label="Acciones Clave a Seguir" value={accionesClave || ''} />
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {/* SECCIÓN 7: EXPERIENCIA DEL CLIENTE */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-        {!collapsed[7] && <ManualTextareaView label="Reclamos y Satisfacción" value={experienciaCliente || ''} />}
+        {!collapsed[7] && (
+          <div style={{ padding: '24px' }}>
+            <ManualTextareaView label="Reclamos y Satisfacción" value={experienciaCliente || ''} />
+          </div>
+        )}
       </div>
 
       {/* SECCIÓN 8: GESTIÓN DEL EQUIPO */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
         {!collapsed[8] && (
-          <>
+          <div style={{ padding: '24px' }}>
             {auditCounts && Object.keys(auditCounts).length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
@@ -643,15 +675,16 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
               <ManualTextareaView label="Capacitación Realizada" value={capacitacion || ''} />
               <ManualTextareaView label="Evaluación de Desempeño" value={evaluacionDesempeno || ''} />
             </div>
-          </>
+          </div>
         )}
       </div>
 
       {/* SECCIÓN 9: PLAN DE ACCIÓN */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
         {!collapsed[9] && (
-          planAcciones && planAcciones.length > 0 ? (
+          <div style={{ padding: '24px' }}>
+          {planAcciones && planAcciones.length > 0 ? (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
               <thead>
                 <tr>
@@ -671,21 +704,24 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
                 ))}
               </tbody>
             </table>
-          ) : <div style={{ color: '#444', fontSize: 13 }}>—</div>
+          ) : <div style={{ color: '#444', fontSize: 13 }}>—</div>}
+          </div>
         )}
       </div>
 
       {/* SECCIÓN 10: ANÁLISIS TEMPORAL */}
-      <div className="data-card" style={{ background: '#0a0a0a' }}>
+      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(10, '10. Análisis Temporal', <Activity size={15} color="#60a5fa" />)}
         {!collapsed[10] && (
-          registros && registros.length > 0 ? (
-            <AnalisisTemporalTab registros={registros} isPublic={true} />
-          ) : (
-            <div style={{ color: '#444', fontSize: 13, fontStyle: 'italic', padding: '10px 0' }}>
-              No hay datos históricos disponibles para este período.
-            </div>
-          )
+          <div style={{ padding: '24px' }}>
+            {registros && registros.length > 0 ? (
+              <AnalisisTemporalTab registros={registros} isPublic={true} />
+            ) : (
+              <div style={{ color: '#444', fontSize: 13, fontStyle: 'italic', padding: '10px 0' }}>
+                No hay datos históricos disponibles para este período.
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

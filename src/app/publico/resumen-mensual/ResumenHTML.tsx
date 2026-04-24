@@ -8,7 +8,7 @@ import {
 } from 'chart.js';
 import { formatCurrency } from '@/lib/utils';
 import { CONFIG } from '@/types';
-import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown } from 'lucide-react';
+import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
@@ -47,9 +47,34 @@ const baseChartOpts = (show = true) => ({
 const cumplColor = (pct: number | null) => !pct ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
 
 const sectionHeader = (title: string, icon: React.ReactNode) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-    {icon}
-    <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</span>
+  <div 
+    style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: 12, 
+      padding: '16px 20px',
+      background: 'rgba(255,255,255,0.01)',
+      userSelect: 'none',
+      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      cursor: 'default'
+    }}
+  >
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20 }}>
+      {icon}
+    </div>
+    <span style={{ fontSize: 12, fontWeight: 800, color: '#eee', textTransform: 'uppercase', letterSpacing: '1px', flex: 1 }}>{title}</span>
+    <div style={{ 
+      width: 24, 
+      height: 24, 
+      borderRadius: '50%', 
+      background: 'rgba(255,255,255,0.03)', 
+      border: '1px solid rgba(255,255,255,0.05)',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center' 
+    }}>
+      <ChevronRight size={14} color="#555" />
+    </div>
   </div>
 );
 
@@ -160,9 +185,10 @@ export default function ResumenHTML({ datos }: { datos: any }) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:24}}>
       {/* 1. TABLERO */}
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:16}}>
+        <div style={{padding:24}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:16}}>
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:20,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',textTransform:'uppercase',marginBottom:8}}>Capital Vendido</div>
             <div style={{fontSize:22,fontWeight:900,color:'#fff'}}>{formatCurrency(kpiTotal.capital)}</div>
@@ -186,9 +212,10 @@ export default function ResumenHTML({ datos }: { datos: any }) {
       </div>
 
       {/* 2. INDICADORES */}
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12,marginBottom:24}}>
+        <div style={{padding:24}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12,marginBottom:24}}>
           {allAnalistas.map((k: any, i: number) => {
             const isT = i === kpiPorAnalista.length;
             return (
@@ -220,65 +247,84 @@ export default function ResumenHTML({ datos }: { datos: any }) {
       </div>
 
       {/* 3. VENTAS POR CATEGORÍA */}
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
-          <Tag size={15} color="#fb923c" />
-          <span style={{fontSize:13,fontWeight:800,color:'#aaa',textTransform:'uppercase'}}>3. Ventas por Categoría</span>
-          <span style={{marginLeft:'auto',fontSize:11,color:'#444'}}>{kpiTotal.ops} ops · {formatCurrency(total)}</span>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20 }}>
+            <Tag size={15} color="#fb923c" />
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#eee', textTransform: 'uppercase', letterSpacing: '1px', flex: 1 }}>3. Ventas por Categoría</span>
+          <span style={{ fontSize: 11, color: '#444' }}>{kpiTotal.ops} ops · {formatCurrency(total)}</span>
+          <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}>
+            <ChevronRight size={14} color="#555" />
+          </div>
         </div>
-        <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
-          {distAcuerdos?.length && <DistBlock title="Acuerdo" icon={<PieChart size={12} color="#f97316" />} data={distAcuerdos} color="#f97316" total={total} />}
-          {distEstados?.length && <DistBlock title="Estados" icon={<BarChart3 size={12} color="#f87171" />} data={distEstados} color="#f87171" total={total} />}
-          {distCuotas?.length && <DistBlock title="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} data={distCuotas} color="#60a5fa" total={total} />}
-          {distRangoEtario?.length && <DistBlock title="Rango Etario" icon={<Users size={12} color="#34d399" />} data={distRangoEtario} color="#34d399" total={total} />}
-          {distSexo?.length && <DistBlock title="Sexo" icon={<Users size={12} color="#f472b6" />} data={distSexo} color="#f472b6" total={total} />}
-          {distEmpleador?.length && <DistBlock title="Empleador" icon={<Shield size={12} color="#fbbf24" />} data={distEmpleador} color="#fbbf24" total={total} />}
-          {distLocalidad?.length && <DistBlock title="Localidad" icon={<FileText size={12} color="#a78bfa" />} data={distLocalidad} color="#a78bfa" total={total} />}
+        <div style={{padding:24}}>
+          <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
+            {distAcuerdos?.length && <DistBlock title="Acuerdo" icon={<PieChart size={12} color="#f97316" />} data={distAcuerdos} color="#f97316" total={total} />}
+            {distEstados?.length && <DistBlock title="Estados" icon={<BarChart3 size={12} color="#f87171" />} data={distEstados} color="#f87171" total={total} />}
+            {distCuotas?.length && <DistBlock title="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} data={distCuotas} color="#60a5fa" total={total} />}
+            {distRangoEtario?.length && <DistBlock title="Rango Etario" icon={<Users size={12} color="#34d399" />} data={distRangoEtario} color="#34d399" total={total} />}
+            {distSexo?.length && <DistBlock title="Sexo" icon={<Users size={12} color="#f472b6" />} data={distSexo} color="#f472b6" total={total} />}
+            {distEmpleador?.length && <DistBlock title="Empleador" icon={<Shield size={12} color="#fbbf24" />} data={distEmpleador} color="#fbbf24" total={total} />}
+            {distLocalidad?.length && <DistBlock title="Localidad" icon={<FileText size={12} color="#a78bfa" />} data={distLocalidad} color="#a78bfa" total={total} />}
+          </div>
         </div>
       </div>
 
       {/* 4-9 TEXTOS */}
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
-        <TextView label="Interpretación del Período" value={analisisComercial||''} />
+        <div style={{padding:24}}>
+          <TextView label="Interpretación del Período" value={analisisComercial||''} />
+        </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-        <TextView label="Procedimientos" value={operacionProcesos||''} />
+        <div style={{padding:24}}>
+          <TextView label="Procedimientos" value={operacionProcesos||''} />
+        </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
-          <TextView label="Gestiones Realizadas" value={gestionesRealizadas||''} />
-          <TextView label="Coordinación de Salidas" value={coordinacionSalidas||''} />
-          <TextView label="Empresas Estratégicas" value={empresasEstrategicas||''} />
+        <div style={{padding:24}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
+            <TextView label="Gestiones Realizadas" value={gestionesRealizadas||''} />
+            <TextView label="Coordinación de Salidas" value={coordinacionSalidas||''} />
+            <TextView label="Empresas Estratégicas" value={empresasEstrategicas||''} />
+          </div>
         </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-        <TextView label="Reclamos y Satisfacción" value={experienciaCliente||''} />
-      </div>
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
-        {sectionHeader('8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
-          <TextView label="Dotación Actual" value={dotacion||''} />
-          <TextView label="Ausentismo" value={ausentismo||''} />
-          <TextView label="Capacitación" value={capacitacion||''} />
-          <TextView label="Evaluación" value={evaluacionDesempeno||''} />
+        <div style={{padding:24}}>
+          <TextView label="Reclamos y Satisfacción" value={experienciaCliente||''} />
         </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:24,borderRadius:6}}>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+        {sectionHeader('8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+        <div style={{padding:24}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
+            <TextView label="Dotación Actual" value={dotacion||''} />
+            <TextView label="Ausentismo" value={ausentismo||''} />
+            <TextView label="Capacitación" value={capacitacion||''} />
+            <TextView label="Evaluación" value={evaluacionDesempeno||''} />
+          </div>
+        </div>
+      </div>
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('9. Plan de Acción', <Target size={15} color="#fb923c" />)}
-        {planAcciones?.length ? (
-          <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
-            <thead><tr><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Problema</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Acción</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Responsable</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Fecha</th></tr></thead>
-            <tbody>
-              {planAcciones.map((f: any, i: number) => (
-                <tr key={i}><td style={{padding:6,color:'#ccc'}}>{f.problema}</td><td style={{padding:6,color:'#ccc'}}>{f.accion}</td><td style={{padding:6,color:'#ccc'}}>{f.responsable}</td><td style={{padding:6,color:'#ccc'}}>{f.fecha}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        ) : <div style={{color:'#444'}}>/</div>}
+        <div style={{padding:24}}>
+          {planAcciones?.length ? (
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+              <thead><tr><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Problema</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Acción</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Responsable</th><th style={{padding:8,textAlign:'left',color:'#444',fontSize:10}}>Fecha</th></tr></thead>
+              <tbody>
+                {planAcciones.map((f: any, i: number) => (
+                  <tr key={i}><td style={{padding:6,color:'#ccc'}}>{f.problema}</td><td style={{padding:6,color:'#ccc'}}>{f.accion}</td><td style={{padding:6,color:'#ccc'}}>{f.responsable}</td><td style={{padding:6,color:'#ccc'}}>{f.fecha}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          ) : <div style={{color:'#444'}}>/</div>}
+        </div>
       </div>
     </div>
   );
