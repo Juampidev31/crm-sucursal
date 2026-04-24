@@ -767,7 +767,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         justifyContent: 'space-between', 
         marginBottom: isCollapsed ? 0 : 16, 
         paddingBottom: 10, 
-        borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)' 
+        borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)',
+        gap: 12
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {icon}
@@ -932,7 +933,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const distPor = (campo: keyof Registro) => {
     const map = new Map<string, { monto: number; cantidad: number }>();
     for (const r of ventasMes) {
-      const val = (r[campo] as string | undefined)?.trim() || 'Sin dato';
+      const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
       const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
       map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
     }
@@ -943,7 +944,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
   // ── Normalización de empleador para agrupar duplicados ────────────────────
   const normalizarEmpleador = (nombre: string): string => {
-    if (!nombre) return 'Sin dato';
+    if (!nombre) return 'No especificado';
     let n = nombre.toUpperCase().trim();
     // Quitar acentos
     n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -953,7 +954,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
     // Quitar múltiples espacios
     n = n.replace(/\s+/g, ' ').trim();
-    return n || 'Sin dato';
+    return n || 'No especificado';
   };
 
   const distEmpleador = useMemo(() => {
@@ -1008,7 +1009,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       } else if (raw === 'afectaciones') {
         label = 'Afectaciones';
       } else {
-        label = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'Sin dato';
+        label = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'No especificado';
       }
 
       const prev = map.get(label) ?? { monto: 0, cantidad: 0 };
@@ -1033,7 +1034,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const distPorAnt = (campo: keyof Registro, fuente: typeof ventasMesAnt) => {
     const map = new Map<string, { monto: number; cantidad: number }>();
     for (const r of fuente) {
-      const val = (r[campo] as string | undefined)?.trim() || 'Sin dato';
+      const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
       const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
       map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
     }
@@ -1379,7 +1380,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const ant = ventasMesAnt;
     const classify = (r: typeof ventas[0]) => {
       const e = (r.empleador ?? '').toLowerCase();
-      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'Sin dato' : 'Privado';
+      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'No especificado' : 'Privado';
     };
     const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
     const countsAnt: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
