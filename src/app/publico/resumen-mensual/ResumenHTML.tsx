@@ -72,8 +72,8 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
         <div style={{ width: 24, height: 24, borderRadius: 6, background: color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' }}>{title}</span>
       </div>
-      <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflow: 'hidden' }}>
-        <div style={{ padding: 10 }}>
+      <div style={{ background: '#0d0d0d', borderRadius: 10, border: '1px solid rgba(255,255,255,0.04)', overflowX: 'hidden', overflowY: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: 10, flex: 1, overflowX: 'hidden', overflowY: 'hidden' }}>
           {displayData.map((d: any, i: number) => {
             const pct = totalCant ? (d.cantidad/totalCant)*100 : 0;
             const pctM = total ? (d.monto/total)*100 : 0;
@@ -96,9 +96,9 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
             style={{
               width: '100%',
               padding: '10px',
-              background: 'rgba(255,255,255,0.02)',
+              background: 'rgba(255,255,255,0.04)',
               border: 'none',
-              borderTop: '1px solid rgba(255,255,255,0.04)',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
               color: color,
               fontSize: '10px',
               fontWeight: 800,
@@ -107,7 +107,8 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 4
+              gap: 4,
+              flexShrink: 0
             }}
           >
             {expanded ? 'Ver menos' : `Ver todos (${data.length})`}
