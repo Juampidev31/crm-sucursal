@@ -200,6 +200,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
   const [mostrarTodos, setMostrarTodos] = useState(true);
   const [busquedaEmpleador, setBusquedaEmpleador] = useState('');
+  const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [gruposDescartados, setGruposDescartados] = useState<Map<string, number>>(() => {
     if (typeof window === 'undefined') return new Map();
     try {
@@ -889,16 +890,23 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
           border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)'}`,
           borderRadius: '10px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div 
+            onClick={() => setCorrectorExpandido(!correctorExpandido)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorExpandido ? 16 : 0, cursor: 'pointer' }}
+          >
             {variantesConDuplicados.length > 0
               ? <AlertTriangle size={18} color="#ef4444" />
               : <CheckCircle size={18} color="#555" />}
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ef4444' : '#888', textTransform: 'uppercase' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ef4444' : '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
               {variantesConDuplicados.length > 0
                 ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
                 : 'Corrector de Empleador — Sin duplicados'}
+              {correctorExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
             </h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
+            <div 
+              style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}
+              onClick={(e) => e.stopPropagation()}
+            >
               {gruposDescartados.size > 0 && (
                 <button
                   onClick={restaurarDescartados}
@@ -926,6 +934,9 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
               </button>
             </div>
           </div>
+
+          {correctorExpandido && (
+            <>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
             <div>
@@ -1065,8 +1076,10 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
               )}
             </div>
           )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
+      )}
 
         {/* STEP 1: FILTROS */}
         {(mode === 'all' || mode === 'bulk') && step === 'filter' && (
