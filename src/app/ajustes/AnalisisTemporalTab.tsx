@@ -565,21 +565,60 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
   }, [ventasFiltradas, dateRange, calcVal]);
 
   const weeklyStats = useMemo(() => {
-    const firstFourWeeks = mapaActividad.weeks.slice(0, 5);
-    const totals = firstFourWeeks
-      .map((w, i) => {
-        const weekRegs = w.flatMap(d => d.regs);
-        return { label: `Semana ${i + 1}`, total: calcVal(weekRegs) };
+    const getWeeklyTotals = (from: Date, to: Date) => {
+      const fromStr = toLocalKey(from);
+      const toStr = toLocalKey(to);
+      const rangeRegs = registros.filter(r => {
+        if (!r.fecha || !isVenta(r)) return false;
+        const d = r.fecha.slice(0, 10);
+        if (d < fromStr || d > toStr) return false;
+        if (analistaFil !== 'todos' && r.analista !== analistaFil) return false;
+        return true;
       });
-    const avg = totals.length > 0 ? totals.reduce((s, w) => s + w.total, 0) / totals.length : 1;
-    const withVsAvg = totals.map(w => ({ ...w, vsAvg: avg > 0 ? ((w.total - avg) / avg) * 100 : 0 }));
+      const byDate = new Map<string, typeof rangeRegs>();
+      for (const r of rangeRegs) {
+        const key = r.fecha!.slice(0, 10);
+        if (!byDate.has(key)) byDate.set(key, []);
+        byDate.get(key)!.push(r);
+      }
+      const weeks: { total: number }[] = [];
+      const cur = new Date(from);
+      const dow = (cur.getDay() + 6) % 7;
+      cur.setDate(cur.getDate() - dow);
+      for (let i = 0; i < 5; i++) {
+        let weekTotal = 0;
+        for (let d = 0; d < 7; d++) {
+          const key = toLocalKey(cur);
+          if (key >= fromStr && key <= toStr) {
+            weekTotal += calcVal(byDate.get(key) || []);
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+        weeks.push({ total: weekTotal });
+      }
+      return weeks;
+    };
+
+    const actualWeeks = getWeeklyTotals(dateRange.from, dateRange.to);
+    const anteriorWeeks = dateRangeAnterior ? getWeeklyTotals(dateRangeAnterior.from, dateRangeAnterior.to) : [];
+
+    const totals = actualWeeks.map((w, i) => {
+      const prevTotal = anteriorWeeks[i]?.total || 0;
+      const vsPrev = prevTotal > 0 ? ((w.total - prevTotal) / prevTotal) * 100 : (w.total > 0 && prevTotal === 0 ? 100 : 0);
+      return {
+        label: `Semana ${i + 1}`,
+        total: w.total,
+        vsPrev,
+        prevTotal
+      };
+    });
+
     const best = totals.reduce((a, b) => a.total > b.total ? a : b, totals[0] || { label: '—', total: 0 });
     const withData = totals.filter(w => w.total > 0);
-    const worst = withData.length > 0
-      ? withData.reduce((a, b) => a.total < b.total ? a : b, withData[0])
-      : totals[0] || { label: '—', total: 0 };
-    return { totals, withVsAvg, best, worst };
-  }, [mapaActividad, calcVal]);
+    const worst = withData.length > 0 ? withData.reduce((a, b) => a.total < b.total ? a : b, withData[0]) : totals[0];
+
+    return { totals, best, worst };
+  }, [registros, dateRange, dateRangeAnterior, analistaFil, calcVal, metrica]);
 
   const dowStats = useMemo(() => {
     const byDow = new Array(7).fill(null).map(() => [] as typeof ventasFiltradas);
@@ -923,12 +962,12 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
           </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
-          {weeklyStats.withVsAvg.map((w) => (
+          {weeklyStats.totals.map((w) => (
             <div key={w.label} style={{ flex: '1 1 130px', minWidth: 120, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
               <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
               <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsAvg >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsAvg >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
-                {w.vsAvg >= 0 ? '↑' : '↓'} {Math.abs(w.vsAvg).toFixed(1)}%
+              <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsPrev >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+                {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}%
               </div>
             </div>
           ))}

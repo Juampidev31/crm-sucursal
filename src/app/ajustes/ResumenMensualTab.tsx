@@ -274,8 +274,12 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
     const pad = (n: number) => String(n).padStart(2, '0');
     const mesStr = pad(selectedMes);
-    const startTs = `${selectedAnio}-${mesStr}-01T00:00:00`;
-    const endTs = `${selectedAnio}-${mesStr}-31T23:59:59`;
+    const lastDay = new Date(selectedAnio, selectedMes, 0).getDate();
+    
+    // Fetch desde el inicio del mes anterior para permitir comparaciones en el análisis temporal
+    const prevDate = new Date(selectedAnio, selectedMes - 2, 1);
+    const startTs = `${prevDate.getFullYear()}-${pad(prevDate.getMonth() + 1)}-01T00:00:00`;
+    const endTs = `${selectedAnio}-${mesStr}-${pad(lastDay)}T23:59:59`;
 
     Promise.all([
       supabase
@@ -411,8 +415,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
       // 8. Preparar datos para interactividad
       const auditCounts: Record<string, number> = {};
+      const currentMonthPrefix = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}`;
       CONFIG.ANALISTAS_DEFAULT.forEach(a => {
-        auditCounts[a] = auditoriaData.filter(ad => ad.analista === a).length;
+        auditCounts[a] = auditoriaData.filter(ad => ad.analista === a && ad.fecha_hora.startsWith(currentMonthPrefix)).length;
       });
 
       // Preparar registros "seguros" para el análisis temporal público (sin datos sensibles)
