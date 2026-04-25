@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
 import AnalisisTemporalTab from '../../ajustes/AnalisisTemporalTab';
+import type { AnalisisTemporalState } from '../../ajustes/AnalisisTemporalTab';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
@@ -145,6 +146,7 @@ interface DatosGraficos {
   distEmpleador?: Array<{ label: string; monto: number; cantidad: number }>;
   distAcuerdos?: Array<{ label: string; monto: number; cantidad: number }>;
   distEstados?: Array<{ label: string; monto: number; cantidad: number }>;
+  seccion10State?: AnalisisTemporalState | null;
 }
 
 const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, showLegend = false, stacked = false): any => ({
@@ -304,7 +306,8 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
     planAcciones, auditCounts, collapsedSections, registros, chartCapitalVsObjetivo, chartTicketPromedio, chartVariacion, 
     chartCumplimiento, chartEmbudo, chartAperturas, chartRenovaciones, chartConversionTotal, 
     chartConversionPresupuesto, chartEmpleoPublPriv, chartAcuerdos, distSexo, distCuotas, 
-    distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, distEstados 
+    distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, distEstados,
+    seccion10State
   } = datos;
 
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>(collapsedSections || { 10: true });
@@ -714,7 +717,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
         {!collapsed[10] && (
           registros && registros.length > 0 ? (
-            <AnalisisTemporalTab registros={registros} isPublic={true} initialMonth={month} initialYear={year} />
+            <AnalisisTemporalTab registros={registros} isPublic={true} initialMonth={month} initialYear={year} initialState={seccion10State ?? undefined} />
           ) : (
             <div style={{ padding: '24px', color: '#444', fontSize: 13, fontStyle: 'italic' }}>
               No hay datos históricos disponibles para este período.

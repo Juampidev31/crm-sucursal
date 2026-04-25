@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { Registro, CONFIG } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import CustomSelect from '@/components/CustomSelect';
@@ -13,11 +13,23 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, BarElement, Tooltip, Legend, Filler);
 
+export interface AnalisisTemporalState {
+  periodo: number;
+  analistaFil: string;
+  analistaFil2: string;
+  metrica: string;
+  compararPeriodo: boolean;
+  fechaDesde: string;
+  fechaHasta: string;
+  collapsedSections: Record<number, boolean>;
+}
+
 interface Props {
   registros: Registro[];
   isPublic?: boolean;
   initialMonth?: number;
   initialYear?: number;
+  initialState?: AnalisisTemporalState;
 }
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -55,11 +67,11 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
   );
 };
 
-export default function AnalisisTemporalTab({ registros, isPublic, initialMonth, initialYear }: Props) {
-  const [periodo, setPeriodo] = useState(-1);
-  const [analistaFil, setAnalistaFil] = useState('todos');
-  const [analistaFil2, setAnalistaFil2] = useState('ninguno');
-  const [metrica, setMetrica] = useState('ventas');
+const AnalisisTemporalTab = forwardRef<{ getState: () => AnalisisTemporalState }, Props>(function AnalisisTemporalTab({ registros, isPublic, initialMonth, initialYear, initialState }, ref) {
+  const [periodo, setPeriodo] = useState(initialState?.periodo ?? -1);
+  const [analistaFil, setAnalistaFil] = useState(initialState?.analistaFil ?? 'todos');
+  const [analistaFil2, setAnalistaFil2] = useState(initialState?.analistaFil2 ?? 'ninguno');
+  const [metrica, setMetrica] = useState(initialState?.metrica ?? 'ventas');
 
   const baseDate = useMemo(() => {
     if (initialYear && initialMonth) {
@@ -68,12 +80,18 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
     }
     return new Date();
   }, [initialYear, initialMonth]);
-  const [compararPeriodo, setCompararPeriodo] = useState(true);
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
-  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
-    11: false
-  });
+  const [compararPeriodo, setCompararPeriodo] = useState(initialState?.compararPeriodo ?? true);
+  const [fechaDesde, setFechaDesde] = useState(initialState?.fechaDesde ?? '');
+  const [fechaHasta, setFechaHasta] = useState(initialState?.fechaHasta ?? '');
+  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>(
+    initialState?.collapsedSections ?? { 11: false }
+  );
+
+  useImperativeHandle(ref, () => ({
+    getState: () => ({
+      periodo, analistaFil, analistaFil2, metrica, compararPeriodo, fechaDesde, fechaHasta, collapsedSections
+    })
+  }), [periodo, analistaFil, analistaFil2, metrica, compararPeriodo, fechaDesde, fechaHasta, collapsedSections]);
 
   const toggleSection = (id: number) => {
     setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1153,4 +1171,6 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       )}
     </div>
   );
-}
+});
+
+export default AnalisisTemporalTab;
