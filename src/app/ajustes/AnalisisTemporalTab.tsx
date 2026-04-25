@@ -20,7 +20,7 @@ interface Props {
   initialYear?: number;
 }
 
-const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const toLocalKey = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -648,10 +648,10 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       const dow = (toLocalDate(r.fecha).getDay() + 6) % 7;
       byDow[dow].push(r);
     }
-    const sums = byDow.map(regs => calcVal(regs));
+    const sums = byDow.slice(0, 6).map(regs => calcVal(regs));
     const max = Math.max(...sums);
-    const activeDay = sums.reduce((bestIdx, currentVal, currentIdx) => currentVal > sums[bestIdx] ? currentIdx : bestIdx, 0);
-    return { sums: sums.slice(0, 6), max, activeDay: DIAS_SEMANA[activeDay] || '—' };
+    const activeDayIdx = sums.reduce((bestIdx, currentVal, currentIdx) => currentVal > sums[bestIdx] ? currentIdx : bestIdx, 0);
+    return { sums, max, activeDay: DIAS_SEMANA[activeDayIdx] || '—' };
   }, [ventasFiltradas, calcVal]);
 
   const heatColor = (val: number, max: number): string => {
@@ -833,7 +833,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       <div id="seccion-tendencia-mapa" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
 
         {/* Tendencia (Chart) */}
-        <div style={{ background: 'rgba(10, 10, 10, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+        <div style={{ background: 'rgba(10, 10, 10, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', height: 500, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -846,7 +846,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
               }
             </div>
           </div>
-          <div id="chart-at-tendencia" style={{ flex: 1, marginTop: 12, minHeight: 400 }}>
+          <div id="chart-at-tendencia" style={{ flex: 1, marginTop: 12, overflow: 'hidden' }}>
             <Line
               data={{
                 labels: tendenciaData.labels,
@@ -920,7 +920,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         </div>
 
         {/* Mapa de actividad */}
-        <div style={{ background: 'rgba(10, 10, 10, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+        <div style={{ background: 'rgba(10, 10, 10, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', height: 500, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -929,7 +929,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
             <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Ventas por día — {periodoLabel}</div>
           </div>
           <div style={{ overflowX: 'auto', flex: 1 }}>
-            <table style={{ borderCollapse: 'separate', borderSpacing: 3, width: '100%' }}>
+            <table style={{ borderCollapse: 'separate', borderSpacing: 3, width: '100%', height: '100%' }}>
               <thead>
                 <tr>
                   <th style={{ width: 30 }} />
@@ -945,7 +945,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   return (
                     <tr key={wi}>
                       <td style={{ fontSize: 10, color: '#444', fontWeight: 600, paddingRight: 6, textAlign: 'right' }}>S{wi + 1}</td>
-                      {week.map((day, di) => (
+                      {week.slice(0, 6).map((day, di) => (
                         <td key={di} title={`${day.key}: ${fmt(day.valor)}`}
                           style={{
                             background: heatColor(day.valor, mapaActividad.maxVal),
