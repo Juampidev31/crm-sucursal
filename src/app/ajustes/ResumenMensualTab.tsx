@@ -473,6 +473,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         distEmpleador,
         distAcuerdos,
         distEstados,
+        seccion10State: seccion10State,
       };
 
       // 9. Guardar snapshot y datos
