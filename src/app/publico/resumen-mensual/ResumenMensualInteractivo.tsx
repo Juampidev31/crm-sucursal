@@ -716,13 +716,15 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
         {!collapsed[10] && (
-          registros && registros.length > 0 ? (
-            <AnalisisTemporalTab registros={registros} isPublic={true} initialMonth={month} initialYear={year} initialState={seccion10State ?? undefined} />
-          ) : (
-            <div style={{ padding: '24px', color: '#444', fontSize: 13, fontStyle: 'italic' }}>
-              No hay datos históricos disponibles para este período.
-            </div>
-          )
+          <div style={{ padding: '24px' }}>
+            {registros && registros.length > 0 ? (
+              <AnalisisTemporalTab registros={registros} isPublic={true} initialMonth={month} initialYear={year} initialState={seccion10State ?? undefined} />
+            ) : (
+              <div style={{ color: '#444', fontSize: 13, fontStyle: 'italic' }}>
+                No hay datos históricos disponibles para este período.
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

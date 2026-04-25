@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Registro, CONFIG } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import CustomSelect from '@/components/CustomSelect';
@@ -30,6 +30,7 @@ interface Props {
   initialMonth?: number;
   initialYear?: number;
   initialState?: AnalisisTemporalState;
+  onStateChange?: (state: AnalisisTemporalState) => void;
 }
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -67,7 +68,7 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
   );
 };
 
-const AnalisisTemporalTab = forwardRef<{ getState: () => AnalisisTemporalState }, Props>(function AnalisisTemporalTab({ registros, isPublic, initialMonth, initialYear, initialState }, ref) {
+export default function AnalisisTemporalTab({ registros, isPublic, initialMonth, initialYear, initialState, onStateChange }: Props) {
   const [periodo, setPeriodo] = useState(initialState?.periodo ?? -1);
   const [analistaFil, setAnalistaFil] = useState(initialState?.analistaFil ?? 'todos');
   const [analistaFil2, setAnalistaFil2] = useState(initialState?.analistaFil2 ?? 'ninguno');
@@ -87,11 +88,11 @@ const AnalisisTemporalTab = forwardRef<{ getState: () => AnalisisTemporalState }
     initialState?.collapsedSections ?? { 11: false }
   );
 
-  useImperativeHandle(ref, () => ({
-    getState: () => ({
-      periodo, analistaFil, analistaFil2, metrica, compararPeriodo, fechaDesde, fechaHasta, collapsedSections
-    })
-  }), [periodo, analistaFil, analistaFil2, metrica, compararPeriodo, fechaDesde, fechaHasta, collapsedSections]);
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange({ periodo, analistaFil, analistaFil2, metrica, compararPeriodo, fechaDesde, fechaHasta, collapsedSections });
+    }
+  }, [periodo, analistaFil, analistaFil2, metrica, compararPeriodo, fechaDesde, fechaHasta, collapsedSections, onStateChange]);
 
   const toggleSection = (id: number) => {
     setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -713,7 +714,7 @@ const AnalisisTemporalTab = forwardRef<{ getState: () => AnalisisTemporalState }
         {/* El header se movió al contenedor padre */}
         
         {!collapsedSections[11] && (
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
+          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12, pointerEvents: isPublic ? 'none' : 'auto', opacity: isPublic ? 0.9 : 1 }}>
             {[
               { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={(v) => setPeriodo(Number(v))} width="170px" /> },
               { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={(v) => setAnalistaFil(String(v))} width="160px" /> },
@@ -1171,6 +1172,4 @@ const AnalisisTemporalTab = forwardRef<{ getState: () => AnalisisTemporalState }
       )}
     </div>
   );
-});
-
-export default AnalisisTemporalTab;
+}

@@ -235,7 +235,7 @@ const ManualTextarea = ({ label, value, onChange, placeholder }: {
 );
 
 export default function ResumenMensualTab({ registros, objetivos, onSuccess, onError }: Props) {
-  const seccion10Ref = useRef<{ getState: () => AnalisisTemporalState }>(null);
+  const [seccion10State, setSeccion10State] = useState<AnalisisTemporalState | null>(null);
   const { setRegistrosWindowMonths } = useRegistros();
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
@@ -582,7 +582,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       distEmpleador,
       distAcuerdos,
       distEstados,
-      seccion10State: seccion10Ref.current?.getState() ?? null,
+      seccion10State: seccion10State,
     };
 
     const payload = {
@@ -2145,9 +2145,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
           </div>
 
           {/* ── SECCIÓN 10: ANÁLISIS TEMPORAL ── */}
-          <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
-            {!collapsedSections[10] && <AnalisisTemporalTab ref={seccion10Ref} registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} />}
+            {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
           </div>
 
 
