@@ -298,7 +298,7 @@ const ManualTextareaView = ({ label, value }: { label: string; value: string }) 
 
 export default function ResumenMensualInteractivo({ datos }: { datos: DatosGraficos }) {
   const { 
-    kpiTotal, kpiPorAnalista, mesActual, mesAnterior, experienciaCliente, analisisComercial, 
+    kpiTotal, kpiPorAnalista, mesActual, mesAnterior, month, year, experienciaCliente, analisisComercial, 
     operacionProcesos, gestionesRealizadas, coordinacionSalidas, empresasEstrategicas, 
     logros, desvios, accionesClave, dotacion, ausentismo, capacitacion, evaluacionDesempeno, 
     planAcciones, auditCounts, collapsedSections, registros, chartCapitalVsObjetivo, chartTicketPromedio, chartVariacion, 
@@ -715,7 +715,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         {!collapsed[10] && (
           <div style={{ padding: '24px' }}>
             {registros && registros.length > 0 ? (
-              <AnalisisTemporalTab registros={registros} isPublic={true} />
+              <AnalisisTemporalTab registros={registros} isPublic={true} initialMonth={month} initialYear={year} />
             ) : (
               <div style={{ color: '#444', fontSize: 13, fontStyle: 'italic', padding: '10px 0' }}>
                 No hay datos históricos disponibles para este período.

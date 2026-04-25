@@ -16,6 +16,8 @@ ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, BarEleme
 interface Props {
   registros: Registro[];
   isPublic?: boolean;
+  initialMonth?: number;
+  initialYear?: number;
 }
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -53,11 +55,19 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
   );
 };
 
-export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
-  const [periodo, setPeriodo] = useState(30);
-  const [analistaFil, setAnalistaFil] = useState('Luciana');
-  const [analistaFil2, setAnalistaFil2] = useState('Victoria');
+export default function AnalisisTemporalTab({ registros, isPublic, initialMonth, initialYear }: Props) {
+  const [periodo, setPeriodo] = useState(-1);
+  const [analistaFil, setAnalistaFil] = useState('todos');
+  const [analistaFil2, setAnalistaFil2] = useState('ninguno');
   const [metrica, setMetrica] = useState('ventas');
+
+  const baseDate = useMemo(() => {
+    if (initialYear && initialMonth) {
+      // Usamos el último día del mes/año especificado como referencia
+      return new Date(initialYear, initialMonth, 0, 23, 59, 59);
+    }
+    return new Date();
+  }, [initialYear, initialMonth]);
   const [compararPeriodo, setCompararPeriodo] = useState(true);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -162,14 +172,16 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
   ], [analisisAnalistas]);
 
   const dateRange = useMemo(() => {
-    const now = new Date();
+    const ref = baseDate;
     if (periodo === -1) {
-      const from = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-      return { from, to: now, nDays: now.getDate() };
+      const from = new Date(ref.getFullYear(), ref.getMonth(), 1, 0, 0, 0, 0);
+      const to = (initialYear && initialMonth) ? new Date(ref.getFullYear(), ref.getMonth() + 1, 0, 23, 59, 59) : ref;
+      const nDays = to.getDate();
+      return { from, to, nDays };
     }
     if (periodo === -2) {
-      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-      const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      const from = new Date(ref.getFullYear(), ref.getMonth() - 1, 1, 0, 0, 0, 0);
+      const to = new Date(ref.getFullYear(), ref.getMonth(), 0, 23, 59, 59, 999);
       return { from, to, nDays: to.getDate() };
     }
     if (periodo === -10 && fechaDesde && fechaHasta) {
@@ -179,34 +191,34 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
       return { from, to, nDays };
     }
     if (periodo === 0) {
-      const minYear = analisisAnios[0] ?? now.getFullYear();
+      const minYear = analisisAnios[0] ?? ref.getFullYear();
       const from = new Date(minYear, 0, 1, 0, 0, 0, 0);
-      return { from, to: now, nDays: Math.ceil((now.getTime() - from.getTime()) / 86400000) };
+      return { from, to: ref, nDays: Math.ceil((ref.getTime() - from.getTime()) / 86400000) };
     }
     if (periodo >= 2000 && periodo <= 2100) {
       const from = new Date(periodo, 0, 1, 0, 0, 0, 0);
       const end = new Date(periodo, 11, 31, 23, 59, 59, 999);
-      const to = end > now ? now : end;
+      const to = end > ref ? ref : end;
       return { from, to, nDays: Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1 };
     }
-    const from = new Date(now);
+    const from = new Date(ref);
     from.setDate(from.getDate() - periodo);
     from.setHours(0, 0, 0, 0);
-    return { from, to: now, nDays: periodo };
-  }, [periodo, analisisAnios, fechaDesde, fechaHasta]);
+    return { from, to: ref, nDays: periodo };
+  }, [periodo, analisisAnios, fechaDesde, fechaHasta, baseDate, initialYear, initialMonth]);
 
   const dateRangeAnterior = useMemo(() => {
     if (!compararPeriodo) return null;
-    const now = new Date();
+    const ref = baseDate;
     const duracionMs = dateRange.to.getTime() - dateRange.from.getTime();
     if (periodo === -1) {
-      const to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-      const from = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      const to = new Date(ref.getFullYear(), ref.getMonth(), 0, 23, 59, 59, 999);
+      const from = new Date(ref.getFullYear(), ref.getMonth() - 1, 1, 0, 0, 0, 0);
       return { from, to, nDays: to.getDate() };
     }
     if (periodo === -2) {
-      const to = new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59, 999);
-      const from = new Date(now.getFullYear(), now.getMonth() - 2, 1, 0, 0, 0, 0);
+      const to = new Date(ref.getFullYear(), ref.getMonth() - 1, 0, 23, 59, 59, 999);
+      const from = new Date(ref.getFullYear(), ref.getMonth() - 2, 1, 0, 0, 0, 0);
       return { from, to, nDays: to.getDate() - from.getDate() + 1 };
     }
     if (periodo === -10) {
