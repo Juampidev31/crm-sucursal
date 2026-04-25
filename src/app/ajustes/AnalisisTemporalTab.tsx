@@ -741,10 +741,8 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       {!collapsedSections[11] && (
         <>
 
-      {/* Rendimiento + Tendencia row */}
-      <div id="seccion-rendimiento-tendencia" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px', marginBottom: '20px' }}>
-        {/* Rendimiento (Stats) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Rendimiento (Stats) - Top Row */}
+      <div id="seccion-rendimiento-horizontal" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
           {[
             { 
               id: 'total', 
@@ -782,53 +780,60 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
             
             return (
               <div key={s.id} style={{ 
-                background: '#0a0a0a', 
-                border: '1px solid rgba(255,255,255,0.03)', 
-                borderRadius: '12px', 
-                padding: '16px 20px', 
-                flex: 1, 
+                background: 'rgba(20, 20, 20, 0.4)', 
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.05)', 
+                borderRadius: '16px', 
+                padding: '20px 24px', 
                 display: 'flex', 
                 flexDirection: 'column',
-                justifyContent: 'center',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
               }}>
-                <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>
-                  {s.title}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <div style={{ width: 3, height: 12, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+                  <div style={{ fontSize: 10, color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    {s.title}
+                  </div>
                 </div>
                 
-                {/* Analista 1 */}
-                <div style={{ marginBottom: s.val2 !== undefined ? 12 : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
-                    <div style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase' }}>{analistaFil}</div>
+                <div style={{ display: 'flex', gap: 32 }}>
+                  {/* Analista 1 */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+                      <div style={{ fontSize: 9, color: '#888', fontWeight: 700 }}>{analistaFil.toUpperCase()}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                      <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{displayVal(s.val1)}</div>
+                      {s.var1 !== undefined && <VariacionBadge valor={s.var1} />}
+                    </div>
+                    {s.prev1 !== undefined && <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev1)}</div>}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{displayVal(s.val1)}</div>
-                    {s.var1 !== undefined && <VariacionBadge valor={s.var1} />}
-                  </div>
-                  {s.prev1 !== undefined && <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev1)}</div>}
-                </div>
 
-                {/* Analista 2 (Comparación) */}
-                {s.val2 !== undefined && (
-                  <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />
-                      <div style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase' }}>{analistaFil2}</div>
+                  {/* Analista 2 (Comparación) */}
+                  {s.val2 !== undefined && (
+                    <div style={{ flex: 1, borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: 32 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />
+                        <div style={{ fontSize: 9, color: '#888', fontWeight: 700 }}>{analistaFil2.toUpperCase()}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                        <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{displayVal(s.val2)}</div>
+                        {s.var2 !== undefined && <VariacionBadge valor={s.var2} />}
+                      </div>
+                      {s.prev2 !== undefined && <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev2)}</div>}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{displayVal(s.val2)}</div>
-                      {s.var2 !== undefined && <VariacionBadge valor={s.var2} />}
-                    </div>
-                    {s.prev2 !== undefined && <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev2)}</div>}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}
-        </div>
+      </div>
+
+      <div id="seccion-tendencia-mapa" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
 
         {/* Tendencia (Chart) */}
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div style={{ background: 'rgba(10, 10, 10, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -906,66 +911,66 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${fmt(ctx.parsed.y ?? 0)}` } },
                 },
                 scales: {
-                  x: { ticks: { color: '#555', maxTicksLimit: 32, font: { size: 9 }, maxRotation: 45, minRotation: 45 }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                  y: { grace: '25%', ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  x: { ticks: { color: '#555', maxTicksLimit: 32, font: { size: 9 }, maxRotation: 45, minRotation: 45, padding: 0 }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  y: { min: 0, grace: '25%', ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
                 },
               }}
             />
           </div>
         </div>
-      </div>
 
-      {/* Mapa de actividad */}
-      <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '16px 20px', display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
-            <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mapa de Actividad</span>
+        {/* Mapa de actividad */}
+        <div style={{ background: 'rgba(10, 10, 10, 0.4)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mapa de Actividad</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Ventas por día — {periodoLabel}</div>
           </div>
-          <div style={{ fontSize: 11, color: '#555', marginTop: 4, marginLeft: 11 }}>Ventas por día — {periodoLabel}</div>
-        </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ borderCollapse: 'separate', borderSpacing: 3, width: '100%' }}>
-            <thead>
-              <tr>
-                <th style={{ width: 30 }} />
-                {DIAS_SEMANA.map(d => (
-                  <th key={d} style={{ textAlign: 'center', fontSize: 10, color: '#555', fontWeight: 600, padding: '0 2px 6px' }}>{d}</th>
-                ))}
-                <th style={{ fontSize: 10, color: '#555', fontWeight: 600, textAlign: 'right', paddingLeft: 8, paddingBottom: 6 }}>TOTAL</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mapaActividad.weeks.slice(0, 5).map((week, wi) => {
-                const weekTotal = week.reduce((s, d) => s + d.valor, 0);
-                return (
-                  <tr key={wi}>
-                    <td style={{ fontSize: 10, color: '#444', fontWeight: 600, paddingRight: 6, textAlign: 'right' }}>S{wi + 1}</td>
-                    {week.map((day, di) => (
-                      <td key={di} title={`${day.key}: ${fmt(day.valor)}`}
-                        style={{
-                          background: heatColor(day.valor, mapaActividad.maxVal),
-                          borderRadius: 4, height: 60, textAlign: 'center', fontSize: 10,
-                          color: day.valor > 0 ? '#86efac' : '#333', fontWeight: day.valor > 0 ? 600 : 400,
-                          border: 'none', padding: '0 4px', cursor: 'default', minWidth: 44,
-                        }}
-                      >{day.valor > 0 ? fmtK(day.valor) : ''}</td>
-                    ))}
-                    <td style={{ fontSize: 11, color: '#fff', fontWeight: 700, textAlign: 'right', paddingLeft: 8 }}>{fmtK(weekTotal)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div style={{ display: 'flex', gap: 32, marginTop: 'auto', paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-          <div>
-            <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>DÍA MÁS ACTIVO</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{dowStats.activeDay}</div>
+          <div style={{ overflowX: 'auto', flex: 1 }}>
+            <table style={{ borderCollapse: 'separate', borderSpacing: 3, width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 30 }} />
+                  {DIAS_SEMANA.map(d => (
+                    <th key={d} style={{ textAlign: 'center', fontSize: 10, color: '#555', fontWeight: 600, padding: '0 2px 6px' }}>{d}</th>
+                  ))}
+                  <th style={{ fontSize: 10, color: '#555', fontWeight: 600, textAlign: 'right', paddingLeft: 8, paddingBottom: 6 }}>TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mapaActividad.weeks.slice(0, 5).map((week, wi) => {
+                  const weekTotal = week.reduce((s, d) => s + d.valor, 0);
+                  return (
+                    <tr key={wi}>
+                      <td style={{ fontSize: 10, color: '#444', fontWeight: 600, paddingRight: 6, textAlign: 'right' }}>S{wi + 1}</td>
+                      {week.map((day, di) => (
+                        <td key={di} title={`${day.key}: ${fmt(day.valor)}`}
+                          style={{
+                            background: heatColor(day.valor, mapaActividad.maxVal),
+                            borderRadius: 4, height: 50, textAlign: 'center', fontSize: 10,
+                            color: day.valor > 0 ? '#86efac' : '#333', fontWeight: day.valor > 0 ? 600 : 400,
+                            border: 'none', padding: '0 4px', cursor: 'default', minWidth: 35,
+                          }}
+                        >{day.valor > 0 ? fmtK(day.valor) : ''}</td>
+                      ))}
+                      <td style={{ fontSize: 11, color: '#fff', fontWeight: 700, textAlign: 'right', paddingLeft: 8 }}>{fmtK(weekTotal)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <div>
-            <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL PERÍODO</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.total)}</div>
+          <div style={{ display: 'flex', gap: 20, marginTop: 'auto', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+            <div>
+              <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>DÍA MÁS ACTIVO</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>{dowStats.activeDay}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>TOTAL PERÍODO</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(summary.total)}</div>
+            </div>
           </div>
         </div>
       </div>
