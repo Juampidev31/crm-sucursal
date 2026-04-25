@@ -21,7 +21,6 @@ const ErrorScreen = ({ message }: { message: string }) => (
       </div>
       <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, marginBottom: '12px' }}>Error al cargar el reporte</h2>
       <p style={{ color: '#999', fontSize: '14px', lineHeight: '1.6' }}>{message}</p>
-      <button onClick={() => window.location.reload()} style={{ marginTop: '24px', background: '#fff', color: '#000', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Reintentar</button>
     </div>
   </div>
 );

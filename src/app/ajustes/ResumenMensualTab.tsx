@@ -472,15 +472,16 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       const snapshotHtml = clone.innerHTML;
       const { error: saveError } = await supabase
         .from('resumen_mensual')
-        .update({
+        .upsert({
+          anio: selectedAnio,
+          mes: selectedMes,
           experiencia_cliente: JSON.stringify({
             text: resumen.experiencia_cliente,
             html: snapshotHtml,
             datos: datosParaCompartir
-          })
-        })
-        .eq('anio', selectedAnio)
-        .eq('mes', selectedMes);
+          }),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'anio,mes' });
 
       if (saveError) {
         alert(`ERROR al guardar snapshot: ${saveError.message}`);
@@ -573,6 +574,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       distLocalidad,
       distEmpleador,
       distAcuerdos,
+      distEstados,
     };
 
     const payload = {
