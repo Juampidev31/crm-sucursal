@@ -597,8 +597,6 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
 
   const weeklyStats = useMemo(() => {
     const getWeeklyTotals = (from: Date, to: Date) => {
-      const year = from.getFullYear();
-      const month = from.getMonth();
       const fromStr = toLocalKey(from);
       const toStr = toLocalKey(to);
       
@@ -617,25 +615,33 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         byDate.get(key)!.push(r);
       }
 
-      const getSum = (start: number, end: number) => {
+      const getSumAllMonths = (startDay: number, endDay: number) => {
         let sum = 0;
-        for (let day = start; day <= end; day++) {
-          const d = new Date(year, month, day);
-          if (d.getMonth() !== month) continue;
-          const key = toLocalKey(d);
-          if (key >= fromStr && key <= toStr) {
-            sum += calcVal(byDate.get(key) || []);
+        let m = new Date(from.getFullYear(), from.getMonth(), 1);
+        const endM = new Date(to.getFullYear(), to.getMonth(), 1);
+        
+        while (m <= endM) {
+          const year = m.getFullYear();
+          const month = m.getMonth();
+          for (let day = startDay; day <= endDay; day++) {
+            const d = new Date(year, month, day);
+            if (d.getMonth() !== month) continue; // Skip invalid dates like Feb 30
+            const key = toLocalKey(d);
+            if (key >= fromStr && key <= toStr) {
+              sum += calcVal(byDate.get(key) || []);
+            }
           }
+          m.setMonth(m.getMonth() + 1);
         }
         return sum;
       };
 
       return [
-        { total: getSum(1, 7) },
-        { total: getSum(8, 14) },
-        { total: getSum(15, 21) },
-        { total: getSum(22, 28) },
-        { total: getSum(29, 31) }
+        { total: getSumAllMonths(1, 7) },
+        { total: getSumAllMonths(8, 14) },
+        { total: getSumAllMonths(15, 21) },
+        { total: getSumAllMonths(22, 28) },
+        { total: getSumAllMonths(29, 31) }
       ];
     };
 
