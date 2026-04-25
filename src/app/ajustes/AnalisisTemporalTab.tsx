@@ -694,7 +694,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       }}>
         {/* El header se movió al contenedor padre */}
         
-        {!collapsedSections[11] && !isPublic && (
+        {!collapsedSections[11] && (
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
             {[
               { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={(v) => setPeriodo(Number(v))} width="170px" /> },
