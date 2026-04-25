@@ -566,8 +566,11 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
 
   const weeklyStats = useMemo(() => {
     const getWeeklyTotals = (from: Date, to: Date) => {
+      const year = from.getFullYear();
+      const month = from.getMonth();
       const fromStr = toLocalKey(from);
       const toStr = toLocalKey(to);
+      
       const rangeRegs = registros.filter(r => {
         if (!r.fecha || !isVenta(r)) return false;
         const d = r.fecha.slice(0, 10);
@@ -575,28 +578,34 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
         if (analistaFil !== 'todos' && r.analista !== analistaFil) return false;
         return true;
       });
+
       const byDate = new Map<string, typeof rangeRegs>();
       for (const r of rangeRegs) {
         const key = r.fecha!.slice(0, 10);
         if (!byDate.has(key)) byDate.set(key, []);
         byDate.get(key)!.push(r);
       }
-      const weeks: { total: number }[] = [];
-      const cur = new Date(from);
-      const dow = (cur.getDay() + 6) % 7;
-      cur.setDate(cur.getDate() - dow);
-      for (let i = 0; i < 5; i++) {
-        let weekTotal = 0;
-        for (let d = 0; d < 7; d++) {
-          const key = toLocalKey(cur);
+
+      const getSum = (start: number, end: number) => {
+        let sum = 0;
+        for (let day = start; day <= end; day++) {
+          const d = new Date(year, month, day);
+          if (d.getMonth() !== month) continue;
+          const key = toLocalKey(d);
           if (key >= fromStr && key <= toStr) {
-            weekTotal += calcVal(byDate.get(key) || []);
+            sum += calcVal(byDate.get(key) || []);
           }
-          cur.setDate(cur.getDate() + 1);
         }
-        weeks.push({ total: weekTotal });
-      }
-      return weeks;
+        return sum;
+      };
+
+      return [
+        { total: getSum(1, 7) },
+        { total: getSum(8, 14) },
+        { total: getSum(15, 21) },
+        { total: getSum(22, 28) },
+        { total: getSum(29, 31) }
+      ];
     };
 
     const actualWeeks = getWeeklyTotals(dateRange.from, dateRange.to);
