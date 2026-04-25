@@ -711,7 +711,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
 
       {/* SECCIÓN 10: ANÁLISIS TEMPORAL */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(10, '10. Análisis Temporal', <Activity size={15} color="#60a5fa" />)}
+        {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
         {!collapsed[10] && (
           <div style={{ padding: '24px' }}>
             {registros && registros.length > 0 ? (

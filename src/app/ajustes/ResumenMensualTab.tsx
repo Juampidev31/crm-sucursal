@@ -2143,7 +2143,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
 
           {/* ── SECCIÓN 10: ANÁLISIS TEMPORAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(10, '10. Análisis Temporal', <Activity size={15} color="#60a5fa" />)}
+            {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
             {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} />}
           </div>
 

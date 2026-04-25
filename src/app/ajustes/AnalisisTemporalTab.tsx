@@ -687,12 +687,12 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         background: '#0a0a0a',
         border: '1px solid rgba(255,255,255,0.03)',
         borderRadius: '8px',
-        padding: '12px 24px',
+        padding: '10px 20px',
         display: 'flex',
         flexDirection: 'column',
         marginBottom: '16px',
       }}>
-        {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart2 size={18} color="#fff" />)}
+        {/* El header se movió al contenedor padre */}
         
         {!collapsedSections[11] && !isPublic && (
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
@@ -742,9 +742,9 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         <>
 
       {/* Rendimiento + Tendencia row */}
-      <div id="seccion-rendimiento-tendencia" style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '32px', marginBottom: '32px' }}>
+      <div id="seccion-rendimiento-tendencia" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px', marginBottom: '20px' }}>
         {/* Rendimiento (Stats) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {[
             { 
               id: 'total', 
@@ -785,24 +785,24 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                 background: '#0a0a0a', 
                 border: '1px solid rgba(255,255,255,0.03)', 
                 borderRadius: '12px', 
-                padding: '24px', 
+                padding: '16px 20px', 
                 flex: 1, 
                 display: 'flex', 
                 flexDirection: 'column',
                 justifyContent: 'center',
               }}>
-                <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 20 }}>
+                <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12 }}>
                   {s.title}
                 </div>
                 
                 {/* Analista 1 */}
-                <div style={{ marginBottom: s.val2 !== undefined ? 20 : 0 }}>
+                <div style={{ marginBottom: s.val2 !== undefined ? 12 : 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
                     <div style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase' }}>{analistaFil}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                    <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{displayVal(s.val1)}</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{displayVal(s.val1)}</div>
                     {s.var1 !== undefined && <VariacionBadge valor={s.var1} />}
                   </div>
                   {s.prev1 !== undefined && <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev1)}</div>}
@@ -810,13 +810,13 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
 
                 {/* Analista 2 (Comparación) */}
                 {s.val2 !== undefined && (
-                  <div style={{ marginTop: 10, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />
                       <div style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase' }}>{analistaFil2}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                      <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{displayVal(s.val2)}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{displayVal(s.val2)}</div>
                       {s.var2 !== undefined && <VariacionBadge valor={s.var2} />}
                     </div>
                     {s.prev2 !== undefined && <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev2)}</div>}
@@ -828,7 +828,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         </div>
 
         {/* Tendencia (Chart) */}
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -841,7 +841,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
               }
             </div>
           </div>
-          <div id="chart-at-tendencia" style={{ height: '100%', minHeight: 400, flex: 1 }}>
+          <div id="chart-at-tendencia" style={{ flex: 1, marginTop: 12, minHeight: 400 }}>
             <Line
               data={{
                 labels: tendenciaData.labels,
@@ -852,7 +852,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     borderColor: 'rgba(34,197,94,0.8)',
                     backgroundColor: 'rgba(34,197,94,0.1)',
                     borderWidth: 2,
-                    pointRadius: 4,
+                    pointRadius: 3,
                     pointBackgroundColor: 'rgba(34,197,94,0.9)',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1.5,
@@ -867,7 +867,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     borderColor: 'rgba(100,150,255,0.5)',
                     backgroundColor: 'rgba(100,150,255,0.08)',
                     borderWidth: 2,
-                    pointRadius: 4,
+                    pointRadius: 3,
                     pointBackgroundColor: 'rgba(100,150,255,0.4)',
                     pointBorderColor: 'rgba(100,150,255,0.7)',
                     pointBorderWidth: 1.5,
@@ -882,7 +882,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     borderColor: 'rgba(239,68,68,0.8)',
                     backgroundColor: 'rgba(239,68,68,0.1)',
                     borderWidth: 2,
-                    pointRadius: 4,
+                    pointRadius: 3,
                     pointBackgroundColor: 'rgba(239,68,68,0.9)',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1.5,
@@ -900,14 +900,14 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   legend: {
                     display: (compararPeriodo && !!tendenciaDataAnterior) || (analistaFil2 !== 'ninguno' && !!tendenciaDataAnalista2),
                     position: 'top' as const,
-                    align: 'end' as const,
-                    labels: { color: '#888', boxWidth: 16, padding: 12, font: { size: 10 }, usePointStyle: true },
+                    align: 'center' as const,
+                    labels: { color: '#888', boxWidth: 16, padding: 10, font: { size: 10 }, usePointStyle: true },
                   },
                   tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${fmt(ctx.parsed.y ?? 0)}` } },
                 },
                 scales: {
-                  x: { ticks: { color: '#555', maxTicksLimit: 20, font: { size: 10 }, autoSkipPadding: 4 }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                  y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  x: { ticks: { color: '#555', maxTicksLimit: 32, font: { size: 9 }, maxRotation: 45, minRotation: 45 }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  y: { grace: '25%', ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
                 },
               }}
             />
@@ -916,7 +916,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       </div>
 
       {/* Mapa de actividad */}
-      <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', marginBottom: '32px' }}>
+      <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '16px 20px', display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -945,7 +945,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                       <td key={di} title={`${day.key}: ${fmt(day.valor)}`}
                         style={{
                           background: heatColor(day.valor, mapaActividad.maxVal),
-                          borderRadius: 4, height: 85, textAlign: 'center', fontSize: 10,
+                          borderRadius: 4, height: 60, textAlign: 'center', fontSize: 10,
                           color: day.valor > 0 ? '#86efac' : '#333', fontWeight: day.valor > 0 ? 600 : 400,
                           border: 'none', padding: '0 4px', cursor: 'default', minWidth: 44,
                         }}
@@ -971,7 +971,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       </div>
 
       {/* Evolucion semanal */}
-      <div id="seccion-estacionalidad" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px', marginBottom: '32px' }}>
+      <div id="seccion-estacionalidad" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -984,9 +984,9 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
           {weeklyStats.totals.map((w) => (
-            <div key={w.label} style={{ flex: '1 1 130px', minWidth: 120, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+            <div key={w.label} style={{ flex: '1 1 120px', minWidth: 110, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
               <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
-              <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
+              <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
               <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsPrev >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
                 {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.6, fontSize: '9px', marginLeft: '4px' }}>vs MES ANT.</span>
               </div>
@@ -995,7 +995,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
               </div>
             </div>
           ))}
-          <div id="chart-at-estacionalidad" style={{ flex: '2 1 300px', minWidth: 280, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '16px', minHeight: 180 }}>
+          <div id="chart-at-estacionalidad" style={{ flex: '2 1 300px', minWidth: 280, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '12px', minHeight: 140 }}>
             <Bar
               data={{
                 labels: weeklyStats.totals.map(s => s.label),
