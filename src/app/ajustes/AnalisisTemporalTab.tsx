@@ -615,7 +615,7 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
       const prevTotal = anteriorWeeks[i]?.total || 0;
       const vsPrev = prevTotal > 0 ? ((w.total - prevTotal) / prevTotal) * 100 : (w.total > 0 && prevTotal === 0 ? 100 : 0);
       return {
-        label: `Semana ${i + 1}`,
+        label: i === 4 ? 'Resto MES' : `Semana ${i + 1}`,
         total: w.total,
         vsPrev,
         prevTotal
@@ -977,6 +977,9 @@ export default function AnalisisTemporalTab({ registros, isPublic }: Props) {
               <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
               <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsPrev >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
                 {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.6, fontSize: '9px', marginLeft: '4px' }}>vs MES ANT.</span>
+              </div>
+              <div style={{ fontSize: '10px', color: '#444', marginTop: '6px', fontWeight: 600 }}>
+                Ant: {fmt(w.prevTotal)}
               </div>
             </div>
           ))}
