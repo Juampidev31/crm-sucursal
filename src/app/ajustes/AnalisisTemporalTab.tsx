@@ -258,7 +258,6 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
   }, [periodo, analisisAnios, fechaDesde, fechaHasta, baseDate, initialYear, initialMonth]);
 
   const dateRangeAnterior = useMemo(() => {
-    if (!compararPeriodo) return null;
     const ref = baseDate;
     const duracionMs = dateRange.to.getTime() - dateRange.from.getTime();
     if (periodo === -1) {
@@ -471,13 +470,29 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
   }), [ventasFiltradas, tendenciaData.daily, dateRange.nDays, calcVal]);
 
   const summaryAnterior = useMemo(() => {
-    if (!dateRangeAnterior || !tendenciaDataAnterior) return null;
+    if (!dateRangeAnterior) return null;
+    
+    const byDate = new Map<string, typeof ventasFiltradasAnterior>();
+    for (const r of ventasFiltradasAnterior) {
+      if (!r.fecha) continue;
+      const key = r.fecha.slice(0, 10);
+      const bucket = byDate.get(key);
+      if (bucket) bucket.push(r);
+      else byDate.set(key, [r]);
+    }
+    
+    let maxDay = 0;
+    byDate.forEach((regs) => {
+      const v = calcVal(regs);
+      if (v > maxDay) maxDay = v;
+    });
+
     return {
       total: calcVal(ventasFiltradasAnterior),
       avg: dateRangeAnterior.nDays > 0 ? calcVal(ventasFiltradasAnterior) / dateRangeAnterior.nDays : 0,
-      maxDay: tendenciaDataAnterior.daily.length ? Math.max(...tendenciaDataAnterior.daily) : 0,
+      maxDay,
     };
-  }, [ventasFiltradasAnterior, tendenciaDataAnterior, dateRangeAnterior, calcVal]);
+  }, [ventasFiltradasAnterior, dateRangeAnterior, calcVal]);
 
   const ventasFiltradasAnalista2 = useMemo(() => {
     if (analistaFil2 === 'ninguno') return [];
@@ -1057,7 +1072,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
             <div key={w.label} style={{ flex: '1 1 120px', minWidth: 110, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
               <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
               <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
-              {compararPeriodo && dateRangeAnterior && w.prevTotal !== undefined && (
+              {dateRangeAnterior && w.prevTotal !== undefined && (
                 <>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsPrev >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
                     {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.6, fontSize: '9px', marginLeft: '4px' }}>{vsLabel}</span>
