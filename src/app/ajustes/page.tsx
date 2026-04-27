@@ -542,9 +542,9 @@ export default function AjustesPage() {
             { id: 'auditoria', label: 'Auditoría', icon: Shield },
             { id: 'resumen-mensual', label: 'Resumen Mensual', icon: BarChart3 },
             ...(isAdmin ? [
-              { id: 'modificacion-masiva', label: 'Corrector Empleador', icon: ShieldCheck },
+              { id: 'modificacion-masiva', label: 'Corrector', icon: ShieldCheck },
               { id: 'calif-score', label: 'Calif. x SCORE', icon: Users },
-              { id: 'avisos', label: 'Avisos Pop-up', icon: Bell }
+              { id: 'avisos', label: 'Avisos', icon: Bell }
             ] : []),
           ].map(t => (
             <button

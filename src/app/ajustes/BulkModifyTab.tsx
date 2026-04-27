@@ -945,10 +945,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', gap: 10 }}>
               {mode === 'bulk' ? <Users size={20} style={{ color: '#888' }} /> : <ShieldCheck size={20} style={{ color: '#fbbf24' }} />}
-              {mode === 'bulk' ? 'Calif. x SCORE' : 'Corrector de Empleadores'}
+              {mode === 'bulk' ? 'Calif. x SCORE' : 'Corrector'}
             </h3>
             <p style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>
-              {mode === 'bulk' ? 'Filtra registros por cualquier condición y actualiza campos masivamente' : 'Detecta y corrige variantes de nombres de empleadores para unificar la base'}
+              {mode === 'bulk' ? 'Filtra registros por cualquier condición y actualiza campos masivamente' : 'Detecta y corrige variantes de nombres para unificar la base'}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
