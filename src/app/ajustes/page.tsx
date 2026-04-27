@@ -19,6 +19,7 @@ import {
 import CustomSelect from '@/components/CustomSelect';
 import ResumenMensualTab from './ResumenMensualTab';
 import BulkModifyTab from './BulkModifyTab';
+import AvisosTab from './AvisosTab';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
@@ -26,7 +27,7 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ObjetivoRow = { analista: string; mes: number; meta_ventas: number; meta_operaciones: number };
-type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score';
+type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -542,7 +543,8 @@ export default function AjustesPage() {
             { id: 'resumen-mensual', label: 'Resumen Mensual', icon: BarChart3 },
             ...(isAdmin ? [
               { id: 'modificacion-masiva', label: 'Corrector Empleador', icon: ShieldCheck },
-              { id: 'calif-score', label: 'Calif. x SCORE', icon: Users }
+              { id: 'calif-score', label: 'Calif. x SCORE', icon: Users },
+              { id: 'avisos', label: 'Avisos Pop-up', icon: Bell }
             ] : []),
           ].map(t => (
             <button
@@ -1532,6 +1534,11 @@ export default function AjustesPage() {
           {/* TAB: CALIF. POR SCORE (solo admin) */}
           {activeTab === 'calif-score' && isAdmin && (
             <BulkModifyTab mode="bulk" />
+          )}
+
+          {/* TAB: AVISOS POP-UP (solo admin) */}
+          {activeTab === 'avisos' && isAdmin && (
+            <AvisosTab />
           )}
 
 

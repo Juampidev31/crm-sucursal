@@ -62,7 +62,7 @@ interface FilterCtx {
   setShowFilters: (val: boolean | ((v: boolean) => boolean)) => void;
 }
 
-const FilterContext = createContext<FilterCtx | null>(null);
+export const FilterContext = createContext<FilterCtx | null>(null);
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [filters, setFilters] = useState<FilterState>(initialState);

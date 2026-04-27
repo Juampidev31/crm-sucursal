@@ -56,20 +56,87 @@ const DataErrorToast = () => {
   );
 };
 
-// Componente para avisos de recordatorios pendientes
+// Componente para avisos de recordatorios pendientes y popups de admin
 const ReminderAlertPopup = () => {
-  const { pendingReminders } = useRecordatorios();
-  const [show, setShow] = useState(false);
+  const { pendingReminders, reminderAlert, clearReminderAlert, markReminderCompleted } = useRecordatorios();
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
-    if (pendingReminders > 0) {
-      setShow(true);
-      const t = setTimeout(() => setShow(false), 8000);
+    if (pendingReminders > 0 && !reminderAlert) {
+      setShowToast(true);
+      const t = setTimeout(() => setShowToast(false), 8000);
       return () => clearTimeout(t);
     }
-  }, [pendingReminders]);
+  }, [pendingReminders, reminderAlert]);
 
-  if (!show || pendingReminders === 0) return null;
+  if (reminderAlert) {
+    const isAvisoAdmin = reminderAlert.cuil === 'ADMIN_AVISO';
+    
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 2000,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
+        padding: '20px',
+      }}>
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{
+            background: '#0a0a0a', border: `1px solid ${isAvisoAdmin ? 'var(--azul)' : 'rgba(255,255,255,0.1)'}`,
+            borderRadius: '20px', padding: '32px', maxWidth: '500px', width: '100%',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            display: 'flex', flexDirection: 'column', gap: '20px',
+            position: 'relative'
+          }}
+        >
+          <div style={{
+            width: '60px', height: '60px', 
+            background: isAvisoAdmin ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
+            borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Bell size={28} style={{ color: isAvisoAdmin ? 'var(--azul)' : 'var(--naranja)' }} />
+          </div>
+
+          <div>
+            <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#fff', marginBottom: '8px' }}>
+              {isAvisoAdmin ? 'MENSAJE DEL ADMINISTRADOR' : 'Recordatorio Pendiente'}
+            </h3>
+            {!isAvisoAdmin && (
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#555', marginBottom: '16px' }}>
+                {reminderAlert.nombre} | CUIL: {reminderAlert.cuil}
+              </div>
+            )}
+            <p style={{ 
+              fontSize: '16px', color: '#ccc', lineHeight: '1.6', 
+              background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px' 
+            }}>
+              {reminderAlert.nota || 'Sin descripción adicional.'}
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+            <button 
+              onClick={() => markReminderCompleted(reminderAlert.id)}
+              className="btn-primary"
+              style={{ flex: 1, justifyContent: 'center', height: '48px', fontSize: '14px', fontWeight: 700 }}
+            >
+              ENTENDIDO
+            </button>
+            <button 
+              onClick={clearReminderAlert}
+              className="btn-secondary"
+              style={{ height: '48px', padding: '0 20px' }}
+            >
+              CERRAR
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!showToast || pendingReminders === 0) return null;
 
   return (
     <div style={{
@@ -91,7 +158,7 @@ const ReminderAlertPopup = () => {
         <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>Recordatorios Pendientes</div>
         <div style={{ fontSize: '12px', color: '#555', marginTop: '2px' }}>{pendingReminders} {pendingReminders === 1 ? 'recordatorio' : 'recordatorios'} sin revisar</div>
       </div>
-      <button onClick={() => setShow(false)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', marginLeft: '8px' }}>
+      <button onClick={() => setShowToast(false)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', marginLeft: '8px' }}>
         <X size={16} />
       </button>
     </div>
@@ -102,6 +169,11 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loading, isAdmin } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const isLoginPage = pathname === '/login';
   const isPublicRoute = pathname.startsWith('/publico');
@@ -144,7 +216,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     return () => window.removeEventListener('keydown', handleGlobalEscape);
   }, [pathname, router, isPublicRoute, isLoginPage]);
 
-  if (loading) {
+  if (loading || !mounted) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -287,21 +359,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <ErrorProvider>
     <RegistrosProvider>
-    <RecordatoriosProvider>
     <ObjetivosProvider>
     <HistoricoProvider>
     <SettingsProvider>
     <FilterProvider>
+    <RecordatoriosProvider>
       <React.Suspense fallback={null}>
         <AppShellInner pathname={pathname}>
           {children}
         </AppShellInner>
       </React.Suspense>
+    </RecordatoriosProvider>
     </FilterProvider>
     </SettingsProvider>
     </HistoricoProvider>
     </ObjetivosProvider>
-    </RecordatoriosProvider>
     </RegistrosProvider>
     </ErrorProvider>
   );
