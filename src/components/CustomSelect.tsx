@@ -6,6 +6,7 @@ import { ChevronDown } from 'lucide-react';
 interface Option {
   label: string;
   value: string | number;
+  disabled?: boolean;
 }
 
 interface CustomSelectProps {
@@ -83,6 +84,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
             <div
               key={opt.value}
               onClick={() => {
+                if (opt.disabled) return;
                 onChange(opt.value);
                 setIsOpen(false);
               }}
@@ -91,18 +93,21 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
                 borderRadius: '3px',
                 fontSize: '12.5px',
                 fontWeight: 500,
-                cursor: 'pointer',
-                color: opt.value === value ? '#fff' : '#999',
+                cursor: opt.disabled ? 'default' : 'pointer',
+                color: opt.disabled ? '#444' : (opt.value === value ? '#fff' : '#999'),
                 background: opt.value === value ? 'rgba(255,255,255,0.08)' : 'transparent',
                 transition: 'all 0.1s',
+                pointerEvents: opt.disabled ? 'none' : 'auto',
               }}
               onMouseEnter={e => {
+                if (opt.disabled) return;
                 if (opt.value !== value) {
                   e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
                   e.currentTarget.style.color = '#fff';
                 }
               }}
               onMouseLeave={e => {
+                if (opt.disabled) return;
                 if (opt.value !== value) {
                   e.currentTarget.style.background = 'transparent';
                   e.currentTarget.style.color = '#999';

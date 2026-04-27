@@ -161,7 +161,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
   );
 
   const PERIODOS = useMemo(() => {
-    const list = [
+    const list: { label: string; value: number; disabled?: boolean }[] = [
       { label: 'Mes actual', value: -1 },
       { label: 'Mes anterior', value: -2 },
     ];
