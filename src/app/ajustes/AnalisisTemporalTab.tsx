@@ -322,6 +322,12 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
     return `últimos ${periodo} días`;
   }, [periodo, fechaDesde, fechaHasta, baseDate]);
 
+  const vsLabel = useMemo(() => {
+    if (periodo === -1 || periodo === -2 || periodo <= -100) return 'vs MES ANT.';
+    if (periodo >= 2000) return 'vs AÑO ANT.';
+    return 'vs PER. ANT.';
+  }, [periodo]);
+
 
   const ventasFiltradas = useMemo(() => {
     const { from, to } = dateRange;
@@ -586,7 +592,10 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
 
   const variacionAnalista2 = useMemo(() => {
     if (!summaryAnalista2 || !summaryAnalista2Anterior) return null;
-    const calc = (act: number, prev: number) => prev > 0 ? ((act - prev) / prev) * 100 : 0;
+    const calc = (act: number, prev: number) => {
+      if (prev > 0) return ((act - prev) / prev) * 100;
+      return act > 0 ? 100 : 0;
+    };
     return {
       total: calc(summaryAnalista2.total, summaryAnalista2Anterior.total),
       avg: calc(summaryAnalista2.avg, summaryAnalista2Anterior.avg),
@@ -596,7 +605,10 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
 
   const variacion = useMemo(() => {
     if (!summaryAnterior) return null;
-    const calc = (act: number, prev: number) => prev > 0 ? ((act - prev) / prev) * 100 : 0;
+    const calc = (act: number, prev: number) => {
+      if (prev > 0) return ((act - prev) / prev) * 100;
+      return act > 0 ? 100 : 0;
+    };
     return {
       total: calc(summary.total, summaryAnterior.total),
       avg: calc(summary.avg, summaryAnterior.avg),
@@ -1045,10 +1057,10 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
             <div key={w.label} style={{ flex: '1 1 120px', minWidth: 110, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
               <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
               <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
-              {periodo === -1 && (
+              {compararPeriodo && dateRangeAnterior && w.prevTotal !== undefined && (
                 <>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsPrev >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
-                    {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.6, fontSize: '9px', marginLeft: '4px' }}>vs MES ANT.</span>
+                    {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.6, fontSize: '9px', marginLeft: '4px' }}>{vsLabel}</span>
                   </div>
                   <div style={{ fontSize: '10px', color: '#444', marginTop: '6px', fontWeight: 600 }}>
                     Ant: {fmt(w.prevTotal)}
