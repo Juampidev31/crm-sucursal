@@ -314,13 +314,8 @@ export default function AnalistasPage() {
   const [analistasSel, setAnalistasSel] = useState<string[]>([]);
 
   useEffect(() => {
-    if (todosRegs.length === 0) return;
-    const esAnalistaValido = (a: string) =>
-      a && a !== 'Column 5' && a !== 'Column5' &&
-      !a.startsWith('$') && !a.includes('%') && !/^\d/.test(a.trim());
-    const set = new Set(todosRegs.map(r => r.analista).filter(esAnalistaValido));
-    setAnalistasSel(Array.from(set) as string[]);
-  }, [todosRegs]);
+    setAnalistasSel(CONFIG.ANALISTAS_DEFAULT);
+  }, []);
 
   // Registros del analista seleccionado
   // PDV = todos, individual = filtrado

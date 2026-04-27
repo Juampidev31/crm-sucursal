@@ -21,10 +21,7 @@ export default function ReporteVentasPage() {
       r.estado?.toLowerCase() === 'venta' || r.estado?.toLowerCase().includes('aprobado cc')
     ), [todosRegistros]);
 
-  const analistas = useMemo(() => {
-    const set = new Set(registros.map(r => r.analista).filter(Boolean));
-    return Array.from(set) as string[];
-  }, [registros]);
+  const analistas = CONFIG.ANALISTAS_DEFAULT;
 
   const [filtroAnalista, setFiltroAnalista] = useState('');
   const [filtroMes, setFiltroMes] = useState(() => {
