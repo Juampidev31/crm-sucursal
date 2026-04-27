@@ -600,6 +600,8 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       const fromStr = toLocalKey(from);
       const toStr = toLocalKey(to);
       
+      const regsByBucket = [[], [], [], [], []] as Registro[][];
+
       const rangeRegs = registros.filter(r => {
         if (!r.fecha || !isVenta(r)) return false;
         const d = r.fecha.slice(0, 10);
@@ -608,41 +610,20 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         return true;
       });
 
-      const byDate = new Map<string, typeof rangeRegs>();
       for (const r of rangeRegs) {
-        const key = r.fecha!.slice(0, 10);
-        if (!byDate.has(key)) byDate.set(key, []);
-        byDate.get(key)!.push(r);
+        const d = toLocalDate(r.fecha!);
+        const day = d.getDate();
+        let bucketIdx = 0;
+        if (day <= 7) bucketIdx = 0;
+        else if (day <= 14) bucketIdx = 1;
+        else if (day <= 21) bucketIdx = 2;
+        else if (day <= 28) bucketIdx = 3;
+        else bucketIdx = 4;
+        
+        regsByBucket[bucketIdx].push(r);
       }
 
-      const getSumAllMonths = (startDay: number, endDay: number) => {
-        let sum = 0;
-        let m = new Date(from.getFullYear(), from.getMonth(), 1);
-        const endM = new Date(to.getFullYear(), to.getMonth(), 1);
-        
-        while (m <= endM) {
-          const year = m.getFullYear();
-          const month = m.getMonth();
-          for (let day = startDay; day <= endDay; day++) {
-            const d = new Date(year, month, day);
-            if (d.getMonth() !== month) continue; // Skip invalid dates like Feb 30
-            const key = toLocalKey(d);
-            if (key >= fromStr && key <= toStr) {
-              sum += calcVal(byDate.get(key) || []);
-            }
-          }
-          m.setMonth(m.getMonth() + 1);
-        }
-        return sum;
-      };
-
-      return [
-        { total: getSumAllMonths(1, 7) },
-        { total: getSumAllMonths(8, 14) },
-        { total: getSumAllMonths(15, 21) },
-        { total: getSumAllMonths(22, 28) },
-        { total: getSumAllMonths(29, 31) }
-      ];
+      return regsByBucket.map(regs => ({ total: calcVal(regs) }));
     };
 
     const actualWeeks = getWeeklyTotals(dateRange.from, dateRange.to);
