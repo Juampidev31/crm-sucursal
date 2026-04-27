@@ -668,7 +668,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
   }, [ventasFiltradas, dateRange, calcVal]);
 
   const weeklyStats = useMemo(() => {
-    const getWeeklyTotals = (from: Date, to: Date) => {
+    const getWeeklyTotals = (from: Date, to: Date, analista: string) => {
       const fromStr = toLocalKey(from);
       const toStr = toLocalKey(to);
       
@@ -678,7 +678,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         if (!r.fecha || !isVenta(r)) return false;
         const d = r.fecha.slice(0, 10);
         if (d < fromStr || d > toStr) return false;
-        if (analistaFil !== 'todos' && r.analista !== analistaFil) return false;
+        if (analista !== 'todos' && r.analista !== analista) return false;
         return true;
       });
 
@@ -698,17 +698,27 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       return regsByBucket.map(regs => ({ total: calcVal(regs) }));
     };
 
-    const actualWeeks = getWeeklyTotals(dateRange.from, dateRange.to);
-    const anteriorWeeks = dateRangeAnterior ? getWeeklyTotals(dateRangeAnterior.from, dateRangeAnterior.to) : [];
+    const actualWeeks = getWeeklyTotals(dateRange.from, dateRange.to, analistaFil);
+    const anteriorWeeks = dateRangeAnterior ? getWeeklyTotals(dateRangeAnterior.from, dateRangeAnterior.to, analistaFil) : [];
+    const actualWeeks2 = analistaFil2 !== 'ninguno' ? getWeeklyTotals(dateRange.from, dateRange.to, analistaFil2) : [];
+    const anteriorWeeks2 = (analistaFil2 !== 'ninguno' && dateRangeAnterior) ? getWeeklyTotals(dateRangeAnterior.from, dateRangeAnterior.to, analistaFil2) : [];
 
     const totals = actualWeeks.map((w, i) => {
       const prevTotal = anteriorWeeks[i]?.total || 0;
       const vsPrev = prevTotal > 0 ? ((w.total - prevTotal) / prevTotal) * 100 : (w.total > 0 && prevTotal === 0 ? 100 : 0);
+      
+      const total2 = actualWeeks2[i]?.total ?? 0;
+      const prevTotal2 = anteriorWeeks2[i]?.total ?? 0;
+      const vsPrev2 = prevTotal2 > 0 ? ((total2 - prevTotal2) / prevTotal2) * 100 : (total2 > 0 && prevTotal2 === 0 ? 100 : 0);
+
       return {
         label: i === 4 ? 'Resto MES' : `Semana ${i + 1}`,
         total: w.total,
         vsPrev,
-        prevTotal
+        prevTotal,
+        total2,
+        vsPrev2,
+        prevTotal2
       };
     });
 
@@ -719,7 +729,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
 
 
     return { totals, best, worst };
-  }, [registros, dateRange, dateRangeAnterior, analistaFil, calcVal, metrica]);
+  }, [registros, dateRange, dateRangeAnterior, analistaFil, analistaFil2, calcVal, metrica]);
 
   const dowStats = useMemo(() => {
     const byDow = new Array(7).fill(null).map(() => [] as typeof ventasFiltradas);
@@ -1069,18 +1079,31 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
           {weeklyStats.totals.map((w) => (
-            <div key={w.label} style={{ flex: '1 1 120px', minWidth: 110, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
-              <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
-              {dateRangeAnterior && w.prevTotal !== undefined && (
-                <>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsPrev >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
-                    {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.6, fontSize: '9px', marginLeft: '4px' }}>{vsLabel}</span>
+            <div key={w.label} style={{ flex: '1 1 120px', minWidth: 110, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', textAlign: 'center' }}>
+              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '14px', letterSpacing: '0.5px' }}>{w.label}</div>
+              
+              {/* Analista 1 */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: analistaFil2 !== 'ninguno' ? 12 : 0, paddingBottom: analistaFil2 !== 'ninguno' ? 12 : 0, borderBottom: analistaFil2 !== 'ninguno' ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                {analistaFil2 !== 'ninguno' && <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil}</div>}
+                <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
+                {dateRangeAnterior && w.prevTotal !== undefined && (
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
+                    {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}%
                   </div>
-                  <div style={{ fontSize: '10px', color: '#444', marginTop: '6px', fontWeight: 600 }}>
-                    Ant: {fmt(w.prevTotal)}
-                  </div>
-                </>
+                )}
+              </div>
+
+              {/* Analista 2 */}
+              {analistaFil2 !== 'ninguno' && (
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil2}</div>
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total2)}</div>
+                  {dateRangeAnterior && w.prevTotal2 !== undefined && (
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
+                      {w.vsPrev2 >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev2).toFixed(1)}%
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           ))}
@@ -1088,18 +1111,34 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
             <Bar
               data={{
                 labels: weeklyStats.totals.map(s => s.label),
-                datasets: [{
-                  label: metrica === 'operaciones' ? 'Operaciones' : 'Total',
-                  data: weeklyStats.totals.map(s => s.total),
-                  backgroundColor: weeklyStats.totals.map(s => s.label === weeklyStats.best.label ? 'rgba(34,197,94,0.7)' : 'rgba(34,197,94,0.3)'),
-                  borderRadius: 4,
-                  borderSkipped: false,
-                }],
+                datasets: [
+                  {
+                    label: analistaFil !== 'todos' ? analistaFil : (metrica === 'operaciones' ? 'Operaciones' : 'Total'),
+                    data: weeklyStats.totals.map(s => s.total),
+                    backgroundColor: weeklyStats.totals.map(s => s.label === weeklyStats.best.label ? 'rgba(34,197,94,0.7)' : 'rgba(34,197,94,0.3)'),
+                    borderRadius: 4,
+                    borderSkipped: false,
+                  },
+                  ...(analistaFil2 !== 'ninguno' ? [{
+                    label: analistaFil2,
+                    data: weeklyStats.totals.map(s => s.total2),
+                    backgroundColor: 'rgba(239,68,68,0.5)',
+                    borderRadius: 4,
+                    borderSkipped: false,
+                  }] : [])
+                ],
               }}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => fmt(ctx.parsed.y ?? 0) } } },
+                plugins: { 
+                  legend: { 
+                    display: analistaFil2 !== 'ninguno',
+                    position: 'top' as const,
+                    labels: { color: '#888', boxWidth: 12, font: { size: 10 } }
+                  }, 
+                  tooltip: { callbacks: { label: (ctx: any) => `${ctx.dataset.label}: ${fmt(ctx.parsed.y ?? 0)}` } } 
+                },
                 scales: {
                   x: { ticks: { color: '#555', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
                   y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
