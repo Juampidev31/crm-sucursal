@@ -160,19 +160,42 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
     [registros]
   );
 
-  const PERIODOS = useMemo(() => [
-    { label: 'Mes actual', value: -1 },
-    { label: 'Mes anterior', value: -2 },
-    { label: 'Últimos 7 días', value: 7 },
-    { label: 'Últimos 15 días', value: 15 },
-    { label: 'Últimos 30 días', value: 30 },
-    { label: 'Últimos 60 días', value: 60 },
-    { label: 'Últimos 90 días', value: 90 },
-    ...analisisAnios.map(y => ({ label: `Año ${y}`, value: y })),
-    { label: 'Histórico completo', value: 0 },
-    { label: '───', value: -999, disabled: true },
-    { label: 'Rango personalizado', value: -10 },
-  ], [analisisAnios]);
+  const PERIODOS = useMemo(() => {
+    const list = [
+      { label: 'Mes actual', value: -1 },
+      { label: 'Mes anterior', value: -2 },
+    ];
+    
+    // Agregamos los meses restantes para completar 12 meses individuales
+    for (let i = 2; i < 12; i++) {
+      const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
+      list.push({
+        label: `${CONFIG.MESES_NOMBRES[d.getMonth()]} ${d.getFullYear()}`,
+        value: -(100 + i)
+      });
+    }
+
+    list.push({ label: '───', value: -998, disabled: true });
+    list.push({ label: 'Últimos 7 días', value: 7 });
+    list.push({ label: 'Últimos 15 días', value: 15 });
+    list.push({ label: 'Últimos 30 días', value: 30 });
+    list.push({ label: 'Últimos 60 días', value: 60 });
+    list.push({ label: 'Últimos 90 días', value: 90 });
+    list.push({ label: 'Últimos 12 meses', value: 365 });
+    list.push({ label: '───', value: -997, disabled: true });
+    
+    list.push({ label: 'Este año', value: baseDate.getFullYear() });
+    analisisAnios.filter(y => y !== baseDate.getFullYear()).forEach(y => {
+      list.push({ label: `Año ${y}`, value: y });
+    });
+    
+    list.push({ label: 'Histórico completo', value: 0 });
+    list.push({ label: '───', value: -999, disabled: true });
+    list.push({ label: 'Rango personalizado', value: -10 });
+    
+    return list;
+  }, [analisisAnios, baseDate]);
+
 
   const METRICAS = [
     { value: 'ventas', label: 'Ventas ($)' },
@@ -209,6 +232,14 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       const nDays = Math.max(Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1, 1);
       return { from, to, nDays };
     }
+    if (periodo <= -100) {
+      const index = Math.abs(periodo) - 100;
+      const from = new Date(ref.getFullYear(), ref.getMonth() - index, 1, 0, 0, 0, 0);
+      const to = new Date(ref.getFullYear(), ref.getMonth() - index + 1, 0, 23, 59, 59, 999);
+      const nDays = to.getDate();
+      return { from, to, nDays };
+    }
+
     if (periodo === 0) {
       const minYear = analisisAnios[0] ?? ref.getFullYear();
       const from = new Date(minYear, 0, 1, 0, 0, 0, 0);
@@ -250,6 +281,13 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       const nDays = Math.ceil((to.getTime() - from.getTime()) / 86400000) + 1;
       return { from, to, nDays };
     }
+    if (periodo <= -100) {
+      const index = Math.abs(periodo) - 100;
+      const from = new Date(ref.getFullYear(), ref.getMonth() - index - 1, 1, 0, 0, 0, 0);
+      const to = new Date(ref.getFullYear(), ref.getMonth() - index, 0, 23, 59, 59, 999);
+      return { from, to, nDays: to.getDate() };
+    }
+
     if (periodo === 0) return null;
     if (periodo >= 2000) {
       const prevYear = periodo - 1;
@@ -275,8 +313,15 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
     if (periodo === -10 && fechaDesde && fechaHasta) return `${fechaDesde} → ${fechaHasta}`;
     if (periodo === -10) return 'rango personalizado';
     if (periodo >= 2000) return `año ${periodo}`;
+    if (periodo === 365) return 'últimos 12 meses';
+    if (periodo <= -100) {
+      const index = Math.abs(periodo) - 100;
+      const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - index, 1);
+      return `${CONFIG.MESES_NOMBRES[d.getMonth()]} ${d.getFullYear()}`;
+    }
     return `últimos ${periodo} días`;
-  }, [periodo, fechaDesde, fechaHasta]);
+  }, [periodo, fechaDesde, fechaHasta, baseDate]);
+
 
   const ventasFiltradas = useMemo(() => {
     const { from, to } = dateRange;
@@ -640,9 +685,11 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       };
     });
 
-    const best = totals.reduce((a, b) => a.total > b.total ? a : b, totals[0] || { label: '—', total: 0 });
-    const withData = totals.filter(w => w.total > 0);
-    const worst = withData.length > 0 ? withData.reduce((a, b) => a.total < b.total ? a : b, withData[0]) : totals[0];
+    const weekTotals = totals.slice(0, 4);
+    const best = weekTotals.reduce((a, b) => a.total > b.total ? a : b, weekTotals[0] || { label: '—', total: 0 });
+    const withData = weekTotals.filter(w => w.total > 0);
+    const worst = withData.length > 0 ? withData.reduce((a, b) => a.total < b.total ? a : b, withData[0]) : weekTotals[0] || totals[0];
+
 
     return { totals, best, worst };
   }, [registros, dateRange, dateRangeAnterior, analistaFil, calcVal, metrica]);
@@ -998,12 +1045,16 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
             <div key={w.label} style={{ flex: '1 1 120px', minWidth: 110, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
               <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.5px' }}>{w.label}</div>
               <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsPrev >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
-                {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.6, fontSize: '9px', marginLeft: '4px' }}>vs MES ANT.</span>
-              </div>
-              <div style={{ fontSize: '10px', color: '#444', marginTop: '6px', fontWeight: 600 }}>
-                Ant: {fmt(w.prevTotal)}
-              </div>
+              {periodo === -1 && (
+                <>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '10px', background: w.vsPrev >= 0 ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
+                    {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.6, fontSize: '9px', marginLeft: '4px' }}>vs MES ANT.</span>
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#444', marginTop: '6px', fontWeight: 600 }}>
+                    Ant: {fmt(w.prevTotal)}
+                  </div>
+                </>
+              )}
             </div>
           ))}
           <div id="chart-at-estacionalidad" style={{ flex: '2 1 300px', minWidth: 280, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '12px', minHeight: 140 }}>
