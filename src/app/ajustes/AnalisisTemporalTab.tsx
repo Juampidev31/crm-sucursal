@@ -1088,9 +1088,14 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   {analistaFil2 !== 'ninguno' && <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil}</div>}
                   <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
                   {dateRangeAnterior && w.prevTotal !== undefined && (
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
-                      {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}%
-                    </div>
+                    <>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
+                        {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
+                      </div>
+                      <div style={{ fontSize: '9px', color: '#444', marginTop: '2px', fontWeight: 600 }}>
+                        Ant: {fmt(w.prevTotal)}
+                      </div>
+                    </>
                   )}
                 </div>
 
@@ -1100,9 +1105,14 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil2}</div>
                     <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total2)}</div>
                     {dateRangeAnterior && w.prevTotal2 !== undefined && (
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
-                        {w.vsPrev2 >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev2).toFixed(1)}%
-                      </div>
+                      <>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
+                          {w.vsPrev2 >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev2).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
+                        </div>
+                        <div style={{ fontSize: '9px', color: '#444', marginTop: '2px', fontWeight: 600 }}>
+                          Ant: {fmt(w.prevTotal2)}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
