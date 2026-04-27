@@ -25,10 +25,6 @@ const initialForm: Partial<Registro> = {
 
 const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
 
-const LOCALIDADES = [
-  'Paraná',
-];
-
 const FIELD_LABELS: Record<string, string> = {
   nombre: 'Nombre', cuil: 'CUIL', analista: 'Analista',
   estado: 'Estado', monto: 'Monto', fecha: 'Fecha',
@@ -37,6 +33,8 @@ const FIELD_LABELS: Record<string, string> = {
   fecha_score: 'Fecha score', cuotas: 'Cuotas', rango_etario: 'Rango etario',
   sexo: 'Sexo', empleador: 'Empleador', localidad: 'Localidad',
 };
+
+const LOCALIDADES_POR_DEFECTO = ['Paraná'];
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -383,11 +381,16 @@ const RegistroModal = memo(function RegistroModal({
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
   const [showComentariosModal, setShowComentariosModal] = useState(false);
   const [empleadorCustom, setEmpleadorCustom] = useState(false);
+  const [localidadCustom, setLocalidadCustom] = useState(false);
   const { registros: allRegistros } = useRegistros();
 
-  // Derivar empleadores reactivamente desde DataContext (se actualiza al corregir en BulkModifyTab)
+  // Derivar empleadores y localidades reactivamente desde DataContext
   const empleadoresDB = useMemo(() =>
     Array.from(new Set(allRegistros.map(r => r.empleador).filter(Boolean) as string[])).sort(),
+    [allRegistros]
+  );
+  const localidadesDB = useMemo(() =>
+    Array.from(new Set(allRegistros.map(r => r.localidad).filter(Boolean) as string[])).sort(),
     [allRegistros]
   );
   const empleadoresLoaded = true; // siempre cargados desde DataContext
@@ -424,8 +427,9 @@ const RegistroModal = memo(function RegistroModal({
       setDupBlocked(false);
       setAgendarRecordatorio(false);
       setEmpleadorCustom(!!initialData.empleador && !empleadoresDB.includes(initialData.empleador));
+      setLocalidadCustom(!!initialData.localidad && !localidadesDB.includes(initialData.localidad));
     }
-  }, [isOpen, initialData, empleadoresDB]);
+  }, [isOpen, initialData, empleadoresDB, localidadesDB]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -693,12 +697,36 @@ const RegistroModal = memo(function RegistroModal({
                 )}
               </Field>
               <Field label={`Localidad${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
-                <PremiumSelect
-                  value={form.localidad || ''}
-                  onChange={val => set('localidad', val)}
-                  options={LOCALIDADES}
-                  placeholder="— Sin especificar —"
-                />
+                {localidadCustom ? (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      className="form-input"
+                      value={form.localidad || ''}
+                      onChange={e => set('localidad', e.target.value)}
+                      placeholder="Nombre de la localidad"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setLocalidadCustom(false); set('localidad', ''); }}
+                      className="btn-icon"
+                      style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <PremiumSelect
+                    value={localidadesDB.includes(form.localidad || '') ? (form.localidad || '') : ''}
+                    onChange={val => set('localidad', val)}
+                    options={Array.from(new Set([...LOCALIDADES_POR_DEFECTO, ...localidadesDB])).sort()}
+                    placeholder="— Sin especificar —"
+                    onAddCustom={() => {
+                      setLocalidadCustom(true);
+                      set('localidad', '');
+                    }}
+                  />
+                )}
               </Field>
             </div>
             <div className="form-row">

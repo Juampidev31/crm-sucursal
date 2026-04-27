@@ -128,7 +128,6 @@ const ACUERDOS_OPCIONES = ['Riesgo Bajo', 'Riesgo Medio', 'Premium', 'No calific
 const TIPO_CLIENTE_OPCIONES = ['Apertura', 'Renovacion'];
 const RANGOS_ETARIOS = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
 const SEXOS = ['Masculino', 'Femenino', 'Otro'];
-const LOCALIDADES = ['Paraná'];
 
 interface Filtros {
   // Filtros de selección
@@ -200,20 +199,37 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
   const [mostrarTodos, setMostrarTodos] = useState(true);
   const [busquedaEmpleador, setBusquedaEmpleador] = useState('');
-  const [correctorExpandido, setCorrectorExpandido] = useState(false);
+const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [gruposDescartados, setGruposDescartados] = useState<Map<string, number>>(() => {
     if (typeof window === 'undefined') return new Map();
     try {
       const saved = localStorage.getItem('empleador_grupos_ok');
       if (!saved) return new Map();
       const parsed = JSON.parse(saved);
-      // Migrar formato viejo (array de strings) al nuevo (objeto clave→cantidad)
       if (Array.isArray(parsed)) {
         return new Map((parsed as string[]).map(k => [k, 0]));
       }
       return new Map(Object.entries(parsed) as [string, number][]);
     } catch { return new Map(); }
   });
+
+  const [localidadCorreccion, setLocalidadCorreccion] = useState<string>('');
+  const [localidadesSeleccionadas, setLocalidadesSeleccionadas] = useState<string[]>([]);
+  const [busquedaLocalidad, setBusquedaLocalidad] = useState('');
+  const [correctorLocalidadExpandido, setCorrectorLocalidadExpandido] = useState(false);
+  const [gruposLocalidadDescartados, setGruposLocalidadDescartados] = useState<Map<string, number>>(() => {
+    if (typeof window === 'undefined') return new Map();
+    try {
+      const saved = localStorage.getItem('localidad_grupos_ok');
+      if (!saved) return new Map();
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return new Map((parsed as string[]).map(k => [k, 0]));
+      }
+      return new Map(Object.entries(parsed) as [string, number][]);
+    } catch { return new Map(); }
+  });
+
   interface VarianteEmpleador {
     normalizado: string;
     variantes: string[];
@@ -494,6 +510,65 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
     try { localStorage.removeItem('empleador_grupos_ok'); } catch { }
   }, []);
 
+  // Localidad corrector helpers
+const variantesLocalidadConDuplicados = useMemo(() => {
+    const lista = registros.map(r => r.localidad).filter(Boolean) as string[];
+    if (!lista) return [];
+    const myMap = new Map<string, Set<string>>();
+    for (const locVar of lista) {
+      const key = String(locVar).toUpperCase().trim();
+      if (!myMap.has(key)) myMap.set(key, new Set());
+      myMap.get(key)!.add(String(locVar));
+    }
+    return Array.from(myMap.entries())
+      .filter(([_, vars]) => vars.size > 1)
+      .map(([normalizado, variantes]) => ({
+        normalizado,
+        variantes: Array.from(variantes),
+        cantidad: variantes.size,
+      }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }, [registros]);
+
+  // Todas las localidades para buscar
+  const todasLasLocalidadess = useMemo(() => {
+    const lista = registros.map(r => r.localidad).filter(Boolean) as string[];
+    return Array.from(new Set(lista)).sort();
+  }, [registros]);
+
+  // Localidades filtradas por búsqueda
+  const localidadesFiltradas = useMemo(() => {
+    if (!busquedaLocalidad.trim()) return variantesLocalidadConDuplicados;
+    const q = busquedaLocalidad.toLowerCase();
+    return variantesLocalidadConDuplicados.filter(v => 
+      v.normalizado.toLowerCase().includes(q) || 
+      v.variantes.some(lv => lv.toLowerCase().includes(q))
+    );
+  }, [busquedaLocalidad, variantesLocalidadConDuplicados]);
+
+  // Si no hay duplicados pero hay búsqueda, mostrar todas las localidades
+  const listaLocalidadess = busquedaLocalidad.trim() 
+    ? todasLasLocalidadess.filter(l => l.toLowerCase().includes(busquedaLocalidad.toLowerCase())).map(l => ({
+      normalizado: l.toUpperCase(),
+      variantes: [l],
+      cantidad: 1
+    }))
+    : localidadesFiltradas;
+
+  const descartarGrupoLocalidad = useCallback((normalizado: string) => {
+    setGruposLocalidadDescartados(prev => {
+      const next = new Map(prev);
+      next.set(normalizado, 1);
+      try { localStorage.setItem('localidad_grupos_ok', JSON.stringify(Object.fromEntries(next))); } catch { }
+      return next;
+    });
+  }, []);
+
+  const restaurarDescartadosLocalidad = useCallback(() => {
+    setGruposLocalidadDescartados(new Map());
+    try { localStorage.removeItem('localidad_grupos_ok'); } catch { }
+  }, []);
+
   // ── Cargar registros de un grupo de variantes ──────────────────────────
   const cargarRegistrosGrupo = useCallback(async (variantes: string[], grupoNombre: string) => {
     setModalLoading(true);
@@ -662,6 +737,67 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
     }
   }, [empleadoresSeleccionados, empleadorCorreccion, mutateRegistros, pushBulkRefresh, modalOpen, modalRegistros, modalGrupo, variantesConDuplicados, cargarRegistrosGrupo]);
 
+  const corregirLocalidad = useCallback(async () => {
+    if (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) {
+      setToast({ message: 'Seleccioná al menos una localidad y escribí el nombre correcto', type: 'error' });
+      return;
+    }
+    setUpdating(true);
+    let actualizados = 0;
+    let errores = 0;
+    for (const loc of localidadesSeleccionadas) {
+      const { error } = await supabase
+        .from('registros')
+        .update({ localidad: localidadCorreccion.trim() })
+        .eq('localidad', loc);
+      if (error) errores++;
+      else actualizados++;
+    }
+    setUpdating(false);
+    if (errores > 0) {
+      setToast({ message: `Actualizadas ${actualizados}, ${errores} errores`, type: 'error' });
+    } else {
+      const correctedName = localidadCorreccion.trim();
+      const oldVars = [...localidadesSeleccionadas];
+      setToast({ message: `${actualizados} localidad(es) corregida(s)`, type: 'success' });
+      setLocalidadesSeleccionadas([]);
+      setLocalidadCorreccion('');
+      mutateRegistros(prev => prev.map(r =>
+        oldVars.includes(r.localidad ?? '') ? { ...r, localidad: correctedName } : r
+      ));
+      pushBulkRefresh();
+    }
+  }, [localidadesSeleccionadas, localidadCorreccion, mutateRegistros, pushBulkRefresh]);
+
+  const agregarNuevaLocalidad = useCallback(async () => {
+    if (!localidadCorreccion.trim()) {
+      setToast({ message: 'Escribí el nombre de la nueva localidad', type: 'error' });
+      return;
+    }
+    setUpdating(true);
+    try {
+      // Crear un registro dummy para que la localidad aparezca en los dropdowns
+      const { error } = await supabase.from('registros').insert({
+        localidad: localidadCorreccion.trim(),
+        nombre: 'NUEVA LOCALIDAD',
+        cuil: '00000000000',
+        analista: 'Sistema',
+        estado: 'derivado / rechazado cc',
+        comentarios: 'Localidad agregada desde corrector',
+      });
+      
+      if (error) throw error;
+      
+      setToast({ message: `Localidad "${localidadCorreccion.trim()}" creada`, type: 'success' });
+      setLocalidadCorreccion('');
+      pushBulkRefresh();
+    } catch (err) {
+      console.error(err);
+      setToast({ message: 'Error al agregar localidad', type: 'error' });
+    } finally {
+      setUpdating(false);
+    }
+  }, [localidadCorreccion, pushBulkRefresh]);
 
   useEffect(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
@@ -1081,6 +1217,173 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
         </div>
       )}
 
+      {/* ── CORRECTOR DE LOCALIDAD ──────────────────────────────────────────── */}
+      {(mode === 'all' || mode === 'corrector') && (
+        <div style={{
+          marginBottom: '28px', padding: '20px',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '10px',
+        }}>
+          <div 
+            onClick={() => setCorrectorLocalidadExpandido(!correctorLocalidadExpandido)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorLocalidadExpandido ? 16 : 0, cursor: 'pointer' }}
+          >
+            <CheckCircle size={18} color="#555" />
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+              Corrector de Localidad
+              {correctorLocalidadExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+            </h4>
+          </div>
+
+          {correctorLocalidadExpandido && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                    Nombre correcto
+                  </label>
+                  <input
+                    className="form-input"
+                    placeholder="Ej: PARANA"
+                    value={localidadCorreccion}
+                    onChange={e => setLocalidadCorreccion(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && corregirLocalidad()}
+                    style={{
+                      background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <button
+                  onClick={corregirLocalidad}
+                  disabled={updating || localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()}
+                  style={{
+                    background: (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) ? '#333' : '#fbbf24',
+                    color: (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) ? '#666' : '#000',
+                    border: 'none', borderRadius: '6px', padding: '10px 24px',
+                    fontSize: '11px', fontWeight: 900, cursor: (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase', letterSpacing: '1px',
+                    flexShrink: 0,
+                  }}
+                >
+                  {updating ? 'CORRIGIENDO...' : `CORREGIR ${localidadesSeleccionadas.length} LOCALIDAD(ES)`}
+                </button>
+                <button
+                  onClick={() => {
+                    if (!localidadCorreccion.trim()) {
+                      setToast({ message: 'Escribí el nombre de la nueva localidad', type: 'error' });
+                      return;
+                    }
+                    agregarNuevaLocalidad();
+                  }}
+                  disabled={updating || !localidadCorreccion.trim()}
+                  style={{
+                    background: (!localidadCorreccion.trim()) ? '#333' : 'rgba(16,185,129,0.15)',
+                    color: (!localidadCorreccion.trim()) ? '#666' : '#34d399',
+                    border: '1px solid rgba(16,185,129,0.3)',
+                    borderRadius: '6px', padding: '10px 24px',
+                    fontSize: '11px', fontWeight: 900, cursor: (!localidadCorreccion.trim()) ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase', letterSpacing: '1px',
+                    flexShrink: 0,
+                  }}
+                >
+                  AGREGAR NUEVA LOCALIDAD
+                </button>
+                <input
+                  className="form-input"
+                  placeholder="Buscar localidad..."
+                  value={busquedaLocalidad}
+                  onChange={e => setBusquedaLocalidad(e.target.value)}
+                  style={{
+                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', flex: 1, outline: 'none',
+                  }}
+                />
+              </div>
+
+              {localidadesSeleccionadas.length > 0 && (
+                <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+                  Seleccionadas: {localidadesSeleccionadas.length} — {localidadCorreccion || '(sin nombre correcto)'}
+                </div>
+              )}
+
+              {/* Lista de localidades */}
+              {(listaLocalidadess.length > 0 || busquedaLocalidad.trim()) ? (
+                <div style={{ marginTop: '20px', maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
+                  {listaLocalidadess.map((v, i) => (
+                    <div key={i} style={{
+                      marginBottom: 12, padding: '12px 14px',
+                      background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>
+                          {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                          {v.cantidad > 1 && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); descartarGrupoLocalidad(v.normalizado); }}
+                              title="Marcar como correcto"
+                              style={{
+                                background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+                                color: '#34d399', borderRadius: '4px', padding: '2px 8px',
+                                fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                                textTransform: 'uppercase', letterSpacing: '0.5px',
+                                display: 'flex', alignItems: 'center', gap: 4,
+                              }}
+                            >
+                              <CheckCircle size={10} /> OK
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {v.variantes.map((varName, j) => {
+                          const isSelected = localidadesSeleccionadas.includes(varName);
+                          return (
+                            <span
+                              key={j}
+                              onClick={() => {
+                                setLocalidadesSeleccionadas(prev =>
+                                  isSelected ? prev.filter(v => v !== varName) : [...prev, varName]
+                                );
+                              }}
+                              style={{
+                                padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
+                                background: isSelected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
+                                border: isSelected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
+                                color: isSelected ? '#fbbf24' : '#888',
+                                fontWeight: 600, cursor: 'pointer',
+                              }}
+                            >
+                              {varName}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+                  <p>{busquedaLocalidad ? 'No se encontraron resultados.' : 'No hay localidades en la base.'}</p>
+                  {busquedaLocalidad && (
+                    <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
+                      Intentá con otro término.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
         {/* STEP 1: FILTROS */}
         {(mode === 'all' || mode === 'bulk') && step === 'filter' && (
           <>
@@ -1432,7 +1735,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
               {fieldSection('Localidad',
                 <select className="form-select" value={campos.localidad} onChange={e => setCampos(p => ({ ...p, localidad: e.target.value }))}>
                   <option value="">— No modificar —</option>
-                  {LOCALIDADES.map(l => <option key={l} value={l}>{l}</option>)}
+                  {registros.map(r => r.localidad).filter((l, i, arr) => l && arr.indexOf(l) === i).sort().map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               )}
             </div>
