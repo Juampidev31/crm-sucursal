@@ -1079,32 +1079,34 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'stretch' }}>
           {weeklyStats.totals.map((w) => (
-            <div key={w.label} style={{ flex: '1 1 120px', minWidth: 110, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', textAlign: 'center' }}>
+            <div key={w.label} style={{ flex: '1 1 120px', minWidth: 110, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '14px 10px', display: 'flex', flexDirection: 'column', alignItems: 'stretch', textAlign: 'center', minHeight: analistaFil2 !== 'ninguno' ? 160 : 'auto' }}>
               <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', marginBottom: '14px', letterSpacing: '0.5px' }}>{w.label}</div>
               
-              {/* Analista 1 */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: analistaFil2 !== 'ninguno' ? 12 : 0, paddingBottom: analistaFil2 !== 'ninguno' ? 12 : 0, borderBottom: analistaFil2 !== 'ninguno' ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                {analistaFil2 !== 'ninguno' && <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil}</div>}
-                <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
-                {dateRangeAnterior && w.prevTotal !== undefined && (
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
-                    {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}%
-                  </div>
-                )}
-              </div>
-
-              {/* Analista 2 */}
-              {analistaFil2 !== 'ninguno' && (
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil2}</div>
-                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total2)}</div>
-                  {dateRangeAnterior && w.prevTotal2 !== undefined && (
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
-                      {w.vsPrev2 >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev2).toFixed(1)}%
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                {/* Analista 1 */}
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: analistaFil2 !== 'ninguno' ? 12 : 0, paddingBottom: analistaFil2 !== 'ninguno' ? 12 : 0, borderBottom: analistaFil2 !== 'ninguno' ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+                  {analistaFil2 !== 'ninguno' && <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil}</div>}
+                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
+                  {dateRangeAnterior && w.prevTotal !== undefined && (
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
+                      {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}%
                     </div>
                   )}
                 </div>
-              )}
+
+                {/* Analista 2 */}
+                {analistaFil2 !== 'ninguno' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil2}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total2)}</div>
+                    {dateRangeAnterior && w.prevTotal2 !== undefined && (
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
+                        {w.vsPrev2 >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev2).toFixed(1)}%
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
           <div id="chart-at-estacionalidad" style={{ flex: '2 1 300px', minWidth: 280, background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '12px', minHeight: 140 }}>
