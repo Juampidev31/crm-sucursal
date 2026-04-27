@@ -22,6 +22,7 @@ export interface AnalisisTemporalState {
   fechaDesde: string;
   fechaHasta: string;
   collapsedSections: Record<number, boolean>;
+  mostrarVariaciones: boolean;
 }
 
 interface Props {
@@ -82,6 +83,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
     return new Date();
   }, [initialYear, initialMonth]);
   const [compararPeriodo, setCompararPeriodo] = useState(initialState?.compararPeriodo ?? true);
+  const [mostrarVariaciones, setMostrarVariaciones] = useState(initialState?.mostrarVariaciones ?? true);
   const [fechaDesde, setFechaDesde] = useState(initialState?.fechaDesde ?? '');
   const [fechaHasta, setFechaHasta] = useState(initialState?.fechaHasta ?? '');
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>(
@@ -90,9 +92,9 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
 
   useEffect(() => {
     if (onStateChange) {
-      onStateChange({ periodo, analistaFil, analistaFil2, metrica, compararPeriodo, fechaDesde, fechaHasta, collapsedSections });
+      onStateChange({ periodo, analistaFil, analistaFil2, metrica, compararPeriodo, mostrarVariaciones, fechaDesde, fechaHasta, collapsedSections });
     }
-  }, [periodo, analistaFil, analistaFil2, metrica, compararPeriodo, fechaDesde, fechaHasta, collapsedSections, onStateChange]);
+  }, [periodo, analistaFil, analistaFil2, metrica, compararPeriodo, mostrarVariaciones, fechaDesde, fechaHasta, collapsedSections, onStateChange]);
 
   const toggleSection = (id: number) => {
     setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -816,12 +818,48 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
-              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Comparar</div>
+              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Controles</div>
               <button
                 onClick={() => setCompararPeriodo(v => !v)}
-                style={{ width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', background: compararPeriodo ? 'rgba(34,197,94,0.8)' : '#333', position: 'relative', transition: 'background 0.2s' }}
+                style={{
+                  background: compararPeriodo ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${compararPeriodo ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: '12px',
+                  padding: '8px 16px',
+                  color: compararPeriodo ? '#22c55e' : '#888',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'all 0.2s',
+                  marginBottom: '4px'
+                }}
               >
-                <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: compararPeriodo ? 25 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: compararPeriodo ? '#22c55e' : '#555' }} />
+                {compararPeriodo ? 'Comparación: ON' : 'Comparación: OFF'}
+              </button>
+
+              <button
+                onClick={() => setMostrarVariaciones(v => !v)}
+                style={{
+                  background: mostrarVariaciones ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${mostrarVariaciones ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: '12px',
+                  padding: '8px 16px',
+                  color: mostrarVariaciones ? '#3b82f6' : '#888',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: mostrarVariaciones ? '#3b82f6' : '#555' }} />
+                {mostrarVariaciones ? 'Variaciones: ON' : 'Variaciones: OFF'}
               </button>
             </div>
           </div>
@@ -895,9 +933,9 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                       <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{displayVal(s.val1)}</div>
-                      {s.var1 !== undefined && <VariacionBadge valor={s.var1} />}
+                      {mostrarVariaciones && s.var1 !== undefined && <VariacionBadge valor={s.var1} />}
                     </div>
-                    {s.prev1 !== undefined && <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev1)}</div>}
+                    {mostrarVariaciones && dateRangeAnterior && s.prev1 !== undefined && <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev1)}</div>}
                   </div>
 
                   {/* Analista 2 (Comparación) */}
@@ -909,9 +947,9 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                       </div>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                         <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{displayVal(s.val2)}</div>
-                        {s.var2 !== undefined && <VariacionBadge valor={s.var2} />}
+                        {mostrarVariaciones && s.var2 !== undefined && <VariacionBadge valor={s.var2} />}
                       </div>
-                      {s.prev2 !== undefined && <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev2)}</div>}
+                      {mostrarVariaciones && dateRangeAnterior && s.prev2 !== undefined && <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>Ant: {displayVal(s.prev2)}</div>}
                     </div>
                   )}
                 </div>
@@ -1087,7 +1125,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginBottom: analistaFil2 !== 'ninguno' ? 12 : 0, paddingBottom: analistaFil2 !== 'ninguno' ? 12 : 0, borderBottom: analistaFil2 !== 'ninguno' ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
                   {analistaFil2 !== 'ninguno' && <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil}</div>}
                   <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
-                  {dateRangeAnterior && w.prevTotal !== undefined && (
+                  {mostrarVariaciones && dateRangeAnterior && w.prevTotal !== undefined && (
                     <>
                       <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
                         {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
@@ -1104,7 +1142,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <div style={{ fontSize: 9, color: '#888', fontWeight: 800, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{analistaFil2}</div>
                     <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total2)}</div>
-                    {dateRangeAnterior && w.prevTotal2 !== undefined && (
+                    {mostrarVariaciones && dateRangeAnterior && w.prevTotal2 !== undefined && (
                       <>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
                           {w.vsPrev2 >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev2).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
