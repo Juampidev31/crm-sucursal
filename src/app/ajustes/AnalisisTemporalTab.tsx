@@ -157,10 +157,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
     [registros]
   );
 
-  const analisisAnalistas = useMemo(() =>
-    Array.from(new Set(registros.map(r => r.analista).filter(Boolean) as string[])),
-    [registros]
-  );
+  const analisisAnalistas = CONFIG.ANALISTAS_DEFAULT;
 
   const PERIODOS = useMemo(() => {
     const list: { label: string; value: number; disabled?: boolean }[] = [
