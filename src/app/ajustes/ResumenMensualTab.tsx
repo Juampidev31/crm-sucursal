@@ -1297,7 +1297,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
         return ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
       }),
-      ventasMesAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0),
+      ventasMesAnt.filter(isVenta).reduce((s, r) => s + (Number(r.monto) || 0), 0),
     ];
     const objetivo = [...kpiPorAnalista.map(k => k.metaCapital || 0), kpiTotal.metaCapital || 0];
     return {
@@ -1319,7 +1319,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         const cap = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
         return ant.length > 0 ? cap / ant.length : 0;
       }),
-      ventasMesAnt.length > 0 ? ventasMesAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0) / ventasMesAnt.length : 0,
+      (() => {
+        const vAnt = ventasMesAnt.filter(isVenta);
+        return vAnt.length > 0 ? vAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0) / vAnt.length : 0;
+      })(),
     ];
     return {
       labels,
@@ -1347,7 +1350,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   // ── Chart 7: Aperturas vs Renovaciones ───────────────────────────────────
   const apertVsRenData = useMemo(() => {
     const allVentas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
-    const allAnt = ventasMesAnt;
+    const allAnt = ventasMesAnt.filter(isVenta);
     return {
       porAnalista: CONFIG.ANALISTAS_DEFAULT.map(analista => {
         const v = allVentas.filter(r => r.analista === analista);
@@ -1388,7 +1391,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const empleoPublPrivData = useMemo(() => {
     const PUBLICO = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
     const ventas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
-    const ant = ventasMesAnt;
+    const ant = ventasMesAnt.filter(isVenta);
     const classify = (r: typeof ventas[0]) => {
       const e = (r.empleador ?? '').toLowerCase();
       return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'No especificado' : 'Privado';
