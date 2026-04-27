@@ -1051,6 +1051,10 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
         </div>
         <div style={{ display: 'flex', gap: 24, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 16 }}>
           <div>
+            <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase' }}>Total Período</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 2 }}>{fmt(weeklyStats.totals.reduce((acc, curr) => acc + curr.total, 0))}</div>
+          </div>
+          <div>
             <div style={{ fontSize: 10, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase' }}>Mejor Sem</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginTop: 2 }}>{weeklyStats.best.label}</div>
           </div>
