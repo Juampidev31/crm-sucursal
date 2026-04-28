@@ -15,7 +15,6 @@ const AVAILABLE_ROUTES = [
   { path: '/ajustes', label: 'Ajustes' },
   { path: '/proyeccion', label: 'Proyección' },
   { path: '/analistas', label: 'Analistas' },
-  { path: '/metricas', label: 'Métricas' },
   { path: '/recordatorios', label: 'Recordatorios' },
 ];
 

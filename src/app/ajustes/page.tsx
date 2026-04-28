@@ -14,12 +14,13 @@ import {
   Settings, Target, Activity, Copy, Shield, AlertTriangle,
   CheckCircle, User, ShieldCheck, BarChart3, Calendar, TrendingUp, Trash2,
   Search, Filter, Download, ArrowRight, Eye, Edit3, Plus, Users,
-  ChevronLeft, ChevronRight, RefreshCw
+  ChevronLeft, ChevronRight, RefreshCw, PieChart
 } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
 import ResumenMensualTab from './ResumenMensualTab';
 import BulkModifyTab from './BulkModifyTab';
 import AvisosTab from './AvisosTab';
+import MetricasTab from './MetricasTab';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
@@ -27,7 +28,7 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ObjetivoRow = { analista: string; mes: number; meta_ventas: number; meta_operaciones: number };
-type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos';
+type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'metricas' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -538,6 +539,7 @@ export default function AjustesPage() {
             { id: 'dias', label: 'Días Hábiles', icon: Clock },
             { id: 'historico', label: 'Histórico', icon: History },
             { id: 'objetivos', label: 'Objetivos', icon: Target },
+            { id: 'metricas', label: 'Métricas', icon: PieChart },
             { id: 'duplicados', label: 'Duplicados', icon: Copy },
             { id: 'auditoria', label: 'Auditoría', icon: Shield },
             { id: 'resumen-mensual', label: 'Resumen Mensual', icon: BarChart3 },
@@ -1515,6 +1517,13 @@ export default function AjustesPage() {
               </div>
             );
           })()}
+
+          {/* TAB: METRICAS */}
+          {activeTab === 'metricas' && (
+            <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <MetricasTab />
+            </div>
+          )}
 
           {/* TAB: RESUMEN MENSUAL */}
           {activeTab === 'resumen-mensual' && (

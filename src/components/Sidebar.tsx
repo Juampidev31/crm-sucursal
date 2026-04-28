@@ -200,7 +200,6 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
           active={pathname === '/registros'}
         />
         <NavItem href="/analistas" icon={BarChart2} label="Reportes" active={pathname === '/analistas'} />
-        <NavItem href="/metricas" icon={PieChart} label="Métricas" active={pathname === '/metricas'} />
         <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
 
         <SidebarDivider />
