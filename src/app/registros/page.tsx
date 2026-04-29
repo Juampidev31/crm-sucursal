@@ -1230,22 +1230,6 @@ export default function RegistrosPage() {
 
   // ── Animaciones ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @keyframes pulseGlow {
-        0% { opacity: 0.4; transform: scale(0.95); box-shadow: 0 0 5px currentColor; }
-        50% { opacity: 1; transform: scale(1.05); box-shadow: 0 0 12px currentColor; }
-        100% { opacity: 0.4; transform: scale(0.95); box-shadow: 0 0 5px currentColor; }
-      }
-      .score-dot-pulse {
-        animation: pulseGlow 2.5s infinite ease-in-out;
-      }
-    `;
-    document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
-  }, []);
-
-  useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
@@ -1480,13 +1464,12 @@ export default function RegistrosPage() {
                   return (
                     <tr
                       key={reg.id}
+                      className="hover-row"
                       style={{
                         borderBottom: '1px solid rgba(255,255,255,0.02)',
-                        transition: 'all 0.2s ease',
+                        transition: 'all 0.1s ease',
                         cursor: 'default',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.012)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       {/* Cliente */}
                       <td style={{ padding: '18px 24px', minWidth: 220, textAlign: 'left' }}>
@@ -1501,7 +1484,7 @@ export default function RegistrosPage() {
                                 letterSpacing: '1.5px'
                               }}>RE</span>
                             )}
-                            {reg.cuil && <div style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
+                            {reg.cuil && <div className="cuil-text" style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
                           </div>
                           {vencidoIds.has(reg.id) && (
                             <span style={{

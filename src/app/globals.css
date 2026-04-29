@@ -383,8 +383,43 @@ a {
   color: #cbd5e1;
 }
 
-.data-table tr:hover {
-  background: rgba(255, 255, 255, 0.01);
+.data-table tr:hover, 
+.hover-row:hover {
+  transform: scale(1.007) translateY(-1px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5) !important;
+  z-index: 10;
+  position: relative;
+}
+
+.data-table tr:hover td, 
+.hover-row:hover td {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #fff !important;
+  cursor: pointer;
+}
+
+.data-table tr:hover td *, 
+.hover-row:hover td * {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+/* EL CUIL EN VERDE AL HACER HOVER */
+.hover-row:hover .cuil-text, 
+.data-table tr:hover .cuil-text {
+  color: #22c55e !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+
+.data-table tr, 
+.hover-row {
+  transition: all 0.2s ease !important;
+}
+
+.data-table tr td, 
+.hover-row td {
+  transition: all 0.2s ease !important;
 }
 
 /* ============ BADGES ============ */
