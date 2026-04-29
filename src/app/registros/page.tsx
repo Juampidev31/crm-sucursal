@@ -1137,7 +1137,7 @@ function MultiSelectDropdown({
 
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
-  const { registros, applyRegistroChange, loading, refresh, registrosWindowMonths, setRegistrosWindowMonths } = useRegistros();
+  const { registros, applyRegistroChange, loading, refresh } = useRegistros();
   const { alertasConfig } = useSettings();
   const {
     filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,

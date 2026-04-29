@@ -98,10 +98,10 @@ const DistBlock = ({
             alignItems: 'center',
             flexShrink: 0
           }}>
-            <span style={{ fontSize: 10, color: '#777', fontWeight: 700, fontStyle: 'italic' }}>
+            <span style={{ fontSize: 10, color: '#999', fontWeight: 700, fontStyle: 'italic' }}>
               * {noEspData.cantidad} sin especificar
             </span>
-            <span style={{ fontSize: 9, color: '#666', fontWeight: 600 }}>{formatCurrency(noEspData.monto)}</span>
+            <span style={{ fontSize: 9, color: '#888', fontWeight: 600 }}>{formatCurrency(noEspData.monto)}</span>
           </div>
         )}
 
@@ -297,7 +297,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const nowMonth = now.getMonth() + 1;
     const nowYear = now.getFullYear();
     const monthsBack = (nowYear - selectedAnio) * 12 + (nowMonth - selectedMes) + 2;
-    setRegistrosWindowMonths(Math.max(6, monthsBack));
+    const nextWindow = Math.max(6, monthsBack);
+    setRegistrosWindowMonths(prev => Math.max(prev, nextWindow));
   }, [selectedMes, selectedAnio, setRegistrosWindowMonths]);
 
   // ── Fetch al cambiar mes/año ──────────────────────────────────────────────

@@ -228,7 +228,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
               >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>Ver</span>
-                  <span style={{ fontSize: 14, fontWeight: 900 }}>{pageSize}</span>
+                  <span style={{ fontSize: pageSize >= 1000 ? 18 : 14, fontWeight: 900 }}>{pageSize >= 1000 ? '∞' : pageSize}</span>
                 </div>
               </button>
               {showPageSizeSelector && (
@@ -248,7 +248,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
                     {totalResults} registros
                   </div>
                   <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 8px 4px' }} />
-                  {[25, 50, 100, 200].map(size => (
+                  {[25, 50, 100, 200, 999999].map(size => (
                     <button
                       key={size}
                       onClick={() => { setPageSize(size); setShowPageSizeSelector(false); }}
@@ -262,7 +262,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
                         transition: 'all 0.15s',
                       }}
                     >
-                      {size} filas
+                      {size >= 1000 ? '∞ Todo' : `${size} filas`}
                     </button>
                   ))}
                 </div>

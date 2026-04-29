@@ -283,10 +283,10 @@ const DistBlock = ({
             alignItems: 'center',
             flexShrink: 0
           }}>
-            <span style={{ fontSize: 10, color: '#777', fontWeight: 700, fontStyle: 'italic' }}>
+            <span style={{ fontSize: 10, color: '#999', fontWeight: 700, fontStyle: 'italic' }}>
               * {noEspData.cantidad} sin especificar
             </span>
-            <span style={{ fontSize: 9, color: '#666', fontWeight: 600 }}>{formatCurrency(noEspData.monto)}</span>
+            <span style={{ fontSize: 9, color: '#888', fontWeight: 600 }}>{formatCurrency(noEspData.monto)}</span>
           </div>
         )}
 

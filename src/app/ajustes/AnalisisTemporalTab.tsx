@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Registro, CONFIG } from '@/types';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import CustomSelect from '@/components/CustomSelect';
 import { Line, Bar } from 'react-chartjs-2';
@@ -89,6 +90,8 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>(
     initialState?.collapsedSections ?? { 11: false }
   );
+  
+
 
   useEffect(() => {
     if (onStateChange) {
