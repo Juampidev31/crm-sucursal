@@ -1513,15 +1513,6 @@ export default function RegistrosPage() {
                       <td style={{ padding: '18px 24px', textAlign: 'center' }}>
                         {reg.puntaje ? (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <div
-                              className="score-dot-pulse"
-                              style={{
-                                width: 6, height: 6, borderRadius: '50%',
-                                background: reg.puntaje >= 700 ? '#60a5facc' : reg.puntaje >= 500 ? '#fbbf24cc' : '#ef4444cc',
-                                boxShadow: `0 0 10px ${reg.puntaje >= 700 ? '#60a5fa33' : reg.puntaje >= 500 ? '#fbbf2433' : '#ef444433'}`,
-                                color: reg.puntaje >= 700 ? '#60a5fa' : reg.puntaje >= 500 ? '#fbbf24' : '#ef4444',
-                              }}
-                            />
                             <span style={{ fontSize: '15px', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{reg.puntaje}</span>
                           </div>
                         ) : (
