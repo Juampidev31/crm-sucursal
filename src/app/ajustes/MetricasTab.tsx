@@ -85,13 +85,9 @@ const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: nu
 
 export default function MetricasTab() {
   const [mes, setMes] = useState(mesActual);
-  const { registros: regs, loading, setRegistrosWindowMonths } = useRegistros();
+  const { registros: regs, loading } = useRegistros();
 
-  useEffect(() => {
-    if (setRegistrosWindowMonths) {
-      setRegistrosWindowMonths(24);
-    }
-  }, [setRegistrosWindowMonths]);
+
 
   const getStatsForAnalista = (analista: string) => {
     let filtered = regs;

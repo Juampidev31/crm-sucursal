@@ -267,7 +267,7 @@ const ManualTextarea = ({ label, value, onChange, placeholder }: {
 
 export default function ResumenMensualTab({ registros, objetivos, onSuccess, onError }: Props) {
   const [seccion10State, setSeccion10State] = useState<AnalisisTemporalState | null>(null);
-  const { setRegistrosWindowMonths } = useRegistros();
+
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
   const [resumen, setResumen] = useState<ResumenMensual>(EMPTY_RESUMEN());
@@ -292,14 +292,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // ── Expandir ventana de registros según mes seleccionado ─────────────────
-  useEffect(() => {
-    const nowMonth = now.getMonth() + 1;
-    const nowYear = now.getFullYear();
-    const monthsBack = (nowYear - selectedAnio) * 12 + (nowMonth - selectedMes) + 2;
-    const nextWindow = Math.max(6, monthsBack);
-    setRegistrosWindowMonths(prev => Math.max(prev, nextWindow));
-  }, [selectedMes, selectedAnio, setRegistrosWindowMonths]);
+
 
   // ── Fetch al cambiar mes/año ──────────────────────────────────────────────
   useEffect(() => {

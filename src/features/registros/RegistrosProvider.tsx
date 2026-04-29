@@ -73,22 +73,34 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const { broadcast } = useRealtimeBroadcast('registros-updates', (payload) => {
-    if (payload.type === 'REFRESH_ALL') {
-      refresh(true);
-      return;
-    }
-    const result = registroChangeSchema.safeParse(payload);
-    if (result.success) {
-      if (validateBroadcast(result.data.registro)) {
-        applyRegistroChange(result.data.type, result.data.registro);
+  const channelRef = useRealtimeBroadcast('registros-updates', {
+    update: (payload) => {
+      if (payload.type === 'REFRESH_ALL') {
+        refresh(true);
+        return;
+      }
+      const data = validateBroadcast('update', registroChangeSchema, payload);
+      if (data) {
+        applyRegistroChange(data.type, data.registro);
       }
     }
   });
 
   const pushBulkRefresh = useCallback(() => {
-    broadcast({ type: 'REFRESH_ALL' });
-  }, [broadcast]);
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'update',
+      payload: { type: 'REFRESH_ALL' }
+    });
+  }, [channelRef]);
+
+  const pushRegistroChange = useCallback((type: ChangeType, registro: any) => {
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'update',
+      payload: { type, registro }
+    });
+  }, [channelRef]);
 
   const value = useMemo(() => ({
     registros, loading,

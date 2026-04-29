@@ -303,14 +303,13 @@ export default function AnalistasPage() {
   const [anio, setAnio] = useState(now.getFullYear());
   const [compararMesAnterior, setCompararMesAnterior] = useState(false);
 
-  const { registros: rawRegs, loading, setRegistrosWindowMonths } = useRegistros();
+  const { registros: rawRegs, loading } = useRegistros();
   const { objetivos: todosObjs } = useObjetivos();
   const { historicoVentas } = useHistorico();
   const { diasConfig: diasCfg, alertasConfig } = useSettings();
   const todosRegs = rawRegs as unknown as Reg[];
 
-  // Analistas usa tendencias YoY y mensuales → necesita 24m de historia
-  useEffect(() => { setRegistrosWindowMonths(24); }, [setRegistrosWindowMonths]);
+
   const [analistasSel, setAnalistasSel] = useState<string[]>([]);
 
   useEffect(() => {
