@@ -788,9 +788,12 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     if (pct === null) return <span style={{ color: '#333' }}>—</span>;
     const color = pct >= 0 ? '#34d399' : '#f87171';
     return (
-      <span style={{ fontSize: 11, fontWeight: 700, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4 }}>
-        {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+          {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
+        </span>
+        <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+      </div>
     );
   };
 
@@ -906,10 +909,18 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       .reduce((s, r) => s + (Number(r.monto) || 0), 0);
 
     const ventasAnt = filterByMonth(registros, mesPrev, anioPrev).filter(isVenta);
+    const regsAnt = filterByMonth(registros, mesPrev, anioPrev);
     const capitalAnt = ventasAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const opsAnt = ventasAnt.length;
+    const ticketAnt = opsAnt > 0 ? capitalAnt / opsAnt : 0;
+    const clientesAnt = regsAnt.length;
+    const conversionAnt = clientesAnt > 0 ? (opsAnt / clientesAnt) * 100 : 0;
+
     const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
     const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
+    const tendTicket = ticketAnt > 0 ? ((ticket - ticketAnt) / ticketAnt) * 100 : null;
+    const tendClientes = clientesAnt > 0 ? ((clientes - clientesAnt) / clientesAnt) * 100 : null;
+    const tendConversion = conversionAnt > 0 ? ((conversion - conversionAnt) / conversionAnt) * 100 : null;
 
     const obj = objetivos.find(o => o.analista === 'PDV' && o.mes === selectedMes - 1 && o.anio === selectedAnio);
     const metaCapital = obj?.meta_ventas ?? 0;
@@ -919,7 +930,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
     const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
 
-    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
+    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
@@ -1711,15 +1722,18 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
-                  <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}</div>
-                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {kpiTotal.cumplCapital !== null && (
-                      <span style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
-                        {kpiTotal.cumplCapital.toFixed(1)}% cumpl.
-                      </span>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
+                    {tendBadge(kpiTotal.tendCapital)}
                   </div>
+                  <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+                    Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
+                  </div>
+                  {kpiTotal.cumplCapital !== null && (
+                    <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
+                      {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
+                    </div>
+                  )}
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
@@ -1741,15 +1755,18 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
-                  <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}</div>
-                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    {kpiTotal.cumplOps !== null && (
-                      <span style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
-                        {kpiTotal.cumplOps.toFixed(1)}% cumpl.
-                      </span>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
+                    {tendBadge(kpiTotal.tendOps)}
                   </div>
+                  <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+                    Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
+                  </div>
+                  {kpiTotal.cumplOps !== null && (
+                    <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
+                      {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
+                    </div>
+                  )}
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
@@ -1782,9 +1799,18 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
-                  <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
-                  <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>{kpiTotal.clientes} clientes ingresados</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
+                    {tendBadge(kpiTotal.tendTicket)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                    <div style={{ fontSize: 12, color: '#555' }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
+                    {tendBadge(kpiTotal.tendConversion)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                    <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
+                    {tendBadge(kpiTotal.tendClientes)}
+                  </div>
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>

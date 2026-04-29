@@ -46,6 +46,19 @@ const baseChartOpts = (show = true) => ({
 
 const cumplColor = (pct: number | null) => !pct ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
 
+const tendBadge = (pct: number | null) => {
+  if (pct === null) return <span style={{ color: '#333' }}>—</span>;
+  const color = pct >= 0 ? '#34d399' : '#f87171';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+        {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
+      </span>
+      <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+    </div>
+  );
+};
+
 const sectionHeader = (title: string, icon: React.ReactNode) => (
   <div 
     style={{ 
@@ -195,21 +208,37 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:16}}>
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:20,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',textTransform:'uppercase',marginBottom:8}}>Capital Vendido</div>
-            <div style={{fontSize:22,fontWeight:900,color:'#fff'}}>{formatCurrency(kpiTotal.capital)}</div>
-            <div style={{fontSize:12,color:'#555',marginTop:4}}>Meta: {kpiTotal.metaCapital?formatCurrency(kpiTotal.metaCapital):'/'}</div>
-            {kpiTotal.cumplCapital && <div style={{marginTop:6,fontSize:12,fontWeight:800,color:cumplColor(kpiTotal.cumplCapital)}}>{kpiTotal.cumplCapital.toFixed(1)}% cumpl.</div>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{fontSize:22,fontWeight:900,color:'#fff'}}>{formatCurrency(kpiTotal.capital)}</div>
+              {tendBadge(kpiTotal.tendCapital)}
+            </div>
+            <div style={{fontSize:12,color:'#555',marginBottom:2}}>Meta: {kpiTotal.metaCapital?formatCurrency(kpiTotal.metaCapital):'/'}</div>
+            {kpiTotal.cumplCapital && <div style={{fontSize:12,fontWeight:800,color:cumplColor(kpiTotal.cumplCapital)}}>{kpiTotal.cumplCapital.toFixed(1)}% Cumpl.</div>}
             <div style={{marginTop:24,height:180}}><Bar data={chartCapital as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
           </div>
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:20,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',textTransform:'uppercase',marginBottom:8}}>Operaciones</div>
-            <div style={{fontSize:22,fontWeight:900,color:'#fff'}}>{kpiTotal.ops}</div>
-            <div style={{fontSize:12,color:'#555',marginTop:4}}>Meta: {kpiTotal.metaOps||'/'}</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{fontSize:22,fontWeight:900,color:'#fff'}}>{kpiTotal.ops}</div>
+              {tendBadge(kpiTotal.tendOps)}
+            </div>
+            <div style={{fontSize:12,color:'#555',marginBottom:2}}>Meta: {kpiTotal.metaOps||'/'}</div>
+            {kpiTotal.cumplOps && <div style={{fontSize:12,fontWeight:800,color:cumplColor(kpiTotal.cumplOps)}}>{kpiTotal.cumplOps.toFixed(1)}% Cumpl.</div>}
           </div>
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:20,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',textTransform:'uppercase',marginBottom:8}}>Ticket Promedio</div>
-            <div style={{fontSize:22,fontWeight:900,color:'#fff'}}>{formatCurrency(kpiTotal.ticket)}</div>
-            <div style={{fontSize:12,color:'#555',marginTop:4}}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
-            <div style={{fontSize:11,color:'#444',marginTop:4}}>{kpiTotal.clientes} clientes</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{fontSize:22,fontWeight:900,color:'#fff'}}>{formatCurrency(kpiTotal.ticket)}</div>
+              {tendBadge(kpiTotal.tendTicket)}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+              <div style={{fontSize:12,color:'#555'}}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
+              {tendBadge(kpiTotal.tendConversion)}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+              <div style={{fontSize:11,color:'#444'}}>{kpiTotal.clientes} clientes</div>
+              {tendBadge(kpiTotal.tendClientes)}
+            </div>
             <div style={{marginTop:24,height:180}}><Bar data={chartTicket as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
           </div>
         </div>

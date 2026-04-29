@@ -79,6 +79,9 @@ interface KPITotal {
   cumplOps: number | null;
   tendCapital: number | null;
   tendOps: number | null;
+  tendTicket: number | null;
+  tendConversion: number | null;
+  tendClientes: number | null;
   restanteCapital: number | null;
   restanteOps: number | null;
   montoVenta?: number;
@@ -200,6 +203,19 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
 
 const cumplColor = (pct: number | null) =>
   pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+
+const tendBadge = (pct: number | null) => {
+  if (pct === null) return <span style={{ color: '#333' }}>—</span>;
+  const color = pct >= 0 ? '#34d399' : '#f87171';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+        {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
+      </span>
+      <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+    </div>
+  );
+};
 
 const DistBlock = ({ 
   titulo, icon, datos, color, totalMes, maxItems = 5
@@ -399,9 +415,16 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginBottom: 24 }}>
             <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}</div>
-              {kpiTotal.cumplCapital !== null && <div style={{ marginTop: 6, fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>{kpiTotal.cumplCapital.toFixed(1)}% cumpl.</div>}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
+                {tendBadge(kpiTotal.tendCapital)}
+              </div>
+              <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}</div>
+              {kpiTotal.cumplCapital !== null && (
+                <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
+                  {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
+                </div>
+              )}
               <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase', letterSpacing: 0.8 }}>Capital vs Objetivo</div>
@@ -418,9 +441,16 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
 
             <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}</div>
-              {kpiTotal.cumplOps !== null && <div style={{ marginTop: 6, fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>{kpiTotal.cumplOps.toFixed(1)}% cumpl.</div>}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
+                {tendBadge(kpiTotal.tendOps)}
+              </div>
+              <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}</div>
+              {kpiTotal.cumplOps !== null && (
+                <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
+                  {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
+                </div>
+              )}
               <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase', letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
@@ -448,9 +478,18 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
 
             <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
-              <div style={{ fontSize: 11, color: '#444', marginTop: 4 }}>{kpiTotal.clientes} clientes ingresados</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
+                {tendBadge(kpiTotal.tendTicket)}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                <div style={{ fontSize: 12, color: '#555' }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
+                {tendBadge(kpiTotal.tendConversion)}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
+                {tendBadge(kpiTotal.tendClientes)}
+              </div>
               <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase', letterSpacing: 0.8 }}>Análisis vs {mesAnterior}</div>
