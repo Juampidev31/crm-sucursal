@@ -24,9 +24,21 @@ const DistBlock = ({
   color: string; totalMes: number; maxItems?: number;
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const totalCant = datos.reduce((s, d) => s + d.cantidad, 0);
-  const displayData = expanded ? datos : datos.slice(0, maxItems);
-  const hasMore = datos.length > maxItems;
+
+  // Separar datos válidos de "No especificado"
+  const validData = datos.filter(d => {
+    const l = d.label?.trim()?.toLowerCase();
+    return l !== 'no especificado' && l !== 'sin dato' && l !== '';
+  });
+  
+  const noEspData = datos.find(d => {
+    const l = d.label?.trim()?.toLowerCase();
+    return l === 'no especificado' || l === 'sin dato' || l === '';
+  });
+
+  const totalCant = validData.reduce((s, d) => s + d.cantidad, 0);
+  const displayData = expanded ? validData : validData.slice(0, maxItems);
+  const hasMore = validData.length > maxItems;
 
   return (
     <div style={{ 
@@ -60,7 +72,7 @@ const DistBlock = ({
             return (
               <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
-                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(d.label?.trim() === 'Sin dato' ? 'No especificado' : d.label?.trim()) || 'No especificado'}</span>
+                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                     <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
                     <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
@@ -74,6 +86,25 @@ const DistBlock = ({
             );
           })}
         </div>
+        
+        {/* Observación de no especificados */}
+        {noEspData && noEspData.cantidad > 0 && (
+          <div style={{ 
+            padding: '8px 14px', 
+            background: 'rgba(255,255,255,0.01)', 
+            borderTop: '1px solid rgba(255,255,255,0.03)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexShrink: 0
+          }}>
+            <span style={{ fontSize: 10, color: '#777', fontWeight: 700, fontStyle: 'italic' }}>
+              * {noEspData.cantidad} sin especificar
+            </span>
+            <span style={{ fontSize: 9, color: '#666', fontWeight: 600 }}>{formatCurrency(noEspData.monto)}</span>
+          </div>
+        )}
+
         {hasMore && (
           <button 
             onClick={() => setExpanded(!expanded)}
@@ -97,7 +128,7 @@ const DistBlock = ({
               flexShrink: 0
             }}
           >
-            {expanded ? 'Ver menos' : `Ver todos (${datos.length})`}
+            {expanded ? 'Ver menos' : `Ver todos (${validData.length})`}
             <ChevronDown size={12} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
           </button>
         )}
