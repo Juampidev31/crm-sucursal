@@ -52,7 +52,7 @@ const tendBadge = (pct: number | null) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
-        {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
+        {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
       </span>
       <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
     </div>
