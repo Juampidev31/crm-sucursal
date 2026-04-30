@@ -10,7 +10,7 @@ import { STATUS_LABEL } from '@/lib/utils';
 import { 
   AlignJustify, BarChart2, PieChart, FileText,
   DollarSign, Settings, Bell, Lock, LogOut, Plus, 
-  SlidersHorizontal, Download, ChevronDown, ChevronUp, X 
+  SlidersHorizontal, Download, ChevronDown, ChevronUp, X, Calculator
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -104,6 +104,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const isRegistros = pathname === '/registros';
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     if (showAdminModal) {
@@ -155,7 +156,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         boxShadow: 'inset -20px 0 40px rgba(0,0,0,0.5)',
         display: 'flex', flexDirection: 'row', // Change to row to support side panel
         alignItems: 'stretch',
-        width: showFilters ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
+        width: (showFilters || showCalculator) ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
         zIndex: 150,
         position: 'relative',
         transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -169,7 +170,7 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         paddingTop: 24,
         gap: 10,
         flexShrink: 0,
-        borderRight: showFilters ? '1px solid rgba(255,255,255,0.03)' : 'none',
+        borderRight: (showFilters || showCalculator) ? '1px solid rgba(255,255,255,0.03)' : 'none',
       }}>
         {isRegistros && (
           <>
@@ -303,6 +304,17 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         {isAdmin && (
           <>
             <SidebarDivider />
+            <NavItem
+              href="#"
+              icon={Calculator}
+              label="Calculadora Incentivos"
+              active={showCalculator}
+              onClick={(e) => {
+                e.preventDefault();
+                setShowCalculator(s => !s);
+                if (showFilters) setShowFilters(false);
+              }}
+            />
             <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname === '/ajustes'} />
           </>
         )}
@@ -362,6 +374,32 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
 
           <div style={{ flex: 1, overflow: 'hidden', padding: '16px 20px' }}>
             <FiltersContent />
+          </div>
+        </div>
+      )}
+
+      {/* Incentive Calculator Panel */}
+      {showCalculator && isAdmin && (
+        <div style={{
+          flex: 1,
+          display: 'flex', flexDirection: 'column',
+          background: 'rgba(255,255,255,0.005)',
+          overflow: 'hidden',
+          animation: 'fadeIn 0.4s ease-out'
+        }}>
+          <div style={{
+            padding: '28px 24px 20px',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          }}>
+            <span style={{ fontSize: '13px', fontWeight: 900, color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>Calculadora Sucursal B</span>
+            <button onClick={() => setShowCalculator(false)} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer' }}>
+              <Calculator size={16} />
+            </button>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+            <CalculadoraContent />
           </div>
         </div>
       )}
@@ -552,6 +590,90 @@ const FiltersContent = () => {
           <X size={14} strokeWidth={3} /> Limpiar Filtros
         </button>
       )}
+    </div>
+  );
+};
+
+// ── Calculator Content ───────────────────────────────────────────────────────
+
+const CalculadoraContent = () => {
+  const [pacts, setPacts] = useState({
+    capital: '',
+    operacion: '',
+    recupero90: '',
+    recupero120: '',
+    refi: ''
+  });
+
+  const calculate = (type: string, val: string) => {
+    const pct = parseFloat(val);
+    if (isNaN(pct) || pct < 80) return 0;
+    
+    // Valores para SUCURSAL B
+    const values: Record<string, { c1: number; c2: number; c3: number }> = {
+      capital: { c1: 62055, c2: 93703, c3: 141492 },
+      operacion: { c1: 42836, c2: 64682, c3: 97671 },
+      recupero90: { c1: 40801, c2: 52633, c3: 67897 },
+      recupero120: { c1: 40801, c2: 52633, c3: 67897 },
+      refi: { c1: 20400, c2: 26521, c3: 37129 }
+    };
+
+    const v = values[type];
+    if (pct < 100) return v.c1;
+    if (pct < 110) return v.c2;
+    return v.c3;
+  };
+
+  const results = {
+    capital: calculate('capital', pacts.capital),
+    operacion: calculate('operacion', pacts.operacion),
+    recupero90: calculate('recupero90', pacts.recupero90),
+    recupero120: calculate('recupero120', pacts.recupero120),
+    refi: calculate('refi', pacts.refi)
+  };
+
+  const total = Object.values(results).reduce((s, v) => s + v, 0);
+
+  const inputRow = (label: string, key: keyof typeof pacts) => (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>{label} (%)</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <input
+          type="number"
+          placeholder="%"
+          value={pacts[key]}
+          onChange={e => setPacts(p => ({ ...p, [key]: e.target.value }))}
+          style={{ width: '64px', height: 40, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', color: '#fff', textAlign: 'center', fontSize: 13, outline: 'none' }}
+        />
+        <div style={{ flex: 1, textAlign: 'right', fontSize: 13, fontWeight: 800, color: results[key] > 0 ? '#34d399' : '#333' }}>
+          {results[key] > 0 ? `$ ${results[key].toLocaleString('es-AR')}` : '—'}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.02)', marginBottom: 20 }}>
+        <div style={{ fontSize: 10, fontWeight: 900, color: '#fb923c', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 0.5 }}>Venta</div>
+        {inputRow('Capital', 'capital')}
+        {inputRow('Operación', 'operacion')}
+      </div>
+
+      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.02)', marginBottom: 20 }}>
+        <div style={{ fontSize: 10, fontWeight: 900, color: '#60a5fa', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 0.5 }}>Cobranzas</div>
+        {inputRow('Recupero 90-119', 'recupero90')}
+        {inputRow('Recupero 120-209', 'recupero120')}
+        {inputRow('REFI', 'refi')}
+      </div>
+
+      <div style={{ marginTop: 'auto', padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: 10, fontWeight: 900, color: '#444', textTransform: 'uppercase' }}>Total Estimado</span>
+          <span style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>$ {total.toLocaleString('es-AR')}</span>
+        </div>
+        <div style={{ fontSize: 9, color: '#333', textAlign: 'right' }}>Sucursal B</div>
+      </div>
     </div>
   );
 };

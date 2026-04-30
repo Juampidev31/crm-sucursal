@@ -2040,8 +2040,56 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                           </div>
                         </div>
                       </div>
-                      <div id="chart-embudo" style={{ height: 280 }}>
-                        <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
+                    <div id="chart-embudo" style={{ height: 280 }}>
+                      <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Total Conversión</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesActualLabel}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(124, 45, 18, 0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesAntLabel}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ height: 280 }}>
+                        <Bar data={chartConversionTotal} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                        <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
+                      </div>
+                      <div style={{ height: 280 }}>
+                        <Bar data={chartEmpleoPublPriv} options={baseChartOpts(' ops', false, true, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Acuerdos por Analista</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Luciana</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Victoria</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ height: 280 }}>
+                        <Bar data={chartAcuerdos} options={baseChartOpts(' ops', false, true, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
                   </div>

@@ -166,7 +166,14 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
 export default function ResumenHTML({ datos }: { datos: any }) {
   if (!datos?.kpiTotal) return <div style={{color:'#666'}}>Cargando...</div>;
 
-  const { kpiTotal, kpiPorAnalista, mesActual, mesAnterior, month, year, registros, experienciaCliente, analisisComercial, operacionProcesos, gestionesRealizadas, coordinacionSalidas, empresasEstrategicas, logros, desvios, accionesClave, dotacion, ausentismo, capacitacion, evaluacionDesempeno, planAcciones, distSexo, distCuotas, distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, distEstados } = datos;
+  const { 
+    kpiTotal, kpiPorAnalista, mesActual, mesAnterior, month, year, registros, 
+    experienciaCliente, analisisComercial, operacionProcesos, gestionesRealizadas, 
+    coordinacionSalidas, empresasEstrategicas, logros, desvios, accionesClave, 
+    dotacion, ausentismo, capacitacion, evaluacionDesempeno, planAcciones, 
+    distSexo, distCuotas, distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, 
+    chartConversionTotal, chartEmpleoPublPriv, chartAcuerdos, chartEmbudo 
+  } = datos;
 
   const allAnalistas = [...kpiPorAnalista, {analista:'Total PDV', ...kpiTotal}];
   const total = kpiTotal.capital;
@@ -289,6 +296,25 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>Variación % vs {mesAnterior}</div>
             <div style={{height:280}}><Bar data={chartVar as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
+          </div>
+          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
+            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>Embudo Comercial</div>
+            <div style={{height:280}}>{chartEmbudo && <Bar data={chartEmbudo as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} />}</div>
+          </div>
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:16,marginTop:16}}>
+          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
+            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>% Total Conversión</div>
+            <div style={{height:280}}>{chartConversionTotal && <Bar data={chartConversionTotal as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} />}</div>
+          </div>
+          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
+            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>% Empleo Público / Privado</div>
+            <div style={{height:280}}>{chartEmpleoPublPriv && <Bar data={chartEmpleoPublPriv as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} />}</div>
+          </div>
+          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
+            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>Acuerdos por Analista</div>
+            <div style={{height:280}}>{chartAcuerdos && <Bar data={chartAcuerdos as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} />}</div>
           </div>
         </div>
       </div>
