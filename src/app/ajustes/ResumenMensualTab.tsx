@@ -276,6 +276,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const [loadingData, setLoadingData] = useState(false);
   const [lastSnapshot, setLastSnapshot] = useState(''); // Estado para el HTML
   const [saving, setSaving] = useState(false);
+  const [publicLink, setPublicLink] = useState('');
+  const [copied, setCopied] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
     1: true,
     2: true,
@@ -537,7 +539,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         document.execCommand('copy');
         document.body.removeChild(inp);
       }
-      alert('✅ Link copiado al portapapeles:\n' + publicUrl);
+      setPublicLink(publicUrl);
       onSuccess('Link público generado y copiado');
     } catch (err: any) {
       alert('ERROR inesperado: ' + (err?.message || err));
@@ -1710,6 +1712,65 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         </div>
       </div>
 
+      {/* BANNER DE LINK GENERADO (A LO ANCHO) */}
+      {publicLink && (
+        <div style={{
+          background: 'rgba(16, 185, 129, 0.05)',
+          border: '1px solid rgba(16, 185, 129, 0.15)',
+          borderRadius: '16px',
+          padding: '24px 32px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '24px',
+          animation: 'fadeInDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          marginTop: '-16px', // Pegado un poco al toolbar
+          boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, overflow: 'hidden' }}>
+            <div style={{ 
+              width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
+              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                Link Público del Reporte Generado
+              </span>
+              <a href={publicLink} target="_blank" rel="noopener noreferrer" style={{
+                fontSize: '15px', color: '#fff', fontWeight: 700, textDecoration: 'none',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+              }}>
+                {publicLink}
+              </a>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(publicLink);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            style={{
+              padding: '12px 28px', borderRadius: '12px', border: 'none',
+              background: copied ? 'rgba(16, 185, 129, 0.2)' : '#10b981',
+              color: copied ? '#10b981' : '#000', fontSize: '12px', fontWeight: 900,
+              textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px',
+              transition: 'all 0.3s ease',
+              boxShadow: copied ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.3)'
+            }}
+          >
+            {copied ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+            )}
+            {copied ? 'Copiado' : 'Copiar Link'}
+          </button>
+        </div>
+      )}
+
       {loadingData ? (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '100px', flexDirection: 'column', gap: 20 }}>
           <div className="spinner" style={{ width: 40, height: 40, border: '3px solid rgba(255,255,255,0.05)', borderTopColor: '#fff' }} />
@@ -2010,16 +2071,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               </div>
             )}
           </div>
-          {/* ── SECCIÓN 4: MÉTRICAS COMPARATIVAS ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(4, '4. Métricas Comparativas', <PieChart size={15} color="#4ade80" />)}
-            {!collapsedSections[4] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} />}
-          </div>
 
-          {/* ── SECCIÓN 5: ANÁLISIS COMERCIAL ── */}
+          {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(5, '5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
-            {!collapsedSections[5] && (
+            {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+            {!collapsedSections[4] && (
               <ManualTextarea
                 label="Interpretación del Período"
                 value={resumen.analisis_comercial}
@@ -2029,10 +2085,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 6: OPERACIÓN Y PROCESOS ── */}
+          {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(6, '6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-            {!collapsedSections[6] && (
+            {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+            {!collapsedSections[5] && (
               <ManualTextarea
                 label="Cumplimiento de Procedimientos / Tiempos / Stock"
                 value={resumen.operacion_procesos}
@@ -2042,10 +2098,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 7: GESTIÓN COMERCIAL ── */}
+          {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(7, '7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
-            {!collapsedSections[7] && (
+            {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+            {!collapsedSections[6] && (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
                   <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
@@ -2061,10 +2117,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 8: EXPERIENCIA DEL CLIENTE ── */}
+          {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(8, '8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-            {!collapsedSections[8] && (
+            {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+            {!collapsedSections[7] && (
               <ManualTextarea
                 label="Reclamos y Satisfacción"
                 value={resumen.experiencia_cliente}
@@ -2074,10 +2130,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 9: GESTIÓN DEL EQUIPO ── */}
+          {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(9, '9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
-            {!collapsedSections[9] && (
+            {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+            {!collapsedSections[8] && (
               <>
                 {auditoriaData.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
@@ -2106,10 +2162,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 10: PLAN DE ACCIÓN ── */}
+          {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(10, '10. Plan de Acción', <Target size={15} color="#fb923c" />)}
-            {!collapsedSections[10] && (
+            {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
+            {!collapsedSections[9] && (
               <>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
                   <thead>
@@ -2206,10 +2262,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 11: ANÁLISIS TEMPORAL ── */}
+          {/* ── SECCIÓN 10: RENDIMIENTO Y TENDENCIAS ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
-            {!collapsedSections[11] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
+            {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
+            {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
           </div>
 
 

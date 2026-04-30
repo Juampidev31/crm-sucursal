@@ -675,40 +675,31 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         )}
       </div>
 
-      {/* SECCIÓN 4: MÉTRICAS COMPARATIVAS */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(4, '4. Métricas Comparativas', <PieChart size={15} color="#4ade80" />)}
-        {!collapsed[4] && (
-          <div style={{ padding: '24px' }}>
-            <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
-          </div>
-        )}
-      </div>
 
-      {/* SECCIÓN 5: ANÁLISIS COMERCIAL */}
+      {/* SECCIÓN 4: ANÁLISIS COMERCIAL */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(5, '5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
-        {!collapsed[5] && (
+        {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+        {!collapsed[4] && (
           <div style={{ padding: '24px' }}>
             <ManualTextareaView label="Interpretación del Período" value={analisisComercial || ''} />
           </div>
         )}
       </div>
 
-      {/* SECCIÓN 6: OPERACIÓN Y PROCESOS */}
+      {/* SECCIÓN 5: OPERACIÓN Y PROCESOS */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(6, '6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-        {!collapsed[6] && (
+        {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+        {!collapsed[5] && (
           <div style={{ padding: '24px' }}>
             <ManualTextareaView label="Cumplimiento de Procedimientos / Tiempos / Stock" value={operacionProcesos || ''} />
           </div>
         )}
       </div>
 
-      {/* SECCIÓN 7: GESTIÓN COMERCIAL */}
+      {/* SECCIÓN 6: GESTIÓN COMERCIAL */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(7, '7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
-        {!collapsed[7] && (
+        {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+        {!collapsed[6] && (
           <div style={{ padding: '24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
               <ManualTextareaView label="Gestiones Realizadas" value={gestionesRealizadas || ''} />
@@ -724,20 +715,20 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         )}
       </div>
 
-      {/* SECCIÓN 8: EXPERIENCIA DEL CLIENTE */}
+      {/* SECCIÓN 7: EXPERIENCIA DEL CLIENTE */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(8, '8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-        {!collapsed[8] && (
+        {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+        {!collapsed[7] && (
           <div style={{ padding: '24px' }}>
             <ManualTextareaView label="Reclamos y Satisfacción" value={experienciaCliente || ''} />
           </div>
         )}
       </div>
 
-      {/* SECCIÓN 9: GESTIÓN DEL EQUIPO */}
+      {/* SECCIÓN 8: GESTIÓN DEL EQUIPO */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(9, '9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
-        {!collapsed[9] && (
+        {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+        {!collapsed[8] && (
           <div style={{ padding: '24px' }}>
             {auditCounts && Object.keys(auditCounts).length > 0 && (
               <div style={{ marginBottom: 20 }}>
@@ -763,10 +754,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         )}
       </div>
 
-      {/* SECCIÓN 10: PLAN DE ACCIÓN */}
+      {/* SECCIÓN 9: PLAN DE ACCIÓN */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(10, '10. Plan de Acción', <Target size={15} color="#fb923c" />)}
-        {!collapsed[10] && (
+        {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
+        {!collapsed[9] && (
           <div style={{ padding: '24px' }}>
           {planAcciones && planAcciones.length > 0 ? (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
@@ -793,10 +784,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         )}
       </div>
 
-      {/* SECCIÓN 11: ANÁLISIS TEMPORAL */}
+      {/* SECCIÓN 10: RENDIMIENTO Y TENDENCIAS */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
-        {!collapsed[11] && (
+        {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
+        {!collapsed[10] && (
           <div style={{ padding: '24px' }}>
             {registros && registros.length > 0 ? (
               <AnalisisTemporalTab registros={registros} isPublic={true} initialMonth={month} initialYear={year} initialState={seccion10State ?? undefined} />
