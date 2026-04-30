@@ -2075,12 +2075,15 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                           <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <ModernDoughnut data={chartData} total={total} label="Acuerdos" unit=" Ops" />
                             <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                              {labels.map((l, i) => (
-                                <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartData.datasets[0].backgroundColor as string[])[i] }} />
-                                  <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l}</span>
-                                </div>
-                              ))}
+                              {labels.map((l, i) => {
+                                const pct = total > 0 ? (data[i] / total * 100).toFixed(1) : '0';
+                                return (
+                                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartData.datasets[0].backgroundColor as string[])[i] }} />
+                                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );
@@ -2096,12 +2099,16 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                       <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                         <ModernDoughnut data={chartEmpleoPublPriv} total={kpiTotal.ops} label="Total" unit=" Ops" />
                         <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                          {chartEmpleoPublPriv.labels.map((l, i) => (
-                            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
-                              <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l}</span>
-                            </div>
-                          ))}
+                          {chartEmpleoPublPriv.labels.map((l, i) => {
+                            const val = chartEmpleoPublPriv.datasets[0].data[i];
+                            const pct = kpiTotal.ops > 0 ? (val / kpiTotal.ops * 100).toFixed(1) : '0';
+                            return (
+                              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
+                                <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
