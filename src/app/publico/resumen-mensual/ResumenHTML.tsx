@@ -29,9 +29,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
         cornerRadius: 8,
         callbacks: {
           label: (context: any) => {
-            const value = context.raw;
-            const pct = totalNum > 0 ? ((value / totalNum) * 100).toFixed(1) : '0';
-            return `${pct}%`;
+            return `${context.raw}`;
           }
         }
       }
