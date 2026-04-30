@@ -2062,7 +2062,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         </div>
                       </div>
                       <div style={{ height: 280 }}>
-                        <Bar data={chartConversionTotal} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                        <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -2071,7 +2071,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
                       </div>
                       <div style={{ height: 280 }}>
-                        <Bar data={chartEmpleoPublPriv} options={baseChartOpts(' ops', false, true, false)} plugins={[labelsPlugin]} />
+                        <Bar data={chartEmpleoPublPriv as any} options={baseChartOpts(' ops', false, true, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -2089,7 +2089,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         </div>
                       </div>
                       <div style={{ height: 280 }}>
-                        <Bar data={chartAcuerdos} options={baseChartOpts(' ops', false, true, false)} plugins={[labelsPlugin]} />
+                        <Bar data={chartAcuerdos as any} options={baseChartOpts(' ops', false, true, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
                   </div>
