@@ -121,7 +121,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 export function useRegistros(safe = false) {
   const ctx = useContext(RegistrosContext);
   if (!ctx) {
-    if (safe) return { registros: [], loading: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, refresh: () => {}, pushBulkRefresh: () => {} };
+    if (safe) return { registros: [], loading: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {} };
     throw new Error('useRegistros must be used within RegistrosProvider');
   }
   return ctx;
