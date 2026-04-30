@@ -325,6 +325,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const [saving, setSaving] = useState(false);
   const [publicLink, setPublicLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const [selectedZoom, setSelectedZoom] = useState(1);
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
     1: true,
     2: true,
@@ -573,7 +574,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       }
 
       const baseUrl = window.location.origin;
-      const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}`;
+      const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}${selectedZoom !== 1 ? `&zoom=${selectedZoom}` : ''}`;
 
       // 10. Copiar link
       try {
@@ -1606,7 +1607,26 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
+              <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase' }}>Zoom</span>
+              <select 
+                value={selectedZoom}
+                onChange={e => setSelectedZoom(parseFloat(e.target.value))}
+                style={{ 
+                  background: 'transparent', border: 'none', color: '#888', 
+                  fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 700, 
+                  outline: 'none', cursor: 'pointer' 
+                }}
+              >
+                <option value="0.7">70%</option>
+                <option value="0.8">80%</option>
+                <option value="0.9">90%</option>
+                <option value="1">100%</option>
+                <option value="1.1">110%</option>
+                <option value="1.2">120%</option>
+              </select>
+            </div>
             <button
               onClick={handleGenerarLink}
               style={{ 

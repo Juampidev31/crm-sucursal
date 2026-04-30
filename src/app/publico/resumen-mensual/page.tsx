@@ -5,12 +5,13 @@ import { AlertTriangle } from 'lucide-react';
 
 const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-type SearchParams = Promise<{ anio?: string; mes?: string }>;
+type SearchParams = Promise<{ anio?: string; mes?: string; zoom?: string }>;
 
-const parsePeriodo = (params: { anio?: string; mes?: string }) => {
+const parsePeriodo = (params: { anio?: string; mes?: string; zoom?: string }) => {
   const anio = parseInt(params.anio || '2026');
   const mes = parseInt(params.mes || '1');
-  return { anio, mes };
+  const zoom = parseFloat(params.zoom || '1');
+  return { anio, mes, zoom };
 };
 
 const ErrorScreen = ({ message }: { message: string }) => (
@@ -60,9 +61,10 @@ async function fetchSnapshot(anio: number, mes: number): Promise<{ html?: string
 }
 
 import ResumenMensualInteractivo from './ResumenMensualInteractivo';
+import ZoomWrapper from './ZoomWrapper';
 
 export default async function ResumenMensualPublico({ searchParams }: { searchParams: SearchParams }) {
-  const { anio, mes } = parsePeriodo(await searchParams);
+  const { anio, mes, zoom } = parsePeriodo(await searchParams);
   const result = await fetchSnapshot(anio, mes);
 
   if ('error' in result) return <ErrorScreen message={result.error || 'Error desconocido'} />;
@@ -88,16 +90,19 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
         </div>
       </header>
 
-      <main style={{ padding: '32px 40px', width: '100%', maxWidth: 'none', margin: '0' }}>
-        {result.datos ? (
-          <ResumenMensualInteractivo datos={result.datos} />
-        ) : (
-          <div
-            dangerouslySetInnerHTML={{ __html: result.html || '' }}
-            style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
-          />
-        )}
-      </main>
+      <ZoomWrapper initialZoom={zoom}>
+        <main style={{ padding: '32px 40px', width: '100%', maxWidth: 'none', margin: '0' }}>
+          {result.datos ? (
+            <ResumenMensualInteractivo datos={result.datos} />
+          ) : (
+            <div
+              dangerouslySetInnerHTML={{ __html: result.html || '' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+            />
+          )}
+        </main>
+      </ZoomWrapper>
     </div>
   );
 }
+
