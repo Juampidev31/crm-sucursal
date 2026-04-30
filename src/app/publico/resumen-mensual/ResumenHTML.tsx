@@ -1,17 +1,58 @@
 'use client';
 
 import React from 'react';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
-  LineElement, PointElement, Tooltip, Legend, BarController, LineController,
+  LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
 } from 'chart.js';
 import { formatCurrency } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
 import MetricasTab from '../../ajustes/MetricasTab';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
+
+const ModernDoughnut = ({ data, total, label, unit = '' }: { data: any, total: number | string, label: string, unit?: string }) => {
+  const options = {
+    cutout: '80%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111',
+        titleColor: '#fff',
+        bodyColor: '#ccc',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+      }
+    },
+    maintainAspectRatio: false,
+    elements: {
+      arc: {
+        borderWidth: 0,
+        borderRadius: 4,
+      }
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} />
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)', textAlign: 'center',
+        width: '100%', pointerEvents: 'none'
+      }}>
+        <div style={{ fontSize: '8px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ fontSize: '15px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+          {total}{unit}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const labelsPlugin: any = {
   id: 'labelsPlugin',
@@ -175,7 +216,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
     chartConversionTotal, chartEmpleoPublPriv, chartAcuerdos, chartEmbudo 
   } = datos;
 
-  const allAnalistas = [...kpiPorAnalista, {analista:'Total PDV', ...kpiTotal}];
+  const allAnalistas = kpiPorAnalista;
   const total = kpiTotal.capital;
 
   const chartCapital = {
@@ -288,33 +329,81 @@ export default function ResumenHTML({ datos }: { datos: any }) {
             );
           })}
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:16}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:16}}>
+          {/* 1. Cumplimiento */}
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>% Cumplimiento vs {mesAnterior}</div>
             <div style={{height:280}}><Bar data={chartCumpl as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
           </div>
+          {/* 2. Variación */}
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>Variación % vs {mesAnterior}</div>
             <div style={{height:280}}><Bar data={chartVar as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
           </div>
-          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
-            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>Embudo Comercial</div>
-            <div style={{height:280}}>{chartEmbudo && <Bar data={chartEmbudo as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} />}</div>
-          </div>
-        </div>
-
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:16,marginTop:16}}>
-          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
-            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>% Total Conversión</div>
-            <div style={{height:280}}>{chartConversionTotal && <Bar data={chartConversionTotal as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} />}</div>
-          </div>
-          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
-            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>% Empleo Público / Privado</div>
-            <div style={{height:280}}>{chartEmpleoPublPriv && <Bar data={chartEmpleoPublPriv as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} />}</div>
-          </div>
+          {/* 3. Acuerdos por Analista (Dona) */}
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>Acuerdos por Analista</div>
-            <div style={{height:280}}>{chartAcuerdos && <Bar data={chartAcuerdos as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} />}</div>
+            {(() => {
+              const labels = CONFIG.ANALISTAS_DEFAULT;
+              const data = chartAcuerdos.datasets.map((ds: any) => ds.data.reduce((s: number, v: number) => s + v, 0));
+              const total = data.reduce((s: number, v: number) => s + v, 0);
+              const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'];
+              const cData = {
+                labels,
+                datasets: [{
+                  data,
+                  backgroundColor: colors,
+                  borderWidth: 0,
+                  hoverOffset: 10,
+                  borderRadius: 4,
+                  spacing: 4
+                }]
+              };
+              return (
+                <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <ModernDoughnut data={cData} total={total} label="Acuerdos" unit=" Ops" />
+                  <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                    {labels.map((l, i) => (
+                      <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors[i] }} />
+                        <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          {/* 4. Empleo (Dona) */}
+          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
+            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>% Empleo Público / Privado</div>
+            {(() => {
+              const colors = ['#10b981', '#3b82f6', 'rgba(100,100,100,0.5)'];
+              const cData = {
+                ...chartEmpleoPublPriv,
+                datasets: [{
+                  ...chartEmpleoPublPriv.datasets[0],
+                  backgroundColor: chartEmpleoPublPriv.labels.map((l: string, i: number) => colors[i] || colors[0]),
+                  borderWidth: 0,
+                  hoverOffset: 10,
+                  borderRadius: 4,
+                  spacing: 4
+                }]
+              };
+              return (
+                <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <ModernDoughnut data={cData} total={kpiTotal.ops} label="Total" unit=" Ops" />
+                  <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                    {chartEmpleoPublPriv.labels.map((l: string, i: number) => (
+                      <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors[i] || colors[0] }} />
+                        <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

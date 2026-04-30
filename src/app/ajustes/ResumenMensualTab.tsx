@@ -6,17 +6,56 @@ import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
-  LineElement, PointElement, Tooltip, Legend, BarController, LineController,
+  LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
 } from 'chart.js';
 import AnalisisTemporalTab from './AnalisisTemporalTab';
 import MetricasTab from './MetricasTab';
 import type { AnalisisTemporalState } from './AnalisisTemporalTab';
 
-// ── Componente auxiliar para bloques de distribución ──────────────────────
-// ── Componente auxiliar para bloques de distribución ──────────────────────
+const ModernDoughnut = ({ data, total, label, unit = '' }: { data: any, total: number | string, label: string, unit?: string }) => {
+  const options = {
+    cutout: '80%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111',
+        titleColor: '#fff',
+        bodyColor: '#ccc',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+      }
+    },
+    maintainAspectRatio: false,
+    elements: {
+      arc: {
+        borderWidth: 0,
+        borderRadius: 4,
+      }
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} />
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)', textAlign: 'center',
+        width: '100%', pointerEvents: 'none'
+      }}>
+        <div style={{ fontSize: '8px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ fontSize: '15px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+          {total}{unit}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DistBlock = ({ 
   titulo, icon, datos, color, totalMes, maxItems = 5
 }: { 
@@ -139,7 +178,7 @@ const DistBlock = ({
 };
 
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
 // ── Plugin inline: data labels on bars ───────────────────────────────────
 const labelsPlugin: any = {
@@ -1446,15 +1485,17 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const chartEmpleoPublPriv = useMemo(() => {
     const { counts } = empleoPublPrivData;
     const labels = ['Público', 'Privado', 'Sin dato'];
-    const colors = ['rgba(52,211,153,0.8)', 'rgba(96,165,250,0.8)', 'rgba(100,100,100,0.5)'];
+    const colors = ['#10b981', '#3b82f6', 'rgba(100,100,100,0.5)'];
     const filtered = labels.filter(l => (counts[l] ?? 0) > 0);
     return {
       labels: filtered,
       datasets: [{
-        label: 'Operaciones',
         data: filtered.map(l => counts[l] ?? 0),
-        backgroundColor: labels.map(c => colors[labels.indexOf(c)]),
+        backgroundColor: filtered.map(l => colors[labels.indexOf(l)]),
+        borderWidth: 0,
+        hoverOffset: 10,
         borderRadius: 4,
+        spacing: 4
       }],
     };
   }, [empleoPublPrivData]);
@@ -1489,35 +1530,19 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const chartEmbudo = useMemo(() => {
     const labels = CONFIG.ANALISTAS_DEFAULT;
     const regsMes = filterByMonth(registros, selectedMes, selectedAnio);
-
-    // Todos los estados que cuentan como "clientes ingresados"
-    const matchIngresado = (estado: string) => {
-      const e = (estado || '').toLowerCase();
-      return ['proyeccion', 'score bajo', 'en seguimiento', 'no califica', 'afectaciones', 'aprobado cc', 'rechazado cc', 'venta'].some(est => e.includes(est));
-    };
-
-    const ingresados = labels.map(a => {
-      const regsAnalista = regsMes.filter(r => r.analista === a);
-      return regsAnalista.filter(r => matchIngresado(r.estado ?? '')).length;
-    });
-    const cerradas = labels.map(a => {
-      const regsAnalista = regsMes.filter(r => r.analista === a);
-      return regsAnalista.filter(isVenta).length;
-    });
-    const conversion = labels.map((a, i) => {
-      return ingresados[i] > 0 ? `${((cerradas[i] / ingresados[i]) * 100).toFixed(1)}%` : '0%';
-    });
-    const chartLabels = labels.map((l, i) => `${l} (${conversion[i]})`);
-
+    const cerradas = labels.map(a => regsMes.filter(r => r.analista === a && isVenta(r)).length);
+    
     return {
-      labels: chartLabels,
+      labels,
       datasets: [
         {
-          label: 'Clientes Ingresados', data: ingresados, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4
-        },
-        {
-          label: 'Op. Cerradas', data: cerradas, backgroundColor: 'rgba(167,139,250,0.8)', borderRadius: 4
-        },
+          data: cerradas,
+          backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'],
+          borderWidth: 0,
+          hoverOffset: 10,
+          borderRadius: 4,
+          spacing: 4
+        }
       ],
     };
   }, [registros, selectedMes, selectedAnio, isVenta]);
@@ -1906,17 +1931,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             {!collapsedSections[2] && (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
-                  {[...kpiPorAnalista, {
-                    analista: 'Total PDV',
-                    capital: kpiTotal.capital, ops: kpiTotal.ops, ticket: kpiTotal.ticket,
-                    conversion: kpiTotal.conversion, clientesIngresados: kpiTotal.clientes,
-                    cumplCapital: kpiTotal.cumplCapital, restanteCapital: kpiTotal.restanteCapital, cumplOps: kpiTotal.cumplOps, restanteOps: kpiTotal.restanteOps,
-                    tendCapital: kpiTotal.tendCapital, tendOps: kpiTotal.tendOps,
-                    metaCapital: kpiTotal.metaCapital, metaOps: kpiTotal.metaOps,
-                    montoVenta: kpiTotal.montoVenta,
-                    montoAprobCC: kpiTotal.montoAprobCC,
-                  }].map((k, idx) => {
-                    const isTotal = idx === kpiPorAnalista.length;
+                  {kpiPorAnalista.map((k, idx) => {
+                    const isTotal = false;
                     return (
                       <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
                         <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1989,7 +2005,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                 </div>
 
                 <div style={{ marginBottom: 28 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                    {/* 1. Cumplimiento */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                         <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
@@ -2008,6 +2025,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
+
+                    {/* 2. Variación */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                         <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
@@ -2026,70 +2045,64 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Embudo Comercial por Analista</div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Atendidos</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(167,139,250,0.8)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Op. Cerradas</span>
-                          </div>
-                        </div>
-                      </div>
-                    <div id="chart-embudo" style={{ height: 280 }}>
-                      <Bar data={chartEmbudo} options={baseChartOpts(' registros', false, true)} plugins={[labelsPlugin]} />
-                    </div>
-                  </div>
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                    {/* 3. Embudo */}
+                    {/* 3. Acuerdos por Analista */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Total Conversión</div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(251,191,36,0.8)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesActualLabel}</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(124, 45, 18, 0.8)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesAntLabel}</span>
-                          </div>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Acuerdos por Analista</div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                           <Users size={12} color="#666" />
+                           <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>{kpiTotal.ops} TOTAL</span>
                         </div>
                       </div>
-                      <div style={{ height: 280 }}>
-                        <Bar data={chartConversionTotal as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
-                      </div>
+                      {(() => {
+                        const labels = CONFIG.ANALISTAS_DEFAULT;
+                        const data = labels.map(a => filterByMonth(registros, selectedMes, selectedAnio).filter(r => r.analista === a && r.acuerdo_precios).length);
+                        const total = data.reduce((s, v) => s + v, 0);
+                        const chartData = {
+                          labels,
+                          datasets: [{
+                            data,
+                            backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'],
+                            borderWidth: 0,
+                            hoverOffset: 10,
+                            borderRadius: 4,
+                            spacing: 4
+                          }]
+                        };
+                        return (
+                          <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <ModernDoughnut data={chartData} total={total} label="Acuerdos" unit=" Ops" />
+                            <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                              {labels.map((l, i) => (
+                                <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartData.datasets[0].backgroundColor as string[])[i] }} />
+                                  <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
+
+                    {/* 4. Empleo */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                         <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
                         <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
                       </div>
-                      <div style={{ height: 280 }}>
-                        <Bar data={chartEmpleoPublPriv as any} options={baseChartOpts(' ops', false, true, false)} plugins={[labelsPlugin]} />
-                      </div>
-                    </div>
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Acuerdos por Analista</div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Luciana</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Victoria</span>
-                          </div>
+                      <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <ModernDoughnut data={chartEmpleoPublPriv} total={kpiTotal.ops} label="Total" unit=" Ops" />
+                        <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                          {chartEmpleoPublPriv.labels.map((l, i) => (
+                            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
+                              <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l}</span>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                      <div style={{ height: 280 }}>
-                        <Bar data={chartAcuerdos as any} options={baseChartOpts(' ops', false, true, false)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
                   </div>
