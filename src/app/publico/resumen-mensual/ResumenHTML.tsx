@@ -262,8 +262,20 @@ export default function ResumenHTML({ datos }: { datos: any }) {
                   <span style={{fontSize:13,fontWeight:800,color:isT?'#a78bfa':'#ccc'}}>{k.analista}</span>
                 </div>
                 <div style={{padding:'14px 16px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                  <div><div style={{fontSize:9,fontWeight:700,color:'#444',textTransform:'uppercase',marginBottom:4}}>Capital</div><div style={{fontSize:16,fontWeight:900,color:'#fff'}}>{formatCurrency(k.capital)}</div></div>
-                  <div><div style={{fontSize:9,fontWeight:700,color:'#444',textTransform:'uppercase',marginBottom:4}}>Ops</div><div style={{fontSize:16,fontWeight:900,color:'#fff'}}>{k.ops}</div></div>
+                  <div>
+                    <div style={{fontSize:9,fontWeight:700,color:'#444',textTransform:'uppercase',marginBottom:4}}>Capital</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{fontSize:16,fontWeight:900,color:'#fff'}}>{formatCurrency(k.capital)}</div>
+                      {tendBadge(k.tendCapital)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:9,fontWeight:700,color:'#444',textTransform:'uppercase',marginBottom:4}}>Ops</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{fontSize:16,fontWeight:900,color:'#fff'}}>{k.ops}</div>
+                      {tendBadge(k.tendOps)}
+                    </div>
+                  </div>
                 </div>
               </div>
             );

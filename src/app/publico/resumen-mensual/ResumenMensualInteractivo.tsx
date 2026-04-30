@@ -401,6 +401,19 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
     </div>
   );
 
+  const tendBadge = (pct: number | null) => {
+    if (pct === null) return <span style={{ color: '#333' }}>—</span>;
+    const color = pct >= 0 ? '#34d399' : '#f87171';
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+          {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+        </span>
+        <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+      </div>
+    );
+  };
+
   const allAnalistas = [...kpiPorAnalista, { analista: 'Total PDV', ...kpiTotal, clientesIngresados: kpiTotal.clientes }];
   const totalMes = kpiTotal.capital;
   const ventasCount = kpiTotal.ops;
@@ -530,7 +543,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
                     <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       <div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                          <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
+                          {tendBadge(k.tendCapital)}
+                        </div>
                         {k.cumplCapital !== null && (
                           <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
@@ -542,7 +558,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
                       </div>
                       <div>
                         <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                          <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
+                          {tendBadge(k.tendOps)}
+                        </div>
                         {k.cumplOps !== null && (
                           <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>

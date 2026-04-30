@@ -1746,28 +1746,31 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               </a>
             </div>
           </div>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(publicLink);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
-            style={{
-              padding: '12px 28px', borderRadius: '12px', border: 'none',
-              background: copied ? 'rgba(16, 185, 129, 0.2)' : '#10b981',
-              color: copied ? '#10b981' : '#000', fontSize: '12px', fontWeight: 900,
-              textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px',
-              transition: 'all 0.3s ease',
-              boxShadow: copied ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.3)'
-            }}
-          >
-            {copied ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-            )}
-            {copied ? 'Copiado' : 'Copiar Link'}
-          </button>
+          <div style={{ display: 'flex', gap: 12 }}>
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(publicLink);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              style={{
+                padding: '12px 28px', borderRadius: '12px', border: 'none',
+                background: copied ? 'rgba(16, 185, 129, 0.2)' : '#10b981',
+                color: copied ? '#10b981' : '#000', fontSize: '12px', fontWeight: 900,
+                textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px',
+                transition: 'all 0.3s ease',
+                boxShadow: copied ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.3)'
+              }}
+            >
+              {copied ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+              )}
+              {copied ? 'Copiado' : 'Copiar Link'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -1927,7 +1930,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                         <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                           <div>
                             <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
-                            <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
+                              {tendBadge(k.tendCapital)}
+                            </div>
                             {k.cumplCapital !== null && (
                               <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
@@ -1940,7 +1946,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                           </div>
                           <div>
                             <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
-                            <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
+                              {tendBadge(k.tendOps)}
+                            </div>
                             {k.cumplOps !== null && (
                               <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
