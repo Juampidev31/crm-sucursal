@@ -13,7 +13,8 @@ import MetricasTab from '../../ajustes/MetricasTab';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
-const ModernDoughnut = ({ data, total, label, unit = '' }: { data: any, total: number | string, label: string, unit?: string }) => {
+const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
+  const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
     cutout: '80%',
     plugins: {
@@ -26,6 +27,13 @@ const ModernDoughnut = ({ data, total, label, unit = '' }: { data: any, total: n
         borderWidth: 1,
         padding: 12,
         cornerRadius: 8,
+        callbacks: {
+          label: (context: any) => {
+            const value = context.raw;
+            const pct = totalNum > 0 ? ((value / totalNum) * 100).toFixed(1) : '0';
+            return `${pct}%`;
+          }
+        }
       }
     },
     maintainAspectRatio: false,
@@ -37,6 +45,8 @@ const ModernDoughnut = ({ data, total, label, unit = '' }: { data: any, total: n
     }
   };
 
+  const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
+
   return (
     <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto' }}>
       <Doughnut data={data} options={options} />
@@ -47,7 +57,7 @@ const ModernDoughnut = ({ data, total, label, unit = '' }: { data: any, total: n
       }}>
         <div style={{ fontSize: '8px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
         <div style={{ fontSize: '15px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
-          {total}{unit}
+          {displayValue}
         </div>
       </div>
     </div>
