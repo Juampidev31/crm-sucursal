@@ -9,6 +9,7 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
+import MetricasTab from '../../ajustes/MetricasTab';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
@@ -165,7 +166,7 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
 export default function ResumenHTML({ datos }: { datos: any }) {
   if (!datos?.kpiTotal) return <div style={{color:'#666'}}>Cargando...</div>;
 
-  const { kpiTotal, kpiPorAnalista, mesActual, mesAnterior, experienciaCliente, analisisComercial, operacionProcesos, gestionesRealizadas, coordinacionSalidas, empresasEstrategicas, logros, desvios, accionesClave, dotacion, ausentismo, capacitacion, evaluacionDesempeno, planAcciones, distSexo, distCuotas, distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, distEstados } = datos;
+  const { kpiTotal, kpiPorAnalista, mesActual, mesAnterior, month, year, registros, experienciaCliente, analisisComercial, operacionProcesos, gestionesRealizadas, coordinacionSalidas, empresasEstrategicas, logros, desvios, accionesClave, dotacion, ausentismo, capacitacion, evaluacionDesempeno, planAcciones, distSexo, distCuotas, distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, distEstados } = datos;
 
   const allAnalistas = [...kpiPorAnalista, {analista:'Total PDV', ...kpiTotal}];
   const total = kpiTotal.capital;
@@ -306,21 +307,29 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
       </div>
 
-      {/* 4-9 TEXTOS */}
+      {/* 4. MÉTRICAS COMPARATIVAS */}
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+        {sectionHeader('4. Métricas Comparativas', <PieChart size={15} color="#4ade80" />)}
+        <div style={{padding:24}}>
+          <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
+        </div>
+      </div>
+
+      {/* 5. ANÁLISIS COMERCIAL */}
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+        {sectionHeader('5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         <div style={{padding:24}}>
           <TextView label="Interpretación del Período" value={analisisComercial||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+        {sectionHeader('6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
         <div style={{padding:24}}>
           <TextView label="Procedimientos" value={operacionProcesos||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+        {sectionHeader('7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
             <TextView label="Gestiones Realizadas" value={gestionesRealizadas||''} />
@@ -330,13 +339,13 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+        {sectionHeader('8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
         <div style={{padding:24}}>
           <TextView label="Reclamos y Satisfacción" value={experienciaCliente||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+        {sectionHeader('9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
             <TextView label="Dotación Actual" value={dotacion||''} />
@@ -347,7 +356,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('9. Plan de Acción', <Target size={15} color="#fb923c" />)}
+        {sectionHeader('10. Plan de Acción', <Target size={15} color="#fb923c" />)}
         <div style={{padding:24}}>
           {planAcciones?.length ? (
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>

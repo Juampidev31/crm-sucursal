@@ -12,6 +12,7 @@ import {
   LineElement, PointElement, Tooltip, Legend, BarController, LineController,
 } from 'chart.js';
 import AnalisisTemporalTab from './AnalisisTemporalTab';
+import MetricasTab from './MetricasTab';
 import type { AnalisisTemporalState } from './AnalisisTemporalTab';
 
 // ── Componente auxiliar para bloques de distribución ──────────────────────
@@ -286,6 +287,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     8: true,
     9: true,
     10: true,
+    11: true,
   });
 
   const toggleSection = (id: number) => {
@@ -2009,10 +2011,16 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
               </div>
             )}
           </div>
-          {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
+          {/* ── SECCIÓN 4: MÉTRICAS COMPARATIVAS ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
-            {!collapsedSections[4] && (
+            {sectionHeader(4, '4. Métricas Comparativas', <PieChart size={15} color="#4ade80" />)}
+            {!collapsedSections[4] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} />}
+          </div>
+
+          {/* ── SECCIÓN 5: ANÁLISIS COMERCIAL ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader(5, '5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+            {!collapsedSections[5] && (
               <ManualTextarea
                 label="Interpretación del Período"
                 value={resumen.analisis_comercial}
@@ -2022,10 +2030,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
+          {/* ── SECCIÓN 6: OPERACIÓN Y PROCESOS ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-            {!collapsedSections[5] && (
+            {sectionHeader(6, '6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+            {!collapsedSections[6] && (
               <ManualTextarea
                 label="Cumplimiento de Procedimientos / Tiempos / Stock"
                 value={resumen.operacion_procesos}
@@ -2035,10 +2043,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
+          {/* ── SECCIÓN 7: GESTIÓN COMERCIAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
-            {!collapsedSections[6] && (
+            {sectionHeader(7, '7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+            {!collapsedSections[7] && (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
                   <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
@@ -2054,10 +2062,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
+          {/* ── SECCIÓN 8: EXPERIENCIA DEL CLIENTE ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-            {!collapsedSections[7] && (
+            {sectionHeader(8, '8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+            {!collapsedSections[8] && (
               <ManualTextarea
                 label="Reclamos y Satisfacción"
                 value={resumen.experiencia_cliente}
@@ -2067,10 +2075,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
+          {/* ── SECCIÓN 9: GESTIÓN DEL EQUIPO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
-            {!collapsedSections[8] && (
+            {sectionHeader(9, '9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+            {!collapsedSections[9] && (
               <>
                 {auditoriaData.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
@@ -2099,10 +2107,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
+          {/* ── SECCIÓN 10: PLAN DE ACCIÓN ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
-            {!collapsedSections[9] && (
+            {sectionHeader(10, '10. Plan de Acción', <Target size={15} color="#fb923c" />)}
+            {!collapsedSections[10] && (
               <>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
                   <thead>
@@ -2199,10 +2207,10 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             )}
           </div>
 
-          {/* ── SECCIÓN 10: ANÁLISIS TEMPORAL ── */}
+          {/* ── SECCIÓN 11: ANÁLISIS TEMPORAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
-            {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
+            {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
+            {!collapsedSections[11] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
           </div>
 
 

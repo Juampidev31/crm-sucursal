@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { formatCurrency, getStatusLabel } from '@/lib/utils';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
+import { CONFIG } from '@/types';
 import { ESTADOS } from '@/context/FilterContext';
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
@@ -83,16 +84,36 @@ const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: nu
   );
 };
 
-export default function MetricasTab() {
-  const [mes, setMes] = useState(mesActual);
-  const { registros: regs, loading } = useRegistros();
+interface Props {
+  selectedMes?: number;
+  selectedAnio?: number;
+  registros?: any[];
+}
 
+export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAnio, registros: manualRegs }: Props) {
+  const [internalMes, setInternalMes] = useState(mesActual);
+  const [internalAnio, setInternalAnio] = useState(new Date().getFullYear());
+  
+  const mes = propMes ? String(propMes).padStart(2, '0') : internalMes;
+  const anio = propAnio || internalAnio;
 
+  // Intentar usar el provider si no nos pasan los registros por prop
+  let ctxRegs: any[] = [];
+  let ctxLoading = false;
+  try {
+    const ctx = useRegistros();
+    ctxRegs = ctx.registros;
+    ctxLoading = ctx.loading;
+  } catch (e) { }
+  
+  const regs = manualRegs || ctxRegs;
+  const loading = manualRegs ? false : ctxLoading;
 
   const getStatsForAnalista = (analista: string) => {
-    let filtered = regs;
+    let filtered = regs || [];
     if (analista) filtered = filtered.filter(r => r.analista === analista);
     if (mes) filtered = filtered.filter(r => r.fecha && r.fecha.slice(5, 7) === mes);
+    if (anio) filtered = filtered.filter(r => r.fecha && r.fecha.slice(0, 4) === String(anio));
 
     const stats = ESTADOS.map(st => {
       const match = filtered.filter(r => r.estado?.toLowerCase() === st);
@@ -122,11 +143,19 @@ export default function MetricasTab() {
     return { stats, totalMonto, totalOps, doughnutData };
   };
 
-  const views = useMemo(() => [
-    { id: 'todos', label: 'General (Todos)', analista: '' },
-    { id: 'luciana', label: 'Luciana', analista: 'Luciana' },
-    { id: 'victoria', label: 'Victoria', analista: 'Victoria' },
-  ].map(v => ({ ...v, data: getStatsForAnalista(v.analista) })), [regs, mes]);
+  const views = useMemo(() => {
+    const base = [{ id: 'todos', label: 'General (Todos)', analista: '' }];
+    const analistas = (CONFIG.ANALISTAS_DEFAULT || []).map(a => ({
+      id: a.toLowerCase(),
+      label: a,
+      analista: a
+    }));
+    
+    return [...base, ...analistas].map(v => ({ 
+      ...v, 
+      data: getStatsForAnalista(v.analista) 
+    }));
+  }, [regs, mes, anio]);
 
   if (loading) return <div className="loading-container"><div className="spinner" /></div>;
 
@@ -138,17 +167,19 @@ export default function MetricasTab() {
           <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Rendimiento distribuido por analista y total general</p>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>PERÍODO ANALIZADO</label>
-          <select 
-            style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
-            value={mes} 
-            onChange={e => setMes(e.target.value)}
-          >
-            <option value="" style={{ background: '#111' }}>Todos los meses</option>
-            {MESES.map(m => <option key={m.value} value={m.value} style={{ background: '#111' }}>{m.label}</option>)}
-          </select>
-        </div>
+        {!propMes && (
+          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>PERÍODO ANALIZADO</label>
+            <select 
+              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
+              value={internalMes} 
+              onChange={e => setInternalMes(e.target.value)}
+            >
+              <option value="" style={{ background: '#111' }}>Todos los meses</option>
+              {MESES.map(m => <option key={m.value} value={m.value} style={{ background: '#111' }}>{m.label}</option>)}
+            </select>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>

@@ -17,6 +17,7 @@ interface RegistrosCtx {
   mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
   refresh: (silent?: boolean) => void;
   pushBulkRefresh: () => void;
+  pushRegistroChange: (type: ChangeType, registro: Registro) => void;
 }
 
 const RegistrosContext = createContext<RegistrosCtx | null>(null);
@@ -104,10 +105,10 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({
     registros, loading,
-    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh,
+    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh, pushRegistroChange,
   }), [
     registros, loading,
-    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh,
+    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh, pushRegistroChange,
   ]);
 
   return (

@@ -1137,7 +1137,7 @@ function MultiSelectDropdown({
 
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
-  const { registros, applyRegistroChange, loading, refresh } = useRegistros();
+  const { registros, applyRegistroChange, pushRegistroChange, loading, refresh } = useRegistros();
   const { alertasConfig } = useSettings();
   const {
     filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
@@ -1329,22 +1329,28 @@ export default function RegistrosPage() {
     await supabase.from('registros').delete().eq('id', reg.id);
     logAudit({ id_registro: reg.id, nombre: reg.nombre, cuil: reg.cuil, analista: reg.analista, accion: 'Eliminación', campo_modificado: 'Registro', valor_anterior: `${reg.nombre} | ${reg.estado} | $${reg.monto}` });
     applyRegistroChange('DELETE', reg);
+    pushRegistroChange('DELETE', reg);
     showToast('Registro eliminado', 'success');
-  }, [deleteTarget, applyRegistroChange, showToast]);
+    refresh(true);
+  }, [deleteTarget, applyRegistroChange, pushRegistroChange, showToast, refresh]);
 
   const handleSaved = useCallback((reg: Registro) => {
     const isNew = !registros.find(r => r.id === reg.id);
-    applyRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
+    const type = isNew ? 'INSERT' : 'UPDATE';
+    applyRegistroChange(type, reg);
+    pushRegistroChange(type, reg);
     refresh(true);
-  }, [applyRegistroChange, refresh, registros]);
+  }, [applyRegistroChange, pushRegistroChange, refresh, registros]);
 
   const handleSavedWithRecordatorio = useCallback((reg: Registro) => {
     const isNew = !registros.find(r => r.id === reg.id);
-    applyRegistroChange(isNew ? 'INSERT' : 'UPDATE', reg);
+    const type = isNew ? 'INSERT' : 'UPDATE';
+    applyRegistroChange(type, reg);
+    pushRegistroChange(type, reg);
     showToast('Guardado', 'success');
     refresh(true);
     setRecordatorioTarget(reg);
-  }, [applyRegistroChange, refresh, registros, showToast]);
+  }, [applyRegistroChange, pushRegistroChange, refresh, registros, showToast]);
 
   const handleRecordatorioClose = useCallback((saved: boolean, newRec?: Recordatorio) => {
     setRecordatorioTarget(null);
@@ -1366,7 +1372,9 @@ export default function RegistrosPage() {
       } else {
         showToast('Comentarios guardados', 'success');
         setComentariosTarget(null);
-        refresh();
+        applyRegistroChange('UPDATE', { ...comentariosTarget, comentarios: updatedComentarios });
+        pushRegistroChange('UPDATE', { ...comentariosTarget, comentarios: updatedComentarios });
+        refresh(true);
       }
     } else {
       setComentariosTarget(null);
