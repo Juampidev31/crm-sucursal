@@ -91,11 +91,17 @@ interface Props {
 }
 
 export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAnio, registros: manualRegs }: Props) {
-  const [internalMes, setInternalMes] = useState(mesActual);
-  const [internalAnio, setInternalAnio] = useState(new Date().getFullYear());
+  const [internalMes, setInternalMes] = useState(propMes ? String(propMes).padStart(2, '0') : mesActual);
+  const [internalAnio, setInternalAnio] = useState(propAnio || new Date().getFullYear());
   
-  const mes = propMes ? String(propMes).padStart(2, '0') : internalMes;
-  const anio = propAnio || internalAnio;
+  // Sincronizar con props cuando cambian en el dashboard principal
+  useEffect(() => {
+    if (propMes) setInternalMes(String(propMes).padStart(2, '0'));
+    if (propAnio) setInternalAnio(propAnio);
+  }, [propMes, propAnio]);
+
+  const mes = internalMes;
+  const anio = internalAnio;
 
   // Intentar usar el provider si no nos pasan los registros por prop
   let ctxRegs: any[] = [];
@@ -161,25 +167,34 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
 
   return (
     <div style={{ width: '100%', padding: '8px' }}>
-      <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-        <div>
-          <h3 style={{ fontSize: '22px', fontWeight: 900, color: '#fff', letterSpacing: '-0.8px' }}>Métricas Comparativas</h3>
-          <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Rendimiento distribuido por analista y total general</p>
-        </div>
+      <div className="data-card-header" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '40px' }}>
 
-        {!propMes && (
-          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>PERÍODO ANALIZADO</label>
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>MES</label>
             <select 
               style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
               value={internalMes} 
               onChange={e => setInternalMes(e.target.value)}
             >
-              <option value="" style={{ background: '#111' }}>Todos los meses</option>
+              <option value="" style={{ background: '#111' }}>Todos</option>
               {MESES.map(m => <option key={m.value} value={m.value} style={{ background: '#111' }}>{m.label}</option>)}
             </select>
           </div>
-        )}
+          
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.05)' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>AÑO</label>
+            <select 
+              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
+              value={internalAnio} 
+              onChange={e => setInternalAnio(Number(e.target.value))}
+            >
+              {[2024, 2025, 2026].map(y => <option key={y} value={y} style={{ background: '#111' }}>{y}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
