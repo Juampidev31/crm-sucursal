@@ -308,21 +308,29 @@ export default function ResumenHTML({ datos }: { datos: any }) {
       </div>
 
 
-      {/* 4. ANÁLISIS COMERCIAL */}
+      {/* 4. RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL */}
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+        {sectionHeader('4. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
+        <div style={{padding:24}}>
+          <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
+        </div>
+      </div>
+
+      {/* 5. ANÁLISIS COMERCIAL */}
+      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+        {sectionHeader('5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         <div style={{padding:24}}>
           <TextView label="Interpretación del Período" value={analisisComercial||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+        {sectionHeader('6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
         <div style={{padding:24}}>
           <TextView label="Procedimientos" value={operacionProcesos||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+        {sectionHeader('7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
             <TextView label="Gestiones Realizadas" value={gestionesRealizadas||''} />
@@ -332,13 +340,13 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+        {sectionHeader('8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
         <div style={{padding:24}}>
           <TextView label="Reclamos y Satisfacción" value={experienciaCliente||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+        {sectionHeader('9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
             <TextView label="Dotación Actual" value={dotacion||''} />
@@ -349,7 +357,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('9. Plan de Acción', <Target size={15} color="#fb923c" />)}
+        {sectionHeader('10. Plan de Acción', <Target size={15} color="#fb923c" />)}
         <div style={{padding:24}}>
           {planAcciones?.length ? (
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
