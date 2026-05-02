@@ -7,7 +7,22 @@ import { CONFIG } from '@/types';
 import { Bell, Send, User, Users, Trash2, Clock, AlertCircle, Play } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/utils';
-import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
+import { useRecordatorios, type ReminderAlertData } from '@/features/recordatorios/RecordatoriosProvider';
+
+/** Minimal shape returned by `select('*')` from the `recordatorios` table. */
+interface RecordatorioRow {
+  id: string;
+  cuil: string;
+  nombre: string;
+  nota?: string;
+  analista: string;
+  fecha_hora: string;
+  mostrado: boolean;
+  creado_por?: string;
+  creado_en?: string;
+  estado?: string;
+  registro_id?: string;
+}
 
 export default function AvisosTab() {
   const { user } = useAuth();
@@ -16,8 +31,8 @@ export default function AvisosTab() {
   const [mensaje, setMensaje] = useState('');
   const [target, setTarget] = useState<'todos' | string>('todos');
   const [loading, setLoading] = useState(false);
-  const [historial, setHistorial] = useState<any[]>([]);
-  const [recordatorios, setRecordatorios] = useState<any[]>([]);
+  const [historial, setHistorial] = useState<RecordatorioRow[]>([]);
+  const [recordatorios, setRecordatorios] = useState<RecordatorioRow[]>([]);
   const [fetching, setFetching] = useState(true);
   const [fetchingRecs, setFetchingRecs] = useState(true);
 
@@ -30,7 +45,7 @@ export default function AvisosTab() {
       .order('creado_en', { ascending: false })
       .limit(5);
     
-    if (!error && data) setHistorial(data);
+    if (!error && data) setHistorial(data as RecordatorioRow[]);
     setFetching(false);
   };
 
@@ -43,7 +58,7 @@ export default function AvisosTab() {
       .neq('cuil', 'ADMIN_AVISO')
       .order('fecha_hora', { ascending: true });
     
-    if (!error && data) setRecordatorios(data);
+    if (!error && data) setRecordatorios(data as RecordatorioRow[]);
     setFetchingRecs(false);
   };
 
@@ -73,7 +88,7 @@ export default function AvisosTab() {
         mostrado: false,
       }));
 
-      const { error } = await supabase.from('recordatorios').insert(records);
+      const { error, data: inserted } = await supabase.from('recordatorios').insert(records).select();
       
       if (error) throw error;
 
@@ -81,12 +96,23 @@ export default function AvisosTab() {
       setMensaje('');
       fetchHistorial();
       
-      // Enviar broadcast para notificación inmediata
-      pushRecordatorioChange('INSERT', records[0]);
-      forceShowPopup(records[0]);
+      // Enviar broadcast para notificación inmediata (inserted has id from DB)
+      if (inserted && inserted[0]) {
+        const rec: ReminderAlertData = {
+          id: inserted[0].id as string,
+          nombre: inserted[0].nombre as string,
+          cuil: inserted[0].cuil as string,
+          nota: inserted[0].nota as string,
+          fecha_hora: inserted[0].fecha_hora as string,
+          analista: inserted[0].analista as string,
+        };
+        pushRecordatorioChange('INSERT', rec);
+        forceShowPopup(rec);
+      }
 
-    } catch (err: any) {
-      showError(`Error: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      showError(`Error: ${message}`);
     } finally {
       setLoading(false);
     }
@@ -103,15 +129,23 @@ export default function AvisosTab() {
     }
   };
 
-  const ejecutarRecordatorio = async (rec: any) => {
+  const ejecutarRecordatorio = async (rec: RecordatorioRow) => {
     try {
       // Simplemente enviamos el aviso para que se muestre en pantalla (sin modificar la fecha real de la BD)
-      forceShowPopup(rec);
+      forceShowPopup({
+        id: rec.id,
+        nombre: rec.nombre,
+        cuil: rec.cuil,
+        nota: rec.nota,
+        fecha_hora: rec.fecha_hora,
+        analista: rec.analista,
+      });
       showSuccess(`Recordatorio de ${rec.nombre} enviado a la pantalla de ${rec.analista}`);
 
       fetchRecordatoriosPendientes();
-    } catch (err: any) {
-      showError(`Error al ejecutar: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      showError(`Error al ejecutar: ${message}`);
     }
   };
 
@@ -266,7 +300,7 @@ export default function AvisosTab() {
                     <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--azul)', background: 'rgba(59,130,246,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
                       {h.analista}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#555' }}>{new Date(h.creado_en).toLocaleString()}</span>
+                    <span style={{ fontSize: '11px', color: '#555' }}>{new Date(h.creado_en || '').toLocaleString()}</span>
                   </div>
                   <p style={{ fontSize: '13px', color: '#ccc' }}>{h.nota}</p>
                 </div>

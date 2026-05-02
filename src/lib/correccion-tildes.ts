@@ -324,14 +324,6 @@ export function corregirTildes(texto: string): string {
 }
 
 /**
- * Aplica corregirTildes al texto.
- * (Antes era un "hook" pero no usa ninguna API de React — es una función pura.)
- */
-export function aplicarCorreccionTildes(valor: string): string {
-  return corregirTildes(valor);
-}
-
-/**
  * Corrige tildes en tiempo real mientras el usuario escribe
  * Se aplica después de escribir la palabra completa (detecta espacios, punto, etc.)
  */

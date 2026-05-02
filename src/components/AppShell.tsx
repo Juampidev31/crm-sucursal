@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ErrorProvider, useDataError } from '@/context/ErrorContext';
@@ -11,6 +11,7 @@ import { HistoricoProvider } from '@/features/historico/HistoricoProvider';
 import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { FilterProvider } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
+import ZoomWrapper from './ZoomWrapper';
 import { Bell, X, AlertCircle, Columns } from 'lucide-react';
 import SplitLayout from './SplitLayout';
 import { formatDate } from '@/lib/utils';
@@ -337,7 +338,9 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                   }}
                 />
               ) : (
-                children
+                <ZoomWrapper>
+                  {children}
+                </ZoomWrapper>
               )}
             </motion.div>
           </AnimatePresence>
@@ -354,7 +357,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === '/login';
   const isPublicRoute = pathname.startsWith('/publico');
 
-  if (isPublicRoute || isLoginPage) return <>{children}</>;
+  if (isPublicRoute || isLoginPage) {
+    return (
+      <React.Suspense fallback={null}>
+        <ZoomWrapper>{children}</ZoomWrapper>
+      </React.Suspense>
+    );
+  }
 
   return (
     <ErrorProvider>

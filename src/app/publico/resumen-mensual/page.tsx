@@ -61,7 +61,6 @@ async function fetchSnapshot(anio: number, mes: number): Promise<{ html?: string
 }
 
 import ResumenMensualInteractivo from './ResumenMensualInteractivo';
-import ZoomWrapper from './ZoomWrapper';
 
 export default async function ResumenMensualPublico({ searchParams }: { searchParams: SearchParams }) {
   const { anio, mes, zoom } = parsePeriodo(await searchParams);
@@ -90,18 +89,16 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
         </div>
       </header>
 
-      <ZoomWrapper initialZoom={zoom}>
-        <main style={{ padding: '32px 40px', width: '100%', maxWidth: 'none', margin: '0' }}>
-          {result.datos ? (
-            <ResumenMensualInteractivo datos={result.datos} />
-          ) : (
-            <div
-              dangerouslySetInnerHTML={{ __html: result.html || '' }}
-              style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
-            />
-          )}
-        </main>
-      </ZoomWrapper>
+      <main style={{ padding: '32px 40px', width: '100%', maxWidth: 'none', margin: '0' }}>
+        {result.datos ? (
+          <ResumenMensualInteractivo datos={result.datos} />
+        ) : (
+          <div
+            dangerouslySetInnerHTML={{ __html: result.html || '' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+          />
+        )}
+      </main>
     </div>
   );
 }

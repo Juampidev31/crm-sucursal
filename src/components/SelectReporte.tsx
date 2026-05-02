@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { ChevronDown, Calendar, User } from 'lucide-react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface Option {
   label: string;
@@ -22,15 +23,8 @@ export default function SelectReporte({ options, value, onChange, icon, width = 
 
   const selectedOption = options.find(o => String(o.value) === String(value)) || options[0];
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const closeDropdown = useCallback(() => setIsOpen(false), []);
+  useClickOutside(containerRef, closeDropdown);
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width }}>
@@ -156,12 +150,6 @@ export default function SelectReporte({ options, value, onChange, icon, width = 
           ))}
         </div>
       )}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes elegantIn {
-          from { opacity: 0; transform: translateY(-10px) scale(0.95); filter: blur(10px); }
-          to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-        }
-      ` }} />
     </div>
   );
 }

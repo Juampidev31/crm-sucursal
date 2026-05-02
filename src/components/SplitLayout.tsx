@@ -184,14 +184,6 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
           />
         </div>
       </div>
-      
-      <style dangerouslySetInnerHTML={{ __html: `
-        /* Ocultar scrollbars en los iframes si es posible */
-        iframe::-webkit-scrollbar {
-          width: 0;
-          height: 0;
-        }
-      ` }} />
     </div>
   );
 }

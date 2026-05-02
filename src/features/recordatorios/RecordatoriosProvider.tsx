@@ -29,9 +29,9 @@ interface RecordatoriosCtx {
   clearReminderAlert: () => void;
   markReminderCompleted: (id: string) => Promise<void>;
   adjustPendingReminders: (delta: number) => void;
-  pushRecordatorioChange: (type: ChangeType, recordatorio: any) => void;
+  pushRecordatorioChange: (type: ChangeType, recordatorio: Recordatorio | ReminderAlertData) => void;
   forceCheckDue: () => void;
-  forceShowPopup: (recordatorio: any) => void;
+  forceShowPopup: (recordatorio: ReminderAlertData) => void;
 }
 
 const RecordatoriosContext = createContext<RecordatoriosCtx | null>(null);
@@ -81,7 +81,8 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
     } catch (err) {
       console.warn('[RecordatoriosProvider] Error inesperado en fetchCount:', err);
     }
-  }, [reportError, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportError, user, filterCtx?.filters.analista]);
 
   const checkDueReminders = useCallback(async () => {
     if (!user) return;
@@ -189,7 +190,7 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
     bulk_refresh: () => { fetchCount(); },
   });
 
-  const forceShowPopup = useCallback((recordatorio: any) => {
+  const forceShowPopup = useCallback((recordatorio: ReminderAlertData) => {
     broadcastRef.current?.send({
       type: 'broadcast',
       event: 'force_show_popup',
@@ -197,11 +198,11 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
     }).catch(() => { });
   }, [broadcastRef]);
 
-  const pushRecordatorioChange = useCallback((type: ChangeType, recordatorio: any) => {
+  const pushRecordatorioChange = useCallback((type: ChangeType, recordatorio: Recordatorio | ReminderAlertData) => {
     broadcastRef.current?.send({
       type: 'broadcast',
       event: 'recordatorio_change',
-      payload: { type, recordatorio, mostrado: recordatorio.mostrado },
+      payload: { type, recordatorio, mostrado: 'mostrado' in recordatorio ? recordatorio.mostrado : undefined },
     }).catch(() => { });
     
     // También procesar localmente si es un trigger de admin

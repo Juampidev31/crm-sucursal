@@ -9,6 +9,8 @@ import {
   LinearScale,
   BarElement,
   Tooltip,
+  type ChartOptions,
+  type TooltipItem,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
@@ -16,7 +18,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
 const VERDE = '#4CAF50';
 const ROJO = '#ef4444';
-const AZUL = '#3b82f6';
 
 interface Props {
   filtroMes: string;      // "YYYY-MM"
@@ -73,15 +74,14 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
     }],
   };
 
-  const chartOptions = {
+  const chartOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          label: (ctx: any) => ` ${formatCurrency(ctx.raw)}`,
+          label: (ctx: TooltipItem<'bar'>) => ` ${formatCurrency(ctx.raw as number)}`,
         },
       },
     },
@@ -96,8 +96,7 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
           color: '#555',
           font: { size: 10 },
           maxTicksLimit: 5,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          callback: (v: any) =>
+          callback: (v: string | number) =>
             new Intl.NumberFormat('es-AR').format(Number(v)),
         },
         grid: { color: 'rgba(255,255,255,0.03)' },
@@ -202,7 +201,7 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
 
           {/* Bar chart */}
           <div style={{ height: '80px', paddingLeft: '16px' }}>
-            <Bar data={chartData} options={chartOptions as never} />
+            <Bar data={chartData} options={chartOptions} />
           </div>
         </div>
       )}

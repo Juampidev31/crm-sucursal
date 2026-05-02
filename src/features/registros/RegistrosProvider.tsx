@@ -95,7 +95,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     });
   }, [channelRef]);
 
-  const pushRegistroChange = useCallback((type: ChangeType, registro: any) => {
+  const pushRegistroChange = useCallback((type: ChangeType, registro: Registro) => {
     channelRef.current?.send({
       type: 'broadcast',
       event: 'update',

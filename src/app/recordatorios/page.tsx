@@ -151,7 +151,7 @@ export default function RecordatoriosPage() {
         showToast('Acción deshecha', 'success');
         logAudit({ id_registro: data.registro_id, nombre: data.nombre, cuil: data.cuil, analista: data.analista, accion: 'Undo Eliminación', campo_modificado: 'Recordatorio', valor_nuevo: 'Restaurado' });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al deshacer:', err);
       showToast('Error al deshacer la acción', 'error');
     } finally {

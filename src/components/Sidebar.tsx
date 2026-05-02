@@ -8,7 +8,7 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { STATUS_LABEL } from '@/lib/utils';
 import { 
-  AlignJustify, BarChart2, PieChart, FileText,
+  AlignJustify, BarChart2, FileText,
   DollarSign, Settings, Bell, Lock, LogOut, Plus, 
   SlidersHorizontal, Download, ChevronDown, ChevronUp, X, Calculator
 } from 'lucide-react';
