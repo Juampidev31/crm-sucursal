@@ -1029,9 +1029,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     [registros, selectedMes, selectedAnio]
   );
 
-  const distPor = (campo: keyof Registro) => {
+  const distPor = (campo: keyof Registro, fuente = ventasMes) => {
     const map = new Map<string, { monto: number; cantidad: number }>();
-    for (const r of ventasMes) {
+    for (const r of fuente) {
       const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
       const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
       map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
@@ -1081,7 +1081,7 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
   }, [ventasMes]);
 
-  const distCuotas = useMemo(() => distPor('cuotas'), [ventasMes]);
+  const distCuotas = useMemo(() => distPor('cuotas', ventasMes.filter(isVenta)), [ventasMes]);
   const distRangoEtario = useMemo(() => distPor('rango_etario'), [ventasMes]);
   const distSexo = useMemo(() => distPor('sexo'), [ventasMes]);
   const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
