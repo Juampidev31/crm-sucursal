@@ -143,24 +143,31 @@ export default function CobranzasClient({ data, year, years }: Props) {
       </div>
 
       <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div className="data-card" style={{ flex: 1, minWidth: '400px', marginBottom: 0 }}>
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0 }}>
           <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Cumplimiento por Tramo</h3>
           <div style={{ height: '260px' }}>
             <Chart type="bar" data={cumplData} options={chartOpts('%') as any} />
           </div>
         </div>
 
-        <div className="data-card" style={{ flex: 1, minWidth: '400px', marginBottom: 0 }}>
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0 }}>
           <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Morosidad Anual</h3>
           <div style={{ height: '260px' }}>
             <Line data={moresData} options={chartOpts('%') as any} />
+          </div>
+        </div>
+
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0 }}>
+          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Variación Morosidad (+/-)</h3>
+          <div style={{ height: '260px' }}>
+            <Chart type="bar" data={variationData} options={{ ...chartOpts(' p.p.'), maintainAspectRatio: false } as any} />
           </div>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch', flexWrap: 'wrap' }}>
         {data.morosidad.length > 0 && (
-          <div style={{ flex: 1.6, minWidth: '600px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'hidden' }}>
+          <div style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
               <span style={{ fontSize: '11px', fontWeight: 800, color: '#666', letterSpacing: '1px', textTransform: 'uppercase' }}>Detalle Morosidad</span>
             </div>
@@ -190,13 +197,6 @@ export default function CobranzasClient({ data, year, years }: Props) {
             </table>
           </div>
         )}
-
-        <div className="data-card" style={{ flex: 1, minWidth: '350px', marginBottom: 0 }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Variación Morosidad (+/-)</h3>
-          <div style={{ height: '360px' }}>
-            <Chart type="bar" data={variationData} options={{ ...chartOpts(' p.p.'), maintainAspectRatio: false } as any} />
-          </div>
-        </div>
       </div>
     </div>
   );
