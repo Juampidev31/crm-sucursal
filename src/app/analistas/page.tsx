@@ -1,1447 +1,1476 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { logAudit } from '@/lib/audit';
-import { formatCurrency, calcularComisiones, calcularDiasHabilesAutomaticos, getStatusLabel } from '@/lib/utils';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
+import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
-import { useHistorico } from '@/features/historico/HistoricoProvider';
-import { useSettings } from '@/features/settings/SettingsProvider';
-import { CONFIG, DiasConfig } from '@/types';
-import {
-  Chart as ChartJS,
-  CategoryScale, LinearScale, BarElement, LineElement,
-  PointElement, Tooltip, Legend, Filler,
-} from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
-import {
-  Activity,
-  BarChart2,
-  CalendarDays,
-  Wallet,
-  TrendingUp,
-  TrendingDown,
-  Zap,
-  Target,
-  AlertTriangle,
-  Clock,
-  ShieldAlert,
-  Users,
-  ChevronDown,
-  FileText,
-  RotateCcw,
-  Plus,
-  DollarSign,
-  Percent,
-} from 'lucide-react';
-
 import SelectReporte from '@/components/SelectReporte';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, Filler);
-
-
-// PDV = vista combinada de TODOS los analistas (no es un analista real en la DB)
-const PDV = '__pdv__';
-
-const numFmt = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-const pct = (v: number) => `${v.toFixed(1)}%`;
-const mesStr = (anio: number, mes: number) => `${anio}-${String(mes + 1).padStart(2, '0')}`;
-const esVenta = (estado: string) =>
-  estado.toLowerCase() === 'venta' || estado.toLowerCase().includes('aprobado cc');
-
-interface Reg {
-  analista: string;
-  estado: string;
-  monto: number;
-  fecha: string | null;
-  tipo_cliente?: string;
-  es_re?: boolean;
-  acuerdo_precios?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-const CHART_COLORS: Record<string, string> = {
-  venta: '#ffffff',
-  proyeccion: 'rgba(255,255,255,0.6)',
-  'en seguimiento': 'rgba(255,255,255,0.4)',
-  'score bajo': 'rgba(255,255,255,0.25)',
-  afectaciones: 'rgba(248,113,113,0.4)',
-  'derivado / aprobado cc': 'rgba(255,255,255,0.7)',
-  'derivado / rechazado cc': 'rgba(248,113,113,0.3)',
-};
-
-const ESTADOS_METRICAS = [
-  'venta', 'proyeccion', 'en seguimiento', 'score bajo',
-  'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc',
-];
-
-const ESTADOS_RESUMEN = [
-  { key: 'proyeccion', label: 'PROYECCIONES' },
-  { key: 'en seguimiento', label: 'EN SEGUIMIENTO' },
-  { key: 'score bajo', label: 'SCORE BAJO' },
-  { key: 'afectaciones', label: 'AFECTACIONES' },
-  { key: 'derivado / aprobado cc', label: 'DERIVADO APROBADO CC' },
-  { key: 'derivado / rechazado cc', label: 'DERIVADO RECHAZADO CC' },
-];
-
-interface MesData { mes: string; obj: string; real: string; cumpl: string; cumplPct: number | null; varIM: string; ops: string; alcance: string; cumplOps: string; cumplOpsPct: number | null; varIMOps: string; }
-interface SeccionData { anio: number; meses: MesData[]; }
-interface HistoricoData { secciones: SeccionData[]; }
-interface PDVMes { mes: string; obj: string; real: string; cumpl: string; cumplPct: number | null; var: string; }
-interface PDVData { years: number[]; yearData: Record<number, { capital: PDVMes[]; operaciones: PDVMes[] | null }>; }
-
-function pctColor(v: number | null) { if (v === null) return '#333'; if (v >= 100) return '#34d399'; return '#f87171'; }
-function varColor(_v: string) { return '#ffffff'; }
-
-function PDVHistorico({ data }: { data: PDVData }) {
-  const [anioSel, setAnioSel] = useState<number>(() => data.years[data.years.length - 1]);
-  const yd = data.yearData[anioSel];
-  const capitalRows: PDVMes[] = (yd?.capital ?? []) as PDVMes[];
-  const opsRows: PDVMes[] | null = (yd?.operaciones ?? null) as PDVMes[] | null;
-
-  const trimestres = [0, 1, 2, 3].map(q => {
-    const meses = capitalRows.slice(q * 3, q * 3 + 3).filter(m => m.cumplPct !== null);
-    if (!meses.length) return null;
-    return meses.reduce((s, m) => s + (m.cumplPct ?? 0), 0) / meses.length;
-  });
-
-  const th: React.CSSProperties = { padding: '8px 12px', color: '#666', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
-
-  const MiniTable = ({ titulo, filas }: { titulo: string; filas: PDVMes[] }) => (
-    <div style={{ background: '#080808', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px', overflow: 'auto', flex: 1 }}>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
-      </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-        <thead><tr>
-          {['Mes', 'Objetivo', 'Alcance', 'Cumpl.', 'Var'].map(h => <th key={h} style={{ ...th, textAlign: 'center' }}>{h}</th>)}
-        </tr></thead>
-        <tbody>
-          {filas.map((r, i) => (
-            <tr key={i} style={{
-              borderBottom: '1px solid rgba(255,255,255,0.02)',
-              background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'
-            }}>
-              <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.mes}</td>
-              <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.obj}</td>
-              <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.real}</td>
-              <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#fff' }}>—</span>}
-              </td>
-              <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.var !== '-' ? r.var : '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-
-  return (
-    <div style={{ marginTop: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-            <CalendarDays size={16} color="#fbbf24" />
-          </div>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO ANUAL — PDV</div>
-            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-              Rendimiento ANUAL
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
-            {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => (
-              <div key={q} style={{ padding: '4px 12px', textAlign: 'center', minWidth: '50px' }}>
-                <div style={{ fontSize: '8px', color: '#666', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
-                <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(trimestres[i]) }}>{trimestres[i] !== null ? `${trimestres[i]!.toFixed(1)}%` : '—'}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
-            {data.years.map(a => (
-              <button key={a} onClick={() => setAnioSel(a)} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === a ? '#f7e479' : 'transparent', color: anioSel === a ? '#000' : '#555' }}>{a}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-        <MiniTable titulo="Capital" filas={capitalRows} />
-        {opsRows && opsRows.length > 0 && <MiniTable titulo="Operaciones" filas={opsRows} />}
-      </div>
-    </div>
-  );
-}
-
-function AnalistaHistorico({ data, nombre }: { data: HistoricoData; nombre: string }) {
-  const [anioSel, setAnioSel] = useState<number>(() =>
-    data.secciones.length ? data.secciones[data.secciones.length - 1].anio : new Date().getFullYear()
-  );
-
-  const seccion = data.secciones.find(s => s.anio === anioSel);
-  const th: React.CSSProperties = { padding: '8px 12px', color: '#666', fontWeight: 700, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap' };
-
-  // Calcular Q1-Q4 desde los meses del año seleccionado
-  const trimestres = [0, 1, 2, 3].map(q => {
-    const meses = seccion?.meses.slice(q * 3, q * 3 + 3) ?? [];
-    const validos = meses.filter(m => m.cumplPct !== null);
-    if (!validos.length) return null;
-    const avg = validos.reduce((s, m) => s + (m.cumplPct ?? 0), 0) / validos.length;
-    return avg;
-  });
-
-  return (
-    <div style={{ marginTop: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-            <CalendarDays size={16} color="#fbbf24" />
-          </div>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO ANUAL — {nombre}</div>
-            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-              Rendimiento ANUAL
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          {/* Trimestrales en bloque similar a los años */}
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
-            {['Q1', 'Q2', 'Q3', 'Q4'].map((q, i) => {
-              const val = trimestres[i];
-              return (
-                <div key={q} style={{ padding: '4px 12px', textAlign: 'center', minWidth: '50px' }}>
-                  <div style={{ fontSize: '8px', color: '#666', fontWeight: 800, letterSpacing: '1px' }}>{q}</div>
-                  <div style={{ fontSize: '12px', fontWeight: 900, color: pctColor(val) }}>{val !== null ? `${val.toFixed(1)}%` : '—'}</div>
-                </div>
-              );
-            })}
-          </div>
-          {/* Selector año */}
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '8px', padding: '3px', display: 'flex', gap: '2px' }}>
-            {data.secciones.map(s => (
-              <button key={s.anio} onClick={() => setAnioSel(s.anio)} style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: anioSel === s.anio ? '#f7e479' : 'transparent', color: anioSel === s.anio ? '#000' : '#555' }}>{s.anio}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Tablas en Grid */}
-      {seccion && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {/* Capital */}
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'auto' }}>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', letterSpacing: '1px', textTransform: 'uppercase' }}>CAPITAL</span>
-            </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead><tr>
-                <th style={{ ...th, textAlign: 'center' }}>Mes</th>
-                <th style={{ ...th, textAlign: 'center' }}>Objetivo</th>
-                <th style={{ ...th, textAlign: 'center' }}>Alcance</th>
-                <th style={{ ...th, textAlign: 'center' }}>Cumpl.</th>
-                <th style={{ ...th, textAlign: 'center' }}>Var.IM</th>
-              </tr></thead>
-              <tbody>
-                {seccion.meses.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.mes}</td>
-                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.obj}</td>
-                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.real}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                      {r.cumplPct !== null ? <span style={{ color: pctColor(r.cumplPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumpl}</span> : <span style={{ color: '#666' }}>—</span>}
-                    </td>
-                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.varIM !== '-' ? r.varIM : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Operaciones */}
-          <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '14px', overflow: 'auto' }}>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', letterSpacing: '1px', textTransform: 'uppercase' }}>OPERACIONES</span>
-            </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead><tr>
-                <th style={{ ...th, textAlign: 'center' }}>Mes</th>
-                <th style={{ ...th, textAlign: 'center' }}>Objetivo</th>
-                <th style={{ ...th, textAlign: 'center' }}>Alcance</th>
-                <th style={{ ...th, textAlign: 'center' }}>Cumpl.</th>
-                <th style={{ ...th, textAlign: 'center' }}>Var.IM</th>
-              </tr></thead>
-              <tbody>
-                {seccion.meses.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.mes}</td>
-                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.ops}</td>
-                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.alcance}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                      {r.cumplOpsPct !== null ? <span style={{ color: pctColor(r.cumplOpsPct), fontWeight: 800, fontSize: '11px', background: `${pctColor(r.cumplOpsPct)}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumplOps}</span> : <span style={{ color: '#666' }}>—</span>}
-                    </td>
-                    <td style={{ padding: '8px 12px', color: '#666', textAlign: 'center' }}>{r.varIMOps !== '-' ? r.varIMOps : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function AnalistasPage() {
-  const now = new Date();
-  const [analista, setAnalista] = useState<string>(PDV);
-
-
-  const [mes, setMes] = useState(now.getMonth());
-  const [anio, setAnio] = useState(now.getFullYear());
-  const [compararMesAnterior, setCompararMesAnterior] = useState(false);
-
-  const { registros: rawRegs, loading } = useRegistros();
-  const { objetivos: todosObjs } = useObjetivos();
-  const { historicoVentas } = useHistorico();
-  const { diasConfig: diasCfg, alertasConfig } = useSettings();
-  const todosRegs = rawRegs as unknown as Reg[];
-
-
-  const [analistasSel, setAnalistasSel] = useState<string[]>([]);
-
-  useEffect(() => {
-    setAnalistasSel(CONFIG.ANALISTAS_DEFAULT);
-  }, []);
-
-  // Registros del analista seleccionado
-  // PDV = todos, individual = filtrado
-  const regs = useMemo(
-    () => analista === PDV ? todosRegs : todosRegs.filter(r => r.analista === analista),
-    [todosRegs, analista]
-  );
-
-  // ── Histórico Anual — calculado desde Supabase en tiempo real ────────────
-  const historicoAnualData = useMemo(() => {
-    const fmtK = (v: number) => v > 0 ? `$${numFmt.format(v)}` : '-';
-    const fmtPct = (v: number) => `${v.toFixed(1)}%`;
-    const fmtVar = (curr: number, prev: number) => {
-      if (prev === 0) return '-';
-      const p = ((curr - prev) / prev) * 100;
-      return `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`;
-    };
-
-    const aniosSet = new Set<number>();
-    todosObjs.forEach(o => {
-      aniosSet.add(o.anio);
-    });
-    historicoVentas.forEach(h => {
-      aniosSet.add(h.anio);
-    });
-    aniosSet.add(new Date().getFullYear());
-    // Ocultar años 2021 y 2022 solo para analistas individuales (no PDV)
-    const anios = Array.from(aniosSet).filter(a => analista === PDV ? true : a >= 2023).sort();
-
-    const buildAnalistaHistorico = (analistaName: string): HistoricoData => {
-      const secciones = anios.map(anio => {
-        let prevMonto = 0, prevOps = 0;
-        const meses: MesData[] = [];
-        CONFIG.MESES_NOMBRES.forEach((mesNombre, mesIdx) => {
-          const mesKey = mesStr(anio, mesIdx);
-          const mesRegs = todosRegs.filter(r =>
-            r.analista === analistaName &&
-            r.fecha?.slice(0, 7) === mesKey &&
-            esVenta(r.estado || '')
-          );
-          const regsCapital = mesRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-          const regsOps = mesRegs.length;
-          // Usar filter + reduce en lugar de find para manejar múltiples registros
-          const histEntries = historicoVentas.filter(h => h.analista === analistaName && h.anio === anio && h.mes === mesIdx);
-          const histSum = histEntries.reduce((s, h) => s + (h.capital_real || 0), 0);
-          const histOpsSum = histEntries.reduce((s, h) => s + (h.ops_real || 0), 0);
-          const real = regsCapital > 0 ? regsCapital : histSum;
-          const opsReal = regsOps > 0 ? regsOps : histOpsSum;
-          const obj = todosObjs.find(o => o.analista === analistaName && o.mes === mesIdx && o.anio === anio);
-          const metaVentas = Number(obj?.meta_ventas) || 0;
-          const metaOps = Number(obj?.meta_operaciones) || 0;
-          const cumplPct = metaVentas > 0 ? (real / metaVentas) * 100 : null;
-          const cumplOpsPct = metaOps > 0 ? (opsReal / metaOps) * 100 : null;
-          const varIM = fmtVar(real, prevMonto);
-          const varIMOps = fmtVar(opsReal, prevOps);
-          prevMonto = real;
-          prevOps = opsReal;
-          if (metaVentas === 0 && real === 0) return;
-          meses.push({
-            mes: mesNombre,
-            obj: metaVentas > 0 ? fmtK(metaVentas) : '-',
-            real: real > 0 ? fmtK(real) : '-',
-            cumpl: cumplPct !== null ? fmtPct(cumplPct) : '-',
-            cumplPct,
-            varIM,
-            ops: metaOps > 0 ? String(metaOps) : '-',
-            alcance: opsReal > 0 ? String(opsReal) : '-',
-            cumplOps: cumplOpsPct !== null ? fmtPct(cumplOpsPct) : '-',
-            cumplOpsPct,
-            varIMOps,
-          });
-        });
-        return { anio, meses };
-      }).filter(s => s.meses.length > 0);
-      return { secciones };
-    };
-
-    const buildPDVHistorico = (): PDVData => {
-      const yearsData: PDVData['yearData'] = {};
-      anios.forEach(anio => {
-        let prevCapital = 0, prevOps = 0;
-        const capitalRows: PDVMes[] = [];
-        const opsRows: PDVMes[] = [];
-        CONFIG.MESES_NOMBRES.forEach((mesNombre, mesIdx) => {
-          const mesKey = mesStr(anio, mesIdx);
-          const mesRegs = todosRegs.filter(r =>
-            r.fecha?.slice(0, 7) === mesKey && esVenta(r.estado || '')
-          );
-          const regsCapital = mesRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-          const regsOps = mesRegs.length;
-          const pdvHist = historicoVentas.filter(h => h.analista === 'PDV' && h.anio === anio && h.mes === mesIdx);
-          const indivHist = historicoVentas.filter(h => h.analista !== 'PDV' && h.anio === anio && h.mes === mesIdx);
-          const histSrc = pdvHist.length > 0 ? pdvHist : indivHist;
-          const histSum = histSrc.reduce((s, h) => s + (h.capital_real || 0), 0);
-          const histOpsSum = histSrc.reduce((s, h) => s + (h.ops_real || 0), 0);
-          const real = regsCapital > 0 ? regsCapital : histSum;
-          const opsReal = regsOps > 0 ? regsOps : histOpsSum;
-          const pdvObjs = todosObjs.filter(o => o.mes === mesIdx && o.anio === anio && o.analista === 'PDV');
-          const objsForMonth = pdvObjs.length > 0
-            ? pdvObjs
-            : todosObjs.filter(o => o.mes === mesIdx && o.anio === anio && CONFIG.ANALISTAS_DEFAULT.includes(o.analista));
-          const metaVentas = objsForMonth.reduce((s, o) => s + (Number(o.meta_ventas) || 0), 0);
-          const metaOps = objsForMonth.reduce((s, o) => s + (Number(o.meta_operaciones) || 0), 0);
-          const cumplPct = metaVentas > 0 ? (real / metaVentas) * 100 : null;
-          const cumplOpsPct = metaOps > 0 ? (opsReal / metaOps) * 100 : null;
-          const varCapital = fmtVar(real, prevCapital);
-          const varOps = fmtVar(opsReal, prevOps);
-          prevCapital = real;
-          prevOps = opsReal;
-          if (metaVentas === 0 && real === 0) return;
-          capitalRows.push({ mes: mesNombre, obj: metaVentas > 0 ? fmtK(metaVentas) : '-', real: real > 0 ? fmtK(real) : '-', cumpl: cumplPct !== null ? fmtPct(cumplPct) : '-', cumplPct, var: varCapital });
-          opsRows.push({ mes: mesNombre, obj: metaOps > 0 ? String(metaOps) : '-', real: opsReal > 0 ? String(opsReal) : '-', cumpl: cumplOpsPct !== null ? fmtPct(cumplOpsPct) : '-', cumplPct: cumplOpsPct, var: varOps });
-        });
-        if (capitalRows.length > 0) yearsData[anio] = { capital: capitalRows, operaciones: opsRows.length > 0 ? opsRows : null };
-      });
-      const validYears = Object.keys(yearsData).map(Number).sort();
-      return { years: validYears, yearData: yearsData };
-    };
-
-    return {
-      analistaSel: analista !== PDV ? buildAnalistaHistorico(analista) : { secciones: [] as SeccionData[] },
-      pdv: buildPDVHistorico(),
-    };
-  }, [todosRegs, todosObjs, analista, historicoVentas]);
-
-  // Objetivos indexados por "anio-mes"
-  // PDV = suma de todos los analistas, individual = solo el suyo
-  const objMap = useMemo(() => {
-    const map: Record<string, { meta_ventas: number; meta_operaciones: number }> = {};
-    for (const o of todosObjs) {
-      const k = mesStr(o.anio, o.mes);
-      if (!map[k]) map[k] = { meta_ventas: 0, meta_operaciones: 0 };
-      if (analista === PDV ? o.analista === 'PDV' : o.analista === analista) {
-        map[k].meta_ventas += Number(o.meta_ventas) || 0;
-        map[k].meta_operaciones += Number(o.meta_operaciones) || 0;
-      }
-    }
-    return map;
-  }, [todosObjs, analista]);
-
-  // Días hábiles: la config manual solo aplica al mes actual.
-  // Para meses pasados/futuros se calcula automáticamente
-  // (en meses pasados dt = dh → proyectado = alcance)
-  const diasInfo = useMemo(() => {
-    const esMesActual = mes === now.getMonth() && anio === now.getFullYear();
-    if (esMesActual) {
-      const cfgKey = analista === PDV ? 'Todos' : analista;
-      const cfg = diasCfg.find(d => d.analista === cfgKey);
-      if (cfg && cfg.dias_habiles > 0) {
-        return { diasHabiles: cfg.dias_habiles, diasTranscurridos: cfg.dias_transcurridos };
-      }
-    }
-    return calcularDiasHabilesAutomaticos(mes, anio);
-  }, [diasCfg, analista, mes, anio, now]);
-
-  // ── KPIs del mes seleccionado ──────────────────────────────────────
-  const kpis = useMemo(() => {
-    const key = mesStr(anio, mes);
-    const obj = objMap[key] || { meta_ventas: 0, meta_operaciones: 0 };
-
-    const ventasMes = regs.filter(r => r.fecha?.slice(0, 7) === key && esVenta(r.estado || ''));
-    const alcanceCapital = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-    const alcanceOps = ventasMes.length;
-
-    const { diasHabiles: dh, diasTranscurridos: dt } = diasInfo;
-
-    // Mes anterior para tendencia — comparar vs el mismo día hábil del mes anterior
-    let pMes = mes - 1; let pAnio = anio;
-    if (pMes < 0) { pMes = 11; pAnio--; }
-    const prevKey = mesStr(pAnio, pMes);
-
-    // Filtrar ventas del mes anterior hasta el mismo número de días hábiles transcurridos
-    const ventasPrev = regs.filter(r => {
-      if (r.fecha?.slice(0, 7) !== prevKey || !esVenta(r.estado || '')) return false;
-      const fechaVenta = new Date(r.fecha);
-      // Contar cuántos días hábiles han pasado desde el inicio del mes hasta esta fecha
-      let diasHabilesHastaFecha = 0;
-      for (let d = 1; d <= fechaVenta.getDate(); d++) {
-        const ds = new Date(pAnio, pMes, d).getDay();
-        if (ds >= 1 && ds <= 5) diasHabilesHastaFecha++;
-      }
-      return diasHabilesHastaFecha <= dt;
-    });
-    const alcancePrev = ventasPrev.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-    const prevOpsPrev = ventasPrev.length;
-
-    // Para meses pasados completos, proyectado = alcance real (todos los días ya transcurrieron)
-    const esMesPasado = anio < now.getFullYear() || (anio === now.getFullYear() && mes < now.getMonth());
-
-    // Proyección: misma fórmula que el GAS original: (alcance / dt) * dh
-    // Si el mes ya terminó, se fuerza proyectado = alcance para evitar distorsiones
-    const proyCapital = esMesPasado ? alcanceCapital : (dt > 0 ? (alcanceCapital / dt) * dh : 0);
-    const proyOpsRaw = esMesPasado ? alcanceOps : (dt > 0 ? (alcanceOps / dt) * dh : 0);
-    const proyOps = esMesPasado ? alcanceOps : Math.round(proyOpsRaw);
-
-    const cumplReal = obj.meta_ventas > 0 ? (alcanceCapital / obj.meta_ventas) * 100 : 0;
-    const cumplProy = obj.meta_ventas > 0 ? (proyCapital / obj.meta_ventas) * 100 : 0;
-    const cumplRealOps = obj.meta_operaciones > 0 ? (alcanceOps / obj.meta_operaciones) * 100 : 0;
-    const cumplProyOps = obj.meta_operaciones > 0 ? (proyOpsRaw / obj.meta_operaciones) * 100 : 0;
-
-    const tendPct = alcancePrev > 0 ? ((alcanceCapital - alcancePrev) / alcancePrev) * 100 : 0;
-    const tendPctOps = prevOpsPrev > 0 ? ((alcanceOps - prevOpsPrev) / prevOpsPrev) * 100 : 0;
-    const comisiones = calcularComisiones(alcanceCapital, alcanceOps, obj.meta_ventas, obj.meta_operaciones);
-
-    const aperturas = regs.filter(r => r.fecha?.slice(0, 7) === key && r.tipo_cliente === 'Apertura').length;
-    const renovaciones = regs.filter(r => r.fecha?.slice(0, 7) === key && (r.tipo_cliente === 'Renovacion' || r.es_re)).length;
-
-    // Desglose de acuerdos
-    const acuerdosBajo = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Riesgo Bajo').length;
-    const acuerdosMedio = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Riesgo Medio').length;
-    const acuerdosPremium = regs.filter(r => r.fecha?.slice(0, 7) === key && r.acuerdo_precios === 'Premium').length;
-    const acuerdos = acuerdosBajo + acuerdosMedio + acuerdosPremium;
-
-    // Venta promedio y conversión
-    const ventaPromedio = alcanceOps > 0 ? alcanceCapital / alcanceOps : 0;
-    // Clientes atendidos = todos los registros del analista en el mes (independientemente del estado)
-    const clientesAtendidos = regs.filter(r => r.fecha?.slice(0, 7) === key).length;
-    const conversion = clientesAtendidos > 0 ? (alcanceOps / clientesAtendidos) * 100 : 0;
-
-    return {
-      obj, alcanceCapital, alcanceOps,
-      alcancePrev, prevOpsPrev, tendPct, tendPctOps,
-      proyCapital, proyOps,
-      cumplReal, cumplProy, cumplRealOps, cumplProyOps,
-      dh, dt, comisiones, pMes, pAnio,
-      aperturas, renovaciones, acuerdos,
-      acuerdosBajo, acuerdosMedio, acuerdosPremium,
-      ventaPromedio, clientesAtendidos, conversion
-    };
-  }, [regs, objMap, diasInfo, mes, anio, analista]);
-
-  // ── Curva de crecimiento (acumulado diario) ──────────────────────
-  const curva = useMemo(() => {
-    const lastDay = new Date(anio, mes + 1, 0).getDate();
-    const key = mesStr(anio, mes);
-    const ventasMes = regs.filter(r => r.fecha?.slice(0, 7) === key && esVenta(r.estado || ''));
-    let acum = 0;
-    let lastAcum = 0;
-    const stats = [
-      { acum: 0, hasSale: false, day: 0 },
-      ...Array.from({ length: lastDay }, (_, i) => {
-        const d = String(i + 1).padStart(2, '0');
-        const v = ventasMes.filter(r => r.fecha?.slice(8, 10) === d)
-          .reduce((s, r) => s + (Number(r.monto) || 0), 0);
-        acum += v;
-        const hasSale = v > 0;
-        const data = { acum, hasSale, day: i + 1 };
-        lastAcum = acum;
-        return data;
-      })
-    ];
-
-    const hoyStr = mesStr(now.getFullYear(), now.getMonth());
-    const diaHoy = key === hoyStr ? now.getDate() : lastDay;
-    const objetivo = kpis.obj.meta_ventas;
-    const referencias = [0, ...Array.from({ length: lastDay }, (_, i) =>
-      Math.round((objetivo / lastDay) * (i + 1))
-    )];
-
-    return {
-      dias: [0, ...Array.from({ length: lastDay }, (_, i) => i + 1)],
-      stats,
-      referencias,
-      diaHoy,
-      objetivo
-    };
-  }, [regs, mes, anio, kpis.obj.meta_ventas, now]);
-
-  // ── Histórico 12 meses ────────────────────────────────────────────
-  const historico = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => {
-      let m = mes - (11 - i); let a = anio;
-      while (m < 0) { m += 12; a--; }
-      const k = mesStr(a, m);
-      const v = regs.filter(r => r.fecha?.slice(0, 7) === k && esVenta(r.estado || ''));
-      const alcance = v.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-      const obj = objMap[k]?.meta_ventas || 0;
-      return {
-        label: CONFIG.MESES_NOMBRES[m].substring(0, 3),
-        alcance, objetivo: obj,
-        cumplimiento: obj > 0 ? (alcance / obj) * 100 : 0,
-      };
-    });
-  }, [regs, objMap, mes, anio]);
-
-  // ── Datos del mes anterior para comparación ───────────────────────
-  const datosMesAnterior = useMemo(() => {
-    const mesAnterior = mes === 0 ? 11 : mes - 1;
-    const anioAnterior = mes === 0 ? anio - 1 : anio;
-    const k = mesStr(anioAnterior, mesAnterior);
-    const lastDay = new Date(anioAnterior, mesAnterior + 1, 0).getDate();
-    
-    const ventasMes = regs.filter(r => r.fecha?.slice(0, 7) === k && esVenta(r.estado || ''));
-    let acum = 0;
-    const dailyData = Array.from({ length: lastDay }, (_, i) => {
-      const d = String(i + 1).padStart(2, '0');
-      const v = ventasMes.filter(r => r.fecha?.slice(8, 10) === d)
-        .reduce((s, r) => s + (Number(r.monto) || 0), 0);
-      acum += v;
-      return acum;
-    });
-
-    return {
-      label: CONFIG.MESES_NOMBRES[mesAnterior].substring(0, 3),
-      data: dailyData,
-      total: acum,
-      lastDay
-    };
-  }, [regs, mes, anio]);
-
-  // ── Alertas y resumen de gestión ─────────────────────────────────
-  const alertas = useMemo(() => {
-    const now = new Date();
-
-    const countByStateAndDays = (estado: string, diasLimite: number) => {
-      return regs.filter(r => {
-        if (r.estado?.toLowerCase() !== estado.toLowerCase()) return false;
-
-        // Use fecha (business date) so edits don't reset the counter
-        const dateStr = r.fecha || r.created_at;
-
-        // If no date fields available, count all records (fallback to old behavior)
-        if (!dateStr) return true;
-
-        const recordDate = new Date(dateStr);
-        const daysDiff = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 60 * 60 * 24));
-
-        return daysDiff >= diasLimite;
-      }).length;
-    };
-
-    // Get dias limit for each alert type from config
-    const getConfigDias = (estado: string): number => {
-      const config = alertasConfig?.find(a => a.estado.toLowerCase() === estado.toLowerCase());
-      return config?.dias ?? 0; // Return 0 if config not found (show all)
-    };
-
-    return {
-      proyeccion: countByStateAndDays('proyeccion', getConfigDias('proyeccion')),
-      seguimiento: countByStateAndDays('en seguimiento', getConfigDias('en seguimiento')),
-      afectaciones: countByStateAndDays('afectaciones', getConfigDias('afectaciones')),
-    };
-  }, [regs, alertasConfig]);
-
-  const resumenGestion = useMemo(() =>
-    ESTADOS_RESUMEN.map(g => {
-      const items = regs.filter(r => r.estado?.toLowerCase() === g.key);
-      return { label: g.label, ops: items.length, monto: items.reduce((s, r) => s + (Number(r.monto) || 0), 0) };
-    }).filter(g => g.ops > 0),
-    [regs]
-  );
-
-  const metricasEstados = useMemo(() => {
-    const key = mesStr(anio, mes);
-    const filtrados = regs.filter(r => r.fecha?.slice(0, 7) === key);
-    return ESTADOS_METRICAS.map(st => {
-      const match = filtrados.filter(r => r.estado?.toLowerCase() === st);
-      return {
-        key: st,
-        label: getStatusLabel(st),
-        monto: match.reduce((s, r) => s + (Number(r.monto) || 0), 0),
-        ops: match.length,
-        color: CHART_COLORS[st] || '#888',
-      };
-    });
-  }, [regs, mes, anio]);
-
-  // ── Chart data ────────────────────────────────────────────────────
-  const curvaChart = {
-    labels: curva.dias.map(d => d > 0 ? `${d}/${mes + 1}` : ''),
-    datasets: [
-      {
-        label: 'Acumulado',
-        data: curva.stats.map(s => s.acum),
-        borderColor: 'rgba(34, 197, 94, 0.9)',
-        backgroundColor: (context: any) => {
-          const chart = context.chart;
-          const { ctx, chartArea } = chart;
-          if (!chartArea) return 'rgba(34, 197, 94, 0.1)';
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(34, 197, 94, 0.4)');
-          gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.1)');
-          gradient.addColorStop(1, 'rgba(34, 197, 94, 0.01)');
-          return gradient;
-        },
-        fill: true,
-        tension: 0.35,
-        borderWidth: 3,
-        pointRadius: curva.dias.map(d => d <= curva.diaHoy ? 4 : 0),
-        pointBackgroundColor: 'rgba(34, 197, 94, 1)',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointHoverRadius: 7,
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(34, 197, 94, 1)',
-        pointHoverBorderWidth: 3,
-        animations: {
-          y: {
-            duration: 1000,
-            easing: 'easeInOutQuart' as const,
-            from: (ctx: any) => ctx.chart.chartArea?.bottom || 500
-          }
-        }
-      },
-      {
-        label: 'Venta Ideal',
-        data: curva.referencias,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderDash: [6, 4],
-        fill: false,
-        tension: 0,
-        pointRadius: 0,
-        borderWidth: 1,
-        hidden: compararMesAnterior,
-      },
-      {
-        label: 'Período anterior',
-        data: curva.dias.map((dia) => {
-          if (!datosMesAnterior || dia === 0) return 0;
-          if (dia <= datosMesAnterior.data.length) {
-            return datosMesAnterior.data[dia - 1];
-          }
-          return datosMesAnterior.total;
-        }),
-        borderColor: 'rgba(100, 150, 255, 0.6)',
-        backgroundColor: (context: any) => {
-          const chart = context.chart;
-          const { ctx, chartArea } = chart;
-          if (!chartArea) return 'rgba(100, 150, 255, 0.05)';
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, 'rgba(100, 150, 255, 0.3)');
-          gradient.addColorStop(0.5, 'rgba(100, 150, 255, 0.08)');
-          gradient.addColorStop(1, 'rgba(100, 150, 255, 0.01)');
-          return gradient;
-        },
-        fill: true,
-        tension: 0.35,
-        pointRadius: 4,
-        pointBackgroundColor: 'rgba(100, 150, 255, 0.8)',
-        pointBorderColor: 'rgba(255, 255, 255, 0.4)',
-        pointBorderWidth: 1.5,
-        pointHoverRadius: 7,
-        borderWidth: 2,
-        hidden: !compararMesAnterior,
-        animations: {
-          y: {
-            duration: 1000,
-            easing: 'easeInOutQuart' as const,
-            from: (ctx: any) => ctx.chart.chartArea?.bottom || 500
-          }
-        }
-      },
-    ],
-  };
-
-  const curvaOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index' as const, intersect: false },
-    animation: {
-      duration: 1200,
-      easing: 'easeInOutQuart' as const,
-      delay: (context: any) => {
-        let delay = 0;
-        if (context.type === 'data' && context.mode === 'default') {
-          delay = context.dataIndex * 25 + context.datasetIndex * 150;
-        }
-        return delay;
-      },
-    },
-    transitions: {
-      show: { animations: { y: { from: 0 }, opacity: { from: 0 } } },
-      hide: { animations: { y: { to: 0 }, opacity: { to: 0 } } }
-    },
+import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
+import { Bar, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, BarElement,
+  LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
+} from 'chart.js';
+import AnalisisTemporalTab from '@/app/ajustes/AnalisisTemporalTab';
+import MetricasTab from '@/app/ajustes/MetricasTab';
+import type { AnalisisTemporalState } from '@/app/ajustes/AnalisisTemporalTab';
+
+const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
+  const totalNum = typeof total === 'string' ? parseFloat(total) : total;
+  const options = {
+    cutout: '80%',
     plugins: {
-      legend: {
-        display: true,
-        position: 'top' as const,
-        align: 'end' as const,
-        labels: {
-          color: '#aaa',
-          boxWidth: 8,
-          boxHeight: 8,
-          padding: 20,
-          font: { size: 11, weight: 'bold' as const },
-          usePointStyle: true,
-          pointStyle: 'circle' as const
-        }
-      },
+      legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(10, 10, 10, 0.95)',
+        backgroundColor: '#111',
+        titleColor: '#fff',
+        bodyColor: '#ccc',
         borderColor: 'rgba(255,255,255,0.1)',
         borderWidth: 1,
-        titleFont: { family: 'Outfit', size: 14, weight: 'bold' as const },
-        bodyFont: { family: 'Outfit', size: 12 },
-        padding: 16,
-        cornerRadius: 12,
-        displayColors: true,
-        boxPadding: 6,
-        filter: (tooltipItem: any) => {
-          if (compararMesAnterior && tooltipItem.datasetIndex === 1) return false;
-          if (!compararMesAnterior && tooltipItem.datasetIndex === 2) return false;
-          return true;
-        },
-        callbacks: {
-          title: (items: any[]) => `Día ${items[0].label}`,
-          label: (context: any) => {
-            const val = context.parsed.y;
-            const isIdeal = context.datasetIndex === 1;
-            const dayIdx = context.dataIndex;
-            const idealVal = curva.referencias[dayIdx];
-
-            if (isIdeal) return ` VENTA IDEAL: ${formatCurrency(val)}`;
-            if (context.datasetIndex === 2) return ` MES ANTERIOR: ${formatCurrency(val)}`;
-
-            const diff = idealVal > 0 ? ((val - idealVal) / idealVal) * 100 : 0;
-            const diffStr = diff >= 0 ? `(+${diff.toFixed(1)}% vs ideal)` : `(${diff.toFixed(1)}% vs ideal)`;
-            return ` VENTA REAL: ${formatCurrency(val)} ${diffStr}`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: {
-        title: { display: false },
-        ticks: { 
-          color: '#666', 
-          font: { size: 10, weight: 600 },
-          maxRotation: 0,
-          minRotation: 0,
-          autoSkip: false
-        },
-        grid: { display: false }
-      },
-      y: {
-        ticks: {
-          color: '#666',
-          font: { size: 10, weight: 600 },
-          callback: (v: any) => `$${numFmt.format(Number(v) / 1000)}K`
-        },
-        grid: { color: 'rgba(255, 255, 255, 0.03)', drawBorder: false }
-      },
-    },
-  };
-
-  const histChart = {
-    labels: historico.map(h => h.label),
-    datasets: [
-      {
-        type: 'bar' as const,
-        label: 'Objetivo Venta',
-        data: historico.map(h => h.objetivo),
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderColor: 'rgba(255, 255, 255, 0.15)',
-        borderWidth: { top: 1, left: 1, right: 1, bottom: 0 },
-        borderRadius: 8,
-        borderSkipped: 'bottom' as const,
-        yAxisID: 'y',
-        barPercentage: 0.85,
-        categoryPercentage: 0.8,
-      },
-      {
-        type: 'line' as const,
-        label: 'Cumplimiento (%)',
-        data: historico.map(h => h.cumplimiento),
-        borderColor: '#bbb',
-        backgroundColor: 'transparent',
-        fill: false,
-        pointRadius: 4,
-        borderWidth: 2,
-        tension: 0.4,
-        yAxisID: 'y2',
-        pointBackgroundColor: '#888',
-        pointBorderColor: '#bbb',
-        pointBorderWidth: 1.5,
-        pointHoverRadius: 6,
-      },
-      {
-        type: 'line' as const,
-        label: 'Referencia 100%',
-        data: historico.map(() => 100),
-        borderColor: '#f87171',
-        borderWidth: 1.2,
-        borderDash: [4, 4],
-        pointRadius: 0,
-        fill: false,
-        yAxisID: 'y2',
-      },
-    ],
-  };
-
-  const histOpts = {
-    responsive: true, maintainAspectRatio: false,
-    interaction: { mode: 'index' as const, intersect: false },
-    plugins: {
-      legend: {
-        position: 'top' as const,
-        align: 'end' as const,
-        labels: { color: '#fff', font: { family: 'Outfit', size: 10, weight: 800 as const }, boxWidth: 16, boxHeight: 8, padding: 20 }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0,0,0,0.9)',
-        titleFont: { family: 'Outfit', size: 13, weight: 'bold' as const },
-        bodyFont: { family: 'Outfit', size: 12 },
         padding: 12,
         cornerRadius: 8,
         callbacks: {
-          label: (c: { dataset: { label?: string }; parsed: { y: number } }) =>
-            c.dataset.label === 'Objetivo Venta' ? ` ${formatCurrency(c.parsed.y)}` : ` ${pct(c.parsed.y)}`
-        }
-      },
-    },
-    scales: {
-      x: {
-        ticks: { color: '#fff', font: { family: 'Outfit', size: 10, weight: 800 as const } },
-        grid: { display: false }
-      },
-      y: {
-        title: { display: true, text: 'Valores', color: '#fff', font: { family: 'Outfit', size: 11, weight: 800 as const } },
-        ticks: {
-          color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => {
-            const n = Number(v);
-            if (n >= 1000000) return `${n / 1000000}M`;
-            if (n >= 1000) return `${n / 1000}K`;
-            return n;
+          label: (context: any) => {
+            return `${context.raw}`;
           }
-        },
-        grid: { display: false },
-        min: 0,
-        grace: '10%'
-      },
-      y2: {
-        position: 'right' as const,
-        title: { display: true, text: 'Cumplimiento (%)', color: '#fff', font: { family: 'Outfit', size: 11, weight: 800 as const } },
-        min: 0,
-        grace: '10%',
-        ticks: { color: '#888', font: { family: 'Outfit', size: 10, weight: 600 as const }, callback: (v: string | number) => `${v}%` },
-        grid: { display: false }
-      },
+        }
+      }
     },
+    maintainAspectRatio: false,
+    elements: {
+      arc: {
+        borderWidth: 0,
+        borderRadius: 4,
+      }
+    }
   };
 
-  // ── Estilos ──────────────────────────────────────────────────────
-  const sel: React.CSSProperties = {
-    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '8px', color: '#fff', fontSize: '13px',
-    padding: '6px 30px 6px 10px', outline: 'none',
-    fontFamily: "'Outfit', sans-serif", cursor: 'pointer',
-    WebkitAppearance: 'none', appearance: 'none',
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center',
-    minWidth: '180px', maxWidth: '220px', width: 'auto',
-  };
-
-  const box: React.CSSProperties = {
-    flex: 1,
-    background: 'linear-gradient(145deg, #0d0d0d 0%, #060606 100%)',
-    border: '1px solid rgba(255,255,255,0.04)',
-    borderRadius: '16px',
-    padding: '20px',
-    minWidth: '220px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-    position: 'relative',
-    overflow: 'hidden',
-  };
-
-
-  const lbl: React.CSSProperties = {
-    fontSize: '11px',
-    color: '#444',
-    fontWeight: 800,
-    textTransform: 'uppercase',
-    letterSpacing: '1.2px',
-    marginBottom: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  };
-
-  const val: React.CSSProperties = {
-    fontSize: '24px',
-    fontWeight: 900,
-    color: '#fff',
-    lineHeight: 1,
-    fontFamily: "'Outfit', sans-serif",
-    letterSpacing: '-0.8px',
-    textShadow: '0 2px 10px rgba(0,0,0,0.5)'
-  };
-
-
-  const sub: React.CSSProperties = {
-    fontSize: '12px',
-    color: '#555',
-    marginTop: '6px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px'
-  };
-
-  const card: React.CSSProperties = {
-    background: '#070707',
-    border: '1px solid rgba(255,255,255,0.02)',
-    borderRadius: '24px',
-    padding: '16px',
-    boxShadow: '0 10px 50px rgba(0,0,0,0.5)', // Eliminado brillo excesivo
-  };
-
-  const prevMesLabel = CONFIG.MESES_NOMBRES[kpis.pMes].substring(0, 3).toUpperCase();
-
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-      <div className="spinner" style={{ width: 40, height: 40 }} />
-    </div>
-  );
+  const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
 
   return (
-    <div className="dashboard-container">
-
-      {/* --- Action Bar --- */}
-      <div style={{ display: 'flex', width: '100%', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-        <SelectReporte
-          icon="user"
-          value={analista}
-          onChange={v => setAnalista(String(v))}
-          options={[
-            { label: 'Vista Global (PDV)', value: PDV },
-            ...analistasSel.map(a => ({ label: a.toUpperCase(), value: a }))
-          ]}
-          width="220px"
-        />
-
-        <SelectReporte
-          icon="calendar"
-          value={`${anio}-${mes}`}
-          onChange={v => {
-            const [a, m] = String(v).split('-');
-            setAnio(Number(a)); 
-            setMes(Number(m));
-          }}
-          options={Array.from({ length: 12 }, (_, i) => {
-            let m = now.getMonth() - i; 
-            let a = now.getFullYear();
-            while (m < 0) { m += 12; a--; }
-            return {
-              label: `${CONFIG.MESES_NOMBRES[m].toUpperCase()} ${a}`,
-              value: `${a}-${m}`
-            };
-          })}
-          width="180px"
-        />
-      </div>
-
-
-      {/* ── KPI Capital ── */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ ...lbl, fontSize: '14px', marginBottom: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <DollarSign size={18} color="#fff" strokeWidth={3} />
-            CAPITAL
-          </div>
-
-        </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={box}>
-            <div style={lbl}><Target size={18} color="#666" /> OBJETIVO</div>
-            <div style={val}>{formatCurrency(kpis.obj.meta_ventas)}</div>
-            <div style={{ color: '#444', fontWeight: 600, fontSize: '11px', marginTop: '8px' }}>
-              MES ANT: <span style={{ color: '#888' }}>{formatCurrency(objMap[mesStr(kpis.pAnio, kpis.pMes)]?.meta_ventas || 0)}</span>
-            </div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><TrendingUp size={18} color="#fff" /> ALCANCE ACTUAL</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
-              <div>
-                <div style={val}>{formatCurrency(kpis.alcanceCapital)}</div>
-                <div style={{ ...sub, display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '4px', color: kpis.tendPct >= 0 ? '#fff' : '#f87171' }}>
-                    {kpis.tendPct >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                    {Math.abs(kpis.tendPct).toFixed(1)}%
-                  </div>
-                  <div style={{ color: '#444', fontWeight: 600, fontSize: '11px' }}>
-                    MES ANT: <span style={{ color: '#888' }}>{formatCurrency(kpis.alcancePrev)}</span>
-                  </div>
-                </div>
-              </div>
-              {/* Sparkline removed */}
-            </div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><Zap size={18} color={kpis.cumplReal >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
-            <div style={{ ...val, color: '#fff' }}>
-              {pct(kpis.cumplReal)}
-            </div>
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.03)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplReal)}%`, height: '100%', background: '#fff', boxShadow: '0 0 10px rgba(255,255,255,0.3)' }} />
-            </div>
-
-          </div>
-          <div style={box}>
-            <div style={lbl}><TrendingUp size={18} color="#666" /> PROYECTADO FIN MES</div>
-            <div style={val}>{formatCurrency(kpis.proyCapital)}</div>
-            <div style={sub}>Tendencia actual ({pct(kpis.cumplProy)})</div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><Zap size={18} color={kpis.cumplProy >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
-            <div style={{ ...val, color: '#fff' }}>
-              {pct(kpis.cumplProy)}
-            </div>
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplProy)}%`, height: '100%', background: kpis.cumplProy >= 100 ? '#fff' : '#f87171' }} />
-            </div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><DollarSign size={18} color="#666" /> VENTA PROMEDIO</div>
-            <div style={val}>{formatCurrency(kpis.ventaPromedio)}</div>
-            <div style={sub}>por operación</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── KPI Operaciones ── */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ ...lbl, fontSize: '14px', marginBottom: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Activity size={18} color="#4ade80" strokeWidth={3} />
-            OPERACIONES
-          </div>
-
-        </div>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={box}>
-            <div style={lbl}><Target size={18} color="#666" /> OBJETIVO</div>
-            <div style={val}>{kpis.obj.meta_operaciones} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
-            <div style={{ color: '#444', fontWeight: 600, fontSize: '11px', marginTop: '8px' }}>
-              MES ANT: <span style={{ color: '#888' }}>{objMap[mesStr(kpis.pAnio, kpis.pMes)]?.meta_operaciones || 0}</span>
-            </div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><TrendingUp size={18} color="#fff" /> ALCANCE ACTUAL</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '15px' }}>
-              <div>
-                <div style={val}>{kpis.alcanceOps} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
-                <div style={{ ...sub, display: 'flex', alignItems: 'center', gap: '10px', marginTop: '8px' }}>
-                  <div style={{ padding: '2px 6px', borderRadius: '4px', background: kpis.tendPctOps >= 0 ? 'rgba(74,222,128,0.05)' : 'rgba(248,113,113,0.05)', display: 'flex', alignItems: 'center', gap: '4px', color: kpis.tendPctOps >= 0 ? '#4ade80' : '#f87171', border: `1px solid ${kpis.tendPctOps >= 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)'}` }}>
-                    {kpis.tendPctOps >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                    {Math.abs(kpis.tendPctOps).toFixed(1)}%
-                  </div>
-                  <div style={{ color: '#444', fontWeight: 600, fontSize: '11px' }}>
-                    MES ANT: <span style={{ color: '#888' }}>{kpis.prevOpsPrev}</span>
-                  </div>
-                </div>
-              </div>
-              {/* Sparkline removed */}
-            </div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><Zap size={18} color={kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171'} /> CUMPLIMIENTO</div>
-            <div style={{ ...val, color: kpis.cumplRealOps >= 100 ? '#4ade80' : '#f87171' }}>
-              {pct(kpis.cumplRealOps)}
-            </div>
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplRealOps)}%`, height: '100%', background: kpis.cumplRealOps >= 100 ? '#fff' : '#f87171' }} />
-            </div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><TrendingUp size={18} color="#666" /> PROYECTADO FIN MES</div>
-            <div style={val}>{kpis.proyOps} <span style={{ fontSize: 13, color: '#444' }}>OPS</span></div>
-            <div style={sub}>Tendencia actual ({pct(kpis.cumplProyOps)})</div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><Zap size={18} color={kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171'} /> CUMPL. PROYECTADO</div>
-            <div style={{ ...val, color: kpis.cumplProyOps >= 100 ? '#4ade80' : '#f87171' }}>
-              {pct(kpis.cumplProyOps)}
-            </div>
-            <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, marginTop: '12px', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(100, kpis.cumplProyOps)}%`, height: '100%', background: kpis.cumplProyOps >= 100 ? '#fff' : '#f87171' }} />
-            </div>
-          </div>
-          <div style={box}>
-            <div style={lbl}><Percent size={18} color="#666" /> CONVERSIÓN</div>
-            <div style={val}>{pct(kpis.conversion)}</div>
-            <div style={sub}>{kpis.alcanceOps} / {kpis.clientesAtendidos} clientes</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Liquidación de Comisiones (Solo Luciana y Victoria) ── */}
-      {(analista === 'Luciana' || analista === 'Victoria') && kpis.comisiones.comisionTotal > 0 && (
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <div style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
-              <Wallet size={16} color="#4ade80" />
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>COMISIONES — {analista.toUpperCase()}</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={box}>
-              <div style={lbl}><TrendingUp size={14} color="#666" /> COMISION VENTAS</div>
-              <div style={val}>{formatCurrency(kpis.comisiones.comisionCapital)}</div>
-              <div style={sub}>Base: {pct(kpis.cumplReal)} del objetivo</div>
-            </div>
-            <div style={box}>
-              <div style={lbl}><Zap size={14} color="#666" /> COMISIONES OPERACIONES</div>
-              <div style={val}>{formatCurrency(kpis.comisiones.comisionOperaciones)}</div>
-              <div style={sub}>Base: {kpis.alcanceOps} / {kpis.obj.meta_operaciones} ops</div>
-            </div>
-            <div style={{ ...box, background: 'rgba(74, 222, 128, 0.03)', border: '1px solid rgba(74, 222, 128, 0.1)' }}>
-              <div style={{ ...lbl, color: '#4ade80' }}><Activity size={14} color="#4ade80" /> TOTAL ESTIMADO</div>
-              <div style={{ ...val, color: '#4ade80' }}>{formatCurrency(kpis.comisiones.comisionTotal)}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Alertas + Curva ── */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '350px 1fr', 
-        gap: '16px', 
-        marginBottom: '24px', 
-        alignItems: 'stretch' 
+    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} />
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)', textAlign: 'center',
+        width: '100%', pointerEvents: 'none'
       }}>
-        {/* Columna Izquierda: Diario y Alertas */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-          
-          {/* Diario */}
-          {(() => {
-            const resCap = kpis.obj.meta_ventas - kpis.alcanceCapital;
-            const resOps = kpis.obj.meta_operaciones - kpis.alcanceOps;
-            const diasRest = Math.max(0, kpis.dh - kpis.dt);
-            const divDias = Math.max(1, diasRest);
+        <div style={{ fontSize: '8px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ fontSize: '15px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+          {displayValue}
+        </div>
+      </div>
+    </div>
+  );
+};
 
-            const fmtVal = (val: number, isK: boolean) => {
-              const sign = val >= 0 ? '+' : '-';
-              const absVal = Math.abs(val);
-              const color = val >= 0 ? '#ef4444' : '#22c55e';
-              return {
-                text: `${sign} ${isK ? formatCurrency(absVal) : absVal}`,
-                color
-              };
-            };
-            
+const DistBlock = ({ 
+  titulo, icon, datos, color, totalMes, maxItems = 5
+}: { 
+  titulo: string; icon: React.ReactNode; 
+  datos: { label: string; monto: number; cantidad: number }[]; 
+  color: string; totalMes: number; maxItems?: number;
+}) => {
+  const [expanded, setExpanded] = useState(false);
+
+  // Separar datos válidos de "No especificado"
+  const validData = datos.filter(d => {
+    const l = d.label?.trim()?.toLowerCase();
+    return l !== 'no especificado' && l !== 'sin dato' && l !== '';
+  });
+  
+  const noEspData = datos.find(d => {
+    const l = d.label?.trim()?.toLowerCase();
+    return l === 'no especificado' || l === 'sin dato' || l === '';
+  });
+
+  const totalCant = validData.reduce((s, d) => s + d.cantidad, 0);
+  const displayData = expanded ? validData : validData.slice(0, maxItems);
+  const hasMore = validData.length > maxItems;
+
+  return (
+    <div style={{ 
+      flex: 1, 
+      minWidth: 240, 
+      maxHeight: expanded ? 'none' : 320, 
+      display: 'flex', 
+      flexDirection: 'column',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
+        <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+        <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
+      </div>
+      <div style={{ 
+        background: '#0d0d0d', 
+        borderRadius: 10, 
+        border: '1px solid rgba(255,255,255,0.04)', 
+        overflowX: 'hidden', 
+        overflowY: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1, 
+        maxHeight: expanded ? 'none' : 280,
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
+        <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'hidden' }}>
+          {displayData.map((d, i) => {
+            const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
+            const pctMonto = totalMes > 0 ? (d.monto / totalMes) * 100 : 0;
             return (
-              <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                    <Activity size={18} color="#38bdf8" />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>DIARIO</div>
-                    <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-                      Días hábiles: {kpis.dh} • Transcurridos: {kpis.dt}
-                    </div>
+              <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
+                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' as const }}>{pct.toFixed(0)}%</span>
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: '11px', color: '#888', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>Dif. 100%</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      {(() => {
-                        const m = fmtVal(resCap, true);
-                        return <span style={{ fontSize: '13px', fontWeight: 700, color: m.color }}>(K) {m.text}</span>
-                      })()}
-                      <span style={{ color: '#333' }}>—</span>
-                      {(() => {
-                        const m = fmtVal(resOps, false);
-                        return <span style={{ fontSize: '13px', fontWeight: 700, color: m.color }}>(Q) {m.text}</span>
-                      })()}
-                    </div>
-                  </div>
-
-                  <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                    <div style={{ fontSize: '11px', color: '#888', fontWeight: 800, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
-                      Venta diaria <span style={{fontSize: '9px', color: '#555', fontWeight: 500, marginLeft: '4px'}}>(Días rest: {diasRest})</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      {(() => {
-                        const m = fmtVal(resCap / divDias, true);
-                        return <span style={{ fontSize: '13px', fontWeight: 900, color: m.color }}>(K) {m.text}</span>
-                      })()}
-                      <span style={{ color: 'rgba(56, 189, 248, 0.3)' }}>—</span>
-                      {(() => {
-                        const m = fmtVal(Math.round(resOps / divDias), false);
-                        return <span style={{ fontSize: '13px', fontWeight: 900, color: m.color }}>(Q) {m.text}</span>
-                      })()}
-                    </div>
-                  </div>
+                <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pctMonto}%`, background: color, opacity: 0.6, borderRadius: 2 }} />
                 </div>
               </div>
             );
-          })()}
-
-          {/* Alertas Premium - Solo Luciana y Victoria, no PDV */}
-          {(analista !== PDV) && (
-            <div style={card}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                  <AlertTriangle size={18} color="#f87171" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>ALERTAS DE GESTIÓN</div>
-                  <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-                    Indicadores de acciones requeridas
-                  </div>
-                </div>
-              </div>
-              {[
-                { id: 'proy', label: 'PROYECCIÓN', count: alertas.proyeccion, icon: <TrendingUp size={16} />, color: '#fff', status: alertas.proyeccion > 20 ? 'URGENTE' : 'OK' },
-                { id: 'seg', label: 'SEGUIMIENTO', count: alertas.seguimiento, icon: <Clock size={16} />, color: '#fbbf24', status: alertas.seguimiento > 5 ? 'REVISAR' : 'OK' },
-                { id: 'afect', label: 'AFECTACIONES', count: alertas.afectaciones, icon: <ShieldAlert size={16} />, color: '#f87171', status: alertas.afectaciones > 0 ? 'URGENTE' : 'OK' },
-              ].map(a => (
-                <div key={a.id} style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  borderRadius: '12px',
-                  padding: '12px',
-                  marginBottom: '8px',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', fontWeight: 700, color: '#666' }}>
-                      {a.icon} {a.label}
-                    </div>
-                    <div style={{
-                      fontSize: '9px',
-                      fontWeight: 900,
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      background: a.status === 'OK' ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
-                      color: a.status === 'OK' ? '#4ade80' : '#f87171',
-                      letterSpacing: '0.5px'
-                    }}>
-                      {a.status}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff' }}>
-                    {a.count} <span style={{ fontSize: '10px', color: '#444', fontWeight: 400 }}>Registros</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-
+          })}
         </div>
-
-
-        {/* Curva de crecimiento — MÁS ALTA */}
-        <div style={{ ...card, height: '100%', minHeight: '620px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '12px', border: '1px solid rgba(74, 222, 128, 0.2)' }}>
-                <Activity size={18} style={{ color: '#4ade80' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px' }}>DINÁMICA DE CRECIMIENTO</div>
-                <div style={{ fontSize: '11px', color: '#555', marginTop: '2px' }}>
-                  Cumplimiento acumulado vs. Proyección ideal ({formatCurrency(curva.objetivo)})
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => setCompararMesAnterior(!compararMesAnterior)}
-              style={{
-                background: compararMesAnterior ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                border: `1px solid ${compararMesAnterior ? 'rgba(34, 197, 94, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
-                color: compararMesAnterior ? '#22c55e' : '#666',
-                padding: '8px 16px',
-                borderRadius: '12px',
-                fontSize: '11px',
-                fontWeight: 900,
-                cursor: 'pointer',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                boxShadow: compararMesAnterior ? '0 4px 20px rgba(34, 197, 94, 0.15)' : 'none'
-              }}
-            >
-              <Activity size={14} color={compararMesAnterior ? '#22c55e' : '#444'} />
-              {compararMesAnterior ? 'Comparando' : 'Comparar Mes'}
-            </button>
+        
+        {/* Observación de no especificados */}
+        {noEspData && noEspData.cantidad > 0 && (
+          <div style={{ 
+            padding: '8px 14px', 
+            background: 'rgba(255,255,255,0.01)', 
+            borderTop: '1px solid rgba(255,255,255,0.03)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexShrink: 0
+          }}>
+            <span style={{ fontSize: 10, color: '#999', fontWeight: 700, fontStyle: 'italic' }}>
+              * {noEspData.cantidad} sin especificar
+            </span>
+            <span style={{ fontSize: 9, color: '#888', fontWeight: 600 }}>{formatCurrency(noEspData.monto)}</span>
           </div>
-          <div style={{ flex: 1, minHeight: '450px' }}>
-            <Line data={curvaChart} options={curvaOpts} />
-          </div>
-        </div>
+        )}
 
+        {hasMore && (
+          <button 
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              background: 'rgba(255,255,255,0.04)',
+              border: 'none',
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              color: color,
+              fontSize: '10px',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '1.5px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.3s ease',
+              flexShrink: 0
+            }}
+          >
+            {expanded ? 'Ver menos' : `Ver todos (${validData.length})`}
+            <ChevronDown size={12} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
+          </button>
+        )}
       </div>
-      {/* ── Histórico 12 meses ── */}
-      <div style={{ ...card, marginBottom: '16px', position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
-          <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <BarChart2 size={18} color="#4ade80" />
+    </div>
+  );
+};
+
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
+
+// ── Plugin inline: data labels on bars ───────────────────────────────────
+const labelsPlugin: any = {
+  id: 'labelsPlugin',
+  afterDatasetsDraw(chart: any) {
+    const { ctx, scales } = chart;
+    const isHorizontal = chart.config.options.indexAxis === 'y';
+    const isStacked = chart.config.options.scales?.x?.stacked || chart.config.options.scales?.y?.stacked;
+
+    chart.data.datasets.forEach((ds: any, dsIdx: number) => {
+      const meta = chart.getDatasetMeta(dsIdx);
+      if (!meta || meta.hidden || meta.type !== 'bar') return;
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = isStacked ? 'middle' : 'bottom';
+
+      // Shadow for readability
+      ctx.shadowColor = 'rgba(0,0,0,1)';
+      ctx.shadowBlur = 5;
+
+      // Detección de porcentaje: solo mediante flag explícito
+      const isPct = chart.config.options?._isPct === true;
+
+      meta.data.forEach((bar: any, idx: number) => {
+        const val = ds.data[idx];
+        if (val === null || val === undefined || (val === 0 && !isPct)) return;
+
+        let label = '';
+        const v = Math.abs(val);
+
+        if (isPct) {
+          label = Math.round(val) + '%';
+        } else if (v >= 1_000_000) {
+          label = (val / 1_000_000).toFixed(1).replace('.', ',') + 'M';
+        } else if (v >= 1000) {
+          label = (val / 1000).toFixed(0) + 'K';
+        } else {
+          // Redondear a 1 decimal si es < 10, sino entero
+          label = (val < 10 && val > 0 && !Number.isInteger(val)) ? val.toFixed(1).replace('.', ',') : Math.round(val).toString();
+        }
+
+        if (isHorizontal) {
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, bar.x + 6, bar.y);
+        } else if (isStacked) {
+          ctx.fillText(label, bar.x, bar.y + (bar.base - bar.y) / 2);
+        } else {
+          ctx.fillText(label, bar.x, bar.y - 7);
+        }
+      });
+      ctx.restore();
+    });
+  },
+};
+
+const now = new Date();
+
+
+export default function AnalistasPage() {
+  const { registros: allRegistros, loading } = useRegistros();
+  const { objetivos } = useObjetivos();
+  const [analista, setAnalista] = useState<string>('PDV');
+
+  const registros = useMemo(() => {
+    return analista === 'PDV' ? allRegistros : allRegistros.filter(r => r.analista === analista);
+  }, [allRegistros, analista]);
+
+  const analistasParaMostrar = analista === 'PDV' ? CONFIG.ANALISTAS_DEFAULT : [analista];
+  const chartLabels = useMemo(() => {
+    const base = analistasParaMostrar.map(a => a.charAt(0).toUpperCase() + a.slice(1));
+    if (analista === 'PDV') return [...base, 'Total PDV'];
+    return base;
+  }, [analistasParaMostrar, analista]);
+  const [seccion10State, setSeccion10State] = useState<AnalisisTemporalState | null>(null);
+
+  const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
+  const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
+  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
+    1: true,
+    2: true,
+    3: true,
+    4: true,
+    11: true,
+  });
+
+  const toggleSection = (id: number) => {
+    setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+
+
+  // ── Helpers de cálculo ────────────────────────────────────────────────────
+  const filterByMonth = (regs: Registro[], mes: number, anio: number) => {
+    const key = `${anio}-${String(mes).padStart(2, '0')}`;
+    return regs.filter(r => r.fecha?.slice(0, 7) === key);
+  };
+
+  const isVenta = (r: Registro) => {
+    const e = (r.estado ?? '').toLowerCase();
+    return e === 'venta' || e.includes('aprobado cc');
+  };
+
+  const cumplColor = (pct: number | null) =>
+    pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+
+  const tendBadge = (pct: number | null) => {
+    if (pct === null) return <span style={{ color: '#333' }}>—</span>;
+    const color = pct >= 0 ? '#34d399' : '#f87171';
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+          {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+        </span>
+        <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+      </div>
+    );
+  };
+
+  const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
+    const isCollapsed = !!collapsedSections[id];
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        marginBottom: isCollapsed ? 0 : 16, 
+        paddingBottom: 10, 
+        borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)',
+        gap: 12
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {icon}
+          <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+        </div>
+        <button 
+          onClick={() => toggleSection(id)}
+          style={{ 
+            background: isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', 
+            border: '1px solid rgba(255,255,255,0.08)', 
+            borderRadius: '8px', 
+            width: 28, 
+            height: 28, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            cursor: 'pointer', 
+            color: isCollapsed ? '#555' : '#fff',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: isCollapsed ? 'none' : '0 0 15px rgba(255,255,255,0.05)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)';
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+            e.currentTarget.style.color = isCollapsed ? '#555' : '#fff';
+          }}
+        >
+          <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
+        </button>
+      </div>
+    );
+  };
+
+  const mesPrev = selectedMes === 1 ? 12 : selectedMes - 1;
+  const anioPrev = selectedMes === 1 ? selectedAnio - 1 : selectedAnio;
+
+  // ── KPI por analista ──────────────────────────────────────────────────────
+  const kpiPorAnalista = useMemo(() => {
+    return analistasParaMostrar.map(analista => {
+      const regsAnalista = filterByMonth(registros, selectedMes, selectedAnio).filter(r => r.analista === analista);
+      const ventas = regsAnalista.filter(isVenta);
+      const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      const ops = ventas.length;
+      const ticket = ops > 0 ? capital / ops : 0;
+      const conversion = regsAnalista.length > 0 ? (ops / regsAnalista.length) * 100 : 0;
+
+      // Monto venta y Aprob CC por separado
+      const montoVenta = regsAnalista
+        .filter(r => (r.estado ?? '').toLowerCase() === 'venta')
+        .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      const montoAprobCC = regsAnalista
+        .filter(r => (r.estado ?? '').toLowerCase().includes('aprobado cc'))
+        .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+
+      // Objetivo.mes es 0-indexed (0 = Enero)
+      const obj = objetivos.find(o => o.analista === analista && o.mes === selectedMes - 1 && o.anio === selectedAnio);
+      const metaCapital = obj?.meta_ventas ?? 0;
+      const metaOps = obj?.meta_operaciones ?? 0;
+      const cumplCapital = metaCapital > 0 ? (capital / metaCapital) * 100 : null;
+      const restanteCapital = metaCapital > 0 ? Math.max(0, 100 - (capital / metaCapital) * 100) : null;
+      const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
+      const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
+
+      const ventasAnt = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === analista).filter(isVenta);
+      const capitalAnt = ventasAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      const opsAnt = ventasAnt.length;
+      const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
+      const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
+
+      return { 
+        analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps, 
+        clientesIngresados: regsAnalista.length,
+        montoVenta,
+        montoAprobCC
+      };
+    });
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
+
+  // ── KPI total ─────────────────────────────────────────────────────────────
+  const kpiTotal = useMemo(() => {
+    const regs = filterByMonth(registros, selectedMes, selectedAnio);
+    const ventas = regs.filter(isVenta);
+    const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    const ops = ventas.length;
+    const ticket = ops > 0 ? capital / ops : 0;
+    const clientes = regs.length;
+    const conversion = clientes > 0 ? (ops / clientes) * 100 : 0;
+
+    const montoVenta = regs
+      .filter(r => (r.estado ?? '').toLowerCase() === 'venta')
+      .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    const montoAprobCC = regs
+      .filter(r => (r.estado ?? '').toLowerCase().includes('aprobado cc'))
+      .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+
+    const ventasAnt = filterByMonth(registros, mesPrev, anioPrev).filter(isVenta);
+    const regsAnt = filterByMonth(registros, mesPrev, anioPrev);
+    const capitalAnt = ventasAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    const opsAnt = ventasAnt.length;
+    const ticketAnt = opsAnt > 0 ? capitalAnt / opsAnt : 0;
+    const clientesAnt = regsAnt.length;
+    const conversionAnt = clientesAnt > 0 ? (opsAnt / clientesAnt) * 100 : 0;
+
+    const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
+    const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
+    const tendTicket = ticketAnt > 0 ? ((ticket - ticketAnt) / ticketAnt) * 100 : null;
+    const tendClientes = clientesAnt > 0 ? ((clientes - clientesAnt) / clientesAnt) * 100 : null;
+    const tendConversion = conversionAnt > 0 ? ((conversion - conversionAnt) / conversionAnt) * 100 : null;
+
+    const obj = objetivos.find(o => o.analista === 'PDV' && o.mes === selectedMes - 1 && o.anio === selectedAnio);
+    const metaCapital = obj?.meta_ventas ?? 0;
+    const metaOps = obj?.meta_operaciones ?? 0;
+    const cumplCapital = metaCapital > 0 ? (capital / metaCapital) * 100 : null;
+    const restanteCapital = metaCapital > 0 ? Math.max(0, 100 - (capital / metaCapital) * 100) : null;
+    const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
+    const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
+
+    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
+
+  // ── Distribución acuerdo de precios ──────────────────────────────────────
+  const distribucionAcuerdos = useMemo(() => {
+    const tipos: Record<string, { monto: number; cantidad: number }> = {
+      'PREMIUM': { monto: 0, cantidad: 0 },
+      'Riesgo MEDIO': { monto: 0, cantidad: 0 },
+      'Riesgo BAJO': { monto: 0, cantidad: 0 },
+      'No califica/Excepcion': { monto: 0, cantidad: 0 },
+      'No califica': { monto: 0, cantidad: 0 },
+    };
+    // Mapeo para match con DB
+    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
+      const ac = (acuerdo || '').toLowerCase().trim();
+      const es = (estado || '').toLowerCase().trim();
+      // Prioridad a estados de no calificación
+      const esRechazo = ac.includes('no califica') || ac === 'n/c' || 
+                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+      
+      if (esRechazo) {
+        return isV ? 'No califica/Excepcion' : 'No califica';
+      }
+
+      if (ac.includes('bajo')) return 'Riesgo BAJO';
+      if (ac.includes('medio')) return 'Riesgo MEDIO';
+      if (ac.includes('premium')) return 'PREMIUM';
+      
+      return null;
+    };
+    for (const r of filterByMonth(registros, selectedMes, selectedAnio)) {
+      const isV = isVenta(r);
+      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+      if (matched) {
+        tipos[matched].monto += Number(r.monto) || 0;
+        tipos[matched].cantidad += 1;
+      }
+    }
+    return tipos;
+  }, [registros, selectedMes, selectedAnio]);
+
+  // ── Distribuciones demográficas (ventas del mes) ─────────────────────────
+  const ventasMes = useMemo(() =>
+    filterByMonth(registros, selectedMes, selectedAnio),
+    [registros, selectedMes, selectedAnio]
+  );
+
+  const distPor = (campo: keyof Registro, fuente = ventasMes) => {
+    const map = new Map<string, { monto: number; cantidad: number }>();
+    for (const r of fuente) {
+      const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
+      const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
+      map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([label, data]) => ({ label, ...data }));
+  };
+
+  // ── Normalización de empleador para agrupar duplicados ────────────────────
+  const normalizarEmpleador = (nombre: string): string => {
+    if (!nombre) return 'No especificado';
+    let n = nombre.toUpperCase().trim();
+    // Quitar acentos
+    n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Quitar sufijos legales comunes
+    n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
+    // Quitar palabras vacías al final
+    n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
+    // Quitar múltiples espacios
+    n = n.replace(/\s+/g, ' ').trim();
+    return n || 'No especificado';
+  };
+
+  const distEmpleador = useMemo(() => {
+    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
+    for (const r of ventasMes) {
+      const raw = (r.empleador ?? '').trim();
+      const key = normalizarEmpleador(raw);
+      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
+      prev.monto += Number(r.monto) || 0;
+      prev.cantidad += 1;
+      if (raw) {
+        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
+        // Usar la variante más común como displayLabel
+        let maxCount = 0;
+        let maxVariant = raw;
+        for (const [v, c] of prev.variantes) {
+          if (c > maxCount) { maxCount = c; maxVariant = v; }
+        }
+        prev.displayLabel = maxVariant;
+      }
+      map.set(key, prev);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
+  }, [ventasMes]);
+
+  const distCuotas = useMemo(() => distPor('cuotas', ventasMes.filter(isVenta)), [ventasMes]);
+  const distRangoEtario = useMemo(() => distPor('rango_etario'), [ventasMes]);
+  const distSexo = useMemo(() => distPor('sexo'), [ventasMes]);
+  const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
+  const distEstados = useMemo(() => {
+    const map = new Map<string, { monto: number; cantidad: number }>();
+    for (const r of ventasMes) {
+      let raw = (r.estado || '').toLowerCase().trim();
+      let label = '';
+
+      if (raw.includes('derivado') || raw.includes('aprobado cc')) {
+        label = 'Aprob. CC';
+      } else if (raw.includes('rechazado')) {
+        label = 'Rechaz. CC';
+      } else if (raw === 'venta') {
+        label = 'Venta';
+      } else if (raw === 'proyeccion') {
+        label = 'Proyección';
+      } else if (raw === 'en seguimiento') {
+        label = 'En Seguimiento';
+      } else if (raw === 'no califica') {
+        label = 'No califica';
+      } else if (raw === 'score bajo') {
+        label = 'Score Bajo';
+      } else if (raw === 'afectaciones') {
+        label = 'Afectaciones';
+      } else {
+        label = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'No especificado';
+      }
+
+      const prev = map.get(label) ?? { monto: 0, cantidad: 0 };
+      map.set(label, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([label, data]) => ({ label, ...data }));
+  }, [ventasMes]);
+  const distAcuerdos = useMemo(() => {
+    return Object.entries(distribucionAcuerdos)
+      .map(([label, data]) => ({ label, ...data }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }, [distribucionAcuerdos]);
+
+  // ── Distribuciones mes anterior ───────────────────────────────────────────
+  const ventasMesAnt = useMemo(() =>
+    filterByMonth(registros, mesPrev, anioPrev),
+    [registros, mesPrev, anioPrev]
+  );
+
+  const distPorAnt = (campo: keyof Registro, fuente: typeof ventasMesAnt) => {
+    const map = new Map<string, { monto: number; cantidad: number }>();
+    for (const r of fuente) {
+      const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
+      const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
+      map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
+    }
+    return map;
+  };
+
+  const distCuotasAnt = useMemo(() => distPorAnt('cuotas', ventasMesAnt), [ventasMesAnt]);
+  const distRangoAnt = useMemo(() => distPorAnt('rango_etario', ventasMesAnt), [ventasMesAnt]);
+  const distSexoAnt = useMemo(() => distPorAnt('sexo', ventasMesAnt), [ventasMesAnt]);
+  const distEmpleadorAnt = useMemo(() => {
+    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
+    for (const r of ventasMesAnt) {
+      const raw = (r.empleador ?? '').trim();
+      const key = normalizarEmpleador(raw);
+      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
+      prev.monto += Number(r.monto) || 0;
+      prev.cantidad += 1;
+      if (raw) {
+        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
+        let maxCount = 0;
+        let maxVariant = raw;
+        for (const [v, c] of prev.variantes) {
+          if (c > maxCount) { maxCount = c; maxVariant = v; }
+        }
+        prev.displayLabel = maxVariant;
+      }
+      map.set(key, prev);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
+  }, [ventasMesAnt]);
+  const distLocalidadAnt = useMemo(() => distPorAnt('localidad', ventasMesAnt), [ventasMesAnt]);
+  const distAcuerdosAnt = useMemo(() => distPorAnt('acuerdo_precios', ventasMesAnt), [ventasMesAnt]);
+
+  // ── Config base de gráficos (dark theme) ─────────────────────────────────
+  const mesActualLabel = CONFIG.MESES_NOMBRES[selectedMes - 1].slice(0, 3);
+  const mesAntLabel = CONFIG.MESES_NOMBRES[mesPrev - 1].slice(0, 3);
+
+  const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, showLegend = false, stacked = false): any => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: horizontal ? 'y' as const : 'x' as const,
+    layout: { padding: { top: showLabels ? 50 : 20, bottom: 5 } },
+    _isPct: yLabel.includes('%'), // Flag explícito para el plugin
+    plugins: {
+      legend: {
+        display: showLegend,
+        position: 'top' as const,
+        align: 'end' as const,
+        labels: { color: '#666', font: { size: 10 }, usePointStyle: true, padding: 10 }
+      },
+      tooltip: { backgroundColor: '#111', titleColor: '#fff', bodyColor: '#aaa', borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1 },
+      datalabels: {
+        display: showLabels,
+        align: stacked ? 'center' as const : 'top' as const,
+        anchor: stacked ? 'center' as const : 'end' as const,
+        offset: stacked ? 0 : 12,
+        color: '#fff',
+        formatter: (v: any) => {
+          if (v === 0 || v === undefined || v === null) return '';
+          const n = Number(v);
+          if (isNaN(n)) return v;
+          if (yLabel.includes('%')) return n.toFixed(0) + '%';
+          if (yLabel.includes('ops') || yLabel.includes('reg')) return n;
+          if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+          if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+          return n;
+        },
+        font: { size: 10, weight: 800 }
+      },
+    },
+    categoryPercentage: 0.8,
+    barPercentage: 0.7,
+    scales: {
+      x: {
+        stacked,
+        ticks: {
+          color: '#555', font: { size: 10 },
+          callback: function (this: any, val: any) {
+            let label = this.getLabelForValue(val);
+            if (label === undefined) label = val;
+            if (horizontal) {
+              const n = Number(label);
+              if (isNaN(n)) return label;
+              return (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : n) + yLabel;
+            }
+            return label;
+          }
+        },
+        grid: { color: 'rgba(255,255,255,0.03)' }
+      },
+      y: {
+        stacked,
+        ticks: {
+          color: '#555', font: { size: 10 },
+          callback: function (this: any, val: any) {
+            let label = this.getLabelForValue(val);
+            if (label === undefined) label = val;
+            if (!horizontal) {
+              const n = Number(label);
+              if (isNaN(n)) return label;
+              return (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : n) + yLabel;
+            }
+            return label;
+          }
+        },
+        grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true,
+      },
+    },
+  });
+
+  // Helper: línea de referencia 100%
+  const refLine100 = (n: number) => ({
+    type: 'line' as const,
+    label: 'Meta 100%',
+    data: Array(n).fill(100),
+    borderColor: '#f87171',
+    borderWidth: 1.5,
+    borderDash: [5, 4],
+    pointRadius: 0,
+    fill: false,
+    order: 0,
+  });
+
+  // ── Datos gráfico cumplimiento por analista ───────────────────────────────
+  const chartCumplimiento = useMemo(() => {
+    const labels = kpiPorAnalista.map(k => k.analista);
+    return {
+      labels,
+      datasets: [
+        {
+          label: `Capital ${mesActualLabel}`,
+          data: kpiPorAnalista.map(k => k.cumplCapital ?? 0),
+          backgroundColor: 'rgba(96,165,250,0.7)', borderRadius: 4, order: 1,
+        },
+        {
+          label: `Capital ${mesAntLabel}`,
+          data: kpiPorAnalista.map(k => {
+            const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+            const capitalAnt = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+            const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
+            return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
+          }),
+          backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 1,
+        },
+        {
+          label: `Ops ${mesActualLabel}`,
+          data: kpiPorAnalista.map(k => k.cumplOps ?? 0),
+          backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, order: 1,
+        },
+        {
+          label: `Ops ${mesAntLabel}`,
+          data: kpiPorAnalista.map(k => {
+            const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+            const opsAnt = ant.length;
+            const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
+            return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
+          }),
+          backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, order: 1, // Purpura oscuro
+        },
+        refLine100(labels.length),
+      ],
+    };
+  }, [kpiPorAnalista, registros, objetivos, mesPrev, anioPrev, mesActualLabel, mesAntLabel]);
+
+  // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
+  const chartAcuerdos = useMemo(() => {
+    const tiposDisplay = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/Excepcion', 'No califica'];
+    const analistas = analistasParaMostrar;
+    const colores = ['#60a5fa', '#a78bfa'];
+
+    const matchAcuerdo = (acuerdo: string, estado: string, isV: boolean): string | null => {
+      const ac = (acuerdo || '').toLowerCase().trim();
+      const es = (estado || '').toLowerCase().trim();
+      // Prioridad a estados de no calificación
+      const esRechazo = ac.includes('no califica') || ac === 'n/c' || 
+                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+      
+      if (esRechazo) {
+        return isV ? 'No califica/Excepcion' : 'No califica';
+      }
+
+      if (ac.includes('bajo')) return 'Riesgo BAJO';
+      if (ac.includes('medio')) return 'Riesgo MEDIO';
+      if (ac.includes('premium')) return 'PREMIUM';
+      return null;
+    };
+
+    return {
+      labels: tiposDisplay,
+      datasets: analistas.map((an, idx) => ({
+        label: an,
+        data: tiposDisplay.map(t => {
+          return filterByMonth(registros, selectedMes, selectedAnio).filter(r => {
+            const isV = isVenta(r);
+            const matched = matchAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+            return r.analista === an && matched === t;
+          }).length;
+        }),
+        backgroundColor: colores[idx] || '#555',
+        borderRadius: 4,
+        maxBarThickness: 70,
+      }))
+    };
+  }, [registros, selectedMes, selectedAnio, filterByMonth, isVenta]);
+
+  // ── Helper gráfico horizontal por categoría ───────────────────────────────
+  const buildCatChart = (
+    actual: { label: string; cantidad: number }[],
+    anterior: Map<string, { cantidad: number }>,
+    color: string,
+    limit = 8
+  ) => {
+    const top = actual.slice(0, limit);
+    return {
+      labels: top.map(d => d.label),
+      datasets: [
+        {
+          label: mesActualLabel,
+          data: top.map(d => d.cantidad),
+          backgroundColor: color,
+          borderRadius: 4, order: 1,
+        },
+        {
+          label: mesAntLabel,
+          data: top.map(d => anterior.get(d.label)?.cantidad ?? 0),
+          backgroundColor: `${color}44`,
+          borderRadius: 4, order: 1,
+        },
+      ],
+    };
+  };
+
+  const chartSexo = useMemo(() => buildCatChart(distSexo, distSexoAnt, '#f472b6'), [distSexo, distSexoAnt, mesActualLabel, mesAntLabel]);
+
+  // ── Ranking analistas ─────────────────────────────────────────────────────
+  const rankingAnalistas = useMemo(() =>
+    [...kpiPorAnalista].sort((a, b) => b.capital - a.capital),
+    [kpiPorAnalista]
+  );
+
+  // ── Chart 1: Capital vs Objetivo ──────────────────────────────────────────
+  const chartCapitalVsObjetivo = useMemo(() => {
+    const labels = chartLabels;
+    const capitalAct = [...kpiPorAnalista.map(k => k.capital)];
+    if (analista === 'PDV') capitalAct.push(kpiTotal.capital);
+
+    const capitalAnt = [
+      ...kpiPorAnalista.map(k => {
+        const ant = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+        return ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      })
+    ];
+    if (analista === 'PDV') {
+      capitalAnt.push(filterByMonth(allRegistros, mesPrev, anioPrev).filter(isVenta).reduce((s, r) => s + (Number(r.monto) || 0), 0));
+    }
+
+    const objetivo = [...kpiPorAnalista.map(k => k.metaCapital || 0)];
+    if (analista === 'PDV') objetivo.push(kpiTotal.metaCapital || 0);
+
+    return {
+      labels,
+      datasets: [
+        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4, order: 1, maxBarThickness: 70 },
+        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 1, maxBarThickness: 70 },
+        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#f87171', fill: false, order: 0 },
+      ],
+    };
+  }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
+
+  // ── Chart 2: Ticket Promedio ──────────────────────────────────────────────
+  const chartTicketPromedio = useMemo(() => {
+    const labels = chartLabels;
+    const ticketAct = [...kpiPorAnalista.map(k => k.ticket)];
+    if (analista === 'PDV') ticketAct.push(kpiTotal.ticket);
+
+    const ticketAnt = [
+      ...kpiPorAnalista.map(k => {
+        const ant = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+        const cap = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+        return ant.length > 0 ? cap / ant.length : 0;
+      })
+    ];
+    if (analista === 'PDV') {
+      const vAnt = filterByMonth(allRegistros, mesPrev, anioPrev).filter(isVenta);
+      ticketAnt.push(vAnt.length > 0 ? vAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0) / vAnt.length : 0);
+    }
+
+    return {
+      labels,
+      datasets: [
+        { label: `Ticket ${mesActualLabel}`, data: ticketAct, backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4, maxBarThickness: 70 },
+        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: 'rgba(6, 78, 59, 0.9)', borderRadius: 4, maxBarThickness: 70 },
+      ],
+    };
+  }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
+
+  // ── Chart 4: Variación % vs mes anterior ─────────────────────────────────
+  const chartVariacion = useMemo(() => {
+    const labels = chartLabels;
+    const capitalVar = [...kpiPorAnalista.map(k => k.tendCapital ?? 0)];
+    if (analista === 'PDV') capitalVar.push(kpiTotal.tendCapital ?? 0);
+
+    const opsVar = [...kpiPorAnalista.map(k => k.tendOps ?? 0)];
+    if (analista === 'PDV') opsVar.push(kpiTotal.tendOps ?? 0);
+
+    return {
+      labels,
+      datasets: [
+        { label: 'Variación Capital %', data: capitalVar, backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
+        { label: 'Variación Ops %', data: opsVar, backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
+      ],
+    };
+  }, [chartLabels, kpiPorAnalista, kpiTotal, analista]);
+
+  // ── Chart 7: Aperturas vs Renovaciones ───────────────────────────────────
+  const apertVsRenData = useMemo(() => {
+    const allVentas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
+    const allAnt = ventasMesAnt.filter(isVenta);
+    return {
+      porAnalista: analistasParaMostrar.map(analista => {
+        const v = allVentas.filter(r => r.analista === analista);
+        return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
+      }),
+      porAnalistaAnt: analistasParaMostrar.map(analista => {
+        const v = allAnt.filter(r => r.analista === analista);
+        return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
+      }),
+      total: { aperturas: allVentas.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allVentas.filter(r => r.tipo_cliente === 'Renovacion').length },
+      ant: { aperturas: allAnt.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allAnt.filter(r => r.tipo_cliente === 'Renovacion').length },
+    };
+  }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
+
+  const chartAperturas = useMemo(() => {
+    const labels = chartLabels;
+    const actual = [...apertVsRenData.porAnalista.map(d => d.aperturas)];
+    if (analista === 'PDV') actual.push(apertVsRenData.total.aperturas);
+
+    const anterior = [...apertVsRenData.porAnalistaAnt.map(d => d.aperturas)];
+    if (analista === 'PDV') anterior.push(apertVsRenData.ant.aperturas);
+
+    return {
+      labels,
+      datasets: [
+        { label: `Actual`, data: actual, backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: anterior, backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, maxBarThickness: 50 },
+      ],
+    };
+  }, [chartLabels, apertVsRenData, analista]);
+
+  const chartRenovaciones = useMemo(() => {
+    const labels = chartLabels;
+    const actual = [...apertVsRenData.porAnalista.map(d => d.renovaciones)];
+    if (analista === 'PDV') actual.push(apertVsRenData.total.renovaciones);
+
+    const anterior = [...apertVsRenData.porAnalistaAnt.map(d => d.renovaciones)];
+    if (analista === 'PDV') anterior.push(apertVsRenData.ant.renovaciones);
+
+    return {
+      labels,
+      datasets: [
+        { label: `Actual`, data: actual, backgroundColor: '#a78bfa', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Anterior`, data: anterior, backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, maxBarThickness: 50 },
+      ],
+    };
+  }, [chartLabels, apertVsRenData, analista]);
+
+  // ── Chart 8: % Empleo Público / Privado ──────────────────────────────────
+  const empleoPublPrivData = useMemo(() => {
+    const PUBLICO = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
+    const ventas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
+    const ant = ventasMesAnt.filter(isVenta);
+    const classify = (r: typeof ventas[0]) => {
+      const e = (r.empleador ?? '').toLowerCase();
+      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'No especificado' : 'Privado';
+    };
+    const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
+    const countsAnt: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
+    ventas.forEach(r => counts[classify(r)]++);
+    ant.forEach(r => countsAnt[classify(r)]++);
+    return { counts, countsAnt };
+  }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
+
+  const chartEmpleoPublPriv = useMemo(() => {
+    const { counts } = empleoPublPrivData;
+    const labels = ['Público', 'Privado', 'Sin dato'];
+    const colors = ['#10b981', '#3b82f6', 'rgba(100,100,100,0.5)'];
+    const filtered = labels.filter(l => (counts[l] ?? 0) > 0);
+    return {
+      labels: filtered,
+      datasets: [{
+        data: filtered.map(l => counts[l] ?? 0),
+        backgroundColor: filtered.map(l => colors[labels.indexOf(l)]),
+        borderWidth: 0,
+        hoverOffset: 10,
+        borderRadius: 4,
+        spacing: 4
+      }],
+    };
+  }, [empleoPublPrivData]);
+
+  // ── Chart 10: % Total Conversión ─────────────────────────────────────────
+  const chartConversionTotal = useMemo(() => {
+    const labels = chartLabels;
+    const actual = [...kpiPorAnalista.map(k => k.conversion)];
+    if (analista === 'PDV') actual.push(kpiTotal.conversion);
+
+    const anterior = [
+      ...kpiPorAnalista.map(k => {
+        const regsAnt = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista);
+        const ventasAnt = regsAnt.filter(isVenta);
+        return regsAnt.length > 0 ? (ventasAnt.length / regsAnt.length) * 100 : 0;
+      })
+    ];
+    if (analista === 'PDV') {
+      const regsAntTotal = filterByMonth(allRegistros, mesPrev, anioPrev);
+      const ventasAntTotal = regsAntTotal.filter(isVenta);
+      anterior.push(regsAntTotal.length > 0 ? (ventasAntTotal.length / regsAntTotal.length) * 100 : 0);
+    }
+
+    return {
+      labels,
+      datasets: [
+        { label: `Conversión % ${mesActualLabel}`, data: actual, backgroundColor: 'rgba(251,191,36,0.8)', borderRadius: 4, order: 1 },
+        { label: `Conversión % ${mesAntLabel}`, data: anterior, backgroundColor: 'rgba(124, 45, 18, 0.8)', borderRadius: 4, order: 1 },
+        refLine100(labels.length),
+      ],
+    };
+  }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
+
+  // ── Chart 5: Embudo Comercial ────────────────────────────────────────────
+  const chartEmbudo = useMemo(() => {
+    const labels = analistasParaMostrar;
+    const regsMes = filterByMonth(allRegistros, selectedMes, selectedAnio);
+    const cerradas = labels.map(a => regsMes.filter(r => r.analista === a && isVenta(r)).length);
+    
+    return {
+      labels: labels.map(a => a.toUpperCase()),
+      datasets: [
+        {
+          data: cerradas,
+          backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'],
+          borderWidth: 0,
+          hoverOffset: 10,
+          borderRadius: 4,
+          spacing: 4
+        }
+      ],
+    };
+  }, [registros, selectedMes, selectedAnio, isVenta]);
+
+  // ── Chart 6: % Conversión de Presupuesto ──────────────────────────────────
+  const chartConversionPresupuesto = useMemo(() => {
+    const labels = analistasParaMostrar;
+    const data = labels.map((a, i) => {
+      const pres = ({})[a] ?? 0;
+      const ops = kpiPorAnalista[i]?.ops ?? 0;
+      return pres > 0 ? (ops / pres) * 100 : 0;
+    });
+    return {
+      labels,
+      datasets: [
+        { label: '% Conv. Presupuesto → Venta', data, backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4, order: 1 },
+        refLine100(labels.length),
+      ],
+    };
+  }, [({}), kpiPorAnalista, refLine100]);
+
+  if (loading) return <div style={{display:'flex',justifyContent:'center',padding:'40px'}}><div className="spinner"></div></div>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', paddingTop: '32px' }}>
+
+      {/* Toolbar Superior */}
+      <div style={{ 
+        background: 'rgba(255,255,255,0.01)',
+        border: '1px solid rgba(255,255,255,0.04)',
+        borderRadius: '24px',
+        padding: '24px 32px',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+        marginBottom: '24px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.02)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <BarChart3 size={24} color="#fff" />
+            </div>
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Vista Analistas</div>
+              <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>Métricas detalladas por persona</div>
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', color: '#fff', letterSpacing: '0.5px' }}>HISTÓRICO 12 MESES</div>
-            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', fontWeight: 600 }}>
-              Objetivo vs. Alcance (Ventas $)
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <SelectReporte
+              icon="user"
+              value={analista}
+              onChange={v => setAnalista(String(v))}
+              options={[
+                { label: 'Vista Global (PDV)', value: 'PDV' },
+                ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a.toUpperCase(), value: a }))
+              ]}
+              width="220px"
+            />
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '4px' }}>
+              <select value={selectedMes} onChange={e => setSelectedMes(Number(e.target.value))} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
+                {CONFIG.MESES_NOMBRES.map((m, i) => <option key={m} value={i + 1} style={{ background: '#111' }}>{m}</option>)}
+              </select>
+              <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
+              <select value={selectedAnio} onChange={e => setSelectedAnio(Number(e.target.value))} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
+                {[2023, 2024, 2025, 2026].map(a => <option key={a} value={a} style={{ background: '#111' }}>{a}</option>)}
+              </select>
             </div>
           </div>
         </div>
-
-        <div style={{ height: '360px', padding: '40px 10px 10px 10px' }}>
-          <Bar data={histChart as any} options={histOpts as any} />
-        </div>
       </div>
 
-      {/* ── Histórico anual ── */}
-      {analista === PDV && historicoAnualData.pdv.years.length > 0 && (
-        <div style={{ ...card, marginBottom: '16px' }}>
-          <PDVHistorico data={historicoAnualData.pdv} />
-        </div>
-      )}
-      {analista !== PDV && historicoAnualData.analistaSel.secciones.length > 0 && (
-        <div style={{ ...card, marginBottom: '16px' }}>
-          <AnalistaHistorico data={historicoAnualData.analistaSel} nombre={analista} />
-        </div>
-      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* ── SECCIÓN 1: TABLERO ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
+            {!collapsedSections[1] && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
+                    {tendBadge(kpiTotal.tendCapital)}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+                    Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
+                  </div>
+                  {kpiTotal.cumplCapital !== null && (
+                    <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
+                      {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
+                    </div>
+                  )}
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="chart-capital-objetivo" style={{ height: 180 }}>
+                      <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
+                    {tendBadge(kpiTotal.tendOps)}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+                    Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
+                  </div>
+                  {kpiTotal.cumplOps !== null && (
+                    <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
+                      {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
+                    </div>
+                  )}
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
+                        <div id="chart-aperturas" style={{ height: 140, position: 'relative', width: '100%' }}>
+                          <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                        </div>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
+                        <div id="chart-renovaciones" style={{ height: 140, position: 'relative', width: '100%' }}>
+                          <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
+                    {tendBadge(kpiTotal.tendTicket)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                    <div style={{ fontSize: 12, color: '#555' }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
+                    {tendBadge(kpiTotal.tendConversion)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                    <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
+                    {tendBadge(kpiTotal.tendClientes)}
+                  </div>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="chart-ticket-promedio" style={{ height: 180 }}>
+                      <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
+          {/* ── SECCIÓN 2: INDICADORES CLAVE ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader(2, '2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
+            {!collapsedSections[2] && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
+                  {kpiPorAnalista.map((k, idx) => {
+                    const isTotal = false;
+                    return (
+                      <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
+                        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 8, background: isTotal ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Users size={13} color={isTotal ? '#a78bfa' : '#666'} />
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: isTotal ? '#a78bfa' : '#ccc' }}>{k.analista}</span>
+                          </div>
+                        </div>
+                        <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
+                              {tendBadge(k.tendCapital)}
+                            </div>
+                            {k.cumplCapital !== null && (
+                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
+                                </div>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplCapital), whiteSpace: 'nowrap' as const }}>{k.cumplCapital.toFixed(0)}%</span>
+                              </div>
+                            )}
+                            {k.metaCapital > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {formatCurrency(k.metaCapital)}</div>}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
+                              {tendBadge(k.tendOps)}
+                            </div>
+                            {k.cumplOps !== null && (
+                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
+                                </div>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplOps), whiteSpace: 'nowrap' as const }}>{k.cumplOps.toFixed(0)}%</span>
+                              </div>
+                            )}
+                            {k.metaOps > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {k.metaOps}</div>}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ticket Prom.</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{formatCurrency(k.ticket)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Conversión</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}%</div>
+                          </div>
+
+                          {/* Nuevos indicadores solicitados */}
+                          <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Monto de Venta</div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoVenta)}</div>
+                          </div>
+                          <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Aprob. CC</div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoAprobCC)}</div>
+                          </div>
+                          <div style={{ gridColumn: 'span 2', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Cantidad de operaciones</div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: '#888' }}>{k.clientesIngresados} <span style={{ fontSize: 10, fontWeight: 500, color: '#444' }}>registros totales</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div style={{ marginBottom: 28 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                    {/* 1. Cumplimiento */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="chart-cumplimiento" style={{ height: 280 }}>
+                        <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+
+                    {/* 2. Variación */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Positivo</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(248,113,113,0.7)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Negativo</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="chart-variacion" style={{ height: 280 }}>
+                        <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                      </div>
+                    </div>
+
+                    {/* 3. Embudo */}
+                    {/* 3. Acuerdos por Analista */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Acuerdos por Analista</div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                           <Users size={12} color="#666" />
+                           <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>{kpiTotal.ops} TOTAL</span>
+                        </div>
+                      </div>
+                      {(() => {
+                        const labels = analistasParaMostrar;
+                        const data = labels.map(a => filterByMonth(allRegistros, selectedMes, selectedAnio).filter(r => r.analista === a && r.acuerdo_precios).length);
+                        const total = data.reduce((s, v) => s + v, 0);
+                        const chartData = {
+                          labels: labels.map(a => a.toUpperCase()),
+                          datasets: [{
+                            data,
+                            backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'],
+                            borderWidth: 0,
+                            hoverOffset: 10,
+                            borderRadius: 4,
+                            spacing: 4
+                          }]
+                        };
+                        return (
+                          <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <ModernDoughnut data={chartData} total={total} label="Acuerdos" unit=" Ops" />
+                            <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                              {labels.map((l, i) => {
+                                const pct = total > 0 ? (data[i] / total * 100).toFixed(1) : '0';
+                                return (
+                                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartData.datasets[0].backgroundColor as string[])[i] }} />
+                                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* 4. Empleo */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                        <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
+                      </div>
+                      <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <ModernDoughnut data={chartEmpleoPublPriv} total={kpiTotal.ops} label="Total" unit=" Ops" />
+                        <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                          {chartEmpleoPublPriv.labels.map((l, i) => {
+                            const val = chartEmpleoPublPriv.datasets[0].data[i];
+                            const pct = kpiTotal.ops > 0 ? (val / kpiTotal.ops * 100).toFixed(1) : '0';
+                            return (
+                              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
+                                <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
+              <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+              {!collapsedSections[3] && <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>}
+            </div>
+            {!collapsedSections[3] && ventasMes.length > 0 && (
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+                {(() => {
+                  const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+                  return (
+                    <>
+                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" totalMes={totalMes} />
+                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalMes} />
+                      <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" totalMes={totalMes} />
+                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalMes} />
+                      <DistBlock 
+                        titulo="Empleador" 
+                        icon={<Shield size={12} color="#fbbf24" />} 
+                        datos={distEmpleador} 
+                        color="#fbbf24" 
+                        totalMes={totalMes}
+                      />
+                      <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" totalMes={totalMes} />
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
+          {/* ── SECCIÓN 4: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader(4, '4. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
+            {!collapsedSections[4] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} />}
+          </div>
+
+          {/* ── SECCIÓN 11: RENDIMIENTO Y TENDENCIAS ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
+            {!collapsedSections[11] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
+          </div>
+
+
+        </div>
     </div>
   );
 }
