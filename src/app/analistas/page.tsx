@@ -247,7 +247,43 @@ const labelsPlugin: any = {
     });
   },
 };
-
+ 
+// ── Plugin inline: líneas de referencia horizontales (Meta/Objetivo) ─────
+const referenceLinesPlugin: any = {
+  id: 'referenceLinesPlugin',
+  afterDraw(chart: any) {
+    const { ctx, chartArea: { left, right }, scales } = chart;
+    
+    chart.data.datasets.forEach((dataset: any) => {
+      if (dataset.horizontalReferenceValue !== undefined) {
+        const yAxisID = dataset.yAxisID || 'y';
+        const yScale = scales[yAxisID];
+        if (!yScale) return;
+        
+        const yValue = yScale.getPixelForValue(dataset.horizontalReferenceValue);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash(dataset.borderDash || []);
+        ctx.lineWidth = dataset.borderWidth || 2;
+        ctx.strokeStyle = dataset.borderColor || '#fff';
+        ctx.moveTo(left, yValue);
+        ctx.lineTo(right, yValue);
+        ctx.stroke();
+        
+        // Etiqueta opcional
+        if (dataset.showLabelOnLine) {
+          ctx.fillStyle = dataset.borderColor;
+          ctx.font = 'bold 9px Outfit, sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillText(dataset.label, right - 5, yValue - 5);
+        }
+        
+        ctx.restore();
+      }
+    });
+  }
+};
+ 
 const now = new Date();
 
 
@@ -436,7 +472,7 @@ export default function AnalistasPage() {
     const tendClientes = clientesAnt > 0 ? ((clientes - clientesAnt) / clientesAnt) * 100 : null;
     const tendConversion = conversionAnt > 0 ? ((conversion - conversionAnt) / conversionAnt) * 100 : null;
 
-    const obj = objetivos.find(o => o.analista === 'PDV' && o.mes === selectedMes - 1 && o.anio === selectedAnio);
+    const obj = objetivos.find(o => o.analista === analista && o.mes === selectedMes - 1 && o.anio === selectedAnio);
     const metaCapital = obj?.meta_ventas ?? 0;
     const metaOps = obj?.meta_operaciones ?? 0;
     const cumplCapital = metaCapital > 0 ? (capital / metaCapital) * 100 : null;
@@ -709,16 +745,18 @@ export default function AnalistasPage() {
   });
 
   // Helper: línea de referencia 100%
-  const refLine100 = (n: number) => ({
+  const refLine100 = (n: number, yAxisID?: string) => ({
     type: 'line' as const,
     label: 'Meta 100%',
     data: Array(n).fill(100),
+    horizontalReferenceValue: 100,
     borderColor: '#f87171',
     borderWidth: 1.5,
     borderDash: [5, 4],
     pointRadius: 0,
     fill: false,
     order: 0,
+    yAxisID,
   });
 
   // ── Datos gráfico cumplimiento por analista ───────────────────────────────
@@ -841,6 +879,8 @@ export default function AnalistasPage() {
   // ── Chart 1: Capital vs Objetivo ──────────────────────────────────────────
   const chartCapitalVsObjetivo = useMemo(() => {
     const labels = chartLabels;
+    const isSingle = labels.length === 1;
+
     const capitalAct = [...kpiPorAnalista.map(k => k.capital)];
     if (analista === 'PDV') capitalAct.push(kpiTotal.capital);
 
@@ -857,12 +897,23 @@ export default function AnalistasPage() {
     const objetivo = [...kpiPorAnalista.map(k => k.metaCapital || 0)];
     if (analista === 'PDV') objetivo.push(kpiTotal.metaCapital || 0);
 
+    const cumplimiento = [...kpiPorAnalista.map(k => k.cumplCapital || 0)];
+    if (analista === 'PDV') cumplimiento.push(kpiTotal.cumplCapital || 0);
+
     return {
       labels,
       datasets: [
-        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4, order: 1, maxBarThickness: 70 },
-        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 1, maxBarThickness: 70 },
-        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#f87171', fill: false, order: 0 },
+        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4, order: 2, maxBarThickness: 70 },
+        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 2, maxBarThickness: 70 },
+        { 
+          type: 'line' as const, label: 'Objetivo ($)', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 1,
+          horizontalReferenceValue: isSingle ? objetivo[0] : undefined 
+        },
+        { 
+          type: 'line' as const, label: 'Cumplimiento (%)', data: cumplimiento, borderColor: '#10b981', borderWidth: 2, pointRadius: 0, fill: false, order: 0, yAxisID: 'y1',
+          horizontalReferenceValue: isSingle ? cumplimiento[0] : undefined
+        },
+        refLine100(labels.length, 'y1'),
       ],
     };
   }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
@@ -1148,7 +1199,21 @@ export default function AnalistasPage() {
                       </div>
                     </div>
                     <div id="chart-capital-objetivo" style={{ height: 180 }}>
-                      <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                      {(() => {
+                        const opts = baseChartOpts('$', false, true, false);
+                        opts.scales.y1 = {
+                          position: 'right' as const,
+                          beginAtZero: true,
+                          grid: { display: false },
+                          ticks: { 
+                            color: '#10b981', 
+                            font: { size: 9, weight: 'bold' },
+                            callback: (v: any) => v + '%' 
+                          },
+                          title: { display: true, text: 'Cumplimiento %', color: '#10b981', font: { size: 9 } }
+                        };
+                        return <Bar data={chartCapitalVsObjetivo as any} options={opts} plugins={[labelsPlugin, referenceLinesPlugin]} />;
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -1184,13 +1249,13 @@ export default function AnalistasPage() {
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
                         <div id="chart-aperturas" style={{ height: 140, position: 'relative', width: '100%' }}>
-                          <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                          <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
                         </div>
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
                         <div id="chart-renovaciones" style={{ height: 140, position: 'relative', width: '100%' }}>
-                          <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
+                          <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
                         </div>
                       </div>
                     </div>
@@ -1225,7 +1290,7 @@ export default function AnalistasPage() {
                       </div>
                     </div>
                     <div id="chart-ticket-promedio" style={{ height: 180 }}>
-                      <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                      <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
                     </div>
                   </div>
                 </div>
@@ -1330,7 +1395,7 @@ export default function AnalistasPage() {
                         </div>
                       </div>
                       <div id="chart-cumplimiento" style={{ height: 280 }}>
-                        <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                        <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
                       </div>
                     </div>
 
@@ -1350,7 +1415,7 @@ export default function AnalistasPage() {
                         </div>
                       </div>
                       <div id="chart-variacion" style={{ height: 280 }}>
-                        <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin]} />
+                        <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
                       </div>
                     </div>
 
