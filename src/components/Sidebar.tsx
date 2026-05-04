@@ -597,6 +597,7 @@ const FiltersContent = () => {
 // ── Calculator Content ───────────────────────────────────────────────────────
 
 const CalculadoraContent = () => {
+  const SUELDO_FIJO = 1641799.18;
   const [pacts, setPacts] = useState({
     capital: '',
     operacion: '',
@@ -632,7 +633,8 @@ const CalculadoraContent = () => {
     refi: calculate('refi', pacts.refi)
   };
 
-  const total = Object.values(results).reduce((s, v) => s + v, 0);
+  const comisiones = Object.values(results).reduce((s, v) => s + v, 0);
+  const totalGeneral = comisiones + SUELDO_FIJO;
 
   const inputRow = (label: string, key: keyof typeof pacts) => (
     <div style={{ marginBottom: 16 }}>
@@ -668,9 +670,21 @@ const CalculadoraContent = () => {
       </div>
 
       <div style={{ marginTop: 'auto', padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontSize: 10, fontWeight: 900, color: '#444', textTransform: 'uppercase' }}>Sueldo Fijo</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>$ {SUELDO_FIJO.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+        </div>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <span style={{ fontSize: 10, fontWeight: 900, color: '#444', textTransform: 'uppercase' }}>Comisiones</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#34d399' }}>$ {comisiones.toLocaleString('es-AR')}</span>
+        </div>
+
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '16px 0' }} />
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: '#444', textTransform: 'uppercase' }}>Total Estimado</span>
-          <span style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>$ {total.toLocaleString('es-AR')}</span>
+          <span style={{ fontSize: 10, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Cobrar</span>
+          <span style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>$ {totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
         </div>
         <div style={{ fontSize: 9, color: '#333', textAlign: 'right' }}>Sucursal B</div>
       </div>
