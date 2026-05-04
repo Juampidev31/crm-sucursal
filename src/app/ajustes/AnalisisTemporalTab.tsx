@@ -33,6 +33,8 @@ interface Props {
   initialYear?: number;
   initialState?: AnalisisTemporalState;
   onStateChange?: (state: AnalisisTemporalState) => void;
+  forcedAnalista?: string;
+  hideFilters?: boolean;
 }
 
 const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -70,11 +72,18 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
   );
 };
 
-export default function AnalisisTemporalTab({ registros, isPublic, initialMonth, initialYear, initialState, onStateChange }: Props) {
+export default function AnalisisTemporalTab({ registros, isPublic, initialMonth, initialYear, initialState, onStateChange, forcedAnalista, hideFilters }: Props) {
   const [periodo, setPeriodo] = useState(initialState?.periodo ?? -1);
-  const [analistaFil, setAnalistaFil] = useState(initialState?.analistaFil ?? 'todos');
+  const [analistaFil, setAnalistaFil] = useState(initialState?.analistaFil ?? (forcedAnalista || 'todos'));
   const [analistaFil2, setAnalistaFil2] = useState(initialState?.analistaFil2 ?? 'ninguno');
   const [metrica, setMetrica] = useState(initialState?.metrica ?? 'ventas');
+
+  // Sincronizar analista forzado si cambia externamente
+  useEffect(() => {
+    if (forcedAnalista) {
+      setAnalistaFil(forcedAnalista);
+    }
+  }, [forcedAnalista]);
 
   const baseDate = useMemo(() => {
     if (initialYear && initialMonth) {
@@ -775,96 +784,98 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
   return (
     <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
       {/* Filters Header Card */}
-      <div style={{
-        background: '#0a0a0a',
-        border: '1px solid rgba(255,255,255,0.03)',
-        borderRadius: '8px',
-        padding: '10px 20px',
-        display: 'flex',
-        flexDirection: 'column',
-        marginBottom: '16px',
-      }}>
-        {/* El header se movió al contenedor padre */}
-        
-        {!collapsedSections[11] && (
-          <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12, pointerEvents: isPublic ? 'none' : 'auto', opacity: isPublic ? 0.9 : 1 }}>
-            {[
-              { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={(v) => setPeriodo(Number(v))} width="170px" /> },
-              { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={(v) => setAnalistaFil(String(v))} width="160px" /> },
-              { label: 'Comparar c/', node: <CustomSelect options={analistaOpts2} value={analistaFil2} onChange={(v) => setAnalistaFil2(String(v))} width="160px" /> },
-              { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={(v) => setMetrica(String(v))} width="160px" /> },
-            ].map(f => (
-              <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</div>
-                {f.node}
+      {!hideFilters && (
+        <div style={{
+          background: '#0a0a0a',
+          border: '1px solid rgba(255,255,255,0.03)',
+          borderRadius: '8px',
+          padding: '10px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          marginBottom: '16px',
+        }}>
+          {/* El header se movió al contenedor padre */}
+          
+          {!collapsedSections[11] && (
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', marginTop: 12, pointerEvents: isPublic ? 'none' : 'auto', opacity: isPublic ? 0.9 : 1 }}>
+              {[
+                { label: 'Período', node: <CustomSelect options={PERIODOS} value={periodo} onChange={(v) => setPeriodo(Number(v))} width="170px" /> },
+                !forcedAnalista && { label: 'Analista', node: <CustomSelect options={analistaOpts} value={analistaFil} onChange={(v) => setAnalistaFil(String(v))} width="160px" /> },
+                { label: 'Comparar c/', node: <CustomSelect options={analistaOpts2} value={analistaFil2} onChange={(v) => setAnalistaFil2(String(v))} width="160px" /> },
+                { label: 'Métrica', node: <CustomSelect options={METRICAS} value={metrica} onChange={(v) => setMetrica(String(v))} width="160px" /> },
+              ].filter(Boolean).map((f: any) => (
+                <div key={f.label} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{f.label}</div>
+                  {f.node}
+                </div>
+              ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha desde</div>
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={e => { setFechaDesde(e.target.value); setPeriodo(-10); }}
+                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
+                />
               </div>
-            ))}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha desde</div>
-              <input
-                type="date"
-                value={fechaDesde}
-                onChange={e => { setFechaDesde(e.target.value); setPeriodo(-10); }}
-                style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha hasta</div>
-              <input
-                type="date"
-                value={fechaHasta}
-                onChange={e => { setFechaHasta(e.target.value); setPeriodo(-10); }}
-                style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
-              />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
-              <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Controles</div>
-              <button
-                onClick={() => setCompararPeriodo(v => !v)}
-                style={{
-                  background: compararPeriodo ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${compararPeriodo ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: '12px',
-                  padding: '8px 16px',
-                  color: compararPeriodo ? '#22c55e' : '#888',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  transition: 'all 0.2s',
-                  marginBottom: '4px'
-                }}
-              >
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: compararPeriodo ? '#22c55e' : '#555' }} />
-                {compararPeriodo ? 'Comparación: ON' : 'Comparación: OFF'}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Fecha hasta</div>
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={e => { setFechaHasta(e.target.value); setPeriodo(-10); }}
+                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
+                <div style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Controles</div>
+                <button
+                  onClick={() => setCompararPeriodo(v => !v)}
+                  style={{
+                    background: compararPeriodo ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${compararPeriodo ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: '12px',
+                    padding: '8px 16px',
+                    color: compararPeriodo ? '#22c55e' : '#888',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    transition: 'all 0.2s',
+                    marginBottom: '4px'
+                  }}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: compararPeriodo ? '#22c55e' : '#555' }} />
+                  {compararPeriodo ? 'Comparación: ON' : 'Comparación: OFF'}
+                </button>
 
-              <button
-                onClick={() => setMostrarVariaciones(v => !v)}
-                style={{
-                  background: mostrarVariaciones ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${mostrarVariaciones ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.1)'}`,
-                  borderRadius: '12px',
-                  padding: '8px 16px',
-                  color: mostrarVariaciones ? '#3b82f6' : '#888',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  transition: 'all 0.2s'
-                }}
-              >
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: mostrarVariaciones ? '#3b82f6' : '#555' }} />
-                {mostrarVariaciones ? 'Variaciones: ON' : 'Variaciones: OFF'}
-              </button>
+                <button
+                  onClick={() => setMostrarVariaciones(v => !v)}
+                  style={{
+                    background: mostrarVariaciones ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${mostrarVariaciones ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.1)'}`,
+                    borderRadius: '12px',
+                    padding: '8px 16px',
+                    color: mostrarVariaciones ? '#3b82f6' : '#888',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: mostrarVariaciones ? '#3b82f6' : '#555' }} />
+                  {mostrarVariaciones ? 'Variaciones: ON' : 'Variaciones: OFF'}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {!collapsedSections[11] && (
         <>

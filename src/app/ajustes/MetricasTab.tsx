@@ -88,9 +88,10 @@ interface Props {
   selectedMes?: number;
   selectedAnio?: number;
   registros?: any[];
+  analista?: string;
 }
 
-export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAnio, registros: manualRegs }: Props) {
+export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAnio, registros: manualRegs, analista: propAnalista }: Props) {
   const [internalMes, setInternalMes] = useState(propMes ? String(propMes).padStart(2, '0') : mesActual);
   const [internalAnio, setInternalAnio] = useState(propAnio || new Date().getFullYear());
   
@@ -117,7 +118,13 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
 
   const getStatsForAnalista = (analista: string) => {
     let filtered = regs || [];
-    if (analista) filtered = filtered.filter(r => r.analista === analista);
+    // OJO: Si ya nos pasan registros manuales (ya filtrados en el padre), no volvemos a filtrar por analista
+    // a menos que analista sea un nombre específico y estemos en modo "General"
+    if (analista && !manualRegs) filtered = filtered.filter(r => r.analista === analista);
+    
+    // Si estamos en PDV y filtramos por Luciana en un sub-gráfico, filtramos sobre el total
+    if (analista && manualRegs) filtered = filtered.filter(r => r.analista === analista);
+
     if (mes) filtered = filtered.filter(r => r.fecha && r.fecha.slice(5, 7) === mes);
     if (anio) filtered = filtered.filter(r => r.fecha && r.fecha.slice(0, 4) === String(anio));
 
@@ -150,6 +157,16 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
   };
 
   const views = useMemo(() => {
+    // Si se fuerza un analista específico (que no sea PDV), mostrar solo ese
+    if (propAnalista && propAnalista !== 'PDV') {
+      return [{ 
+        id: propAnalista.toLowerCase(), 
+        label: propAnalista.toUpperCase(), 
+        analista: propAnalista,
+        data: getStatsForAnalista(propAnalista)
+      }];
+    }
+
     const base = [{ id: 'todos', label: 'General (Todos)', analista: '' }];
     const analistas = (CONFIG.ANALISTAS_DEFAULT || []).map(a => ({
       id: a.toLowerCase(),
@@ -161,7 +178,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
       ...v, 
       data: getStatsForAnalista(v.analista) 
     }));
-  }, [regs, mes, anio]);
+  }, [regs, mes, anio, propAnalista]);
 
   if (loading) return <div className="loading-container"><div className="spinner" /></div>;
 
@@ -197,56 +214,103 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
-        {views.map(view => (
-          <div key={view.id} style={{ 
-            background: 'rgba(255,255,255,0.01)', 
-            borderRadius: '28px', 
-            border: '1px solid rgba(255,255,255,0.03)',
-            padding: '32px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '32px',
-            transition: 'transform 0.3s ease, border-color 0.3s ease',
-          }}
-          className="metric-card-hover"
-          >
-            <div style={{ textAlign: 'center' }}>
-              <ModernDoughnut 
-                data={view.data.doughnutData} 
-                totalMonto={view.data.totalMonto} 
-                label={view.label}
-              />
-              <div style={{ marginTop: '16px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.5px' }}>
-                {view.data.totalOps} OPERACIONES TOTALES
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: views.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', 
+        gap: '32px',
+        justifyContent: 'center'
+      }}>
+        {views.map(view => {
+          const isSingle = views.length === 1;
+          const topState = [...view.data.stats].sort((a, b) => b.monto - a.monto)[0];
+          const avgTicket = view.data.totalOps > 0 ? view.data.totalMonto / view.data.totalOps : 0;
+
+          return (
+            <div key={view.id} style={{ 
+              background: 'rgba(255,255,255,0.01)', 
+              borderRadius: '28px', 
+              border: '1px solid rgba(255,255,255,0.03)',
+              padding: isSingle ? '56px 64px' : '32px',
+              display: 'flex',
+              flexDirection: isSingle ? 'row' : 'column',
+              alignItems: isSingle ? 'center' : 'stretch',
+              justifyContent: 'center',
+              gap: isSingle ? '80px' : '32px',
+              transition: 'transform 0.3s ease, border-color 0.3s ease',
+              maxWidth: isSingle ? '1200px' : 'none',
+              margin: isSingle ? '0 auto' : '0',
+              width: '100%'
+            }}
+            className="metric-card-hover"
+            >
+              <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                <ModernDoughnut 
+                  data={view.data.doughnutData} 
+                  totalMonto={view.data.totalMonto} 
+                  label={view.label}
+                />
+                <div style={{ marginTop: '20px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                  {view.data.totalOps} OPERACIONES TOTALES
+                </div>
+                
+                {isSingle && (
+                   <div style={{ marginTop: '32px', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                      <div style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>Ticket Promedio Gral.</div>
+                      <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff' }}>{formatCurrency(avgTicket)}</div>
+                   </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, minWidth: isSingle ? '400px' : 'auto' }}>
+                {isSingle && (
+                   <div style={{ marginBottom: '12px', display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1, padding: '16px', background: 'linear-gradient(135deg, rgba(74,222,128,0.1) 0%, rgba(74,222,128,0) 100%)', borderRadius: '16px', border: '1px solid rgba(74,222,128,0.1)' }}>
+                        <div style={{ fontSize: '9px', color: '#34d399', fontWeight: 900, textTransform: 'uppercase', marginBottom: '4px' }}>Mejor Desempeño</div>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>{topState.label}</div>
+                        <div style={{ fontSize: '11px', color: '#34d399', fontWeight: 700 }}>{formatCurrency(topState.monto)}</div>
+                      </div>
+                      <div style={{ flex: 1, padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ fontSize: '9px', color: '#666', fontWeight: 900, textTransform: 'uppercase', marginBottom: '4px' }}>Cierre del Mes</div>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>{view.data.totalOps} Ops</div>
+                        <div style={{ fontSize: '11px', color: '#888', fontWeight: 700 }}>Finalizadas</div>
+                      </div>
+                   </div>
+                )}
+
+                {view.data.stats.filter(s => s.ops > 0).map(s => {
+                  const pct = view.data.totalMonto > 0 ? (s.monto / view.data.totalMonto * 100).toFixed(0) : '0';
+                  const tick = s.ops > 0 ? s.monto / s.ops : 0;
+                  
+                  return (
+                    <div key={s.key} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '14px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px',
+                      border: '1px solid rgba(255,255,255,0.01)',
+                    }}>
+                      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ width: '4px', height: '24px', background: s.color, borderRadius: '4px' }} />
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '13px', color: '#eee' }}>{s.label}</div>
+                          <div style={{ fontSize: '10px', color: '#555', fontWeight: 700 }}>{s.ops} OPERACIONES · {pct}%</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 900, fontSize: '15px', color: '#fff' }}>{formatCurrency(s.monto)}</div>
+                        {isSingle && <div style={{ fontSize: '9px', color: '#444', fontWeight: 800 }}>TICKET: {formatCurrency(tick)}</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {view.data.totalOps === 0 && (
+                  <div style={{ textAlign: 'center', padding: '60px 20px', color: '#333', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '24px', fontSize: '13px' }}>
+                    No se encontraron registros para este periodo.
+                  </div>
+                )}
               </div>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {view.data.stats.filter(s => s.ops > 0).map(s => (
-                <div key={s.key} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.01)',
-                }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ width: '4px', height: '14px', background: s.color, borderRadius: '4px' }} />
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>{s.label}</div>
-                      <div style={{ fontSize: '9px', color: '#444', fontWeight: 800 }}>{s.ops} OPS</div>
-                    </div>
-                  </div>
-                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#fff' }}>{formatCurrency(s.monto)}</div>
-                </div>
-              ))}
-              {view.data.totalOps === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#333', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '20px', fontSize: '12px' }}>
-                  Sin datos en este período
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <style jsx global>{`
@@ -259,3 +323,4 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
     </div>
   );
 }
+

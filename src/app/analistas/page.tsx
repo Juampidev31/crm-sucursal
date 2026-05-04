@@ -350,48 +350,27 @@ export default function AnalistasPage() {
   const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
     const isCollapsed = !!collapsedSections[id];
     return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        marginBottom: isCollapsed ? 0 : 16, 
-        paddingBottom: 10, 
-        borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)',
-        gap: 12
-      }}>
+      <div 
+        onClick={() => toggleSection(id)}
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          marginBottom: isCollapsed ? 0 : 16, 
+          paddingBottom: 10, 
+          borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)',
+          gap: 12,
+          cursor: 'pointer',
+          userSelect: 'none',
+          transition: 'opacity 0.2s ease'
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {icon}
           <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
         </div>
-        <button 
-          onClick={() => toggleSection(id)}
-          style={{ 
-            background: isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', 
-            border: '1px solid rgba(255,255,255,0.08)', 
-            borderRadius: '8px', 
-            width: 28, 
-            height: 28, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            cursor: 'pointer', 
-            color: isCollapsed ? '#555' : '#fff',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: isCollapsed ? 'none' : '0 0 15px rgba(255,255,255,0.05)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-            e.currentTarget.style.color = isCollapsed ? '#555' : '#fff';
-          }}
-        >
-          <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
-        </button>
       </div>
     );
   };
@@ -909,11 +888,6 @@ export default function AnalistasPage() {
           type: 'line' as const, label: 'Objetivo ($)', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 1,
           horizontalReferenceValue: isSingle ? objetivo[0] : undefined 
         },
-        { 
-          type: 'line' as const, label: 'Cumplimiento (%)', data: cumplimiento, borderColor: '#10b981', borderWidth: 2, pointRadius: 0, fill: false, order: 0, yAxisID: 'y1',
-          horizontalReferenceValue: isSingle ? cumplimiento[0] : undefined
-        },
-        refLine100(labels.length, 'y1'),
       ],
     };
   }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
@@ -1201,17 +1175,6 @@ export default function AnalistasPage() {
                     <div id="chart-capital-objetivo" style={{ height: 180 }}>
                       {(() => {
                         const opts = baseChartOpts('$', false, true, false);
-                        opts.scales.y1 = {
-                          position: 'right' as const,
-                          beginAtZero: true,
-                          grid: { display: false },
-                          ticks: { 
-                            color: '#10b981', 
-                            font: { size: 9, weight: 'bold' },
-                            callback: (v: any) => v + '%' 
-                          },
-                          title: { display: true, text: 'Cumplimiento %', color: '#10b981', font: { size: 9 } }
-                        };
                         return <Bar data={chartCapitalVsObjetivo as any} options={opts} plugins={[labelsPlugin, referenceLinesPlugin]} />;
                       })()}
                     </div>
@@ -1300,7 +1263,7 @@ export default function AnalistasPage() {
 
           {/* ── SECCIÓN 2: INDICADORES CLAVE ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(2, '2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
+            {sectionHeader(2, '2. Indicadores', <Users size={15} color="#a78bfa" />)}
             {!collapsedSections[2] && (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -1524,14 +1487,23 @@ export default function AnalistasPage() {
 
           {/* ── SECCIÓN 4: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(4, '4. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
-            {!collapsedSections[4] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} />}
+            {sectionHeader(4, '4. Distribucion por Estado', <PieChart size={15} color="#4ade80" />)}
+            {!collapsedSections[4] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />}
           </div>
 
           {/* ── SECCIÓN 11: RENDIMIENTO Y TENDENCIAS ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
-            {!collapsedSections[11] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
+            {sectionHeader(11, '11. Tendencia', <BarChart3 size={15} color="#60a5fa" />)}
+            {!collapsedSections[11] && (
+              <AnalisisTemporalTab 
+                registros={allRegistros} 
+                initialMonth={selectedMes} 
+                initialYear={selectedAnio} 
+                forcedAnalista={analista === 'PDV' ? 'todos' : analista}
+                hideFilters={true}
+                onStateChange={setSeccion10State} 
+              />
+            )}
           </div>
 
 
