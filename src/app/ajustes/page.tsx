@@ -1381,10 +1381,11 @@ export default function AjustesPage() {
                           <thead>
                             <tr>
                               <th style={{ width: 45, textAlign: 'center', padding: '10px 8px' }} />
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '20%' }}>Fecha / Hora</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '20%' }}>Analista</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '25%' }}>Acción</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '35%' }}>Campo</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '18%' }}>Fecha / Hora</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '15%' }}>Analista</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '15%' }}>CUIL</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '22%' }}>Acción</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '30%' }}>Campo</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1419,6 +1420,9 @@ export default function AjustesPage() {
                                         <span style={{ fontSize: '12px', fontWeight: 600, color: '#ccc', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{reg.analista || reg.id_analista || '—'}</span>
                                       </div>
                                     </td>
+                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', fontSize: '12px', color: '#22c55e', fontWeight: 700, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                      {reg.cuil || '—'}
+                                    </td>
                                     <td style={{ padding: '10px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
                                       <span style={{
                                         display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -1437,27 +1441,31 @@ export default function AjustesPage() {
 
                                   {/* EXPANDED DETAIL ROW */}
                                   {isExpanded && (
-                                    <tr style={{ background: 'rgba(255,255,255,0.015)' }}>
-                                      <td colSpan={5} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                    <tr style={{ background: 'transparent' }}>
+                                      <td colSpan={6} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                         <div style={{
-                                          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                                          gap: 16, padding: '16px 20px', background: 'rgba(255,255,255,0.02)',
+                                          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                                          gap: 16, padding: '16px 20px', background: 'transparent',
                                           borderRadius: 6, border: '1px solid rgba(255,255,255,0.04)',
                                         }}>
                                           <div>
                                             <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista (ID)</div>
                                             <div style={{ fontSize: '11px', color: '#888' }}>{reg.id_analista || reg.analista || '—'}</div>
                                           </div>
+                                          <div>
+                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>CUIL / Cliente</div>
+                                            <div style={{ fontSize: '11px', color: '#22c55e', fontWeight: 700 }}>{reg.cuil || '—'} {reg.nombre ? `| ${reg.nombre}` : ''}</div>
+                                          </div>
                                           {reg.valor_anterior && (
                                             <div style={{ gridColumn: '1 / -1' }}>
                                               <div style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Anterior</div>
-                                              <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'rgba(239,68,68,0.04)', borderRadius: 4, border: '1px solid rgba(239,68,68,0.08)', wordBreak: 'break-all' }}>{reg.valor_anterior}</div>
+                                              <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'transparent', borderRadius: 4, border: '1px solid rgba(239,68,68,0.2)', wordBreak: 'break-all' }}>{reg.valor_anterior}</div>
                                             </div>
                                           )}
                                           {reg.valor_nuevo && (
                                             <div style={{ gridColumn: '1 / -1' }}>
                                               <div style={{ fontSize: '9px', fontWeight: 800, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Nuevo</div>
-                                              <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'rgba(34,197,94,0.04)', borderRadius: 4, border: '1px solid rgba(34,197,94,0.08)', wordBreak: 'break-all' }}>{reg.valor_nuevo}</div>
+                                              <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'transparent', borderRadius: 4, border: '1px solid rgba(34,197,94,0.2)', wordBreak: 'break-all' }}>{reg.valor_nuevo}</div>
                                             </div>
                                           )}
                                         </div>

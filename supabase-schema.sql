@@ -35,6 +35,8 @@ CREATE INDEX IF NOT EXISTS idx_registros_cuil ON registros (cuil);
 CREATE TABLE IF NOT EXISTS auditoria (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   id_registro TEXT DEFAULT '',
+  nombre TEXT DEFAULT '',
+  cuil TEXT DEFAULT '',
   fecha_hora TIMESTAMPTZ DEFAULT now(),
   analista TEXT DEFAULT '',
   accion TEXT DEFAULT '',
