@@ -171,9 +171,40 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const searchParams = useSearchParams();
   const { loading, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [zoom, setZoom] = useState(0.9);
   
   useEffect(() => {
     setMounted(true);
+    const saved = localStorage.getItem('app_zoom_level');
+    if (saved) {
+      const parsed = parseFloat(saved);
+      if (!isNaN(parsed)) setZoom(parsed);
+    }
+  }, []);
+
+  const handleZoom = (delta: number) => {
+    setZoom(prev => {
+      const next = Math.max(0.3, Math.min(3, prev + delta));
+      localStorage.setItem('app_zoom_level', next.toString());
+      return next;
+    });
+  };
+
+  const resetZoom = () => {
+    setZoom(0.9);
+    localStorage.setItem('app_zoom_level', '0.9');
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey) {
+        if (e.key === '+' || e.key === '=') { e.preventDefault(); handleZoom(0.1); }
+        else if (e.key === '-') { e.preventDefault(); handleZoom(-0.1); }
+        else if (e.key === '0') { e.preventDefault(); resetZoom(); }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
   
   const isLoginPage = pathname === '/login';
@@ -296,7 +327,14 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       )}
 
       <div className="wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
-        {!isMinimal && <Sidebar />}
+        {!isMinimal && (
+          <Sidebar 
+            zoom={zoom} 
+            onZoomIn={() => handleZoom(0.1)} 
+            onZoomOut={() => handleZoom(-0.1)} 
+            onReset={resetZoom} 
+          />
+        )}
         <main
           className="content-wrapper"
           style={{
@@ -338,7 +376,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                   }}
                 />
               ) : (
-                <ZoomWrapper>
+                <ZoomWrapper zoom={zoom}>
                   {children}
                 </ZoomWrapper>
               )}

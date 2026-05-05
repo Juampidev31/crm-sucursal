@@ -10,7 +10,8 @@ import { STATUS_LABEL } from '@/lib/utils';
 import { 
   AlignJustify, BarChart2, FileText,
   DollarSign, Settings, Bell, Lock, LogOut, Plus, 
-  SlidersHorizontal, Download, ChevronDown, ChevronUp, X, Calculator
+  SlidersHorizontal, Download, ChevronDown, ChevronUp, X, Calculator,
+  ZoomIn, ZoomOut, Maximize
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -93,7 +94,19 @@ function SidebarDivider() {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
-export default function Sidebar({ hidden }: { hidden?: boolean }) {
+export default function Sidebar({ 
+  hidden,
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onReset
+}: { 
+  hidden?: boolean;
+  zoom?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onReset?: () => void;
+}) {
   const pathname = usePathname();
   const { isAdmin, logout, refreshUser } = useAuth();
   const { pendingReminders } = useRecordatorios();
@@ -320,6 +333,60 @@ export default function Sidebar({ hidden }: { hidden?: boolean }) {
         )}
 
         <div style={{ flex: 1 }} />
+        
+        {/* Zoom Controls Section */}
+        {zoom !== undefined && (
+          <div style={{
+            padding: '0 0 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+             <button
+              onClick={onZoomIn}
+              className="green-hover-btn"
+              title="Aumentar Zoom (Ctrl +)"
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+              }}
+            >
+              <ZoomIn size={16} />
+            </button>
+
+            <div style={{ fontSize: '10px', fontWeight: 900, color: '#333', textAlign: 'center', minWidth: '40px' }}>
+              {Math.round(zoom * 100)}%
+            </div>
+
+            <button
+              onClick={onZoomOut}
+              className="green-hover-btn"
+              title="Disminuir Zoom (Ctrl -)"
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+              }}
+            >
+              <ZoomOut size={16} />
+            </button>
+
+            <button
+              onClick={onReset}
+              className="green-hover-btn"
+              title="Resetear Zoom (Ctrl 0)"
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+                color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+              }}
+            >
+              <Maximize size={14} />
+            </button>
+          </div>
+        )}
 
         <div style={{ padding: '0 0 32px' }}>
           {isAdmin ? (

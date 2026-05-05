@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import SelectReporte from '@/components/SelectReporte';
-import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown, Calculator, Table } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -314,6 +314,7 @@ export default function AnalistasPage() {
     3: true,
     4: true,
     11: true,
+    12: true,
   });
 
   const toggleSection = (id: number) => {
@@ -443,6 +444,34 @@ export default function AnalistasPage() {
       const cumplProyCapital = metaCapital > 0 ? (proyCapital !== null ? (proyCapital / metaCapital) * 100 : null) : null;
       const cumplProyOps = metaOps > 0 ? (proyOps !== null ? (proyOps / metaOps) * 100 : null) : null;
 
+      // Cálculo de incentivos (SOLO LUCIANA Y VICTORIA)
+      const analistasConIncentivo = ['luciana', 'victoria'];
+      const tieneIncentivo = analistasConIncentivo.includes(analista.toLowerCase());
+      
+      let coefCap = 0;
+      let coefOps = 0;
+      let incentivoCap = 0;
+      let incentivoOps = 0;
+      let incentivoTotal = 0;
+
+      if (tieneIncentivo) {
+        if (cumplCapital !== null) {
+          if (cumplCapital >= 120) coefCap = 0.0045;
+          else if (cumplCapital >= 110) coefCap = 0.0037;
+          else if (cumplCapital >= 90) coefCap = 0.0030;
+          else if (cumplCapital >= 75) coefCap = 0.0020;
+        }
+        
+        if (cumplOps !== null && cumplCapital !== null && cumplCapital >= 75) {
+          if (cumplOps >= 100) coefOps = 0.0030;
+          else if (cumplOps >= 80) coefOps = 0.0020;
+        }
+
+        incentivoCap = capital * coefCap;
+        incentivoOps = capital * coefOps * (coefCap * 100);
+        incentivoTotal = incentivoCap + incentivoOps;
+      }
+
       return {
         analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps,
         clientesIngresados: regsAnalista.length,
@@ -450,7 +479,8 @@ export default function AnalistasPage() {
         montoAprobCC,
         ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
         diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
-        cumplProyCapital, cumplProyOps
+        cumplProyCapital, cumplProyOps,
+        coefCap, coefOps, incentivoCap, incentivoOps, incentivoTotal
       };
     });
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
@@ -487,8 +517,12 @@ export default function AnalistasPage() {
     const tendConversion = conversionAnt > 0 ? ((conversion - conversionAnt) / conversionAnt) * 100 : null;
 
     const obj = objetivos.find(o => o.analista === analista && o.mes === selectedMes - 1 && o.anio === selectedAnio);
-    const metaCapital = obj?.meta_ventas ?? 0;
-    const metaOps = obj?.meta_operaciones ?? 0;
+    const metaCapital = analista === 'PDV' 
+      ? objetivos.filter(o => o.mes === selectedMes - 1 && o.anio === selectedAnio && o.analista !== 'PDV').reduce((s, o) => s + (o.meta_ventas || 0), 0)
+      : (obj?.meta_ventas ?? 0);
+    const metaOps = analista === 'PDV' 
+      ? objetivos.filter(o => o.mes === selectedMes - 1 && o.anio === selectedAnio && o.analista !== 'PDV').reduce((s, o) => s + (o.meta_operaciones || 0), 0)
+      : (obj?.meta_operaciones ?? 0);
     const cumplCapital = metaCapital > 0 ? (capital / metaCapital) * 100 : null;
     const restanteCapital = metaCapital > 0 ? Math.max(0, 100 - (capital / metaCapital) * 100) : null;
     const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
@@ -521,6 +555,11 @@ export default function AnalistasPage() {
     const cumplProyCapital = metaCapital > 0 ? (proyCapital !== null ? (proyCapital / metaCapital) * 100 : null) : null;
     const cumplProyOps = metaOps > 0 ? (proyOps !== null ? (proyOps / metaOps) * 100 : null) : null;
 
+    // Cálculo de incentivos global - Suma de individuales (Solo Luciana y Victoria)
+    const incentivoCap = kpiPorAnalista.reduce((s, k) => s + k.incentivoCap, 0);
+    const incentivoOps = kpiPorAnalista.reduce((s, k) => s + k.incentivoOps, 0);
+    const incentivoTotal = incentivoCap + incentivoOps;
+
     return {
       analista: 'PDV',
       capital, ops, ticket, conversion, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion,
@@ -528,9 +567,10 @@ export default function AnalistasPage() {
       clientesIngresados: clientes,
       ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
       diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
-      cumplProyCapital, cumplProyOps
+      cumplProyCapital, cumplProyOps,
+      incentivoCap, incentivoOps, incentivoTotal
     };
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, analista]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, analista, kpiPorAnalista]);
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
   const distribucionAcuerdos = useMemo(() => {
@@ -559,7 +599,7 @@ export default function AnalistasPage() {
       
       return null;
     };
-    for (const r of filterByMonth(registros, selectedMes, selectedAnio)) {
+    for (const r of filterByMonth(allRegistros, selectedMes, selectedAnio)) {
       const isV = isVenta(r);
       const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
       if (matched) {
@@ -568,7 +608,7 @@ export default function AnalistasPage() {
       }
     }
     return tipos;
-  }, [registros, selectedMes, selectedAnio]);
+  }, [allRegistros, selectedMes, selectedAnio]);
 
   // ── Distribuciones demográficas (ventas del mes) ─────────────────────────
   const ventasMes = useMemo(() =>
@@ -1183,6 +1223,14 @@ export default function AnalistasPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', paddingTop: '32px' }}>
+      <style>{`
+        .row-hover {
+          transition: background 0.2s ease;
+        }
+        .row-hover:hover {
+          background: rgba(255,255,255,0.02);
+        }
+      `}</style>
 
       {/* Toolbar Superior */}
       <div style={{ 
@@ -1445,59 +1493,79 @@ export default function AnalistasPage() {
                                 Cargá días hábiles en Ajustes para ver proyección
                               </div>
                             ) : (
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                {k.metaDiariaCapital !== null && (
-                                  <div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Venta / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.metaDiariaCapital)}</div>
-                                    {k.ventaPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {formatCurrency(k.ventaPorDia)}</div>}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                                <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '6px 8px', borderRadius: '6px' }}>
+                                  <div style={{ flex: 1 }}>
+                                    {k.metaDiariaCapital !== null && (
+                                      <>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Venta / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.metaDiariaCapital)}</div>
+                                        {k.ventaPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {formatCurrency(k.ventaPorDia)}</div>}
+                                      </>
+                                    )}
                                   </div>
-                                )}
-                                {k.metaDiariaOps !== null && (
-                                  <div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ops. / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{k.metaDiariaOps.toFixed(1)}</div>
-                                    {k.opsPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {k.opsPorDia.toFixed(1)}</div>}
+                                  <div style={{ flex: 1 }}>
+                                    {k.metaDiariaOps !== null && (
+                                      <>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ops. / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{k.metaDiariaOps.toFixed(1)}</div>
+                                        {k.opsPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {k.opsPorDia.toFixed(1)}</div>}
+                                      </>
+                                    )}
                                   </div>
-                                )}
-                                {k.proyCapital !== null && (
-                                  <div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>{k.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
-                                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: k.esMesActual ? (k.proyCapital >= k.metaCapital ? '#10b981' : '#f87171') : '#ccc' }}>{formatCurrency(k.proyCapital)}</div>
-                                        {k.cumplProyCapital !== null && (
-                                          <span style={{ fontSize: 10, fontWeight: 800, color: k.esMesActual ? (k.cumplProyCapital >= 100 ? '#10b981' : '#f87171') : '#444' }}>
-                                            ({k.cumplProyCapital.toFixed(0)}%)
-                                          </span>
-                                        )}
-                                      </div>
+                                </div>
+                                
+                                <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '8px 8px 6px', borderRadius: '6px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                                  <div style={{ flex: 1 }}>
+                                    {k.proyCapital !== null && (
+                                      <>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>{k.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                          <div style={{ fontSize: 14, fontWeight: 800, color: k.esMesActual ? (k.proyCapital >= k.metaCapital ? '#10b981' : '#f87171') : '#ccc' }}>{formatCurrency(k.proyCapital)}</div>
+                                          {k.cumplProyCapital !== null && (
+                                            <span style={{ fontSize: 10, fontWeight: 800, color: k.esMesActual ? (k.cumplProyCapital >= 100 ? '#10b981' : '#f87171') : '#444' }}>
+                                              ({k.cumplProyCapital.toFixed(0)}%)
+                                            </span>
+                                          )}
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
-                                )}
-                                {k.proyOps !== null && (
-                                  <div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>{k.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
-                                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: k.esMesActual ? (k.proyOps >= k.metaOps ? '#10b981' : '#f87171') : '#ccc' }}>{k.proyOps}</div>
-                                        {k.cumplProyOps !== null && (
-                                          <span style={{ fontSize: 10, fontWeight: 800, color: k.esMesActual ? (k.cumplProyOps >= 100 ? '#10b981' : '#f87171') : '#444' }}>
-                                            ({k.cumplProyOps.toFixed(0)}%)
-                                          </span>
-                                        )}
-                                      </div>
+                                  <div style={{ flex: 1 }}>
+                                    {k.proyOps !== null && (
+                                      <>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>{k.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                          <div style={{ fontSize: 14, fontWeight: 800, color: k.esMesActual ? (k.proyOps >= k.metaOps ? '#10b981' : '#f87171') : '#ccc' }}>{k.proyOps}</div>
+                                          {k.cumplProyOps !== null && (
+                                            <span style={{ fontSize: 10, fontWeight: 800, color: k.esMesActual ? (k.cumplProyOps >= 100 ? '#10b981' : '#f87171') : '#444' }}>
+                                              ({k.cumplProyOps.toFixed(0)}%)
+                                            </span>
+                                          )}
+                                        </div>
+                                      </>
+                                    )}
                                   </div>
-                                )}
-                                {k.faltaCapital !== null && (
-                                  <div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Falta 100% (K)</div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: k.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(k.faltaCapital)}</div>
+                                </div>
+
+                                <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '8px 8px 6px', borderRadius: '6px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                                  <div style={{ flex: 1 }}>
+                                    {k.faltaCapital !== null && (
+                                      <>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Falta 100% (K)</div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: k.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(k.faltaCapital)}</div>
+                                      </>
+                                    )}
                                   </div>
-                                )}
-                                {k.faltaOps !== null && (
-                                  <div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Falta 100% (Q)</div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: k.faltaOps === 0 ? '#10b981' : '#f87171' }}>{k.faltaOps}</div>
+                                  <div style={{ flex: 1 }}>
+                                    {k.faltaOps !== null && (
+                                      <>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Falta 100% (Q)</div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: k.faltaOps === 0 ? '#10b981' : '#f87171' }}>{k.faltaOps}</div>
+                                      </>
+                                    )}
                                   </div>
-                                )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1703,6 +1771,111 @@ export default function AnalistasPage() {
               />
             )}
           </div>
+
+          {/* ── SECCIÓN 12: CÁLCULO DE INCENTIVOS ── */}
+          {['luciana', 'victoria'].includes(analista.toLowerCase()) && (
+            <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader(12, '12. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
+            {!collapsedSections[12] && (
+              <div style={{ marginTop: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 32 }}>
+                  {/* Reglas de Capital */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#a78bfa', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Target size={12} /> Escala de Incentivos - Capital
+                    </div>
+                    <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <th style={{ textAlign: 'left', padding: '8px 4px', color: '#444' }}>ALCANCE</th>
+                          <th style={{ textAlign: 'right', padding: '8px 4px', color: '#444' }}>COEFICIENTE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { a: '75% < 90%', c: '0.20%' },
+                          { a: '90% < 110%', c: '0.30%' },
+                          { a: '110% < 120%', c: '0.37%' },
+                          { a: '>= 120%', c: '0.45%' },
+                        ].map((r, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                            <td style={{ padding: '8px 4px', color: '#888' }}>{r.a}</td>
+                            <td style={{ padding: '8px 4px', textAlign: 'right', color: '#ccc', fontWeight: 700 }}>{r.c}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Reglas de Operaciones */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Activity size={12} /> Escala de Incentivos - Operaciones
+                    </div>
+                    <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <th style={{ textAlign: 'left', padding: '8px 4px', color: '#444' }}>ALCANCE</th>
+                          <th style={{ textAlign: 'right', padding: '8px 4px', color: '#444' }}>COEFICIENTE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { a: '80% y 99.99%', c: '0.20%' },
+                          { a: '>= 100%', c: '0.30%' },
+                        ].map((r, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                            <td style={{ padding: '8px 4px', color: '#888' }}>{r.a}</td>
+                            <td style={{ padding: '8px 4px', textAlign: 'right', color: '#ccc', fontWeight: 700 }}>{r.c}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div style={{ marginTop: 12, fontSize: 9, color: '#444', fontStyle: 'italic' }}>
+                      * Requiere alcance mínimo de 75% en Capital.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tabla de resultados por Analista */}
+                <div style={{ overflowX: 'auto', background: 'rgba(255,255,255,0.01)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)', padding: 8 }}>
+                  <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Analista</th>
+                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Vendido (K)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Cumpl. (K)</th>
+                        <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Coef. (K)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Incentivo (K)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Cumpl. (Q)</th>
+                        <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Coef. (Q)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Incentivo (Q)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(167, 139, 250, 0.05)' }}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kpiCards.filter(k => k.analista === 'PDV' || ['luciana', 'victoria'].includes(k.analista.toLowerCase())).map((k, idx) => (
+                        <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                          <td style={{ padding: '16px 20px', fontSize: 13, fontWeight: 700, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                            {k.analista === 'PDV' ? 'TOTAL GENERAL' : k.analista.toUpperCase()}
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{formatCurrency(k.capital)}</td>
+                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{k.cumplCapital?.toFixed(1)}%</td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{k.coefCap > 0 ? `${(k.coefCap * 100).toFixed(2)}%` : '-'}</td>
+                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: '#ccc', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{formatCurrency(k.incentivoCap)}</td>
+                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{k.cumplOps?.toFixed(1)}%</td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{k.coefOps > 0 ? `${(k.coefOps * 100).toFixed(2)}%` : '-'}</td>
+                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: '#ccc', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{formatCurrency(k.incentivoOps)}</td>
+                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 14, color: '#fff', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.02)', background: 'rgba(167, 139, 250, 0.05)' }}>{formatCurrency(k.incentivoTotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+          )}
 
 
         </div>
