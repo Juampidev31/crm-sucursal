@@ -478,7 +478,7 @@ export default function AnalistasPage() {
           else if (cumplOps >= 80) coefOps = 0.0020;
         }
 
-        incentivoCap = capital * coefCap;
+        incentivoCap = (capital * coefCap) + 21470;
         // El incentivo de operaciones es un % del incentivo de capital (20% o 30%)
         incentivoOps = incentivoCap * (coefOps === 0.0030 ? 0.30 : (coefOps === 0.0020 ? 0.20 : 0));
 
@@ -1860,7 +1860,7 @@ export default function AnalistasPage() {
                       </tbody>
                     </table>
                     <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
-                      * Base de referencia: $21,470 (fijo no sumado al cálculo automático).<br/>
+                      * Se suma una base fija de $21,470 al incentivo de Capital.<br/>
                       * El tope máximo combinado (K + Q) es de $200,000.
                     </div>
                   </div>
