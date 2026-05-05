@@ -478,9 +478,11 @@ export default function AnalistasPage() {
           else if (cumplOps >= 80) coefOps = 0.0020;
         }
 
-        incentivoCap = (capital * coefCap) + 21470;
-        // El incentivo de operaciones es un % del incentivo de capital (20% o 30%)
-        incentivoOps = incentivoCap * (coefOps === 0.0030 ? 0.30 : (coefOps === 0.0020 ? 0.20 : 0));
+        const incentivoCapVariable = capital * coefCap;
+        incentivoCap = incentivoCapVariable + 21470;
+        
+        // El incentivo de operaciones es un % del incentivo de capital VARIABLE (sin los 21470)
+        incentivoOps = incentivoCapVariable * (coefOps === 0.0030 ? 0.30 : (coefOps === 0.0020 ? 0.20 : 0));
 
         // Tope máximo combinado de $200,000 para K y Q
         const totalKQ = incentivoCap + incentivoOps;
