@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import SelectReporte from '@/components/SelectReporte';
-import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown, Calculator, Table } from 'lucide-react';
+import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown, Calculator, Table, DollarSign } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -323,6 +323,17 @@ export default function AnalistasPage() {
 
 
 
+  const [manualCobranzas, setManualCobranzas] = useState({
+    pctTr90: 0,
+    pctTr120: 0,
+    pctRefin: 0
+  });
+
+  const handleManualCobChange = (key: string, val: string) => {
+    const num = parseFloat(val) || 0;
+    setManualCobranzas(prev => ({ ...prev, [key]: num }));
+  };
+
   // ── Helpers de cálculo ────────────────────────────────────────────────────
   const filterByMonth = (regs: Registro[], mes: number, anio: number) => {
     const key = `${anio}-${String(mes).padStart(2, '0')}`;
@@ -452,7 +463,6 @@ export default function AnalistasPage() {
       let coefOps = 0;
       let incentivoCap = 0;
       let incentivoOps = 0;
-      let incentivoTotal = 0;
 
       if (tieneIncentivo) {
         if (cumplCapital !== null) {
@@ -468,9 +478,32 @@ export default function AnalistasPage() {
         }
 
         incentivoCap = capital * coefCap;
-        incentivoOps = capital * coefOps * (coefCap * 100);
-        incentivoTotal = incentivoCap + incentivoOps;
+        incentivoOps = capital * coefOps * 10;
       }
+
+      // ── Incentivos de Cobranzas ──────────────────────────────────────────────
+      let incentivoCobTr90 = 0, incentivoCobTr120 = 0, incentivoCobRefin = 0;
+      let pctTr90 = 0, pctTr120 = 0, pctRefin = 0;
+
+      if (['luciana', 'victoria'].includes(analista.toLowerCase())) {
+        pctTr90 = manualCobranzas.pctTr90;
+        pctTr120 = manualCobranzas.pctTr120;
+        pctRefin = manualCobranzas.pctRefin;
+
+        // Tramo 90-119
+        if (pctTr90 >= 100) incentivoCobTr90 = 16667;
+        else if (pctTr90 >= 90) incentivoCobTr90 = 12643;
+
+        // Tramo 120-209
+        if (pctTr120 >= 100) incentivoCobTr120 = 16667;
+        else if (pctTr120 >= 90) incentivoCobTr120 = 12643;
+
+        // Refinanciacion
+        if (pctRefin >= 110) incentivoCobRefin = 16667;
+        else if (pctRefin >= 90) incentivoCobRefin = 12643;
+      }
+
+      const incentivoTotal = incentivoCap + incentivoOps + incentivoCobTr90 + incentivoCobTr120 + incentivoCobRefin;
 
       return {
         analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps,
@@ -480,10 +513,13 @@ export default function AnalistasPage() {
         ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
         diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
         cumplProyCapital, cumplProyOps,
-        coefCap, coefOps, incentivoCap, incentivoOps, incentivoTotal
+        coefCap, coefOps, incentivoCap, incentivoOps,
+        incentivoCobTr90, incentivoCobTr120, incentivoCobRefin,
+        pctTr90, pctTr120, pctRefin,
+        incentivoTotal
       };
     });
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, manualCobranzas]);
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
@@ -556,9 +592,15 @@ export default function AnalistasPage() {
     const cumplProyOps = metaOps > 0 ? (proyOps !== null ? (proyOps / metaOps) * 100 : null) : null;
 
     // Cálculo de incentivos global - Suma de individuales (Solo Luciana y Victoria)
-    const incentivoCap = kpiPorAnalista.reduce((s, k) => s + k.incentivoCap, 0);
-    const incentivoOps = kpiPorAnalista.reduce((s, k) => s + k.incentivoOps, 0);
-    const incentivoTotal = incentivoCap + incentivoOps;
+    const incentivoCap = kpiPorAnalista.reduce((s, k) => s + (k.incentivoCap || 0), 0);
+    const incentivoOps = kpiPorAnalista.reduce((s, k) => s + (k.incentivoOps || 0), 0);
+    
+    // Cobranzas Total (Suma de analistas con incentivo)
+    const incentivoCobTr90 = kpiPorAnalista.reduce((s, k) => s + (k.incentivoCobTr90 || 0), 0);
+    const incentivoCobTr120 = kpiPorAnalista.reduce((s, k) => s + (k.incentivoCobTr120 || 0), 0);
+    const incentivoCobRefin = kpiPorAnalista.reduce((s, k) => s + (k.incentivoCobRefin || 0), 0);
+
+    const incentivoTotal = incentivoCap + incentivoOps + incentivoCobTr90 + incentivoCobTr120 + incentivoCobRefin;
 
     return {
       analista: 'PDV',
@@ -568,7 +610,9 @@ export default function AnalistasPage() {
       ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
       diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
       cumplProyCapital, cumplProyOps,
-      coefCap: 0, coefOps: 0, incentivoCap, incentivoOps, incentivoTotal
+      coefCap: 0, coefOps: 0, incentivoCap, incentivoOps, 
+      incentivoCobTr90, incentivoCobTr120, incentivoCobRefin,
+      incentivoTotal
     };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, analista, kpiPorAnalista]);
 
@@ -1781,14 +1825,14 @@ export default function AnalistasPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 32 }}>
                   {/* Reglas de Capital */}
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#a78bfa', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Target size={12} /> Escala de Incentivos - Capital
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#a78bfa', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Target size={14} /> Escala de Incentivos - Capital
                     </div>
-                    <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+                    <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <th style={{ textAlign: 'left', padding: '8px 4px', color: '#444' }}>ALCANCE</th>
-                          <th style={{ textAlign: 'right', padding: '8px 4px', color: '#444' }}>COEFICIENTE</th>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                          <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa' }}>ALCANCE</th>
+                          <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa' }}>COEFICIENTE</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1798,9 +1842,9 @@ export default function AnalistasPage() {
                           { a: '110% < 120%', c: '0.37%' },
                           { a: '>= 120%', c: '0.45%' },
                         ].map((r, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                            <td style={{ padding: '8px 4px', color: '#888' }}>{r.a}</td>
-                            <td style={{ padding: '8px 4px', textAlign: 'right', color: '#ccc', fontWeight: 700 }}>{r.c}</td>
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
+                            <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1809,14 +1853,14 @@ export default function AnalistasPage() {
 
                   {/* Reglas de Operaciones */}
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Activity size={12} /> Escala de Incentivos - Operaciones
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Activity size={14} /> Escala de Incentivos - Operaciones
                     </div>
-                    <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
+                    <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <th style={{ textAlign: 'left', padding: '8px 4px', color: '#444' }}>ALCANCE</th>
-                          <th style={{ textAlign: 'right', padding: '8px 4px', color: '#444' }}>COEFICIENTE</th>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                          <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa' }}>ALCANCE</th>
+                          <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa' }}>COEFICIENTE</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1824,15 +1868,83 @@ export default function AnalistasPage() {
                           { a: '80% y 99.99%', c: '0.20%' },
                           { a: '>= 100%', c: '0.30%' },
                         ].map((r, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                            <td style={{ padding: '8px 4px', color: '#888' }}>{r.a}</td>
-                            <td style={{ padding: '8px 4px', textAlign: 'right', color: '#ccc', fontWeight: 700 }}>{r.c}</td>
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
+                            <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    <div style={{ marginTop: 12, fontSize: 9, color: '#444', fontStyle: 'italic' }}>
+                    <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
                       * Requiere alcance mínimo de 75% en Capital.
+                    </div>
+                  </div>
+
+                  {/* Reglas de Cobranzas */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <DollarSign size={14} /> Escala de Incentivos - Cobranzas
+                    </div>
+                    <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                          <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa' }}>CONCEPTO</th>
+                          <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa' }}>ALCANCE</th>
+                          <th style={{ textAlign: 'right', padding: '8px 4px', color: '#aaa' }}>PREMIO</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { n: 'TRAMO 90-119', a: '90% - 99.99%', p: '$12.643' },
+                          { n: 'TRAMO 90-119', a: '>= 100%', p: '$16.667' },
+                          { n: 'TRAMO 120-209', a: '90% - 99.99%', p: '$12.643' },
+                          { n: 'TRAMO 120-209', a: '>= 100%', p: '$16.667' },
+                          { n: 'REFINANCIACION', a: '90% - 109.99%', p: '$12.643' },
+                          { n: 'REFINANCIACION', a: '>= 110%', p: '$16.667' },
+                        ].map((r, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '8px 4px', color: '#aaa', fontSize: 11 }}>{r.n}</td>
+                            <td style={{ padding: '8px 4px', color: '#bbb' }}>{r.a}</td>
+                            <td style={{ padding: '8px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.p}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#fb923c', marginBottom: 8, textTransform: 'uppercase' }}>Ingreso Manual de Cumplimiento (%)</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 90</div>
+                          <input 
+                            type="number" 
+                            value={manualCobranzas.pctTr90 || ''} 
+                            onChange={(e) => handleManualCobChange('pctTr90', e.target.value)}
+                            style={{ width: '100%', background: '#111', border: '1px solid #222', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                            placeholder="0%"
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 120</div>
+                          <input 
+                            type="number" 
+                            value={manualCobranzas.pctTr120 || ''} 
+                            onChange={(e) => handleManualCobChange('pctTr120', e.target.value)}
+                            style={{ width: '100%', background: '#111', border: '1px solid #222', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                            placeholder="0%"
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>REFIN</div>
+                          <input 
+                            type="number" 
+                            value={manualCobranzas.pctRefin || ''} 
+                            onChange={(e) => handleManualCobChange('pctRefin', e.target.value)}
+                            style={{ width: '100%', background: '#111', border: '1px solid #222', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                            placeholder="0%"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1842,31 +1954,29 @@ export default function AnalistasPage() {
                   <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Analista</th>
-                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Vendido (K)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Cumpl. (K)</th>
-                        <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Coef. (K)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Incentivo (K)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Cumpl. (Q)</th>
-                        <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Coef. (Q)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>Incentivo (Q)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 20px', fontSize: 10, fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(167, 139, 250, 0.05)' }}>Total</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Analista</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Vendido (K)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Cumpl. (K)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Incent. (K)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Cumpl. (Q)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Incent. (Q)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Incent. (Cob)</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(167, 139, 250, 0.05)' }}>Total Final</th>
                       </tr>
                     </thead>
                     <tbody>
                       {kpiCards.filter(k => k.analista === 'PDV' || ['luciana', 'victoria'].includes(k.analista.toLowerCase())).map((k, idx) => (
                         <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                          <td style={{ padding: '16px 20px', fontSize: 13, fontWeight: 700, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                          <td style={{ padding: '18px 15px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {k.analista === 'PDV' ? 'TOTAL GENERAL' : k.analista.toUpperCase()}
                           </td>
-                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{formatCurrency(k.capital)}</td>
-                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{k.cumplCapital?.toFixed(1)}%</td>
-                          <td style={{ padding: '16px 20px', textAlign: 'center', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{k.coefCap > 0 ? `${(k.coefCap * 100).toFixed(2)}%` : '-'}</td>
-                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: '#ccc', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{formatCurrency(k.incentivoCap)}</td>
-                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{k.cumplOps?.toFixed(1)}%</td>
-                          <td style={{ padding: '16px 20px', textAlign: 'center', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{k.coefOps > 0 ? `${(k.coefOps * 100).toFixed(2)}%` : '-'}</td>
-                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 13, color: '#ccc', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.02)' }}>{formatCurrency(k.incentivoOps)}</td>
-                          <td style={{ padding: '16px 20px', textAlign: 'right', fontSize: 14, color: '#fff', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.02)', background: 'rgba(167, 139, 250, 0.05)' }}>{formatCurrency(k.incentivoTotal)}</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#eee', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.capital)}</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{k.cumplCapital?.toFixed(1)}%</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.incentivoCap)}</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{k.cumplOps?.toFixed(1)}%</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.incentivoOps)}</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 15, color: '#fff', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(167, 139, 250, 0.1)' }}>{formatCurrency(k.incentivoTotal)}</td>
                         </tr>
                       ))}
                     </tbody>
