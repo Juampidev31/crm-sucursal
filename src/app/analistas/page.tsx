@@ -1,5 +1,4 @@
 'use client';
-// Build trigger: 2026-05-05 12:26
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -479,7 +478,7 @@ export default function AnalistasPage() {
         }
 
         incentivoCap = capital * coefCap;
-        incentivoOps = capital * coefOps * 10;
+        incentivoOps = capital * coefOps;
       }
 
       // ── Incentivos de Cobranzas ──────────────────────────────────────────────
