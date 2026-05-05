@@ -313,8 +313,8 @@ export default function AnalistasPage() {
     2: true,
     3: true,
     4: true,
-    11: true,
-    12: true,
+    5: true,
+    6: true,
   });
 
   const toggleSection = (id: number) => {
@@ -1757,10 +1757,10 @@ export default function AnalistasPage() {
             {!collapsedSections[4] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />}
           </div>
 
-          {/* ── SECCIÓN 11: RENDIMIENTO Y TENDENCIAS ── */}
+          {/* ── SECCIÓN 5: RENDIMIENTO Y TENDENCIAS ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(11, '11. Tendencia', <BarChart3 size={15} color="#60a5fa" />)}
-            {!collapsedSections[11] && (
+            {sectionHeader(5, '5. Tendencia', <BarChart3 size={15} color="#60a5fa" />)}
+            {!collapsedSections[5] && (
               <AnalisisTemporalTab 
                 registros={allRegistros} 
                 initialMonth={selectedMes} 
@@ -1772,11 +1772,11 @@ export default function AnalistasPage() {
             )}
           </div>
 
-          {/* ── SECCIÓN 12: CÁLCULO DE INCENTIVOS ── */}
+          {/* ── SECCIÓN 6: CÁLCULO DE INCENTIVOS ── */}
           {['luciana', 'victoria'].includes(analista.toLowerCase()) && (
             <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(12, '12. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
-            {!collapsedSections[12] && (
+            {sectionHeader(6, '6. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
+            {!collapsedSections[6] && (
               <div style={{ marginTop: 24 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 32 }}>
                   {/* Reglas de Capital */}
