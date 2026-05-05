@@ -42,9 +42,12 @@ function TramoTable({ titulo, rows, color }: { titulo: string; rows: TramoRow[];
                 <td style={{ padding: '8px 12px', color: '#444', textAlign: 'right' }}>{r.objetivo}</td>
                 <td style={{ padding: '8px 12px', color: '#aaa', fontWeight: 600, textAlign: 'right' }}>{r.recupero}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                  {r.pct !== null ? (
-                    <span style={{ color: c, fontWeight: 800, fontSize: '11px', background: `${c}18`, padding: '2px 7px', borderRadius: '6px' }}>{r.cumplimiento}</span>
-                  ) : <span style={{ color: '#333' }}>—</span>}
+                   {r.pct !== null ? (
+                     <span style={{ color: '#fff', fontWeight: 800, fontSize: '11px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                       <span style={{ color: c }}>●</span>
+                       {r.cumplimiento}
+                     </span>
+                   ) : <span style={{ color: '#333' }}>—</span>}
                 </td>
               </tr>
             );
@@ -186,7 +189,12 @@ export default function CobranzasClient({ data, year, years }: Props) {
                     <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                       <td style={{ padding: '12px 14px', color: '#888', fontWeight: 600, textAlign: 'center' }}>{r.mes}</td>
                       <td style={{ padding: '12px 14px', textAlign: 'center' }}>
-                        {r.currentPct !== null ? <span style={{ color: c, fontWeight: 800, fontSize: '12px', background: `${c}18`, padding: '3px 9px', borderRadius: '6px' }}>{r.current}</span> : <span style={{ color: '#333' }}>—</span>}
+                        {r.currentPct !== null ? (
+                          <span style={{ color: '#fff', fontWeight: 800, fontSize: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '3px 9px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ color: c }}>●</span>
+                            {r.current}
+                          </span>
+                        ) : <span style={{ color: '#333' }}>—</span>}
                       </td>
                       <td style={{ padding: '12px 14px', color: '#555', textAlign: 'center' }}>{r.anteriorPct !== null ? r.anterior : '—'}</td>
                       <td style={{ padding: '12px 14px', color: '#555', textAlign: 'center' }}>{r.mediaPct !== null ? r.mediaEmp : '—'}</td>

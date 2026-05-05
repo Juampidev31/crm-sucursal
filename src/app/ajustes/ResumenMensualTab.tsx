@@ -222,10 +222,8 @@ const labelsPlugin: any = {
 
         if (isPct) {
           label = Math.round(val) + '%';
-        } else if (v >= 1_000_000) {
-          label = (val / 1_000_000).toFixed(1).replace('.', ',') + 'M';
         } else if (v >= 1000) {
-          label = (val / 1000).toFixed(0) + 'K';
+          label = val.toLocaleString('es-AR');
         } else {
           // Redondear a 1 decimal si es < 10, sino entero
           label = (val < 10 && val > 0 && !Number.isInteger(val)) ? val.toFixed(1).replace('.', ',') : Math.round(val).toString();
@@ -836,13 +834,14 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const cumplColor = (pct: number | null) =>
     pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
 
+
   const tendBadge = (pct: number | null) => {
     if (pct === null) return <span style={{ color: '#333' }}>—</span>;
     const color = pct >= 0 ? '#34d399' : '#f87171';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
-          {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+          <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
         <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
       </div>
@@ -1230,15 +1229,14 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         stacked,
         ticks: {
           color: '#555', font: { size: 10 },
+          precision: yLabel.includes('ops') || yLabel.includes('reg') ? 0 : undefined,
           callback: function (this: any, val: any) {
-            let label = this.getLabelForValue(val);
-            if (label === undefined) label = val;
-            if (!horizontal) {
-              const n = Number(label);
-              if (isNaN(n)) return label;
-              return (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : n) + yLabel;
-            }
-            return label;
+            const n = Number(val);
+            if (isNaN(n)) return val;
+            if (horizontal) return val; // Generalmente labels de analistas
+            if (yLabel.includes('%')) return n.toFixed(0) + '%';
+            if (n >= 1000) return n.toLocaleString('es-AR') + yLabel;
+            return n + yLabel;
           }
         },
         grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true,
@@ -1268,7 +1266,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         {
           label: `Capital ${mesActualLabel}`,
           data: kpiPorAnalista.map(k => k.cumplCapital ?? 0),
-          backgroundColor: 'rgba(96,165,250,0.7)', borderRadius: 4, order: 1,
+          backgroundColor: 'rgba(96,165,250,0.8)',
+          borderColor: 'rgba(96,165,250,1)',
+          borderWidth: 1.5,
+          borderRadius: 4,
+          order: 1,
         },
         {
           label: `Capital ${mesAntLabel}`,
@@ -1278,12 +1280,20 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-          backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 1,
+          backgroundColor: 'rgba(30, 58, 138, 0.8)',
+          borderColor: 'rgba(30, 58, 138, 1)',
+          borderWidth: 1.5,
+          borderRadius: 4,
+          order: 1,
         },
         {
           label: `Ops ${mesActualLabel}`,
           data: kpiPorAnalista.map(k => k.cumplOps ?? 0),
-          backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, order: 1,
+          backgroundColor: 'rgba(167,139,250,0.8)',
+          borderColor: 'rgba(167,139,250,1)',
+          borderWidth: 1.5,
+          borderRadius: 4,
+          order: 1,
         },
         {
           label: `Ops ${mesAntLabel}`,
@@ -1293,7 +1303,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
           }),
-          backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, order: 1, // Purpura oscuro
+          backgroundColor: 'rgba(76, 29, 149, 0.8)',
+          borderColor: 'rgba(76, 29, 149, 1)',
+          borderWidth: 1.5,
+          borderRadius: 4,
+          order: 1, // Purpura oscuro
         },
         refLine100(labels.length),
       ],
@@ -1304,7 +1318,8 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
   const chartAcuerdos = useMemo(() => {
     const tiposDisplay = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/Excepcion', 'No califica'];
     const analistas = CONFIG.ANALISTAS_DEFAULT;
-    const colores = ['#60a5fa', '#a78bfa'];
+    const colores = ['rgba(96,165,250,0.8)', 'rgba(167,139,250,0.8)'];
+    const borderColores = ['rgba(96,165,250,1)', 'rgba(167,139,250,1)'];
 
     const matchAcuerdo = (acuerdo: string, estado: string, isV: boolean): string | null => {
       const ac = (acuerdo || '').toLowerCase().trim();
@@ -1334,7 +1349,9 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
             return r.analista === an && matched === t;
           }).length;
         }),
-        backgroundColor: colores[idx] || '#555',
+        backgroundColor: colores[idx] || 'rgba(255,255,255,0.05)',
+        borderColor: borderColores[idx] || 'rgba(255,255,255,0.2)',
+        borderWidth: 1.5,
         borderRadius: 4,
         maxBarThickness: 70,
       }))
@@ -1355,13 +1372,17 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
         {
           label: mesActualLabel,
           data: top.map(d => d.cantidad),
-          backgroundColor: color,
+          backgroundColor: `${color}cc`,
+          borderColor: color,
+          borderWidth: 1.5,
           borderRadius: 4, order: 1,
         },
         {
           label: mesAntLabel,
           data: top.map(d => anterior.get(d.label)?.cantidad ?? 0),
-          backgroundColor: `${color}44`,
+          backgroundColor: `${color}66`,
+          borderColor: `${color}99`,
+          borderWidth: 1.5,
           borderRadius: 4, order: 1,
         },
       ],
@@ -1391,8 +1412,26 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       labels,
       datasets: [
-        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4, order: 1, maxBarThickness: 70 },
-        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 1, maxBarThickness: 70 },
+        { 
+          label: `Capital ${mesActualLabel}`, 
+          data: capitalAct, 
+          backgroundColor: 'rgba(96,165,250,0.8)', 
+          borderColor: 'rgba(96,165,250,1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          order: 1, 
+          maxBarThickness: 70 
+        },
+        { 
+          label: `Capital ${mesAntLabel}`, 
+          data: capitalAnt, 
+          backgroundColor: 'rgba(30, 58, 138, 0.9)', 
+          borderColor: 'rgba(30, 58, 138, 1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          order: 1, 
+          maxBarThickness: 70 
+        },
         { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#f87171', fill: false, order: 0 },
       ],
     };
@@ -1415,8 +1454,24 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       labels,
       datasets: [
-        { label: `Ticket ${mesActualLabel}`, data: [...kpiPorAnalista.map(k => k.ticket), kpiTotal.ticket], backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4, maxBarThickness: 70 },
-        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: 'rgba(6, 78, 59, 0.9)', borderRadius: 4, maxBarThickness: 70 },
+        { 
+          label: `Ticket ${mesActualLabel}`, 
+          data: [...kpiPorAnalista.map(k => k.ticket), kpiTotal.ticket], 
+          backgroundColor: 'rgba(52,211,153,0.8)', 
+          borderColor: 'rgba(52,211,153,1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          maxBarThickness: 70 
+        },
+        { 
+          label: `Ticket ${mesAntLabel}`, 
+          data: ticketAnt, 
+          backgroundColor: 'rgba(6, 78, 59, 0.9)', 
+          borderColor: 'rgba(6, 78, 59, 1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          maxBarThickness: 70 
+        },
       ],
     };
   }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, ventasMesAnt, mesActualLabel, mesAntLabel]);
@@ -1429,8 +1484,24 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       labels,
       datasets: [
-        { label: 'Variación Capital %', data: capitalVar, backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
-        { label: 'Variación Ops %', data: opsVar, backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
+        { 
+          label: 'Variación Capital %', 
+          data: capitalVar, 
+          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.8)' : 'rgba(248,113,113,0.8)'), 
+          borderColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,1)' : 'rgba(248,113,113,1)'), 
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          maxBarThickness: 70 
+        },
+        { 
+          label: 'Variación Ops %', 
+          data: opsVar, 
+          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.8)' : 'rgba(248,113,113,0.8)'), 
+          borderColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,1)' : 'rgba(248,113,113,1)'), 
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          maxBarThickness: 70 
+        },
       ],
     };
   }, [kpiPorAnalista, kpiTotal]);
@@ -1458,8 +1529,24 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       labels,
       datasets: [
-        { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: [...apertVsRenData.porAnalistaAnt.map(d => d.aperturas), apertVsRenData.ant.aperturas], backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, maxBarThickness: 50 },
+        { 
+          label: `Actual`, 
+          data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], 
+          backgroundColor: 'rgba(96,165,250,0.8)', 
+          borderColor: 'rgba(96,165,250,1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          maxBarThickness: 50 
+        },
+        { 
+          label: `Anterior`, 
+          data: [...apertVsRenData.porAnalistaAnt.map(d => d.aperturas), apertVsRenData.ant.aperturas], 
+          backgroundColor: 'rgba(30, 58, 138, 0.9)', 
+          borderColor: 'rgba(30, 58, 138, 1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          maxBarThickness: 50 
+        },
       ],
     };
   }, [apertVsRenData, mesActualLabel, mesAntLabel]);
@@ -1469,8 +1556,24 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       labels,
       datasets: [
-        { label: `Actual`, data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], backgroundColor: '#a78bfa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: [...apertVsRenData.porAnalistaAnt.map(d => d.renovaciones), apertVsRenData.ant.renovaciones], backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, maxBarThickness: 50 },
+        { 
+          label: `Actual`, 
+          data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], 
+          backgroundColor: 'rgba(167,139,250,0.8)', 
+          borderColor: 'rgba(167,139,250,1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          maxBarThickness: 50 
+        },
+        { 
+          label: `Anterior`, 
+          data: [...apertVsRenData.porAnalistaAnt.map(d => d.renovaciones), apertVsRenData.ant.renovaciones], 
+          backgroundColor: 'rgba(76, 29, 149, 0.9)', 
+          borderColor: 'rgba(76, 29, 149, 1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          maxBarThickness: 50 
+        },
       ],
     };
   }, [apertVsRenData, mesActualLabel, mesAntLabel]);
@@ -1500,8 +1603,15 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       labels: filtered,
       datasets: [{
         data: filtered.map(l => counts[l] ?? 0),
-        backgroundColor: filtered.map(l => colors[labels.indexOf(l)]),
-        borderWidth: 0,
+        backgroundColor: filtered.map(l => {
+          const baseColor = colors[labels.indexOf(l)];
+          return baseColor.includes('rgba') ? baseColor : `${baseColor}22`;
+        }),
+        borderColor: filtered.map(l => {
+          const baseColor = colors[labels.indexOf(l)];
+          return baseColor.includes('rgba') ? baseColor.replace('0.5', '0.3') : `${baseColor}66`;
+        }),
+        borderWidth: 1,
         hoverOffset: 10,
         borderRadius: 4,
         spacing: 4
@@ -1528,8 +1638,24 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       labels,
       datasets: [
-        { label: `Conversión % ${mesActualLabel}`, data: actual, backgroundColor: 'rgba(251,191,36,0.8)', borderRadius: 4, order: 1 },
-        { label: `Conversión % ${mesAntLabel}`, data: anterior, backgroundColor: 'rgba(124, 45, 18, 0.8)', borderRadius: 4, order: 1 },
+        { 
+          label: `Conversión % ${mesActualLabel}`, 
+          data: actual, 
+          backgroundColor: 'rgba(251,191,36,0.8)', 
+          borderColor: 'rgba(251,191,36,1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          order: 1 
+        },
+        { 
+          label: `Conversión % ${mesAntLabel}`, 
+          data: anterior, 
+          backgroundColor: 'rgba(124, 45, 18, 0.12)', 
+          borderColor: 'rgba(124, 45, 18, 0.4)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          order: 1 
+        },
         refLine100(labels.length),
       ],
     };
@@ -1546,8 +1672,23 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       datasets: [
         {
           data: cerradas,
-          backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'],
-          borderWidth: 0,
+          backgroundColor: [
+            'rgba(16, 185, 129, 0.15)', 
+            'rgba(59, 130, 246, 0.15)', 
+            'rgba(139, 92, 246, 0.15)', 
+            'rgba(236, 72, 153, 0.15)', 
+            'rgba(245, 158, 11, 0.15)', 
+            'rgba(239, 68, 68, 0.15)'
+          ],
+          borderColor: [
+            'rgba(16, 185, 129, 0.4)', 
+            'rgba(59, 130, 246, 0.4)', 
+            'rgba(139, 92, 246, 0.4)', 
+            'rgba(236, 72, 153, 0.4)', 
+            'rgba(245, 158, 11, 0.4)', 
+            'rgba(239, 68, 68, 0.4)'
+          ],
+          borderWidth: 1.5,
           hoverOffset: 10,
           borderRadius: 4,
           spacing: 4
@@ -1567,7 +1708,15 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
     return {
       labels,
       datasets: [
-        { label: '% Conv. Presupuesto → Venta', data, backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4, order: 1 },
+        { 
+          label: '% Conv. Presupuesto → Venta', 
+          data, 
+          backgroundColor: 'rgba(52,211,153,0.8)', 
+          borderColor: 'rgba(52,211,153,1)',
+          borderWidth: 1.5,
+          borderRadius: 4, 
+          order: 1 
+        },
         refLine100(labels.length),
       ],
     };
@@ -1849,10 +1998,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
                   </div>
                   {kpiTotal.cumplCapital !== null && (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
-                      {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
-                    </div>
-                  )}
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                  <span style={{ color: cumplColor(kpiTotal.cumplCapital), marginRight: 4 }}>●</span>
+                  {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
+                </div>
+              )}
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
@@ -1882,10 +2032,11 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                     Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
                   </div>
                   {kpiTotal.cumplOps !== null && (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
-                      {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
-                    </div>
-                  )}
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                  <span style={{ color: cumplColor(kpiTotal.cumplOps), marginRight: 4 }}>●</span>
+                  {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
+                </div>
+              )}
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
@@ -1979,13 +2130,16 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                               {tendBadge(k.tendCapital)}
                             </div>
                             {k.cumplCapital !== null && (
-                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
-                                </div>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplCapital), whiteSpace: 'nowrap' as const }}>{k.cumplCapital.toFixed(0)}%</span>
-                              </div>
-                            )}
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2 }} />
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ color: cumplColor(k.cumplCapital) }}>●</span>
+                              {k.cumplCapital.toFixed(0)}%
+                            </span>
+                          </div>
+                        )}
                             {k.metaCapital > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {formatCurrency(k.metaCapital)}</div>}
                           </div>
                           <div>
@@ -1995,13 +2149,16 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                               {tendBadge(k.tendOps)}
                             </div>
                             {k.cumplOps !== null && (
-                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
-                                </div>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplOps), whiteSpace: 'nowrap' as const }}>{k.cumplOps.toFixed(0)}%</span>
-                              </div>
-                            )}
+                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2 }} />
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ color: cumplColor(k.cumplOps) }}>●</span>
+                              {k.cumplOps.toFixed(0)}%
+                            </span>
+                          </div>
+                        )}
                             {k.metaOps > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {k.metaOps}</div>}
                           </div>
                           <div>

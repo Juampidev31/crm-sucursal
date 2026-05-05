@@ -14,13 +14,13 @@ import { Doughnut } from 'react-chartjs-2';
 ChartJS.register(CategoryScale, LinearScale, Tooltip, Legend, ArcElement);
 
 const CHART_COLORS = {
-  venta: '#4ade80',
-  proyeccion: 'rgba(255, 255, 255, 0.8)',
+  venta: 'rgba(74, 222, 128, 0.8)',
+  proyeccion: 'rgba(255, 255, 255, 0.7)',
   'en seguimiento': 'rgba(255, 255, 255, 0.4)',
-  'score bajo': '#f87171',
-  afectaciones: '#fb923c',
-  'derivado / aprobado cc': '#60a5fa',
-  'derivado / rechazado cc': '#f43f5e'
+  'score bajo': 'rgba(248, 113, 113, 0.8)',
+  afectaciones: 'rgba(251, 146, 60, 0.8)',
+  'derivado / aprobado cc': 'rgba(96, 165, 250, 0.8)',
+  'derivado / rechazado cc': 'rgba(244, 63, 94, 0.8)'
 };
 
 const MESES = [
@@ -61,7 +61,8 @@ const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: nu
     maintainAspectRatio: false,
     elements: {
       arc: {
-        borderWidth: 0,
+        borderWidth: 2,
+        borderColor: '#0a0a0a',
         borderRadius: 4,
       }
     }

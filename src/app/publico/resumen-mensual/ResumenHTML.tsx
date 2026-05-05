@@ -77,7 +77,7 @@ const labelsPlugin: any = {
         const val = ds.data[idx];
         if (!val) return;
         const v = Math.abs(val);
-        let label = v >= 1000 ? (v/1000).toFixed(0) + 'K' : Math.round(v).toString();
+        let label = v >= 1000 ? val.toLocaleString('es-AR') : Math.round(v).toString();
         ctx.fillText(label, bar.x, bar.y - 7);
       });
       ctx.restore();
@@ -91,18 +91,19 @@ const baseChartOpts = (show = true) => ({
   plugins: { legend: { display: false }, tooltip: { backgroundColor: '#111', titleColor: '#fff', bodyColor: '#aaa' } },
   categoryPercentage: 0.8, barPercentage: 0.7,
   scales: { x: { ticks: { color: '#555', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-            y: { ticks: { color: '#555', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } },
+            y: { ticks: { color: '#555', font: { size: 10 }, precision: 0 }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } },
 });
 
 const cumplColor = (pct: number | null) => !pct ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+
 
 const tendBadge = (pct: number | null) => {
   if (pct === null) return <span style={{ color: '#333' }}>—</span>;
   const color = pct >= 0 ? '#34d399' : '#f87171';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
-        {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+      <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
       </span>
       <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
     </div>
@@ -270,7 +271,12 @@ export default function ResumenHTML({ datos }: { datos: any }) {
               {tendBadge(kpiTotal.tendCapital)}
             </div>
             <div style={{fontSize:12,color:'#555',marginBottom:2}}>Meta: {kpiTotal.metaCapital?formatCurrency(kpiTotal.metaCapital):'/'}</div>
-            {kpiTotal.cumplCapital && <div style={{fontSize:12,fontWeight:800,color:cumplColor(kpiTotal.cumplCapital)}}>{kpiTotal.cumplCapital.toFixed(1)}% Cumpl.</div>}
+            {kpiTotal.cumplCapital && (
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                <span style={{ color: cumplColor(kpiTotal.cumplCapital), marginRight: 4 }}>●</span>
+                {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
+              </div>
+            )}
             <div style={{marginTop:24,height:180}}><Bar data={chartCapital as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
           </div>
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:20,border:'1px solid rgba(255,255,255,0.04)'}}>
@@ -280,7 +286,12 @@ export default function ResumenHTML({ datos }: { datos: any }) {
               {tendBadge(kpiTotal.tendOps)}
             </div>
             <div style={{fontSize:12,color:'#555',marginBottom:2}}>Meta: {kpiTotal.metaOps||'/'}</div>
-            {kpiTotal.cumplOps && <div style={{fontSize:12,fontWeight:800,color:cumplColor(kpiTotal.cumplOps)}}>{kpiTotal.cumplOps.toFixed(1)}% Cumpl.</div>}
+            {kpiTotal.cumplOps && (
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                <span style={{ color: cumplColor(kpiTotal.cumplOps), marginRight: 4 }}>●</span>
+                {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
+              </div>
+            )}
           </div>
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:20,border:'1px solid rgba(255,255,255,0.04)'}}>
             <div style={{fontSize:10,fontWeight:800,color:'#444',textTransform:'uppercase',marginBottom:8}}>Ticket Promedio</div>

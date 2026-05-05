@@ -303,7 +303,7 @@ export default function AnalistasPage() {
   const chartLabels = useMemo(() => {
     const base = analistasParaMostrar.map(a => a.charAt(0).toUpperCase() + a.slice(1));
     if (analista === 'PDV') return [...base, 'Total PDV'];
-    return base;
+    return ['']; // Ocultar nombre del analista en el eje
   }, [analistasParaMostrar, analista]);
   const [seccion10State, setSeccion10State] = useState<AnalisisTemporalState | null>(null);
 
@@ -354,8 +354,8 @@ export default function AnalistasPage() {
     const color = pct >= 0 ? '#34d399' : '#f87171';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
-          {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+          <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
         <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
       </div>
@@ -816,7 +816,7 @@ export default function AnalistasPage() {
   const mesActualLabel = CONFIG.MESES_NOMBRES[selectedMes - 1].slice(0, 3);
   const mesAntLabel = CONFIG.MESES_NOMBRES[mesPrev - 1].slice(0, 3);
 
-  const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, showLegend = false, stacked = false): any => ({
+  const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, showLegend = false, stacked = false, hideXLabels = false): any => ({
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: horizontal ? 'y' as const : 'x' as const,
@@ -849,12 +849,14 @@ export default function AnalistasPage() {
         font: { size: 10, weight: 800 }
       },
     },
-    categoryPercentage: 0.8,
-    barPercentage: 0.7,
+    categoryPercentage: 0.85,
+    barPercentage: 0.9,
     scales: {
       x: {
+        display: !hideXLabels,
         stacked,
         ticks: {
+          display: !hideXLabels,
           color: '#555', font: { size: 10 },
           callback: function (this: any, val: any) {
             let label = this.getLabelForValue(val);
@@ -919,7 +921,10 @@ export default function AnalistasPage() {
         {
           label: `Capital ${mesActualLabel}`,
           data: kpiCards.map(k => k.cumplCapital ?? 0),
-          backgroundColor: 'rgba(96,165,250,0.7)', borderRadius: 4, order: 1,
+          backgroundColor: 'rgba(96, 165, 250, 0.15)',
+          borderColor: 'rgba(96, 165, 250, 0.5)',
+          borderWidth: 1.5,
+          borderRadius: 4, order: 1,
         },
         {
           label: `Capital ${mesAntLabel}`,
@@ -930,12 +935,18 @@ export default function AnalistasPage() {
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-          backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 1,
+          backgroundColor: 'rgba(30, 58, 138, 0.1)',
+          borderColor: 'rgba(30, 58, 138, 0.4)',
+          borderWidth: 1.5,
+          borderRadius: 4, order: 1,
         },
         {
           label: `Ops ${mesActualLabel}`,
           data: kpiCards.map(k => k.cumplOps ?? 0),
-          backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, order: 1,
+          backgroundColor: 'rgba(167, 139, 250, 0.15)',
+          borderColor: 'rgba(167, 139, 250, 0.5)',
+          borderWidth: 1.5,
+          borderRadius: 4, order: 1,
         },
         {
           label: `Ops ${mesAntLabel}`,
@@ -946,7 +957,10 @@ export default function AnalistasPage() {
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
           }),
-          backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, order: 1, // Purpura oscuro
+          backgroundColor: 'rgba(76, 29, 149, 0.1)',
+          borderColor: 'rgba(76, 29, 149, 0.4)',
+          borderWidth: 1.5,
+          borderRadius: 4, order: 1, // Purpura oscuro
         },
         refLine100(labels.length),
       ],
@@ -1056,8 +1070,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4, order: 2, maxBarThickness: 70 },
-        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, order: 2, maxBarThickness: 70 },
+        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.4)', borderWidth: 1.5, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 4, order: 2, maxBarThickness: 100 },
         { 
           type: 'line' as const, label: 'Objetivo ($)', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 1,
           horizontalReferenceValue: isSingle ? objetivo[0] : undefined 
@@ -1087,8 +1101,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Ticket ${mesActualLabel}`, data: ticketAct, backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4, maxBarThickness: 70 },
-        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: 'rgba(6, 78, 59, 0.9)', borderRadius: 4, maxBarThickness: 70 },
+        { label: `Ticket ${mesActualLabel}`, data: ticketAct, backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.4)', borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
@@ -1107,14 +1121,18 @@ export default function AnalistasPage() {
         { 
           label: 'Variación Capital %', 
           data: capitalVar, 
-          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), 
+          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(45, 212, 191, 0.2)' : 'rgba(239, 68, 68, 0.1)'), 
+          borderColor: capitalVar.map(v => v >= 0 ? 'rgba(45, 212, 191, 0.5)' : 'rgba(239, 68, 68, 0.4)'),
+          borderWidth: 1.5,
           borderRadius: 4, 
           maxBarThickness: 100 
         },
         { 
           label: 'Variación Ops %', 
           data: opsVar, 
-          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.7)' : 'rgba(248,113,113,0.7)'), 
+          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(239, 68, 68, 0.1)'), 
+          borderColor: opsVar.map(v => v >= 0 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(239, 68, 68, 0.4)'),
+          borderWidth: 1.5,
           borderRadius: 4, 
           maxBarThickness: 100 
         },
@@ -1151,8 +1169,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Actual`, data: actual, backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: anterior, backgroundColor: 'rgba(30, 58, 138, 0.9)', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Actual`, data: actual, backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.4)', borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Anterior`, data: anterior, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, apertVsRenData, analista]);
@@ -1168,8 +1186,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Actual`, data: actual, backgroundColor: '#a78bfa', borderRadius: 4, maxBarThickness: 50 },
-        { label: `Anterior`, data: anterior, backgroundColor: 'rgba(76, 29, 149, 0.9)', borderRadius: 4, maxBarThickness: 50 },
+        { label: `Actual`, data: actual, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.4)', borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Anterior`, data: anterior, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, apertVsRenData, analista]);
@@ -1230,8 +1248,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Conversión % ${mesActualLabel}`, data: actual, backgroundColor: 'rgba(251,191,36,0.8)', borderRadius: 4, order: 1 },
-        { label: `Conversión % ${mesAntLabel}`, data: anterior, backgroundColor: 'rgba(124, 45, 18, 0.8)', borderRadius: 4, order: 1 },
+        { label: `Conversión % ${mesActualLabel}`, data: actual, backgroundColor: 'rgba(251, 191, 36, 0.15)', borderColor: 'rgba(251, 191, 36, 0.5)', borderWidth: 1.5, borderRadius: 4, order: 1 },
+        { label: `Conversión % ${mesAntLabel}`, data: anterior, backgroundColor: 'rgba(124, 45, 18, 0.1)', borderColor: 'rgba(124, 45, 18, 0.4)', borderWidth: 1.5, borderRadius: 4, order: 1 },
         refLine100(labels.length),
       ],
     };
@@ -1269,7 +1287,7 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: '% Conv. Presupuesto → Venta', data, backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4, order: 1 },
+        { label: '% Conv. Presupuesto → Venta', data, backgroundColor: 'rgba(52, 211, 153, 0.15)', borderColor: 'rgba(52, 211, 153, 0.5)', borderWidth: 1.5, borderRadius: 4, order: 1 },
         refLine100(labels.length),
       ],
     };
@@ -1347,7 +1365,8 @@ export default function AnalistasPage() {
                     Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
                   </div>
                   {kpiTotal.cumplCapital !== null && (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                      <span style={{ color: cumplColor(kpiTotal.cumplCapital), marginRight: 4 }}>●</span>
                       {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
                     </div>
                   )}
@@ -1367,7 +1386,7 @@ export default function AnalistasPage() {
                     </div>
                     <div id="chart-capital-objetivo" style={{ height: 180 }}>
                       {(() => {
-                        const opts = baseChartOpts('$', false, true, false);
+                        const opts = baseChartOpts('$', false, true, false, false, analista !== 'PDV');
                         return <Bar data={chartCapitalVsObjetivo as any} options={opts} plugins={[labelsPlugin, referenceLinesPlugin]} />;
                       })()}
                     </div>
@@ -1383,7 +1402,8 @@ export default function AnalistasPage() {
                     Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
                   </div>
                   {kpiTotal.cumplOps !== null && (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                      <span style={{ color: cumplColor(kpiTotal.cumplOps), marginRight: 4 }}>●</span>
                       {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
                     </div>
                   )}
@@ -1404,14 +1424,14 @@ export default function AnalistasPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
-                        <div id="chart-aperturas" style={{ height: 140, position: 'relative', width: '100%' }}>
-                          <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        <div id="chart-aperturas" style={{ height: 180, position: 'relative', width: '100%' }}>
+                          <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                         </div>
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
-                        <div id="chart-renovaciones" style={{ height: 140, position: 'relative', width: '100%' }}>
-                          <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        <div id="chart-renovaciones" style={{ height: 180, position: 'relative', width: '100%' }}>
+                          <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                         </div>
                       </div>
                     </div>
@@ -1446,7 +1466,7 @@ export default function AnalistasPage() {
                       </div>
                     </div>
                     <div id="chart-ticket-promedio" style={{ height: 180 }}>
-                      <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                      <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                     </div>
                   </div>
                 </div>
@@ -1484,7 +1504,10 @@ export default function AnalistasPage() {
                                 <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                                   <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
                                 </div>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplCapital), whiteSpace: 'nowrap' as const }}>{k.cumplCapital.toFixed(0)}%</span>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' as const, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ color: cumplColor(k.cumplCapital) }}>●</span>
+                                  {k.cumplCapital.toFixed(0)}%
+                                </span>
                               </div>
                             )}
                             {k.metaCapital > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {formatCurrency(k.metaCapital)}</div>}
@@ -1500,7 +1523,10 @@ export default function AnalistasPage() {
                                 <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                                   <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
                                 </div>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplOps), whiteSpace: 'nowrap' as const }}>{k.cumplOps.toFixed(0)}%</span>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' as const, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ color: cumplColor(k.cumplOps) }}>●</span>
+                                  {k.cumplOps.toFixed(0)}%
+                                </span>
                               </div>
                             )}
                             {k.metaOps > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {k.metaOps}</div>}
@@ -1649,7 +1675,7 @@ export default function AnalistasPage() {
                         </div>
                       </div>
                       <div id="chart-cumplimiento" style={{ height: 280 }}>
-                        <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                       </div>
                     </div>
 
@@ -1669,7 +1695,7 @@ export default function AnalistasPage() {
                         </div>
                       </div>
                       <div id="chart-variacion" style={{ height: 280 }}>
-                        <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                       </div>
                     </div>
 
@@ -1977,7 +2003,7 @@ export default function AnalistasPage() {
                         <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Cumpl. (Q)</th>
                         <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Incent. (Q)</th>
                         <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Incent. (Cob)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(167, 139, 250, 0.05)' }}>Total Final</th>
+                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 900, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Total Final</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1992,7 +2018,7 @@ export default function AnalistasPage() {
                           <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{k.cumplOps?.toFixed(1)}%</td>
                           <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.incentivoOps)}</td>
                           <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 15, color: '#fff', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(167, 139, 250, 0.1)' }}>{formatCurrency(k.incentivoTotal)}</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 15, color: '#fff', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.incentivoTotal)}</td>
                         </tr>
                       ))}
                     </tbody>

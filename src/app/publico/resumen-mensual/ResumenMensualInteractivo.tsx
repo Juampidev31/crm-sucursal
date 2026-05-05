@@ -239,10 +239,13 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
         color: '#555',
         font: { size: 10 },
         padding: 8,
+        precision: yLabel.includes('ops') || yLabel.includes('reg') ? 0 : undefined,
         callback: function(val: any) {
           const n = Number(val);
           if (isNaN(n)) return val;
-          return (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : n) + yLabel;
+          if (yLabel.includes('%')) return n.toFixed(0) + '%';
+          if (n >= 1000) return n.toLocaleString('es-AR') + yLabel;
+          return n + yLabel;
         }
       },
       grid: { color: 'rgba(255,255,255,0.04)' },
@@ -259,8 +262,8 @@ const tendBadge = (pct: number | null) => {
   const color = pct >= 0 ? '#34d399' : '#f87171';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
-        {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
+      <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
       </span>
       <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
     </div>
@@ -450,6 +453,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
     </div>
   );
 
+
   const tendBadge = (pct: number | null) => {
     if (pct === null) return <span style={{ color: '#333' }}>—</span>;
     const color = pct >= 0 ? '#34d399' : '#f87171';
@@ -484,7 +488,8 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
               </div>
               <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}</div>
               {kpiTotal.cumplCapital !== null && (
-                <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplCapital) }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                  <span style={{ color: cumplColor(kpiTotal.cumplCapital), marginRight: 4 }}>●</span>
                   {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
                 </div>
               )}
@@ -510,7 +515,8 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
               </div>
               <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}</div>
               {kpiTotal.cumplOps !== null && (
-                <div style={{ fontSize: 12, fontWeight: 800, color: cumplColor(kpiTotal.cumplOps) }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                  <span style={{ color: cumplColor(kpiTotal.cumplOps), marginRight: 4 }}>●</span>
                   {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
                 </div>
               )}
@@ -601,7 +607,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
                             <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2 }} />
                             </div>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplCapital), whiteSpace: 'nowrap' }}>{k.cumplCapital.toFixed(0)}%</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ color: cumplColor(k.cumplCapital) }}>●</span>
+                              {k.cumplCapital.toFixed(0)}%
+                            </span>
                           </div>
                         )}
                       </div>
@@ -616,7 +625,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
                             <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2 }} />
                             </div>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: cumplColor(k.cumplOps), whiteSpace: 'nowrap' }}>{k.cumplOps.toFixed(0)}%</span>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ color: cumplColor(k.cumplOps) }}>●</span>
+                              {k.cumplOps.toFixed(0)}%
+                            </span>
                           </div>
                         )}
                       </div>

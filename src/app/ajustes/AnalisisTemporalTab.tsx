@@ -64,10 +64,20 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
       padding: '1px 6px',
       borderRadius: 4,
       marginTop: 2,
-      color: esCero ? '#888' : esPositivo ? '#4ade80' : '#f87171',
-      background: esCero ? 'rgba(255,255,255,0.05)' : esPositivo ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
+      color: '#fff',
+      background: 'rgba(255,255,255,0.02)',
+      border: '1px solid rgba(255,255,255,0.05)'
     }}>
-      {esCero ? '— 0%' : `${esPositivo ? '▲' : '▼'} ${valor >= 0 ? '+' : ''}${valor.toFixed(1)}%`}
+      {esCero ? (
+        <span style={{ color: '#888' }}>— 0%</span>
+      ) : (
+        <>
+          <span style={{ color: esPositivo ? '#4ade80' : '#f87171' }}>
+            {esPositivo ? '▲' : '▼'}
+          </span>
+          {` ${valor >= 0 ? '+' : ''}${valor.toFixed(1)}%`}
+        </>
+      )}
     </span>
   );
 };
@@ -993,14 +1003,14 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   {
                     label: analistaFil !== 'todos' ? analistaFil : (metrica === 'ventas' ? 'Acumulado' : metrica === 'operaciones' ? 'Operaciones' : 'Ticket Prom.'),
                     data: tendenciaData.values,
-                    borderColor: 'rgba(34,197,94,0.8)',
-                    backgroundColor: 'rgba(34,197,94,0.1)',
-                    borderWidth: 2,
-                    pointRadius: 3,
+                    borderColor: 'rgba(34,197,94,0.9)',
+                    backgroundColor: 'rgba(34,197,94,0.15)',
+                    borderWidth: 2.5,
+                    pointRadius: 2,
                     pointBackgroundColor: 'rgba(34,197,94,0.9)',
                     pointBorderColor: '#fff',
-                    pointBorderWidth: 1.5,
-                    pointHoverRadius: 6,
+                    pointBorderWidth: 1,
+                    pointHoverRadius: 5,
                     fill: true,
                     tension: 0.3,
                     spanGaps: false,
@@ -1008,14 +1018,10 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   ...(compararPeriodo && tendenciaDataAnterior ? [{
                     label: 'Período anterior',
                     data: tendenciaDataAnterior.values,
-                    borderColor: 'rgba(100,150,255,0.5)',
-                    backgroundColor: 'rgba(100,150,255,0.08)',
+                    borderColor: 'rgba(100,150,255,0.7)',
+                    backgroundColor: 'rgba(100,150,255,0.1)',
                     borderWidth: 2,
-                    pointRadius: 3,
-                    pointBackgroundColor: 'rgba(100,150,255,0.4)',
-                    pointBorderColor: 'rgba(100,150,255,0.7)',
-                    pointBorderWidth: 1.5,
-                    pointHoverRadius: 6,
+                    pointRadius: 0,
                     fill: true,
                     tension: 0.3,
                     spanGaps: false,
@@ -1023,14 +1029,10 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   ...(analistaFil2 !== 'ninguno' && tendenciaDataAnalista2 ? [{
                     label: analistaFil2,
                     data: tendenciaDataAnalista2.values,
-                    borderColor: 'rgba(239,68,68,0.8)',
-                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    borderColor: 'rgba(239,68,68,0.5)',
+                    backgroundColor: 'rgba(239,68,68,0.08)',
                     borderWidth: 2,
-                    pointRadius: 3,
-                    pointBackgroundColor: 'rgba(239,68,68,0.9)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 1.5,
-                    pointHoverRadius: 6,
+                    pointRadius: 0,
                     fill: true,
                     tension: 0.3,
                     spanGaps: false,
@@ -1138,8 +1140,8 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total)}</div>
                   {mostrarVariaciones && dateRangeAnterior && w.prevTotal !== undefined && (
                     <>
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
-                        {w.vsPrev >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: '#fff', marginTop: '4px' }}>
+                        <span style={{ color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444' }}>{w.vsPrev >= 0 ? '↑' : '↓'}</span> {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
                       </div>
                       <div style={{ fontSize: '9px', color: '#444', marginTop: '2px', fontWeight: 600 }}>
                         Ant: {fmt(w.prevTotal)}
@@ -1155,8 +1157,8 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{fmt(w.total2)}</div>
                     {mostrarVariaciones && dateRangeAnterior && w.prevTotal2 !== undefined && (
                       <>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444', marginTop: '4px' }}>
-                          {w.vsPrev2 >= 0 ? '↑' : '↓'} {Math.abs(w.vsPrev2).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#fff', marginTop: '4px' }}>
+                          <span style={{ color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444' }}>{w.vsPrev2 >= 0 ? '↑' : '↓'}</span> {Math.abs(w.vsPrev2).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
                         </div>
                         <div style={{ fontSize: '9px', color: '#444', marginTop: '2px', fontWeight: 600 }}>
                           Ant: {fmt(w.prevTotal2)}
@@ -1176,14 +1178,18 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   {
                     label: analistaFil !== 'todos' ? analistaFil : (metrica === 'operaciones' ? 'Operaciones' : 'Total'),
                     data: weeklyStats.totals.map(s => s.total),
-                    backgroundColor: weeklyStats.totals.map(s => s.label === weeklyStats.best.label ? 'rgba(34,197,94,0.7)' : 'rgba(34,197,94,0.3)'),
+                    backgroundColor: weeklyStats.totals.map(s => s.label === weeklyStats.best.label ? 'rgba(34,197,94,0.85)' : 'rgba(34,197,94,0.75)'),
+                    borderColor: 'rgba(34,197,94,1)',
+                    borderWidth: 1.5,
                     borderRadius: 4,
                     borderSkipped: false,
                   },
                   ...(analistaFil2 !== 'ninguno' ? [{
                     label: analistaFil2,
                     data: weeklyStats.totals.map(s => s.total2),
-                    backgroundColor: 'rgba(239,68,68,0.5)',
+                    backgroundColor: 'rgba(239,68,68,0.8)',
+                    borderColor: 'rgba(239,68,68,1)',
+                    borderWidth: 1.5,
                     borderRadius: 4,
                     borderSkipped: false,
                   }] : [])
@@ -1202,7 +1208,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                 },
                 scales: {
                   x: { ticks: { color: '#555', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                  y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 9 }, precision: metrica === 'operaciones' ? 0 : undefined }, grid: { color: 'rgba(255,255,255,0.03)' } },
                 },
               }}
             />
@@ -1247,7 +1253,9 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                 datasets: [{
                   label: metrica === 'operaciones' ? 'Operaciones' : 'Total',
                   data: dowStats.sums,
-                  backgroundColor: dowStats.sums.map(v => v >= dowStats.max * 0.9 ? 'rgba(34,197,94,0.6)' : 'rgba(34,197,94,0.2)'),
+                  backgroundColor: dowStats.sums.map(v => v >= dowStats.max * 0.9 ? 'rgba(34,197,94,0.85)' : 'rgba(34,197,94,0.75)'),
+                  borderColor: 'rgba(34,197,94,1)',
+                  borderWidth: 1.5,
                   borderRadius: 4,
                   borderSkipped: false,
                 }],
@@ -1258,7 +1266,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                 plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: any) => fmt(ctx.parsed.y ?? 0) } } },
                 scales: {
                   x: { ticks: { color: '#555', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
-                  y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
+                  y: { ticks: { color: '#555', callback: (v: any) => fmtK(Number(v)), font: { size: 10 }, precision: metrica === 'operaciones' ? 0 : undefined }, grid: { color: 'rgba(255,255,255,0.03)' } },
                 },
               }}
             />
@@ -1278,9 +1286,9 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
               data={{
                 labels: acuerdosTimeData.map(w => w.label),
                 datasets: [
-                  { label: 'Riesgo Bajo', data: acuerdosTimeData.map(w => w.bajo), backgroundColor: 'rgba(74, 222, 128, 0.6)', borderRadius: 2, borderSkipped: false, stack: 'stack1' },
-                  { label: 'Riesgo Medio', data: acuerdosTimeData.map(w => w.medio), backgroundColor: 'rgba(239, 68, 68, 0.5)', borderRadius: 2, borderSkipped: false, stack: 'stack1' },
-                  { label: 'Premium', data: acuerdosTimeData.map(w => w.premium), backgroundColor: 'rgba(96, 165, 250, 0.5)', borderRadius: 2, borderSkipped: false, stack: 'stack1' },
+                  { label: 'Riesgo Bajo', data: acuerdosTimeData.map(w => w.bajo), backgroundColor: 'rgba(74, 222, 128, 0.8)', borderColor: 'rgba(74, 222, 128, 1)', borderWidth: 1.5, borderRadius: 2, borderSkipped: false, stack: 'stack1' },
+                  { label: 'Riesgo Medio', data: acuerdosTimeData.map(w => w.medio), backgroundColor: 'rgba(239, 68, 68, 0.8)', borderColor: 'rgba(239, 68, 68, 1)', borderWidth: 1.5, borderRadius: 2, borderSkipped: false, stack: 'stack1' },
+                  { label: 'Premium', data: acuerdosTimeData.map(w => w.premium), backgroundColor: 'rgba(96, 165, 250, 0.8)', borderColor: 'rgba(96, 165, 250, 1)', borderWidth: 1.5, borderRadius: 2, borderSkipped: false, stack: 'stack1' },
                 ],
               }}
               options={{
@@ -1319,17 +1327,26 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
               <div style={{ display: 'flex', gap: 16, marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Riesgo Bajo</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#4ade80', marginTop: 2 }}>{((totalBajo / total) * 100).toFixed(1)}%</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>
+                    <span style={{ color: '#4ade80', marginRight: 4 }}>●</span>
+                    {((totalBajo / total) * 100).toFixed(1)}%
+                  </div>
                   <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalBajo)}</div>
                 </div>
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Riesgo Medio</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#ef4444', marginTop: 2 }}>{((totalMedio / total) * 100).toFixed(1)}%</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>
+                    <span style={{ color: '#ef4444', marginRight: 4 }}>●</span>
+                    {((totalMedio / total) * 100).toFixed(1)}%
+                  </div>
                   <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalMedio)}</div>
                 </div>
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Premium</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#60a5fa', marginTop: 2 }}>{((totalPremium / total) * 100).toFixed(1)}%</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>
+                    <span style={{ color: '#60a5fa', marginRight: 4 }}>●</span>
+                    {((totalPremium / total) * 100).toFixed(1)}%
+                  </div>
                   <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalPremium)}</div>
                 </div>
               </div>
