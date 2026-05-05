@@ -478,7 +478,8 @@ export default function AnalistasPage() {
         }
 
         incentivoCap = capital * coefCap;
-        incentivoOps = capital * coefOps;
+        // El incentivo de operaciones es un % del incentivo de capital (20% o 30%)
+        incentivoOps = incentivoCap * (coefOps === 0.0030 ? 0.30 : (coefOps === 0.0020 ? 0.20 : 0));
       }
 
       // ── Incentivos de Cobranzas ──────────────────────────────────────────────
@@ -1865,8 +1866,8 @@ export default function AnalistasPage() {
                       </thead>
                       <tbody>
                         {[
-                          { a: '80% y 99.99%', c: '0.20%' },
-                          { a: '>= 100%', c: '0.30%' },
+                          { a: '80% y 99.99%', c: '20%' },
+                          { a: '>= 100%', c: '30%' },
                         ].map((r, i) => (
                           <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
