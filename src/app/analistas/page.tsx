@@ -421,10 +421,19 @@ export default function AnalistasPage() {
       const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
       const tieneDiasAdmin = diasHabilesAdmin > 0 && diasTransAdmin > 0;
 
+      const diasRestantes = Math.max(0, diasHabilesAdmin - diasTransAdmin);
       const ventaPorDia = tieneDiasAdmin ? capital / diasTransAdmin : null;
       const opsPorDia = tieneDiasAdmin ? ops / diasTransAdmin : null;
-      const metaDiariaCapital = tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null;
-      const metaDiariaOps = tieneDiasAdmin ? metaOps / diasHabilesAdmin : null;
+      
+      // La meta diaria se calcula como lo que falta para llegar dividido los días restantes
+      // Si ya pasó el mes o no hay días cargados, se usa la meta lineal original
+      const metaDiariaCapital = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
+        ? Math.max(0, metaCapital - capital) / diasRestantes
+        : (tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null);
+      
+      const metaDiariaOps = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
+        ? Math.max(0, metaOps - ops) / diasRestantes
+        : (tieneDiasAdmin ? metaOps / diasHabilesAdmin : null);
 
       const proyCapital = (esMesActual && tieneDiasAdmin && ventaPorDia !== null) ? ventaPorDia * diasHabilesAdmin : (esMesActual ? null : capital);
       const proyOps = (esMesActual && tieneDiasAdmin && opsPorDia !== null) ? Math.round(opsPorDia * diasHabilesAdmin) : (esMesActual ? null : ops);
@@ -492,10 +501,17 @@ export default function AnalistasPage() {
     const diasHabilesAdmin = cfgDias?.dias_habiles ?? 0;
     const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
     const tieneDiasAdmin = diasHabilesAdmin > 0 && diasTransAdmin > 0;
+    const diasRestantes = Math.max(0, diasHabilesAdmin - diasTransAdmin);
     const ventaPorDia = tieneDiasAdmin ? capital / diasTransAdmin : null;
     const opsPorDia = tieneDiasAdmin ? ops / diasTransAdmin : null;
-    const metaDiariaCapital = tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null;
-    const metaDiariaOps = tieneDiasAdmin ? metaOps / diasHabilesAdmin : null;
+    
+    const metaDiariaCapital = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
+      ? Math.max(0, metaCapital - capital) / diasRestantes
+      : (tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null);
+      
+    const metaDiariaOps = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
+      ? Math.max(0, metaOps - ops) / diasRestantes
+      : (tieneDiasAdmin ? metaOps / diasHabilesAdmin : null);
 
     const proyCapital = (esMesActual && tieneDiasAdmin && ventaPorDia !== null) ? ventaPorDia * diasHabilesAdmin : (esMesActual ? null : capital);
     const proyOps = (esMesActual && tieneDiasAdmin && opsPorDia !== null) ? Math.round(opsPorDia * diasHabilesAdmin) : (esMesActual ? null : ops);
@@ -1408,7 +1424,6 @@ export default function AnalistasPage() {
                             <div style={{ fontSize: 14, fontWeight: 800, color: '#888' }}>{k.clientesIngresados} <span style={{ fontSize: 10, fontWeight: 500, color: '#444' }}>registros totales</span></div>
                           </div>
 
-                          {/* ── Proyección a fin de mes (usa días hábiles cargados en /ajustes) ── */}
                           <div style={{ gridColumn: 'span 2', paddingTop: 10, marginTop: 4, borderTop: '1px solid rgba(167,139,250,0.12)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1433,14 +1448,14 @@ export default function AnalistasPage() {
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                 {k.metaDiariaCapital !== null && (
                                   <div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Venta / día (Meta)</div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Venta / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
                                     <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.metaDiariaCapital)}</div>
                                     {k.ventaPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {formatCurrency(k.ventaPorDia)}</div>}
                                   </div>
                                 )}
                                 {k.metaDiariaOps !== null && (
                                   <div>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ops. / día (Meta)</div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ops. / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
                                     <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{k.metaDiariaOps.toFixed(1)}</div>
                                     {k.opsPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {k.opsPorDia.toFixed(1)}</div>}
                                   </div>
