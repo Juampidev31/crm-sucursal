@@ -1,4 +1,5 @@
 'use client';
+// Build trigger: 2026-05-05 12:03
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
