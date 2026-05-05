@@ -568,7 +568,7 @@ export default function AnalistasPage() {
       ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
       diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
       cumplProyCapital, cumplProyOps,
-      incentivoCap, incentivoOps, incentivoTotal
+      coefCap: 0, coefOps: 0, incentivoCap, incentivoOps, incentivoTotal
     };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, analista, kpiPorAnalista]);
 
