@@ -1,25 +1,21 @@
 'use client';
-// Build trigger: 2026-05-05 12:03
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import React, { useState, useMemo } from 'react';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import SelectReporte from '@/components/SelectReporte';
-import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown, Calculator, Table, DollarSign } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, Calculator, DollarSign } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
 } from 'chart.js';
-import AnalisisTemporalTab from '@/app/ajustes/AnalisisTemporalTab';
 import MetricasTab from '@/app/ajustes/MetricasTab';
-import type { AnalisisTemporalState } from '@/app/ajustes/AnalisisTemporalTab';
 
-const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
+const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: import('chart.js').ChartData<'doughnut'>, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
     cutout: '80%',
@@ -301,26 +297,14 @@ export default function AnalistasPage() {
 
   const analistasParaMostrar = analista === 'PDV' ? CONFIG.ANALISTAS_DEFAULT : [analista];
   const chartLabels = useMemo(() => {
-    const base = analistasParaMostrar.map(a => a.charAt(0).toUpperCase() + a.slice(1));
-    if (analista === 'PDV') return [...base, 'Total PDV'];
-    return ['']; // Ocultar nombre del analista en el eje
-  }, [analistasParaMostrar, analista]);
-  const [seccion10State, setSeccion10State] = useState<AnalisisTemporalState | null>(null);
+    if (analista === 'PDV') {
+      return [...CONFIG.ANALISTAS_DEFAULT.map(a => a.toUpperCase()), 'TOTAL GENERAL'];
+    }
+    return ['INDIVIDUAL'];
+  }, [analista]);
 
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
-  const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
-    1: true,
-    2: true,
-    3: true,
-    4: true,
-    5: true,
-    6: true,
-  });
-
-  const toggleSection = (id: number) => {
-    setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
-  };
 
 
 
@@ -363,24 +347,18 @@ export default function AnalistasPage() {
   };
 
   const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
-    const isCollapsed = !!collapsedSections[id];
     return (
       <div 
-        onClick={() => toggleSection(id)}
         style={{ 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between', 
-          marginBottom: isCollapsed ? 0 : 16, 
+          marginBottom: 16, 
           paddingBottom: 10, 
-          borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
           gap: 12,
-          cursor: 'pointer',
           userSelect: 'none',
-          transition: 'opacity 0.2s ease'
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {icon}
@@ -449,7 +427,7 @@ export default function AnalistasPage() {
         : (tieneDiasAdmin ? metaOps / diasHabilesAdmin : null);
 
       const proyCapital = (esMesActual && tieneDiasAdmin && ventaPorDia !== null) ? ventaPorDia * diasHabilesAdmin : (esMesActual ? null : capital);
-      const proyOps = (esMesActual && tieneDiasAdmin && opsPorDia !== null) ? Math.round(opsPorDia * diasHabilesAdmin) : (esMesActual ? null : ops);
+      const proyOps = (esMesActual && tieneDiasAdmin && opsPorDia !== null) ? opsPorDia * diasHabilesAdmin : (esMesActual ? null : ops);
       const faltaCapital = metaCapital > 0 ? Math.max(0, metaCapital - capital) : null;
       const faltaOps = metaOps > 0 ? Math.max(0, metaOps - ops) : null;
 
@@ -531,7 +509,7 @@ export default function AnalistasPage() {
         incentivoTotal
       };
     });
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, manualCobranzas]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, manualCobranzas, analista]);
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
@@ -576,10 +554,11 @@ export default function AnalistasPage() {
     const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
     const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
 
-    // Proyección PDV consolidada — admin carga días con analista='Todos' en /ajustes (Punto de Venta)
     const hoy = new Date();
     const esMesActual = selectedMes === (hoy.getMonth() + 1) && selectedAnio === hoy.getFullYear();
-    const cfgDias = diasConfig.find(d => d.analista === 'Todos');
+    const cfgDias = analista === 'PDV'
+      ? diasConfig.find(d => d.analista === 'Todos')
+      : diasConfig.find(d => d.analista === analista);
     const diasHabilesAdmin = cfgDias?.dias_habiles ?? 0;
     const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
     const tieneDiasAdmin = diasHabilesAdmin > 0 && diasTransAdmin > 0;
@@ -596,7 +575,7 @@ export default function AnalistasPage() {
       : (tieneDiasAdmin ? metaOps / diasHabilesAdmin : null);
 
     const proyCapital = (esMesActual && tieneDiasAdmin && ventaPorDia !== null) ? ventaPorDia * diasHabilesAdmin : (esMesActual ? null : capital);
-    const proyOps = (esMesActual && tieneDiasAdmin && opsPorDia !== null) ? Math.round(opsPorDia * diasHabilesAdmin) : (esMesActual ? null : ops);
+    const proyOps = (esMesActual && tieneDiasAdmin && opsPorDia !== null) ? opsPorDia * diasHabilesAdmin : (esMesActual ? null : ops);
     const faltaCapital = metaCapital > 0 ? Math.max(0, metaCapital - capital) : null;
     const faltaOps = metaOps > 0 ? Math.max(0, metaOps - ops) : null;
 
@@ -993,7 +972,7 @@ export default function AnalistasPage() {
     return {
       labels: tiposDisplay,
       datasets: analistas.map((an, idx) => ({
-        label: an,
+        label: analista === 'PDV' ? an.toUpperCase() : 'INDIVIDUAL',
         data: tiposDisplay.map(t => {
           return filterByMonth(registros, selectedMes, selectedAnio).filter(r => {
             const isV = isVenta(r);
@@ -1110,7 +1089,7 @@ export default function AnalistasPage() {
   // ── Chart 4: Variación % vs mes anterior ─────────────────────────────────
   const chartVariacion = useMemo(() => {
     const isGlobal = analista === 'PDV';
-    const labels = isGlobal ? ['TOTAL GENERAL'] : [analista.toUpperCase()];
+    const labels = isGlobal ? ['TOTAL GENERAL'] : ['INDIVIDUAL'];
     
     const capitalVar = isGlobal ? [kpiTotal.tendCapital ?? 0] : [kpiPorAnalista[0]?.tendCapital ?? 0];
     const opsVar = isGlobal ? [kpiTotal.tendOps ?? 0] : [kpiPorAnalista[0]?.tendOps ?? 0];
@@ -1262,7 +1241,7 @@ export default function AnalistasPage() {
     const cerradas = labels.map(a => regsMes.filter(r => r.analista === a && isVenta(r)).length);
     
     return {
-      labels: labels.map(a => a.toUpperCase()),
+      labels: labels.map(a => analista === 'PDV' ? a.toUpperCase() : 'INDIVIDUAL'),
       datasets: [
         {
           data: cerradas,
@@ -1353,8 +1332,8 @@ export default function AnalistasPage() {
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
-            {!collapsedSections[1] && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -1471,192 +1450,107 @@ export default function AnalistasPage() {
                   </div>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* ── SECCIÓN 2: INDICADORES CLAVE ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(2, '2. Indicadores', <Users size={15} color="#a78bfa" />)}
-            {!collapsedSections[2] && (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
-                  {(analista === 'PDV' ? [kpiTotal] : kpiPorAnalista).map((k, idx) => {
-                    const isTotal = false;
-                    return (
-                      <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
-                        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: 8, background: isTotal ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Users size={13} color={isTotal ? '#a78bfa' : '#666'} />
-                            </div>
-                            <span style={{ fontSize: 13, fontWeight: 800, color: isTotal ? '#a78bfa' : '#ccc' }}>{k.analista}</span>
-                          </div>
+                {/* ── BLOQUE DE PROYECCIÓN ── */}
+                <div style={{ 
+                  background: 'rgba(255,255,255,0.02)', 
+                  borderRadius: 12, 
+                  padding: '20px 24px', 
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  marginTop: 12
+                }}>
+                  {kpiTotal.esMesActual && !kpiTotal.tieneDiasAdmin ? (
+                    <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
+                      Cargá días hábiles en Ajustes para ver proyección
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      <div style={{ display: 'flex', gap: 32 }}>
+                        <div style={{ flex: 1 }}>
+                          {kpiTotal.metaDiariaCapital !== null && (
+                            <>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Venta / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
+                              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.metaDiariaCapital)}</div>
+                              {kpiTotal.ventaPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {formatCurrency(kpiTotal.ventaPorDia)}</div>}
+                            </>
+                          )}
                         </div>
-                        <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
-                              {tendBadge(k.tendCapital)}
-                            </div>
-                            {k.cumplCapital !== null && (
-                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2, transition: 'width 0.4s' }} />
-                                </div>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' as const, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <span style={{ color: cumplColor(k.cumplCapital) }}>●</span>
-                                  {k.cumplCapital.toFixed(0)}%
-                                </span>
-                              </div>
-                            )}
-                            {k.metaCapital > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {formatCurrency(k.metaCapital)}</div>}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
-                              {tendBadge(k.tendOps)}
-                            </div>
-                            {k.cumplOps !== null && (
-                              <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                                  <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2, transition: 'width 0.4s' }} />
-                                </div>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' as const, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                  <span style={{ color: cumplColor(k.cumplOps) }}>●</span>
-                                  {k.cumplOps.toFixed(0)}%
-                                </span>
-                              </div>
-                            )}
-                            {k.metaOps > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {k.metaOps}</div>}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ticket Prom.</div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{formatCurrency(k.ticket)}</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Conversión</div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}%</div>
-                          </div>
-
-                          {/* Nuevos indicadores solicitados */}
-                          <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Monto de Venta</div>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoVenta)}</div>
-                          </div>
-                          <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Aprob. CC</div>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoAprobCC)}</div>
-                          </div>
-                          <div style={{ gridColumn: 'span 2', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Cantidad de operaciones</div>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: '#888' }}>{k.clientesIngresados} <span style={{ fontSize: 10, fontWeight: 500, color: '#444' }}>registros totales</span></div>
-                          </div>
-
-                          <div style={{ gridColumn: 'span 2', paddingTop: 10, marginTop: 4, borderTop: '1px solid rgba(167,139,250,0.12)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'rgba(167,139,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Target size={14} color="#a78bfa" />
-                                </div>
-                                <div style={{ fontSize: 11, fontWeight: 900, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: 1 }}>
-                                  {k.esMesActual ? 'Proyección a fin de mes' : 'Cierre del mes'}
-                                </div>
-                              </div>
-                              {k.tieneDiasAdmin && k.esMesActual && (
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>
-                                  {k.diasTransAdmin} / {k.diasHabilesAdmin} DÍAS
-                                </div>
-                              )}
-                            </div>
-                            {k.esMesActual && !k.tieneDiasAdmin ? (
-                              <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', padding: '4px 0' }}>
-                                Cargá días hábiles en Ajustes para ver proyección
-                              </div>
-                            ) : (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
-                                <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '6px 8px', borderRadius: '6px' }}>
-                                  <div style={{ flex: 1 }}>
-                                    {k.metaDiariaCapital !== null && (
-                                      <>
-                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Venta / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.metaDiariaCapital)}</div>
-                                        {k.ventaPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {formatCurrency(k.ventaPorDia)}</div>}
-                                      </>
-                                    )}
-                                  </div>
-                                  <div style={{ flex: 1 }}>
-                                    {k.metaDiariaOps !== null && (
-                                      <>
-                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ops. / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{k.metaDiariaOps.toFixed(1)}</div>
-                                        {k.opsPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {k.opsPorDia.toFixed(1)}</div>}
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                                
-                                <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '8px 8px 6px', borderRadius: '6px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                                  <div style={{ flex: 1 }}>
-                                    {k.proyCapital !== null && (
-                                      <>
-                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>{k.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                          <div style={{ fontSize: 14, fontWeight: 800, color: k.esMesActual ? (k.proyCapital >= k.metaCapital ? '#10b981' : '#f87171') : '#ccc' }}>{formatCurrency(k.proyCapital)}</div>
-                                          {k.cumplProyCapital !== null && (
-                                            <span style={{ fontSize: 10, fontWeight: 800, color: k.esMesActual ? (k.cumplProyCapital >= 100 ? '#10b981' : '#f87171') : '#444' }}>
-                                              ({k.cumplProyCapital.toFixed(0)}%)
-                                            </span>
-                                          )}
-                                        </div>
-                                      </>
-                                    )}
-                                  </div>
-                                  <div style={{ flex: 1 }}>
-                                    {k.proyOps !== null && (
-                                      <>
-                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>{k.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                          <div style={{ fontSize: 14, fontWeight: 800, color: k.esMesActual ? (k.proyOps >= k.metaOps ? '#10b981' : '#f87171') : '#ccc' }}>{k.proyOps}</div>
-                                          {k.cumplProyOps !== null && (
-                                            <span style={{ fontSize: 10, fontWeight: 800, color: k.esMesActual ? (k.cumplProyOps >= 100 ? '#10b981' : '#f87171') : '#444' }}>
-                                              ({k.cumplProyOps.toFixed(0)}%)
-                                            </span>
-                                          )}
-                                        </div>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '8px 8px 6px', borderRadius: '6px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                                  <div style={{ flex: 1 }}>
-                                    {k.faltaCapital !== null && (
-                                      <>
-                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Falta 100% (K)</div>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: k.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(k.faltaCapital)}</div>
-                                      </>
-                                    )}
-                                  </div>
-                                  <div style={{ flex: 1 }}>
-                                    {k.faltaOps !== null && (
-                                      <>
-                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Falta 100% (Q)</div>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: k.faltaOps === 0 ? '#10b981' : '#f87171' }}>{k.faltaOps}</div>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                        <div style={{ flex: 1 }}>
+                          {kpiTotal.metaDiariaOps !== null && (
+                            <>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ops. / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
+                              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{Math.round(kpiTotal.metaDiariaOps)}</div>
+                              {kpiTotal.opsPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {Math.round(kpiTotal.opsPorDia)}</div>}
+                            </>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      
+                      <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
 
+                      <div style={{ display: 'flex', gap: 32 }}>
+                        <div style={{ flex: 1 }}>
+                          {kpiTotal.proyCapital !== null && (
+                            <>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.esMesActual ? (kpiTotal.proyCapital >= kpiTotal.metaCapital ? '#10b981' : '#f87171') : '#ccc' }}>{formatCurrency(kpiTotal.proyCapital)}</div>
+                                {kpiTotal.cumplProyCapital !== null && (
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.esMesActual ? (kpiTotal.cumplProyCapital >= 100 ? '#10b981' : '#f87171') : '#444' }}>
+                                    ({kpiTotal.cumplProyCapital.toFixed(2)}%)
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          {kpiTotal.proyOps !== null && (
+                            <>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.esMesActual ? (kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171') : '#ccc' }}>{kpiTotal.proyOps.toFixed(2)}</div>
+                                {kpiTotal.cumplProyOps !== null && (
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.esMesActual ? (kpiTotal.cumplProyOps >= 100 ? '#10b981' : '#f87171') : '#444' }}>
+                                    ({kpiTotal.cumplProyOps.toFixed(2)}%)
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+
+                      <div style={{ display: 'flex', gap: 32 }}>
+                        <div style={{ flex: 1 }}>
+                          {kpiTotal.faltaCapital !== null && (
+                            <>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (K)</div>
+                              <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.faltaCapital)}</div>
+                            </>
+                          )}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          {kpiTotal.faltaOps !== null && (
+                            <>
+                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (Q)</div>
+                              <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{kpiTotal.faltaOps}</div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    )}
+                  </div>
+                </>
+              </div>
+
+          {/* ── SECCIÓN 2: GRÁFICOS ── */}
+          <div className="data-card" style={{ background: '#0a0a0a' }}>
+            {sectionHeader(2, '2. Gráficos', <BarChart3 size={15} color="#a78bfa" />)}
+              <>
                 <div style={{ marginBottom: 28 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
                     {/* 1. Cumplimiento */}
@@ -1704,7 +1598,7 @@ export default function AnalistasPage() {
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                         <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
-                          {analista === 'PDV' ? 'Distribución de Acuerdos (Total)' : `Acuerdos de ${analista}`}
+                          Distribución de Acuerdos
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                            <Users size={12} color="#666" />
@@ -1770,7 +1664,7 @@ export default function AnalistasPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                         <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
                         <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
-                          {analista === 'PDV' ? '% Empleo Público / Privado (Total)' : `% Empleo de ${analista}`}
+                          % Empleo Público / Privado
                         </span>
                       </div>
                       {(() => {
@@ -1799,16 +1693,15 @@ export default function AnalistasPage() {
                   </div>
                 </div>
               </>
-            )}
           </div>
 
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
-              {!collapsedSections[3] && <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>}
+              <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>
             </div>
-            {!collapsedSections[3] && ventasMes.length > 0 && (
+            {ventasMes.length > 0 && (
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
                 {(() => {
                   const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
@@ -1836,29 +1729,13 @@ export default function AnalistasPage() {
           {/* ── SECCIÓN 4: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             {sectionHeader(4, '4. Distribucion por Estado', <PieChart size={15} color="#4ade80" />)}
-            {!collapsedSections[4] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />}
+            <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />
           </div>
 
-          {/* ── SECCIÓN 5: RENDIMIENTO Y TENDENCIAS ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(5, '5. Tendencia', <BarChart3 size={15} color="#60a5fa" />)}
-            {!collapsedSections[5] && (
-              <AnalisisTemporalTab 
-                registros={allRegistros} 
-                initialMonth={selectedMes} 
-                initialYear={selectedAnio} 
-                forcedAnalista={analista === 'PDV' ? 'todos' : analista}
-                hideFilters={true}
-                onStateChange={setSeccion10State} 
-              />
-            )}
-          </div>
-
-          {/* ── SECCIÓN 6: CÁLCULO DE INCENTIVOS ── */}
+          {/* ── SECCIÓN 5: CÁLCULO DE INCENTIVOS ── */}
           {['luciana', 'victoria'].includes(analista.toLowerCase()) && (
             <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(6, '6. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
-            {!collapsedSections[6] && (
+            {sectionHeader(5, '5. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
               <div style={{ marginTop: 24 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 32 }}>
                   {/* Reglas de Capital */}
@@ -2010,7 +1887,7 @@ export default function AnalistasPage() {
                       {kpiCards.filter(k => k.analista === 'PDV' || ['luciana', 'victoria'].includes(k.analista.toLowerCase())).map((k, idx) => (
                         <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
                           <td style={{ padding: '18px 15px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {k.analista === 'PDV' ? 'TOTAL GENERAL' : k.analista.toUpperCase()}
+                            {k.analista === 'PDV' ? 'TOTAL GENERAL' : (analista === 'PDV' ? k.analista.toUpperCase() : 'INDIVIDUAL')}
                           </td>
                           <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#eee', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.capital)}</td>
                           <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{k.cumplCapital?.toFixed(1)}%</td>
@@ -2025,12 +1902,9 @@ export default function AnalistasPage() {
                   </table>
                 </div>
               </div>
-            )}
           </div>
-          )}
-
-
-        </div>
+        )}
+      </div>
     </div>
   );
 }

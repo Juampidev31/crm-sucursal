@@ -248,7 +248,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                 <ModernDoughnut 
                   data={view.data.doughnutData} 
                   totalMonto={view.data.totalMonto} 
-                  label={view.label}
+                  label="VENTAS"
                 />
                 <div style={{ marginTop: '20px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                   {view.data.totalOps} OPERACIONES TOTALES

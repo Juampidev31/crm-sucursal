@@ -1529,6 +1529,7 @@ export default function AjustesPage() {
             <ResumenMensualTab
               registros={ctxRegistros}
               objetivos={ctxObjetivos}
+              diasConfig={ctxDias}
               onSuccess={showSuccess}
               onError={showError}
             />

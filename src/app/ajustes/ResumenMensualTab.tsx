@@ -285,6 +285,7 @@ const EMPTY_RESUMEN = (): ResumenMensual => ({
 interface Props {
   registros: Registro[];
   objetivos: Objetivo[];
+  diasConfig: { analista: string; dias_habiles: number; dias_transcurridos: number }[];
   onSuccess: (msg: string) => void;
   onError: (msg: string) => void;
 }
@@ -311,7 +312,7 @@ const ManualTextarea = ({ label, value, onChange, placeholder }: {
   </div>
 );
 
-export default function ResumenMensualTab({ registros, objetivos, onSuccess, onError }: Props) {
+export default function ResumenMensualTab({ registros, objetivos, diasConfig, onSuccess, onError }: Props) {
   const [seccion10State, setSeccion10State] = useState<AnalisisTemporalState | null>(null);
 
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
@@ -933,14 +934,41 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
       const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
       const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
 
+      const esMesActual = selectedAnio === now.getFullYear() && selectedMes === (now.getMonth() + 1);
+      const diasCfg = diasConfig.find(d => d.analista === analista) || { dias_habiles: 22, dias_transcurridos: 0 };
+      const diasHabiles = Number(diasCfg.dias_habiles) || 22;
+      const diasTrans = Number(diasCfg.dias_transcurridos) || 0;
+      const diasRestantes = Math.max(0, diasHabiles - diasTrans);
+
+      // Proyección
+      const ventaPorDia = diasTrans > 0 ? capital / diasTrans : null;
+      const opsPorDia = diasTrans > 0 ? ops / diasTrans : null;
+
+      const proyeccionCapital = ventaPorDia !== null ? ventaPorDia * diasHabiles : null;
+      const proyeccionOps = opsPorDia !== null ? opsPorDia * diasHabiles : null;
+
+      const metaDiariaCapital = diasRestantes > 0 ? (metaCapital - capital) / diasRestantes : null;
+      const metaDiariaOps = diasRestantes > 0 ? (metaOps - ops) / diasRestantes : null;
+
       return { 
         analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps, 
         clientesIngresados: regsAnalista.length,
         montoVenta,
-        montoAprobCC
+        montoAprobCC,
+        // Projection
+        esMesActual,
+        proyeccionCapital,
+        proyeccionOps,
+        ventaPorDia,
+        opsPorDia,
+        metaDiariaCapital,
+        metaDiariaOps,
+        diasHabilesAdmin: diasHabiles,
+        diasTransAdmin: diasTrans,
+        tieneDiasAdmin: diasHabiles > 0
       };
     });
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
@@ -2122,66 +2150,67 @@ export default function ResumenMensualTab({ registros, objetivos, onSuccess, onE
                             <span style={{ fontSize: 13, fontWeight: 800, color: isTotal ? '#a78bfa' : '#ccc' }}>{k.analista}</span>
                           </div>
                         </div>
-                        <div style={{ padding: '14px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Capital</div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.capital)}</div>
-                              {tendBadge(k.tendCapital)}
+                        <div style={{ padding: '14px 16px' }}>
+                          {/* Eliminados indicadores redundantes (Capital, Ops, Ticket, Conversión) */}
+                          <div style={{ gridColumn: 'span 2', paddingTop: 10, marginTop: 4, borderTop: '1px solid rgba(167,139,250,0.12)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'rgba(167,139,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Target size={14} color="#a78bfa" />
+                                </div>
+                                <div style={{ fontSize: 11, fontWeight: 900, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+                                  {k.esMesActual ? 'Proyección a fin de mes' : 'Cierre del mes'}
+                                </div>
+                              </div>
+                              {k.tieneDiasAdmin && k.esMesActual && (
+                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>
+                                  {k.diasTransAdmin} / {k.diasHabilesAdmin} DÍAS
+                                </div>
+                              )}
                             </div>
-                            {k.cumplCapital !== null && (
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${Math.min(k.cumplCapital, 100)}%`, background: cumplColor(k.cumplCapital), borderRadius: 2 }} />
-                            </div>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span style={{ color: cumplColor(k.cumplCapital) }}>●</span>
-                              {k.cumplCapital.toFixed(0)}%
-                            </span>
-                          </div>
-                        )}
-                            {k.metaCapital > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {formatCurrency(k.metaCapital)}</div>}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Operaciones</div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{k.ops}</div>
-                              {tendBadge(k.tendOps)}
-                            </div>
-                            {k.cumplOps !== null && (
-                          <div style={{ marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${Math.min(k.cumplOps, 100)}%`, background: cumplColor(k.cumplOps), borderRadius: 2 }} />
-                            </div>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span style={{ color: cumplColor(k.cumplOps) }}>●</span>
-                              {k.cumplOps.toFixed(0)}%
-                            </span>
-                          </div>
-                        )}
-                            {k.metaOps > 0 && <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>Meta {k.metaOps}</div>}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ticket Prom.</div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{formatCurrency(k.ticket)}</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Conversión</div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>{k.conversion.toFixed(1)}%</div>
-                          </div>
-
-                          {/* Nuevos indicadores solicitados */}
-                          <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Monto de Venta</div>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoVenta)}</div>
-                          </div>
-                          <div style={{ paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Aprob. CC</div>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.montoAprobCC)}</div>
-                          </div>
-                          <div style={{ gridColumn: 'span 2', paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Cantidad de operaciones</div>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: '#888' }}>{k.clientesIngresados} <span style={{ fontSize: 10, fontWeight: 500, color: '#444' }}>registros totales</span></div>
+                            {k.esMesActual && !k.tieneDiasAdmin ? (
+                              <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', padding: '4px 0' }}>
+                                Cargá días hábiles en Ajustes para ver proyección
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                                <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '6px 8px', borderRadius: '6px' }}>
+                                  <div style={{ flex: 1 }}>
+                                    {k.metaDiariaCapital !== null && (
+                                      <>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Venta / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.metaDiariaCapital)}</div>
+                                        {k.ventaPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {formatCurrency(k.ventaPorDia)}</div>}
+                                      </>
+                                    )}
+                                  </div>
+                                  <div style={{ flex: 1 }}>
+                                    {k.metaDiariaOps !== null && (
+                                      <>
+                                        <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ops. / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{k.metaDiariaOps.toFixed(1)}</div>
+                                        {k.opsPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {k.opsPorDia.toFixed(1)}</div>}
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '8px 8px 6px', borderRadius: '6px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Proyección Capital</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.proyeccionCapital || 0)}</div>
+                                    </div>
+                                  </div>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Proyección Ops</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                      <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{(k.proyeccionOps || 0).toFixed(0)}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
