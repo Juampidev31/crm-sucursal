@@ -1554,42 +1554,34 @@ export default function AnalistasPage() {
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                         <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
-                          {analista === 'PDV' ? 'Distribución de Acuerdos (Total)' : 'Acuerdos del Analista'}
+                          {analista === 'PDV' ? 'Distribución de Acuerdos (Total)' : `Acuerdos de ${analista}`}
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                            <Users size={12} color="#666" />
-                           <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>{kpiTotal.ops} TOTAL</span>
+                           <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>
+                             {analista === 'PDV' ? kpiTotal.ops : (kpiPorAnalista.find(k => k.analista === analista)?.ops ?? 0)} TOTAL
+                           </span>
                         </div>
                       </div>
                       {(() => {
                         const isGlobal = analista === 'PDV';
-                        const regs = filterByMonth(allRegistros, selectedMes, selectedAnio);
+                        const sourceRegs = filterByMonth(allRegistros, selectedMes, selectedAnio);
+                        const regs = isGlobal ? sourceRegs : sourceRegs.filter(r => r.analista === analista);
                         
-                        let displayLabels: string[] = [];
-                        let displayData: number[] = [];
-                        let bgColors: string[] = [];
-
-                        if (isGlobal) {
-                          // Mostrar por tipo de acuerdo
-                          const categories = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica'];
-                          bgColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
-                          displayLabels = categories;
-                          displayData = categories.map(cat => {
-                            return regs.filter(r => {
-                               const ac = (r.acuerdo_precios || '').toLowerCase();
-                               if (cat === 'PREMIUM') return ac.includes('premium');
-                               if (cat === 'Riesgo MEDIO') return ac.includes('medio');
-                               if (cat === 'Riesgo BAJO') return ac.includes('bajo');
-                               if (cat === 'No califica') return ac.includes('no califica') || ac === 'n/c';
-                               return false;
-                            }).length;
-                          });
-                        } else {
-                          // Mostrar por analista (aunque sea uno solo, o el total vs otros si hubiera)
-                          displayLabels = [analista.toUpperCase()];
-                          displayData = [regs.filter(r => r.analista === analista && r.acuerdo_precios).length];
-                          bgColors = ['#3b82f6'];
-                        }
+                        const categories = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica'];
+                        const bgColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+                        const displayLabels = categories;
+                        
+                        const displayData = categories.map(cat => {
+                          return regs.filter(r => {
+                             const ac = (r.acuerdo_precios || '').toLowerCase();
+                             if (cat === 'PREMIUM') return ac.includes('premium');
+                             if (cat === 'Riesgo MEDIO') return ac.includes('medio');
+                             if (cat === 'Riesgo BAJO') return ac.includes('bajo');
+                             if (cat === 'No califica') return ac.includes('no califica') || ac === 'n/c';
+                             return false;
+                          }).length;
+                        });
 
                         const total = displayData.reduce((s, v) => s + v, 0);
                         const chartData = {
