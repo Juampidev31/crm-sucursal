@@ -478,9 +478,17 @@ export default function AnalistasPage() {
           else if (cumplOps >= 80) coefOps = 0.0020;
         }
 
-        incentivoCap = (capital * coefCap) + 21470;
+        incentivoCap = capital * coefCap;
         // El incentivo de operaciones es un % del incentivo de capital (20% o 30%)
         incentivoOps = incentivoCap * (coefOps === 0.0030 ? 0.30 : (coefOps === 0.0020 ? 0.20 : 0));
+
+        // Tope máximo combinado de $200,000 para K y Q
+        const totalKQ = incentivoCap + incentivoOps;
+        if (totalKQ > 200000) {
+          const factor = 200000 / totalKQ;
+          incentivoCap = incentivoCap * factor;
+          incentivoOps = incentivoOps * factor;
+        }
       }
 
       // ── Incentivos de Cobranzas ──────────────────────────────────────────────
@@ -1852,7 +1860,8 @@ export default function AnalistasPage() {
                       </tbody>
                     </table>
                     <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
-                      * Se suma una base fija de $21,470 al incentivo de Capital.
+                      * Base de referencia: $21,470 (fijo no sumado al cálculo automático).<br/>
+                      * El tope máximo combinado (K + Q) es de $200,000.
                     </div>
                   </div>
 
