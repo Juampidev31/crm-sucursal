@@ -6,6 +6,7 @@ import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
+import { useSettings } from '@/features/settings/SettingsProvider';
 import SelectReporte from '@/components/SelectReporte';
 import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -290,6 +291,7 @@ const now = new Date();
 export default function AnalistasPage() {
   const { registros: allRegistros, loading } = useRegistros();
   const { objetivos } = useObjetivos();
+  const { diasConfig } = useSettings();
   const [analista, setAnalista] = useState<string>('PDV');
 
   const registros = useMemo(() => {
@@ -411,14 +413,38 @@ export default function AnalistasPage() {
       const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
       const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
 
-      return { 
-        analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps, 
+      // Proyección a fin de mes — usa días hábiles cargados manualmente por admin (/ajustes)
+      const hoy = new Date();
+      const esMesActual = selectedMes === (hoy.getMonth() + 1) && selectedAnio === hoy.getFullYear();
+      const cfgDias = diasConfig.find(d => d.analista === analista);
+      const diasHabilesAdmin = cfgDias?.dias_habiles ?? 0;
+      const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
+      const tieneDiasAdmin = diasHabilesAdmin > 0 && diasTransAdmin > 0;
+
+      const ventaPorDia = tieneDiasAdmin ? capital / diasTransAdmin : null;
+      const opsPorDia = tieneDiasAdmin ? ops / diasTransAdmin : null;
+      const metaDiariaCapital = tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null;
+      const metaDiariaOps = tieneDiasAdmin ? metaOps / diasHabilesAdmin : null;
+
+      const proyCapital = (esMesActual && tieneDiasAdmin && ventaPorDia !== null) ? ventaPorDia * diasHabilesAdmin : (esMesActual ? null : capital);
+      const proyOps = (esMesActual && tieneDiasAdmin && opsPorDia !== null) ? Math.round(opsPorDia * diasHabilesAdmin) : (esMesActual ? null : ops);
+      const faltaCapital = metaCapital > 0 ? Math.max(0, metaCapital - capital) : null;
+      const faltaOps = metaOps > 0 ? Math.max(0, metaOps - ops) : null;
+
+      const cumplProyCapital = metaCapital > 0 ? (proyCapital !== null ? (proyCapital / metaCapital) * 100 : null) : null;
+      const cumplProyOps = metaOps > 0 ? (proyOps !== null ? (proyOps / metaOps) * 100 : null) : null;
+
+      return {
+        analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps,
         clientesIngresados: regsAnalista.length,
         montoVenta,
-        montoAprobCC
+        montoAprobCC,
+        ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
+        diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
+        cumplProyCapital, cumplProyOps
       };
     });
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
@@ -459,8 +485,36 @@ export default function AnalistasPage() {
     const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
     const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
 
-    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
+    // Proyección PDV consolidada — admin carga días con analista='Todos' en /ajustes (Punto de Venta)
+    const hoy = new Date();
+    const esMesActual = selectedMes === (hoy.getMonth() + 1) && selectedAnio === hoy.getFullYear();
+    const cfgDias = diasConfig.find(d => d.analista === 'Todos');
+    const diasHabilesAdmin = cfgDias?.dias_habiles ?? 0;
+    const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
+    const tieneDiasAdmin = diasHabilesAdmin > 0 && diasTransAdmin > 0;
+    const ventaPorDia = tieneDiasAdmin ? capital / diasTransAdmin : null;
+    const opsPorDia = tieneDiasAdmin ? ops / diasTransAdmin : null;
+    const metaDiariaCapital = tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null;
+    const metaDiariaOps = tieneDiasAdmin ? metaOps / diasHabilesAdmin : null;
+
+    const proyCapital = (esMesActual && tieneDiasAdmin && ventaPorDia !== null) ? ventaPorDia * diasHabilesAdmin : (esMesActual ? null : capital);
+    const proyOps = (esMesActual && tieneDiasAdmin && opsPorDia !== null) ? Math.round(opsPorDia * diasHabilesAdmin) : (esMesActual ? null : ops);
+    const faltaCapital = metaCapital > 0 ? Math.max(0, metaCapital - capital) : null;
+    const faltaOps = metaOps > 0 ? Math.max(0, metaOps - ops) : null;
+
+    const cumplProyCapital = metaCapital > 0 ? (proyCapital !== null ? (proyCapital / metaCapital) * 100 : null) : null;
+    const cumplProyOps = metaOps > 0 ? (proyOps !== null ? (proyOps / metaOps) * 100 : null) : null;
+
+    return {
+      analista: 'PDV',
+      capital, ops, ticket, conversion, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion,
+      metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC,
+      clientesIngresados: clientes,
+      ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
+      diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
+      cumplProyCapital, cumplProyOps
+    };
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, analista]);
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
   const distribucionAcuerdos = useMemo(() => {
@@ -739,20 +793,27 @@ export default function AnalistasPage() {
   });
 
   // ── Datos gráfico cumplimiento por analista ───────────────────────────────
+  // Card unificada: en Vista Global usa el consolidado (kpiTotal); en vista de analista usa el individual
+  const kpiCards = useMemo(
+    () => (analista === 'PDV' ? [kpiTotal] : kpiPorAnalista),
+    [analista, kpiTotal, kpiPorAnalista]
+  );
+
   const chartCumplimiento = useMemo(() => {
-    const labels = kpiPorAnalista.map(k => k.analista);
+    const labels = kpiCards.map(k => k.analista);
     return {
       labels,
       datasets: [
         {
           label: `Capital ${mesActualLabel}`,
-          data: kpiPorAnalista.map(k => k.cumplCapital ?? 0),
+          data: kpiCards.map(k => k.cumplCapital ?? 0),
           backgroundColor: 'rgba(96,165,250,0.7)', borderRadius: 4, order: 1,
         },
         {
           label: `Capital ${mesAntLabel}`,
-          data: kpiPorAnalista.map(k => {
-            const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+          data: kpiCards.map(k => {
+            const antRegs = filterByMonth(registros, mesPrev, anioPrev);
+            const ant = (k.analista === 'PDV' ? antRegs : antRegs.filter(r => r.analista === k.analista)).filter(isVenta);
             const capitalAnt = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
@@ -761,13 +822,14 @@ export default function AnalistasPage() {
         },
         {
           label: `Ops ${mesActualLabel}`,
-          data: kpiPorAnalista.map(k => k.cumplOps ?? 0),
+          data: kpiCards.map(k => k.cumplOps ?? 0),
           backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4, order: 1,
         },
         {
           label: `Ops ${mesAntLabel}`,
-          data: kpiPorAnalista.map(k => {
-            const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+          data: kpiCards.map(k => {
+            const antRegs = filterByMonth(registros, mesPrev, anioPrev);
+            const ant = (k.analista === 'PDV' ? antRegs : antRegs.filter(r => r.analista === k.analista)).filter(isVenta);
             const opsAnt = ant.length;
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
@@ -777,7 +839,7 @@ export default function AnalistasPage() {
         refLine100(labels.length),
       ],
     };
-  }, [kpiPorAnalista, registros, objetivos, mesPrev, anioPrev, mesActualLabel, mesAntLabel]);
+  }, [kpiCards, registros, objetivos, mesPrev, anioPrev, mesActualLabel, mesAntLabel]);
 
   // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
   const chartAcuerdos = useMemo(() => {
@@ -921,21 +983,32 @@ export default function AnalistasPage() {
 
   // ── Chart 4: Variación % vs mes anterior ─────────────────────────────────
   const chartVariacion = useMemo(() => {
-    const labels = chartLabels;
-    const capitalVar = [...kpiPorAnalista.map(k => k.tendCapital ?? 0)];
-    if (analista === 'PDV') capitalVar.push(kpiTotal.tendCapital ?? 0);
-
-    const opsVar = [...kpiPorAnalista.map(k => k.tendOps ?? 0)];
-    if (analista === 'PDV') opsVar.push(kpiTotal.tendOps ?? 0);
+    const isGlobal = analista === 'PDV';
+    const labels = isGlobal ? ['TOTAL GENERAL'] : [analista.toUpperCase()];
+    
+    const capitalVar = isGlobal ? [kpiTotal.tendCapital ?? 0] : [kpiPorAnalista[0]?.tendCapital ?? 0];
+    const opsVar = isGlobal ? [kpiTotal.tendOps ?? 0] : [kpiPorAnalista[0]?.tendOps ?? 0];
 
     return {
       labels,
       datasets: [
-        { label: 'Variación Capital %', data: capitalVar, backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
-        { label: 'Variación Ops %', data: opsVar, backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), borderRadius: 4, maxBarThickness: 70 },
+        { 
+          label: 'Variación Capital %', 
+          data: capitalVar, 
+          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.7)' : 'rgba(248,113,113,0.7)'), 
+          borderRadius: 4, 
+          maxBarThickness: 100 
+        },
+        { 
+          label: 'Variación Ops %', 
+          data: opsVar, 
+          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.7)' : 'rgba(248,113,113,0.7)'), 
+          borderRadius: 4, 
+          maxBarThickness: 100 
+        },
       ],
     };
-  }, [chartLabels, kpiPorAnalista, kpiTotal, analista]);
+  }, [kpiPorAnalista, kpiTotal, analista]);
 
   // ── Chart 7: Aperturas vs Renovaciones ───────────────────────────────────
   const apertVsRenData = useMemo(() => {
@@ -1267,7 +1340,7 @@ export default function AnalistasPage() {
             {!collapsedSections[2] && (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
-                  {kpiPorAnalista.map((k, idx) => {
+                  {(analista === 'PDV' ? [kpiTotal] : kpiPorAnalista).map((k, idx) => {
                     const isTotal = false;
                     return (
                       <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
@@ -1334,6 +1407,85 @@ export default function AnalistasPage() {
                             <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Cantidad de operaciones</div>
                             <div style={{ fontSize: 14, fontWeight: 800, color: '#888' }}>{k.clientesIngresados} <span style={{ fontSize: 10, fontWeight: 500, color: '#444' }}>registros totales</span></div>
                           </div>
+
+                          {/* ── Proyección a fin de mes (usa días hábiles cargados en /ajustes) ── */}
+                          <div style={{ gridColumn: 'span 2', paddingTop: 10, marginTop: 4, borderTop: '1px solid rgba(167,139,250,0.12)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'rgba(167,139,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Target size={14} color="#a78bfa" />
+                                </div>
+                                <div style={{ fontSize: 11, fontWeight: 900, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+                                  {k.esMesActual ? 'Proyección a fin de mes' : 'Cierre del mes'}
+                                </div>
+                              </div>
+                              {k.tieneDiasAdmin && k.esMesActual && (
+                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>
+                                  {k.diasTransAdmin} / {k.diasHabilesAdmin} DÍAS
+                                </div>
+                              )}
+                            </div>
+                            {k.esMesActual && !k.tieneDiasAdmin ? (
+                              <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', padding: '4px 0' }}>
+                                Cargá días hábiles en Ajustes para ver proyección
+                              </div>
+                            ) : (
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                {k.metaDiariaCapital !== null && (
+                                  <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Venta / día (Meta)</div>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.metaDiariaCapital)}</div>
+                                    {k.ventaPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {formatCurrency(k.ventaPorDia)}</div>}
+                                  </div>
+                                )}
+                                {k.metaDiariaOps !== null && (
+                                  <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ops. / día (Meta)</div>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{k.metaDiariaOps.toFixed(1)}</div>
+                                    {k.opsPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {k.opsPorDia.toFixed(1)}</div>}
+                                  </div>
+                                )}
+                                {k.proyCapital !== null && (
+                                  <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>{k.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
+                                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: k.esMesActual ? (k.proyCapital >= k.metaCapital ? '#10b981' : '#f87171') : '#ccc' }}>{formatCurrency(k.proyCapital)}</div>
+                                        {k.cumplProyCapital !== null && (
+                                          <span style={{ fontSize: 10, fontWeight: 800, color: k.esMesActual ? (k.cumplProyCapital >= 100 ? '#10b981' : '#f87171') : '#444' }}>
+                                            ({k.cumplProyCapital.toFixed(0)}%)
+                                          </span>
+                                        )}
+                                      </div>
+                                  </div>
+                                )}
+                                {k.proyOps !== null && (
+                                  <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>{k.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
+                                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                                        <div style={{ fontSize: 14, fontWeight: 800, color: k.esMesActual ? (k.proyOps >= k.metaOps ? '#10b981' : '#f87171') : '#ccc' }}>{k.proyOps}</div>
+                                        {k.cumplProyOps !== null && (
+                                          <span style={{ fontSize: 10, fontWeight: 800, color: k.esMesActual ? (k.cumplProyOps >= 100 ? '#10b981' : '#f87171') : '#444' }}>
+                                            ({k.cumplProyOps.toFixed(0)}%)
+                                          </span>
+                                        )}
+                                      </div>
+                                  </div>
+                                )}
+                                {k.faltaCapital !== null && (
+                                  <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Falta 100% (K)</div>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: k.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(k.faltaCapital)}</div>
+                                  </div>
+                                )}
+                                {k.faltaOps !== null && (
+                                  <div>
+                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Falta 100% (Q)</div>
+                                    <div style={{ fontSize: 14, fontWeight: 800, color: k.faltaOps === 0 ? '#10b981' : '#f87171' }}>{k.faltaOps}</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -1386,36 +1538,66 @@ export default function AnalistasPage() {
                     {/* 3. Acuerdos por Analista */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Acuerdos por Analista</div>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+                          {analista === 'PDV' ? 'Distribución de Acuerdos (Total)' : 'Acuerdos del Analista'}
+                        </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                            <Users size={12} color="#666" />
                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>{kpiTotal.ops} TOTAL</span>
                         </div>
                       </div>
                       {(() => {
-                        const labels = analistasParaMostrar;
-                        const data = labels.map(a => filterByMonth(allRegistros, selectedMes, selectedAnio).filter(r => r.analista === a && r.acuerdo_precios).length);
-                        const total = data.reduce((s, v) => s + v, 0);
+                        const isGlobal = analista === 'PDV';
+                        const regs = filterByMonth(allRegistros, selectedMes, selectedAnio);
+                        
+                        let displayLabels: string[] = [];
+                        let displayData: number[] = [];
+                        let bgColors: string[] = [];
+
+                        if (isGlobal) {
+                          // Mostrar por tipo de acuerdo
+                          const categories = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica'];
+                          bgColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+                          displayLabels = categories;
+                          displayData = categories.map(cat => {
+                            return regs.filter(r => {
+                               const ac = (r.acuerdo_precios || '').toLowerCase();
+                               if (cat === 'PREMIUM') return ac.includes('premium');
+                               if (cat === 'Riesgo MEDIO') return ac.includes('medio');
+                               if (cat === 'Riesgo BAJO') return ac.includes('bajo');
+                               if (cat === 'No califica') return ac.includes('no califica') || ac === 'n/c';
+                               return false;
+                            }).length;
+                          });
+                        } else {
+                          // Mostrar por analista (aunque sea uno solo, o el total vs otros si hubiera)
+                          displayLabels = [analista.toUpperCase()];
+                          displayData = [regs.filter(r => r.analista === analista && r.acuerdo_precios).length];
+                          bgColors = ['#3b82f6'];
+                        }
+
+                        const total = displayData.reduce((s, v) => s + v, 0);
                         const chartData = {
-                          labels: labels.map(a => a.toUpperCase()),
+                          labels: displayLabels,
                           datasets: [{
-                            data,
-                            backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'],
+                            data: displayData,
+                            backgroundColor: bgColors,
                             borderWidth: 0,
                             hoverOffset: 10,
                             borderRadius: 4,
                             spacing: 4
                           }]
                         };
+
                         return (
                           <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <ModernDoughnut data={chartData} total={total} label="Acuerdos" unit=" Ops" />
                             <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                              {labels.map((l, i) => {
-                                const pct = total > 0 ? (data[i] / total * 100).toFixed(1) : '0';
+                              {displayLabels.map((l, i) => {
+                                const pct = total > 0 ? (displayData[i] / total * 100).toFixed(1) : '0';
                                 return (
                                   <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartData.datasets[0].backgroundColor as string[])[i] }} />
+                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: bgColors[i] }} />
                                     <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
                                   </div>
                                 );
