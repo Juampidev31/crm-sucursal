@@ -1619,23 +1619,32 @@ export default function AnalistasPage() {
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                         <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-                        <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+                          {analista === 'PDV' ? '% Empleo Público / Privado (Total)' : `% Empleo de ${analista}`}
+                        </span>
                       </div>
-                      <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <ModernDoughnut data={chartEmpleoPublPriv} total={kpiTotal.ops} label="Total" unit=" Ops" />
-                        <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                          {chartEmpleoPublPriv.labels.map((l, i) => {
-                            const val = chartEmpleoPublPriv.datasets[0].data[i];
-                            const pct = kpiTotal.ops > 0 ? (val / kpiTotal.ops * 100).toFixed(1) : '0';
-                            return (
-                              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
-                                <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      {(() => {
+                        const counts = chartEmpleoPublPriv.datasets[0].data as number[];
+                        const total = counts.reduce((s, v) => s + v, 0);
+                        
+                        return (
+                          <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                            <ModernDoughnut data={chartEmpleoPublPriv} total={total} label="Total" unit=" Ops" />
+                            <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                              {chartEmpleoPublPriv.labels.map((l, i) => {
+                                const val = counts[i];
+                                const pct = total > 0 ? (val / total * 100).toFixed(1) : '0';
+                                return (
+                                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
+                                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
