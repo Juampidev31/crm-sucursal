@@ -305,6 +305,7 @@ export default function AnalistasPage() {
 
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
+  const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
 
 
 
@@ -745,6 +746,56 @@ export default function AnalistasPage() {
       .map(([label, data]) => ({ label, ...data }))
       .sort((a, b) => b.cantidad - a.cantidad);
   }, [distribucionAcuerdos]);
+
+  // ── Distribuciones totales (todos los registros) ──────────────────────────
+  const distCuotasTotal = useMemo(() => distPor('cuotas', registros.filter(isVenta)), [registros]);
+  const distRangoEtarioTotal = useMemo(() => distPor('rango_etario', registros), [registros]);
+  const distSexoTotal = useMemo(() => distPor('sexo', registros), [registros]);
+  const distLocalidadTotal = useMemo(() => distPor('localidad', registros), [registros]);
+  const distEmpleadorTotal = useMemo(() => {
+    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
+    for (const r of registros) {
+      const raw = (r.empleador ?? '').trim();
+      const key = normalizarEmpleador(raw);
+      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
+      prev.monto += Number(r.monto) || 0;
+      prev.cantidad += 1;
+      if (raw) {
+        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
+        let maxCount = 0; let maxVariant = raw;
+        for (const [v, c] of prev.variantes) { if (c > maxCount) { maxCount = c; maxVariant = v; } }
+        prev.displayLabel = maxVariant;
+      }
+      map.set(key, prev);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
+  }, [registros]);
+  const distAcuerdosTotal = useMemo(() => {
+    const tipos: Record<string, { monto: number; cantidad: number }> = {
+      'PREMIUM': { monto: 0, cantidad: 0 }, 'Riesgo MEDIO': { monto: 0, cantidad: 0 },
+      'Riesgo BAJO': { monto: 0, cantidad: 0 }, 'No califica/Excepcion': { monto: 0, cantidad: 0 },
+      'No califica': { monto: 0, cantidad: 0 },
+    };
+    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
+      const ac = (acuerdo || '').toLowerCase().trim();
+      const es = (estado || '').toLowerCase().trim();
+      const esRechazo = ac.includes('no califica') || ac === 'n/c' ||
+                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+      if (esRechazo) return isV ? 'No califica/Excepcion' : 'No califica';
+      if (ac.includes('bajo')) return 'Riesgo BAJO';
+      if (ac.includes('medio')) return 'Riesgo MEDIO';
+      if (ac.includes('premium')) return 'PREMIUM';
+      return null;
+    };
+    for (const r of allRegistros) {
+      const isV = isVenta(r);
+      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+      if (matched) { tipos[matched].monto += Number(r.monto) || 0; tipos[matched].cantidad += 1; }
+    }
+    return Object.entries(tipos).map(([label, data]) => ({ label, ...data })).sort((a, b) => b.cantidad - a.cantidad);
+  }, [allRegistros]);
 
   // ── Distribuciones mes anterior ───────────────────────────────────────────
   const ventasMesAnt = useMemo(() =>
@@ -1509,7 +1560,7 @@ export default function AnalistasPage() {
                             <>
                               <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.esMesActual ? (kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171') : '#ccc' }}>{kpiTotal.proyOps.toFixed(2)}</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.esMesActual ? (kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171') : '#ccc' }}>{Math.round(kpiTotal.proyOps)}</div>
                                 {kpiTotal.cumplProyOps !== null && (
                                   <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.esMesActual ? (kpiTotal.cumplProyOps >= 100 ? '#10b981' : '#f87171') : '#444' }}>
                                     ({kpiTotal.cumplProyOps.toFixed(2)}%)
@@ -1536,7 +1587,7 @@ export default function AnalistasPage() {
                           {kpiTotal.faltaOps !== null && (
                             <>
                               <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (Q)</div>
-                              <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{kpiTotal.faltaOps}</div>
+                              <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.faltaOps || 0)}</div>
                             </>
                           )}
                         </div>
@@ -1699,31 +1750,50 @@ export default function AnalistasPage() {
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
-              <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>
-            </div>
-            {ventasMes.length > 0 && (
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
-                {(() => {
-                  const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-                  return (
-                    <>
-                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" totalMes={totalMes} />
-                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalMes} />
-                      <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" totalMes={totalMes} />
-                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalMes} />
-                      <DistBlock 
-                        titulo="Empleador" 
-                        icon={<Shield size={12} color="#fbbf24" />} 
-                        datos={distEmpleador} 
-                        color="#fbbf24" 
-                        totalMes={totalMes}
-                      />
-                      <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" totalMes={totalMes} />
-                    </>
-                  );
-                })()}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <span style={{ fontSize: 11, color: '#444' }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>
+                <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+                  {(['mensual', 'total'] as const).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriodoSec3(p)}
+                      style={{
+                        padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                        fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
+                        background: periodoSec3 === p ? '#fb923c' : 'transparent',
+                        color: periodoSec3 === p ? '#000' : '#555',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {p === 'mensual' ? 'Mes' : 'Total'}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+              {(() => {
+                const isMensual = periodoSec3 === 'mensual';
+                const fuente = isMensual ? ventasMes : registros;
+                const base = fuente.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+                const ac = isMensual ? distAcuerdos : distAcuerdosTotal;
+                const cu = isMensual ? distCuotas : distCuotasTotal;
+                const re = isMensual ? distRangoEtario : distRangoEtarioTotal;
+                const sx = isMensual ? distSexo : distSexoTotal;
+                const em = isMensual ? distEmpleador : distEmpleadorTotal;
+                const lo = isMensual ? distLocalidad : distLocalidadTotal;
+                return (
+                  <>
+                    <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={ac} color="#f97316" totalMes={base} />
+                    <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={cu} color="#60a5fa" totalMes={base} />
+                    <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={re} color="#34d399" totalMes={base} />
+                    <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={sx} color="#f472b6" totalMes={base} />
+                    <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={em} color="#fbbf24" totalMes={base} />
+                    <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={lo} color="#a78bfa" totalMes={base} />
+                  </>
+                );
+              })()}
+            </div>
           </div>
 
           {/* ── SECCIÓN 4: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}

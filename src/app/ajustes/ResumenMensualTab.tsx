@@ -325,6 +325,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const [publicLink, setPublicLink] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedZoom, setSelectedZoom] = useState(1);
+  const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
     1: true,
     2: true,
@@ -549,6 +550,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         distEmpleador,
         distAcuerdos,
         distEstados,
+        distSexoTotal,
+        distCuotasTotal,
+        distRangoEtarioTotal,
+        distLocalidadTotal,
+        distEmpleadorTotal,
+        distAcuerdosTotal,
         seccion10State: seccion10State,
       };
 
@@ -659,6 +666,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       distEmpleador,
       distAcuerdos,
       distEstados,
+      distSexoTotal,
+      distCuotasTotal,
+      distRangoEtarioTotal,
+      distLocalidadTotal,
+      distEmpleadorTotal,
+      distAcuerdosTotal,
       seccion10State: seccion10State,
     };
 
@@ -1151,6 +1164,66 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       .sort((a, b) => b.cantidad - a.cantidad);
   }, [distribucionAcuerdos]);
 
+  // ── Distribuciones totales (todos los registros) ──────────────────────────
+  const distCuotasTotal = useMemo(() => distPor('cuotas', registros.filter(isVenta)), [registros]);
+  const distRangoEtarioTotal = useMemo(() => distPor('rango_etario', registros), [registros]);
+  const distSexoTotal = useMemo(() => distPor('sexo', registros), [registros]);
+  const distLocalidadTotal = useMemo(() => distPor('localidad', registros), [registros]);
+  const distEmpleadorTotal = useMemo(() => {
+    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
+    for (const r of registros) {
+      const raw = (r.empleador ?? '').trim();
+      const key = normalizarEmpleador(raw);
+      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
+      prev.monto += Number(r.monto) || 0;
+      prev.cantidad += 1;
+      if (raw) {
+        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
+        let maxCount = 0;
+        let maxVariant = raw;
+        for (const [v, c] of prev.variantes) {
+          if (c > maxCount) { maxCount = c; maxVariant = v; }
+        }
+        prev.displayLabel = maxVariant;
+      }
+      map.set(key, prev);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].cantidad - a[1].cantidad)
+      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
+  }, [registros]);
+  const distAcuerdosTotal = useMemo(() => {
+    const tipos: Record<string, { monto: number; cantidad: number }> = {
+      'PREMIUM': { monto: 0, cantidad: 0 },
+      'Riesgo MEDIO': { monto: 0, cantidad: 0 },
+      'Riesgo BAJO': { monto: 0, cantidad: 0 },
+      'No califica/Excepcion': { monto: 0, cantidad: 0 },
+      'No califica': { monto: 0, cantidad: 0 },
+    };
+    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
+      const ac = (acuerdo || '').toLowerCase().trim();
+      const es = (estado || '').toLowerCase().trim();
+      const esRechazo = ac.includes('no califica') || ac === 'n/c' ||
+                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+      if (esRechazo) return isV ? 'No califica/Excepcion' : 'No califica';
+      if (ac.includes('bajo')) return 'Riesgo BAJO';
+      if (ac.includes('medio')) return 'Riesgo MEDIO';
+      if (ac.includes('premium')) return 'PREMIUM';
+      return null;
+    };
+    for (const r of registros) {
+      const isV = isVenta(r);
+      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+      if (matched) {
+        tipos[matched].monto += Number(r.monto) || 0;
+        tipos[matched].cantidad += 1;
+      }
+    }
+    return Object.entries(tipos)
+      .map(([label, data]) => ({ label, ...data }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }, [registros]);
+
   // ── Distribuciones mes anterior ───────────────────────────────────────────
   const ventasMesAnt = useMemo(() =>
     filterByMonth(registros, mesPrev, anioPrev),
@@ -1233,8 +1306,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         font: { size: 10, weight: 800 }
       },
     },
-    categoryPercentage: 0.8,
-    barPercentage: 0.7,
+    categoryPercentage: 0.85,
+    barPercentage: 0.9,
     scales: {
       x: {
         stacked,
@@ -1294,8 +1367,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           label: `Capital ${mesActualLabel}`,
           data: kpiPorAnalista.map(k => k.cumplCapital ?? 0),
-          backgroundColor: 'rgba(96,165,250,0.8)',
-          borderColor: 'rgba(96,165,250,1)',
+          backgroundColor: 'rgba(96, 165, 250, 0.15)',
+          borderColor: 'rgba(96, 165, 250, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4,
           order: 1,
@@ -1308,17 +1381,17 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-          backgroundColor: 'rgba(30, 58, 138, 0.8)',
-          borderColor: 'rgba(30, 58, 138, 1)',
-          borderWidth: 1.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
           borderRadius: 4,
           order: 1,
         },
         {
           label: `Ops ${mesActualLabel}`,
           data: kpiPorAnalista.map(k => k.cumplOps ?? 0),
-          backgroundColor: 'rgba(167,139,250,0.8)',
-          borderColor: 'rgba(167,139,250,1)',
+          backgroundColor: 'rgba(167, 139, 250, 0.15)',
+          borderColor: 'rgba(167, 139, 250, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4,
           order: 1,
@@ -1331,9 +1404,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
           }),
-          backgroundColor: 'rgba(76, 29, 149, 0.8)',
-          borderColor: 'rgba(76, 29, 149, 1)',
-          borderWidth: 1.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+          borderWidth: 1,
           borderRadius: 4,
           order: 1, // Purpura oscuro
         },
@@ -1346,8 +1419,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const chartAcuerdos = useMemo(() => {
     const tiposDisplay = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/Excepcion', 'No califica'];
     const analistas = CONFIG.ANALISTAS_DEFAULT;
-    const colores = ['rgba(96,165,250,0.8)', 'rgba(167,139,250,0.8)'];
-    const borderColores = ['rgba(96,165,250,1)', 'rgba(167,139,250,1)'];
+    const colores = ['rgba(96, 165, 250, 0.15)', 'rgba(167, 139, 250, 0.15)'];
+    const borderColores = ['rgba(96, 165, 250, 0.5)', 'rgba(167, 139, 250, 0.5)'];
 
     const matchAcuerdo = (acuerdo: string, estado: string, isV: boolean): string | null => {
       const ac = (acuerdo || '').toLowerCase().trim();
@@ -1400,17 +1473,17 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           label: mesActualLabel,
           data: top.map(d => d.cantidad),
-          backgroundColor: `${color}cc`,
-          borderColor: color,
+          backgroundColor: `${color}26`,
+          borderColor: `${color}80`,
           borderWidth: 1.5,
           borderRadius: 4, order: 1,
         },
         {
           label: mesAntLabel,
           data: top.map(d => anterior.get(d.label)?.cantidad ?? 0),
-          backgroundColor: `${color}66`,
-          borderColor: `${color}99`,
-          borderWidth: 1.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
           borderRadius: 4, order: 1,
         },
       ],
@@ -1443,22 +1516,22 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Capital ${mesActualLabel}`, 
           data: capitalAct, 
-          backgroundColor: 'rgba(96,165,250,0.8)', 
-          borderColor: 'rgba(96,165,250,1)',
+          backgroundColor: 'rgba(16, 185, 129, 0.15)', 
+          borderColor: 'rgba(16, 185, 129, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4, 
           order: 1, 
-          maxBarThickness: 70 
+          maxBarThickness: 100 
         },
         { 
           label: `Capital ${mesAntLabel}`, 
           data: capitalAnt, 
-          backgroundColor: 'rgba(30, 58, 138, 0.9)', 
-          borderColor: 'rgba(30, 58, 138, 1)',
-          borderWidth: 1.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
           borderRadius: 4, 
           order: 1, 
-          maxBarThickness: 70 
+          maxBarThickness: 100 
         },
         { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#f87171', fill: false, order: 0 },
       ],
@@ -1485,20 +1558,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Ticket ${mesActualLabel}`, 
           data: [...kpiPorAnalista.map(k => k.ticket), kpiTotal.ticket], 
-          backgroundColor: 'rgba(52,211,153,0.8)', 
-          borderColor: 'rgba(52,211,153,1)',
+          backgroundColor: 'rgba(59, 130, 246, 0.15)', 
+          borderColor: 'rgba(59, 130, 246, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4, 
-          maxBarThickness: 70 
+          maxBarThickness: 100 
         },
         { 
           label: `Ticket ${mesAntLabel}`, 
           data: ticketAnt, 
-          backgroundColor: 'rgba(6, 78, 59, 0.9)', 
-          borderColor: 'rgba(6, 78, 59, 1)',
-          borderWidth: 1.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
           borderRadius: 4, 
-          maxBarThickness: 70 
+          maxBarThickness: 100 
         },
       ],
     };
@@ -1515,20 +1588,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: 'Variación Capital %', 
           data: capitalVar, 
-          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.8)' : 'rgba(248,113,113,0.8)'), 
-          borderColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,1)' : 'rgba(248,113,113,1)'), 
+          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)'), 
+          borderColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)'), 
           borderWidth: 1.5,
           borderRadius: 4, 
-          maxBarThickness: 70 
+          maxBarThickness: 100 
         },
         { 
           label: 'Variación Ops %', 
           data: opsVar, 
-          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.8)' : 'rgba(248,113,113,0.8)'), 
-          borderColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,1)' : 'rgba(248,113,113,1)'), 
+          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.15)' : 'rgba(248,113,113,0.15)'), 
+          borderColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.5)' : 'rgba(248,113,113,0.5)'), 
           borderWidth: 1.5,
           borderRadius: 4, 
-          maxBarThickness: 70 
+          maxBarThickness: 100 
         },
       ],
     };
@@ -1560,20 +1633,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Actual`, 
           data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], 
-          backgroundColor: 'rgba(96,165,250,0.8)', 
-          borderColor: 'rgba(96,165,250,1)',
+          backgroundColor: 'rgba(96, 165, 250, 0.15)', 
+          borderColor: 'rgba(96, 165, 250, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4, 
-          maxBarThickness: 50 
+          maxBarThickness: 70 
         },
         { 
           label: `Anterior`, 
           data: [...apertVsRenData.porAnalistaAnt.map(d => d.aperturas), apertVsRenData.ant.aperturas], 
-          backgroundColor: 'rgba(30, 58, 138, 0.9)', 
-          borderColor: 'rgba(30, 58, 138, 1)',
-          borderWidth: 1.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
           borderRadius: 4, 
-          maxBarThickness: 50 
+          maxBarThickness: 70 
         },
       ],
     };
@@ -1587,20 +1660,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Actual`, 
           data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], 
-          backgroundColor: 'rgba(167,139,250,0.8)', 
-          borderColor: 'rgba(167,139,250,1)',
+          backgroundColor: 'rgba(167, 139, 250, 0.15)', 
+          borderColor: 'rgba(167, 139, 250, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4, 
-          maxBarThickness: 50 
+          maxBarThickness: 70 
         },
         { 
           label: `Anterior`, 
           data: [...apertVsRenData.porAnalistaAnt.map(d => d.renovaciones), apertVsRenData.ant.renovaciones], 
-          backgroundColor: 'rgba(76, 29, 149, 0.9)', 
-          borderColor: 'rgba(76, 29, 149, 1)',
-          borderWidth: 1.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
           borderRadius: 4, 
-          maxBarThickness: 50 
+          maxBarThickness: 70 
         },
       ],
     };
@@ -1610,40 +1683,41 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const empleoPublPrivData = useMemo(() => {
     const PUBLICO = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
     const ventas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
-    const ant = ventasMesAnt.filter(isVenta);
-    const classify = (r: typeof ventas[0]) => {
+    
+    const classify = (r: Registro) => {
       const e = (r.empleador ?? '').toLowerCase();
-      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'No especificado' : 'Privado';
+      if (PUBLICO.some(k => e.includes(k))) return 'Público';
+      if (e.trim() === '' || e === 'sin dato') return 'Sin dato';
+      return 'Privado';
     };
-    const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
-    const countsAnt: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
-    ventas.forEach(r => counts[classify(r)]++);
-    ant.forEach(r => countsAnt[classify(r)]++);
-    return { counts, countsAnt };
-  }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
+
+    const labels = ['Público', 'Privado', 'Sin dato'];
+    const dataPorAnalista = CONFIG.ANALISTAS_DEFAULT.map(analista => {
+      const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
+      ventas.filter(r => r.analista === analista).forEach(r => counts[classify(r)]++);
+      return { analista, counts };
+    });
+
+    return { dataPorAnalista, labels };
+  }, [registros, selectedMes, selectedAnio]);
 
   const chartEmpleoPublPriv = useMemo(() => {
-    const { counts } = empleoPublPrivData;
-    const labels = ['Público', 'Privado', 'Sin dato'];
-    const colors = ['#10b981', '#3b82f6', 'rgba(100,100,100,0.5)'];
-    const filtered = labels.filter(l => (counts[l] ?? 0) > 0);
+    const { labels, dataPorAnalista } = empleoPublPrivData;
+    const analistas = CONFIG.ANALISTAS_DEFAULT;
+    const colores = ['rgba(96, 165, 250, 0.15)', 'rgba(167, 139, 250, 0.15)'];
+    const borderColores = ['rgba(96, 165, 250, 0.5)', 'rgba(167, 139, 250, 0.5)'];
+
     return {
-      labels: filtered,
-      datasets: [{
-        data: filtered.map(l => counts[l] ?? 0),
-        backgroundColor: filtered.map(l => {
-          const baseColor = colors[labels.indexOf(l)];
-          return baseColor.includes('rgba') ? baseColor : `${baseColor}22`;
-        }),
-        borderColor: filtered.map(l => {
-          const baseColor = colors[labels.indexOf(l)];
-          return baseColor.includes('rgba') ? baseColor.replace('0.5', '0.3') : `${baseColor}66`;
-        }),
-        borderWidth: 1,
-        hoverOffset: 10,
+      labels,
+      datasets: analistas.map((an, idx) => ({
+        label: an,
+        data: labels.map(l => dataPorAnalista.find(d => d.analista === an)?.counts[l] || 0),
+        backgroundColor: colores[idx] || 'rgba(255, 255, 255, 0.05)',
+        borderColor: borderColores[idx] || 'rgba(255, 255, 255, 0.2)',
+        borderWidth: 1.5,
         borderRadius: 4,
-        spacing: 4
-      }],
+        maxBarThickness: 70,
+      }))
     };
   }, [empleoPublPrivData]);
 
@@ -1669,8 +1743,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Conversión % ${mesActualLabel}`, 
           data: actual, 
-          backgroundColor: 'rgba(251,191,36,0.8)', 
-          borderColor: 'rgba(251,191,36,1)',
+          backgroundColor: 'rgba(251, 191, 36, 0.15)', 
+          borderColor: 'rgba(251, 191, 36, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4, 
           order: 1 
@@ -1678,9 +1752,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Conversión % ${mesAntLabel}`, 
           data: anterior, 
-          backgroundColor: 'rgba(124, 45, 18, 0.12)', 
-          borderColor: 'rgba(124, 45, 18, 0.4)',
-          borderWidth: 1.5,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
           borderRadius: 4, 
           order: 1 
         },
@@ -1739,8 +1813,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: '% Conv. Presupuesto → Venta', 
           data, 
-          backgroundColor: 'rgba(52,211,153,0.8)', 
-          borderColor: 'rgba(52,211,153,1)',
+          backgroundColor: 'rgba(52, 211, 153, 0.15)', 
+          borderColor: 'rgba(52, 211, 153, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4, 
           order: 1 
@@ -2310,20 +2384,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
                         <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
                       </div>
-                      <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <ModernDoughnut data={chartEmpleoPublPriv} total={kpiTotal.ops} label="Total" unit=" Ops" />
-                        <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                          {chartEmpleoPublPriv.labels.map((l, i) => {
-                            const val = chartEmpleoPublPriv.datasets[0].data[i];
-                            const pct = kpiTotal.ops > 0 ? (val / kpiTotal.ops * 100).toFixed(1) : '0';
-                            return (
-                              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
-                                <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-                              </div>
-                            );
-                          })}
-                        </div>
+                      <div id="chart-empleo" style={{ height: 280 }}>
+                        <Bar data={chartEmpleoPublPriv as any} options={baseChartOpts(' reg', false, true, true)} plugins={[labelsPlugin]} />
                       </div>
                     </div>
                   </div>
@@ -2336,26 +2398,55 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           <div className="data-card" style={{ background: '#0a0a0a' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
-              {!collapsedSections[3] && <span style={{ fontSize: 11, color: '#444', marginBottom: 20 }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>}
+              {!collapsedSections[3] && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <span style={{ fontSize: 11, color: '#444' }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>
+                  <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+                    {(['mensual', 'total'] as const).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setPeriodoSec3(p)}
+                        style={{
+                          padding: '4px 14px',
+                          borderRadius: 6,
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 10,
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.8px',
+                          background: periodoSec3 === p ? '#fb923c' : 'transparent',
+                          color: periodoSec3 === p ? '#000' : '#555',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {p === 'mensual' ? 'Mes' : 'Total'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            {!collapsedSections[3] && ventasMes.length > 0 && (
+            {!collapsedSections[3] && (
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
                 {(() => {
-                  const totalMes = ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+                  const isMensual = periodoSec3 === 'mensual';
+                  const fuente = isMensual ? ventasMes : registros;
+                  const base = fuente.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+                  const ac = isMensual ? distAcuerdos : distAcuerdosTotal;
+                  const cu = isMensual ? distCuotas : distCuotasTotal;
+                  const re = isMensual ? distRangoEtario : distRangoEtarioTotal;
+                  const sx = isMensual ? distSexo : distSexoTotal;
+                  const em = isMensual ? distEmpleador : distEmpleadorTotal;
+                  const lo = isMensual ? distLocalidad : distLocalidadTotal;
                   return (
                     <>
-                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" totalMes={totalMes} />
-                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalMes} />
-                      <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" totalMes={totalMes} />
-                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalMes} />
-                      <DistBlock 
-                        titulo="Empleador" 
-                        icon={<Shield size={12} color="#fbbf24" />} 
-                        datos={distEmpleador} 
-                        color="#fbbf24" 
-                        totalMes={totalMes}
-                      />
-                      <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" totalMes={totalMes} />
+                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={ac} color="#f97316" totalMes={base} />
+                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={cu} color="#60a5fa" totalMes={base} />
+                      <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={re} color="#34d399" totalMes={base} />
+                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={sx} color="#f472b6" totalMes={base} />
+                      <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={em} color="#fbbf24" totalMes={base} />
+                      <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={lo} color="#a78bfa" totalMes={base} />
                     </>
                   );
                 })()}

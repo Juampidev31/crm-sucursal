@@ -210,6 +210,12 @@ interface DatosGraficos {
   distEmpleador?: Array<{ label: string; monto: number; cantidad: number }>;
   distAcuerdos?: Array<{ label: string; monto: number; cantidad: number }>;
   distEstados?: Array<{ label: string; monto: number; cantidad: number }>;
+  distSexoTotal?: Array<{ label: string; monto: number; cantidad: number }>;
+  distCuotasTotal?: Array<{ label: string; monto: number; cantidad: number }>;
+  distRangoEtarioTotal?: Array<{ label: string; monto: number; cantidad: number }>;
+  distLocalidadTotal?: Array<{ label: string; monto: number; cantidad: number }>;
+  distEmpleadorTotal?: Array<{ label: string; monto: number; cantidad: number }>;
+  distAcuerdosTotal?: Array<{ label: string; monto: number; cantidad: number }>;
   seccion10State?: AnalisisTemporalState | null;
 }
 
@@ -416,12 +422,14 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
     logros, desvios, accionesClave, dotacion, ausentismo, capacitacion, evaluacionDesempeno, 
     planAcciones, auditCounts, collapsedSections, registros, chartCapitalVsObjetivo, chartTicketPromedio, chartVariacion, 
     chartCumplimiento, chartEmbudo, chartAperturas, chartRenovaciones, chartConversionTotal, 
-    chartConversionPresupuesto, chartEmpleoPublPriv, chartAcuerdos, distSexo, distCuotas, 
+    chartConversionPresupuesto, chartEmpleoPublPriv, chartAcuerdos, distSexo, distCuotas,
     distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, distEstados,
+    distSexoTotal, distCuotasTotal, distRangoEtarioTotal, distLocalidadTotal, distEmpleadorTotal, distAcuerdosTotal,
     seccion10State
   } = datos;
 
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>(collapsedSections || { 11: true });
+  const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
 
   const toggleSection = (id: number) => setCollapsed(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -791,17 +799,52 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         {sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}
         {!collapsed[3] && (
           <div style={{ padding: '24px' }}>
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <span style={{ fontSize: 11, color: '#444' }}>{ventasCount} ops · {formatCurrency(totalMes)}</span>
+              <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+                {(['mensual', 'total'] as const).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriodoSec3(p)}
+                    style={{
+                      padding: '4px 14px',
+                      borderRadius: 6,
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 10,
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.8px',
+                      background: periodoSec3 === p ? '#fb923c' : 'transparent',
+                      color: periodoSec3 === p ? '#000' : '#555',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {p === 'mensual' ? 'Mes' : 'Total'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              {distAcuerdos && <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdos} color="#f97316" totalMes={totalMes} />}
-              {distCuotas && <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalMes} />}
-              {distRangoEtario && <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRangoEtario} color="#34d399" totalMes={totalMes} />}
-              {distSexo && <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalMes} />}
-              {distEmpleador && <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" totalMes={totalMes} />}
-              {distLocalidad && <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={distLocalidad} color="#a78bfa" totalMes={totalMes} />}
-            </div>
+            {(() => {
+              const isMensual = periodoSec3 === 'mensual';
+              const ac = isMensual ? distAcuerdos : distAcuerdosTotal;
+              const cu = isMensual ? distCuotas : distCuotasTotal;
+              const re = isMensual ? distRangoEtario : distRangoEtarioTotal;
+              const sx = isMensual ? distSexo : distSexoTotal;
+              const em = isMensual ? distEmpleador : distEmpleadorTotal;
+              const lo = isMensual ? distLocalidad : distLocalidadTotal;
+              const base = isMensual ? totalMes : (ac ?? cu ?? re ?? sx ?? em ?? lo ?? []).reduce((s: number, d: { monto: number }) => s + d.monto, 0);
+              return (
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  {ac && <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={ac} color="#f97316" totalMes={base} />}
+                  {cu && <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={cu} color="#60a5fa" totalMes={base} />}
+                  {re && <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={re} color="#34d399" totalMes={base} />}
+                  {sx && <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={sx} color="#f472b6" totalMes={base} />}
+                  {em && <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={em} color="#fbbf24" totalMes={base} />}
+                  {lo && <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={lo} color="#a78bfa" totalMes={base} />}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
