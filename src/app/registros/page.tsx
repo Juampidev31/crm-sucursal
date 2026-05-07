@@ -664,9 +664,10 @@ const RegistroModal = memo(function RegistroModal({
                       className="form-input"
                       style={{ flex: 1 }}
                       value={form.empleador || ''}
-                      onChange={e => set('empleador', corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
-                      onBlur={e => set('empleador', normalizarSufijosLegales(e.target.value.trim()))}
+                      onChange={e => set('empleador', isAdmin ? e.target.value : corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
+                      onBlur={e => set('empleador', isAdmin ? e.target.value.trim() : normalizarSufijosLegales(e.target.value.trim()))}
                       onPaste={e => {
+                        if (isAdmin) return;
                         e.preventDefault();
                         const pasted = e.clipboardData.getData('text').trim();
                         set('empleador', corregirTildes(normalizarSufijosLegales(pasted.charAt(0).toUpperCase() + pasted.slice(1).toLowerCase())));
