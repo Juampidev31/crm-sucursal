@@ -426,6 +426,12 @@ const RegistroModal = memo(function RegistroModal({
       setDupRecord(null);
       setDupBlocked(false);
       setAgendarRecordatorio(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialData]);
+
+  useEffect(() => {
+    if (isOpen) {
       setEmpleadorCustom(!!initialData.empleador && !empleadoresDB.includes(initialData.empleador));
       setLocalidadCustom(!!initialData.localidad && !localidadesDB.includes(initialData.localidad));
     }
