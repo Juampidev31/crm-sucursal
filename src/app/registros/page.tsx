@@ -658,16 +658,29 @@ const RegistroModal = memo(function RegistroModal({
               <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
                 {!empleadoresLoaded ? (
                   <input className="form-input" value={form.empleador || ''} disabled placeholder="Cargando empleadores..." />
+                ) : isAdmin ? (
+                  <>
+                    <input
+                      className="form-input"
+                      list="empleadores-datalist"
+                      value={form.empleador || ''}
+                      onChange={e => set('empleador', e.target.value)}
+                      onBlur={e => set('empleador', e.target.value.trim())}
+                      placeholder="— Sin especificar —"
+                    />
+                    <datalist id="empleadores-datalist">
+                      {empleadoresDB.map(emp => <option key={emp} value={emp} />)}
+                    </datalist>
+                  </>
                 ) : empleadorCustom ? (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input
                       className="form-input"
                       style={{ flex: 1 }}
                       value={form.empleador || ''}
-                      onChange={e => set('empleador', isAdmin ? e.target.value : corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
-                      onBlur={e => set('empleador', isAdmin ? e.target.value.trim() : normalizarSufijosLegales(e.target.value.trim()))}
+                      onChange={e => set('empleador', corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
+                      onBlur={e => set('empleador', normalizarSufijosLegales(e.target.value.trim()))}
                       onPaste={e => {
-                        if (isAdmin) return;
                         e.preventDefault();
                         const pasted = e.clipboardData.getData('text').trim();
                         set('empleador', corregirTildes(normalizarSufijosLegales(pasted.charAt(0).toUpperCase() + pasted.slice(1).toLowerCase())));
