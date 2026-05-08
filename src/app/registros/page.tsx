@@ -4,13 +4,14 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, Upload, CheckCircle2, Info } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
+import { AuditResult, parseCSVAudit, performAudit } from '@/lib/audit-import-utils';
 import { corregirTildes } from '@/lib/correccion-tildes';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
