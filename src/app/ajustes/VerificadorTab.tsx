@@ -47,19 +47,23 @@ export default function VerificadorTab() {
   const [rawText, setRawText] = useState('');
   const [rows, setRows]       = useState<ParsedRow[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>({});
-  const [results, setResults] = useState<VerificadorResult[] | null>(null);
+  const [verified, setVerified] = useState(false);
 
   const colCount = useMemo(() => rows.reduce((max, r) => Math.max(max, r.cells.length), 0), [rows]);
   const hasCuil  = Object.values(mapping).includes('cuil');
+  const results  = useMemo<VerificadorResult[] | null>(
+    () => verified ? verificarFilas(rows, mapping, registros) : null,
+    [verified, rows, mapping, registros],
+  );
 
   const handlePaste = (text: string) => {
     setRawText(text);
     setRows(parsePastedText(text));
     setMapping({});
-    setResults(null);
+    setVerified(false);
   };
 
-  const handleReset = () => { setRawText(''); setRows([]); setMapping({}); setResults(null); };
+  const handleReset = () => { setRawText(''); setRows([]); setMapping({}); setVerified(false); };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -160,7 +164,7 @@ export default function VerificadorTab() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
             <button
-              onClick={() => setResults(verificarFilas(rows, mapping, registros))}
+              onClick={() => setVerified(true)}
               disabled={!hasCuil}
               style={{
                 padding: '9px 24px',
