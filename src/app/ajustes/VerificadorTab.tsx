@@ -22,7 +22,7 @@ export default function VerificadorTab() {
   const [mapping, setMapping] = useState<ColumnMapping>({});
   const [results, setResults] = useState<VerificadorResult[] | null>(null);
 
-  const colCount = useMemo(() => Math.max(0, ...rows.map(r => r.cells.length)), [rows]);
+  const colCount = useMemo(() => rows.reduce((max, r) => Math.max(max, r.cells.length), 0), [rows]);
 
   const handlePaste = (text: string) => {
     setRawText(text);
@@ -123,6 +123,12 @@ export default function VerificadorTab() {
   );
 }
 
+const STATUS_CONFIG = {
+  found:     { label: 'Encontrado',        color: '#4ade80', Icon: CheckCircle2 },
+  mismatch:  { label: 'Importe diferente', color: '#fbbf24', Icon: AlertCircle },
+  not_found: { label: 'No encontrado',     color: '#f87171', Icon: XCircle },
+};
+
 function ResultsTable({
   results, mapping, colCount, onReset,
 }: {
@@ -134,12 +140,6 @@ function ResultsTable({
   const found = results.filter(r => r.status === 'found').length;
   const mismatch = results.filter(r => r.status === 'mismatch').length;
   const notFound = results.filter(r => r.status === 'not_found').length;
-
-  const STATUS_CONFIG = {
-    found:     { label: 'Encontrado',        color: '#4ade80', Icon: CheckCircle2 },
-    mismatch:  { label: 'Importe diferente', color: '#fbbf24', Icon: AlertCircle },
-    not_found: { label: 'No encontrado',     color: '#f87171', Icon: XCircle },
-  };
 
   return (
     <div>
