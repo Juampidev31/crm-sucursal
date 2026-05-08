@@ -593,7 +593,7 @@ const RegistroModal = memo(function RegistroModal({
               {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
             </h3>
             <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 12, marginRight: 12 }}>
-              {!editingId && (
+              {!editingId && isAdmin && (
                 <button 
                   className="btn-sync" 
                   onClick={handleImportJune} 
