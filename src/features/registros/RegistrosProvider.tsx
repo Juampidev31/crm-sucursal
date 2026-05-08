@@ -15,6 +15,7 @@ interface RegistrosCtx {
   loading: boolean;
   applyRegistroChange: (type: ChangeType, registro: Registro) => void;
   mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
+  bulkInsertRegistros: (newRegistros: Partial<Registro>[]) => Promise<void>;
   refresh: (silent?: boolean) => void;
   pushBulkRefresh: () => void;
   pushRegistroChange: (type: ChangeType, registro: Registro) => void;
@@ -60,6 +61,13 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const mutateRegistros = useCallback((mapper: (prev: Registro[]) => Registro[]) => {
     setRegistros(mapper);
   }, []);
+
+  const bulkInsertRegistros = async (newRegistros: Partial<Registro>[]) => {
+    const { error } = await supabase.from('registros').insert(newRegistros);
+    if (error) throw error;
+    pushBulkRefresh();
+    await refresh(true);
+  };
 
   const applyRegistroChange = useCallback((type: ChangeType, reg: Registro) => {
     setRegistros(prev => {
