@@ -164,7 +164,9 @@ const PremiumSelect = ({
   return (
     <div ref={ref} style={{ position: 'relative', width: '100%' }}>
       <div
+        tabIndex={disabled ? -1 : 0}
         onClick={() => !disabled && setIsOpen(!isOpen)}
+        onKeyDown={e => { if (!disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setIsOpen(o => !o); } if (e.key === 'Escape') setIsOpen(false); }}
         style={{
           width: '100%',
           minHeight: '40px',
@@ -180,6 +182,7 @@ const PremiumSelect = ({
           fontSize: '13px',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           opacity: disabled ? 0.6 : 1,
+          outline: 'none',
         }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -556,6 +559,7 @@ const RegistroModal = memo(function RegistroModal({
                   <input className="form-input" style={{ flex: 1 }} value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
                   <button
                     type="button"
+                    tabIndex={-1}
                     disabled={(form.cuil?.length ?? 0) !== 11}
                     title="Copiar CUIL y abrir BCRA"
                     onClick={() => {
@@ -1808,3 +1812,142 @@ export default function RegistrosPage() {
     </div>
   );
 }
+const AuditModal = ({ isOpen, onClose, registros: dbRecords }: { isOpen: boolean, onClose: () => void, registros: Registro[] }) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [results, setResults] = useState<AuditResult[] | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { bulkInsertRegistros } = useRegistros();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f);
+    setIsProcessing(true);
+    
+    const text = await f.text();
+    const csvRecords = parseCSVAudit(text);
+    const auditResults = performAudit(csvRecords, dbRecords);
+    
+    setResults(auditResults);
+    setIsProcessing(false);
+  };
+
+  const handleImport = async () => {
+    if (!results) return;
+    const toImport = results.filter(r => r.status === 'new').map(r => r.csvRecord);
+    if (toImport.length === 0) {
+      alert('No hay registros nuevos para importar.');
+      return;
+    }
+    
+    if (!confirm(`¿Deseas importar ${toImport.length} registros nuevos?`)) return;
+    
+    try {
+      setIsProcessing(true);
+      await bulkInsertRegistros(toImport);
+      alert('Importación completada con éxito.');
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert('Error al importar registros.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="modal-header">
+          <div className="modal-title-container">
+            <Upload className="modal-title-icon" />
+            <h2 className="modal-title">AUDITORÍA E IMPORTACIÓN</h2>
+          </div>
+          <button className="modal-close" onClick={onClose}><X /></button>
+        </div>
+
+        <div className="modal-body" style={{ flex: 1, overflowY: 'auto' }}>
+          {!results ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12 }}>
+              <Upload size={48} style={{ color: '#666', marginBottom: 16 }} />
+              <p style={{ color: '#aaa', marginBottom: 20 }}>Selecciona un archivo CSV para auditar contra la base de datos.</p>
+              <input type="file" accept=".csv" onChange={handleFileChange} style={{ display: 'none' }} id="audit-file" />
+              <label htmlFor="audit-file" className="btn-primary" style={{ cursor: 'pointer', padding: '10px 24px' }}>
+                SELECCIONAR ARCHIVO
+              </label>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>NUEVOS</div>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{results.filter(r => r.status === 'new').length}</div>
+                </div>
+                <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.2)', padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontSize: 12, color: '#eab308', fontWeight: 600 }}>DIFERENCIAS</div>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{results.filter(r => r.status === 'mismatch').length}</div>
+                </div>
+                <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontSize: 12, color: '#aaa', fontWeight: 600 }}>YA EXISTENTES</div>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{results.filter(r => r.status === 'duplicate').length}</div>
+                </div>
+              </div>
+
+              <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <tr>
+                      <th style={{ padding: 12, textAlign: 'left' }}>Fecha</th>
+                      <th style={{ padding: 12, textAlign: 'left' }}>CUIL / Nombre</th>
+                      <th style={{ padding: 12, textAlign: 'left' }}>Importe</th>
+                      <th style={{ padding: 12, textAlign: 'left' }}>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.slice(0, 100).map((res, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: 12 }}>{res.csvRecord.fecha}</td>
+                        <td style={{ padding: 12 }}>
+                          <div style={{ fontWeight: 600 }}>{res.csvRecord.nombre}</div>
+                          <div style={{ fontSize: 11, color: '#888' }}>{res.csvRecord.cuil}</div>
+                        </td>
+                        <td style={{ padding: 12 }}>${res.csvRecord.monto?.toLocaleString()}</td>
+                        <td style={{ padding: 12 }}>
+                          {res.status === 'new' && <span style={{ color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={14}/> Nuevo</span>}
+                          {res.status === 'duplicate' && <span style={{ color: '#888', display: 'flex', alignItems: 'center', gap: 4 }}><Info size={14}/> Existente</span>}
+                          {res.status === 'mismatch' && (
+                            <span style={{ color: '#eab308', display: 'flex', alignItems: 'center', gap: 4, cursor: 'help' }} title={res.diffMessage}>
+                              <AlertCircle size={14}/> Diferencia
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {results.length > 100 && (
+                <p style={{ textAlign: 'center', fontSize: 11, color: '#666' }}>Mostrando los primeros 100 de {results.length} registros...</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose} disabled={isProcessing}>CANCELAR</button>
+          {results && (
+            <button 
+              className="btn-primary" 
+              onClick={handleImport} 
+              disabled={isProcessing || results.filter(r => r.status === 'new').length === 0}
+            >
+              {isProcessing ? 'PROCESANDO...' : `IMPORTAR ${results.filter(r => r.status === 'new').length} NUEVOS`}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
