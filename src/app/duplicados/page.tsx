@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
+import React, { useState, useMemo } from 'react';
 import { formatCurrency, formatDate, displayAnalista } from '@/lib/utils';
 import { Registro } from '@/types';
 import { AlertTriangle, CheckCircle, ShieldCheck, User } from 'lucide-react';
+import { useRegistros } from '@/features/registros/RegistrosProvider';
 
 interface GrupoDuplicado {
   key: string;
@@ -13,22 +13,10 @@ interface GrupoDuplicado {
 }
 
 export default function DuplicadosPage() {
-  const [registros, setRegistros] = useState<Registro[]>([]);
-  const [loading, setLoading] = useState(true);
-  
+  const { registros, loading } = useRegistros();
+
   const [selectedEstados, setSelectedEstados] = useState<string[]>([]);
   const [selectedAnalistas, setSelectedAnalistas] = useState<string[]>([]);
-
-  useEffect(() => {
-    supabase
-      .from('registros')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setRegistros(data || []);
-        setLoading(false);
-      });
-  }, []);
 
   const allEstados = useMemo(() => 
     Array.from(new Set(registros.map(r => r.estado?.toLowerCase()).filter(Boolean)))
