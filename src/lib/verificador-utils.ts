@@ -43,6 +43,40 @@ const MESES_ES: Record<string, string> = {
 };
 
 /**
+ * Parsea una fecha completa a YYYY-MM-DD para comparación.
+ * Acepta: "9/1/2025", "01/09/2025", "2025-09-01"
+ * Devuelve null si no puede parsear.
+ */
+export function parseFullDate(raw: string): string | null {
+  const s = raw.trim();
+
+  // "2025-09-01"
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return s;
+
+  // "9/1/2025" o "09/01/2025" (M/D/YYYY o D/M/YYYY — asumimos M/D/YYYY igual que el resto del sistema)
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdy) return `${mdy[3]}-${mdy[1].padStart(2, '0')}-${mdy[2].padStart(2, '0')}`;
+
+  return null;
+}
+
+/**
+ * Formatea una fecha cruda a DD/MM/YYYY para mostrar.
+ * Si no puede parsear, devuelve el valor original.
+ */
+export function formatDateAR(raw: string): string {
+  const s = raw.trim();
+  // M/D/YYYY o D/M/YYYY  → asumimos M/D/YYYY (formato del Excel)
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdy) return `${mdy[2].padStart(2, '0')}/${mdy[1].padStart(2, '0')}/${mdy[3]}`;
+  // YYYY-MM-DD
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  return raw;
+}
+
+/**
  * Extrae YYYY-MM de varios formatos:
  * "01/2025", "enero 2025", "15/01/2025", "2025-01-15"
  * Devuelve null si no puede parsear.
@@ -54,9 +88,14 @@ export function extractYearMonth(raw: string): string | null {
   const m1 = s.match(/^(\d{1,2})\/(\d{4})$/);
   if (m1) return `${m1[2]}-${m1[1].padStart(2, '0')}`;
 
-  // "15/01/2025"
+  // "15/01/2025" o "9/17/2025" — detectamos cuál número es el mes
   const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m2) return `${m2[3]}-${m2[2].padStart(2, '0')}`;
+  if (m2) {
+    const a = parseInt(m2[1]), b = parseInt(m2[2]);
+    // Si b > 12 es M/D/YYYY (el mes es a), si a > 12 es D/M/YYYY (el mes es b)
+    const month = b > 12 ? a : b;
+    return `${m2[3]}-${month.toString().padStart(2, '0')}`;
+  }
 
   // "2025-01-15"
   const m3 = s.match(/^(\d{4})-(\d{2})-\d{2}$/);

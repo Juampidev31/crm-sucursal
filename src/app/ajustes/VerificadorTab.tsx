@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { CheckCircle2, AlertCircle, XCircle, RotateCcw } from 'lucide-react';
 import {
-  parsePastedText, verificarFilas, ParsedRow, ColumnMapping, ColumnRole, VerificadorResult,
+  parsePastedText, verificarFilas, formatDateAR, ParsedRow, ColumnMapping, ColumnRole, VerificadorResult,
 } from '@/lib/verificador-utils';
 
 const ROLE_OPTIONS: { value: ColumnRole; label: string }[] = [
@@ -30,6 +30,11 @@ const ROLE_LABEL: Record<ColumnRole, string> = {
   analista:        'Analista',
   ignore:          '',
 };
+
+// Orden fijo de columnas en resultados
+const ROLE_ORDER: ColumnRole[] = [
+  'fecha', 'tipo_cliente', 'cuil', 'apellido_nombre', 'edad', 'monto', 'cuotas', 'analista',
+];
 
 const STATUS_CONFIG = {
   found:     { label: 'Encontrado',        color: '#4ade80', Icon: CheckCircle2 },
@@ -183,10 +188,12 @@ export default function VerificadorTab() {
   );
 }
 
-const FILTER_INPUT_STYLE: React.CSSProperties = {
-  width: '100%', boxSizing: 'border-box', marginTop: 5,
-  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: 4, color: '#ccc', fontSize: 10, padding: '3px 6px', outline: 'none',
+
+const FILTER_SELECT_STYLE: React.CSSProperties = {
+  display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 4,
+  background: '#111', border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 4, color: '#aaa', fontSize: 11, padding: '5px 7px', outline: 'none',
+  cursor: 'pointer', minWidth: 100,
 };
 
 function ResultsTable({ results, mapping, colCount }: {
@@ -196,6 +203,7 @@ function ResultsTable({ results, mapping, colCount }: {
 }) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'found' | 'mismatch' | 'not_found'>('all');
   const [colFilters, setColFilters]     = useState<Record<string, string>>({});
+  const [search, setSearch]             = useState('');
 
   const found    = results.filter(r => r.status === 'found').length;
   const mismatch = results.filter(r => r.status === 'mismatch').length;
@@ -204,21 +212,48 @@ function ResultsTable({ results, mapping, colCount }: {
   const setCol = (key: string, val: string) =>
     setColFilters(prev => ({ ...prev, [key]: val }));
 
+
+  // Valores únicos por columna (para los selects de filtro)
+  const uniqueVals = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    const addVal = (key: string, v: string) => {
+      if (!v) return;
+      if (!map[key]) map[key] = [];
+      if (!map[key].includes(v)) map[key].push(v);
+    };
+    results.forEach(r => {
+      Object.entries(mapping).forEach(([ci]) => {
+        addVal(ci, r.row.cells[Number(ci)] ?? '');
+      });
+      addVal('dbImporte', r.dbImporte != null ? `$${r.dbImporte.toLocaleString('es-AR')}` : '');
+      addVal('dbFecha',   r.dbFecha   ?? '');
+      addVal('dbEstado',  r.dbEstado  ?? '');
+    });
+    return map;
+  }, [results, mapping]);
+
   const visible = results
     .filter(r => statusFilter === 'all' || r.status === statusFilter)
     .filter(r => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return r.row.cells.some(c => c.toLowerCase().includes(q))
+        || (r.dbFecha ?? '').toLowerCase().includes(q)
+        || (r.dbEstado ?? '').toLowerCase().includes(q)
+        || (r.dbImporte != null && `${r.dbImporte}`.includes(q));
+    })
+    .filter(r => {
       for (const [key, val] of Object.entries(colFilters)) {
         if (!val) continue;
-        const q = val.toLowerCase();
         if (key === 'dbImporte') {
-          if (r.dbImporte == null || !`${r.dbImporte}`.includes(q)) return false;
+          const label = r.dbImporte != null ? `$${r.dbImporte.toLocaleString('es-AR')}` : '';
+          if (label !== val) return false;
         } else if (key === 'dbFecha') {
-          if (!r.dbFecha?.toLowerCase().includes(q)) return false;
+          if ((r.dbFecha ?? '') !== val) return false;
         } else if (key === 'dbEstado') {
-          if (!r.dbEstado?.toLowerCase().includes(q)) return false;
+          if ((r.dbEstado ?? '') !== val) return false;
         } else {
-          const ci = Number(key);
-          if (!(r.row.cells[ci] ?? '').toLowerCase().includes(q)) return false;
+          if ((r.row.cells[Number(key)] ?? '') !== val) return false;
         }
       }
       return true;
@@ -231,14 +266,34 @@ function ResultsTable({ results, mapping, colCount }: {
     { key: 'not_found' as const, label: 'No encontrados',  value: notFound,       color: '#f87171' },
   ];
 
+  // Columnas activas en orden fijo (solo las que el usuario asignó)
+  const orderedCols: { role: ColumnRole; colIndex: number }[] = ROLE_ORDER
+    .map(role => {
+      const entry = Object.entries(mapping).find(([, r]) => r === role);
+      return entry ? { role, colIndex: Number(entry[0]) } : null;
+    })
+    .filter((x): x is { role: ColumnRole; colIndex: number } => x !== null);
+
   const thStyle: React.CSSProperties = {
     padding: '10px 14px', textAlign: 'left', color: '#555',
     fontWeight: 700, fontSize: 11, letterSpacing: '0.05em',
-    whiteSpace: 'nowrap', verticalAlign: 'top',
+    whiteSpace: 'nowrap', verticalAlign: 'top', minWidth: 120,
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+      {/* Search */}
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Buscar en todos los campos..."
+        style={{
+          width: '100%', boxSizing: 'border-box',
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 8, color: '#e5e5e5', fontSize: 13, padding: '9px 14px', outline: 'none',
+        }}
+      />
 
       {/* Status filter buttons */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -257,10 +312,10 @@ function ResultsTable({ results, mapping, colCount }: {
             </button>
           );
         })}
-        {Object.values(colFilters).some(Boolean) && (
-          <button onClick={() => setColFilters({})} style={{
-            marginLeft: 'auto', alignSelf: 'center', padding: '6px 12px',
-            background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
+        {(Object.values(colFilters).some(Boolean) || search) && (
+          <button onClick={() => { setColFilters({}); setSearch(''); }} style={{
+            marginLeft: 'auto', padding: '6px 12px', background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 6, color: '#666', cursor: 'pointer', fontSize: 11,
           }}>
             Limpiar filtros
@@ -270,36 +325,33 @@ function ResultsTable({ results, mapping, colCount }: {
 
       {/* Table */}
       <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'auto' }}>
           <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <tr>
-              {Array.from({ length: colCount }, (_, i) => {
-                const role = mapping[i] as ColumnRole | undefined;
-                const label = role && role !== 'ignore' ? ROLE_LABEL[role] : `Col ${i + 1}`;
-                return (
-                  <th key={i} style={thStyle}>
-                    {label.toUpperCase()}
-                    <input
-                      value={colFilters[i] ?? ''}
-                      onChange={e => setCol(String(i), e.target.value)}
-                      placeholder="Filtrar..."
-                      style={FILTER_INPUT_STYLE}
-                    />
-                  </th>
-                );
-              })}
+              {orderedCols.map(({ role, colIndex }) => (
+                <th key={role} style={thStyle}>
+                  {ROLE_LABEL[role].toUpperCase()}
+                  <FilterSelect
+                    filterKey={String(colIndex)}
+                    value={colFilters[colIndex] ?? ''}
+                    options={uniqueVals[colIndex] ?? []}
+                    onChange={setCol}
+                    formatOption={role === 'fecha' ? formatDateAR : undefined}
+                  />
+                </th>
+              ))}
               <th style={thStyle}>ESTADO</th>
               <th style={thStyle}>
                 MONTO DB
-                <input value={colFilters['dbImporte'] ?? ''} onChange={e => setCol('dbImporte', e.target.value)} placeholder="Filtrar..." style={FILTER_INPUT_STYLE} />
+                <FilterSelect filterKey="dbImporte" value={colFilters['dbImporte'] ?? ''} options={uniqueVals['dbImporte'] ?? []} onChange={setCol} />
               </th>
               <th style={thStyle}>
                 FECHA DB
-                <input value={colFilters['dbFecha'] ?? ''} onChange={e => setCol('dbFecha', e.target.value)} placeholder="Filtrar..." style={FILTER_INPUT_STYLE} />
+                <FilterSelect filterKey="dbFecha" value={colFilters['dbFecha'] ?? ''} options={uniqueVals['dbFecha'] ?? []} onChange={setCol} formatOption={formatDateAR} />
               </th>
               <th style={thStyle}>
                 ESTADO DB
-                <input value={colFilters['dbEstado'] ?? ''} onChange={e => setCol('dbEstado', e.target.value)} placeholder="Filtrar..." style={FILTER_INPUT_STYLE} />
+                <FilterSelect filterKey="dbEstado" value={colFilters['dbEstado'] ?? ''} options={uniqueVals['dbEstado'] ?? []} onChange={setCol} />
               </th>
             </tr>
           </thead>
@@ -308,11 +360,15 @@ function ResultsTable({ results, mapping, colCount }: {
               const { color, Icon } = STATUS_CONFIG[res.status];
               return (
                 <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  {Array.from({ length: colCount }, (_, ci) => (
-                    <td key={ci} style={{ padding: '9px 14px', color: '#aaa', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {res.row.cells[ci] ?? ''}
-                    </td>
-                  ))}
+                  {orderedCols.map(({ role, colIndex }) => {
+                    const raw = res.row.cells[colIndex] ?? '';
+                    const display = role === 'fecha' ? formatDateAR(raw) : raw;
+                    return (
+                      <td key={role} style={{ padding: '9px 14px', color: '#aaa', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {display}
+                      </td>
+                    );
+                  })}
                   <td style={{ padding: '9px 14px', whiteSpace: 'nowrap' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color, fontWeight: 600 }}>
                       <Icon size={12} />
@@ -324,7 +380,7 @@ function ResultsTable({ results, mapping, colCount }: {
                     {res.dbImporte != null ? `$${res.dbImporte.toLocaleString('es-AR')}` : <span style={{ color: '#444' }}>—</span>}
                   </td>
                   <td style={{ padding: '9px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>
-                    {res.dbFecha ?? <span style={{ color: '#444' }}>—</span>}
+                    {res.dbFecha ? formatDateAR(res.dbFecha) : <span style={{ color: '#444' }}>—</span>}
                   </td>
                   <td style={{ padding: '9px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>
                     {res.dbEstado ?? <span style={{ color: '#444' }}>—</span>}
@@ -334,7 +390,7 @@ function ResultsTable({ results, mapping, colCount }: {
             })}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={colCount + 4} style={{ padding: '24px', textAlign: 'center', color: '#555' }}>
+                <td colSpan={orderedCols.length + 4} style={{ padding: '24px', textAlign: 'center', color: '#555' }}>
                   No hay resultados con los filtros aplicados
                 </td>
               </tr>
@@ -343,5 +399,27 @@ function ResultsTable({ results, mapping, colCount }: {
         </table>
       </div>
     </div>
+  );
+}
+
+function FilterSelect({ filterKey, value, options, onChange, formatOption }: {
+  filterKey: string;
+  value: string;
+  options: string[];
+  onChange: (key: string, val: string) => void;
+  formatOption?: (v: string) => string;
+}) {
+  if (options.length === 0) return null;
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(filterKey, e.target.value)}
+      style={FILTER_SELECT_STYLE}
+    >
+      <option value="">Todos</option>
+      {options.sort().map(o => (
+        <option key={o} value={o}>{formatOption ? formatOption(o) : o}</option>
+      ))}
+    </select>
   );
 }
