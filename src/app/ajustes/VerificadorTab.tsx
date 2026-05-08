@@ -262,7 +262,23 @@ function ResultsTable({ results, mapping, colCount }: {
       return true;
     });
 
-  const totalMonto = visible.reduce((sum, r) => sum + (r.dbImporte ?? 0), 0);
+  const montoColIndex = useMemo(() =>
+    Object.entries(mapping).find(([, r]) => r === 'monto')?.[0], [mapping]);
+
+  const parseMontoExcel = (raw: string): number => {
+    if (!raw) return 0;
+    const isArgentine = raw.indexOf(',') > raw.indexOf('.');
+    const normalized = isArgentine
+      ? raw.replace(/\./g, '').replace(',', '.')
+      : raw.replace(/,/g, '');
+    return parseFloat(normalized.replace(/[$\s]/g, '')) || 0;
+  };
+
+  const totalMonto = visible.reduce((sum, r) => {
+    if (r.dbImporte != null) return sum + r.dbImporte;
+    if (montoColIndex !== undefined) return sum + parseMontoExcel(r.row.cells[Number(montoColIndex)] ?? '');
+    return sum;
+  }, 0);
 
   const STATUS_OPTS: { key: MatchStatus; label: string }[] = [
     { key: 'found',     label: 'Encontrado'        },
@@ -374,11 +390,9 @@ function ResultsTable({ results, mapping, colCount }: {
         <span style={{ fontSize: 12, color: '#666' }}>
           Mostrando <span style={{ color: '#fff', fontWeight: 700 }}>{visible.length}</span> de {results.length} filas
         </span>
-        {totalMonto > 0 && (
-          <span style={{ fontSize: 12, color: '#666' }}>
-            Total monto: <span style={{ color: '#fff', fontWeight: 700 }}>${totalMonto.toLocaleString('es-AR')}</span>
-          </span>
-        )}
+        <span style={{ fontSize: 12, color: '#666' }}>
+          Total monto: <span style={{ color: '#fff', fontWeight: 700 }}>${totalMonto.toLocaleString('es-AR')}</span>
+        </span>
       </div>
 
       {/* Table */}
