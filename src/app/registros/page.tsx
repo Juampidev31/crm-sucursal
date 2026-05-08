@@ -599,9 +599,9 @@ const RegistroModal = memo(function RegistroModal({
                   onClick={handleImportJune} 
                   disabled={isImporting}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
-                    borderRadius: 8, fontSize: 11, fontWeight: 600, border: '1px solid #ddd',
-                    background: 'var(--surface2)', color: '#3b82f6', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px',
+                    borderRadius: 8, fontSize: 10, fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'transparent', color: '#666', cursor: 'pointer',
                     transition: 'all 0.2s', opacity: isImporting ? 0.6 : 1
                   }}
                 >
