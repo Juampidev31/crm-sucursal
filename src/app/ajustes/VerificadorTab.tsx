@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { CheckCircle2, AlertCircle, XCircle, RotateCcw } from 'lucide-react';
 import {
-  parsePastedText, verificarFilas, formatDateAR, ParsedRow, ColumnMapping, ColumnRole, VerificadorResult,
+  parsePastedText, verificarFilas, formatDateAR, ParsedRow, ColumnMapping, ColumnRole, MatchStatus, VerificadorResult,
 } from '@/lib/verificador-utils';
 
 const ROLE_OPTIONS: { value: ColumnRole; label: string }[] = [
@@ -201,19 +201,24 @@ function ResultsTable({ results, mapping, colCount }: {
   mapping: ColumnMapping;
   colCount: number;
 }) {
-  const [statusFilter, setStatusFilter] = useState<'all' | 'found' | 'mismatch' | 'not_found'>('all');
-  const [colFilters, setColFilters]     = useState<Record<string, string>>({});
-  const [search, setSearch]             = useState('');
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<MatchStatus>>(new Set());
+  const [colFilters, setColFilters]             = useState<Record<string, string>>({});
+  const [search, setSearch]                     = useState('');
 
-  const found    = results.filter(r => r.status === 'found').length;
-  const mismatch = results.filter(r => r.status === 'mismatch').length;
-  const notFound = results.filter(r => r.status === 'not_found').length;
+  const toggleStatus = (s: MatchStatus) =>
+    setSelectedStatuses(prev => {
+      const next = new Set(prev);
+      next.has(s) ? next.delete(s) : next.add(s);
+      return next;
+    });
 
   const setCol = (key: string, val: string) =>
     setColFilters(prev => ({ ...prev, [key]: val }));
 
+  const hasFilters = selectedStatuses.size > 0 || Object.values(colFilters).some(Boolean) || !!search;
+  const clearAll   = () => { setSelectedStatuses(new Set()); setColFilters({}); setSearch(''); };
 
-  // Valores únicos por columna (para los selects de filtro)
+  // Valores únicos por columna
   const uniqueVals = useMemo(() => {
     const map: Record<string, string[]> = {};
     const addVal = (key: string, v: string) => {
@@ -222,18 +227,16 @@ function ResultsTable({ results, mapping, colCount }: {
       if (!map[key].includes(v)) map[key].push(v);
     };
     results.forEach(r => {
-      Object.entries(mapping).forEach(([ci]) => {
-        addVal(ci, r.row.cells[Number(ci)] ?? '');
-      });
+      Object.entries(mapping).forEach(([ci]) => addVal(ci, r.row.cells[Number(ci)] ?? ''));
       addVal('dbImporte', r.dbImporte != null ? `$${r.dbImporte.toLocaleString('es-AR')}` : '');
-      addVal('dbFecha',   r.dbFecha   ?? '');
-      addVal('dbEstado',  r.dbEstado  ?? '');
+      addVal('dbFecha',  r.dbFecha  ?? '');
+      addVal('dbEstado', r.dbEstado ?? '');
     });
     return map;
   }, [results, mapping]);
 
   const visible = results
-    .filter(r => statusFilter === 'all' || r.status === statusFilter)
+    .filter(r => selectedStatuses.size === 0 || selectedStatuses.has(r.status as MatchStatus))
     .filter(r => {
       if (!search) return true;
       const q = search.toLowerCase();
@@ -259,14 +262,15 @@ function ResultsTable({ results, mapping, colCount }: {
       return true;
     });
 
-  const STATUS_FILTERS = [
-    { key: 'all'       as const, label: 'Todos',           value: results.length, color: '#fff'    },
-    { key: 'found'     as const, label: 'Encontrados',     value: found,          color: '#4ade80' },
-    { key: 'mismatch'  as const, label: 'Importe dif.',    value: mismatch,       color: '#fbbf24' },
-    { key: 'not_found' as const, label: 'No encontrados',  value: notFound,       color: '#f87171' },
+  const totalMonto = visible.reduce((sum, r) => sum + (r.dbImporte ?? 0), 0);
+
+  const STATUS_OPTS: { key: MatchStatus; label: string }[] = [
+    { key: 'found',     label: 'Encontrado'        },
+    { key: 'mismatch',  label: 'Importe diferente' },
+    { key: 'not_found', label: 'No encontrado'     },
   ];
 
-  // Columnas activas en orden fijo (solo las que el usuario asignó)
+  // Columnas activas en orden fijo
   const orderedCols: { role: ColumnRole; colIndex: number }[] = ROLE_ORDER
     .map(role => {
       const entry = Object.entries(mapping).find(([, r]) => r === role);
@@ -281,7 +285,53 @@ function ResultsTable({ results, mapping, colCount }: {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* Active filters bar */}
+      {hasFilters && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+          padding: '8px 14px', background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 11, color: '#555', fontWeight: 600 }}>Filtros activos:</span>
+          {Array.from(selectedStatuses).map(s => (
+            <span key={s} onClick={() => toggleStatus(s)} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+              background: 'rgba(255,255,255,0.08)', color: STATUS_CONFIG[s].color,
+              border: `1px solid ${STATUS_CONFIG[s].color}44`, cursor: 'pointer',
+            }}>
+              {STATUS_CONFIG[s].label} ×
+            </span>
+          ))}
+          {Object.entries(colFilters).filter(([, v]) => v).map(([k, v]) => (
+            <span key={k} onClick={() => setCol(k, '')} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+              background: 'rgba(255,255,255,0.06)', color: '#ccc',
+              border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer',
+            }}>
+              {v} ×
+            </span>
+          ))}
+          {search && (
+            <span onClick={() => setSearch('')} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+              background: 'rgba(255,255,255,0.06)', color: '#ccc',
+              border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer',
+            }}>
+              "{search}" ×
+            </span>
+          )}
+          <button onClick={clearAll} style={{
+            marginLeft: 'auto', padding: '3px 10px', background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+            color: '#555', cursor: 'pointer', fontSize: 11,
+          }}>Limpiar todo</button>
+        </div>
+      )}
 
       {/* Search */}
       <input
@@ -290,36 +340,44 @@ function ResultsTable({ results, mapping, colCount }: {
         placeholder="Buscar en todos los campos..."
         style={{
           width: '100%', boxSizing: 'border-box',
-          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: 8, color: '#e5e5e5', fontSize: 13, padding: '9px 14px', outline: 'none',
         }}
       />
 
-      {/* Status filter buttons */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {STATUS_FILTERS.map(f => {
-          const active = statusFilter === f.key;
-          return (
-            <button key={f.key} onClick={() => setStatusFilter(f.key)} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 16px', cursor: 'pointer',
-              background: active ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-              border: active ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 9,
-            }}>
-              <span style={{ fontSize: 20, fontWeight: 900, color: f.color, lineHeight: 1 }}>{f.value}</span>
-              <span style={{ fontSize: 12, color: active ? '#ccc' : '#666', fontWeight: 600 }}>{f.label}</span>
-            </button>
-          );
-        })}
-        {(Object.values(colFilters).some(Boolean) || search) && (
-          <button onClick={() => { setColFilters({}); setSearch(''); }} style={{
-            marginLeft: 'auto', padding: '6px 12px', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 6, color: '#666', cursor: 'pointer', fontSize: 11,
-          }}>
-            Limpiar filtros
-          </button>
+      {/* Estado toggle pills */}
+      <div>
+        <div style={{ fontSize: 11, color: '#555', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
+          Estado (seleccioná los que querés filtrar)
+          {selectedStatuses.size > 0 && <span style={{ color: '#4ade80', marginLeft: 8 }}>· {selectedStatuses.size} seleccionado{selectedStatuses.size > 1 ? 's' : ''}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {STATUS_OPTS.map(({ key, label }) => {
+            const active = selectedStatuses.has(key);
+            const count = results.filter(r => r.status === key).length;
+            return (
+              <button key={key} onClick={() => toggleStatus(key)} style={{
+                padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                background: active ? '#fff' : 'transparent',
+                color: active ? '#000' : '#666',
+                border: active ? '1px solid #fff' : '1px solid rgba(255,255,255,0.12)',
+              }}>
+                {label} <span style={{ fontWeight: 400, opacity: 0.6 }}>({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Summary bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <span style={{ fontSize: 12, color: '#666' }}>
+          Mostrando <span style={{ color: '#fff', fontWeight: 700 }}>{visible.length}</span> de {results.length} filas
+        </span>
+        {totalMonto > 0 && (
+          <span style={{ fontSize: 12, color: '#666' }}>
+            Total monto: <span style={{ color: '#fff', fontWeight: 700 }}>${totalMonto.toLocaleString('es-AR')}</span>
+          </span>
         )}
       </div>
 
