@@ -172,30 +172,45 @@ function ResultsTable({ results, mapping, colCount }: {
   mapping: ColumnMapping;
   colCount: number;
 }) {
+  const [filter, setFilter] = useState<'all' | 'found' | 'mismatch' | 'not_found'>('all');
+
   const found     = results.filter(r => r.status === 'found').length;
   const mismatch  = results.filter(r => r.status === 'mismatch').length;
   const notFound  = results.filter(r => r.status === 'not_found').length;
 
+  const visible = filter === 'all' ? results : results.filter(r => r.status === filter);
+
+  const FILTERS = [
+    { key: 'all'       as const, label: 'Todos',            value: results.length, color: '#fff'    },
+    { key: 'found'     as const, label: 'Encontrados',      value: found,          color: '#4ade80' },
+    { key: 'mismatch'  as const, label: 'Importe dif.',     value: mismatch,       color: '#fbbf24' },
+    { key: 'not_found' as const, label: 'No encontrados',   value: notFound,       color: '#f87171' },
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Summary */}
-      <div style={{ display: 'flex', gap: 10 }}>
-        {([
-          { label: 'Encontrados',        value: found,    color: '#4ade80' },
-          { label: 'Importe diferente',  value: mismatch, color: '#fbbf24' },
-          { label: 'No encontrados',     value: notFound, color: '#f87171' },
-        ] as const).map(s => (
-          <div key={s.label} style={{
-            flex: 1, padding: '14px 18px',
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 10,
-          }}>
-            <div style={{ fontSize: 11, color: '#666', marginBottom: 6, fontWeight: 600 }}>{s.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</div>
-          </div>
-        ))}
+      {/* Summary + filters */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {FILTERS.map(f => {
+          const active = filter === f.key;
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 16px', cursor: 'pointer',
+                background: active ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                border: active ? `1px solid rgba(255,255,255,0.18)` : '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 9, transition: 'background 0.1s',
+              }}
+            >
+              <span style={{ fontSize: 20, fontWeight: 900, color: f.color, lineHeight: 1 }}>{f.value}</span>
+              <span style={{ fontSize: 12, color: active ? '#ccc' : '#666', fontWeight: 600 }}>{f.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Table */}
@@ -219,7 +234,7 @@ function ResultsTable({ results, mapping, colCount }: {
             </tr>
           </thead>
           <tbody>
-            {results.map((res, idx) => {
+            {visible.map((res, idx) => {
               const { color, Icon } = STATUS_CONFIG[res.status];
               return (
                 <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
