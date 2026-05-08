@@ -1,6 +1,6 @@
 import { Registro } from '@/types';
 
-export type ColumnRole = 'cuil' | 'nombre' | 'mes' | 'importe' | 'ignore';
+export type ColumnRole = 'fecha' | 'tipo_cliente' | 'cuil' | 'apellido_nombre' | 'edad' | 'monto' | 'cuotas' | 'analista' | 'ignore';
 
 export interface ParsedRow {
   cells: string[];
@@ -91,9 +91,9 @@ export function verificarFilas(
     dbByCuil.set(key, list);
   });
 
-  const cuilCol = Object.entries(mapping).find(([, role]) => role === 'cuil')?.[0];
-  const mesCol = Object.entries(mapping).find(([, role]) => role === 'mes')?.[0];
-  const importeCol = Object.entries(mapping).find(([, role]) => role === 'importe')?.[0];
+  const cuilCol    = Object.entries(mapping).find(([, role]) => role === 'cuil')?.[0];
+  const mesCol     = Object.entries(mapping).find(([, role]) => role === 'fecha')?.[0];
+  const importeCol = Object.entries(mapping).find(([, role]) => role === 'monto')?.[0];
 
   return rows.map(row => {
     if (cuilCol === undefined) return { row, status: 'not_found' as MatchStatus };

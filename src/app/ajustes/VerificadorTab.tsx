@@ -8,12 +8,28 @@ import {
 } from '@/lib/verificador-utils';
 
 const ROLE_OPTIONS: { value: ColumnRole; label: string }[] = [
-  { value: 'ignore',  label: '— Ignorar —' },
-  { value: 'cuil',    label: 'CUIL' },
-  { value: 'nombre',  label: 'Nombre' },
-  { value: 'mes',     label: 'Mes' },
-  { value: 'importe', label: 'Importe' },
+  { value: 'ignore',          label: '— Ignorar —'      },
+  { value: 'fecha',           label: 'Fecha'            },
+  { value: 'tipo_cliente',    label: 'Tipo de cliente'  },
+  { value: 'cuil',            label: 'CUIL'             },
+  { value: 'apellido_nombre', label: 'Apellido y nombre'},
+  { value: 'edad',            label: 'Edad'             },
+  { value: 'monto',           label: 'Monto'            },
+  { value: 'cuotas',          label: 'Cuotas'           },
+  { value: 'analista',        label: 'Analista'         },
 ];
+
+const ROLE_LABEL: Record<ColumnRole, string> = {
+  fecha:           'Fecha',
+  tipo_cliente:    'Tipo de cliente',
+  cuil:            'CUIL',
+  apellido_nombre: 'Apellido y nombre',
+  edad:            'Edad',
+  monto:           'Monto',
+  cuotas:          'Cuotas',
+  analista:        'Analista',
+  ignore:          '',
+};
 
 const STATUS_CONFIG = {
   found:     { label: 'Encontrado',        color: '#4ade80', Icon: CheckCircle2 },
@@ -167,70 +183,124 @@ export default function VerificadorTab() {
   );
 }
 
+const FILTER_INPUT_STYLE: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box', marginTop: 5,
+  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 4, color: '#ccc', fontSize: 10, padding: '3px 6px', outline: 'none',
+};
+
 function ResultsTable({ results, mapping, colCount }: {
   results: VerificadorResult[];
   mapping: ColumnMapping;
   colCount: number;
 }) {
-  const [filter, setFilter] = useState<'all' | 'found' | 'mismatch' | 'not_found'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'found' | 'mismatch' | 'not_found'>('all');
+  const [colFilters, setColFilters]     = useState<Record<string, string>>({});
 
-  const found     = results.filter(r => r.status === 'found').length;
-  const mismatch  = results.filter(r => r.status === 'mismatch').length;
-  const notFound  = results.filter(r => r.status === 'not_found').length;
+  const found    = results.filter(r => r.status === 'found').length;
+  const mismatch = results.filter(r => r.status === 'mismatch').length;
+  const notFound = results.filter(r => r.status === 'not_found').length;
 
-  const visible = filter === 'all' ? results : results.filter(r => r.status === filter);
+  const setCol = (key: string, val: string) =>
+    setColFilters(prev => ({ ...prev, [key]: val }));
 
-  const FILTERS = [
-    { key: 'all'       as const, label: 'Todos',            value: results.length, color: '#fff'    },
-    { key: 'found'     as const, label: 'Encontrados',      value: found,          color: '#4ade80' },
-    { key: 'mismatch'  as const, label: 'Importe dif.',     value: mismatch,       color: '#fbbf24' },
-    { key: 'not_found' as const, label: 'No encontrados',   value: notFound,       color: '#f87171' },
+  const visible = results
+    .filter(r => statusFilter === 'all' || r.status === statusFilter)
+    .filter(r => {
+      for (const [key, val] of Object.entries(colFilters)) {
+        if (!val) continue;
+        const q = val.toLowerCase();
+        if (key === 'dbImporte') {
+          if (r.dbImporte == null || !`${r.dbImporte}`.includes(q)) return false;
+        } else if (key === 'dbFecha') {
+          if (!r.dbFecha?.toLowerCase().includes(q)) return false;
+        } else if (key === 'dbEstado') {
+          if (!r.dbEstado?.toLowerCase().includes(q)) return false;
+        } else {
+          const ci = Number(key);
+          if (!(r.row.cells[ci] ?? '').toLowerCase().includes(q)) return false;
+        }
+      }
+      return true;
+    });
+
+  const STATUS_FILTERS = [
+    { key: 'all'       as const, label: 'Todos',           value: results.length, color: '#fff'    },
+    { key: 'found'     as const, label: 'Encontrados',     value: found,          color: '#4ade80' },
+    { key: 'mismatch'  as const, label: 'Importe dif.',    value: mismatch,       color: '#fbbf24' },
+    { key: 'not_found' as const, label: 'No encontrados',  value: notFound,       color: '#f87171' },
   ];
+
+  const thStyle: React.CSSProperties = {
+    padding: '10px 14px', textAlign: 'left', color: '#555',
+    fontWeight: 700, fontSize: 11, letterSpacing: '0.05em',
+    whiteSpace: 'nowrap', verticalAlign: 'top',
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Summary + filters */}
+      {/* Status filter buttons */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {FILTERS.map(f => {
-          const active = filter === f.key;
+        {STATUS_FILTERS.map(f => {
+          const active = statusFilter === f.key;
           return (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '10px 16px', cursor: 'pointer',
-                background: active ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-                border: active ? `1px solid rgba(255,255,255,0.18)` : '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 9, transition: 'background 0.1s',
-              }}
-            >
+            <button key={f.key} onClick={() => setStatusFilter(f.key)} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 16px', cursor: 'pointer',
+              background: active ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+              border: active ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 9,
+            }}>
               <span style={{ fontSize: 20, fontWeight: 900, color: f.color, lineHeight: 1 }}>{f.value}</span>
               <span style={{ fontSize: 12, color: active ? '#ccc' : '#666', fontWeight: 600 }}>{f.label}</span>
             </button>
           );
         })}
+        {Object.values(colFilters).some(Boolean) && (
+          <button onClick={() => setColFilters({})} style={{
+            marginLeft: 'auto', alignSelf: 'center', padding: '6px 12px',
+            background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 6, color: '#666', cursor: 'pointer', fontSize: 11,
+          }}>
+            Limpiar filtros
+          </button>
+        )}
       </div>
 
       {/* Table */}
       <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>
+          <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <tr>
               {Array.from({ length: colCount }, (_, i) => {
                 const role = mapping[i] as ColumnRole | undefined;
-                const label = role && role !== 'ignore' ? role.toUpperCase() : `COL ${i + 1}`;
+                const label = role && role !== 'ignore' ? ROLE_LABEL[role] : `Col ${i + 1}`;
                 return (
-                  <th key={i} style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 700, fontSize: 11, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                    {label}
+                  <th key={i} style={thStyle}>
+                    {label.toUpperCase()}
+                    <input
+                      value={colFilters[i] ?? ''}
+                      onChange={e => setCol(String(i), e.target.value)}
+                      placeholder="Filtrar..."
+                      style={FILTER_INPUT_STYLE}
+                    />
                   </th>
                 );
               })}
-              <th style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 700, fontSize: 11, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>ESTADO</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 700, fontSize: 11, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>DB · IMPORTE</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 700, fontSize: 11, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>DB · FECHA</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left', color: '#555', fontWeight: 700, fontSize: 11, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>DB · ESTADO</th>
+              <th style={thStyle}>ESTADO</th>
+              <th style={thStyle}>
+                MONTO DB
+                <input value={colFilters['dbImporte'] ?? ''} onChange={e => setCol('dbImporte', e.target.value)} placeholder="Filtrar..." style={FILTER_INPUT_STYLE} />
+              </th>
+              <th style={thStyle}>
+                FECHA DB
+                <input value={colFilters['dbFecha'] ?? ''} onChange={e => setCol('dbFecha', e.target.value)} placeholder="Filtrar..." style={FILTER_INPUT_STYLE} />
+              </th>
+              <th style={thStyle}>
+                ESTADO DB
+                <input value={colFilters['dbEstado'] ?? ''} onChange={e => setCol('dbEstado', e.target.value)} placeholder="Filtrar..." style={FILTER_INPUT_STYLE} />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -262,6 +332,13 @@ function ResultsTable({ results, mapping, colCount }: {
                 </tr>
               );
             })}
+            {visible.length === 0 && (
+              <tr>
+                <td colSpan={colCount + 4} style={{ padding: '24px', textAlign: 'center', color: '#555' }}>
+                  No hay resultados con los filtros aplicados
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
