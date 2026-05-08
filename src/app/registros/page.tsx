@@ -12,8 +12,6 @@ import { useSettings } from '@/features/settings/SettingsProvider';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
 import { corregirTildes } from '@/lib/correccion-tildes';
-import { parsePeriodoCSV } from '@/lib/import-utils';
-import { RefreshCw } from 'lucide-react';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -384,8 +382,7 @@ const RegistroModal = memo(function RegistroModal({
   const [showComentariosModal, setShowComentariosModal] = useState(false);
   const [empleadorCustom, setEmpleadorCustom] = useState(false);
   const [localidadCustom, setLocalidadCustom] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const { registros: allRegistros, bulkInsertRegistros } = useRegistros();
+  const { registros: allRegistros } = useRegistros();
 
   // Derivar empleadores y localidades reactivamente desde DataContext
   const empleadoresDB = useMemo(() =>
@@ -539,48 +536,6 @@ const RegistroModal = memo(function RegistroModal({
     setSaving(false);
   };
 
-  const handleImportJune = async () => {
-    if (!confirm('¿Querés importar los registros de Junio 2025 desde el archivo CSV?')) return;
-    setIsImporting(true);
-    try {
-      const resp = await fetch('/api/import-csv');
-      const json = await resp.json();
-      if (json.error) throw new Error(json.error);
-      
-      const toImport = parsePeriodoCSV(json.content, 6, 6, 2025);
-      if (toImport.length === 0) {
-        alert('No se encontraron registros para Junio 2025 en el CSV.');
-        return;
-      }
-
-      const existingKeys = new Set(allRegistros.map(r => `${r.cuil}_${r.fecha}`));
-      const finalToImport = toImport.filter(r => !existingKeys.has(`${r.cuil}_${r.fecha}`));
-
-      if (finalToImport.length === 0) {
-        alert('Todos los registros de Junio ya existen en la base de datos.');
-        return;
-      }
-
-      if (!confirm(`Se encontraron ${finalToImport.length} registros nuevos para Junio. ¿Proceder?`)) return;
-
-      await bulkInsertRegistros(finalToImport);
-      
-      logAudit({
-        accion: 'Importación Masiva',
-        campo_modificado: 'Registros Junio 2025',
-        valor_nuevo: `Importados ${finalToImport.length} registros desde CSV`,
-        nombre: 'SISTEMA', cuil: '00000000000', analista: 'Sistema'
-      });
-
-      alert(`Éxito: ${finalToImport.length} registros de Junio importados.`);
-      onClose();
-    } catch (err: any) {
-      alert('Error: ' + err.message);
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -592,24 +547,6 @@ const RegistroModal = memo(function RegistroModal({
               <FileText size={18} style={{ color: '#888' }} />
               {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
             </h3>
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 12, marginRight: 12 }}>
-              {!editingId && isAdmin && (
-                <button 
-                  className="btn-sync" 
-                  onClick={handleImportJune} 
-                  disabled={isImporting}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px',
-                    borderRadius: 8, fontSize: 10, fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)',
-                    background: 'transparent', color: '#666', cursor: 'pointer',
-                    transition: 'all 0.2s', opacity: isImporting ? 0.6 : 1
-                  }}
-                >
-                  <RefreshCw size={14} className={isImporting ? 'spin' : ''} />
-                  {isImporting ? 'IMPORTANDO JUNIO...' : 'SINCRONIZAR JUNIO 2025'}
-                </button>
-              )}
-            </div>
             <button className="btn-icon" onClick={onClose} style={{ color: '#444' }}><X size={20} /></button>
           </div>
           <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>

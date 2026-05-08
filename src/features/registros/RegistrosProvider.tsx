@@ -15,7 +15,6 @@ interface RegistrosCtx {
   loading: boolean;
   applyRegistroChange: (type: ChangeType, registro: Registro) => void;
   mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
-  bulkInsertRegistros: (newRegistros: Partial<Registro>[]) => Promise<void>;
   refresh: (silent?: boolean) => void;
   pushBulkRefresh: () => void;
   pushRegistroChange: (type: ChangeType, registro: Registro) => void;
@@ -62,13 +61,6 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     setRegistros(mapper);
   }, []);
 
-  const bulkInsertRegistros = async (newRegistros: Partial<Registro>[]) => {
-    const { error } = await supabase.from('registros').insert(newRegistros);
-    if (error) throw error;
-    pushBulkRefresh();
-    await refresh(true);
-  };
-
   const applyRegistroChange = useCallback((type: ChangeType, reg: Registro) => {
     setRegistros(prev => {
       if (type === 'DELETE') return prev.filter(r => r.id !== reg.id);
@@ -113,10 +105,10 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({
     registros, loading,
-    applyRegistroChange, mutateRegistros, bulkInsertRegistros, refresh, pushBulkRefresh, pushRegistroChange,
+    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh, pushRegistroChange,
   }), [
     registros, loading,
-    applyRegistroChange, mutateRegistros, bulkInsertRegistros, refresh, pushBulkRefresh, pushRegistroChange,
+    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh, pushRegistroChange,
   ]);
 
   return (
@@ -129,7 +121,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 export function useRegistros(safe = false) {
   const ctx = useContext(RegistrosContext);
   if (!ctx) {
-    if (safe) return { registros: [], loading: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, bulkInsertRegistros: async () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {} };
+    if (safe) return { registros: [], loading: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {} };
     throw new Error('useRegistros must be used within RegistrosProvider');
   }
   return ctx;

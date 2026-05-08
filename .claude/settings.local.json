@@ -13,7 +13,10 @@
       "Bash(git push *)",
       "mcp__plugin_context-mode_context-mode__ctx_search",
       "mcp__plugin_context-mode_context-mode__ctx_execute_file",
-      "mcp__plugin_context-mode_context-mode__ctx_execute"
+      "mcp__plugin_context-mode_context-mode__ctx_execute",
+      "Bash(git reset *)",
+      "Bash(git checkout *)",
+      "Bash(git rm *)"
     ]
   }
 }
