@@ -64,7 +64,8 @@ export function extractYearMonth(raw: string): string | null {
 
   // "enero 2025"
   for (const [nombre, num] of Object.entries(MESES_ES)) {
-    if (s.includes(nombre)) {
+    const re = new RegExp(`\\b${nombre}\\b`);
+    if (re.test(s)) {
       const yearMatch = s.match(/\d{4}/);
       if (yearMatch) return `${yearMatch[0]}-${num}`;
     }
@@ -99,6 +100,7 @@ export function verificarFilas(
 
     const rawCuil = row.cells[Number(cuilCol)] ?? '';
     const cuil = normalizeCuil(rawCuil);
+    if (!cuil) return { row, status: 'not_found' };
     const candidates = dbByCuil.get(cuil) ?? [];
 
     if (candidates.length === 0) return { row, status: 'not_found' };
@@ -118,9 +120,13 @@ export function verificarFilas(
     // Comparar importe si hay columna de importe
     if (importeCol !== undefined) {
       const rawImporte = row.cells[Number(importeCol)] ?? '';
-      const csvImporte = parseFloat(rawImporte.replace(/[.,\s$]/g, match =>
-        match === ',' ? (rawImporte.indexOf(',') > rawImporte.indexOf('.') ? '.' : '') : ''
-      ));
+      // Argentine: "1.500,75" → dot=thousands, comma=decimal
+      // US/ISO: "1500.75" → dot=decimal
+      const isArgentine = rawImporte.indexOf(',') > rawImporte.indexOf('.');
+      const normalized = isArgentine
+        ? rawImporte.replace(/\./g, '').replace(',', '.')
+        : rawImporte.replace(/,/g, '');
+      const csvImporte = parseFloat(normalized.replace(/[$\s]/g, ''));
 
       if (!isNaN(csvImporte)) {
         const exact = pool.find(r => Math.abs(r.monto - csvImporte) <= 1);
