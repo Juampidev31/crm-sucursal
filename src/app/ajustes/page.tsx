@@ -14,13 +14,14 @@ import {
   Settings, Target, Activity, Copy, Shield, AlertTriangle,
   CheckCircle, User, ShieldCheck, BarChart3, Calendar, TrendingUp, Trash2,
   Search, Filter, Download, ArrowRight, Eye, Edit3, Plus, Users,
-  ChevronLeft, ChevronRight, RefreshCw, PieChart
+  ChevronLeft, ChevronRight, RefreshCw, PieChart, Upload
 } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
 import ResumenMensualTab from './ResumenMensualTab';
 import BulkModifyTab from './BulkModifyTab';
 import AvisosTab from './AvisosTab';
 import VerificadorTab from './VerificadorTab';
+import CargaRapidaTab from './CargaRapidaTab';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
@@ -28,7 +29,7 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ObjetivoRow = { analista: string; mes: number; meta_ventas: number; meta_operaciones: number };
-type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos' | 'verificador';
+type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos' | 'verificador' | 'carga-rapida';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -547,6 +548,7 @@ export default function AjustesPage() {
               { id: 'calif-score', label: 'Calif. x SCORE', icon: Users },
               { id: 'avisos', label: 'Avisos', icon: Bell },
               { id: 'verificador', label: 'Verificador', icon: Search },
+              { id: 'carga-rapida', label: 'Carga Rápida', icon: Upload },
             ] : []),
           ].map(t => (
             <button
@@ -1556,6 +1558,9 @@ export default function AjustesPage() {
             <VerificadorTab />
           )}
 
+          {activeTab === 'carga-rapida' && isAdmin && (
+            <CargaRapidaTab />
+          )}
 
         </div>
       )}
