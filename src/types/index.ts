@@ -8,7 +8,7 @@ export const registroSchema = z.object({
   cuil: z.string(),
   nombre: z.string(),
   puntaje: z.coerce.number(),
-  es_re: z.boolean(),
+  es_re: z.boolean().nullish().transform(v => v ?? false),
   analista: z.string(),
   fecha: z.string().nullable(),
   fecha_score: z.string().nullable(),
