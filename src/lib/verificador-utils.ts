@@ -54,9 +54,9 @@ export function parseFullDate(raw: string): string | null {
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (iso) return s;
 
-  // "9/1/2025" o "09/01/2025" (M/D/YYYY o D/M/YYYY — asumimos M/D/YYYY igual que el resto del sistema)
-  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (mdy) return `${mdy[3]}-${mdy[1].padStart(2, '0')}-${mdy[2].padStart(2, '0')}`;
+  // "04/08/2025" → D/M/YYYY (formato argentino)
+  const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
 
   return null;
 }
