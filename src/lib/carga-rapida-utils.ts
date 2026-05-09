@@ -80,11 +80,7 @@ export const CARGA_FIELD_LABELS: Partial<Record<keyof Registro, string>> = {
   localidad:       'Localidad',
 };
 
-const DIFFABLE_FIELDS: (keyof Registro)[] = [
-  'analista', 'estado', 'monto', 'fecha', 'fecha_score', 'puntaje', 'es_re',
-  'comentarios', 'tipo_cliente', 'acuerdo_precios', 'cuotas', 'rango_etario',
-  'sexo', 'empleador', 'localidad',
-];
+const DIFFABLE_FIELDS = Object.keys(CARGA_FIELD_LABELS) as (keyof Registro)[];
 
 export function normalizarNombre(nombre: string): string {
   return nombre.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
@@ -199,8 +195,10 @@ export function procesarFilas(
     const diffs: FieldDiff[] = [];
     for (const field of DIFFABLE_FIELDS) {
       if (parsed[field] === undefined) continue;
-      const oldVal = String(existing[field] ?? '');
-      const newVal = String(parsed[field] ?? '');
+      // Normalize null/undefined to empty string; booleans to 'true'/'false'
+      const normalizeVal = (v: unknown) => v == null ? '' : String(v);
+      const oldVal = normalizeVal(existing[field]);
+      const newVal = normalizeVal(parsed[field]);
       if (oldVal !== newVal) {
         diffs.push({
           field,
