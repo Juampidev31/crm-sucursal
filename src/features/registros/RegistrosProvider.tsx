@@ -37,10 +37,24 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     const cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,localidad,created_at,updated_at';
-    let query = supabase.from('registros').select(cols);
-    
-    const { data, error } = await query.order('fecha', { ascending: false }).limit(REGISTROS_SAFETY_LIMIT);
-    if (error) reportError('refresh:registros', error);
+    const PAGE = 1000;
+    const all: unknown[] = [];
+    let from = 0;
+    let error: unknown = null;
+    while (from < REGISTROS_SAFETY_LIMIT) {
+      const { data: chunk, error: err } = await supabase
+        .from('registros')
+        .select(cols)
+        .order('fecha', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (err) { error = err; break; }
+      if (!chunk || chunk.length === 0) break;
+      all.push(...chunk);
+      if (chunk.length < PAGE) break;
+      from += PAGE;
+    }
+    const data = all;
+    if (error) reportError('refresh:registros', error as { message: string });
     else if (data) {
       let dropped = 0;
       const parsed = parseRegistros(data, (i, err, row) => {
