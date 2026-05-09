@@ -75,14 +75,18 @@ export default function CargaRapidaTab() {
         if (insErr) throw new Error(insErr.message);
       }
 
-      for (const item of toUpdate) {
-        if (!item.existingRecord) continue;
-        const { error: updErr } = await supabase
-          .from('registros')
-          .update(item.parsedData)
-          .eq('id', item.existingRecord.id);
-        if (updErr) throw new Error(updErr.message);
-      }
+      const updateResults = await Promise.all(
+        toUpdate
+          .filter(item => item.existingRecord)
+          .map(item =>
+            supabase
+              .from('registros')
+              .update(item.parsedData)
+              .eq('id', item.existingRecord!.id)
+          )
+      );
+      const updErr = updateResults.find(r => r.error)?.error;
+      if (updErr) throw new Error(updErr.message);
 
       await refresh(true);
       pushBulkRefresh();
