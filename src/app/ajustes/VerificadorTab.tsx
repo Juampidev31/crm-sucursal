@@ -2,7 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
-import { CheckCircle2, AlertCircle, XCircle, RotateCcw } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, RotateCcw, Trash2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import {
   parsePastedText, verificarFilas, formatDateAR, ParsedRow, ColumnMapping, ColumnRole, MatchStatus, VerificadorResult,
 } from '@/lib/verificador-utils';
@@ -208,6 +209,8 @@ function ResultsTable({ results, mapping, colCount }: {
   const [selectedStatuses, setSelectedStatuses] = useState<Set<MatchStatus>>(new Set());
   const [colFilters, setColFilters]             = useState<Record<string, string>>({});
   const [search, setSearch]                     = useState('');
+  const [deleting, setDeleting]                 = useState(false);
+  const [deleteResult, setDeleteResult]         = useState<{ deleted: number } | null>(null);
 
   const toggleStatus = (s: MatchStatus) =>
     setSelectedStatuses(prev => {
@@ -288,6 +291,34 @@ function ResultsTable({ results, mapping, colCount }: {
 
   const duplicateCount = duplicateCuils.size;
 
+  const idsToDelete = useMemo(() => {
+    if (cuilColIndex === undefined) return [];
+    const firstSeen = new Map<string, boolean>();
+    const ids: string[] = [];
+    results.forEach(r => {
+      if (r.status !== 'found' || !r.dbId) return;
+      const cuil = (r.row.cells[Number(cuilColIndex)] ?? '').trim();
+      if (!duplicateCuils.has(cuil)) return;
+      if (!firstSeen.has(cuil)) {
+        firstSeen.set(cuil, true);
+      } else {
+        ids.push(r.dbId);
+      }
+    });
+    return ids;
+  }, [results, mapping, duplicateCuils, cuilColIndex]);
+
+  const handleDeleteDuplicates = async () => {
+    if (idsToDelete.length === 0) return;
+    setDeleting(true);
+    const { error } = await supabase
+      .from('registros')
+      .delete()
+      .in('id', idsToDelete);
+    setDeleting(false);
+    if (!error) setDeleteResult({ deleted: idsToDelete.length });
+  };
+
   const parseMontoExcel = (raw: string): number => {
     if (!raw) return 0;
     const isArgentine = raw.indexOf(',') > raw.indexOf('.');
@@ -325,6 +356,47 @@ function ResultsTable({ results, mapping, colCount }: {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {duplicateCount > 0 && !deleteResult && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '10px 16px',
+          background: 'rgba(248,113,113,0.08)',
+          border: '1px solid rgba(248,113,113,0.25)',
+          borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 12, color: '#f87171', fontWeight: 600 }}>
+            {duplicateCount} CUIL{duplicateCount > 1 ? 's' : ''} duplicado{duplicateCount > 1 ? 's' : ''} detectado{duplicateCount > 1 ? 's' : ''} ({idsToDelete.length} registro{idsToDelete.length > 1 ? 's' : ''} extra)
+          </span>
+          <button
+            onClick={handleDeleteDuplicates}
+            disabled={deleting}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px',
+              background: deleting ? 'rgba(255,255,255,0.05)' : 'rgba(248,113,113,0.15)',
+              border: '1px solid rgba(248,113,113,0.3)',
+              borderRadius: 6, cursor: deleting ? 'not-allowed' : 'pointer',
+              color: '#f87171', fontSize: 12, fontWeight: 700,
+            }}
+          >
+            <Trash2 size={12} />
+            {deleting ? 'Eliminando...' : `Eliminar ${idsToDelete.length} duplicado${idsToDelete.length > 1 ? 's' : ''}`}
+          </button>
+        </div>
+      )}
+
+      {deleteResult && (
+        <div style={{
+          padding: '10px 16px',
+          background: 'rgba(74,222,128,0.08)',
+          border: '1px solid rgba(74,222,128,0.2)',
+          borderRadius: 8,
+          fontSize: 12, color: '#4ade80', fontWeight: 600,
+        }}>
+          ✓ {deleteResult.deleted} registro{deleteResult.deleted > 1 ? 's' : ''} eliminado{deleteResult.deleted > 1 ? 's' : ''} correctamente.
+        </div>
+      )}
 
       {/* Active filters bar */}
       {hasFilters && (
