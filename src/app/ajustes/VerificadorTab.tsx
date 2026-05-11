@@ -269,6 +269,25 @@ function ResultsTable({ results, mapping, colCount }: {
   const montoColIndex = useMemo(() =>
     Object.entries(mapping).find(([, r]) => r === 'monto')?.[0], [mapping]);
 
+  const cuilColIndex = useMemo(() =>
+    Object.entries(mapping).find(([, r]) => r === 'cuil')?.[0], [mapping]);
+
+  const duplicateCuils = useMemo(() => {
+    if (cuilColIndex === undefined) return new Set<string>();
+    const seen = new Map<string, number>();
+    results.forEach(r => {
+      if (r.status !== 'found') return;
+      const cuil = (r.row.cells[Number(cuilColIndex)] ?? '').trim();
+      if (!cuil) return;
+      seen.set(cuil, (seen.get(cuil) ?? 0) + 1);
+    });
+    const dups = new Set<string>();
+    seen.forEach((count, cuil) => { if (count > 1) dups.add(cuil); });
+    return dups;
+  }, [results, mapping, cuilColIndex]);
+
+  const duplicateCount = duplicateCuils.size;
+
   const parseMontoExcel = (raw: string): number => {
     if (!raw) return 0;
     const isArgentine = raw.indexOf(',') > raw.indexOf('.');
@@ -435,7 +454,14 @@ function ResultsTable({ results, mapping, colCount }: {
             {visible.map((res, idx) => {
               const { color, Icon } = STATUS_CONFIG[res.status];
               return (
-                <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <tr key={idx} style={{
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  background: (() => {
+                    if (res.status !== 'found' || cuilColIndex === undefined) return undefined;
+                    const cuil = (res.row.cells[Number(cuilColIndex)] ?? '').trim();
+                    return duplicateCuils.has(cuil) ? 'rgba(248,113,113,0.07)' : undefined;
+                  })(),
+                }}>
                   {orderedCols.map(({ role, colIndex }) => {
                     const raw = res.row.cells[colIndex] ?? '';
                     const display = role === 'fecha' ? formatDateAR(raw) : raw;
