@@ -535,6 +535,9 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'auto' }}>
           <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <tr>
+              {duplicateCount > 0 && (
+                <th style={{ ...thStyle, width: 36, minWidth: 36 }} />
+              )}
               {orderedCols.map(({ role, colIndex }) => (
                 <th key={role} style={thStyle}>
                   {ROLE_LABEL[role].toUpperCase()}
@@ -574,6 +577,20 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                     return duplicateCuils.has(cuil) ? 'rgba(248,113,113,0.07)' : undefined;
                   })(),
                 }}>
+                  {duplicateCount > 0 && (
+                    <td style={{ padding: '9px 14px', textAlign: 'center', width: 36 }}>
+                      {res.status === 'found' && cuilColIndex !== undefined &&
+                        duplicateCuils.has((res.row.cells[Number(cuilColIndex)] ?? '').trim()) &&
+                        res.dbId && (
+                          <input
+                            type="checkbox"
+                            checked={selectedForDeletion.has(res.dbId)}
+                            onChange={() => toggleSelected(res.dbId!)}
+                            style={{ cursor: 'pointer', accentColor: '#f87171', width: 14, height: 14 }}
+                          />
+                        )}
+                    </td>
+                  )}
                   {orderedCols.map(({ role, colIndex }) => {
                     const raw = res.row.cells[colIndex] ?? '';
                     const display = role === 'fecha' ? formatDateAR(raw) : raw;
