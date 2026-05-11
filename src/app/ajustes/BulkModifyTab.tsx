@@ -1388,7 +1388,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         {(mode === 'all' || mode === 'bulk') && step === 'filter' && (
           <>
             {/* Resumen de filtros activos */}
-            {(filtros.estados.length > 0 || filtros.analistas.length > 0 || filtros.scoreMin || filtros.scoreMax || filtros.acuerdoPrecios.length > 0) && (
+            {(filtros.estados.length > 0 || filtros.analistas.length > 0 || filtros.scoreMin || filtros.scoreMax || filtros.acuerdoPrecios.length > 0 || filtros.fechaDesde || filtros.fechaHasta) && (
               <div style={{
                 padding: '12px 16px', background: 'rgba(96,165,250,0.05)',
                 border: '1px solid rgba(96,165,250,0.15)', borderRadius: '8px',
@@ -1411,6 +1411,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 {filtros.analistas.map(a => (
                   <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{a}</span>
                 ))}
+                {(filtros.fechaDesde || filtros.fechaHasta) && (
+                  <span style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>
+                    Fecha: {filtros.fechaDesde || '…'} → {filtros.fechaHasta || '…'}
+                  </span>
+                )}
               </div>
             )}
             {/* Sección: Filtros de selección (Estado y Analista side-by-side) */}
@@ -1448,6 +1453,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               </div>
             </div>
 
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>FECHA DESDE</label>
+                <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>FECHA HASTA</label>
+                <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} />
+              </div>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
               <div>

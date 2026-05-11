@@ -16,7 +16,11 @@
       "mcp__plugin_context-mode_context-mode__ctx_execute",
       "Bash(git reset *)",
       "Bash(git checkout *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(npm run *)",
+      "Bash(vercel --version)",
+      "Bash(git -C \"C:\\\\Users\\\\HP\\\\.gemini\\\\antigravity\\\\scratch\\\\Proyeccion y ventas ORIGINAL\\\\next-ventas\" diff 439e708..63df961 --name-only)",
+      "Bash(git -C \"C:\\\\Users\\\\HP\\\\.gemini\\\\antigravity\\\\scratch\\\\Proyeccion y ventas ORIGINAL\\\\next-ventas\" diff 439e708..63df961 -- src/app/ajustes/CargaRapidaTab.tsx)"
     ]
   }
 }
