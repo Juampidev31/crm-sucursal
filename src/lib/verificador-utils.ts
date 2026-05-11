@@ -139,6 +139,9 @@ export function verificarFilas(
   const mesCol     = Object.entries(mapping).find(([, role]) => role === 'fecha')?.[0];
   const importeCol = Object.entries(mapping).find(([, role]) => role === 'monto')?.[0];
 
+  // Greedy matching: cada registro de DB se asigna a lo sumo a una fila Excel
+  const usedIds = new Set<string>();
+
   return rows.map(row => {
     if (cuilCol === undefined) return { row, status: 'not_found' as MatchStatus };
 
@@ -173,12 +176,13 @@ export function verificarFilas(
       const csvImporte = parseFloat(normalized.replace(/[$\s]/g, ''));
 
       if (!isNaN(csvImporte)) {
-        const exact = pool.find(r => Math.abs(r.monto - csvImporte) <= 1);
+        const exact = pool.find(r => Math.abs(r.monto - csvImporte) <= 1 && !usedIds.has(r.id));
         if (exact) {
+          usedIds.add(exact.id);
           return { row, status: 'found', dbId: exact.id, dbImporte: exact.monto, dbFecha: exact.fecha ?? undefined, dbEstado: exact.estado };
         }
-        // Mismo mes/CUIL pero importe diferente
-        const first = pool[0];
+        // Mismo mes/CUIL pero importe diferente (o todos usados)
+        const first = pool.find(r => !usedIds.has(r.id)) ?? pool[0];
         return {
           row, status: 'mismatch',
           dbId: first.id,
@@ -190,8 +194,9 @@ export function verificarFilas(
       }
     }
 
-    // Sin importe o no parseable → encontrado si hay candidato
-    const first = pool[0];
+    // Sin importe o no parseable → encontrado si hay candidato no usado
+    const first = pool.find(r => !usedIds.has(r.id)) ?? pool[0];
+    usedIds.add(first.id);
     return { row, status: 'found', dbId: first.id, dbImporte: first.monto, dbFecha: first.fecha ?? undefined, dbEstado: first.estado };
   });
 }

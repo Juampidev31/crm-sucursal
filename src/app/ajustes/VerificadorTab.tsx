@@ -213,8 +213,9 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
   const [deleting, setDeleting]                 = useState(false);
   const [deleteResult, setDeleteResult]         = useState<{ deleted: number } | null>(null);
   const [deleteError, setDeleteError]           = useState<string | null>(null);
-  const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(new Set());
+  const [selectedForDeletion, setSelectedForDeletion] = useState<Set<number>>(new Set());
   const [confirming, setConfirming] = useState(false);
+  const [hiddenIndices, setHiddenIndices] = useState<Set<number>>(new Set());
 
   const toggleStatus = (s: MatchStatus) =>
     setSelectedStatuses(prev => {
@@ -247,6 +248,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
   }, [results, mapping]);
 
   const visible = results
+    .filter((_, i) => !hiddenIndices.has(i))
     .filter(r => selectedStatuses.size === 0 || selectedStatuses.has(r.status as MatchStatus))
     .filter(r => {
       if (!search) return true;
@@ -295,39 +297,42 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
 
   const duplicateCount = duplicateCuils.size;
 
-  const idsToDelete = useMemo(() => {
-    if (cuilColIndex === undefined) return [];
+  // extraIndices: índices de filas que son extras (no la primera ocurrencia de cada CUIL duplicado)
+  const extraIndices = useMemo(() => {
+    if (cuilColIndex === undefined) return new Set<number>();
     const firstSeen = new Map<string, boolean>();
-    const ids: string[] = [];
-    results.forEach(r => {
+    const extras = new Set<number>();
+    results.forEach((r, idx) => {
       if (r.status !== 'found' || !r.dbId) return;
       const cuil = (r.row.cells[Number(cuilColIndex)] ?? '').trim();
       if (!duplicateCuils.has(cuil)) return;
       if (!firstSeen.has(cuil)) {
         firstSeen.set(cuil, true);
       } else {
-        ids.push(r.dbId);
+        extras.add(idx);
       }
     });
-    return ids;
+    return extras;
   }, [results, mapping, duplicateCuils, cuilColIndex]);
 
   useEffect(() => {
-    setSelectedForDeletion(new Set(idsToDelete));
+    setSelectedForDeletion(new Set(extraIndices));
     setConfirming(false);
     setDeleteResult(null);
     setDeleteError(null);
-  }, [idsToDelete.join(',')]);
+  }, [Array.from(extraIndices).join(',')]);
 
-  const toggleSelected = (id: string) =>
+  const toggleSelected = (idx: number) =>
     setSelectedForDeletion(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
       return next;
     });
 
   const handleDeleteDuplicates = async () => {
-    const ids = Array.from(selectedForDeletion);
+    const ids = Array.from(selectedForDeletion)
+      .map(idx => results[idx]?.dbId)
+      .filter((id): id is string => !!id);
     if (ids.length === 0) return;
     setDeleting(true);
     setDeleteError(null);
@@ -340,6 +345,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
     setDeleting(false);
     setConfirming(false);
     if (!error) {
+      setHiddenIndices(prev => new Set([...prev, ...selectedForDeletion]));
       setDeleteResult({ deleted: ids.length });
       onDeleted();
     } else {
@@ -385,7 +391,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-      {duplicateCount > 0 && !deleteResult && (
+      {(selectedForDeletion.size > 0 || duplicateCount > 0) && !deleteResult && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
           padding: '10px 16px',
@@ -574,9 +580,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'auto' }}>
           <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <tr>
-              {duplicateCount > 0 && (
-                <th style={{ ...thStyle, width: 36, minWidth: 36 }} />
-              )}
+              <th style={{ ...thStyle, width: 36, minWidth: 36 }} />
               {orderedCols.map(({ role, colIndex }) => (
                 <th key={role} style={thStyle}>
                   {ROLE_LABEL[role].toUpperCase()}
@@ -606,6 +610,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
           </thead>
           <tbody>
             {visible.map((res, idx) => {
+              const resultIdx = results.indexOf(res);
               const { color, Icon } = STATUS_CONFIG[res.status];
               return (
                 <tr key={idx} style={{
@@ -616,20 +621,16 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                     return duplicateCuils.has(cuil) ? 'rgba(248,113,113,0.07)' : undefined;
                   })(),
                 }}>
-                  {duplicateCount > 0 && (
-                    <td style={{ padding: '9px 14px', textAlign: 'center', width: 36 }}>
-                      {res.status === 'found' && cuilColIndex !== undefined &&
-                        duplicateCuils.has((res.row.cells[Number(cuilColIndex)] ?? '').trim()) &&
-                        res.dbId && (
-                          <input
-                            type="checkbox"
-                            checked={selectedForDeletion.has(res.dbId)}
-                            onChange={() => toggleSelected(res.dbId!)}
-                            style={{ cursor: 'pointer', accentColor: '#f87171', width: 14, height: 14 }}
-                          />
-                        )}
-                    </td>
-                  )}
+                  <td style={{ padding: '9px 14px', textAlign: 'center', width: 36 }}>
+                    {res.dbId && (
+                      <input
+                        type="checkbox"
+                        checked={selectedForDeletion.has(resultIdx)}
+                        onChange={() => toggleSelected(resultIdx)}
+                        style={{ cursor: 'pointer', accentColor: '#f87171', width: 14, height: 14 }}
+                      />
+                    )}
+                  </td>
                   {orderedCols.map(({ role, colIndex }) => {
                     const raw = res.row.cells[colIndex] ?? '';
                     const display = role === 'fecha' ? formatDateAR(raw) : raw;
