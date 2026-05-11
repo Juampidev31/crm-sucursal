@@ -387,30 +387,69 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
 
       {duplicateCount > 0 && !deleteResult && (
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
           padding: '10px 16px',
-          background: 'rgba(248,113,113,0.08)',
-          border: '1px solid rgba(248,113,113,0.25)',
+          background: confirming ? 'rgba(248,113,113,0.13)' : 'rgba(248,113,113,0.08)',
+          border: `1px solid ${confirming ? 'rgba(248,113,113,0.4)' : 'rgba(248,113,113,0.25)'}`,
           borderRadius: 8,
+          transition: 'all 0.15s',
         }}>
           <span style={{ fontSize: 12, color: '#f87171', fontWeight: 600 }}>
-            {duplicateCount} CUIL{duplicateCount > 1 ? 's' : ''} duplicado{duplicateCount > 1 ? 's' : ''} detectado{duplicateCount > 1 ? 's' : ''} ({idsToDelete.length} registro{idsToDelete.length > 1 ? 's' : ''} extra)
+            {duplicateCount} CUIL{duplicateCount > 1 ? 's' : ''} duplicado{duplicateCount > 1 ? 's' : ''} —{' '}
+            {selectedForDeletion.size} seleccionado{selectedForDeletion.size !== 1 ? 's' : ''} para eliminar
           </span>
-          <button
-            onClick={handleDeleteDuplicates}
-            disabled={deleting}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 14px',
-              background: deleting ? 'rgba(255,255,255,0.05)' : 'rgba(248,113,113,0.15)',
-              border: '1px solid rgba(248,113,113,0.3)',
-              borderRadius: 6, cursor: deleting ? 'not-allowed' : 'pointer',
-              color: '#f87171', fontSize: 12, fontWeight: 700,
-            }}
-          >
-            <Trash2 size={12} />
-            {deleting ? 'Eliminando...' : `Eliminar ${idsToDelete.length} duplicado${idsToDelete.length > 1 ? 's' : ''}`}
-          </button>
+
+          {!confirming ? (
+            <button
+              onClick={() => { if (selectedForDeletion.size > 0) setConfirming(true); }}
+              disabled={selectedForDeletion.size === 0}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 14px',
+                background: selectedForDeletion.size === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(248,113,113,0.15)',
+                border: `1px solid ${selectedForDeletion.size === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(248,113,113,0.3)'}`,
+                borderRadius: 6,
+                cursor: selectedForDeletion.size === 0 ? 'not-allowed' : 'pointer',
+                color: selectedForDeletion.size === 0 ? '#555' : '#f87171',
+                fontSize: 12, fontWeight: 700,
+              }}
+            >
+              <Trash2 size={12} />
+              Eliminar {selectedForDeletion.size} seleccionado{selectedForDeletion.size !== 1 ? 's' : ''}
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={handleDeleteDuplicates}
+                disabled={deleting}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 14px',
+                  background: deleting ? 'rgba(255,255,255,0.05)' : 'rgba(248,113,113,0.3)',
+                  border: '1px solid rgba(248,113,113,0.5)',
+                  borderRadius: 6,
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  color: '#fff', fontSize: 12, fontWeight: 700,
+                }}
+              >
+                <Trash2 size={12} />
+                {deleting ? 'Eliminando...' : '⚠ Confirmar eliminación'}
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                disabled={deleting}
+                style={{
+                  padding: '6px 14px',
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 6, cursor: 'pointer',
+                  color: '#666', fontSize: 12, fontWeight: 600,
+                }}
+              >
+                Cancelar
+              </button>
+            </>
+          )}
         </div>
       )}
 
