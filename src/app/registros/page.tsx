@@ -1184,6 +1184,17 @@ export default function RegistrosPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
+
+  // Sync modal data when registros update externally (e.g. bulk empleador assign)
+  useEffect(() => {
+    if (modalOpen && editingId) {
+      const updated = registros.find(r => r.id === editingId);
+      if (updated) {
+        setModalInitialData({ ...updated, fecha: updated.fecha || '', fecha_score: updated.fecha_score || '' });
+      }
+    }
+  }, [registros, modalOpen, editingId]);
+
   const [recordatorioTarget, setRecordatorioTarget] = useState<Registro | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
   const [comentariosTarget, setComentariosTarget] = useState<Registro | null>(null);
