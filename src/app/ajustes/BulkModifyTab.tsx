@@ -182,9 +182,10 @@ interface AsignarEmpleadorSectionProps {
   registros: Registro[];
   allEmpleadores: string[];
   mutateRegistros: (fn: (prev: Registro[]) => Registro[]) => void;
+  refresh: (silent?: boolean) => void;
 }
 
-function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }: AsignarEmpleadorSectionProps) {
+function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, refresh }: AsignarEmpleadorSectionProps) {
   const [expanded, setExpanded] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -255,6 +256,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }:
       mutateRegistros(prev =>
         prev.map(r => allMatchedIds.includes(r.id) ? { ...r, empleador: emp } : r)
       );
+      refresh(true);
     } else {
       setAssignError(error.message);
     }
@@ -1749,6 +1751,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           registros={registros}
           allEmpleadores={allEmpleadores}
           mutateRegistros={mutateRegistros}
+          refresh={refresh}
         />
       )}
 
