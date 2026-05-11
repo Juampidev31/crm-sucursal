@@ -15,6 +15,7 @@ export type MatchStatus = 'found' | 'mismatch' | 'not_found';
 export interface VerificadorResult {
   row: ParsedRow;
   status: MatchStatus;
+  dbId?: string;
   dbImporte?: number;
   dbFecha?: string;
   dbEstado?: string;
@@ -174,12 +175,13 @@ export function verificarFilas(
       if (!isNaN(csvImporte)) {
         const exact = pool.find(r => Math.abs(r.monto - csvImporte) <= 1);
         if (exact) {
-          return { row, status: 'found', dbImporte: exact.monto, dbFecha: exact.fecha ?? undefined, dbEstado: exact.estado };
+          return { row, status: 'found', dbId: exact.id, dbImporte: exact.monto, dbFecha: exact.fecha ?? undefined, dbEstado: exact.estado };
         }
         // Mismo mes/CUIL pero importe diferente
         const first = pool[0];
         return {
           row, status: 'mismatch',
+          dbId: first.id,
           dbImporte: first.monto,
           dbFecha: first.fecha ?? undefined,
           dbEstado: first.estado,
@@ -190,6 +192,6 @@ export function verificarFilas(
 
     // Sin importe o no parseable → encontrado si hay candidato
     const first = pool[0];
-    return { row, status: 'found', dbImporte: first.monto, dbFecha: first.fecha ?? undefined, dbEstado: first.estado };
+    return { row, status: 'found', dbId: first.id, dbImporte: first.monto, dbFecha: first.fecha ?? undefined, dbEstado: first.estado };
   });
 }
