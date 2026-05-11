@@ -550,7 +550,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {STATUS_OPTS.map(({ key, label }) => {
             const active = selectedStatuses.has(key);
-            const count = results.filter(r => r.status === key).length;
+            const count = results.filter((r, i) => r.status === key && !hiddenIndices.has(i)).length;
             return (
               <button key={key} onClick={() => toggleStatus(key)} style={{
                 padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
@@ -568,7 +568,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
       {/* Summary bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <span style={{ fontSize: 12, color: '#666' }}>
-          Mostrando <span style={{ color: '#fff', fontWeight: 700 }}>{visible.length}</span> de {results.length} filas
+          Mostrando <span style={{ color: '#fff', fontWeight: 700 }}>{visible.length}</span> de {results.length - hiddenIndices.size} filas
         </span>
         <span style={{ fontSize: 12, color: '#666' }}>
           Total monto: <span style={{ color: '#fff', fontWeight: 700 }}>${totalMonto.toLocaleString('es-AR')}</span>
