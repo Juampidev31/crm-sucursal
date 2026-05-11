@@ -307,13 +307,13 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }:
               disabled={!pastedText.trim()}
               style={{
                 marginTop: 8, padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                background: pastedText.trim() ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${pastedText.trim() ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                background: pastedText.trim() ? '#2d2f5e' : '#1a1a1a',
+                border: `1px solid ${pastedText.trim() ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
                 borderRadius: 6, cursor: pastedText.trim() ? 'pointer' : 'not-allowed',
                 color: pastedText.trim() ? '#a5b4fc' : '#444',
               }}
             >
-              Parsear
+              Cargar
             </button>
           </div>
 
@@ -328,10 +328,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }:
                     Columna CUIL *
                   </label>
                   <select
-                    className="form-input"
                     value={cuilCol ?? ''}
                     onChange={e => { setCuilCol(e.target.value === '' ? null : Number(e.target.value)); setSearched(false); }}
-                    style={{ fontSize: 12 }}
+                    style={{
+                      fontSize: 12, padding: '6px 10px', borderRadius: 6,
+                      background: '#1a1a1a', color: '#ccc',
+                      border: '1px solid rgba(255,255,255,0.12)', outline: 'none',
+                      cursor: 'pointer', minWidth: 180,
+                    }}
                   >
                     <option value="">— seleccionar —</option>
                     {Array.from({ length: colCount }, (_, i) => (
@@ -344,10 +348,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }:
                     Columna Apellido/Nombre (opcional)
                   </label>
                   <select
-                    className="form-input"
                     value={nombreCol ?? ''}
                     onChange={e => { setNombreCol(e.target.value === '' ? null : Number(e.target.value)); setSearched(false); }}
-                    style={{ fontSize: 12 }}
+                    style={{
+                      fontSize: 12, padding: '6px 10px', borderRadius: 6,
+                      background: '#1a1a1a', color: '#ccc',
+                      border: '1px solid rgba(255,255,255,0.12)', outline: 'none',
+                      cursor: 'pointer', minWidth: 180,
+                    }}
                   >
                     <option value="">— ninguna —</option>
                     {Array.from({ length: colCount }, (_, i) => (
@@ -390,8 +398,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }:
                 disabled={cuilCol === null}
                 style={{
                   padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                  background: cuilCol !== null ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${cuilCol !== null ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                  background: cuilCol !== null ? '#2d2f5e' : '#1a1a1a',
+                  border: `1px solid ${cuilCol !== null ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
                   borderRadius: 6, cursor: cuilCol !== null ? 'pointer' : 'not-allowed',
                   color: cuilCol !== null ? '#a5b4fc' : '#444',
                   display: 'flex', alignItems: 'center', gap: 6,
@@ -464,8 +472,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }:
                   disabled={!empleadorInput.trim()}
                   style={{
                     alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: empleadorInput.trim() ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${empleadorInput.trim() ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                    background: empleadorInput.trim() ? '#2d2f5e' : '#1a1a1a',
+                    border: `1px solid ${empleadorInput.trim() ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
                     borderRadius: 6, cursor: empleadorInput.trim() ? 'pointer' : 'not-allowed',
                     color: empleadorInput.trim() ? '#a5b4fc' : '#444',
                   }}
@@ -482,8 +490,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }:
                     disabled={assigning}
                     style={{
                       padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                      background: assigning ? 'rgba(255,255,255,0.05)' : 'rgba(248,113,113,0.2)',
-                      border: '1px solid rgba(248,113,113,0.4)',
+                      background: assigning ? '#1a1a1a' : '#5a1a1a',
+                      border: '1px solid rgba(248,113,113,0.5)',
                       borderRadius: 6, cursor: assigning ? 'not-allowed' : 'pointer',
                       color: '#fff',
                     }}
