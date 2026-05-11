@@ -228,6 +228,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros }:
     setSearched(false);
     setAssignResult(null);
     setAssignError(null);
+    setConfirming(false);
+    setEmpleadorInput('');
   };
 
   const handleSearch = () => {
