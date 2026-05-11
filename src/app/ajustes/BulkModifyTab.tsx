@@ -183,9 +183,11 @@ interface AsignarEmpleadorSectionProps {
   allEmpleadores: string[];
   mutateRegistros: (fn: (prev: Registro[]) => Registro[]) => void;
   refresh: (silent?: boolean) => void;
+  applyRegistroChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', reg: Registro) => void;
+  pushRegistroChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', reg: Registro) => void;
 }
 
-function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, refresh }: AsignarEmpleadorSectionProps) {
+function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, refresh, applyRegistroChange, pushRegistroChange }: AsignarEmpleadorSectionProps) {
   const [expanded, setExpanded] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -253,9 +255,15 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     if (!error) {
       setAssignResult({ updated: allMatchedIds.length });
       const emp = empleadorInput.trim();
+      const idsSet = new Set(allMatchedIds);
+      const updatedRegs = registros.filter(r => idsSet.has(r.id)).map(r => ({ ...r, empleador: emp }));
       mutateRegistros(prev =>
-        prev.map(r => allMatchedIds.includes(r.id) ? { ...r, empleador: emp } : r)
+        prev.map(r => idsSet.has(r.id) ? { ...r, empleador: emp } : r)
       );
+      updatedRegs.forEach(reg => {
+        applyRegistroChange('UPDATE', reg);
+        pushRegistroChange('UPDATE', reg);
+      });
       refresh(true);
     } else {
       setAssignError(error.message);
@@ -548,7 +556,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { registros, mutateRegistros, pushBulkRefresh, refresh } = useRegistros();
+  const { registros, mutateRegistros, pushBulkRefresh, refresh, applyRegistroChange, pushRegistroChange } = useRegistros();
 
   // Derivar datos de filtros directamente de registros (reactivo)
   const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);
@@ -1752,6 +1760,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           allEmpleadores={allEmpleadores}
           mutateRegistros={mutateRegistros}
           refresh={refresh}
+          applyRegistroChange={applyRegistroChange}
+          pushRegistroChange={pushRegistroChange}
         />
       )}
 
