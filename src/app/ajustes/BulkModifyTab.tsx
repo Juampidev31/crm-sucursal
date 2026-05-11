@@ -353,26 +353,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label style={{ fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>
-                    Columna Apellido/Nombre (opcional)
-                  </label>
-                  <select
-                    value={nombreCol ?? ''}
-                    onChange={e => { setNombreCol(e.target.value === '' ? null : Number(e.target.value)); setSearched(false); }}
-                    style={{
-                      fontSize: 12, padding: '6px 10px', borderRadius: 6,
-                      background: '#1a1a1a', color: '#ccc',
-                      border: '1px solid rgba(255,255,255,0.12)', outline: 'none',
-                      cursor: 'pointer', minWidth: 180,
-                    }}
-                  >
-                    <option value="">— ninguna —</option>
-                    {Array.from({ length: colCount }, (_, i) => (
-                      <option key={i} value={i}>Col {i + 1}: {previewRows[0]?.cells[i] ?? ''}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
 
               <div style={{ overflowX: 'auto', marginBottom: 12 }}>
@@ -431,26 +411,44 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                   <thead style={{ position: 'sticky', top: 0, background: '#111' }}>
                     <tr>
                       <th style={thStyle}>CUIL</th>
-                      <th style={thStyle}>Apellido y Nombre</th>
-                      <th style={thStyle}>Registros</th>
-                      <th style={thStyle}>Empleador actual</th>
+                      <th style={thStyle}>APELLIDO Y NOMBRE</th>
+                      <th style={thStyle}>FECHA</th>
+                      <th style={thStyle}>CANTIDAD DE REGISTROS</th>
+                      <th style={thStyle}>EMPLEADOR ACTUAL</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {matchedRows.map((mr, i) => (
-                      <tr key={i} style={{ opacity: mr.registros.length === 0 ? 0.4 : 1 }}>
-                        <td style={tdStyle}>{mr.cuil}</td>
-                        <td style={tdStyle}>{mr.nombre || '—'}</td>
-                        <td style={{ ...tdStyle, color: mr.registros.length === 0 ? '#555' : '#ccc' }}>
-                          {mr.registros.length === 0 ? 'Sin registros' : mr.registros.length}
-                        </td>
-                        <td style={tdStyle}>
-                          {mr.registros.length === 0
-                            ? '—'
-                            : [...new Set(mr.registros.map(r => r.empleador).filter(Boolean))].join(', ') || '—'}
-                        </td>
-                      </tr>
-                    ))}
+                    {matchedRows.map((mr, i) => {
+                      const nombresDB = [...new Set(mr.registros.map(r => r.nombre).filter(Boolean))].join(' | ');
+                      const nombreExcel = mr.nombre === mr.cuil ? '' : mr.nombre;
+                      const nombreMostrar = nombresDB || nombreExcel || '—';
+                      
+                      const fechas = [...new Set(mr.registros.map(r => {
+                        const f = r.fecha || (r.created_at ? r.created_at.split('T')[0] : '');
+                        if (!f) return '';
+                        const partes = f.split('-');
+                        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+                        return f;
+                      }).filter(Boolean))].join(' | ');
+
+                      return (
+                        <tr key={i} style={{ opacity: mr.registros.length === 0 ? 0.4 : 1 }}>
+                          <td style={tdStyle}>{mr.cuil}</td>
+                          <td style={tdStyle}>{nombreMostrar}</td>
+                          <td style={tdStyle}>
+                            {mr.registros.length === 0 ? '—' : (fechas || '—')}
+                          </td>
+                          <td style={{ ...tdStyle, color: mr.registros.length === 0 ? '#555' : '#ccc' }}>
+                            {mr.registros.length === 0 ? 'Sin registros' : mr.registros.length}
+                          </td>
+                          <td style={tdStyle}>
+                            {mr.registros.length === 0
+                              ? '—'
+                              : [...new Set(mr.registros.map(r => r.empleador).filter(Boolean))].join(' | ') || '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
