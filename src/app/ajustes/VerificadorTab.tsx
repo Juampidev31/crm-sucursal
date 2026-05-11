@@ -363,8 +363,8 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
   };
 
   const totalMonto = visible.reduce((sum, r) => {
-    if (r.dbImporte != null) return sum + r.dbImporte;
     if (montoColIndex !== undefined) return sum + parseMontoExcel(r.row.cells[Number(montoColIndex)] ?? '');
+    if (r.dbImporte != null) return sum + r.dbImporte;
     return sum;
   }, 0);
 
