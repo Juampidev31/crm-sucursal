@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { CheckCircle2, AlertCircle, XCircle, RotateCcw, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -44,7 +44,7 @@ const STATUS_CONFIG = {
 };
 
 export default function VerificadorTab() {
-  const { registros } = useRegistros();
+  const { registros, refresh } = useRegistros();
   const [rawText, setRawText] = useState('');
   const [rows, setRows]       = useState<ParsedRow[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>({});
@@ -188,7 +188,7 @@ export default function VerificadorTab() {
       )}
 
       {/* Results */}
-      {results && <ResultsTable results={results} mapping={mapping} colCount={colCount} />}
+      {results && <ResultsTable results={results} mapping={mapping} colCount={colCount} onDeleted={() => refresh(true)} />}
     </div>
   );
 }
@@ -201,16 +201,20 @@ const FILTER_SELECT_STYLE: React.CSSProperties = {
   cursor: 'pointer', minWidth: 100,
 };
 
-function ResultsTable({ results, mapping, colCount }: {
+function ResultsTable({ results, mapping, colCount, onDeleted }: {
   results: VerificadorResult[];
   mapping: ColumnMapping;
   colCount: number;
+  onDeleted: () => void;
 }) {
   const [selectedStatuses, setSelectedStatuses] = useState<Set<MatchStatus>>(new Set());
   const [colFilters, setColFilters]             = useState<Record<string, string>>({});
   const [search, setSearch]                     = useState('');
   const [deleting, setDeleting]                 = useState(false);
   const [deleteResult, setDeleteResult]         = useState<{ deleted: number } | null>(null);
+  const [deleteError, setDeleteError]           = useState<string | null>(null);
+  const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(new Set());
+  const [confirming, setConfirming] = useState(false);
 
   const toggleStatus = (s: MatchStatus) =>
     setSelectedStatuses(prev => {
@@ -308,15 +312,39 @@ function ResultsTable({ results, mapping, colCount }: {
     return ids;
   }, [results, mapping, duplicateCuils, cuilColIndex]);
 
+  useEffect(() => {
+    setSelectedForDeletion(new Set(idsToDelete));
+    setConfirming(false);
+    setDeleteResult(null);
+    setDeleteError(null);
+  }, [idsToDelete.join(',')]);
+
+  const toggleSelected = (id: string) =>
+    setSelectedForDeletion(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
   const handleDeleteDuplicates = async () => {
-    if (idsToDelete.length === 0) return;
+    const ids = Array.from(selectedForDeletion);
+    if (ids.length === 0) return;
     setDeleting(true);
+    setDeleteError(null);
+    console.log('[Verificador] eliminando ids:', ids);
     const { error } = await supabase
       .from('registros')
       .delete()
-      .in('id', idsToDelete);
+      .in('id', ids);
+    console.log('[Verificador] resultado delete:', { error });
     setDeleting(false);
-    if (!error) setDeleteResult({ deleted: idsToDelete.length });
+    setConfirming(false);
+    if (!error) {
+      setDeleteResult({ deleted: ids.length });
+      onDeleted();
+    } else {
+      setDeleteError(error.message);
+    }
   };
 
   const parseMontoExcel = (raw: string): number => {
@@ -395,6 +423,18 @@ function ResultsTable({ results, mapping, colCount }: {
           fontSize: 12, color: '#4ade80', fontWeight: 600,
         }}>
           ✓ {deleteResult.deleted} registro{deleteResult.deleted > 1 ? 's' : ''} eliminado{deleteResult.deleted > 1 ? 's' : ''} correctamente.
+        </div>
+      )}
+
+      {deleteError && (
+        <div style={{
+          padding: '10px 16px',
+          background: 'rgba(248,113,113,0.08)',
+          border: '1px solid rgba(248,113,113,0.25)',
+          borderRadius: 8,
+          fontSize: 12, color: '#f87171', fontWeight: 600,
+        }}>
+          Error al eliminar: {deleteError}
         </div>
       )}
 
