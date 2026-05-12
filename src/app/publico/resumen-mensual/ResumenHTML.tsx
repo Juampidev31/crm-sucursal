@@ -311,129 +311,8 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           </div>
         </div>
       </div>
-    </div>
 
-      {/* 2. INDICADORES */}
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
-        <div style={{padding:24}}>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))',gap:12,marginBottom:24}}>
-          {allAnalistas.map((k: any, i: number) => {
-            const isT = i === kpiPorAnalista.length;
-            return (
-              <div key={i} style={{background:isT?'rgba(167,139,250,0.06)':'rgba(255,255,255,0.02)',borderRadius:12,border:`1px solid ${isT?'rgba(167,139,250,0.2)':'rgba(255,255,255,0.05)'}`,overflow:'hidden'}}>
-                <div style={{padding:'12px 16px',borderBottom:'1px solid rgba(255,255,255,0.04)',display:'flex',alignItems:'center',gap:8}}>
-                  <div style={{width:28,height:28,borderRadius:8,background:isT?'rgba(167,139,250,0.15)':'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    <Users size={13} color={isT?'#a78bfa':'#666'} />
-                  </div>
-                  <span style={{fontSize:13,fontWeight:800,color:isT?'#a78bfa':'#ccc'}}>{k.analista}</span>
-                </div>
-                <div style={{padding:'14px 16px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                  <div>
-                    <div style={{fontSize:9,fontWeight:700,color:'#444',textTransform:'uppercase',marginBottom:4}}>Capital</div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{fontSize:16,fontWeight:900,color:'#fff'}}>{formatCurrency(k.capital)}</div>
-                      {tendBadge(k.tendCapital)}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{fontSize:9,fontWeight:700,color:'#444',textTransform:'uppercase',marginBottom:4}}>Ops</div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{fontSize:16,fontWeight:900,color:'#fff'}}>{k.ops}</div>
-                      {tendBadge(k.tendOps)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:16}}>
-          {/* 1. Cumplimiento */}
-          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
-            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>% Cumplimiento vs {mesAnterior}</div>
-            <div style={{height:280}}><Bar data={chartCumpl as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
-          </div>
-          {/* 2. Variación */}
-          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
-            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>Variación % vs {mesAnterior}</div>
-            <div style={{height:280}}><Bar data={chartVar as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
-          </div>
-          {/* 3. Acuerdos por Analista (Dona) */}
-          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
-            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>Acuerdos por Analista</div>
-            {(() => {
-              const labels = CONFIG.ANALISTAS_DEFAULT;
-              const data = chartAcuerdos.datasets.map((ds: any) => ds.data.reduce((s: number, v: number) => s + v, 0));
-              const total = data.reduce((s: number, v: number) => s + v, 0);
-              const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'];
-              const cData = {
-                labels,
-                datasets: [{
-                  data,
-                  backgroundColor: colors,
-                  borderWidth: 0,
-                  hoverOffset: 10,
-                  borderRadius: 4,
-                  spacing: 4
-                }]
-              };
-              return (
-                <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <ModernDoughnut data={cData} total={total} label="Acuerdos" unit=" Ops" />
-                  <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                    {labels.map((l, i) => {
-                      const pct = total > 0 ? (data[i] / total * 100).toFixed(1) : '0';
-                      return (
-                        <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors[i] }} />
-                          <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-          {/* 4. Empleo (Dona) */}
-          <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:14,border:'1px solid rgba(255,255,255,0.04)'}}>
-            <div style={{fontSize:10,fontWeight:800,color:'#444',marginBottom:10}}>% Empleo Público / Privado</div>
-            {(() => {
-              const colors = ['#10b981', '#3b82f6', 'rgba(100,100,100,0.5)'];
-              const cData = {
-                ...chartEmpleoPublPriv,
-                datasets: [{
-                  ...chartEmpleoPublPriv.datasets[0],
-                  backgroundColor: chartEmpleoPublPriv.labels.map((l: string, i: number) => colors[i] || colors[0]),
-                  borderWidth: 0,
-                  hoverOffset: 10,
-                  borderRadius: 4,
-                  spacing: 4
-                }]
-              };
-              return (
-                <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <ModernDoughnut data={cData} total={kpiTotal.ops} label="Total" unit=" Ops" />
-                  <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                    {chartEmpleoPublPriv.labels.map((l: string, i: number) => {
-                      const val = chartEmpleoPublPriv.datasets[0].data[i];
-                      const pct = kpiTotal.ops > 0 ? (val / kpiTotal.ops * 100).toFixed(1) : '0';
-                      return (
-                        <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors[i] || colors[0] }} />
-                          <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      </div>
-    </div>
+
 
       {/* 3. VENTAS POR CATEGORÍA */}
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
@@ -441,7 +320,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20 }}>
             <Tag size={15} color="#fb923c" />
           </div>
-          <span style={{ fontSize: 12, fontWeight: 800, color: '#eee', textTransform: 'uppercase', letterSpacing: '1px', flex: 1 }}>3. Ventas por Categoría</span>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#eee', textTransform: 'uppercase', letterSpacing: '1px', flex: 1 }}>2. Ventas por Categoría</span>
           <span style={{ fontSize: 11, color: '#444' }}>{kpiTotal.ops} ops · {formatCurrency(total)}</span>
           <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}>
             <ChevronRight size={14} color="#555" />
@@ -462,7 +341,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
 
       {/* 4. RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL */}
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('4. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
+        {sectionHeader('3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
         <div style={{padding:24}}>
           <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
         </div>
@@ -470,19 +349,19 @@ export default function ResumenHTML({ datos }: { datos: any }) {
 
       {/* 5. ANÁLISIS COMERCIAL */}
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+        {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         <div style={{padding:24}}>
           <TextView label="Interpretación del Período" value={analisisComercial||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+        {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
         <div style={{padding:24}}>
           <TextView label="Procedimientos" value={operacionProcesos||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+        {sectionHeader('6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
             <TextView label="Gestiones Realizadas" value={gestionesRealizadas||''} />
@@ -492,13 +371,13 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+        {sectionHeader('7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
         <div style={{padding:24}}>
           <TextView label="Reclamos y Satisfacción" value={experienciaCliente||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+        {sectionHeader('8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
             <TextView label="Dotación Actual" value={dotacion||''} />
@@ -509,7 +388,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('10. Plan de Acción', <Target size={15} color="#fb923c" />)}
+        {sectionHeader('9. Plan de Acción', <Target size={15} color="#fb923c" />)}
         <div style={{padding:24}}>
           {planAcciones?.length ? (
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>

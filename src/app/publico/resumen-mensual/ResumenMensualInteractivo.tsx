@@ -428,7 +428,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
     seccion10State
   } = datos;
 
-  const [collapsed, setCollapsed] = useState<Record<number, boolean>>(collapsedSections || { 11: true });
+  const [collapsed, setCollapsed] = useState<Record<number, boolean>>(collapsedSections || { 10: true });
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
 
   const toggleSection = (id: number) => setCollapsed(prev => ({ ...prev, [id]: !prev[id] }));
@@ -596,208 +596,11 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         )}
       </div>
 
-      {/* SECCIÓN 2: INDICADORES POR ANALISTA */}
+
+      {/* SECCIÓN 2: VENTAS POR CATEGORÍA */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(2, '2. Indicadores por Analista', <Users size={15} color="#a78bfa" />)}
+        {sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}
         {!collapsed[2] && (
-          <div style={{ padding: '24px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, marginBottom: 24 }}>
-              {allAnalistas.map((k: any, idx: number) => {
-                const isTotal = idx === kpiPorAnalista.length;
-                return (
-                  <div key={k.analista} style={{ background: isTotal ? 'rgba(167,139,250,0.06)' : 'rgba(255,255,255,0.02)', borderRadius: 12, border: `1px solid ${isTotal ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)'}`, overflow: 'hidden' }}>
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, background: isTotal ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Users size={13} color={isTotal ? '#a78bfa' : '#666'} />
-                        </div>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: isTotal ? '#a78bfa' : '#ccc' }}>{k.analista}</span>
-                      </div>
-                    </div>
-                    <div style={{ padding: '14px 16px' }}>
-                      {/* Eliminados indicadores redundantes (Capital, Ops, Ticket, Conversión) */}
-                      <div style={{ gridColumn: 'span 2', paddingTop: 10, marginTop: 4, borderTop: '1px solid rgba(167,139,250,0.12)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: '6px', background: 'rgba(167,139,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Target size={14} color="#a78bfa" />
-                            </div>
-                            <div style={{ fontSize: 11, fontWeight: 900, color: '#fff', textTransform: 'uppercase' as const, letterSpacing: 1 }}>
-                              {k.esMesActual ? 'Proyección a fin de mes' : 'Cierre del mes'}
-                            </div>
-                          </div>
-                          {k.tieneDiasAdmin && k.esMesActual && (
-                            <div style={{ fontSize: 10, fontWeight: 800, color: '#444', background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: 4 }}>
-                              {k.diasTransAdmin} / {k.diasHabilesAdmin} DÍAS
-                            </div>
-                          )}
-                        </div>
-                        {k.esMesActual && !k.tieneDiasAdmin ? (
-                          <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', padding: '4px 0' }}>
-                            Cargá días hábiles en Ajustes para ver proyección
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
-                            <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '6px 8px', borderRadius: '6px' }}>
-                              <div style={{ flex: 1 }}>
-                                {k.metaDiariaCapital !== undefined && k.metaDiariaCapital !== null && (
-                                  <>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Venta / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{formatCurrency(k.metaDiariaCapital)}</div>
-                                    {k.ventaPorDia !== undefined && k.ventaPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {formatCurrency(k.ventaPorDia)}</div>}
-                                  </>
-                                )}
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                {k.metaDiariaOps !== undefined && k.metaDiariaOps !== null && (
-                                  <>
-                                    <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Ops. / día ({k.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                    <div style={{ fontSize: 14, fontWeight: 800, color: '#ccc' }}>{k.metaDiariaOps.toFixed(1)}</div>
-                                    {k.opsPorDia !== undefined && k.opsPorDia !== null && <div style={{ fontSize: 9, color: '#444', fontWeight: 600, marginTop: 2 }}>RITMO: {k.opsPorDia.toFixed(1)}</div>}
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="row-hover" style={{ display: 'flex', gap: 12, padding: '8px 8px 6px', borderRadius: '6px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Proyección Capital</div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{formatCurrency(k.proyeccionCapital || 0)}</div>
-                                </div>
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 4 }}>Proyección Ops</div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <div style={{ fontSize: 16, fontWeight: 900, color: '#fff' }}>{(k.proyeccionOps || 0).toFixed(0)}</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
-              {/* 1. Cumplimiento */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAnterior}</div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <LegendPill color="rgba(96,165,250,0.8)" label={mesActual} />
-                    <LegendPill color="rgba(30, 58, 138, 0.9)" label={mesAnterior} />
-                  </div>
-                </div>
-                <div style={{ height: 280 }}><Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true)} plugins={[labelsPlugin]} /></div>
-              </div>
-
-              {/* 2. Variación */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8 }}>Variación % vs {mesAnterior}</div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <LegendPill color="rgba(52,211,153,0.7)" label="Positivo" />
-                    <LegendPill color="rgba(248,113,113,0.7)" label="Negativo" />
-                  </div>
-                </div>
-                <div style={{ height: 280 }}><Bar data={chartVariacion as any} options={baseChartOpts('%', false, true)} plugins={[labelsPlugin]} /></div>
-              </div>
-
-              {/* 3. Acuerdos por Analista (Dona) */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8 }}>Acuerdos por Analista</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                     <Users size={12} color="#666" />
-                     <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>{kpiTotal.ops} TOTAL</span>
-                  </div>
-                </div>
-                {(() => {
-                  const labels = CONFIG.ANALISTAS_DEFAULT;
-                  const data = chartAcuerdos.datasets.map((ds: any) => ds.data.reduce((s: number, v: number) => s + v, 0));
-                  const total = data.reduce((s: number, v: number) => s + v, 0);
-                  const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'];
-                  const cData = {
-                    labels,
-                    datasets: [{
-                      data,
-                      backgroundColor: colors,
-                      borderWidth: 0,
-                      hoverOffset: 10,
-                      borderRadius: 4,
-                      spacing: 4
-                    }]
-                  };
-                  return (
-                    <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                      <ModernDoughnut data={cData} total={total} label="Acuerdos" unit=" Ops" />
-                      <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                        {labels.map((l, i) => {
-                          const pct = total > 0 ? (data[i] / total * 100).toFixed(1) : '0';
-                          return (
-                            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors[i] }} />
-                              <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* 4. Empleo Público / Privado (Dona) */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                  <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-                  <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8 }}>% Empleo Público / Privado</span>
-                </div>
-                {(() => {
-                  const colors = ['#10b981', '#3b82f6', 'rgba(100,100,100,0.5)'];
-                  const cData = {
-                    ...chartEmpleoPublPriv,
-                    datasets: [{
-                      ...chartEmpleoPublPriv.datasets[0],
-                      backgroundColor: chartEmpleoPublPriv.labels.map((l: string, i: number) => colors[i] || colors[0]),
-                      borderWidth: 0,
-                      hoverOffset: 10,
-                      borderRadius: 4,
-                      spacing: 4
-                    }]
-                  };
-                  return (
-                    <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                      <ModernDoughnut data={cData} total={kpiTotal.ops} label="Total" unit=" Ops" />
-                      <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                        {chartEmpleoPublPriv.labels.map((l: string, i: number) => {
-                          const val = chartEmpleoPublPriv.datasets[0].data[i];
-                          const pct = kpiTotal.ops > 0 ? (val / kpiTotal.ops * 100).toFixed(1) : '0';
-                          return (
-                            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors[i] || colors[0] }} />
-                              <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* SECCIÓN 3: VENTAS POR CATEGORÍA */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}
-        {!collapsed[3] && (
           <div style={{ padding: '24px' }}>
             <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <span style={{ fontSize: 11, color: '#444' }}>{ventasCount} ops · {formatCurrency(totalMes)}</span>
@@ -850,40 +653,40 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
       </div>
 
 
-      {/* SECCIÓN 4: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL */}
+      {/* SECCIÓN 3: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(4, '4. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
-        {!collapsed[4] && (
+        {sectionHeader(3, '3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
+        {!collapsed[3] && (
           <div style={{ padding: '24px' }}>
             <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
           </div>
         )}
       </div>
 
-      {/* SECCIÓN 5: ANÁLISIS COMERCIAL */}
+      {/* SECCIÓN 4: ANÁLISIS COMERCIAL */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(5, '5. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
-        {!collapsed[5] && (
+        {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+        {!collapsed[4] && (
           <div style={{ padding: '24px' }}>
             <ManualTextareaView label="Interpretación del Período" value={analisisComercial || ''} />
           </div>
         )}
       </div>
 
-      {/* SECCIÓN 6: OPERACIÓN Y PROCESOS */}
+      {/* SECCIÓN 5: OPERACIÓN Y PROCESOS */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(6, '6. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
-        {!collapsed[6] && (
+        {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+        {!collapsed[5] && (
           <div style={{ padding: '24px' }}>
             <ManualTextareaView label="Cumplimiento de Procedimientos / Tiempos / Stock" value={operacionProcesos || ''} />
           </div>
         )}
       </div>
 
-      {/* SECCIÓN 7: GESTIÓN COMERCIAL */}
+      {/* SECCIÓN 6: GESTIÓN COMERCIAL */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(7, '7. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
-        {!collapsed[7] && (
+        {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+        {!collapsed[6] && (
           <div style={{ padding: '24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
               <ManualTextareaView label="Gestiones Realizadas" value={gestionesRealizadas || ''} />
@@ -899,20 +702,20 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         )}
       </div>
 
-      {/* SECCIÓN 8: EXPERIENCIA DEL CLIENTE */}
+      {/* SECCIÓN 7: EXPERIENCIA DEL CLIENTE */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(8, '8. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
-        {!collapsed[8] && (
+        {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+        {!collapsed[7] && (
           <div style={{ padding: '24px' }}>
             <ManualTextareaView label="Reclamos y Satisfacción" value={experienciaCliente || ''} />
           </div>
         )}
       </div>
 
-      {/* SECCIÓN 9: GESTIÓN DEL EQUIPO */}
+      {/* SECCIÓN 8: GESTIÓN DEL EQUIPO */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(9, '9. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
-        {!collapsed[9] && (
+        {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+        {!collapsed[8] && (
           <div style={{ padding: '24px' }}>
             {auditCounts && Object.keys(auditCounts).length > 0 && (
               <div style={{ marginBottom: 20 }}>
@@ -938,10 +741,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         )}
       </div>
 
-      {/* SECCIÓN 10: PLAN DE ACCIÓN */}
+      {/* SECCIÓN 9: PLAN DE ACCIÓN */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(10, '10. Plan de Acción', <Target size={15} color="#fb923c" />)}
-        {!collapsed[10] && (
+        {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
+        {!collapsed[9] && (
           <div style={{ padding: '24px' }}>
           {planAcciones && planAcciones.length > 0 ? (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
@@ -968,10 +771,10 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         )}
       </div>
 
-      {/* SECCIÓN 11: RENDIMIENTO Y TENDENCIAS */}
+      {/* SECCIÓN 10: RENDIMIENTO Y TENDENCIAS */}
       <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(11, '11. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
-        {!collapsed[11] && (
+        {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
+        {!collapsed[10] && (
           <div style={{ padding: '24px' }}>
             {registros && registros.length > 0 ? (
               <AnalisisTemporalTab registros={registros} isPublic={true} initialMonth={month} initialYear={year} initialState={seccion10State ?? undefined} />
