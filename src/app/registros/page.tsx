@@ -37,11 +37,26 @@ const FIELD_LABELS: Record<string, string> = {
 
 const LOCALIDADES_POR_DEFECTO = ['Paraná'];
 const DEPENDENCIAS_POR_DEFECTO = [
-  'SALUD', 'CGE (EDUCACIÓN)', 'POLICÍA', 'VIALIDAD', 'IAFAS', 'UADER',
-  'PENITENCIARIO', 'DESARROLLO HUMANO', 'COPNAF', 'IAPV',
-  'CÁMARA DE SENADORES', 'CÁMARA DE DIPUTADOS', 'CONTADURÍA GENERAL',
-  'TESORERÍA GENERAL', 'TRIBUNAL DE CUENTAS', 'FISCALÍA DE ESTADO',
-  'IPER', 'IOSPER', 'SIDECREER', 'ENERSA',
+  'Ministerio de Salud de Entre Rios',
+  'Consejo General de Educación de Entre Rios',
+  'Jefatura de Policía de la Provincia de Entre Ríos',
+  'Ministerio de Desarrollo Humano de Entre Rios',
+  'Direccion Provincial de Vialidad',
+  'Direccion General Servicio Penitenciario de Entre Ríos',
+  'Universidad Nacional de Entre Ríos',
+  'Consejo Provincial del Niño, el Adolescente y la Familia COPNAF',
+  'Honorable Cámara de Senadores de Entre Ríos',
+  'Instituto de Ayuda Financiera a la Acción Social',
+  'Caja de Retiros Jubilaciones y Pensiones de la Policía Federal',
+  'Ministerio de Seguridad y Justicia de Entre Ríos',
+  'Honorable Camara de Diputados de Entre Ríos',
+  'Ministerio de Desarrollo Social de Entre Ríos',
+  'Instituto Autárquico de Planeamiento y Vivienda',
+  'Ministerio de Planeamiento e Infraestructura de Entre Ríos',
+  'Universidad Autonoma de Entre Ríos',
+  'Ministerio Público de la Defensa de Entre Ríos',
+  'Pami INSSJP',
+  'Secretaria de modernizacion del estado'
 ].sort();
 
 // ── Validation ────────────────────────────────────────────────────────────────
@@ -397,6 +412,7 @@ const RegistroModal = memo(function RegistroModal({
   const [showComentariosModal, setShowComentariosModal] = useState(false);
   const [empleadorCustom, setEmpleadorCustom] = useState(false);
   const [localidadCustom, setLocalidadCustom] = useState(false);
+  const [dependenciaCustom, setDependenciaCustom] = useState(false);
   const { registros: allRegistros } = useRegistros();
 
   // Derivar empleadores y localidades reactivamente desde DataContext
@@ -449,6 +465,7 @@ const RegistroModal = memo(function RegistroModal({
     if (isOpen) {
       setEmpleadorCustom(!!initialData.empleador && !empleadoresDB.includes(initialData.empleador));
       setLocalidadCustom(!!initialData.localidad && !localidadesDB.includes(initialData.localidad));
+      setDependenciaCustom(!!initialData.dependencia && !DEPENDENCIAS_POR_DEFECTO.includes(initialData.dependencia || ''));
     }
   }, [isOpen, initialData, empleadoresDB, localidadesDB]);
 
@@ -768,16 +785,40 @@ const RegistroModal = memo(function RegistroModal({
             {form.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && (
               <div className="form-row">
                 <Field label="Dependencia *" error={errors.dependencia}>
-                  <PremiumSelect
-                    value={form.dependencia || ''}
-                    onChange={val => set('dependencia', val.toUpperCase())}
-                    options={Array.from(new Set([
-                      ...DEPENDENCIAS_POR_DEFECTO,
-                      ...allRegistros.map(r => r.dependencia).filter(Boolean) as string[]
-                    ])).sort()}
-                    placeholder="— Seleccionar dependencia —"
-                    onAddCustom={() => {}} // No necesitamos toggle manual, PremiumSelect ya permite buscar/filtrar
-                  />
+                  {dependenciaCustom ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        className="form-input"
+                        value={form.dependencia || ''}
+                        onChange={e => set('dependencia', e.target.value)}
+                        placeholder="Nombre de la dependencia"
+                        style={{ flex: 1 }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { setDependenciaCustom(false); set('dependencia', ''); }}
+                        className="btn-icon"
+                        style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <PremiumSelect
+                      value={DEPENDENCIAS_POR_DEFECTO.includes(form.dependencia || '') ? (form.dependencia || '') : ''}
+                      onChange={val => set('dependencia', val)}
+                      options={Array.from(new Set([
+                        ...DEPENDENCIAS_POR_DEFECTO,
+                        ...allRegistros.map(r => r.dependencia).filter(Boolean) as string[]
+                      ])).sort()}
+                      placeholder="— Seleccionar dependencia —"
+                      onAddCustom={() => {
+                        setDependenciaCustom(true);
+                        set('dependencia', '');
+                      }}
+                    />
+                  )}
                 </Field>
               </div>
             )}
