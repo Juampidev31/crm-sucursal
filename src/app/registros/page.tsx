@@ -503,7 +503,7 @@ const RegistroModal = memo(function RegistroModal({
 
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, created_at, updated_at, ...cleanForm } = form as Registro & { created_at?: string; updated_at?: string };
+    const { id, created_at, updated_at, dependencia, ...cleanForm } = form as any;
     const payload = {
       ...cleanForm,
       monto: Number(form.monto),
