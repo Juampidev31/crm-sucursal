@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, Upload, CheckCircle2, Info } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, Upload, CheckCircle2, Info, Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -41,7 +41,7 @@ const DEPENDENCIAS_POR_DEFECTO = [
   'Consejo General de Educación de Entre Rios',
   'Jefatura de Policía de la Provincia de Entre Ríos',
   'Ministerio de Desarrollo Humano de Entre Rios',
-  'Direccion Provincial de Vialidad',
+  'Direccion Provincial de Vialidad de Entre Ríos',
   'Direccion General Servicio Penitenciario de Entre Ríos',
   'Universidad Nacional de Entre Ríos',
   'Consejo Provincial del Niño, el Adolescente y la Familia COPNAF',
@@ -329,7 +329,7 @@ const PremiumSelect = ({
                     ))}
                   </div>
                 ))}
-                {onAddCustom && !search && (
+                {onAddCustom && (
                   <div
                     onClick={(e) => { e.stopPropagation(); onAddCustom(); setIsOpen(false); }}
                     style={{
@@ -339,15 +339,19 @@ const PremiumSelect = ({
                       fontWeight: 800,
                       cursor: 'pointer',
                       borderTop: '1px solid rgba(255,255,255,0.06)',
+                      background: 'rgba(134, 239, 172, 0.02)',
                       marginTop: '4px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 6
+                      gap: 6,
+                      position: 'sticky',
+                      bottom: 0,
+                      zIndex: 10
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.05)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.02)'}
                   >
-                    <X size={12} style={{ transform: 'rotate(45deg)' }} /> Agregar otro...
+                    <Plus size={14} /> {search ? `Agregar "${search}"...` : 'Agregar otro...'}
                   </div>
                 )}
               </>
@@ -373,9 +377,34 @@ const PremiumSelect = ({
                       {opt}
                     </div>
                   ))
-                ) : (
+                ) : !onAddCustom && (
                   <div style={{ padding: '12px', textAlign: 'center', color: 'var(--gris)', fontSize: '12px' }}>
                     Sin resultados
+                  </div>
+                )}
+                {onAddCustom && (
+                  <div
+                    onClick={(e) => { e.stopPropagation(); onAddCustom(); setIsOpen(false); }}
+                    style={{
+                      padding: '10px',
+                      fontSize: '12px',
+                      color: '#86efac',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      background: 'rgba(134, 239, 172, 0.02)',
+                      marginTop: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      position: 'sticky',
+                      bottom: 0,
+                      zIndex: 10
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.02)'}
+                  >
+                    <Plus size={14} /> {search ? `Agregar "${search}"...` : 'Agregar otro...'}
                   </div>
                 )}
               </>
@@ -712,7 +741,24 @@ const RegistroModal = memo(function RegistroModal({
                       style={{ flex: 1 }}
                       value={form.empleador || ''}
                       onChange={e => set('empleador', corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
-                      onBlur={e => set('empleador', normalizarSufijosLegales(e.target.value.trim()))}
+                      onBlur={e => {
+                        const val = e.target.value.trim();
+                        const upper = val.toUpperCase();
+                        const esGobierno = upper === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS';
+                        const esDependenciaProvincial = (upper.includes('ENTRE RÍOS') || upper.includes('ENTRE RIOS')) && 
+                                                      !esGobierno && 
+                                                      !upper.includes('ENERSA') && 
+                                                      !upper.includes('ENERGÍA DE ENTRE RÍOS');
+                        
+                        if (esDependenciaProvincial) {
+                          set('empleador', 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS');
+                          set('dependencia', corregirTildes(val));
+                          setDependenciaCustom(false);
+                          setEmpleadorCustom(false);
+                        } else {
+                          set('empleador', normalizarSufijosLegales(val));
+                        }
+                      }}
                       onPaste={e => {
                         e.preventDefault();
                         const pasted = e.clipboardData.getData('text').trim();
@@ -734,7 +780,22 @@ const RegistroModal = memo(function RegistroModal({
                 ) : (
                   <PremiumSelect
                     value={empleadoresDB.includes(form.empleador || '') ? (form.empleador || '') : ''}
-                    onChange={val => set('empleador', val)}
+                    onChange={val => {
+                      const upper = val.toUpperCase();
+                      const esGobierno = upper === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS';
+                      const esDependenciaProvincial = (upper.includes('ENTRE RÍOS') || upper.includes('ENTRE RIOS')) && 
+                                                    !esGobierno && 
+                                                    !upper.includes('ENERSA') && 
+                                                    !upper.includes('ENERGÍA DE ENTRE RÍOS');
+                      
+                      if (esDependenciaProvincial) {
+                        set('empleador', 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS');
+                        set('dependencia', val);
+                        setDependenciaCustom(false);
+                      } else {
+                        set('empleador', val);
+                      }
+                    }}
                     isSearchable={true}
                     placeholder="— Sin especificar —"
                     groups={[
@@ -813,6 +874,7 @@ const RegistroModal = memo(function RegistroModal({
                         ...allRegistros.map(r => r.dependencia).filter(Boolean) as string[]
                       ])).sort()}
                       placeholder="— Seleccionar dependencia —"
+                      isSearchable={true}
                       onAddCustom={() => {
                         setDependenciaCustom(true);
                         set('dependencia', '');
