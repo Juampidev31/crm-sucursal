@@ -21,6 +21,7 @@ export const registroSchema = z.object({
   rango_etario: z.string().nullish().transform(v => v ?? undefined),
   sexo: z.string().nullish().transform(v => v ?? undefined),
   empleador: z.string().nullish().transform(v => v ?? undefined),
+  dependencia: z.string().nullish().transform(v => v ?? undefined),
   localidad: z.string().nullish().transform(v => v ?? undefined),
   created_at: z.string().nullish().transform(v => v ?? undefined),
   updated_at: z.string().nullish().transform(v => v ?? undefined),
