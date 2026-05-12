@@ -98,6 +98,8 @@ export default function AjustesPage() {
   const [duplicadosRegistros, setDuplicadosRegistros] = useState<any[]>([]);
   const [selectedEstados, setSelectedEstados] = useState<string[]>([]);
   const [selectedAnalistas, setSelectedAnalistas] = useState<string[]>([]);
+  const [duplicadosFechaDesde, setDuplicadosFechaDesde] = useState('');
+  const [duplicadosFechaHasta, setDuplicadosFechaHasta] = useState('');
 
   // Auditoria state
   const [auditoriaRegistros, setAuditoriaRegistros] = useState<any[]>([]);
@@ -440,7 +442,10 @@ export default function AjustesPage() {
     const pool = duplicadosRegistros.filter(r => {
       const matchEstado = selectedEstados.length === 0 || selectedEstados.includes(r.estado?.toLowerCase() || '');
       const matchAnalista = selectedAnalistas.length === 0 || selectedAnalistas.includes(r.analista || '');
-      return matchEstado && matchAnalista;
+      let matchFecha = true;
+      if (duplicadosFechaDesde && r.fecha < duplicadosFechaDesde) matchFecha = false;
+      if (duplicadosFechaHasta && r.fecha > duplicadosFechaHasta) matchFecha = false;
+      return matchEstado && matchAnalista && matchFecha;
     });
 
     const byCuil = new Map<string, any[]>();
@@ -468,7 +473,7 @@ export default function AjustesPage() {
       }
     }
     return grupos.sort((a, b) => b.registros.length - a.registros.length);
-  }, [duplicadosRegistros, selectedEstados, selectedAnalistas]);
+  }, [duplicadosRegistros, selectedEstados, selectedAnalistas, duplicadosFechaDesde, duplicadosFechaHasta]);
 
   // ── Variantes de Empleador ──────────────────────────────────────────────
   interface VarianteEmpleador {
@@ -999,6 +1004,32 @@ export default function AjustesPage() {
                           {displayAnalista(a)}
                         </button>
                       ))}
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Calendar size={13} color="var(--azul)" />
+                      <span style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase' }}>Fecha</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input 
+                        type="date" 
+                        className="form-input" 
+                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', fontSize: '11px', padding: '6px 10px', color: '#ccc' }}
+                        value={duplicadosFechaDesde} 
+                        onChange={e => setDuplicadosFechaDesde(e.target.value)} 
+                        title="Desde"
+                      />
+                      <span style={{ color: '#555', fontSize: '10px' }}>-</span>
+                      <input 
+                        type="date" 
+                        className="form-input" 
+                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', fontSize: '11px', padding: '6px 10px', color: '#ccc' }}
+                        value={duplicadosFechaHasta} 
+                        onChange={e => setDuplicadosFechaHasta(e.target.value)} 
+                        title="Hasta"
+                      />
                     </div>
                   </div>
                 </div>
