@@ -36,6 +36,13 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const LOCALIDADES_POR_DEFECTO = ['Paraná'];
+const DEPENDENCIAS_POR_DEFECTO = [
+  'SALUD', 'CGE (EDUCACIÓN)', 'POLICÍA', 'VIALIDAD', 'IAFAS', 'UADER',
+  'PENITENCIARIO', 'DESARROLLO HUMANO', 'COPNAF', 'IAPV',
+  'CÁMARA DE SENADORES', 'CÁMARA DE DIPUTADOS', 'CONTADURÍA GENERAL',
+  'TESORERÍA GENERAL', 'TRIBUNAL DE CUENTAS', 'FISCALÍA DE ESTADO',
+  'IPER', 'IOSPER', 'SIDECREER', 'ENERSA',
+].sort();
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -503,7 +510,7 @@ const RegistroModal = memo(function RegistroModal({
 
     setSaving(true);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, created_at, updated_at, dependencia, ...cleanForm } = form as any;
+    const { id, created_at, updated_at, ...cleanForm } = form as Registro & { created_at?: string; updated_at?: string };
     const payload = {
       ...cleanForm,
       monto: Number(form.monto),
@@ -761,12 +768,15 @@ const RegistroModal = memo(function RegistroModal({
             {form.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && (
               <div className="form-row">
                 <Field label="Dependencia *" error={errors.dependencia}>
-                  <input
-                    className="form-input"
+                  <PremiumSelect
                     value={form.dependencia || ''}
-                    onChange={e => set('dependencia', corregirTildes(e.target.value.toUpperCase()))}
-                    placeholder="Ej: SALUD, EDUCACIÓN, POLICÍA, VIALIDAD..."
-                    autoFocus
+                    onChange={val => set('dependencia', val.toUpperCase())}
+                    options={Array.from(new Set([
+                      ...DEPENDENCIAS_POR_DEFECTO,
+                      ...allRegistros.map(r => r.dependencia).filter(Boolean) as string[]
+                    ])).sort()}
+                    placeholder="— Seleccionar dependencia —"
+                    onAddCustom={() => {}} // No necesitamos toggle manual, PremiumSelect ya permite buscar/filtrar
                   />
                 </Field>
               </div>
