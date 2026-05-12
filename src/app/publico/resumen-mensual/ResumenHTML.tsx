@@ -403,5 +403,6 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
       </div>
     </div>
+  </div>
   );
 }
