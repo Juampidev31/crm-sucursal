@@ -254,6 +254,30 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const totalClientes = matchedRows.length;
   const totalRegistros = allMatchedIds.length;
   const totalSeleccionados = selectedIds.size;
+  const { totalCompletos, totalConFaltantes } = useMemo(() => {
+    let completos = 0, faltantes = 0;
+    matchedRows.forEach(mr => mr.registros.forEach(r => {
+      const missing: string[] = [];
+      if (!r.nombre?.trim()) missing.push('x');
+      if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('x');
+      if (!r.analista) missing.push('x');
+      if (!r.estado) missing.push('x');
+      const req = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
+      if (req) {
+        if (!r.tipo_cliente) missing.push('x');
+        if (!r.acuerdo_precios) missing.push('x');
+        if (!r.cuotas?.trim()) missing.push('x');
+        if (!r.rango_etario) missing.push('x');
+        if (!r.sexo) missing.push('x');
+        if (!r.empleador?.trim()) missing.push('x');
+        if (!r.localidad?.trim()) missing.push('x');
+      }
+      if (r.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && !r.dependencia?.trim()) missing.push('x');
+      if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) missing.push('x');
+      if (missing.length === 0) completos++; else faltantes++;
+    }));
+    return { totalCompletos: completos, totalConFaltantes: faltantes };
+  }, [matchedRows]);
   const allSelected = allMatchedIds.length > 0 && allMatchedIds.every(id => selectedIds.has(id));
   const someSelected = !allSelected && allMatchedIds.some(id => selectedIds.has(id));
 
@@ -584,6 +608,10 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
                 {totalRegistros} registro{totalRegistros !== 1 ? 's' : ''} en total de {totalClientes} cliente{totalClientes !== 1 ? 's' : ''}
+                {' · '}
+                <span style={{ color: '#4ade80', fontWeight: 700 }}>{totalCompletos} completo{totalCompletos !== 1 ? 's' : ''}</span>
+                {' · '}
+                <span style={{ color: '#f87171', fontWeight: 700 }}>{totalConFaltantes} con faltantes</span>
                 {' · '}
                 <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{totalSeleccionados} seleccionado{totalSeleccionados !== 1 ? 's' : ''}</span>
               </div>
