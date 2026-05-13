@@ -891,8 +891,48 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
               padding: '10px 16px', background: 'rgba(74,222,128,0.08)',
               border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8,
               fontSize: 12, color: '#4ade80', fontWeight: 600,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
             }}>
-              ✓ {assignResult.updated} registro{assignResult.updated !== 1 ? 's' : ''} actualizado{assignResult.updated !== 1 ? 's' : ''}.
+              <span>✓ {assignResult.updated} registro{assignResult.updated !== 1 ? 's' : ''} actualizado{assignResult.updated !== 1 ? 's' : ''}.</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => {
+                    setAssignResult(null);
+                    setCamposExcel({ ...EMPTY_CAMPOS_EXCEL });
+                    setSelectedIds(new Set());
+                    setConfirming(false);
+                  }}
+                  style={{
+                    padding: '5px 12px', fontSize: 11, fontWeight: 700,
+                    background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)',
+                    borderRadius: 6, cursor: 'pointer', color: '#4ade80',
+                  }}
+                >
+                  Seguir con estos registros
+                </button>
+                <button
+                  onClick={() => {
+                    setPastedText('');
+                    setRows([]);
+                    setCuilCol(null);
+                    setNombreCol(null);
+                    setSearched(false);
+                    setSelectedIds(new Set());
+                    setCamposExcel({ ...EMPTY_CAMPOS_EXCEL });
+                    setAssignResult(null);
+                    setAssignError(null);
+                    setConfirming(false);
+                    setStep('paste');
+                  }}
+                  style={{
+                    padding: '5px 12px', fontSize: 11, fontWeight: 700,
+                    background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.35)',
+                    borderRadius: 6, cursor: 'pointer', color: '#a5b4fc',
+                  }}
+                >
+                  Cargar otro Excel
+                </button>
+              </div>
             </div>
           )}
         </>
