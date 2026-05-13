@@ -229,6 +229,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const [assignResult, setAssignResult] = useState<{ updated: number } | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [step, setStep] = useState<'paste' | 'match' | 'assign'>('paste');
 
   const previewRows = rows.slice(0, 5);
   const colCount = rows[0]?.cells.length ?? 0;
@@ -294,6 +295,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     setConfirming(false);
     setCamposExcel({ ...EMPTY_CAMPOS_EXCEL });
     setSelectedIds(new Set());
+    if (parsed.length > 0) setStep('match');
   };
 
   const handleSearch = () => {
@@ -301,6 +303,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     setAssignResult(null);
     setAssignError(null);
     setConfirming(false);
+    setStep('assign');
   };
 
   // Limpiar selección al re-buscar
@@ -440,8 +443,41 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
         </h4>
       </div>
 
-      {expanded && (
+      {expanded && (() => {
+        const stepBtn = (n: number, label: string, isActive: boolean, isDone: boolean, isDisabled: boolean, onClick: () => void): React.ReactNode => (
+          <button
+            key={n}
+            onClick={onClick}
+            disabled={isDisabled}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px',
+              background: isActive ? 'rgba(99,102,241,0.12)' : 'transparent',
+              border: `1px solid ${isActive ? 'rgba(99,102,241,0.4)' : isDone ? 'rgba(74,222,128,0.25)' : 'rgba(255,255,255,0.06)'}`,
+              borderRadius: 999, fontSize: 11, fontWeight: 700,
+              color: isActive ? '#a5b4fc' : isDone ? '#4ade80' : '#555',
+              cursor: isDisabled ? 'not-allowed' : 'pointer', opacity: isDisabled ? 0.4 : 1,
+            }}
+          >
+            <span style={{
+              width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, fontWeight: 800,
+              background: isActive ? 'rgba(99,102,241,0.35)' : isDone ? 'rgba(74,222,128,0.25)' : 'rgba(255,255,255,0.05)',
+              color: isActive ? '#c7d2fe' : isDone ? '#4ade80' : '#666',
+            }}>{isDone && !isActive ? '✓' : n}</span>
+            {label}
+          </button>
+        );
+        return (
         <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+            {stepBtn(1, 'Pegar Excel', step === 'paste', rows.length > 0, false, () => setStep('paste'))}
+            <span style={{ color: '#333', fontSize: 12 }}>›</span>
+            {stepBtn(2, rows.length > 0 ? `Columnas (${rows.length} fila${rows.length !== 1 ? 's' : ''})` : 'Columnas', step === 'match', searched, rows.length === 0, () => { if (rows.length > 0) setStep('match'); })}
+            <span style={{ color: '#333', fontSize: 12 }}>›</span>
+            {stepBtn(3, searched ? `Asignar (${totalSeleccionados}/${totalRegistros})` : 'Asignar campos', step === 'assign', false, !searched, () => { if (searched) setStep('assign'); })}
+          </div>
+
+          {step === 'paste' && (
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
               Pegar celdas de Excel (CUIL + Apellido/Nombre)
@@ -468,8 +504,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
               Cargar
             </button>
           </div>
+          )}
 
-          {rows.length > 0 && (
+          {step === 'match' && rows.length > 0 && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
                 {rows.length} fila{rows.length !== 1 ? 's' : ''} detectada{rows.length !== 1 ? 's' : ''}. Asigná las columnas:
@@ -543,7 +580,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
             </div>
           )}
 
-          {searched && (
+          {step === 'assign' && searched && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
                 {totalRegistros} registro{totalRegistros !== 1 ? 's' : ''} en total de {totalClientes} cliente{totalClientes !== 1 ? 's' : ''}
@@ -694,7 +731,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
             </div>
           )}
 
-          {searched && totalRegistros > 0 && !assignResult && (
+          {step === 'assign' && searched && totalRegistros > 0 && !assignResult && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
@@ -773,11 +810,25 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                 <textarea className="form-input" rows={2} value={camposExcel.comentarios} onChange={e => { setCamposExcel(p => ({ ...p, comentarios: e.target.value })); setConfirming(false); }} style={{ width: '100%', fontSize: 12, resize: 'vertical' }} />
               </div>
 
-              {hayCampos && (
-                <div style={{ fontSize: 11, color: '#a5b4fc', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', padding: '6px 10px', borderRadius: 6 }}>
-                  Se modificará: {Object.keys(payloadPreview).join(', ')}
+              <div style={{
+                position: 'sticky', bottom: 0, zIndex: 5,
+                marginLeft: -20, marginRight: -20, marginBottom: -20,
+                padding: '12px 20px',
+                background: 'linear-gradient(to top, #0e0e10 70%, rgba(14,14,16,0.85))',
+                borderTop: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', flexDirection: 'column', gap: 8,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
+                  <span style={{ color: '#888' }}>
+                    <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{totalSeleccionados}</span> seleccionado{totalSeleccionados !== 1 ? 's' : ''}
+                    {hayCampos && <> · <span style={{ color: '#4ade80' }}>{Object.keys(payloadPreview).length} campo{Object.keys(payloadPreview).length !== 1 ? 's' : ''}</span></>}
+                  </span>
+                  {hayCampos && (
+                    <span style={{ color: '#a5b4fc', fontSize: 10 }}>
+                      → {Object.keys(payloadPreview).join(', ')}
+                    </span>
+                  )}
                 </div>
-              )}
 
               {!confirming ? (
                 <button
@@ -831,6 +882,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                   Error: {assignError}
                 </div>
               )}
+              </div>
             </div>
           )}
 
@@ -844,7 +896,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
             </div>
           )}
         </>
-      )}
+        );
+      })()}
     </div>
   );
 }
