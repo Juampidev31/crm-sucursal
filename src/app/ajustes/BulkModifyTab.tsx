@@ -199,6 +199,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const [assigning, setAssigning] = useState(false);
   const [assignResult, setAssignResult] = useState<{ updated: number } | null>(null);
   const [assignError, setAssignError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const previewRows = rows.slice(0, 5);
   const colCount = rows[0]?.cells.length ?? 0;
@@ -222,6 +223,24 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
 
   const totalClientes = matchedRows.length;
   const totalRegistros = allMatchedIds.length;
+  const totalSeleccionados = selectedIds.size;
+  const allSelected = allMatchedIds.length > 0 && allMatchedIds.every(id => selectedIds.has(id));
+  const someSelected = !allSelected && allMatchedIds.some(id => selectedIds.has(id));
+
+  const toggleAll = () => {
+    if (allSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(allMatchedIds));
+  };
+
+  const toggleClient = (ids: string[]) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      const allOn = ids.every(id => next.has(id));
+      if (allOn) ids.forEach(id => next.delete(id));
+      else ids.forEach(id => next.add(id));
+      return next;
+    });
+  };
 
   const handleParse = () => {
     const parsed = parsePastedText(pastedText);
@@ -233,6 +252,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     setAssignError(null);
     setConfirming(false);
     setEmpleadorInput('');
+    setSelectedIds(new Set());
   };
 
   const handleSearch = () => {
@@ -242,20 +262,27 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     setConfirming(false);
   };
 
+  // Pre-seleccionar todos los registros encontrados al buscar
+  useEffect(() => {
+    if (searched) setSelectedIds(new Set(allMatchedIds));
+    else setSelectedIds(new Set());
+  }, [searched, allMatchedIds]);
+
   const handleAssign = async () => {
-    if (!empleadorInput.trim() || allMatchedIds.length === 0) return;
+    const idsToUpdate = Array.from(selectedIds);
+    if (!empleadorInput.trim() || idsToUpdate.length === 0) return;
     setAssigning(true);
     setAssignError(null);
     const { error } = await supabase
       .from('registros')
       .update({ empleador: empleadorInput.trim() })
-      .in('id', allMatchedIds);
+      .in('id', idsToUpdate);
     setAssigning(false);
     setConfirming(false);
     if (!error) {
-      setAssignResult({ updated: allMatchedIds.length });
+      setAssignResult({ updated: idsToUpdate.length });
       const emp = empleadorInput.trim();
-      const idsSet = new Set(allMatchedIds);
+      const idsSet = new Set(idsToUpdate);
       const updatedRegs = registros.filter(r => idsSet.has(r.id)).map(r => ({ ...r, empleador: emp }));
       mutateRegistros(prev =>
         prev.map(r => idsSet.has(r.id) ? { ...r, empleador: emp } : r)
@@ -405,11 +432,23 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
                 {totalRegistros} registro{totalRegistros !== 1 ? 's' : ''} en total de {totalClientes} cliente{totalClientes !== 1 ? 's' : ''}
+                {' · '}
+                <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{totalSeleccionados} seleccionado{totalSeleccionados !== 1 ? 's' : ''}</span>
               </div>
               <div style={{ overflowX: 'auto', maxHeight: 320, overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead style={{ position: 'sticky', top: 0, background: '#111' }}>
                     <tr>
+                      <th style={{ ...thStyle, width: 36, textAlign: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          ref={el => { if (el) el.indeterminate = someSelected; }}
+                          onChange={toggleAll}
+                          style={{ cursor: 'pointer' }}
+                          title="Seleccionar todos"
+                        />
+                      </th>
                       <th style={thStyle}>CUIL</th>
                       <th style={thStyle}>APELLIDO Y NOMBRE</th>
                       <th style={thStyle}>FECHA</th>
@@ -431,8 +470,22 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                         return f;
                       }).filter(Boolean))].join(' | ');
 
+                      const rowIds = mr.registros.map(r => r.id);
+                      const rowAllSelected = rowIds.length > 0 && rowIds.every(id => selectedIds.has(id));
+                      const rowSomeSelected = !rowAllSelected && rowIds.some(id => selectedIds.has(id));
                       return (
                         <tr key={i} style={{ opacity: mr.registros.length === 0 ? 0.4 : 1 }}>
+                          <td style={{ ...tdStyle, textAlign: 'center' }}>
+                            {rowIds.length > 0 && (
+                              <input
+                                type="checkbox"
+                                checked={rowAllSelected}
+                                ref={el => { if (el) el.indeterminate = rowSomeSelected; }}
+                                onChange={() => toggleClient(rowIds)}
+                                style={{ cursor: 'pointer' }}
+                              />
+                            )}
+                          </td>
                           <td style={tdStyle}>{mr.cuil}</td>
                           <td style={tdStyle}>{nombreMostrar}</td>
                           <td style={tdStyle}>
@@ -476,22 +529,22 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
 
               {!confirming ? (
                 <button
-                  onClick={() => { if (empleadorInput.trim()) setConfirming(true); }}
-                  disabled={!empleadorInput.trim()}
+                  onClick={() => { if (empleadorInput.trim() && totalSeleccionados > 0) setConfirming(true); }}
+                  disabled={!empleadorInput.trim() || totalSeleccionados === 0}
                   style={{
                     alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: empleadorInput.trim() ? '#2d2f5e' : '#1a1a1a',
-                    border: `1px solid ${empleadorInput.trim() ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: 6, cursor: empleadorInput.trim() ? 'pointer' : 'not-allowed',
-                    color: empleadorInput.trim() ? '#a5b4fc' : '#444',
+                    background: empleadorInput.trim() && totalSeleccionados > 0 ? '#2d2f5e' : '#1a1a1a',
+                    border: `1px solid ${empleadorInput.trim() && totalSeleccionados > 0 ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 6, cursor: empleadorInput.trim() && totalSeleccionados > 0 ? 'pointer' : 'not-allowed',
+                    color: empleadorInput.trim() && totalSeleccionados > 0 ? '#a5b4fc' : '#444',
                   }}
                 >
-                  Asignar a todos ({totalRegistros} registro{totalRegistros !== 1 ? 's' : ''})
+                  Asignar a seleccionados ({totalSeleccionados} registro{totalSeleccionados !== 1 ? 's' : ''})
                 </button>
               ) : (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 12, color: '#f87171', fontWeight: 600 }}>
-                    ⚠ Se actualizarán {totalRegistros} registro{totalRegistros !== 1 ? 's' : ''}
+                    ⚠ Se actualizarán {totalSeleccionados} registro{totalSeleccionados !== 1 ? 's' : ''}
                   </span>
                   <button
                     onClick={handleAssign}
