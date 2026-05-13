@@ -750,7 +750,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
               <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+              <style>{`.bulk-fields-row > div { flex: 0 0 150px; min-width: 150px; }`}</style>
+              <div className="bulk-fields-row" style={{ display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', gap: 10, paddingBottom: 4 }}>
                 {(() => {
                   const labelStyle: React.CSSProperties = { fontSize: 9, color: '#888', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
                   const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
