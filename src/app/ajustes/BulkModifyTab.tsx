@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { STATUS_LABEL } from '@/lib/utils';
 import { ESTADOS } from '@/context/FilterContext';
@@ -256,12 +256,24 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const allSelected = allMatchedIds.length > 0 && allMatchedIds.every(id => selectedIds.has(id));
   const someSelected = !allSelected && allMatchedIds.some(id => selectedIds.has(id));
 
+  // Preserva el scroll de la ventana al togglear checkboxes
+  const preservedScrollRef = useRef<number | null>(null);
+  const preserveScroll = () => { preservedScrollRef.current = window.scrollY; };
+  useLayoutEffect(() => {
+    if (preservedScrollRef.current !== null) {
+      window.scrollTo({ top: preservedScrollRef.current });
+      preservedScrollRef.current = null;
+    }
+  }, [selectedIds]);
+
   const toggleAll = () => {
+    preserveScroll();
     if (allSelected) setSelectedIds(new Set());
     else setSelectedIds(new Set(allMatchedIds));
   };
 
   const toggleClient = (ids: string[]) => {
+    preserveScroll();
     setSelectedIds(prev => {
       const next = new Set(prev);
       const allOn = ids.every(id => next.has(id));
