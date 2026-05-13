@@ -587,6 +587,12 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                 {' · '}
                 <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{totalSeleccionados} seleccionado{totalSeleccionados !== 1 ? 's' : ''}</span>
               </div>
+              <style>{`
+                .bulk-excel-row { transition: background 80ms ease; }
+                .bulk-excel-row:hover > td { background: rgba(99,102,241,0.10) !important; }
+                .bulk-excel-row.is-selected > td { background: rgba(99,102,241,0.06); }
+                .bulk-excel-row.is-selected:hover > td { background: rgba(99,102,241,0.16) !important; }
+              `}</style>
               <div style={{ overflowX: 'auto', maxHeight: 320, overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead style={{ position: 'sticky', top: 0, background: '#111' }}>
@@ -657,7 +663,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                         // Sin registros
                         if (mr.registros.length === 0) {
                           return [(
-                            <tr key={`${i}-empty`} style={{ opacity: 0.4 }}>
+                            <tr key={`${i}-empty`} className="bulk-excel-row" style={{ opacity: 0.4 }}>
                               <td style={{ ...tdStyle, textAlign: 'center' }} />
                               <td style={tdStyle}>{mr.cuil}</td>
                               <td style={tdStyle}>{nombreMostrar}</td>
@@ -678,7 +684,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                         const elements: React.JSX.Element[] = [];
                         if (isMulti) {
                           elements.push(
-                            <tr key={`${i}-group`} style={{ background: 'rgba(99,102,241,0.04)' }}>
+                            <tr key={`${i}-group`} className="bulk-excel-row" style={{ background: 'rgba(99,102,241,0.04)' }}>
                               <td style={{ ...tdStyle, textAlign: 'center' }}>
                                 <input
                                   type="checkbox"
@@ -703,7 +709,15 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                           const checked = selectedIds.has(reg.id);
                           const missing = getMissingFields(reg);
                           elements.push(
-                            <tr key={`${i}-${reg.id}`}>
+                            <tr
+                              key={`${i}-${reg.id}`}
+                              className={`bulk-excel-row${checked ? ' is-selected' : ''}`}
+                              onClick={(e) => {
+                                if ((e.target as HTMLElement).closest('input')) return;
+                                toggleClient([reg.id]);
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
                               <td style={{ ...tdStyle, textAlign: 'center', paddingLeft: isMulti ? 24 : 12 }}>
                                 <input
                                   type="checkbox"
