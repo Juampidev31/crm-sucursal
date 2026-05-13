@@ -590,8 +590,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
               <style>{`
                 .bulk-excel-row { transition: background 80ms ease; }
                 .bulk-excel-row:hover > td { background: rgba(99,102,241,0.10) !important; }
-                .bulk-excel-row.is-selected > td { background: rgba(99,102,241,0.06); }
-                .bulk-excel-row.is-selected:hover > td { background: rgba(99,102,241,0.16) !important; }
+                .bulk-excel-row.is-selected > td { background: rgba(74,222,128,0.12) !important; box-shadow: inset 2px 0 0 #4ade80; }
+                .bulk-excel-row.is-selected:hover > td { background: rgba(74,222,128,0.20) !important; }
               `}</style>
               <div style={{ overflowX: 'auto', maxHeight: 320, overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
