@@ -291,11 +291,36 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     setConfirming(false);
   };
 
-  // Pre-seleccionar todos los registros encontrados al buscar
+  // Limpiar selección al re-buscar
   useEffect(() => {
-    if (searched) setSelectedIds(new Set(allMatchedIds));
-    else setSelectedIds(new Set());
-  }, [searched, allMatchedIds]);
+    if (!searched) setSelectedIds(new Set());
+  }, [searched]);
+
+  // Devuelve los campos obligatorios que faltan en un registro (según validarForm del modal)
+  const getMissingFields = (r: Registro): string[] => {
+    const missing: string[] = [];
+    if (!r.nombre?.trim()) missing.push('nombre');
+    if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('cuil');
+    if (!r.analista) missing.push('analista');
+    if (!r.estado) missing.push('estado');
+    const requiereTyA = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
+    if (requiereTyA) {
+      if (!r.tipo_cliente) missing.push('tipo_cliente');
+      if (!r.acuerdo_precios) missing.push('acuerdo_precios');
+      if (!r.cuotas?.trim()) missing.push('cuotas');
+      if (!r.rango_etario) missing.push('rango_etario');
+      if (!r.sexo) missing.push('sexo');
+      if (!r.empleador?.trim()) missing.push('empleador');
+      if (!r.localidad?.trim()) missing.push('localidad');
+    }
+    if (r.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && !r.dependencia?.trim()) {
+      missing.push('dependencia');
+    }
+    if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) {
+      missing.push('comentarios');
+    }
+    return missing;
+  };
 
   // Dedupe case-insensitive, prefiriendo una forma canónica si existe en la lista de referencia
   const dedupCI = (values: (string | null | undefined)[], canonical: readonly string[] = []): string[] => {
@@ -532,54 +557,125 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                       <th style={thStyle}>FECHA</th>
                       <th style={thStyle}>CANTIDAD DE REGISTROS</th>
                       <th style={thStyle}>EMPLEADOR ACTUAL</th>
+                      <th style={thStyle}>FALTANTES</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {matchedRows.map((mr, i) => {
-                      const nombresDB = [...new Set(mr.registros.map(r => r.nombre).filter(Boolean))].join(' | ');
-                      const nombreExcel = mr.nombre === mr.cuil ? '' : mr.nombre;
-                      const nombreMostrar = nombresDB || nombreExcel || '—';
-                      
-                      const fechas = [...new Set(mr.registros.map(r => {
+                    {(() => {
+                      const fmtFecha = (r: Registro): string => {
                         const f = r.fecha || (r.created_at ? r.created_at.split('T')[0] : '');
-                        if (!f) return '';
+                        if (!f) return '—';
                         const partes = f.split('-');
                         if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
                         return f;
-                      }).filter(Boolean))].join(' | ');
+                      };
+                      const willFill = (f: string): boolean => {
+                        if (!(f in camposExcel)) return false;
+                        const v = camposExcel[f as keyof CamposExcel];
+                        return typeof v === 'string' && v.trim() !== '';
+                      };
+                      const renderFaltantes = (missing: string[], isSelected: boolean) => {
+                        if (missing.length === 0) {
+                          return <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 700 }}>✓ Completo</span>;
+                        }
+                        const fixed = isSelected ? missing.filter(willFill) : [];
+                        const stillMissing = isSelected ? missing.filter(f => !willFill(f)) : missing;
+                        return (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {fixed.map(f => (
+                              <span key={f} style={{
+                                fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                                background: 'rgba(74,222,128,0.12)', color: '#4ade80',
+                                border: '1px solid rgba(74,222,128,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px',
+                              }} title="Se completará al aplicar">✓ {f}</span>
+                            ))}
+                            {stillMissing.map(f => (
+                              <span key={f} style={{
+                                fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                                background: 'rgba(248,113,113,0.12)', color: '#f87171',
+                                border: '1px solid rgba(248,113,113,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px',
+                              }}>{f}</span>
+                            ))}
+                          </div>
+                        );
+                      };
 
-                      const rowIds = mr.registros.map(r => r.id);
-                      const rowAllSelected = rowIds.length > 0 && rowIds.every(id => selectedIds.has(id));
-                      const rowSomeSelected = !rowAllSelected && rowIds.some(id => selectedIds.has(id));
-                      return (
-                        <tr key={i} style={{ opacity: mr.registros.length === 0 ? 0.4 : 1 }}>
-                          <td style={{ ...tdStyle, textAlign: 'center' }}>
-                            {rowIds.length > 0 && (
-                              <input
-                                type="checkbox"
-                                checked={rowAllSelected}
-                                ref={el => { if (el) el.indeterminate = rowSomeSelected; }}
-                                onChange={() => toggleClient(rowIds)}
-                                style={{ cursor: 'pointer' }}
-                              />
-                            )}
-                          </td>
-                          <td style={tdStyle}>{mr.cuil}</td>
-                          <td style={tdStyle}>{nombreMostrar}</td>
-                          <td style={tdStyle}>
-                            {mr.registros.length === 0 ? '—' : (fechas || '—')}
-                          </td>
-                          <td style={{ ...tdStyle, color: mr.registros.length === 0 ? '#555' : '#ccc' }}>
-                            {mr.registros.length === 0 ? 'Sin registros' : mr.registros.length}
-                          </td>
-                          <td style={tdStyle}>
-                            {mr.registros.length === 0
-                              ? '—'
-                              : [...new Set(mr.registros.map(r => r.empleador).filter(Boolean))].join(' | ') || '—'}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                      return matchedRows.flatMap((mr, i) => {
+                        const nombresDB = [...new Set(mr.registros.map(r => r.nombre).filter(Boolean))].join(' | ');
+                        const nombreExcel = mr.nombre === mr.cuil ? '' : mr.nombre;
+                        const nombreMostrar = nombresDB || nombreExcel || '—';
+
+                        // Sin registros
+                        if (mr.registros.length === 0) {
+                          return [(
+                            <tr key={`${i}-empty`} style={{ opacity: 0.4 }}>
+                              <td style={{ ...tdStyle, textAlign: 'center' }} />
+                              <td style={tdStyle}>{mr.cuil}</td>
+                              <td style={tdStyle}>{nombreMostrar}</td>
+                              <td style={tdStyle}>—</td>
+                              <td style={{ ...tdStyle, color: '#555' }}>Sin registros</td>
+                              <td style={tdStyle}>—</td>
+                              <td style={tdStyle}>—</td>
+                            </tr>
+                          )];
+                        }
+
+                        const rowIds = mr.registros.map(r => r.id);
+                        const groupAllSelected = rowIds.every(id => selectedIds.has(id));
+                        const groupSomeSelected = !groupAllSelected && rowIds.some(id => selectedIds.has(id));
+                        const isMulti = mr.registros.length > 1;
+
+                        // Header de grupo (sólo cuando hay múltiples registros)
+                        const elements: React.JSX.Element[] = [];
+                        if (isMulti) {
+                          elements.push(
+                            <tr key={`${i}-group`} style={{ background: 'rgba(99,102,241,0.04)' }}>
+                              <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={groupAllSelected}
+                                  ref={el => { if (el) el.indeterminate = groupSomeSelected; }}
+                                  onChange={() => toggleClient(rowIds)}
+                                  style={{ cursor: 'pointer' }}
+                                  title="Seleccionar/deseleccionar todos del cliente"
+                                />
+                              </td>
+                              <td style={{ ...tdStyle, fontWeight: 700 }}>{mr.cuil}</td>
+                              <td style={{ ...tdStyle, fontWeight: 700 }}>{nombreMostrar}</td>
+                              <td style={tdStyle} colSpan={4}>
+                                <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700 }}>{mr.registros.length} registros — elegí cuáles modificar</span>
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        // Una fila por registro
+                        mr.registros.forEach((reg, ri) => {
+                          const checked = selectedIds.has(reg.id);
+                          const missing = getMissingFields(reg);
+                          elements.push(
+                            <tr key={`${i}-${reg.id}`}>
+                              <td style={{ ...tdStyle, textAlign: 'center', paddingLeft: isMulti ? 24 : 12 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleClient([reg.id])}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                              </td>
+                              <td style={tdStyle}>{isMulti ? <span style={{ color: '#555' }}>↳ #{ri + 1}</span> : mr.cuil}</td>
+                              <td style={tdStyle}>{isMulti ? '' : nombreMostrar}</td>
+                              <td style={tdStyle}>{fmtFecha(reg)}</td>
+                              <td style={{ ...tdStyle, color: '#ccc' }}>{isMulti ? '' : 1}</td>
+                              <td style={tdStyle}>{reg.empleador || '—'}</td>
+                              <td style={tdStyle}>{renderFaltantes(missing, checked)}</td>
+                            </tr>
+                          );
+                        });
+
+                        return elements;
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
