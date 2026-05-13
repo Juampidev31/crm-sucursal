@@ -130,6 +130,28 @@ const ACUERDOS_OPCIONES = ['Riesgo Bajo', 'Riesgo Medio', 'Premium', 'No calific
 const TIPO_CLIENTE_OPCIONES = ['Apertura', 'Renovacion'];
 const RANGOS_ETARIOS = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
 const SEXOS = ['Masculino', 'Femenino', 'Otro'];
+const DEPENDENCIAS_OFICIALES = [
+  'Ministerio de Salud de Entre Rios',
+  'Consejo General de Educación de Entre Rios',
+  'Jefatura de Policía de la Provincia de Entre Ríos',
+  'Ministerio de Desarrollo Humano de Entre Rios',
+  'Direccion Provincial de Vialidad de Entre Ríos',
+  'Direccion General Servicio Penitenciario de Entre Ríos',
+  'Universidad Nacional de Entre Ríos',
+  'Consejo Provincial del Niño, el Adolescente y la Familia COPNAF',
+  'Honorable Cámara de Senadores de Entre Ríos',
+  'Instituto de Ayuda Financiera a la Acción Social',
+  'Caja de Retiros Jubilaciones y Pensiones de la Policía Federal',
+  'Ministerio de Seguridad y Justicia de Entre Ríos',
+  'Honorable Camara de Diputados de Entre Ríos',
+  'Ministerio de Desarrollo Social de Entre Ríos',
+  'Instituto Autárquico de Planeamiento y Vivienda',
+  'Ministerio de Planeamiento e Infraestructura de Entre Ríos',
+  'Universidad Autonoma de Entre Ríos',
+  'Ministerio Público de la Defensa de Entre Ríos',
+  'Pami INSSJP',
+  'Secretaria de modernizacion del estado',
+].sort();
 
 interface Filtros {
   // Filtros de selección
@@ -194,7 +216,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const [cuilCol, setCuilCol] = useState<number | null>(null);
   const [nombreCol, setNombreCol] = useState<number | null>(null);
   const [searched, setSearched] = useState(false);
-  const [empleadorInput, setEmpleadorInput] = useState('');
+  const EMPTY_CAMPOS_EXCEL = {
+    empleador: '', dependencia: '', analista: '', estado: '',
+    tipo_cliente: '', acuerdo_precios: '', cuotas: '', rango_etario: '',
+    sexo: '', localidad: '', es_re: '', comentarios: '',
+    puntaje: '', monto: '', fecha: '',
+  } as const;
+  type CamposExcel = { -readonly [K in keyof typeof EMPTY_CAMPOS_EXCEL]: string };
+  const [camposExcel, setCamposExcel] = useState<CamposExcel>({ ...EMPTY_CAMPOS_EXCEL });
   const [confirming, setConfirming] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [assignResult, setAssignResult] = useState<{ updated: number } | null>(null);
@@ -251,7 +280,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     setAssignResult(null);
     setAssignError(null);
     setConfirming(false);
-    setEmpleadorInput('');
+    setCamposExcel({ ...EMPTY_CAMPOS_EXCEL });
     setSelectedIds(new Set());
   };
 
@@ -268,24 +297,73 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     else setSelectedIds(new Set());
   }, [searched, allMatchedIds]);
 
+  // Dedupe case-insensitive, prefiriendo una forma canónica si existe en la lista de referencia
+  const dedupCI = (values: (string | null | undefined)[], canonical: readonly string[] = []): string[] => {
+    const canonMap = new Map(canonical.map(c => [c.toLowerCase(), c]));
+    const seen = new Map<string, string>();
+    for (const v of values) {
+      if (!v) continue;
+      const key = v.toLowerCase().trim();
+      if (!key) continue;
+      if (!seen.has(key)) seen.set(key, canonMap.get(key) ?? v);
+      else if (canonMap.has(key)) seen.set(key, canonMap.get(key)!);
+    }
+    return Array.from(seen.values()).sort((a, b) => a.localeCompare(b));
+  };
+
+  // Listas derivadas (case-insensitive dedupe)
+  const allAnalistasExcel = useMemo(() => dedupCI(registros.map(r => r.analista), ANALISTAS), [registros]);
+  const allEstadosExcel = useMemo(() => dedupCI(registros.map(r => r.estado)), [registros]);
+  const allTiposExcel = useMemo(() => dedupCI(registros.map(r => r.tipo_cliente), TIPO_CLIENTE_OPCIONES), [registros]);
+  const allAcuerdosExcel = useMemo(() => dedupCI(registros.map(r => r.acuerdo_precios), ACUERDOS_OPCIONES), [registros]);
+  const allLocalidadesExcel = useMemo(() => dedupCI(registros.map(r => r.localidad)), [registros]);
+  const allDependenciasExcel = useMemo(() => dedupCI(registros.map(r => r.dependencia)), [registros]);
+  const allCuotasExcel = useMemo(() => dedupCI(registros.map(r => r.cuotas)), [registros]);
+  const allRangosExcel = useMemo(() => dedupCI(registros.map(r => r.rango_etario), RANGOS_ETARIOS), [registros]);
+  const allSexosExcel = useMemo(() => dedupCI(registros.map(r => r.sexo), SEXOS), [registros]);
+
+  // Construye payload solo con campos llenos
+  const buildPayload = (): Record<string, unknown> => {
+    const p: Record<string, unknown> = {};
+    if (camposExcel.empleador.trim()) p.empleador = camposExcel.empleador.trim();
+    if (camposExcel.dependencia.trim()) p.dependencia = camposExcel.dependencia.trim();
+    if (camposExcel.analista.trim()) p.analista = camposExcel.analista.trim();
+    if (camposExcel.estado.trim()) p.estado = camposExcel.estado.trim();
+    if (camposExcel.tipo_cliente.trim()) p.tipo_cliente = camposExcel.tipo_cliente.trim();
+    if (camposExcel.acuerdo_precios.trim()) p.acuerdo_precios = camposExcel.acuerdo_precios.trim();
+    if (camposExcel.cuotas.trim()) p.cuotas = camposExcel.cuotas.trim();
+    if (camposExcel.rango_etario.trim()) p.rango_etario = camposExcel.rango_etario.trim();
+    if (camposExcel.sexo.trim()) p.sexo = camposExcel.sexo.trim();
+    if (camposExcel.localidad.trim()) p.localidad = camposExcel.localidad.trim();
+    if (camposExcel.comentarios.trim()) p.comentarios = camposExcel.comentarios.trim();
+    if (camposExcel.es_re === 'si') p.es_re = true;
+    else if (camposExcel.es_re === 'no') p.es_re = false;
+    if (camposExcel.puntaje.trim()) p.puntaje = Number(camposExcel.puntaje);
+    if (camposExcel.monto.trim()) p.monto = Number(camposExcel.monto);
+    if (camposExcel.fecha.trim()) p.fecha = camposExcel.fecha;
+    return p;
+  };
+  const payloadPreview = buildPayload();
+  const hayCampos = Object.keys(payloadPreview).length > 0;
+
   const handleAssign = async () => {
     const idsToUpdate = Array.from(selectedIds);
-    if (!empleadorInput.trim() || idsToUpdate.length === 0) return;
+    const payload = buildPayload();
+    if (Object.keys(payload).length === 0 || idsToUpdate.length === 0) return;
     setAssigning(true);
     setAssignError(null);
     const { error } = await supabase
       .from('registros')
-      .update({ empleador: empleadorInput.trim() })
+      .update(payload)
       .in('id', idsToUpdate);
     setAssigning(false);
     setConfirming(false);
     if (!error) {
       setAssignResult({ updated: idsToUpdate.length });
-      const emp = empleadorInput.trim();
       const idsSet = new Set(idsToUpdate);
-      const updatedRegs = registros.filter(r => idsSet.has(r.id)).map(r => ({ ...r, empleador: emp }));
+      const updatedRegs = registros.filter(r => idsSet.has(r.id)).map(r => ({ ...r, ...payload }));
       mutateRegistros(prev =>
-        prev.map(r => idsSet.has(r.id) ? { ...r, empleador: emp } : r)
+        prev.map(r => idsSet.has(r.id) ? { ...r, ...payload } : r)
       );
       updatedRegs.forEach(reg => {
         applyRegistroChange('UPDATE', reg);
@@ -320,7 +398,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
       >
         <Users size={18} color="#555" />
         <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
-          Asignar Empleador desde Excel
+          Asignar Campos desde Excel
           {expanded ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
         </h4>
       </div>
@@ -510,33 +588,99 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
 
           {searched && totalRegistros > 0 && !assignResult && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div>
-                <label style={{ fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 6 }}>
-                  Empleador a asignar
-                </label>
-                <input
-                  className="form-input"
-                  list="empleadores-datalist-asignar"
-                  placeholder="Ej: MUNICIPALIDAD DE PARANÁ"
-                  value={empleadorInput}
-                  onChange={e => { setEmpleadorInput(e.target.value); setConfirming(false); }}
-                  style={{ width: '100%', fontSize: 12 }}
-                />
-                <datalist id="empleadores-datalist-asignar">
-                  {allEmpleadores.map(e => <option key={e} value={e} />)}
-                </datalist>
+              <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
+                Llená sólo los campos que querés modificar. Los vacíos no se tocan.
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                {(() => {
+                  const labelStyle: React.CSSProperties = { fontSize: 9, color: '#888', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
+                  const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
+                  const setField = (key: keyof CamposExcel) => (v: string) => { setCamposExcel(p => ({ ...p, [key]: v })); setConfirming(false); };
+                  const selects: Array<{ key: keyof CamposExcel; label: string; opts: readonly string[] }> = [
+                    { key: 'analista', label: 'Analista', opts: ANALISTAS },
+                    { key: 'estado', label: 'Estado', opts: ESTADOS },
+                    { key: 'tipo_cliente', label: 'Tipo Cliente', opts: TIPO_CLIENTE_OPCIONES },
+                    { key: 'acuerdo_precios', label: 'Acuerdo Precios', opts: ACUERDOS_OPCIONES },
+                    { key: 'rango_etario', label: 'Rango Etario', opts: RANGOS_ETARIOS },
+                    { key: 'sexo', label: 'Sexo', opts: SEXOS },
+                  ];
+                  const inputs: Array<{ key: keyof CamposExcel; label: string; list: string[] }> = [
+                    { key: 'empleador', label: 'Empleador', list: allEmpleadores },
+                    { key: 'dependencia', label: 'Dependencia', list: DEPENDENCIAS_OFICIALES },
+                    { key: 'cuotas', label: 'Cuotas', list: allCuotasExcel },
+                    { key: 'localidad', label: 'Localidad', list: allLocalidadesExcel },
+                  ];
+                  return (
+                    <>
+                      {selects.map(f => (
+                        <div key={f.key}>
+                          <label style={labelStyle}>{f.label}</label>
+                          <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
+                            <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
+                            {f.opts.map(o => <option key={o} value={o} style={{ background: '#1a1a1a', color: '#ddd' }}>{o}</option>)}
+                          </select>
+                        </div>
+                      ))}
+                      {inputs.map(f => (
+                        <div key={f.key}>
+                          <label style={labelStyle}>{f.label}</label>
+                          <input
+                            className="form-input"
+                            list={`excel-dl-${f.key}`}
+                            value={camposExcel[f.key]}
+                            onChange={e => setField(f.key)(e.target.value)}
+                            style={{ width: '100%', fontSize: 12 }}
+                          />
+                          <datalist id={`excel-dl-${f.key}`}>
+                            {f.list.map(v => <option key={v} value={v} />)}
+                          </datalist>
+                        </div>
+                      ))}
+                      <div>
+                        <label style={labelStyle}>Es RE</label>
+                        <select value={camposExcel.es_re} onChange={e => setField('es_re')(e.target.value)} style={selectStyle}>
+                          <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
+                          <option value="si" style={{ background: '#1a1a1a', color: '#ddd' }}>Sí</option>
+                          <option value="no" style={{ background: '#1a1a1a', color: '#ddd' }}>No</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Puntaje</label>
+                        <input type="number" className="form-input" value={camposExcel.puntaje} onChange={e => setField('puntaje')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Monto</label>
+                        <input type="number" className="form-input" value={camposExcel.monto} onChange={e => setField('monto')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Fecha</label>
+                        <input type="date" className="form-input" value={camposExcel.fecha} onChange={e => setField('fecha')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+              <div>
+                <label style={{ fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>Comentarios</label>
+                <textarea className="form-input" rows={2} value={camposExcel.comentarios} onChange={e => { setCamposExcel(p => ({ ...p, comentarios: e.target.value })); setConfirming(false); }} style={{ width: '100%', fontSize: 12, resize: 'vertical' }} />
+              </div>
+
+              {hayCampos && (
+                <div style={{ fontSize: 11, color: '#a5b4fc', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', padding: '6px 10px', borderRadius: 6 }}>
+                  Se modificará: {Object.keys(payloadPreview).join(', ')}
+                </div>
+              )}
 
               {!confirming ? (
                 <button
-                  onClick={() => { if (empleadorInput.trim() && totalSeleccionados > 0) setConfirming(true); }}
-                  disabled={!empleadorInput.trim() || totalSeleccionados === 0}
+                  onClick={() => { if (hayCampos && totalSeleccionados > 0) setConfirming(true); }}
+                  disabled={!hayCampos || totalSeleccionados === 0}
                   style={{
                     alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: empleadorInput.trim() && totalSeleccionados > 0 ? '#2d2f5e' : '#1a1a1a',
-                    border: `1px solid ${empleadorInput.trim() && totalSeleccionados > 0 ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: 6, cursor: empleadorInput.trim() && totalSeleccionados > 0 ? 'pointer' : 'not-allowed',
-                    color: empleadorInput.trim() && totalSeleccionados > 0 ? '#a5b4fc' : '#444',
+                    background: hayCampos && totalSeleccionados > 0 ? '#2d2f5e' : '#1a1a1a',
+                    border: `1px solid ${hayCampos && totalSeleccionados > 0 ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 6, cursor: hayCampos && totalSeleccionados > 0 ? 'pointer' : 'not-allowed',
+                    color: hayCampos && totalSeleccionados > 0 ? '#a5b4fc' : '#444',
                   }}
                 >
                   Asignar a seleccionados ({totalSeleccionados} registro{totalSeleccionados !== 1 ? 's' : ''})
@@ -588,7 +732,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
               border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8,
               fontSize: 12, color: '#4ade80', fontWeight: 600,
             }}>
-              ✓ {assignResult.updated} registro{assignResult.updated !== 1 ? 's' : ''} actualizados con empleador &quot;{empleadorInput}&quot;.
+              ✓ {assignResult.updated} registro{assignResult.updated !== 1 ? 's' : ''} actualizado{assignResult.updated !== 1 ? 's' : ''}.
             </div>
           )}
         </>
