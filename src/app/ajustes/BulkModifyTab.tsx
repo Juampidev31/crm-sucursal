@@ -132,6 +132,11 @@ function esGobiernoProvincialBulk(s?: string) {
   const u = s.toUpperCase();
   return u.includes('GOBIERNO') && (u.includes('ENTRE RÍOS') || u.includes('ENTRE RIOS'));
 }
+function esConsejoEducacionBulk(s?: string) {
+  if (!s) return false;
+  const u = s.toUpperCase();
+  return u.includes('CONSEJO') && u.includes('EDUCACI');
+}
 function esMunicipalidadParanaBulk(s?: string) {
   if (!s) return false;
   const u = s.toUpperCase();
@@ -283,7 +288,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
         if (!r.empleador?.trim()) missing.push('x');
         if (!r.localidad?.trim()) missing.push('x');
       }
-      if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador)) && !r.dependencia?.trim()) missing.push('x');
+      if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador)) && !r.dependencia?.trim()) missing.push('x');
       if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) missing.push('x');
       if (missing.length === 0) completos++; else faltantes++;
     }));
@@ -363,7 +368,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
       if (!r.empleador?.trim()) missing.push('empleador');
       if (!r.localidad?.trim()) missing.push('localidad');
     }
-    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador)) && !r.dependencia?.trim()) {
+    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador)) && !r.dependencia?.trim()) {
       missing.push('dependencia');
     }
     if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) {

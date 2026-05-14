@@ -68,6 +68,12 @@ function esGobiernoProvincial(s?: string) {
   return u.includes('GOBIERNO') && (u.includes('ENTRE RÍOS') || u.includes('ENTRE RIOS'));
 }
 
+function esConsejoEducacion(s?: string) {
+  if (!s) return false;
+  const u = s.toUpperCase();
+  return u.includes('CONSEJO') && (u.includes('EDUCACI') );
+}
+
 function esMunicipalidadParana(s?: string) {
   if (!s) return false;
   const u = s.toUpperCase();
@@ -97,7 +103,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
   
-  if ((esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador)) && !form.dependencia?.trim()) {
+  if ((esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador) || esConsejoEducacion(form.empleador)) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
   }
 
@@ -919,7 +925,7 @@ const RegistroModal = memo(function RegistroModal({
                 })()}
               </Field>
             </div>
-            {(esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador)) && (
+            {(esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador) || esConsejoEducacion(form.empleador)) && (
               <div className="form-row">
                 <Field label="Dependencia *" error={errors.dependencia}>
                   {dependenciaCustom ? (
@@ -947,7 +953,7 @@ const RegistroModal = memo(function RegistroModal({
                       onChange={val => set('dependencia', val)}
                       options={Array.from(new Set([
                         ...(esMunicipalidadParana(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO),
-                        ...allRegistros.filter(r => esMunicipalidadParana(form.empleador) ? esMunicipalidadParana(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
+                        ...allRegistros.filter(r => esMunicipalidadParana(form.empleador) ? esMunicipalidadParana(r.empleador) : esConsejoEducacion(form.empleador) ? esConsejoEducacion(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
                       ])).sort()}
                       placeholder="— Seleccionar dependencia —"
                       isSearchable={true}
