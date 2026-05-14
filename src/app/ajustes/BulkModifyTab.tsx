@@ -1431,7 +1431,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     try {
       const { data, error } = await supabase
         .from('registros')
-        .select('empleador')
+        .select('empleador, dependencia')
         .not('empleador', 'is', null)
         .neq('empleador', '');
 
@@ -1441,9 +1441,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       } else {
         // Contar ocurrencias de cada empleador
         const conteo = new Map<string, number>();
+        const conteoDep = new Map<string, number>();
         data.forEach(r => {
           const emp = r.empleador;
           conteo.set(emp, (conteo.get(emp) || 0) + 1);
+          const dep = r.dependencia?.trim();
+          if (dep) conteoDep.set(dep, (conteoDep.get(dep) || 0) + 1);
         });
 
         // Convertir a array y enriquecer con info de maestro
@@ -1460,8 +1463,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           })
           .sort((a, b) => b.cantidad - a.cantidad);
 
-        // Agregar dependencias predefinidas que no tengan registros aún
+        // Agregar dependencias reales de registros
         const nombresExistentes = new Set(empleadosArray.map(e => e.nombre.toUpperCase()));
+        conteoDep.forEach((cantidad, dep) => {
+          if (!nombresExistentes.has(dep.toUpperCase())) {
+            const maestro = getMaestroInfo(dep);
+            empleadosArray.push({ nombre: dep, cantidad, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName });
+            nombresExistentes.add(dep.toUpperCase());
+          }
+        });
+
+        // Agregar dependencias predefinidas que no tengan registros aún
         for (const dep of DEPENDENCIAS_OFICIALES) {
           if (!nombresExistentes.has(dep.toUpperCase())) {
             const maestro = getMaestroInfo(dep);
