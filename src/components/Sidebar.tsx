@@ -7,15 +7,16 @@ import { useFilter } from '@/context/FilterContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { STATUS_LABEL } from '@/lib/utils';
-import { 
+import {
   AlignJustify, BarChart2, FileText,
-  DollarSign, Settings, Bell, Lock, LogOut, Plus, 
+  DollarSign, Settings, Bell, Lock, LogOut, Plus,
   SlidersHorizontal, Download, ChevronDown, ChevronUp, X, Calculator,
-  ZoomIn, ZoomOut, Maximize
+  ZoomIn, ZoomOut, Maximize, FileSpreadsheet
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { setSession } from '@/lib/auth';
+import { ExportXlsxModal } from '@/components/ExportXlsxModal';
 
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
@@ -112,6 +113,7 @@ export default function Sidebar({
   const { pendingReminders } = useRecordatorios();
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, triggerExport, totalResults } = useFilter();
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showXlsxModal, setShowXlsxModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -298,8 +300,28 @@ export default function Sidebar({
                 <Download size={22} strokeWidth={2} />
               </button>
             </div>
+
+            {isAdmin && (
+              <div className="sidebar-icon-btn" data-label="Exportar XLSX">
+                <button
+                  onClick={() => setShowXlsxModal(true)}
+                  className="green-hover-btn"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 52, height: 52,
+                    borderRadius: 13,
+                    background: 'rgba(255,255,255,0.04)', color: '#888',
+                    border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
+                  }}
+                >
+                  <FileSpreadsheet size={22} strokeWidth={2} />
+                </button>
+              </div>
+            )}
           </>
         )}
+
+        <ExportXlsxModal open={showXlsxModal} onClose={() => setShowXlsxModal(false)} />
 
         <SidebarDivider />
 
