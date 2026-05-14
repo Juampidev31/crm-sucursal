@@ -53,31 +53,37 @@ export function ExportXlsxModal({ open, onClose }: Props) {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '8px 10px', borderRadius: 8,
-    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-    color: '#fff', fontSize: 14, outline: 'none',
+    width: '100%', padding: '10px 14px', borderRadius: 8, boxSizing: 'border-box',
+    background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)',
+    color: '#fff', fontSize: 15, outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
-    display: 'block', marginBottom: 4, fontSize: 12, color: '#aaa',
+    display: 'block', marginBottom: 6,
+    fontSize: 9, fontWeight: 800, color: '#555',
+    textTransform: 'uppercase', letterSpacing: '0.5px',
   };
 
   return (
     <div
+      className="modal-overlay"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.6)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        overflowY: 'auto', padding: '20px 16px',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        background: '#1a1a2e', borderRadius: 16, padding: 28, width: 360,
-        border: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex', flexDirection: 'column', gap: 18,
+        background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 12, padding: '32px 28px', width: 320,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 20,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Download size={18} style={{ color: '#fff' }} />
           <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Exportar XLSX</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#444', marginLeft: 'auto' }}>
             <X size={18} />
           </button>
         </div>
@@ -104,17 +110,19 @@ export function ExportXlsxModal({ open, onClose }: Props) {
         </div>
 
         {error && (
-          <p style={{ color: '#f87171', fontSize: 13, margin: 0 }}>{error}</p>
+          <p style={{ color: '#e53e3e', fontSize: 13, margin: 0 }}>{error}</p>
         )}
 
         <button
           onClick={handleDownload}
           disabled={loading}
           style={{
+            marginTop: 4, width: '100%', padding: '10px',
+            background: '#fff', color: '#000', border: 'none',
+            borderRadius: 8, fontWeight: 700, fontSize: 15,
+            cursor: loading ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '10px 0', borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-            background: loading ? '#374151' : '#16a34a', color: '#fff',
-            fontWeight: 700, fontSize: 14,
+            opacity: loading ? 0.6 : 1,
           }}
         >
           {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
