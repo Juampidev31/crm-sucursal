@@ -827,7 +827,8 @@ const RegistroModal = memo(function RegistroModal({
                     groups={[
                       { label: 'S.A.', items: empleadoresAgrupados.sa },
                       { label: 'S.R.L.', items: empleadoresAgrupados.srl },
-                      { label: 'Otros', items: empleadoresAgrupados.otros }
+                      { label: 'Otros', items: empleadoresAgrupados.otros },
+                      { label: 'Dependencias provinciales', items: DEPENDENCIAS_POR_DEFECTO },
                     ]}
                     onAddCustom={() => {
                       setEmpleadorCustom(true);
