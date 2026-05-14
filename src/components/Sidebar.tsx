@@ -10,7 +10,7 @@ import { STATUS_LABEL } from '@/lib/utils';
 import {
   AlignJustify, BarChart2, FileText,
   DollarSign, Settings, Bell, Lock, LogOut, Plus,
-  SlidersHorizontal, Download, ChevronDown, ChevronUp, X, Calculator,
+  SlidersHorizontal, ChevronDown, ChevronUp, X, Calculator,
   ZoomIn, ZoomOut, Maximize, FileSpreadsheet
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -111,7 +111,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const { isAdmin, logout, refreshUser } = useAuth();
   const { pendingReminders } = useRecordatorios();
-  const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, triggerExport, totalResults } = useFilter();
+  const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, totalResults } = useFilter();
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showXlsxModal, setShowXlsxModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
@@ -283,22 +283,6 @@ export default function Sidebar({
                   ))}
                 </div>
               )}
-            </div>
-
-            <div className="sidebar-icon-btn" data-label="Exportar CSV">
-              <button
-                onClick={triggerExport}
-                className="green-hover-btn"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 52, height: 52,
-                  borderRadius: 13,
-                  background: 'rgba(255,255,255,0.04)', color: '#888',
-                  border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
-                }}
-              >
-                <Download size={22} strokeWidth={2} />
-              </button>
             </div>
 
             {isAdmin && (

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -1359,7 +1359,7 @@ export default function RegistrosPage() {
   const {
     filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
-    pageSize, triggerExport, exportTick,
+    pageSize,
     currentPage, setCurrentPage, setTotalResults,
     showFilters, setShowFilters,
   } = useFilter();
@@ -1525,17 +1525,7 @@ export default function RegistrosPage() {
     return { cantidad: filteredRegistros.length, monto: suma };
   }, [filteredRegistros]);
 
-  const exportarCSV = useCallback(() => {
-    const headers = ['Nombre', 'CUIL', 'Analista', 'Estado', 'Monto', 'Fecha', 'Puntaje', 'Es RE'];
-    const rows = filteredRegistros.map(r => [r.nombre, r.cuil, r.analista, r.estado, r.monto, r.fecha || '', r.puntaje || '', r.es_re ? 'Sí' : 'No']);
-    const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'registros.csv'; a.click();
-    URL.revokeObjectURL(url);
-  }, [filteredRegistros]);
 
-  useEffect(() => { if (exportTick > 0) exportarCSV(); }, [exportTick, exportarCSV]);
 
   const totalPages = Math.ceil(filteredRegistros.length / pageSize) || 1;
   const paginatedRegistros = useMemo(() => {

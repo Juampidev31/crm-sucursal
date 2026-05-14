@@ -52,8 +52,6 @@ interface FilterCtx {
   setIsCreationModalOpen: (val: boolean) => void;
   pageSize: number;
   setPageSize: (val: number) => void;
-  triggerExport: () => void;
-  exportTick: number;
   currentPage: number;
   setCurrentPage: (val: number | ((p: number) => number)) => void;
   totalResults: number;
@@ -68,7 +66,6 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [filters, setFilters] = useState<FilterState>(initialState);
   const [isCreationModalOpen, setIsCreationModalOpen] = useState(false);
   const [pageSize, setPageSize] = useState(50);
-  const [exportTick, setExportTick] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
@@ -104,10 +101,6 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     });
   }, [filters]);
 
-  const triggerExport = useCallback(() => {
-    setExportTick(prev => prev + 1);
-  }, []);
-
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
@@ -117,7 +110,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     <FilterContext.Provider value={{
       filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
       isCreationModalOpen, setIsCreationModalOpen,
-      pageSize, setPageSize, triggerExport, exportTick,
+      pageSize, setPageSize,
       currentPage, setCurrentPage, totalResults, setTotalResults,
       showFilters, setShowFilters,
     }}>
