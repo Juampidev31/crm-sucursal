@@ -13,6 +13,7 @@ import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
 import { AuditResult, parseCSVAudit, performAudit } from '@/lib/audit-import-utils';
 import { corregirTildes } from '@/lib/correccion-tildes';
+import { getLocalidadesByCP, getCPByLocalidad, addCustomMapping } from '@/lib/codigos-postales';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -440,8 +441,11 @@ const RegistroModal = memo(function RegistroModal({
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
   const [showComentariosModal, setShowComentariosModal] = useState(false);
   const [empleadorCustom, setEmpleadorCustom] = useState(false);
-  const [localidadCustom, setLocalidadCustom] = useState(false);
   const [dependenciaCustom, setDependenciaCustom] = useState(false);
+  const [cp, setCp] = useState('');
+  const [cpAddOpen, setCpAddOpen] = useState(false);
+  const [cpAddLoc, setCpAddLoc] = useState('');
+  const [cpMapVersion, setCpMapVersion] = useState(0);
   const { registros: allRegistros } = useRegistros();
 
   // Derivar empleadores y localidades reactivamente desde DataContext
@@ -493,8 +497,10 @@ const RegistroModal = memo(function RegistroModal({
   useEffect(() => {
     if (isOpen) {
       setEmpleadorCustom(!!initialData.empleador && !empleadoresDB.includes(initialData.empleador));
-      setLocalidadCustom(!!initialData.localidad && !localidadesDB.includes(initialData.localidad));
       setDependenciaCustom(!!initialData.dependencia && !DEPENDENCIAS_POR_DEFECTO.includes(initialData.dependencia || ''));
+      setCp(initialData.localidad ? (getCPByLocalidad(initialData.localidad) || '') : '');
+      setCpAddOpen(false);
+      setCpAddLoc('');
     }
   }, [isOpen, initialData, empleadoresDB, localidadesDB]);
 
@@ -810,37 +816,93 @@ const RegistroModal = memo(function RegistroModal({
                   />
                 )}
               </Field>
-              <Field label={`Localidad${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
-                {localidadCustom ? (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      className="form-input"
-                      value={form.localidad || ''}
-                      onChange={e => set('localidad', e.target.value)}
-                      placeholder="Nombre de la localidad"
-                      style={{ flex: 1 }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { setLocalidadCustom(false); set('localidad', ''); }}
-                      className="btn-icon"
-                      style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                ) : (
-                  <PremiumSelect
-                    value={localidadesDB.includes(form.localidad || '') ? (form.localidad || '') : ''}
-                    onChange={val => set('localidad', val)}
-                    options={Array.from(new Set([...LOCALIDADES_POR_DEFECTO, ...localidadesDB])).sort()}
-                    placeholder="— Sin especificar —"
-                    onAddCustom={() => {
-                      setLocalidadCustom(true);
-                      set('localidad', '');
-                    }}
-                  />
-                )}
+              <Field label={`C.P.${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
+                {(() => {
+                  void cpMapVersion;
+                  const matches = getLocalidadesByCP(cp);
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <input
+                        className="form-input"
+                        value={cp}
+                        onChange={e => {
+                          const next = e.target.value.replace(/\D/g, '').slice(0, 5);
+                          setCp(next);
+                          const m = getLocalidadesByCP(next);
+                          if (m.length === 1) set('localidad', m[0]);
+                          else if (m.length === 0) set('localidad', '');
+                          else if (!m.includes(form.localidad || '')) set('localidad', '');
+                        }}
+                        placeholder="Código postal"
+                        inputMode="numeric"
+                      />
+                      {cp && matches.length === 1 && (
+                        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
+                          Localidad: <strong style={{ color: 'var(--text)' }}>{matches[0]}</strong>
+                        </div>
+                      )}
+                      {cp && matches.length > 1 && (
+                        <PremiumSelect
+                          value={form.localidad || ''}
+                          onChange={val => set('localidad', val)}
+                          options={matches}
+                          placeholder="— Elegir localidad —"
+                        />
+                      )}
+                      {cp && matches.length === 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ fontSize: 13, color: 'var(--warning, #b45309)' }}>Sin coincidencia para este C.P.</div>
+                          {isAdmin && !cpAddOpen && (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              style={{ alignSelf: 'flex-start', fontSize: 13, padding: '6px 10px' }}
+                              onClick={() => { setCpAddOpen(true); setCpAddLoc(''); }}
+                            >
+                              + Agregar localidad para {cp}
+                            </button>
+                          )}
+                          {isAdmin && cpAddOpen && (
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <input
+                                className="form-input"
+                                value={cpAddLoc}
+                                onChange={e => setCpAddLoc(corregirTildes(capitalizarTexto(e.target.value)))}
+                                placeholder="Nombre de la localidad"
+                                style={{ flex: 1 }}
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ padding: '0 12px' }}
+                                onClick={() => {
+                                  const name = cpAddLoc.trim();
+                                  if (!name) return;
+                                  addCustomMapping(cp, name);
+                                  set('localidad', name);
+                                  setCpAddOpen(false);
+                                  setCpAddLoc('');
+                                  setCpMapVersion(v => v + 1);
+                                }}
+                              >
+                                Guardar
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                onClick={() => { setCpAddOpen(false); setCpAddLoc(''); }}
+                                style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </Field>
             </div>
             {form.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && (
