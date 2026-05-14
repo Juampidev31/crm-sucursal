@@ -7,7 +7,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import SelectReporte from '@/components/SelectReporte';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, Calculator, DollarSign } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -306,6 +306,44 @@ export default function AnalistasPage() {
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
+  const [rendimiento12MOpen, setRendimiento12MOpen] = useState(false);
+
+  const ultimos12MesesKQ = useMemo(() => {
+    const buckets: { key: string; mes0: number; anio: number; label: string; monto: number; ops: number; metaK: number; metaQ: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      let m = now.getMonth() - i;
+      let a = now.getFullYear();
+      while (m < 0) { m += 12; a--; }
+      const key = `${a}-${String(m + 1).padStart(2, '0')}`;
+      buckets.push({ key, mes0: m, anio: a, label: `${CONFIG.MESES_NOMBRES[m].slice(0, 3)} ${String(a).slice(2)}`, monto: 0, ops: 0, metaK: 0, metaQ: 0 });
+    }
+    const idx = new Map(buckets.map((b, i) => [b.key, i]));
+    for (const r of registros) {
+      if (!(r.estado?.toLowerCase() === 'venta' || r.estado?.toLowerCase().includes('aprobado cc'))) continue;
+      const k = r.fecha?.slice(0, 7);
+      if (!k) continue;
+      const i = idx.get(k);
+      if (i === undefined) continue;
+      buckets[i].monto += Number(r.monto) || 0;
+      buckets[i].ops += 1;
+    }
+    for (const b of buckets) {
+      if (analista === 'PDV') {
+        b.metaK = objetivos
+          .filter(o => o.mes === b.mes0 && o.anio === b.anio && o.analista !== 'PDV')
+          .reduce((s, o) => s + (o.meta_ventas || 0), 0);
+        b.metaQ = objetivos
+          .filter(o => o.mes === b.mes0 && o.anio === b.anio && o.analista !== 'PDV')
+          .reduce((s, o) => s + (o.meta_operaciones || 0), 0);
+      } else {
+        const obj = objetivos.find(o => o.analista === analista && o.mes === b.mes0 && o.anio === b.anio);
+        b.metaK = obj?.meta_ventas ?? 0;
+        b.metaQ = obj?.meta_operaciones ?? 0;
+      }
+    }
+    return buckets;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registros, objetivos, analista]);
 
 
 
@@ -1381,7 +1419,26 @@ export default function AnalistasPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#0a0a0a', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 2 }}>
+              <button
+                type="button"
+                onClick={() => setRendimiento12MOpen(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 12px', borderRadius: 8,
+                  background: 'rgba(96,165,250,0.08)',
+                  border: '1px solid rgba(96,165,250,0.25)',
+                  color: '#60a5fa',
+                  fontSize: 11, fontWeight: 800, letterSpacing: '0.6px',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  fontFamily: "'Outfit', sans-serif",
+                }}
+              >
+                <TrendingUp size={13} /> Rendimiento Últ. 12M
+              </button>
+            </div>
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
@@ -1974,6 +2031,204 @@ export default function AnalistasPage() {
               </div>
           </div>
         )}
+      </div>
+
+      {rendimiento12MOpen && (
+        <div
+          onClick={() => setRendimiento12MOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#0a0a0a',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 18,
+              padding: 24,
+              width: 'min(1180px, 100%)',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                Rendimiento Últimos 12 Meses {analista !== 'PDV' && `— ${analista}`}
+              </div>
+              <button
+                type="button"
+                onClick={() => setRendimiento12MOpen(false)}
+                style={{
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 8, width: 32, height: 32,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#aaa', cursor: 'pointer',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <Mini12ChartCard
+                label="VENTAS K — CAPITAL"
+                total={formatCurrency(ultimos12MesesKQ.reduce((s, b) => s + b.monto, 0))}
+                buckets={ultimos12MesesKQ}
+                accessor={b => b.monto}
+                metaAccessor={b => b.metaK}
+                formatValue={v => formatCurrency(v)}
+              />
+              <Mini12ChartCard
+                label="VENTAS Q — OPERACIONES"
+                total={String(ultimos12MesesKQ.reduce((s, b) => s + b.ops, 0))}
+                buckets={ultimos12MesesKQ}
+                accessor={b => b.ops}
+                metaAccessor={b => b.metaQ}
+                formatValue={v => `${v} ${v === 1 ? 'op' : 'ops'}`}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+type Bucket12 = { key: string; label: string; monto: number; ops: number; metaK: number; metaQ: number };
+
+function Mini12ChartCard({ label, total, buckets, accessor, metaAccessor, formatValue }: {
+  label: string;
+  total: string;
+  buckets: Bucket12[];
+  accessor: (b: Bucket12) => number;
+  metaAccessor?: (b: Bucket12) => number;
+  formatValue?: (v: number) => string;
+}) {
+  const values = buckets.map(accessor);
+  const metas = metaAccessor ? buckets.map(metaAccessor) : [];
+  const max = Math.max(1, ...values, ...metas);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const fmt = formatValue || ((v: number) => String(v));
+  return (
+    <div style={{
+      background: '#0a0a0a',
+      border: '1px solid rgba(255,255,255,0.05)',
+      borderRadius: 14,
+      padding: '20px 22px',
+      display: 'flex', flexDirection: 'column', minHeight: 340,
+    }}>
+      <div style={{ fontSize: 11, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 20 }}>{total}</div>
+
+      <div style={{ position: 'relative', flex: 1, minHeight: 200, paddingBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 4, height: '100%' }}>
+          {buckets.map((b, i) => {
+            const v = accessor(b);
+            const meta = metaAccessor ? metaAccessor(b) : 0;
+            const h = v > 0 ? Math.max(4, (v / max) * 100) : 2;
+            const mh = meta > 0 ? (meta / max) * 100 : 0;
+            const isHover = hoverIdx === i;
+            const pct = meta > 0 ? (v / meta) * 100 : null;
+            return (
+              <div
+                key={b.key}
+                onMouseEnter={() => setHoverIdx(i)}
+                onMouseLeave={() => setHoverIdx(prev => (prev === i ? null : prev))}
+                style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', cursor: 'pointer' }}
+              >
+                <div style={{ position: 'relative', width: 16, height: '100%' }}>
+                  {meta <= 0 ? (
+                    <div style={{
+                      position: 'absolute', left: 0, right: 0, bottom: 0,
+                      height: `${h}%`,
+                      background: v > 0 ? (isHover ? '#86efac' : '#4ade80') : 'rgba(255,255,255,0.06)',
+                      borderRadius: 2,
+                      transition: 'height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s',
+                    }} />
+                  ) : (
+                    <>
+                      {/* Segmento rojo (0 → min(actual, meta)) */}
+                      <div style={{
+                        position: 'absolute', left: 0, right: 0, bottom: 0,
+                        height: `${Math.min(h, mh)}%`,
+                        background: isHover ? '#f87171' : '#ef4444',
+                        borderTopLeftRadius: h <= mh ? 2 : 0,
+                        borderTopRightRadius: h <= mh ? 2 : 0,
+                        borderBottomLeftRadius: 2, borderBottomRightRadius: 2,
+                        transition: 'height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s',
+                      }} />
+                      {/* Segmento verde (meta → actual) si supera */}
+                      {h > mh && (
+                        <div style={{
+                          position: 'absolute', left: 0, right: 0,
+                          bottom: `${mh}%`,
+                          height: `${h - mh}%`,
+                          background: isHover ? '#86efac' : '#4ade80',
+                          borderTopLeftRadius: 2, borderTopRightRadius: 2,
+                          transition: 'height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s',
+                        }} />
+                      )}
+                      {/* Marcador blanco en el 100% (meta) */}
+                      <div style={{
+                        position: 'absolute',
+                        left: -3, right: -3,
+                        bottom: `calc(${mh}% - 1px)`,
+                        height: 2,
+                        background: '#fff',
+                        borderRadius: 1,
+                        boxShadow: '0 0 4px rgba(255,255,255,0.6)',
+                        pointerEvents: 'none',
+                      }} />
+                    </>
+                  )}
+                </div>
+                {isHover && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: `calc(${Math.max(h, mh)}% + 8px)`,
+                    left: '50%', transform: 'translateX(-50%)',
+                    background: '#111', border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: 6, padding: '8px 10px',
+                    fontSize: 11, color: '#fff', whiteSpace: 'nowrap',
+                    pointerEvents: 'none', zIndex: 3,
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.5)',
+                    minWidth: 120,
+                  }}>
+                    <div style={{ fontSize: 9, color: '#888', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{b.label}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: 2, background: '#4ade80' }} />
+                      <span style={{ color: '#888', fontSize: 10 }}>Real:</span>
+                      <span style={{ fontWeight: 800, marginLeft: 'auto' }}>{fmt(v)}</span>
+                    </div>
+                    {meta > 0 && (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                          <span style={{ width: 8, height: 2, background: '#fff' }} />
+                          <span style={{ color: '#888', fontSize: 10 }}>Meta:</span>
+                          <span style={{ fontWeight: 800, marginLeft: 'auto' }}>{fmt(meta)}</span>
+                        </div>
+                        <div style={{ marginTop: 4, fontSize: 10, color: pct! >= 100 ? '#4ade80' : '#fbbf24', fontWeight: 800, textAlign: 'right' }}>
+                          {pct!.toFixed(1)}% cumpl.
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', gap: 4 }}>
+        {buckets.map(b => (
+          <div key={b.key} style={{ flex: 1, textAlign: 'center' }}>{b.label}</div>
+        ))}
       </div>
     </div>
   );
