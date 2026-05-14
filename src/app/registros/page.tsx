@@ -60,6 +60,20 @@ const DEPENDENCIAS_POR_DEFECTO = [
   'Secretaria de modernizacion del estado'
 ].sort();
 
+const DEPENDENCIAS_MUNICIPALIDAD_PARANA: string[] = [].sort();
+
+function esGobiernoProvincial(s?: string) {
+  if (!s) return false;
+  const u = s.toUpperCase();
+  return u.includes('GOBIERNO') && (u.includes('ENTRE RÍOS') || u.includes('ENTRE RIOS'));
+}
+
+function esMunicipalidadParana(s?: string) {
+  if (!s) return false;
+  const u = s.toUpperCase();
+  return u.includes('MUNICIPALIDAD') && (u.includes('PARANÁ') || u.includes('PARANA'));
+}
+
 // ── Validation ────────────────────────────────────────────────────────────────
 
 function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, string> {
@@ -83,7 +97,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
   
-  if (form.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && !form.dependencia?.trim()) {
+  if ((esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador)) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
   }
 
@@ -750,14 +764,14 @@ const RegistroModal = memo(function RegistroModal({
                       onBlur={e => {
                         const val = e.target.value.trim();
                         const upper = val.toUpperCase();
-                        const esGobierno = upper === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS';
-                        const esDependenciaProvincial = (upper.includes('ENTRE RÍOS') || upper.includes('ENTRE RIOS')) && 
-                                                      !esGobierno && 
-                                                      !upper.includes('ENERSA') && 
+                        const esGobierno = esGobiernoProvincial(val);
+                        const esDependenciaProvincial = (upper.includes('ENTRE RÍOS') || upper.includes('ENTRE RIOS')) &&
+                                                      !esGobierno &&
+                                                      !upper.includes('ENERSA') &&
                                                       !upper.includes('ENERGÍA DE ENTRE RÍOS');
-                        
+
                         if (esDependenciaProvincial) {
-                          set('empleador', 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS');
+                          set('empleador', 'Gobierno de la Provincia de Entre Ríos');
                           set('dependencia', corregirTildes(val));
                           setDependenciaCustom(false);
                           setEmpleadorCustom(false);
@@ -788,14 +802,14 @@ const RegistroModal = memo(function RegistroModal({
                     value={empleadoresDB.includes(form.empleador || '') ? (form.empleador || '') : ''}
                     onChange={val => {
                       const upper = val.toUpperCase();
-                      const esGobierno = upper === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS';
-                      const esDependenciaProvincial = (upper.includes('ENTRE RÍOS') || upper.includes('ENTRE RIOS')) && 
-                                                    !esGobierno && 
-                                                    !upper.includes('ENERSA') && 
+                      const esGobierno = esGobiernoProvincial(val);
+                      const esDependenciaProvincial = (upper.includes('ENTRE RÍOS') || upper.includes('ENTRE RIOS')) &&
+                                                    !esGobierno &&
+                                                    !upper.includes('ENERSA') &&
                                                     !upper.includes('ENERGÍA DE ENTRE RÍOS');
-                      
+
                       if (esDependenciaProvincial) {
-                        set('empleador', 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS');
+                        set('empleador', 'Gobierno de la Provincia de Entre Ríos');
                         set('dependencia', val);
                         setDependenciaCustom(false);
                       } else {
@@ -905,7 +919,7 @@ const RegistroModal = memo(function RegistroModal({
                 })()}
               </Field>
             </div>
-            {form.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && (
+            {(esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador)) && (
               <div className="form-row">
                 <Field label="Dependencia *" error={errors.dependencia}>
                   {dependenciaCustom ? (
@@ -929,11 +943,11 @@ const RegistroModal = memo(function RegistroModal({
                     </div>
                   ) : (
                     <PremiumSelect
-                      value={DEPENDENCIAS_POR_DEFECTO.includes(form.dependencia || '') ? (form.dependencia || '') : ''}
+                      value={(() => { const d = form.dependencia || ''; const list = esMunicipalidadParana(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO; return list.includes(d) ? d : ''; })()}
                       onChange={val => set('dependencia', val)}
                       options={Array.from(new Set([
-                        ...DEPENDENCIAS_POR_DEFECTO,
-                        ...allRegistros.map(r => r.dependencia).filter(Boolean) as string[]
+                        ...(esMunicipalidadParana(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO),
+                        ...allRegistros.filter(r => esMunicipalidadParana(form.empleador) ? esMunicipalidadParana(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
                       ])).sort()}
                       placeholder="— Seleccionar dependencia —"
                       isSearchable={true}
