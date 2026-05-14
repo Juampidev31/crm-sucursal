@@ -127,6 +127,17 @@ interface RegistroVariante {
 }
 
 const ACUERDOS_OPCIONES = ['Riesgo Bajo', 'Riesgo Medio', 'Premium', 'No califica'];
+function esGobiernoProvincialBulk(s?: string) {
+  if (!s) return false;
+  const u = s.toUpperCase();
+  return u.includes('GOBIERNO') && (u.includes('ENTRE RÍOS') || u.includes('ENTRE RIOS'));
+}
+function esMunicipalidadParanaBulk(s?: string) {
+  if (!s) return false;
+  const u = s.toUpperCase();
+  return u.includes('MUNICIPALIDAD') && (u.includes('PARANÁ') || u.includes('PARANA'));
+}
+
 const TIPO_CLIENTE_OPCIONES = ['Apertura', 'Renovacion'];
 const RANGOS_ETARIOS = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
 const SEXOS = ['Masculino', 'Femenino', 'Otro'];
@@ -272,7 +283,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
         if (!r.empleador?.trim()) missing.push('x');
         if (!r.localidad?.trim()) missing.push('x');
       }
-      if (r.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && !r.dependencia?.trim()) missing.push('x');
+      if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador)) && !r.dependencia?.trim()) missing.push('x');
       if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) missing.push('x');
       if (missing.length === 0) completos++; else faltantes++;
     }));
@@ -352,7 +363,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
       if (!r.empleador?.trim()) missing.push('empleador');
       if (!r.localidad?.trim()) missing.push('localidad');
     }
-    if (r.empleador?.toUpperCase() === 'GOBIERNO DE LA PROVINCIA DE ENTRE RÍOS' && !r.dependencia?.trim()) {
+    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador)) && !r.dependencia?.trim()) {
       missing.push('dependencia');
     }
     if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) {
@@ -640,6 +651,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                       <th style={thStyle}>FECHA</th>
                       <th style={thStyle}>CANTIDAD DE REGISTROS</th>
                       <th style={thStyle}>EMPLEADOR ACTUAL</th>
+                      <th style={thStyle}>DEPENDENCIA ACTUAL</th>
                       <th style={thStyle}>FALTANTES</th>
                     </tr>
                   </thead>
@@ -699,6 +711,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                               <td style={{ ...tdStyle, color: '#555' }}>Sin registros</td>
                               <td style={tdStyle}>—</td>
                               <td style={tdStyle}>—</td>
+                              <td style={tdStyle}>—</td>
                             </tr>
                           )];
                         }
@@ -725,7 +738,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                               </td>
                               <td style={{ ...tdStyle, fontWeight: 700 }}>{mr.cuil}</td>
                               <td style={{ ...tdStyle, fontWeight: 700 }}>{nombreMostrar}</td>
-                              <td style={tdStyle} colSpan={4}>
+                              <td style={tdStyle} colSpan={5}>
                                 <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700 }}>{mr.registros.length} registros — elegí cuáles modificar</span>
                               </td>
                             </tr>
@@ -759,6 +772,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                               <td style={tdStyle}>{fmtFecha(reg)}</td>
                               <td style={{ ...tdStyle, color: '#ccc' }}>{isMulti ? '' : 1}</td>
                               <td style={tdStyle}>{reg.empleador || '—'}</td>
+                              <td style={tdStyle}>{reg.dependencia || '—'}</td>
                               <td style={tdStyle}>{renderFaltantes(missing, checked)}</td>
                             </tr>
                           );
