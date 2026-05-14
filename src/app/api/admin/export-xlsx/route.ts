@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   if (fechaDesde) query = query.gte('fecha', fechaDesde);
   if (fechaHasta) query = query.lte('fecha', fechaHasta);
-  if (empleador?.trim()) query = query.eq('empleador', empleador.trim());
+  if (empleador?.trim()) query = query.ilike('empleador', `%${empleador.trim()}%`);
 
   const { data, error } = await query;
 
