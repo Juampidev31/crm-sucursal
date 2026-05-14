@@ -3,6 +3,12 @@
 import React, { useState } from 'react';
 import { X, Download, Loader2 } from 'lucide-react';
 
+const ESTADOS = [
+  'proyeccion', 'venta', 'en seguimiento', 'score bajo',
+  'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc',
+];
+const ANALISTAS = ['Luciana', 'Victoria'];
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -12,6 +18,8 @@ export function ExportXlsxModal({ open, onClose }: Props) {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [empleador, setEmpleador] = useState('');
+  const [estado, setEstado] = useState('');
+  const [analista, setAnalista] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,7 +36,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           'Content-Type': 'application/json',
           'X-Session': session,
         },
-        body: JSON.stringify({ fechaDesde, fechaHasta, empleador }),
+        body: JSON.stringify({ fechaDesde, fechaHasta, empleador, estado, analista }),
       });
 
       if (!res.ok) {
@@ -107,6 +115,22 @@ export function ExportXlsxModal({ open, onClose }: Props) {
             placeholder="Dejar vacío para todos"
             style={inputStyle}
           />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Estado (opcional)</label>
+          <select value={estado} onChange={e => setEstado(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            <option value="">Todos los estados</option>
+            {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label style={labelStyle}>Analista (opcional)</label>
+          <select value={analista} onChange={e => setAnalista(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            <option value="">Todos los analistas</option>
+            {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
         </div>
 
         {error && (

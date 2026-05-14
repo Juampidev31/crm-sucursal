@@ -23,10 +23,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { fechaDesde, fechaHasta, empleador } = await req.json() as {
+  const { fechaDesde, fechaHasta, empleador, estado, analista } = await req.json() as {
     fechaDesde?: string;
     fechaHasta?: string;
     empleador?: string;
+    estado?: string;
+    analista?: string;
   };
 
   let query = supabase
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
   if (fechaDesde) query = query.gte('fecha', fechaDesde);
   if (fechaHasta) query = query.lte('fecha', fechaHasta);
   if (empleador?.trim()) query = query.ilike('empleador', `%${empleador.trim()}%`);
+  if (estado?.trim()) query = query.eq('estado', estado.trim());
+  if (analista?.trim()) query = query.eq('analista', analista.trim());
 
   const { data, error } = await query;
 
