@@ -1460,6 +1460,15 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           })
           .sort((a, b) => b.cantidad - a.cantidad);
 
+        // Agregar dependencias predefinidas que no tengan registros aún
+        const nombresExistentes = new Set(empleadosArray.map(e => e.nombre.toUpperCase()));
+        for (const dep of DEPENDENCIAS_OFICIALES) {
+          if (!nombresExistentes.has(dep.toUpperCase())) {
+            const maestro = getMaestroInfo(dep);
+            empleadosArray.push({ nombre: dep, cantidad: 0, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName });
+          }
+        }
+
         setEmpleadoresConConteo(empleadosArray);
       }
     } catch (err) {
