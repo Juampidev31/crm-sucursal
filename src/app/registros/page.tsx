@@ -1505,7 +1505,7 @@ export default function RegistrosPage() {
     const nowTime = new Date().getTime();
     const list = registros.filter(r => {
       const s = filters.search.toLowerCase();
-      const mSearch = !filters.search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s) || r.empleador?.toLowerCase().includes(s) || r.estado?.toLowerCase().includes(s) || r.localidad?.toLowerCase().includes(s) || r.comentarios?.toLowerCase().includes(s);
+      const mSearch = !filters.search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s) || r.empleador?.toLowerCase().includes(s) || r.estado?.toLowerCase().includes(s) || r.localidad?.toLowerCase().includes(s) || r.dependencia?.toLowerCase().includes(s) || r.comentarios?.toLowerCase().includes(s);
       const mEstado = filters.estados.length === 0 || filters.estados.includes(r.estado);
       const mAnalista = !filters.analista || r.analista === filters.analista;
       const mDesde = !filters.fechaDesde || (r.fecha && r.fecha >= filters.fechaDesde);
