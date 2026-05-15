@@ -1416,13 +1416,24 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     );
   }, [busquedaDependencia, variantesDepConDuplicados]);
 
-  const listaDependencias = busquedaDependencia.trim()
-    ? todasLasDependencias.filter(d => d.toLowerCase().includes(busquedaDependencia.toLowerCase())).map(d => ({
-      normalizado: d.toUpperCase(),
-      variantes: [d],
-      cantidad: 1
-    }))
-    : dependenciasFiltradas;
+  const listaDependencias = useMemo(() => {
+    const q = busquedaDependencia.toLowerCase().trim();
+    const filtradas = q
+      ? todasLasDependencias.filter(d => d.toLowerCase().includes(q))
+      : todasLasDependencias;
+    // merge: duplicates group their variants; singles show as 1
+    const dupMap = new Map(variantesDepConDuplicados.map(v => [v.normalizado, v]));
+    const seen = new Set<string>();
+    const result: { normalizado: string; variantes: string[]; cantidad: number }[] = [];
+    for (const d of filtradas) {
+      const key = d.toUpperCase().trim();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const grupo = dupMap.get(key);
+      result.push(grupo ?? { normalizado: key, variantes: [d], cantidad: 1 });
+    }
+    return result;
+  }, [busquedaDependencia, todasLasDependencias, variantesDepConDuplicados]);
 
   const descartarGrupoLocalidad = useCallback((normalizado: string) => {
     setGruposLocalidadDescartados(prev => {
