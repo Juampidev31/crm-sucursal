@@ -383,10 +383,8 @@ a {
   color: #cbd5e1;
 }
 
-.data-table tr:hover, 
+.data-table tr:hover,
 .hover-row:hover {
-  transform: scale(1.007) translateY(-1px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.5) !important;
   z-index: 10;
   position: relative;
 }

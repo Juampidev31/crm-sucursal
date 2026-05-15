@@ -928,7 +928,7 @@ const RegistroModal = memo(function RegistroModal({
             </div>
             {(esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador) || esConsejoEducacion(form.empleador)) && (
               <div className="form-row">
-                <Field label="Dependencia *" error={errors.dependencia}>
+                <Field label={`${esConsejoEducacion(form.empleador) ? 'Establecimiento' : 'Repartición'} *`} error={errors.dependencia}>
                   {dependenciaCustom ? (
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input
