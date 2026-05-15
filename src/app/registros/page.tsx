@@ -955,7 +955,7 @@ const RegistroModal = memo(function RegistroModal({
                     </div>
                   ) : (
                     <PremiumSelect
-                      value={(() => { const d = form.dependencia || ''; const list = esMunicipalidad(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO; return list.includes(d) ? d : ''; })()}
+                      value={form.dependencia || ''}
                       onChange={val => set('dependencia', val)}
                       options={Array.from(new Set([
                         ...(esMunicipalidad(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO),
