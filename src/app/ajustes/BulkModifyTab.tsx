@@ -1045,6 +1045,10 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [localidadesSeleccionadas, setLocalidadesSeleccionadas] = useState<string[]>([]);
   const [busquedaLocalidad, setBusquedaLocalidad] = useState('');
   const [correctorLocalidadExpandido, setCorrectorLocalidadExpandido] = useState(false);
+  const [dependenciaCorreccion, setDependenciaCorreccion] = useState<string>('');
+  const [dependenciasSeleccionadas, setDependenciasSeleccionadas] = useState<string[]>([]);
+  const [busquedaDependencia, setBusquedaDependencia] = useState('');
+  const [correctorDependenciaExpandido, setCorrectorDependenciaExpandido] = useState(false);
   const [gruposLocalidadDescartados, setGruposLocalidadDescartados] = useState<Map<string, number>>(() => {
     if (typeof window === 'undefined') return new Map();
     try {
@@ -1375,13 +1379,50 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   }, [busquedaLocalidad, variantesLocalidadConDuplicados]);
 
   // Si no hay duplicados pero hay búsqueda, mostrar todas las localidades
-  const listaLocalidadess = busquedaLocalidad.trim() 
+  const listaLocalidadess = busquedaLocalidad.trim()
     ? todasLasLocalidadess.filter(l => l.toLowerCase().includes(busquedaLocalidad.toLowerCase())).map(l => ({
       normalizado: l.toUpperCase(),
       variantes: [l],
       cantidad: 1
     }))
     : localidadesFiltradas;
+
+  // Dependencias corrector helpers
+  const variantesDepConDuplicados = useMemo(() => {
+    const lista = registros.map(r => r.dependencia).filter(Boolean) as string[];
+    const myMap = new Map<string, Set<string>>();
+    for (const dep of lista) {
+      const key = dep.toUpperCase().trim();
+      if (!myMap.has(key)) myMap.set(key, new Set());
+      myMap.get(key)!.add(dep);
+    }
+    return Array.from(myMap.entries())
+      .filter(([_, vars]) => vars.size > 1)
+      .map(([normalizado, variantes]) => ({ normalizado, variantes: Array.from(variantes), cantidad: variantes.size }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }, [registros]);
+
+  const todasLasDependencias = useMemo(() => {
+    const lista = registros.map(r => r.dependencia).filter(Boolean) as string[];
+    return Array.from(new Set(lista)).sort();
+  }, [registros]);
+
+  const dependenciasFiltradas = useMemo(() => {
+    if (!busquedaDependencia.trim()) return variantesDepConDuplicados;
+    const q = busquedaDependencia.toLowerCase();
+    return variantesDepConDuplicados.filter(v =>
+      v.normalizado.toLowerCase().includes(q) ||
+      v.variantes.some(d => d.toLowerCase().includes(q))
+    );
+  }, [busquedaDependencia, variantesDepConDuplicados]);
+
+  const listaDependencias = busquedaDependencia.trim()
+    ? todasLasDependencias.filter(d => d.toLowerCase().includes(busquedaDependencia.toLowerCase())).map(d => ({
+      normalizado: d.toUpperCase(),
+      variantes: [d],
+      cantidad: 1
+    }))
+    : dependenciasFiltradas;
 
   const descartarGrupoLocalidad = useCallback((normalizado: string) => {
     setGruposLocalidadDescartados(prev => {
@@ -1647,6 +1688,38 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       setUpdating(false);
     }
   }, [localidadCorreccion, pushBulkRefresh]);
+
+  const corregirDependencia = useCallback(async () => {
+    if (dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()) {
+      setToast({ message: 'Seleccioná al menos una dependencia y escribí el nombre correcto', type: 'error' });
+      return;
+    }
+    setUpdating(true);
+    let actualizados = 0;
+    let errores = 0;
+    for (const dep of dependenciasSeleccionadas) {
+      const { error } = await supabase
+        .from('registros')
+        .update({ dependencia: dependenciaCorreccion.trim() })
+        .eq('dependencia', dep);
+      if (error) errores++;
+      else actualizados++;
+    }
+    setUpdating(false);
+    if (errores > 0) {
+      setToast({ message: `Actualizadas ${actualizados}, ${errores} errores`, type: 'error' });
+    } else {
+      const correctedName = dependenciaCorreccion.trim();
+      const oldVars = [...dependenciasSeleccionadas];
+      setToast({ message: `${actualizados} dependencia(s) corregida(s)`, type: 'success' });
+      setDependenciasSeleccionadas([]);
+      setDependenciaCorreccion('');
+      mutateRegistros(prev => prev.map(r =>
+        oldVars.includes(r.dependencia ?? '') ? { ...r, dependencia: correctedName } : r
+      ));
+      pushBulkRefresh();
+    }
+  }, [dependenciasSeleccionadas, dependenciaCorreccion, mutateRegistros, pushBulkRefresh]);
 
   useEffect(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
@@ -2226,6 +2299,124 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       Intentá con otro término.
                     </p>
                   )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── CORRECTOR DE DEPENDENCIA ──────────────────────────────────────────── */}
+      {(mode === 'all' || mode === 'corrector') && (
+        <div style={{
+          marginBottom: '28px', padding: '20px',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '10px',
+        }}>
+          <div
+            onClick={() => setCorrectorDependenciaExpandido(!correctorDependenciaExpandido)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorDependenciaExpandido ? 16 : 0, cursor: 'pointer' }}
+          >
+            <CheckCircle size={18} color="#555" />
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+              Corrector de Dependencia
+              {correctorDependenciaExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+            </h4>
+          </div>
+
+          {correctorDependenciaExpandido && (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                    Nombre correcto
+                  </label>
+                  <input
+                    className="form-input"
+                    placeholder="Ej: Subsecretaría de Servicios Públicos"
+                    value={dependenciaCorreccion}
+                    onChange={e => setDependenciaCorreccion(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && corregirDependencia()}
+                    style={{
+                      background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <button
+                  onClick={corregirDependencia}
+                  disabled={updating || dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()}
+                  style={{
+                    background: (dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()) ? '#333' : '#fbbf24',
+                    color: (dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()) ? '#666' : '#000',
+                    border: 'none', borderRadius: '6px', padding: '10px 24px',
+                    fontSize: '11px', fontWeight: 900, cursor: (dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()) ? 'not-allowed' : 'pointer',
+                    textTransform: 'uppercase', letterSpacing: '1px', flexShrink: 0,
+                  }}
+                >
+                  {updating ? 'CORRIGIENDO...' : `CORREGIR ${dependenciasSeleccionadas.length} DEPENDENCIA(S)`}
+                </button>
+                <input
+                  className="form-input"
+                  placeholder="Buscar dependencia..."
+                  value={busquedaDependencia}
+                  onChange={e => setBusquedaDependencia(e.target.value)}
+                  style={{
+                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', flex: 1, outline: 'none',
+                  }}
+                />
+              </div>
+
+              {dependenciasSeleccionadas.length > 0 && (
+                <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+                  Seleccionadas: {dependenciasSeleccionadas.length} — {dependenciaCorreccion || '(sin nombre correcto)'}
+                </div>
+              )}
+
+              {(listaDependencias.length > 0 || busquedaDependencia.trim()) ? (
+                <div style={{ marginTop: '20px', maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
+                  {listaDependencias.map((v, i) => (
+                    <div key={i} style={{
+                      marginBottom: 12, padding: '12px 14px',
+                      background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.04)',
+                    }}>
+                      <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase', marginBottom: 6 }}>
+                        {v.normalizado} {v.cantidad > 1 && <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {v.variantes.map((varName, j) => {
+                          const isSelected = dependenciasSeleccionadas.includes(varName);
+                          return (
+                            <span
+                              key={j}
+                              onClick={() => setDependenciasSeleccionadas(prev =>
+                                isSelected ? prev.filter(d => d !== varName) : [...prev, varName]
+                              )}
+                              style={{
+                                padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
+                                background: isSelected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
+                                border: isSelected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
+                                color: isSelected ? '#fbbf24' : '#888',
+                                fontWeight: 600, cursor: 'pointer',
+                              }}
+                            >
+                              {varName}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+                  <p>{busquedaDependencia ? 'No se encontraron resultados.' : 'No hay dependencias en la base.'}</p>
                 </div>
               )}
             </>
