@@ -18,10 +18,16 @@ export function ExportXlsxModal({ open, onClose }: Props) {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [empleador, setEmpleador] = useState('');
-  const [estado, setEstado] = useState('');
+  const [estados, setEstados] = useState<string[]>([]);
   const [analista, setAnalista] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const toggleEstado = (estado: string) => {
+    setEstados(prev =>
+      prev.includes(estado) ? prev.filter(e => e !== estado) : [...prev, estado]
+    );
+  };
 
   if (!open) return null;
 
@@ -36,7 +42,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           'Content-Type': 'application/json',
           'X-Session': session,
         },
-        body: JSON.stringify({ fechaDesde, fechaHasta, empleador, estado, analista }),
+        body: JSON.stringify({ fechaDesde, fechaHasta, empleador, estados, analista }),
       });
 
       if (!res.ok) {
@@ -118,11 +124,32 @@ export function ExportXlsxModal({ open, onClose }: Props) {
         </div>
 
         <div>
-          <label style={labelStyle}>Estado (opcional)</label>
-          <select value={estado} onChange={e => setEstado(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-            <option value="">Todos los estados</option>
-            {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
-          </select>
+          <label style={labelStyle}>Estados (opcional)</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {ESTADOS.map(est => {
+              const isActive = estados.includes(est);
+              return (
+                <span
+                  key={est}
+                  onClick={() => toggleEstado(est)}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: isActive ? '#fff' : 'rgba(255,255,255,0.03)',
+                    color: isActive ? '#000' : '#666',
+                    border: `1px solid ${isActive ? '#fff' : 'rgba(255,255,255,0.06)'}`,
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {est}
+                </span>
+              );
+            })}
+          </div>
         </div>
 
         <div>

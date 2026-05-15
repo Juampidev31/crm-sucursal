@@ -23,11 +23,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { fechaDesde, fechaHasta, empleador, estado, analista } = await req.json() as {
+  const { fechaDesde, fechaHasta, empleador, estados, analista } = await req.json() as {
     fechaDesde?: string;
     fechaHasta?: string;
     empleador?: string;
-    estado?: string;
+    estados?: string[];
     analista?: string;
   };
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (fechaDesde) query = query.gte('fecha', fechaDesde);
   if (fechaHasta) query = query.lte('fecha', fechaHasta);
   if (empleador?.trim()) query = query.ilike('empleador', `%${empleador.trim()}%`);
-  if (estado?.trim()) query = query.eq('estado', estado.trim());
+  if (estados && estados.length > 0) query = query.in('estado', estados);
   if (analista?.trim()) query = query.eq('analista', analista.trim());
 
   const { data, error } = await query;
