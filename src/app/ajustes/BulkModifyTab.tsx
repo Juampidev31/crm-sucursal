@@ -813,7 +813,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                   ];
                   const inputs: Array<{ key: keyof CamposExcel; label: string; list: string[] }> = [
                     { key: 'empleador', label: 'Empleador', list: allEmpleadores },
-                    { key: 'dependencia', label: 'Dependencia', list: DEPENDENCIAS_OFICIALES },
+                    { key: 'dependencia', label: 'Dependencia', list: allDependenciasExcel },
                     { key: 'cuotas', label: 'Cuotas', list: allCuotasExcel },
                     { key: 'localidad', label: 'Localidad', list: allLocalidadesExcel },
                   ];
