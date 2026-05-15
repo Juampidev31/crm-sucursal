@@ -1388,52 +1388,33 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     : localidadesFiltradas;
 
   // Dependencias corrector helpers
-  const variantesDepConDuplicados = useMemo(() => {
-    const lista = registros.map(r => r.dependencia).filter(Boolean) as string[];
-    const myMap = new Map<string, Set<string>>();
-    for (const dep of lista) {
-      const key = dep.toUpperCase().trim();
-      if (!myMap.has(key)) myMap.set(key, new Set());
-      myMap.get(key)!.add(dep);
+  const allDependencias = useMemo(() =>
+    Array.from(new Set(registros.map(r => r.dependencia).filter(Boolean) as string[])).sort(),
+    [registros]
+  );
+
+  const variantesDependencia = useMemo((): VarianteEmpleador[] => {
+    const map = new Map<string, Set<string>>();
+    for (const d of allDependencias) {
+      const key = normalizar(d);
+      if (!map.has(key)) map.set(key, new Set());
+      map.get(key)!.add(d);
     }
-    return Array.from(myMap.entries())
-      .filter(([_, vars]) => vars.size > 1)
-      .map(([normalizado, variantes]) => ({ normalizado, variantes: Array.from(variantes), cantidad: variantes.size }))
-      .sort((a, b) => b.cantidad - a.cantidad);
-  }, [registros]);
-
-  const todasLasDependencias = useMemo(() => {
-    const lista = registros.map(r => r.dependencia).filter(Boolean) as string[];
-    return Array.from(new Set(lista)).sort();
-  }, [registros]);
-
-  const dependenciasFiltradas = useMemo(() => {
-    if (!busquedaDependencia.trim()) return variantesDepConDuplicados;
-    const q = busquedaDependencia.toLowerCase();
-    return variantesDepConDuplicados.filter(v =>
-      v.normalizado.toLowerCase().includes(q) ||
-      v.variantes.some(d => d.toLowerCase().includes(q))
-    );
-  }, [busquedaDependencia, variantesDepConDuplicados]);
+    const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
+    return fuzzyGrupos.sort((a, b) => b.cantidad - a.cantidad);
+  }, [allDependencias, normalizar, agruparFuzzy]);
 
   const listaDependencias = useMemo(() => {
-    const q = busquedaDependencia.toLowerCase().trim();
-    const filtradas = q
-      ? todasLasDependencias.filter(d => d.toLowerCase().includes(q))
-      : todasLasDependencias;
-    // merge: duplicates group their variants; singles show as 1
-    const dupMap = new Map(variantesDepConDuplicados.map(v => [v.normalizado, v]));
-    const seen = new Set<string>();
-    const result: { normalizado: string; variantes: string[]; cantidad: number }[] = [];
-    for (const d of filtradas) {
-      const key = d.toUpperCase().trim();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const grupo = dupMap.get(key);
-      result.push(grupo ?? { normalizado: key, variantes: [d], cantidad: 1 });
-    }
-    return result;
-  }, [busquedaDependencia, todasLasDependencias, variantesDepConDuplicados]);
+    if (!busquedaDependencia.trim()) return variantesDependencia;
+    const q = busquedaDependencia.toLowerCase();
+    const matching = allDependencias.filter(d => d.toLowerCase().includes(q));
+    if (matching.length === 0) return [];
+    return matching.map(d => ({
+      normalizado: normalizar(d),
+      variantes: [d],
+      cantidad: 1,
+    })).sort((a, b) => a.normalizado.localeCompare(b.normalizado));
+  }, [allDependencias, busquedaDependencia, normalizar, variantesDependencia]);
 
   const descartarGrupoLocalidad = useCallback((normalizado: string) => {
     setGruposLocalidadDescartados(prev => {
