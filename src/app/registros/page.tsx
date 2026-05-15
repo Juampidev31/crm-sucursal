@@ -80,6 +80,11 @@ function esMunicipalidadParana(s?: string) {
   return u.includes('MUNICIPALIDAD') && (u.includes('PARANÁ') || u.includes('PARANA'));
 }
 
+function esMunicipalidad(s?: string) {
+  if (!s) return false;
+  return s.toUpperCase().includes('MUNICIPALIDAD');
+}
+
 // ── Validation ────────────────────────────────────────────────────────────────
 
 function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, string> {
@@ -103,7 +108,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
   
-  if ((esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador) || esConsejoEducacion(form.empleador)) && !form.dependencia?.trim()) {
+  if ((esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador)) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
   }
 
@@ -926,7 +931,7 @@ const RegistroModal = memo(function RegistroModal({
                 })()}
               </Field>
             </div>
-            {(esGobiernoProvincial(form.empleador) || esMunicipalidadParana(form.empleador) || esConsejoEducacion(form.empleador)) && (
+            {(esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador)) && (
               <div className="form-row">
                 <Field label={`${esConsejoEducacion(form.empleador) ? 'Establecimiento' : 'Repartición'} *`} error={errors.dependencia}>
                   {dependenciaCustom ? (
@@ -950,11 +955,11 @@ const RegistroModal = memo(function RegistroModal({
                     </div>
                   ) : (
                     <PremiumSelect
-                      value={(() => { const d = form.dependencia || ''; const list = esMunicipalidadParana(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO; return list.includes(d) ? d : ''; })()}
+                      value={(() => { const d = form.dependencia || ''; const list = esMunicipalidad(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO; return list.includes(d) ? d : ''; })()}
                       onChange={val => set('dependencia', val)}
                       options={Array.from(new Set([
-                        ...(esMunicipalidadParana(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO),
-                        ...allRegistros.filter(r => esMunicipalidadParana(form.empleador) ? esMunicipalidadParana(r.empleador) : esConsejoEducacion(form.empleador) ? esConsejoEducacion(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
+                        ...(esMunicipalidad(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO),
+                        ...allRegistros.filter(r => esMunicipalidad(form.empleador) ? esMunicipalidad(r.empleador) : esConsejoEducacion(form.empleador) ? esConsejoEducacion(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
                       ])).sort()}
                       placeholder="— Seleccionar dependencia —"
                       isSearchable={true}
