@@ -31,24 +31,33 @@ export async function POST(req: NextRequest) {
     analista?: string;
   };
 
-  let query = supabase
-    .from('registros')
-    .select('nombre,cuil,analista,estado,monto,fecha,puntaje,es_re,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,comentarios')
-    .order('fecha', { ascending: false });
+  const buildQuery = () => {
+    let q = supabase
+      .from('registros')
+      .select('nombre,cuil,analista,estado,monto,fecha,puntaje,es_re,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,comentarios')
+      .order('fecha', { ascending: false });
+    if (fechaDesde) q = q.gte('fecha', fechaDesde);
+    if (fechaHasta) q = q.lte('fecha', fechaHasta);
+    if (empleador?.trim()) q = q.ilike('empleador', `%${empleador.trim()}%`);
+    if (estados && estados.length > 0) q = q.in('estado', estados);
+    if (analista?.trim()) q = q.eq('analista', analista.trim());
+    return q;
+  };
 
-  if (fechaDesde) query = query.gte('fecha', fechaDesde);
-  if (fechaHasta) query = query.lte('fecha', fechaHasta);
-  if (empleador?.trim()) query = query.ilike('empleador', `%${empleador.trim()}%`);
-  if (estados && estados.length > 0) query = query.in('estado', estados);
-  if (analista?.trim()) query = query.eq('analista', analista.trim());
-
-  const { data, error } = await query;
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const PAGE = 1000;
+  const SAFETY_LIMIT = 100000;
+  const all: Record<string, unknown>[] = [];
+  let from = 0;
+  while (from < SAFETY_LIMIT) {
+    const { data: chunk, error } = await buildQuery().range(from, from + PAGE - 1);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!chunk || chunk.length === 0) break;
+    all.push(...chunk);
+    if (chunk.length < PAGE) break;
+    from += PAGE;
   }
 
-  const ws = utils.json_to_sheet(data ?? []);
+  const ws = utils.json_to_sheet(all);
   const wb = utils.book_new();
   utils.book_append_sheet(wb, ws, 'Registros');
   const buffer = write(wb, { type: 'buffer', bookType: 'xlsx' });
