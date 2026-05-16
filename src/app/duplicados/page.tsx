@@ -177,7 +177,7 @@ export default function DuplicadosPage() {
                         <td>
                           <span className="status-badge" style={{ fontSize: '9px', padding: '2px 8px' }}>{r.estado}</span>
                         </td>
-                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--dorado)' }}>{formatCurrency(r.monto)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--dorado)' }}>{formatCurrency(r.monto ?? 0)}</td>
                         <td style={{ textAlign: 'center', color: '#555', fontSize: '11px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
                       </tr>
                     ))}

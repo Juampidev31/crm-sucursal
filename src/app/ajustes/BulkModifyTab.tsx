@@ -1083,7 +1083,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [modalEmpleadoresOpen, setModalEmpleadoresOpen] = useState(false);
   const [busquedaEmpleadorModal, setBusquedaEmpleadorModal] = useState('');
   const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'publico' | 'privada' | 'fisica' | 'maestros' | 'otros'>('todos');
-  const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number; tipo: string; categoria: string; masterName?: string }[]>([]);
+  const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number; tipo: string; categoria: string; masterName?: string; esDependencia?: boolean }[]>([]);
   const [empleadoresLoading, setEmpleadoresLoading] = useState(false);
 
   // Estado para "Nuevos hoy" - empleadores creados hoy
@@ -1491,17 +1491,18 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               cantidad,
               tipo: maestro.tipo,
               categoria: maestro.categoria,
-              masterName: maestro.masterName
+              masterName: maestro.masterName,
+              esDependencia: false,
             };
           })
           .sort((a, b) => b.cantidad - a.cantidad);
 
-        // Agregar dependencias reales de registros
+        // Agregar dependencias reales de registros (marcadas como dependencia)
         const nombresExistentes = new Set(empleadosArray.map(e => e.nombre.toUpperCase()));
         conteoDep.forEach((cantidad, dep) => {
           if (!nombresExistentes.has(dep.toUpperCase())) {
             const maestro = getMaestroInfo(dep);
-            empleadosArray.push({ nombre: dep, cantidad, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName });
+            empleadosArray.push({ nombre: dep, cantidad, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName, esDependencia: true });
             nombresExistentes.add(dep.toUpperCase());
           }
         });
@@ -1510,7 +1511,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         for (const dep of DEPENDENCIAS_OFICIALES) {
           if (!nombresExistentes.has(dep.toUpperCase())) {
             const maestro = getMaestroInfo(dep);
-            empleadosArray.push({ nombre: dep, cantidad: 0, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName });
+            empleadosArray.push({ nombre: dep, cantidad: 0, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName, esDependencia: true });
           }
         }
 
@@ -2874,7 +2875,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         <div
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 20,
           }}
@@ -2973,7 +2974,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         <div
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 20,
           }}
@@ -2998,7 +2999,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   Todos los Empleadores
                 </h3>
                 <p style={{ fontSize: 12, color: '#888' }}>
-                  {empleadoresConConteo.length} empleadores únicos
+                  {empleadoresConConteo.filter(e => !e.esDependencia).length} empleadores · {empleadoresConConteo.filter(e => e.esDependencia).length} dependencias
                 </p>
               </div>
               <button
@@ -3198,7 +3199,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       );
                     }
 
-                    return renderTable(filtered);
+                    const empleadores = filtered.filter(e => !e.esDependencia);
+                    const dependencias = filtered.filter(e => e.esDependencia);
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {empleadores.length > 0 && renderTable(empleadores, 'Empleadores', '#60a5fa')}
+                        {dependencias.length > 0 && renderTable(dependencias, 'Dependencias', '#a78bfa')}
+                      </div>
+                    );
                   })()}
                 </>
               )}
@@ -3212,7 +3220,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         <div
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 20,
           }}

@@ -19,6 +19,7 @@ import {
 import CustomSelect from '@/components/CustomSelect';
 import ResumenMensualTab from './ResumenMensualTab';
 import BulkModifyTab from './BulkModifyTab';
+import MassiveDeleteTab from './MassiveDeleteTab';
 import AvisosTab from './AvisosTab';
 import VerificadorTab from './VerificadorTab';
 import CargaRapidaTab from './CargaRapidaTab';
@@ -29,7 +30,7 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ObjetivoRow = { analista: string; mes: number; meta_ventas: number; meta_operaciones: number };
-type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos' | 'verificador' | 'carga-rapida';
+type ActiveTab = 'alertas' | 'dias' | 'historico' | 'objetivos' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos' | 'verificador' | 'carga-rapida' | 'eliminacion-masiva';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -535,8 +536,6 @@ export default function AjustesPage() {
         </div>
       )}
 
-      {/* Header removed to gain space */}
-
       {/* Nav Tabs */}
       <div className="toolbar" style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -554,6 +553,7 @@ export default function AjustesPage() {
               { id: 'avisos', label: 'Avisos', icon: Bell },
               { id: 'verificador', label: 'Verificador', icon: Search },
               { id: 'carga-rapida', label: 'Carga Rápida', icon: Upload },
+              { id: 'eliminacion-masiva', label: 'Borrado Masivo', icon: Trash2 },
             ] : []),
           ].map(t => (
             <button
@@ -1578,6 +1578,11 @@ export default function AjustesPage() {
           {/* TAB: CALIF. POR SCORE (solo admin) */}
           {activeTab === 'calif-score' && isAdmin && (
             <BulkModifyTab mode="bulk" />
+          )}
+
+          {/* TAB: ELIMINACIÓN MASIVA (solo admin) */}
+          {activeTab === 'eliminacion-masiva' && isAdmin && (
+            <MassiveDeleteTab />
           )}
 
           {/* TAB: AVISOS POP-UP (solo admin) */}

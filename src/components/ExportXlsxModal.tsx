@@ -82,7 +82,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
       className="modal-overlay"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.7)',
+        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
         overflowY: 'auto', padding: '20px 16px',
       }}

@@ -246,7 +246,7 @@ export default function ReporteVentasPage() {
                         {r.estado}
                       </span>
                     </td>
-                    <td style={{ padding: '14px 16px', color: '#fff', fontWeight: 800, textAlign: 'center' }}>{formatCurrency(r.monto)}</td>
+                    <td style={{ padding: '14px 16px', color: '#fff', fontWeight: 800, textAlign: 'center' }}>{formatCurrency(r.monto ?? 0)}</td>
                     <td style={{ padding: '14px 16px', color: '#444', textAlign: 'center', fontSize: '13px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
                     <td style={{ padding: '14px 16px', color: '#fff', textAlign: 'center', fontWeight: 800 }}>
                       {r.puntaje ? (

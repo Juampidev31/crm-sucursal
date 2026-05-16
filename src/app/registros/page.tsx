@@ -13,6 +13,7 @@ import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
 import { AuditResult, parseCSVAudit, performAudit } from '@/lib/audit-import-utils';
 import { corregirTildes } from '@/lib/correccion-tildes';
+import ModalPortal from '@/components/ModalPortal';
 import { getLocalidadesByCP, getCPByLocalidad, addCustomMapping } from '@/lib/codigos-postales';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -632,6 +633,7 @@ const RegistroModal = memo(function RegistroModal({
 
   return (
     <>
+      <ModalPortal>
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
@@ -1020,8 +1022,10 @@ const RegistroModal = memo(function RegistroModal({
           </div>
         </div>
       </div>
+      </ModalPortal>
 
       {showDupModal && dupRecord && (
+        <ModalPortal>
         <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
           <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
@@ -1056,6 +1060,7 @@ const RegistroModal = memo(function RegistroModal({
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </>
   );
@@ -1773,8 +1778,8 @@ export default function RegistrosPage() {
                       </td>
 
                       {/* Monto */}
-                      <td style={{ padding: '18px 24px', fontSize: '17px', fontWeight: 900, color: '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        {formatCurrency(Number(reg.monto))}
+                      <td style={{ padding: '18px 24px', fontSize: '17px', fontWeight: 900, color: reg.monto == null ? '#444' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
                       </td>
 
                       {/* Estado */}

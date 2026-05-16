@@ -22,13 +22,12 @@ export interface VerificadorResult {
   diffDetail?: string;
 }
 
-/** Parsea texto copiado de Excel (separado por \t y \n). Máx 500 filas. */
+/** Parsea texto copiado de Excel (separado por \t y \n). */
 export function parsePastedText(text: string): ParsedRow[] {
   return text
     .split('\n')
     .map(line => line.replace(/\r$/, ''))
     .filter(line => line.trim() !== '')
-    .slice(0, 500)
     .map(line => ({ cells: line.split('\t') }));
 }
 
@@ -176,20 +175,20 @@ export function verificarFilas(
       const csvImporte = parseFloat(normalized.replace(/[$\s]/g, ''));
 
       if (!isNaN(csvImporte)) {
-        const exact = pool.find(r => Math.abs(r.monto - csvImporte) <= 1 && !usedIds.has(r.id));
+        const exact = pool.find(r => Math.abs((r.monto ?? 0) - csvImporte) <= 1 && !usedIds.has(r.id));
         if (exact) {
           usedIds.add(exact.id);
-          return { row, status: 'found', dbId: exact.id, dbImporte: exact.monto, dbFecha: exact.fecha ?? undefined, dbEstado: exact.estado };
+          return { row, status: 'found', dbId: exact.id, dbImporte: exact.monto ?? 0, dbFecha: exact.fecha ?? undefined, dbEstado: exact.estado };
         }
         // Mismo mes/CUIL pero importe diferente (o todos usados)
         const first = pool.find(r => !usedIds.has(r.id)) ?? pool[0];
         return {
           row, status: 'mismatch',
           dbId: first.id,
-          dbImporte: first.monto,
+          dbImporte: first.monto ?? 0,
           dbFecha: first.fecha ?? undefined,
           dbEstado: first.estado,
-          diffDetail: `Excel $${csvImporte.toLocaleString('es-AR')} — DB $${first.monto.toLocaleString('es-AR')}`,
+          diffDetail: `Excel $${csvImporte.toLocaleString('es-AR')} — DB $${(first.monto ?? 0).toLocaleString('es-AR')}`,
         };
       }
     }
@@ -197,6 +196,6 @@ export function verificarFilas(
     // Sin importe o no parseable → encontrado si hay candidato no usado
     const first = pool.find(r => !usedIds.has(r.id)) ?? pool[0];
     usedIds.add(first.id);
-    return { row, status: 'found', dbId: first.id, dbImporte: first.monto, dbFecha: first.fecha ?? undefined, dbEstado: first.estado };
+    return { row, status: 'found', dbId: first.id, dbImporte: first.monto ?? 0, dbFecha: first.fecha ?? undefined, dbEstado: first.estado };
   });
 }

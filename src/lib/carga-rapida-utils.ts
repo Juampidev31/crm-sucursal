@@ -51,7 +51,7 @@ export const CARGA_ROLE_OPTIONS: { value: CargaRole; label: string }[] = [
   { value: 'fecha',           label: 'Fecha'               },
   { value: 'fecha_score',     label: 'Fecha Score'         },
   { value: 'puntaje',         label: 'Score'               },
-  { value: 'es_re',           label: 'RE (Renovación)'     },
+  { value: 'es_re',           label: 'RE (Resumen Ejecutivo)' },
   { value: 'comentarios',     label: 'Comentarios'         },
   { value: 'tipo_cliente',    label: 'Tipo de cliente'     },
   { value: 'acuerdo_precios', label: 'Acuerdo de precios'  },
@@ -135,8 +135,6 @@ export function parseCargaRow(row: ParsedRow, mapping: CargaColumnMapping): Part
   const rawEsRe = getCell(row, mapping, 'es_re');
   if (rawEsRe !== undefined) {
     result.es_re = ['si', 'sí', '1', 'true', 'yes'].includes(rawEsRe.toLowerCase());
-  } else if (rawTipoCliente) {
-    result.es_re = /renovaci[oó]n/i.test(rawTipoCliente);
   }
 
   const rawAcuerdo = getCell(row, mapping, 'acuerdo_precios');
@@ -192,29 +190,12 @@ export function procesarFilas(
       return { row, status: 'new', parsedData: parsed };
     }
 
-    const diffs: FieldDiff[] = [];
-    for (const field of DIFFABLE_FIELDS) {
-      if (parsed[field] === undefined) continue;
-      // Normalize null/undefined to empty string; booleans to 'true'/'false'
-      const normalizeVal = (v: unknown) => v == null ? '' : String(v);
-      const oldVal = normalizeVal(existing[field]);
-      const newVal = normalizeVal(parsed[field]);
-      if (oldVal !== newVal) {
-        diffs.push({
-          field,
-          label: CARGA_FIELD_LABELS[field] ?? field,
-          oldValue: oldVal,
-          newValue: newVal,
-        });
-      }
-    }
-
     return {
       row,
-      status: diffs.length > 0 ? 'update' : 'skip',
+      status: 'skip',
       parsedData: parsed,
       existingRecord: existing,
-      diffs,
+      diffs: [],
     };
   });
 }

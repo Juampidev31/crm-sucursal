@@ -11,9 +11,9 @@ import {
 } from '@/lib/carga-rapida-utils';
 
 const STATUS_CONFIG = {
-  new:    { label: 'Nuevo',       color: '#4ade80', Icon: CheckCircle2 },
-  update: { label: 'Actualizar',  color: '#fbbf24', Icon: AlertCircle  },
-  skip:   { label: 'Sin cambios', color: '#555',    Icon: Minus        },
+  new:    { label: 'Nuevo',     color: '#4ade80', Icon: CheckCircle2 },
+  update: { label: 'Ya existe', color: '#fbbf24', Icon: AlertCircle  },
+  skip:   { label: 'Ya existe', color: '#fbbf24', Icon: AlertCircle  },
 };
 
 export default function CargaRapidaTab() {
@@ -66,27 +66,23 @@ export default function CargaRapidaTab() {
     setSaving(true);
     setError(null);
 
-    const toInsert = results.filter(r => r.status === 'new').map(r => r.parsedData);
-    const toUpdate = results.filter(r => r.status === 'update');
+    const mappedRoles = new Set(Object.values(mapping));
+    const toInsert = results.filter(r => r.status === 'new').map(r => {
+      const row: any = { ...r.parsedData };
+      if (!mappedRoles.has('estado')) row.estado = null;
+      if (!mappedRoles.has('monto')) row.monto = null;
+      if (!mappedRoles.has('puntaje')) row.puntaje = null;
+      if (!mappedRoles.has('es_re')) row.es_re = null;
+      return row;
+    });
 
     try {
-      if (toInsert.length > 0) {
-        const { error: insErr } = await supabase.from('registros').insert(toInsert);
-        if (insErr) throw new Error(insErr.message);
+      const BATCH = 500;
+      for (let i = 0; i < toInsert.length; i += BATCH) {
+        const chunk = toInsert.slice(i, i + BATCH);
+        const { error: insErr } = await supabase.from('registros').insert(chunk);
+        if (insErr) throw new Error(`Insert falló en filas ${i + 1}-${i + chunk.length}: ${insErr.message}`);
       }
-
-      const updateResults = await Promise.all(
-        toUpdate
-          .filter(item => item.existingRecord)
-          .map(item =>
-            supabase
-              .from('registros')
-              .update(item.parsedData)
-              .eq('id', item.existingRecord!.id)
-          )
-      );
-      const updErr = updateResults.find(r => r.error)?.error;
-      if (updErr) throw new Error(updErr.message);
 
       await refresh(true);
       pushBulkRefresh();
@@ -180,9 +176,17 @@ export default function CargaRapidaTab() {
               onClick={() => setProcessed(true)}
               disabled={!canProcess}
               style={{
-                padding: '8px 20px', background: canProcess ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
-                color: canProcess ? '#fff' : '#444', border: 'none', borderRadius: 6,
-                fontSize: 13, fontWeight: 700, cursor: canProcess ? 'pointer' : 'not-allowed',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 16px',
+                background: canProcess ? '#1e293b' : 'rgba(255,255,255,0.03)',
+                color: canProcess ? '#e2e8f0' : '#444',
+                border: canProcess
+                  ? '1px solid rgba(148,163,184,0.25)'
+                  : '1px solid rgba(255,255,255,0.05)',
+                borderRadius: 6, fontSize: 12, fontWeight: 600,
+                letterSpacing: '0.3px',
+                cursor: canProcess ? 'pointer' : 'not-allowed',
+                transition: 'background 0.15s ease, border-color 0.15s ease',
               }}
             >
               Procesar
@@ -201,9 +205,8 @@ export default function CargaRapidaTab() {
           {/* Summary bar */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {[
-              { key: 'new',    label: `${summary.new} nuevos`,          color: '#4ade80' },
-              { key: 'update', label: `${summary.update} a actualizar`, color: '#fbbf24' },
-              { key: 'skip',   label: `${summary.skip} sin cambios`,    color: '#555'    },
+              { key: 'new',  label: `${summary.new} nuevos`,            color: '#4ade80' },
+              { key: 'skip', label: `${summary.skip} ya existen (se omiten)`, color: '#fbbf24' },
             ].map(s => (
               <div key={s.key} style={{ padding: '6px 14px', borderRadius: 6, background: 'rgba(255,255,255,0.03)', border: `1px solid ${s.color}22`, fontSize: 12, fontWeight: 700, color: s.color }}>
                 {s.label}
@@ -267,14 +270,22 @@ export default function CargaRapidaTab() {
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
               onClick={handleConfirm}
-              disabled={saving || (summary.new === 0 && summary.update === 0)}
+              disabled={saving || summary.new === 0}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '8px 20px',
-                background: (summary.new > 0 || summary.update > 0) && !saving ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
-                color: (summary.new > 0 || summary.update > 0) && !saving ? '#fff' : '#444',
-                border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 700,
-                cursor: (summary.new > 0 || summary.update > 0) && !saving ? 'pointer' : 'not-allowed',
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '10px 22px',
+                background: summary.new > 0 && !saving
+                  ? 'linear-gradient(135deg, #16a34a 0%, #4ade80 100%)'
+                  : 'rgba(255,255,255,0.04)',
+                color: summary.new > 0 && !saving ? '#0a0a0a' : '#555',
+                border: summary.new > 0 && !saving
+                  ? '1px solid rgba(74,222,128,0.4)'
+                  : '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 8, fontSize: 13, fontWeight: 800,
+                letterSpacing: '0.2px',
+                boxShadow: summary.new > 0 && !saving ? '0 4px 14px rgba(74,222,128,0.25)' : 'none',
+                cursor: summary.new > 0 && !saving ? 'pointer' : 'not-allowed',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
               }}
             >
               {saving ? <><Loader2 size={14} className="animate-spin" /> Guardando...</> : <><Upload size={14} /> Confirmar carga</>}

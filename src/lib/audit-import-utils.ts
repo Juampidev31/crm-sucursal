@@ -83,7 +83,7 @@ export function performAudit(csvRecords: Partial<Registro>[], dbRecords: Registr
     }
 
     // Check if any has same amount
-    const exactMatch = sameMonth.find(db => Math.abs(db.monto - csv.monto!) < 1);
+    const exactMatch = sameMonth.find(db => Math.abs((db.monto ?? 0) - csv.monto!) < 1);
     if (exactMatch) {
       return { status: 'duplicate', csvRecord: csv, dbRecord: exactMatch };
     }
