@@ -188,33 +188,44 @@ const ESTABLECIMIENTOS_CONSEJO_EDUCACION = [
   'Unidad Educativa del Centenario Nivel Inicial 2',
 ].sort();
 
-function esGobiernoProvincial(s?: string) {
-  if (!s) return false;
-  const u = s.toUpperCase();
-  return u.includes('GOBIERNO') && (u.includes('ENTRE RÍOS') || u.includes('ENTRE RIOS'));
+function norm(s: string) {
+  return s.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 function esConsejoEducacion(s?: string) {
   if (!s) return false;
-  const u = s.toUpperCase();
-  return u.includes('CONSEJO') && (u.includes('EDUCACI') );
+  const u = norm(s);
+  return u.includes('CONSEJO') && u.includes('EDUCACI');
 }
 
 function esMinisterioSalud(s?: string) {
   if (!s) return false;
-  const u = s.toUpperCase();
+  const u = norm(s);
   return u.includes('MINISTERIO') && u.includes('SALUD');
 }
 
 function esMunicipalidadParana(s?: string) {
   if (!s) return false;
-  const u = s.toUpperCase();
-  return u.includes('MUNICIPALIDAD') && (u.includes('PARANÁ') || u.includes('PARANA'));
+  const u = norm(s);
+  return u.includes('MUNICIPALIDAD') && u.includes('PARANA');
 }
 
 function esMunicipalidad(s?: string) {
   if (!s) return false;
-  return s.toUpperCase().includes('MUNICIPALIDAD');
+  return norm(s).includes('MUNICIPALIDAD');
+}
+
+function esGobiernoProvincial(s?: string) {
+  if (!s) return false;
+  const u = norm(s);
+  return u.includes('GOBIERNO') && u.includes('ENTRE RIOS');
+}
+
+function getDependencias(empleador?: string): string[] {
+  if (esMunicipalidad(empleador)) return DEPENDENCIAS_MUNICIPALIDAD_PARANA;
+  if (esMinisterioSalud(empleador)) return ESTABLECIMIENTOS_MINISTERIO_SALUD;
+  if (esConsejoEducacion(empleador)) return ESTABLECIMIENTOS_CONSEJO_EDUCACION;
+  return DEPENDENCIAS_POR_DEFECTO;
 }
 
 // ── Validation ────────────────────────────────────────────────────────────────
@@ -1100,8 +1111,8 @@ const RegistroModal = memo(function RegistroModal({
                       value={form.dependencia || ''}
                       onChange={val => set('dependencia', val)}
                       options={Array.from(new Set([
-                        ...(esMunicipalidad(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : esMinisterioSalud(form.empleador) ? ESTABLECIMIENTOS_MINISTERIO_SALUD : esConsejoEducacion(form.empleador) ? ESTABLECIMIENTOS_CONSEJO_EDUCACION : DEPENDENCIAS_POR_DEFECTO),
-                        ...allRegistros.filter(r => esMunicipalidad(form.empleador) ? esMunicipalidad(r.empleador) : esConsejoEducacion(form.empleador) ? esConsejoEducacion(r.empleador) : esMinisterioSalud(form.empleador) ? esMinisterioSalud(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
+                        ...getDependencias(form.empleador),
+                        ...allRegistros.filter(r => norm(r.empleador || '') === norm(form.empleador || '')).map(r => r.dependencia).filter(Boolean) as string[]
                       ])).sort()}
                       placeholder="— Seleccionar dependencia —"
                       isSearchable={true}
