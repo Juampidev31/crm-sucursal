@@ -23,12 +23,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { fechaDesde, fechaHasta, empleador, estados, analista } = await req.json() as {
+  const { fechaDesde, fechaHasta, empleador, estados, analista, preview } = await req.json() as {
     fechaDesde?: string;
     fechaHasta?: string;
     empleador?: string;
     estados?: string[];
     analista?: string;
+    preview?: boolean;
   };
 
   const buildQuery = () => {
@@ -55,6 +56,18 @@ export async function POST(req: NextRequest) {
     all.push(...chunk);
     if (chunk.length < PAGE) break;
     from += PAGE;
+  }
+
+  if (preview) {
+    const porEstado: Record<string, number> = {};
+    const porAnalista: Record<string, number> = {};
+    for (const r of all) {
+      const estado = (r.estado as string) ?? 'Sin estado';
+      const ana = (r.analista as string) ?? 'Sin analista';
+      porEstado[estado] = (porEstado[estado] ?? 0) + 1;
+      porAnalista[ana] = (porAnalista[ana] ?? 0) + 1;
+    }
+    return NextResponse.json({ total: all.length, porEstado, porAnalista });
   }
 
   const ws = utils.json_to_sheet(all);
