@@ -61,7 +61,132 @@ const DEPENDENCIAS_POR_DEFECTO = [
   'Secretaria de modernizacion del estado'
 ].sort();
 
-const DEPENDENCIAS_MUNICIPALIDAD_PARANA: string[] = [].sort();
+const DEPENDENCIAS_MUNICIPALIDAD_PARANA = [
+  'Administracion Fiscal Municipal',
+  'Area Operativa Integral',
+  'Coordinacion de Derechos Humanos',
+  'Coordinacion de Recoleccion y Saneamiento',
+  'Coordinacion para el abordaje Integral a las personas victimas de violencia de genero',
+  'Coordinación de Integración Social a Personas en Situación de Calle',
+  'Coordinación General de la Secretaría de Seguridad Vial, Movilidad y Ordenamiento Urbano',
+  'Cuerpo Unico de Inspectores',
+  'Departamento de Educacion y Extension Ecologica',
+  'Desarrollo institucional SS a la Comunidad',
+  'Direccion Balneario Thompson',
+  'Direccion de Actas y Notificaciones',
+  'Direccion de Archivos General',
+  'Direccion de Arquitectura',
+  'Direccion de Arquitectura Social y Mantenimiento Espacios Publicos',
+  'Direccion de Defensa Civil',
+  'Direccion de Fiscalizacion y Control Ambiental',
+  'Direccion de Liquidacion de Haberes de Personal',
+  'Direccion de Mantenimiento y Servicios Generales',
+  'Direccion de Museos y Patrimonio Historico',
+  'Direccion de Parques y Paseos - Sector Este',
+  'Direccion de Recoleccion Sistematizada',
+  'Direccion de Señalizacion',
+  'Direccion de Taxis y Remises',
+  'Direccion de Tramites Externos',
+  'Direccion de espacios de cuidados de primera infancia',
+  'Direccion de la casa de la mujer',
+  'Direccion de produccion y Distribucion',
+  'Direccion Despacho (Subsecretaria de infraestructura)',
+  'Direccion General Parque Botanico',
+  'Direccion General de Alumbrado Publico',
+  'Direccion General de Conservacion Vial',
+  'Direccion General de Desarrollo Institucional y Servicios',
+  'Direccion General de Habilitaciones comerciales',
+  'Direccion General de Integracion Social para personas mayores',
+  'Direccion General de Parques y Paseos',
+  'Direccion General de Recursos Humanos',
+  'Direccion General de Salud Municipal',
+  'Direccion General de Talleres Mecanicos',
+  'Direccion Miradores Bajada Grande',
+  'Direccion Residencia Madre Teresa de calcuta',
+  'Honorable Consejo Deliberante',
+  'Juzgado de Faltas 3',
+  'Subsecretaria de Deporte Social y Capacitacion',
+  'Subsecretaria de Educacion Formal y No formal',
+  'Subsecretaria de Obras Sanitarias',
+  'Subsecretaria de Prevision y Suministros',
+  'Subsecretaria de Servicios Publicos',
+  'Tesoreria General',
+  'Unidad Municipal 3 - Sureste',
+  'Unidad Municipal 4 Noreste',
+  'Unidad Municipal Sur',
+  'Unidad Municioal 2 - Oeste',
+  'Unidad de Barrido',
+].sort();
+
+const ESTABLECIMIENTOS_MINISTERIO_SALUD = [
+  'Area Emergencia Sanitaria',
+  'Automotores',
+  'Centro HUELLAS',
+  'Centro de salud BELGRANO',
+  'Centro de salud DR. L. ETCHEVEHERE',
+  'Centro de salud EL BRETE',
+  'Centro de salud HERMANA CATALINA',
+  'Centro de salud JORGE NEWBERY',
+  'Centro de salud MALVINAS ARGENTINAS',
+  'Centro de salud SAN BENITO',
+  'Centro de salud SELIG GOLDING',
+  'Direccion de Atencion Medica',
+  'Direccion de despacho',
+  'Direccion de odontologia',
+  'Hospital Escuela de Salud Mental',
+  'Hospital Materno Infantil SAN ROQUE - Nivel 3B',
+  'Hospital PASCUAL PALMA',
+  'Hospital SAN MARTIN - Nivel 3B',
+  'Hospital San Blas - NOGOYA - Nivel 2',
+  'Jardin Maternal TERNURA',
+  'Mesa de entradas',
+  'Ministerio de Salud de Entre Rios',
+  'Secretaria de salud - Direccion 2',
+  'Subsecretaria de Servicios Asistenciales y Gestion',
+].sort();
+
+const ESTABLECIMIENTOS_CONSEJO_EDUCACION = [
+  'Anexo Carlos Maria Onetti Nocturna 144',
+  'Centro Comunitario 11',
+  'Complejo Escuela Hogar Eva Peron',
+  'Dirección de Educación de Jóvenes y Adultos',
+  'Division de concursos de Secundaria (EGB - 3, Media, Polimodal y Superior)',
+  'Escuela Bernardino Rivadavia 3-EGB 1 y 2',
+  'Escuela Capitan de Fragata P.E.Giachino 193-EGB 1 y 2',
+  'Escuela Carolina Tobar Garcia Especial 3',
+  'Escuela Coronel Alvarez Condarco 185-EGB 1 y 2',
+  'Escuela De los Cielitos 93-EGB 1 y 2',
+  'Escuela EET 4-CFP - Secundaria Tecnica Dr. Jorge Pedro Busti',
+  'Escuela ENET Teniente Luis Candelaria 3',
+  'Escuela Evita 207-EGB 1 y 2',
+  'Escuela Francisco Soler 16-EGB 1 y 2',
+  'Escuela Jorge Newbery 22-EGB 1 y 2',
+  'Escuela Luz Vieira Mendez 189-EGB 1 y 2',
+  'Escuela Maestro Entrerriano 198 - Inicial',
+  'Escuela Privada 009 - Rosario Vera Peñaloza',
+  'Escuela Privada N° 127 Pastor Enrique Marconi',
+  'Escuela Privada de gestión publica N°22 San Antonio Maria Gianelli',
+  'Escuela Republica de Chile 132-EGB 1 y 2',
+  'Escuela Secundaria N° 31 Jose de San Martin',
+  'Escuela Secundaria N° 35 Cesareo Bernaldo de Quiros',
+  'Escuela Secundaria N° 36 Capitan Justo Jose de Urquiza',
+  'Escuela Secundaria N° 44 "Enrique Berduc"',
+  'Escuela Secundaria N° 48 Congreso de Oriente',
+  'Escuela Secundaria N° 5-EGB 1 y 2 Manuel Belgrano',
+  'Escuela Secundaria N° 50 República de Entre Ríos',
+  'Escuela Secundaria N° 6 Lomas del Mirador',
+  'Escuela Secundaria N° 67 Tabare',
+  'Escuela Secundaria N° Manuel Belgrano',
+  'Escuela Secundaria de Adultos N° 23 Josefina Zubizarreta',
+  'Escuela Soldados de Malvinas 200-EGB 1 y 2',
+  'Escuela de Educación Técnica (EET) N° 3',
+  'Organismo Central',
+  'Parque Escolar Enrique Berduc',
+  'Supervision Departamental de Educacion',
+  'Taller Antequeda',
+  'Unidad Educativa de Nivel Inicial N° 70',
+  'Unidad Educativa del Centenario Nivel Inicial 2',
+].sort();
 
 function esGobiernoProvincial(s?: string) {
   if (!s) return false;
@@ -529,7 +654,14 @@ const RegistroModal = memo(function RegistroModal({
   useEffect(() => {
     if (isOpen) {
       setEmpleadorCustom(!!initialData.empleador && !empleadoresDB.includes(initialData.empleador));
-      setDependenciaCustom(!!initialData.dependencia && !DEPENDENCIAS_POR_DEFECTO.includes(initialData.dependencia || ''));
+      setDependenciaCustom(
+        !!initialData.dependencia &&
+        !DEPENDENCIAS_POR_DEFECTO.includes(initialData.dependencia || '') &&
+        !DEPENDENCIAS_MUNICIPALIDAD_PARANA.includes(initialData.dependencia || '') &&
+        !ESTABLECIMIENTOS_MINISTERIO_SALUD.includes(initialData.dependencia || '') &&
+        !ESTABLECIMIENTOS_CONSEJO_EDUCACION.includes(initialData.dependencia || '') &&
+        !allRegistros.some(r => r.dependencia === initialData.dependencia)
+      );
       setCp(initialData.localidad ? (getCPByLocalidad(initialData.localidad) || '') : '');
       setCpAddOpen(false);
       setCpAddLoc('');
@@ -968,7 +1100,7 @@ const RegistroModal = memo(function RegistroModal({
                       value={form.dependencia || ''}
                       onChange={val => set('dependencia', val)}
                       options={Array.from(new Set([
-                        ...(esMunicipalidad(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO),
+                        ...(esMunicipalidad(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : esMinisterioSalud(form.empleador) ? ESTABLECIMIENTOS_MINISTERIO_SALUD : esConsejoEducacion(form.empleador) ? ESTABLECIMIENTOS_CONSEJO_EDUCACION : DEPENDENCIAS_POR_DEFECTO),
                         ...allRegistros.filter(r => esMunicipalidad(form.empleador) ? esMunicipalidad(r.empleador) : esConsejoEducacion(form.empleador) ? esConsejoEducacion(r.empleador) : esMinisterioSalud(form.empleador) ? esMinisterioSalud(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
                       ])).sort()}
                       placeholder="— Seleccionar dependencia —"
