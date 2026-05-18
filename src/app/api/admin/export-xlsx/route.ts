@@ -59,15 +59,16 @@ export async function POST(req: NextRequest) {
   }
 
   if (preview) {
-    const porEstado: Record<string, number> = {};
-    const porAnalista: Record<string, number> = {};
-    for (const r of all) {
-      const estado = (r.estado as string) ?? 'Sin estado';
-      const ana = (r.analista as string) ?? 'Sin analista';
-      porEstado[estado] = (porEstado[estado] ?? 0) + 1;
-      porAnalista[ana] = (porAnalista[ana] ?? 0) + 1;
-    }
-    return NextResponse.json({ total: all.length, porEstado, porAnalista });
+    const registros = all.map(r => ({
+      nombre: r.nombre,
+      cuil: r.cuil,
+      analista: r.analista,
+      estado: r.estado,
+      fecha: r.fecha,
+      empleador: r.empleador,
+      dependencia: r.dependencia,
+    }));
+    return NextResponse.json({ total: all.length, registros });
   }
 
   const ws = utils.json_to_sheet(all);

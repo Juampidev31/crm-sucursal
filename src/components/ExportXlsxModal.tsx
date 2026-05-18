@@ -14,10 +14,19 @@ interface Props {
   onClose: () => void;
 }
 
+interface RegistroPreview {
+  nombre: string;
+  cuil: string;
+  analista: string;
+  estado: string;
+  fecha: string;
+  empleador: string;
+  dependencia: string;
+}
+
 interface PreviewData {
   total: number;
-  porEstado: Record<string, number>;
-  porAnalista: Record<string, number>;
+  registros: RegistroPreview[];
 }
 
 export function ExportXlsxModal({ open, onClose }: Props) {
@@ -113,6 +122,16 @@ export function ExportXlsxModal({ open, onClose }: Props) {
     fontSize: 9, fontWeight: 800, color: '#555',
     textTransform: 'uppercase', letterSpacing: '0.5px',
   };
+  const cellStyle: React.CSSProperties = {
+    padding: '8px 10px', fontSize: 12, color: '#ccc',
+    borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap',
+    overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160,
+  };
+  const headStyle: React.CSSProperties = {
+    padding: '8px 10px', fontSize: 9, fontWeight: 800, color: '#555',
+    textTransform: 'uppercase', letterSpacing: '0.5px',
+    borderBottom: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap',
+  };
 
   return (
     <div
@@ -127,9 +146,11 @@ export function ExportXlsxModal({ open, onClose }: Props) {
     >
       <div style={{
         background: '#111', border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: 12, padding: '32px 28px', width: 360,
+        borderRadius: 12, padding: '28px 24px',
+        width: preview ? 780 : 360, maxWidth: '95vw',
         boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
         display: 'flex', flexDirection: 'column', gap: 20,
+        transition: 'width 0.2s',
       }}>
 
         {/* Header */}
@@ -144,7 +165,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           )}
           <Download size={18} style={{ color: '#fff' }} />
           <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
-            {preview ? 'Vista previa' : 'Exportar XLSX'}
+            {preview ? `Vista previa — ${preview.total} registros` : 'Exportar XLSX'}
           </span>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#444', marginLeft: 'auto' }}>
             <X size={18} />
@@ -152,52 +173,51 @@ export function ExportXlsxModal({ open, onClose }: Props) {
         </div>
 
         {preview ? (
-          /* ── PASO 2: Preview ── */
+          /* ── PASO 2: Tabla de registros ── */
           <>
-            <div style={{
-              background: 'rgba(255,255,255,0.04)', borderRadius: 10,
-              padding: '20px', display: 'flex', flexDirection: 'column', gap: 16,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <FileSpreadsheet size={28} style={{ color: '#fff' }} />
-                <div>
-                  <div style={{ color: '#fff', fontWeight: 800, fontSize: 28, lineHeight: 1 }}>{preview.total}</div>
-                  <div style={{ color: '#555', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>registros totales</div>
-                </div>
+            {preview.total === 0 ? (
+              <div style={{ color: '#555', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>
+                No hay registros con los filtros aplicados.
               </div>
-
-              {Object.keys(preview.porEstado).length > 0 && (
-                <div>
-                  <div style={labelStyle}>Por estado</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {Object.entries(preview.porEstado)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([est, count]) => (
-                        <div key={est} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                          <span style={{ color: '#888' }}>{est}</span>
-                          <span style={{ color: '#fff', fontWeight: 700 }}>{count}</span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {Object.keys(preview.porAnalista).length > 0 && (
-                <div>
-                  <div style={labelStyle}>Por analista</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {Object.entries(preview.porAnalista)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([ana, count]) => (
-                        <div key={ana} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                          <span style={{ color: '#888' }}>{ana}</span>
-                          <span style={{ color: '#fff', fontWeight: 700 }}>{count}</span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            ) : (
+              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '60vh', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: 160 }} />
+                    <col style={{ width: 120 }} />
+                    <col style={{ width: 90 }} />
+                    <col style={{ width: 100 }} />
+                    <col style={{ width: 80 }} />
+                    <col style={{ width: 180 }} />
+                    <col style={{ width: 180 }} />
+                  </colgroup>
+                  <thead style={{ background: '#1a1a1a', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <tr>
+                      <th style={headStyle}>Nombre</th>
+                      <th style={headStyle}>CUIL</th>
+                      <th style={headStyle}>Analista</th>
+                      <th style={headStyle}>Estado</th>
+                      <th style={headStyle}>Fecha</th>
+                      <th style={headStyle}>Empleador</th>
+                      <th style={headStyle}>Repartición / Establecimiento</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.registros.map((r, i) => (
+                      <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                        <td style={cellStyle} title={r.nombre}>{r.nombre || '—'}</td>
+                        <td style={cellStyle}>{r.cuil || '—'}</td>
+                        <td style={cellStyle}>{r.analista || '—'}</td>
+                        <td style={cellStyle}>{r.estado || '—'}</td>
+                        <td style={cellStyle}>{r.fecha || '—'}</td>
+                        <td style={cellStyle} title={r.empleador}>{r.empleador || '—'}</td>
+                        <td style={cellStyle} title={r.dependencia}>{r.dependencia || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: 0 }}>{error}</p>}
 
