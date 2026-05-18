@@ -125,7 +125,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
   const cellStyle: React.CSSProperties = {
     padding: '8px 10px', fontSize: 12, color: '#ccc',
     borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap',
-    overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160,
+    overflow: 'hidden', textOverflow: 'ellipsis',
   };
   const headStyle: React.CSSProperties = {
     padding: '8px 10px', fontSize: 9, fontWeight: 800, color: '#555',
@@ -147,7 +147,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
       <div style={{
         background: '#111', border: '1px solid rgba(255,255,255,0.1)',
         borderRadius: 12, padding: '28px 24px',
-        width: preview ? 780 : 360, maxWidth: '95vw',
+        width: preview ? 1100 : 360, maxWidth: '97vw',
         boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
         display: 'flex', flexDirection: 'column', gap: 20,
         transition: 'width 0.2s',
@@ -183,13 +183,13 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '60vh', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                   <colgroup>
-                    <col style={{ width: 160 }} />
+                    <col style={{ width: 180 }} />
                     <col style={{ width: 120 }} />
                     <col style={{ width: 90 }} />
-                    <col style={{ width: 100 }} />
-                    <col style={{ width: 80 }} />
-                    <col style={{ width: 180 }} />
-                    <col style={{ width: 180 }} />
+                    <col style={{ width: 130 }} />
+                    <col style={{ width: 90 }} />
+                    <col style={{ width: 220 }} />
+                    <col style={{ width: 220 }} />
                   </colgroup>
                   <thead style={{ background: '#1a1a1a', position: 'sticky', top: 0, zIndex: 1 }}>
                     <tr>
