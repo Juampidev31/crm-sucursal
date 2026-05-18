@@ -166,24 +166,48 @@ export function procesarFilas(
   mapping: CargaColumnMapping,
   dbRecords: Registro[],
 ): CargaRapidaResult[] {
+  // Maps sin año (fallback cuando la fila no trae fecha)
   const byCuil = new Map<string, Registro>();
   const byNombre = new Map<string, Registro>();
+  // Maps con año: clave = "cuil::2024" / "nombre::2024"
+  const byCuilYear = new Map<string, Registro>();
+  const byNombreYear = new Map<string, Registro>();
 
   dbRecords.forEach(r => {
-    if (r.cuil) byCuil.set(normalizeCuil(r.cuil), r);
-    if (r.nombre) byNombre.set(normalizarNombre(r.nombre), r);
+    if (r.cuil) {
+      const cuil = normalizeCuil(r.cuil);
+      byCuil.set(cuil, r);
+      const year = r.fecha ? r.fecha.slice(0, 4) : '';
+      if (year) byCuilYear.set(`${cuil}::${year}`, r);
+    }
+    if (r.nombre) {
+      const nombre = normalizarNombre(r.nombre);
+      byNombre.set(nombre, r);
+      const year = r.fecha ? r.fecha.slice(0, 4) : '';
+      if (year) byNombreYear.set(`${nombre}::${year}`, r);
+    }
   });
 
   const hasCuil = Object.values(mapping).includes('cuil');
   const hasNombre = Object.values(mapping).includes('apellido_nombre');
+  const hasFecha = Object.values(mapping).includes('fecha');
 
   return rows.map(row => {
     const parsed = parseCargaRow(row, mapping);
+    // Si la fila trae fecha, usar solo el año para discriminar duplicados
+    const rowYear = hasFecha && parsed.fecha ? String(parsed.fecha).slice(0, 4) : null;
 
     let existing: Registro | undefined;
-    if (hasCuil && parsed.cuil) existing = byCuil.get(parsed.cuil);
+    if (hasCuil && parsed.cuil) {
+      existing = rowYear
+        ? byCuilYear.get(`${parsed.cuil}::${rowYear}`)
+        : byCuil.get(parsed.cuil);
+    }
     if (!existing && hasNombre && parsed.nombre) {
-      existing = byNombre.get(normalizarNombre(parsed.nombre));
+      const nombre = normalizarNombre(parsed.nombre);
+      existing = rowYear
+        ? byNombreYear.get(`${nombre}::${rowYear}`)
+        : byNombre.get(nombre);
     }
 
     if (!existing) {

@@ -215,6 +215,19 @@ const EMPTY_FILTROS: Filtros = {
   fechaDesde: '', fechaHasta: '', search: '',
 };
 
+const SIN_ESPECIFICAR = '__sin_especificar__';
+
+// Aplica filtro de chips con soporte para "Sin especificar" (null o vacío en la DB)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyChipFilter(query: any, column: string, values: string[]): any {
+  if (values.length === 0) return query;
+  const hasSin = values.includes(SIN_ESPECIFICAR);
+  const real = values.filter(v => v !== SIN_ESPECIFICAR);
+  if (hasSin && real.length === 0) return query.or(`${column}.is.null,${column}.eq.`);
+  if (hasSin) return query.or(`${column}.in.(${real.join(',')}),${column}.is.null,${column}.eq.`);
+  return query.in(column, real);
+}
+
 const EMPTY_CAMPOS: CamposAModificar = {
   estado: '', analista: '', acuerdo_precios: '', tipo_cliente: '',
   cuotas: '', rango_etario: '', sexo: '', empleador: '', localidad: '',
@@ -1735,14 +1748,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     let query = supabase.from('registros').select('id');
 
     // Aplicar todos los filtros
-    if (filtros.estados.length > 0) query = query.in('estado', filtros.estados);
-    if (filtros.analistas.length > 0) query = query.in('analista', filtros.analistas);
-    if (filtros.acuerdoPrecios.length > 0) query = query.in('acuerdo_precios', filtros.acuerdoPrecios);
-    if (filtros.tipoCliente.length > 0) query = query.in('tipo_cliente', filtros.tipoCliente);
-    if (filtros.rangoEtario.length > 0) query = query.in('rango_etario', filtros.rangoEtario);
-    if (filtros.sexo.length > 0) query = query.in('sexo', filtros.sexo);
-    if (filtros.localidad.length > 0) query = query.in('localidad', filtros.localidad);
-    if (filtros.empleador.length > 0) query = query.in('empleador', filtros.empleador);
+    query = applyChipFilter(query, 'estado', filtros.estados);
+    query = applyChipFilter(query, 'analista', filtros.analistas);
+    query = applyChipFilter(query, 'acuerdo_precios', filtros.acuerdoPrecios);
+    query = applyChipFilter(query, 'tipo_cliente', filtros.tipoCliente);
+    query = applyChipFilter(query, 'rango_etario', filtros.rangoEtario);
+    query = applyChipFilter(query, 'sexo', filtros.sexo);
+    query = applyChipFilter(query, 'localidad', filtros.localidad);
+    query = applyChipFilter(query, 'empleador', filtros.empleador);
     if (filtros.esRe === 'si') query = query.eq('es_re', true);
     if (filtros.esRe === 'no') query = query.eq('es_re', false);
     if (filtros.scoreMin) query = query.gte('puntaje', Number(filtros.scoreMin));
@@ -1772,16 +1785,18 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     let updated = 0;
 
     // Construir el payload solo con campos que tienen valor
+    // SIN_ESPECIFICAR → null (borra el valor en la DB)
+    const sinEsp = (v: string) => v === SIN_ESPECIFICAR ? null : v;
     const updates: Record<string, unknown> = {};
-    if (campos.estado) updates.estado = campos.estado;
-    if (campos.analista) updates.analista = campos.analista;
-    if (campos.acuerdo_precios) updates.acuerdo_precios = campos.acuerdo_precios;
-    if (campos.tipo_cliente) updates.tipo_cliente = campos.tipo_cliente;
+    if (campos.estado) updates.estado = sinEsp(campos.estado);
+    if (campos.analista) updates.analista = sinEsp(campos.analista);
+    if (campos.acuerdo_precios) updates.acuerdo_precios = sinEsp(campos.acuerdo_precios);
+    if (campos.tipo_cliente) updates.tipo_cliente = sinEsp(campos.tipo_cliente);
     if (campos.cuotas) updates.cuotas = campos.cuotas;
-    if (campos.rango_etario) updates.rango_etario = campos.rango_etario;
-    if (campos.sexo) updates.sexo = campos.sexo;
+    if (campos.rango_etario) updates.rango_etario = sinEsp(campos.rango_etario);
+    if (campos.sexo) updates.sexo = sinEsp(campos.sexo);
     if (campos.empleador) updates.empleador = campos.empleador;
-    if (campos.localidad) updates.localidad = campos.localidad;
+    if (campos.localidad) updates.localidad = sinEsp(campos.localidad);
     if (campos.es_re === 'si') updates.es_re = true;
     if (campos.es_re === 'no') updates.es_re = false;
     if (campos.comentarios) updates.comentarios = campos.comentarios;
@@ -2482,6 +2497,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       {STATUS_LABEL[est] ?? est}
                     </span>
                   ))}
+                  <span onClick={() => toggleFilter('estados', SIN_ESPECIFICAR)} style={chipStyle(filtros.estados.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
                 </div>
               </div>
 
@@ -2498,6 +2514,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       {an}
                     </span>
                   ))}
+                  <span onClick={() => toggleFilter('analistas', SIN_ESPECIFICAR)} style={chipStyle(filtros.analistas.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
                 </div>
               </div>
             </div>
@@ -2533,6 +2550,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   {allAcuerdos.map(a => (
                     <span key={a} onClick={() => toggleFilter('acuerdoPrecios', a)} style={chipStyle(filtros.acuerdoPrecios.includes(a))}>{a}</span>
                   ))}
+                  <span onClick={() => toggleFilter('acuerdoPrecios', SIN_ESPECIFICAR)} style={chipStyle(filtros.acuerdoPrecios.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
                 </div>
               </div>
             )}
@@ -2579,6 +2597,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       {allTipos.map(t => (
                         <span key={t} onClick={() => toggleFilter('tipoCliente', t)} style={chipStyle(filtros.tipoCliente.includes(t))}>{t}</span>
                       ))}
+                      <span onClick={() => toggleFilter('tipoCliente', SIN_ESPECIFICAR)} style={chipStyle(filtros.tipoCliente.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
                     </div>
                   </div>
                 )}
@@ -2590,6 +2609,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     {RANGOS_ETARIOS.map(r => (
                       <span key={r} onClick={() => toggleFilter('rangoEtario', r)} style={chipStyle(filtros.rangoEtario.includes(r))}>{r}</span>
                     ))}
+                    <span onClick={() => toggleFilter('rangoEtario', SIN_ESPECIFICAR)} style={chipStyle(filtros.rangoEtario.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
                   </div>
                 </div>
 
@@ -2600,6 +2620,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     {SEXOS.map(s => (
                       <span key={s} onClick={() => toggleFilter('sexo', s)} style={chipStyle(filtros.sexo.includes(s))}>{s}</span>
                     ))}
+                    <span onClick={() => toggleFilter('sexo', SIN_ESPECIFICAR)} style={chipStyle(filtros.sexo.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
                   </div>
                 </div>
 
@@ -2611,6 +2632,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       {allLocalidades.map(l => (
                         <span key={l} onClick={() => toggleFilter('localidad', l)} style={chipStyle(filtros.localidad.includes(l))}>{l}</span>
                       ))}
+                      <span onClick={() => toggleFilter('localidad', SIN_ESPECIFICAR)} style={chipStyle(filtros.localidad.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
                     </div>
                   </div>
                 )}
@@ -2680,6 +2702,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       <option value="" style={{ background: '#111', color: '#666' }}>
                         {filtros.empleador.length > 1 ? `${filtros.empleador.length} empleadores seleccionados` : 'Todos'}
                       </option>
+                      <option value={SIN_ESPECIFICAR} style={{ background: '#111', color: '#888' }}>Sin especificar</option>
                       {allEmpleadores.map(e => (
                         <option key={e} value={e} style={{ background: '#111', color: '#ccc' }}>{e}</option>
                       ))}
@@ -2754,6 +2777,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {fieldSection('Estado',
                 <select className="form-select" value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))}>
                   <option value="">— No modificar —</option>
+                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                   {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
                 </select>
               )}
@@ -2761,6 +2785,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {fieldSection('Analista',
                 <select className="form-select" value={campos.analista} onChange={e => setCampos(p => ({ ...p, analista: e.target.value }))}>
                   <option value="">— No modificar —</option>
+                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                   {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               )}
@@ -2768,6 +2793,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {fieldSection('Acuerdo de Precios',
                 <select className="form-select" value={campos.acuerdo_precios} onChange={e => setCampos(p => ({ ...p, acuerdo_precios: e.target.value }))}>
                   <option value="">— No modificar —</option>
+                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                   {ACUERDOS_OPCIONES.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               )}
@@ -2775,6 +2801,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {fieldSection('Tipo Cliente',
                 <select className="form-select" value={campos.tipo_cliente} onChange={e => setCampos(p => ({ ...p, tipo_cliente: e.target.value }))}>
                   <option value="">— No modificar —</option>
+                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                   {TIPO_CLIENTE_OPCIONES.map(t => <option key={t} value={t}>{t === 'Renovacion' ? 'Renovación' : t}</option>)}
                 </select>
               )}
@@ -2786,6 +2813,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {fieldSection('Rango Etario',
                 <select className="form-select" value={campos.rango_etario} onChange={e => setCampos(p => ({ ...p, rango_etario: e.target.value }))}>
                   <option value="">— No modificar —</option>
+                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                   {RANGOS_ETARIOS.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               )}
@@ -2793,6 +2821,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {fieldSection('Sexo',
                 <select className="form-select" value={campos.sexo} onChange={e => setCampos(p => ({ ...p, sexo: e.target.value }))}>
                   <option value="">— No modificar —</option>
+                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                   {SEXOS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               )}
@@ -2800,6 +2829,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {fieldSection('Localidad',
                 <select className="form-select" value={campos.localidad} onChange={e => setCampos(p => ({ ...p, localidad: e.target.value }))}>
                   <option value="">— No modificar —</option>
+                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                   {registros.map(r => r.localidad).filter((l, i, arr) => l && arr.indexOf(l) === i).sort().map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               )}
