@@ -189,7 +189,9 @@ const ESTABLECIMIENTOS_CONSEJO_EDUCACION = [
 ].sort();
 
 function norm(s: string) {
-  return s.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return s.toUpperCase()
+    .replace(/[ÁÀÄÂ]/g, 'A').replace(/[ÉÈËÊ]/g, 'E').replace(/[ÍÌÏÎ]/g, 'I')
+    .replace(/[ÓÒÖÔ]/g, 'O').replace(/[ÚÙÜÛ]/g, 'U').replace(/Ñ/g, 'N');
 }
 
 function esConsejoEducacion(s?: string) {
