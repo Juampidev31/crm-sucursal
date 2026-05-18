@@ -223,10 +223,23 @@ function esGobiernoProvincial(s?: string) {
   return u.includes('GOBIERNO') && u.includes('ENTRE RIOS');
 }
 
+function esMinisterioDesarrolloHumano(s?: string) {
+  if (!s) return false;
+  const u = norm(s);
+  return u.includes('MINISTERIO') && (u.includes('DESARROLLO') || u.includes('HUMANO'));
+}
+
+const DEPENDENCIAS_MINISTERIO_DESARROLLO_HUMANO = [
+  'Direccion de la mujer',
+  'Ministerio de Desarrollo Humano de Entre Rios',
+  'Ministerio de Salud y Accion Social',
+].sort();
+
 function getDependencias(empleador?: string): string[] {
   if (esMunicipalidad(empleador)) return DEPENDENCIAS_MUNICIPALIDAD_PARANA;
   if (esMinisterioSalud(empleador)) return ESTABLECIMIENTOS_MINISTERIO_SALUD;
   if (esConsejoEducacion(empleador)) return ESTABLECIMIENTOS_CONSEJO_EDUCACION;
+  if (esMinisterioDesarrolloHumano(empleador)) return DEPENDENCIAS_MINISTERIO_DESARROLLO_HUMANO;
   return DEPENDENCIAS_POR_DEFECTO;
 }
 
@@ -253,7 +266,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
   
-  if ((esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador)) && !form.dependencia?.trim()) {
+  if ((esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador) || esMinisterioDesarrolloHumano(form.empleador)) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
   }
 
@@ -1086,7 +1099,7 @@ const RegistroModal = memo(function RegistroModal({
                 })()}
               </Field>
             </div>
-            {(esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador)) && (
+            {(esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador) || esMinisterioDesarrolloHumano(form.empleador)) && (
               <div className="form-row">
                 <Field label={`${(esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador)) ? 'Establecimiento' : 'Repartición'} *`} error={errors.dependencia}>
                   {dependenciaCustom ? (
