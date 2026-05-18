@@ -1133,10 +1133,16 @@ const RegistroModal = memo(function RegistroModal({
                     <PremiumSelect
                       value={form.dependencia || ''}
                       onChange={val => set('dependencia', val)}
-                      options={Array.from(new Set([
-                        ...getDependencias(form.empleador),
-                        ...allRegistros.filter(r => norm(r.empleador || '') === norm(form.empleador || '')).map(r => r.dependencia).filter(Boolean) as string[]
-                      ])).sort()}
+                      options={(() => {
+                        const normDep = (s: string) => s.toUpperCase().replace(/º/g, '°').replace(/\s+/g, ' ').trim();
+                        const all = [
+                          ...getDependencias(form.empleador),
+                          ...allRegistros.filter(r => norm(r.empleador || '') === norm(form.empleador || '')).map(r => r.dependencia).filter(Boolean) as string[],
+                        ];
+                        const seen = new Map<string, string>();
+                        for (const v of all) { const k = normDep(v); if (!seen.has(k)) seen.set(k, v); }
+                        return Array.from(seen.values()).sort();
+                      })()}
                       placeholder="— Seleccionar dependencia —"
                       isSearchable={true}
                       onAddCustom={() => {
