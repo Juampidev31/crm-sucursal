@@ -142,6 +142,11 @@ function esMunicipalidadParanaBulk(s?: string) {
   const u = s.toUpperCase();
   return u.includes('MUNICIPALIDAD') && (u.includes('PARANÁ') || u.includes('PARANA'));
 }
+function esMinisterioSaludBulk(s?: string) {
+  if (!s) return false;
+  const u = s.toUpperCase();
+  return u.includes('MINISTERIO') && u.includes('SALUD');
+}
 
 const TIPO_CLIENTE_OPCIONES = ['Apertura', 'Renovacion'];
 const RANGOS_ETARIOS = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
@@ -288,7 +293,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
         if (!r.empleador?.trim()) missing.push('x');
         if (!r.localidad?.trim()) missing.push('x');
       }
-      if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador)) && !r.dependencia?.trim()) missing.push('x');
+      if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !r.dependencia?.trim()) missing.push('x');
       if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) missing.push('x');
       if (missing.length === 0) completos++; else faltantes++;
     }));
@@ -368,7 +373,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
       if (!r.empleador?.trim()) missing.push('empleador');
       if (!r.localidad?.trim()) missing.push('localidad');
     }
-    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador)) && !r.dependencia?.trim()) {
+    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !r.dependencia?.trim()) {
       missing.push('dependencia');
     }
     if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) {

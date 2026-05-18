@@ -75,6 +75,12 @@ function esConsejoEducacion(s?: string) {
   return u.includes('CONSEJO') && (u.includes('EDUCACI') );
 }
 
+function esMinisterioSalud(s?: string) {
+  if (!s) return false;
+  const u = s.toUpperCase();
+  return u.includes('MINISTERIO') && u.includes('SALUD');
+}
+
 function esMunicipalidadParana(s?: string) {
   if (!s) return false;
   const u = s.toUpperCase();
@@ -109,7 +115,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
   
-  if ((esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador)) && !form.dependencia?.trim()) {
+  if ((esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador)) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
   }
 
@@ -782,7 +788,8 @@ const RegistroModal = memo(function RegistroModal({
                         const esDependenciaProvincial = (upper.includes('ENTRE RÍOS') || upper.includes('ENTRE RIOS')) &&
                                                       !esGobierno &&
                                                       !upper.includes('ENERSA') &&
-                                                      !upper.includes('ENERGÍA DE ENTRE RÍOS');
+                                                      !upper.includes('ENERGÍA DE ENTRE RÍOS') &&
+                                                      !esMinisterioSalud(val);
 
                         if (esDependenciaProvincial) {
                           set('empleador', 'Gobierno de la Provincia de Entre Ríos');
@@ -934,9 +941,9 @@ const RegistroModal = memo(function RegistroModal({
                 })()}
               </Field>
             </div>
-            {(esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador)) && (
+            {(esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador)) && (
               <div className="form-row">
-                <Field label={`${esConsejoEducacion(form.empleador) ? 'Establecimiento' : 'Repartición'} *`} error={errors.dependencia}>
+                <Field label={`${(esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador)) ? 'Establecimiento' : 'Repartición'} *`} error={errors.dependencia}>
                   {dependenciaCustom ? (
                     <div style={{ display: 'flex', gap: 8 }}>
                       <input
@@ -962,7 +969,7 @@ const RegistroModal = memo(function RegistroModal({
                       onChange={val => set('dependencia', val)}
                       options={Array.from(new Set([
                         ...(esMunicipalidad(form.empleador) ? DEPENDENCIAS_MUNICIPALIDAD_PARANA : DEPENDENCIAS_POR_DEFECTO),
-                        ...allRegistros.filter(r => esMunicipalidad(form.empleador) ? esMunicipalidad(r.empleador) : esConsejoEducacion(form.empleador) ? esConsejoEducacion(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
+                        ...allRegistros.filter(r => esMunicipalidad(form.empleador) ? esMunicipalidad(r.empleador) : esConsejoEducacion(form.empleador) ? esConsejoEducacion(r.empleador) : esMinisterioSalud(form.empleador) ? esMinisterioSalud(r.empleador) : esGobiernoProvincial(r.empleador)).map(r => r.dependencia).filter(Boolean) as string[]
                       ])).sort()}
                       placeholder="— Seleccionar dependencia —"
                       isSearchable={true}
