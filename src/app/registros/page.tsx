@@ -190,8 +190,12 @@ const ESTABLECIMIENTOS_CONSEJO_EDUCACION = [
 
 function norm(s: string) {
   return s.toUpperCase()
-    .replace(/[ÁÀÄÂ]/g, 'A').replace(/[ÉÈËÊ]/g, 'E').replace(/[ÍÌÏÎ]/g, 'I')
-    .replace(/[ÓÒÖÔ]/g, 'O').replace(/[ÚÙÜÛ]/g, 'U').replace(/Ñ/g, 'N');
+    .replace(/[ÁÀÄÂ]/g, 'A')
+    .replace(/[ÉÈËÊ]/g, 'E')
+    .replace(/[ÍÌÏÎ]/g, 'I')
+    .replace(/[ÓÒÖÔ]/g, 'O')
+    .replace(/[ÚÙÜÛ]/g, 'U')
+    .replace(/Ñ/g, 'N');
 }
 
 function esConsejoEducacion(s?: string) {
@@ -236,6 +240,7 @@ const DEPENDENCIAS_MINISTERIO_DESARROLLO_HUMANO = [
 ].sort();
 
 function getDependencias(empleador?: string): string[] {
+  console.log('[getDependencias] empleador:', JSON.stringify(empleador), '| norm:', empleador ? norm(empleador) : '');
   if (esMunicipalidad(empleador)) return DEPENDENCIAS_MUNICIPALIDAD_PARANA;
   if (esMinisterioSalud(empleador)) return ESTABLECIMIENTOS_MINISTERIO_SALUD;
   if (esConsejoEducacion(empleador)) return ESTABLECIMIENTOS_CONSEJO_EDUCACION;
