@@ -240,8 +240,7 @@ const DEPENDENCIAS_MINISTERIO_DESARROLLO_HUMANO = [
 ].sort();
 
 function getDependencias(empleador?: string): string[] {
-  console.log('[getDependencias] empleador:', JSON.stringify(empleador), '| norm:', empleador ? norm(empleador) : '');
-  if (esMunicipalidad(empleador)) return DEPENDENCIAS_MUNICIPALIDAD_PARANA;
+if (esMunicipalidad(empleador)) return DEPENDENCIAS_MUNICIPALIDAD_PARANA;
   if (esMinisterioSalud(empleador)) return ESTABLECIMIENTOS_MINISTERIO_SALUD;
   if (esConsejoEducacion(empleador)) return ESTABLECIMIENTOS_CONSEJO_EDUCACION;
   if (esMinisterioDesarrolloHumano(empleador)) return DEPENDENCIAS_MINISTERIO_DESARROLLO_HUMANO;
@@ -989,6 +988,10 @@ const RegistroModal = memo(function RegistroModal({
                       const esGobierno = esGobiernoProvincial(val);
                       const esDependenciaProvincial = (upper.includes('ENTRE RÍOS') || upper.includes('ENTRE RIOS')) &&
                                                     !esGobierno &&
+                                                    !esMunicipalidad(val) &&
+                                                    !esMinisterioSalud(val) &&
+                                                    !esConsejoEducacion(val) &&
+                                                    !esMinisterioDesarrolloHumano(val) &&
                                                     !upper.includes('ENERSA') &&
                                                     !upper.includes('ENERGÍA DE ENTRE RÍOS');
 
