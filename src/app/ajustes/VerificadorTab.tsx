@@ -612,15 +612,18 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
             {visible.map((res, idx) => {
               const resultIdx = results.indexOf(res);
               const { color, Icon } = STATUS_CONFIG[res.status];
+              const baseBg = (() => {
+                if (res.status !== 'found' || cuilColIndex === undefined) return undefined;
+                const cuil = (res.row.cells[Number(cuilColIndex)] ?? '').trim();
+                return duplicateCuils.has(cuil) ? 'rgba(248,113,113,0.07)' : undefined;
+              })();
               return (
-                <tr key={idx} style={{
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  background: (() => {
-                    if (res.status !== 'found' || cuilColIndex === undefined) return undefined;
-                    const cuil = (res.row.cells[Number(cuilColIndex)] ?? '').trim();
-                    return duplicateCuils.has(cuil) ? 'rgba(248,113,113,0.07)' : undefined;
-                  })(),
-                }}>
+                <tr
+                  key={idx}
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: baseBg, transition: 'background 0.12s ease' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = baseBg ?? ''; }}
+                >
                   <td style={{ padding: '9px 14px', textAlign: 'center', width: 36 }}>
                     {res.dbId && (
                       <input

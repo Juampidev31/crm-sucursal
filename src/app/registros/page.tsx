@@ -98,7 +98,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (!form.cuil?.trim()) errs.cuil = 'Requerido';
   else if (form.cuil.length !== 11) errs.cuil = '11 dígitos';
 
-  if (!form.analista) errs.analista = 'Requerido';
+  if (!form.analista?.trim()) errs.analista = 'Requerido';
   if (!form.estado) errs.estado = 'Requerido';
   const requiereTipoYAcuerdo = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
   if (requiereTipoYAcuerdo && !form.tipo_cliente) errs.tipo_cliente = 'Requerido';
@@ -680,11 +680,12 @@ const RegistroModal = memo(function RegistroModal({
                   set('nombre', corregirTildes(capitalizarNombre(clean)));
                 }} />
               </Field>
-              <Field label="Analista *">
+              <Field label={`Analista${isAdmin ? '' : ' *'}`} error={errors.analista}>
                 <PremiumSelect
-                  value={form.analista || ANALISTAS[0]}
-                  onChange={val => set('analista', val)}
-                  options={ANALISTAS}
+                  value={form.analista || (isAdmin ? 'Sin especificar' : '')}
+                  onChange={val => set('analista', val === 'Sin especificar' ? '' : val)}
+                  options={isAdmin ? ['Sin especificar', ...ANALISTAS] : [...ANALISTAS]}
+                  error={errors.analista}
                 />
               </Field>
             </div>
