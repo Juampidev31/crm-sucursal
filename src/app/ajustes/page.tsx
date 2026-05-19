@@ -338,6 +338,10 @@ export default function AjustesPage() {
         setCtxObjetivos(prev => prev.filter(o =>
           !(o.analista === histAnalista && o.anio === histAnio && zeroObjMonths.includes(o.mes))
         ));
+        zeroObjMonths.forEach(mes => pushObjetivosChange('DELETE', {
+          analista: histAnalista, anio: histAnio, mes,
+          meta_ventas: 0, meta_operaciones: 0,
+        } as any));
       }
 
       showSuccess(`Histórico guardado para ${histAnalista}`);
