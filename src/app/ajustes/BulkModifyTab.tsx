@@ -374,27 +374,32 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     if (!searched) setSelectedIds(new Set());
   }, [searched]);
 
-  // Devuelve los campos obligatorios que faltan en un registro (según validarForm del modal)
+  // Devuelve los campos obligatorios que faltan en un registro (según validarForm del modal).
+  // Un campo asignado en camposExcel (incluido SIN_ESPECIFICAR) se considera atendido.
   const getMissingFields = (r: Registro): string[] => {
+    const addressed = (key: keyof CamposExcel) => {
+      const v = camposExcel[key];
+      return typeof v === 'string' && v.trim() !== '';
+    };
     const missing: string[] = [];
     if (!r.nombre?.trim()) missing.push('nombre');
     if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('cuil');
-    if (!r.analista) missing.push('analista');
-    if (!r.estado) missing.push('estado');
+    if (!addressed('analista') && !r.analista) missing.push('analista');
+    if (!addressed('estado') && !r.estado) missing.push('estado');
     const requiereTyA = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
     if (requiereTyA) {
-      if (!r.tipo_cliente) missing.push('tipo_cliente');
-      if (!r.acuerdo_precios) missing.push('acuerdo_precios');
-      if (!r.cuotas?.trim()) missing.push('cuotas');
-      if (!r.rango_etario) missing.push('rango_etario');
-      if (!r.sexo) missing.push('sexo');
-      if (!r.empleador?.trim()) missing.push('empleador');
-      if (!r.localidad?.trim()) missing.push('localidad');
+      if (!addressed('tipo_cliente') && !r.tipo_cliente) missing.push('tipo_cliente');
+      if (!addressed('acuerdo_precios') && !r.acuerdo_precios) missing.push('acuerdo_precios');
+      if (!addressed('cuotas') && !r.cuotas?.trim()) missing.push('cuotas');
+      if (!addressed('rango_etario') && !r.rango_etario) missing.push('rango_etario');
+      if (!addressed('sexo') && !r.sexo) missing.push('sexo');
+      if (!addressed('empleador') && !r.empleador?.trim()) missing.push('empleador');
+      if (!addressed('localidad') && !r.localidad?.trim()) missing.push('localidad');
     }
-    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !r.dependencia?.trim()) {
+    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !addressed('dependencia') && !r.dependencia?.trim()) {
       missing.push('dependencia');
     }
-    if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) {
+    if (r.estado === 'derivado / rechazado cc' && !addressed('comentarios') && !r.comentarios?.trim()) {
       missing.push('comentarios');
     }
     return missing;
