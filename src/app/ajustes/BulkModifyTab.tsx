@@ -707,6 +707,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                       <th style={thStyle}>APELLIDO Y NOMBRE</th>
                       <th style={thStyle}>FECHA</th>
                       <th style={thStyle}>CANTIDAD DE REGISTROS</th>
+                      <th style={thStyle}>ANALISTA ACTUAL</th>
                       <th style={thStyle}>EMPLEADOR ACTUAL</th>
                       <th style={thStyle}>DEPENDENCIA ACTUAL</th>
                       <th style={thStyle}>FALTANTES</th>
@@ -769,6 +770,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                               <td style={tdStyle}>—</td>
                               <td style={tdStyle}>—</td>
                               <td style={tdStyle}>—</td>
+                              <td style={tdStyle}>—</td>
                             </tr>
                           )];
                         }
@@ -795,7 +797,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                               </td>
                               <td style={{ ...tdStyle, fontWeight: 700 }}>{mr.cuil}</td>
                               <td style={{ ...tdStyle, fontWeight: 700 }}>{nombreMostrar}</td>
-                              <td style={tdStyle} colSpan={5}>
+                              <td style={tdStyle} colSpan={6}>
                                 <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700 }}>{mr.registros.length} registros — elegí cuáles modificar</span>
                               </td>
                             </tr>
@@ -828,6 +830,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                               <td style={tdStyle}>{isMulti ? '' : nombreMostrar}</td>
                               <td style={tdStyle}>{fmtFecha(reg)}</td>
                               <td style={{ ...tdStyle, color: '#ccc' }}>{isMulti ? '' : 1}</td>
+                              <td style={tdStyle}>{reg.analista || '—'}</td>
                               <td style={tdStyle}>{reg.empleador || '—'}</td>
                               <td style={tdStyle}>{reg.dependencia || '—'}</td>
                               <td style={tdStyle}>{renderFaltantes(missing, checked)}</td>
