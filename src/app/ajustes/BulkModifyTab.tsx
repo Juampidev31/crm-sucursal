@@ -1745,36 +1745,47 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   };
 
   const previewRecords = useCallback(async () => {
-    let query = supabase.from('registros').select('id');
+    const buildQuery = () => {
+      let q = supabase.from('registros').select('id');
+      q = applyChipFilter(q, 'estado', filtros.estados);
+      q = applyChipFilter(q, 'analista', filtros.analistas);
+      q = applyChipFilter(q, 'acuerdo_precios', filtros.acuerdoPrecios);
+      q = applyChipFilter(q, 'tipo_cliente', filtros.tipoCliente);
+      q = applyChipFilter(q, 'rango_etario', filtros.rangoEtario);
+      q = applyChipFilter(q, 'sexo', filtros.sexo);
+      q = applyChipFilter(q, 'localidad', filtros.localidad);
+      q = applyChipFilter(q, 'empleador', filtros.empleador);
+      if (filtros.esRe === 'si') q = q.eq('es_re', true);
+      if (filtros.esRe === 'no') q = q.eq('es_re', false);
+      if (filtros.scoreMin) q = q.gte('puntaje', Number(filtros.scoreMin));
+      if (filtros.scoreMax) q = q.lte('puntaje', Number(filtros.scoreMax));
+      if (filtros.montoMin) q = q.gte('monto', Number(filtros.montoMin));
+      if (filtros.montoMax) q = q.lte('monto', Number(filtros.montoMax));
+      if (filtros.fechaDesde) q = q.gte('fecha', filtros.fechaDesde);
+      if (filtros.fechaHasta) q = q.lte('fecha', filtros.fechaHasta);
+      if (filtros.search) {
+        const s = filtros.search.toLowerCase();
+        q = q.or(`nombre.ilike.%${s}%,cuil.ilike.%${s}%,empleador.ilike.%${s}%,estado.ilike.%${s}%,analista.ilike.%${s}%,localidad.ilike.%${s}%,comentarios.ilike.%${s}%`);
+      }
+      return q;
+    };
 
-    // Aplicar todos los filtros
-    query = applyChipFilter(query, 'estado', filtros.estados);
-    query = applyChipFilter(query, 'analista', filtros.analistas);
-    query = applyChipFilter(query, 'acuerdo_precios', filtros.acuerdoPrecios);
-    query = applyChipFilter(query, 'tipo_cliente', filtros.tipoCliente);
-    query = applyChipFilter(query, 'rango_etario', filtros.rangoEtario);
-    query = applyChipFilter(query, 'sexo', filtros.sexo);
-    query = applyChipFilter(query, 'localidad', filtros.localidad);
-    query = applyChipFilter(query, 'empleador', filtros.empleador);
-    if (filtros.esRe === 'si') query = query.eq('es_re', true);
-    if (filtros.esRe === 'no') query = query.eq('es_re', false);
-    if (filtros.scoreMin) query = query.gte('puntaje', Number(filtros.scoreMin));
-    if (filtros.scoreMax) query = query.lte('puntaje', Number(filtros.scoreMax));
-    if (filtros.montoMin) query = query.gte('monto', Number(filtros.montoMin));
-    if (filtros.montoMax) query = query.lte('monto', Number(filtros.montoMax));
-    if (filtros.fechaDesde) query = query.gte('fecha', filtros.fechaDesde);
-    if (filtros.fechaHasta) query = query.lte('fecha', filtros.fechaHasta);
-    if (filtros.search) {
-      const s = filtros.search.toLowerCase();
-      query = query.or(`nombre.ilike.%${s}%,cuil.ilike.%${s}%,empleador.ilike.%${s}%,estado.ilike.%${s}%,analista.ilike.%${s}%,localidad.ilike.%${s}%,comentarios.ilike.%${s}%`);
+    // Paginar para superar el límite de 1000 filas de Supabase
+    const PAGE = 1000;
+    const ids = new Set<string>();
+    let from = 0;
+    while (true) {
+      const { data, error } = await buildQuery().range(from, from + PAGE - 1);
+      if (error) {
+        setToast({ message: `Error: ${error.message}`, type: 'error' });
+        return;
+      }
+      if (!data || data.length === 0) break;
+      for (const r of data) ids.add(r.id);
+      if (data.length < PAGE) break;
+      from += PAGE;
     }
 
-    const { data, error } = await query;
-    if (error) {
-      setToast({ message: `Error: ${error.message}`, type: 'error' });
-      return;
-    }
-    const ids = new Set(data.map(r => r.id));
     setPreviewIds(ids);
     setPreviewCount(ids.size);
     setStep('confirm');
