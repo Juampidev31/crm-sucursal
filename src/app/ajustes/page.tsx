@@ -284,27 +284,6 @@ export default function AjustesPage() {
         }))
         .filter(r => r.capital_real > 0 || r.ops_real > 0);
 
-      if (upserts.length > 0) {
-        const { error } = await supabase.from('historico_ventas').upsert(upserts, { onConflict: 'analista,anio,mes' });
-        if (error) throw error;
-
-        // Actualizar contexto y enviar broadcast para historico
-        setCtxHistorico((prev: HistoricoVenta[]) => {
-          const filtered = prev.filter(h => !(h.analista === histAnalista && h.anio === histAnio));
-          const nuevos = upserts.map(u => ({ ...u, id: undefined }));
-          return [...filtered, ...nuevos] as HistoricoVenta[];
-        });
-        upserts.forEach(u => pushHistoricoChange('UPDATE', { ...u, id: undefined }));
-      }
-
-      const zeroMonths = histRows
-        .map((_, mesIdx) => mesIdx)
-        .filter(mesIdx => !Number(histRows[mesIdx].capital_real) && !Number(histRows[mesIdx].ops_real));
-
-      for (const mes of zeroMonths) {
-        await supabase.from('historico_ventas').delete().eq('analista', histAnalista).eq('anio', histAnio).eq('mes', mes);
-      }
-
       const objUpserts = histRows
         .map((row, mesIdx) => ({
           analista: histAnalista, anio: histAnio, mes: mesIdx,
@@ -312,25 +291,48 @@ export default function AjustesPage() {
         }))
         .filter(r => r.meta_ventas > 0 || r.meta_operaciones > 0);
 
-      if (objUpserts.length > 0) {
-        const { error } = await supabase.from('objetivos').upsert(objUpserts, { onConflict: 'analista,mes,anio' });
-        if (error) throw error;
-
-        // Actualizar contexto y enviar broadcast para objetivos
-        setCtxObjetivos(prev => {
-          const filtered = prev.filter(o => !(o.analista === histAnalista && o.anio === histAnio));
-          const nuevos = objUpserts.map(u => ({ ...u, id: undefined }));
-          return [...filtered, ...nuevos];
-        });
-        objUpserts.forEach(u => pushObjetivosChange('UPDATE', { ...u, id: undefined }));
-      }
+      const zeroMonths = histRows
+        .map((_, mesIdx) => mesIdx)
+        .filter(mesIdx => !Number(histRows[mesIdx].capital_real) && !Number(histRows[mesIdx].ops_real));
 
       const zeroObjMonths = histRows
         .map((_, mesIdx) => mesIdx)
         .filter(mesIdx => !Number(histRows[mesIdx].meta_ventas) && !Number(histRows[mesIdx].meta_operaciones));
 
-      for (const mes of zeroObjMonths) {
-        await supabase.from('objetivos').delete().eq('analista', histAnalista).eq('anio', histAnio).eq('mes', mes);
+      // 4 operaciones en paralelo (1 query c/u, en vez de hasta 26 secuenciales)
+      const ops: Promise<any>[] = [];
+      if (upserts.length > 0) {
+        ops.push(supabase.from('historico_ventas').upsert(upserts, { onConflict: 'analista,anio,mes' }));
+      }
+      if (zeroMonths.length > 0) {
+        ops.push(supabase.from('historico_ventas').delete()
+          .eq('analista', histAnalista).eq('anio', histAnio).in('mes', zeroMonths));
+      }
+      if (objUpserts.length > 0) {
+        ops.push(supabase.from('objetivos').upsert(objUpserts, { onConflict: 'analista,mes,anio' }));
+      }
+      if (zeroObjMonths.length > 0) {
+        ops.push(supabase.from('objetivos').delete()
+          .eq('analista', histAnalista).eq('anio', histAnio).in('mes', zeroObjMonths));
+      }
+      const results = await Promise.all(ops);
+      const firstErr = results.find((r: any) => r?.error)?.error;
+      if (firstErr) throw firstErr;
+
+      // Actualizar contextos
+      if (upserts.length > 0) {
+        setCtxHistorico((prev: HistoricoVenta[]) => {
+          const filtered = prev.filter(h => !(h.analista === histAnalista && h.anio === histAnio));
+          return [...filtered, ...upserts.map(u => ({ ...u, id: undefined }))] as HistoricoVenta[];
+        });
+        upserts.forEach(u => pushHistoricoChange('UPDATE', { ...u, id: undefined }));
+      }
+      if (objUpserts.length > 0) {
+        setCtxObjetivos(prev => {
+          const filtered = prev.filter(o => !(o.analista === histAnalista && o.anio === histAnio));
+          return [...filtered, ...objUpserts.map(u => ({ ...u, id: undefined }))];
+        });
+        objUpserts.forEach(u => pushObjetivosChange('UPDATE', { ...u, id: undefined }));
       }
       if (zeroObjMonths.length > 0) {
         setCtxObjetivos(prev => prev.filter(o =>
