@@ -273,6 +273,18 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const previewRows = rows.slice(0, 5);
   const colCount = rows[0]?.cells.length ?? 0;
 
+  // Indexar registros por CUIL normalizado una sola vez (evita O(rows × registros))
+  const registrosByCuil = useMemo(() => {
+    const map = new Map<string, Registro[]>();
+    for (const reg of registros) {
+      const k = normalizeCuil(reg.cuil);
+      if (!k) continue;
+      const arr = map.get(k);
+      if (arr) arr.push(reg); else map.set(k, [reg]);
+    }
+    return map;
+  }, [registros]);
+
   const matchedRows = useMemo(() => {
     if (!searched || cuilCol === null || rows.length === 0) return [];
     const inRange = (f: string | null | undefined): boolean => {
@@ -287,13 +299,12 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
       .map(r => {
         const cuil = normalizeCuil(r.cells[cuilCol] ?? '');
         const nombre = nombreCol !== null ? (r.cells[nombreCol] ?? '') : '';
-        const found = registros
-          .filter(reg => normalizeCuil(reg.cuil) === cuil)
-          .filter(reg => inRange(reg.fecha));
+        const candidates = registrosByCuil.get(cuil) ?? [];
+        const found = (fechaDesde || fechaHasta) ? candidates.filter(reg => inRange(reg.fecha)) : candidates;
         return { cuil, nombre, registros: found };
       })
       .filter(r => r.cuil !== '');
-  }, [searched, rows, cuilCol, nombreCol, registros, fechaDesde, fechaHasta]);
+  }, [searched, rows, cuilCol, nombreCol, registrosByCuil, fechaDesde, fechaHasta]);
 
   const allMatchedIds = useMemo(
     () => matchedRows.flatMap(r => r.registros.map(reg => reg.id)),
