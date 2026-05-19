@@ -192,10 +192,19 @@ export function procesarFilas(
   const hasNombre = Object.values(mapping).includes('apellido_nombre');
   const hasFecha = Object.values(mapping).includes('fecha');
 
+  // Extrae el año de un string de fecha en cualquier formato (ISO, DD/MM/YYYY, etc.)
+  const extractYear = (fecha: unknown): string | null => {
+    const s = String(fecha ?? '');
+    const m = s.match(/\b(19|20)\d{2}\b/);
+    return m ? m[0] : null;
+  };
+
   return rows.map(row => {
     const parsed = parseCargaRow(row, mapping);
     // Si la fila trae fecha, usar solo el año para discriminar duplicados
-    const rowYear = hasFecha && parsed.fecha ? String(parsed.fecha).slice(0, 4) : null;
+    const rawFechaCell = hasFecha ? Object.entries(mapping).find(([, r]) => r === 'fecha')?.[0] : undefined;
+    const rawFecha = rawFechaCell !== undefined ? row.cells[Number(rawFechaCell)] : undefined;
+    const rowYear = hasFecha ? (extractYear(parsed.fecha) ?? extractYear(rawFecha)) : null;
 
     let existing: Registro | undefined;
     if (hasCuil && parsed.cuil) {
