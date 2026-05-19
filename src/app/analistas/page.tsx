@@ -328,18 +328,9 @@ export default function AnalistasPage() {
       buckets[i].ops += 1;
     }
     for (const b of buckets) {
-      if (analista === 'PDV') {
-        b.metaK = objetivos
-          .filter(o => o.mes === b.mes0 && o.anio === b.anio && o.analista !== 'PDV')
-          .reduce((s, o) => s + (o.meta_ventas || 0), 0);
-        b.metaQ = objetivos
-          .filter(o => o.mes === b.mes0 && o.anio === b.anio && o.analista !== 'PDV')
-          .reduce((s, o) => s + (o.meta_operaciones || 0), 0);
-      } else {
-        const obj = objetivos.find(o => o.analista === analista && o.mes === b.mes0 && o.anio === b.anio);
-        b.metaK = obj?.meta_ventas ?? 0;
-        b.metaQ = obj?.meta_operaciones ?? 0;
-      }
+      const obj = objetivos.find(o => o.analista === analista && o.mes === b.mes0 && o.anio === b.anio);
+      b.metaK = obj?.meta_ventas ?? 0;
+      b.metaQ = obj?.meta_operaciones ?? 0;
     }
     return buckets;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -582,12 +573,8 @@ export default function AnalistasPage() {
     const tendConversion = conversionAnt > 0 ? ((conversion - conversionAnt) / conversionAnt) * 100 : null;
 
     const obj = objetivos.find(o => o.analista === analista && o.mes === selectedMes - 1 && o.anio === selectedAnio);
-    const metaCapital = analista === 'PDV' 
-      ? objetivos.filter(o => o.mes === selectedMes - 1 && o.anio === selectedAnio && o.analista !== 'PDV').reduce((s, o) => s + (o.meta_ventas || 0), 0)
-      : (obj?.meta_ventas ?? 0);
-    const metaOps = analista === 'PDV' 
-      ? objetivos.filter(o => o.mes === selectedMes - 1 && o.anio === selectedAnio && o.analista !== 'PDV').reduce((s, o) => s + (o.meta_operaciones || 0), 0)
-      : (obj?.meta_operaciones ?? 0);
+    const metaCapital = obj?.meta_ventas ?? 0;
+    const metaOps = obj?.meta_operaciones ?? 0;
     const cumplCapital = metaCapital > 0 ? (capital / metaCapital) * 100 : null;
     const restanteCapital = metaCapital > 0 ? Math.max(0, 100 - (capital / metaCapital) * 100) : null;
     const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
