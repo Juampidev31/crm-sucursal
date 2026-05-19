@@ -289,29 +289,34 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const totalRegistros = allMatchedIds.length;
   const totalSeleccionados = selectedIds.size;
   const { totalCompletos, totalConFaltantes } = useMemo(() => {
+    // Un campo se considera "atendido" si el usuario asignó algún valor (incluye SIN_ESPECIFICAR)
+    const addressed = (key: keyof CamposExcel) => {
+      const v = camposExcel[key];
+      return typeof v === 'string' && v.trim() !== '';
+    };
     let completos = 0, faltantes = 0;
     matchedRows.forEach(mr => mr.registros.forEach(r => {
       const missing: string[] = [];
       if (!r.nombre?.trim()) missing.push('x');
       if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('x');
-      if (!r.analista) missing.push('x');
-      if (!r.estado) missing.push('x');
+      if (!addressed('analista') && !r.analista) missing.push('x');
+      if (!addressed('estado') && !r.estado) missing.push('x');
       const req = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
       if (req) {
-        if (!r.tipo_cliente) missing.push('x');
-        if (!r.acuerdo_precios) missing.push('x');
-        if (!r.cuotas?.trim()) missing.push('x');
-        if (!r.rango_etario) missing.push('x');
-        if (!r.sexo) missing.push('x');
-        if (!r.empleador?.trim()) missing.push('x');
-        if (!r.localidad?.trim()) missing.push('x');
+        if (!addressed('tipo_cliente') && !r.tipo_cliente) missing.push('x');
+        if (!addressed('acuerdo_precios') && !r.acuerdo_precios) missing.push('x');
+        if (!addressed('cuotas') && !r.cuotas?.trim()) missing.push('x');
+        if (!addressed('rango_etario') && !r.rango_etario) missing.push('x');
+        if (!addressed('sexo') && !r.sexo) missing.push('x');
+        if (!addressed('empleador') && !r.empleador?.trim()) missing.push('x');
+        if (!addressed('localidad') && !r.localidad?.trim()) missing.push('x');
       }
-      if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !r.dependencia?.trim()) missing.push('x');
-      if (r.estado === 'derivado / rechazado cc' && !r.comentarios?.trim()) missing.push('x');
+      if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !addressed('dependencia') && !r.dependencia?.trim()) missing.push('x');
+      if (r.estado === 'derivado / rechazado cc' && !addressed('comentarios') && !r.comentarios?.trim()) missing.push('x');
       if (missing.length === 0) completos++; else faltantes++;
     }));
     return { totalCompletos: completos, totalConFaltantes: faltantes };
-  }, [matchedRows]);
+  }, [matchedRows, camposExcel]);
   const allSelected = allMatchedIds.length > 0 && allMatchedIds.every(id => selectedIds.has(id));
   const someSelected = !allSelected && allMatchedIds.some(id => selectedIds.has(id));
 
@@ -420,20 +425,25 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const allRangosExcel = useMemo(() => dedupCI(registros.map(r => r.rango_etario), RANGOS_ETARIOS), [registros]);
   const allSexosExcel = useMemo(() => dedupCI(registros.map(r => r.sexo), SEXOS), [registros]);
 
-  // Construye payload solo con campos llenos
+  // Construye payload solo con campos llenos. SIN_ESPECIFICAR → null (borra el valor)
   const buildPayload = (): Record<string, unknown> => {
     const p: Record<string, unknown> = {};
-    if (camposExcel.empleador.trim()) p.empleador = camposExcel.empleador.trim();
-    if (camposExcel.dependencia.trim()) p.dependencia = camposExcel.dependencia.trim();
-    if (camposExcel.analista.trim()) p.analista = camposExcel.analista.trim();
-    if (camposExcel.estado.trim()) p.estado = camposExcel.estado.trim();
-    if (camposExcel.tipo_cliente.trim()) p.tipo_cliente = camposExcel.tipo_cliente.trim();
-    if (camposExcel.acuerdo_precios.trim()) p.acuerdo_precios = camposExcel.acuerdo_precios.trim();
-    if (camposExcel.cuotas.trim()) p.cuotas = camposExcel.cuotas.trim();
-    if (camposExcel.rango_etario.trim()) p.rango_etario = camposExcel.rango_etario.trim();
-    if (camposExcel.sexo.trim()) p.sexo = camposExcel.sexo.trim();
-    if (camposExcel.localidad.trim()) p.localidad = camposExcel.localidad.trim();
-    if (camposExcel.comentarios.trim()) p.comentarios = camposExcel.comentarios.trim();
+    const setF = (key: keyof CamposExcel, dbKey: string) => {
+      const v = camposExcel[key];
+      if (typeof v !== 'string' || !v.trim()) return;
+      p[dbKey] = v === SIN_ESPECIFICAR ? null : v.trim();
+    };
+    setF('empleador', 'empleador');
+    setF('dependencia', 'dependencia');
+    setF('analista', 'analista');
+    setF('estado', 'estado');
+    setF('tipo_cliente', 'tipo_cliente');
+    setF('acuerdo_precios', 'acuerdo_precios');
+    setF('cuotas', 'cuotas');
+    setF('rango_etario', 'rango_etario');
+    setF('sexo', 'sexo');
+    setF('localidad', 'localidad');
+    setF('comentarios', 'comentarios');
     if (camposExcel.es_re === 'si') p.es_re = true;
     else if (camposExcel.es_re === 'no') p.es_re = false;
     if (camposExcel.puntaje.trim()) p.puntaje = Number(camposExcel.puntaje);
@@ -842,6 +852,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                           <label style={labelStyle}>{f.label}</label>
                           <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
                             <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
+                            <option value={SIN_ESPECIFICAR} style={{ background: '#1a1a1a', color: '#888' }}>Sin especificar (borrar)</option>
                             {f.opts.map(o => <option key={o} value={o} style={{ background: '#1a1a1a', color: '#ddd' }}>{o}</option>)}
                           </select>
                         </div>
