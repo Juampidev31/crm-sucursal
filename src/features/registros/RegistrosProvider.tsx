@@ -86,13 +86,17 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const applyRegistroChange = useCallback((type: ChangeType, reg: Registro) => {
     setRegistros(prev => {
       if (type === 'DELETE') return prev.filter(r => r.id !== reg.id);
+
       const exists = prev.findIndex(r => r.id === reg.id);
       if (exists >= 0) {
+        // UPDATE: replace in-place without re-sorting (date rarely changes)
         const next = [...prev];
         next[exists] = reg;
-        return next.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+        return next;
       }
-      return [reg, ...prev].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+      // INSERT: prepend and let the page-level sort handle ordering
+      return [reg, ...prev];
     });
   }, []);
 

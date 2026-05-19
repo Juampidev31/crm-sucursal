@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
@@ -303,7 +303,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
 
 // ── Field wrapper ─────────────────────────────────────────────────────────────
 
-const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => {
+const Field = memo(function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   const isRequired = label.includes('*');
   const cleanLabel = label.replace('*', '').trim();
 
@@ -317,7 +317,7 @@ const Field = ({ label, error, children }: { label: string; error?: string; chil
       {children}
     </div>
   );
-};
+});
 
 // ── PremiumSelect Component ───────────────────────────────────────────────────
 
@@ -600,12 +600,7 @@ const PremiumSelect = ({
           </div>
         </div>
       )}
-      <style>{`
-        @keyframes selectFade {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+      {/* selectFade animation is in globals.css */}
     </div>
   );
 };
@@ -1589,12 +1584,15 @@ export default function RegistrosPage() {
   const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
 
   // Sync modal data when registros update externally (e.g. bulk empleador assign)
+  // Guarded: skip when modal is closed to avoid unnecessary work on every realtime update
+  const prevRegistrosRef = useRef(registros);
   useEffect(() => {
-    if (modalOpen && editingId) {
-      const updated = registros.find(r => r.id === editingId);
-      if (updated) {
-        setModalInitialData({ ...updated, fecha: updated.fecha || '', fecha_score: updated.fecha_score || '' });
-      }
+    if (!modalOpen || !editingId) return;
+    if (prevRegistrosRef.current === registros) return;
+    prevRegistrosRef.current = registros;
+    const updated = registros.find(r => r.id === editingId);
+    if (updated) {
+      setModalInitialData({ ...updated, fecha: updated.fecha || '', fecha_score: updated.fecha_score || '' });
     }
   }, [registros, modalOpen, editingId]);
 
@@ -1686,47 +1684,69 @@ export default function RegistrosPage() {
     }
   }, [isCreationModalOpen, setIsCreationModalOpen]);
 
+  // Pre-computed search index: one lowercase string per record (built once when registros change)
+  const searchIndex = useMemo(() => {
+    return registros.map(r => (
+      `${r.nombre}|${r.cuil}|${r.analista}|${r.empleador || ''}|${r.estado}|${r.localidad || ''}|${r.dependencia || ''}|${r.comentarios}`
+    ).toLowerCase());
+  }, [registros]);
+
+  // Debounced search term to avoid re-filtering on every keystroke
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => setDebouncedSearch(filters.search), 200);
+    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
+  }, [filters.search]);
+
   const filteredRegistros = useMemo(() => {
     const nowTime = new Date().getTime();
-    const list = registros.filter(r => {
-      const s = filters.search.toLowerCase();
-      const mSearch = !filters.search || r.nombre?.toLowerCase().includes(s) || r.cuil?.toLowerCase().includes(s) || r.analista?.toLowerCase().includes(s) || r.empleador?.toLowerCase().includes(s) || r.estado?.toLowerCase().includes(s) || r.localidad?.toLowerCase().includes(s) || r.dependencia?.toLowerCase().includes(s) || r.comentarios?.toLowerCase().includes(s);
-      const mEstado = filters.estados.length === 0 || filters.estados.includes(r.estado);
-      const mAnalista = !filters.analista || r.analista === filters.analista;
-      const mDesde = !filters.fechaDesde || (r.fecha && r.fecha >= filters.fechaDesde);
-      const mHasta = !filters.fechaHasta || (r.fecha && r.fecha <= filters.fechaHasta);
-      const mMin = !filters.montoMin || Number(r.monto) >= Number(filters.montoMin);
-      const mMax = !filters.montoMax || Number(r.monto) <= Number(filters.montoMax);
-      const mScoreMin = !filters.scoreMin || (r.puntaje != null && Number(r.puntaje) >= Number(filters.scoreMin));
-      const mScoreMax = !filters.scoreMax || (r.puntaje != null && Number(r.puntaje) <= Number(filters.scoreMax));
-      const mRe = !filters.esRe || (filters.esRe === 'si' ? r.es_re : !r.es_re);
-      const mAcuerdo = filters.acuerdoPrecios.length === 0 || (r.acuerdo_precios && filters.acuerdoPrecios.includes(r.acuerdo_precios));
+    const s = debouncedSearch.toLowerCase();
+    const hasSearch = s.length > 0;
+    const hasEstados = filters.estados.length > 0;
+    const hasAcuerdo = filters.acuerdoPrecios.length > 0;
+    const montoMin = filters.montoMin ? Number(filters.montoMin) : 0;
+    const montoMax = filters.montoMax ? Number(filters.montoMax) : 0;
+    const scoreMin = filters.scoreMin ? Number(filters.scoreMin) : 0;
+    const scoreMax = filters.scoreMax ? Number(filters.scoreMax) : 0;
 
-      let mVencido = true;
+    const list = registros.filter((r, idx) => {
+      if (hasSearch && !searchIndex[idx].includes(s)) return false;
+      if (hasEstados && !filters.estados.includes(r.estado)) return false;
+      if (filters.analista && r.analista !== filters.analista) return false;
+      if (filters.fechaDesde && (!r.fecha || r.fecha < filters.fechaDesde)) return false;
+      if (filters.fechaHasta && (!r.fecha || r.fecha > filters.fechaHasta)) return false;
+      if (filters.montoMin && Number(r.monto) < montoMin) return false;
+      if (filters.montoMax && Number(r.monto) > montoMax) return false;
+      if (filters.scoreMin && (r.puntaje == null || Number(r.puntaje) < scoreMin)) return false;
+      if (filters.scoreMax && (r.puntaje == null || Number(r.puntaje) > scoreMax)) return false;
+      if (filters.esRe && (filters.esRe === 'si' ? !r.es_re : r.es_re)) return false;
+      if (hasAcuerdo && (!r.acuerdo_precios || !filters.acuerdoPrecios.includes(r.acuerdo_precios))) return false;
+
       if (filters.soloAlertasVencidas) {
         const config = alertasConfig?.find(a => a.estado.toLowerCase() === r.estado?.toLowerCase());
         const diasLimite = config?.dias ?? 0;
         const dateStr = r.fecha || r.created_at;
         if (dateStr) {
-          const recordDate = new Date(dateStr).getTime();
-          const daysDiff = Math.floor((nowTime - recordDate) / (1000 * 60 * 60 * 24));
-          if (daysDiff < diasLimite) {
-            mVencido = false;
-          }
+          const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+          if (daysDiff < diasLimite) return false;
         }
       }
 
-      return mSearch && mEstado && mAnalista && mDesde && mHasta && mMin && mMax && mScoreMin && mScoreMax && mRe && mVencido && mAcuerdo;
+      return true;
     });
 
-    return [...list].sort((a, b) => {
+    // Data is already sorted by fecha desc from the provider. Only re-sort if needed for
+    // the secondary priority sort (ventas/aprobados first within same date).
+    return list.sort((a, b) => {
       const dA = a.fecha || '', dB = b.fecha || '';
       if (dA !== dB) return dA > dB ? -1 : 1;
       const priA = a.estado === 'venta' || a.estado === 'derivado / aprobado cc';
       const priB = b.estado === 'venta' || b.estado === 'derivado / aprobado cc';
       return priA === priB ? 0 : priA ? -1 : 1;
     });
-  }, [registros, filters]);
+  }, [registros, searchIndex, debouncedSearch, filters.estados, filters.analista, filters.fechaDesde, filters.fechaHasta, filters.montoMin, filters.montoMax, filters.scoreMin, filters.scoreMax, filters.esRe, filters.soloAlertasVencidas, filters.acuerdoPrecios, alertasConfig]);
 
   useEffect(() => { setTotalResults(filteredRegistros.length); }, [filteredRegistros.length, setTotalResults]);
 

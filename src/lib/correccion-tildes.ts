@@ -295,19 +295,31 @@ const ACCENT_MAP: Record<string, string> = {
   'diaria': 'Diaria',
 };
 
+// ── Pre-compiled regex entries (built once at module load) ─────────────────
+const COMPILED_ENTRIES: Array<{ regex: RegExp; replacement: string }> = Object.entries(ACCENT_MAP).map(
+  ([sinTilde, conTilde]) => ({
+    regex: new RegExp(`\\b${sinTilde}\\b`, 'gi'),
+    replacement: conTilde,
+  })
+);
+
+const SPLIT_RE = /(\s+|[.,;:!?()])/;
+const WHITESPACE_RE = /^\s+$/;
+const PUNCT_RE = /^[.,;:!?()]+$/;
+
 /**
  * Corrige automáticamente las tildes en un texto
  * Busca palabras en el diccionario y las reemplaza por su forma correcta
+ * NOTA: Los regex se pre-compilan una sola vez al cargar el módulo.
  */
 export function corregirTildes(texto: string): string {
   if (!texto) return texto;
 
   let resultado = texto;
 
-  // Recorrer el diccionario y reemplazar coincidencias
-  for (const [sinTilde, conTilde] of Object.entries(ACCENT_MAP)) {
-    // Crear regex que busca la palabra completa (case insensitive)
-    const regex = new RegExp(`\\b${sinTilde}\\b`, 'gi');
+  for (const { regex, replacement: conTilde } of COMPILED_ENTRIES) {
+    // Reset lastIndex for global regex reuse
+    regex.lastIndex = 0;
     resultado = resultado.replace(regex, (match) => {
       // Mantener el case original
       if (match === match.toUpperCase()) {
@@ -331,8 +343,8 @@ export function corregirTildesEnTiempoReal(texto: string): string {
   if (!texto) return texto;
 
   // Dividir por palabras y corregir cada una
-  return texto.split(/(\s+|[.,;:!?()])/).map(parte => {
-    if (/^\s+$/.test(parte) || /^[.,;:!?()]+$/.test(parte)) {
+  return texto.split(SPLIT_RE).map(parte => {
+    if (WHITESPACE_RE.test(parte) || PUNCT_RE.test(parte)) {
       return parte;
     }
     return corregirTildes(parte);
