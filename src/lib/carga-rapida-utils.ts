@@ -173,18 +173,33 @@ export function procesarFilas(
   const byCuilYear = new Map<string, Registro>();
   const byNombreYear = new Map<string, Registro>();
 
+  // Extrae año-mes "YYYY-MM" desde cualquier formato (ISO, DD/MM/YYYY, etc.)
+  const extractYearMonth = (fecha: unknown): string | null => {
+    const s = String(fecha ?? '').trim();
+    if (!s) return null;
+    // ISO: YYYY-MM-DD
+    let m = s.match(/^(\d{4})-(\d{2})/);
+    if (m) return `${m[1]}-${m[2]}`;
+    // DD/MM/YYYY o D/M/YYYY
+    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (m) return `${m[3]}-${m[2].padStart(2, '0')}`;
+    // YYYY/MM/DD
+    m = s.match(/^(\d{4})[\/\-](\d{1,2})/);
+    if (m) return `${m[1]}-${m[2].padStart(2, '0')}`;
+    return null;
+  };
+
   dbRecords.forEach(r => {
+    const ym = extractYearMonth(r.fecha);
     if (r.cuil) {
       const cuil = normalizeCuil(r.cuil);
       byCuil.set(cuil, r);
-      const year = r.fecha ? r.fecha.slice(0, 4) : '';
-      if (year) byCuilYear.set(`${cuil}::${year}`, r);
+      if (ym) byCuilYear.set(`${cuil}::${ym}`, r);
     }
     if (r.nombre) {
       const nombre = normalizarNombre(r.nombre);
       byNombre.set(nombre, r);
-      const year = r.fecha ? r.fecha.slice(0, 4) : '';
-      if (year) byNombreYear.set(`${nombre}::${year}`, r);
+      if (ym) byNombreYear.set(`${nombre}::${ym}`, r);
     }
   });
 
@@ -192,28 +207,21 @@ export function procesarFilas(
   const hasNombre = Object.values(mapping).includes('apellido_nombre');
   const hasFecha = Object.values(mapping).includes('fecha');
 
-  // Extrae el año de un string de fecha en cualquier formato (ISO, DD/MM/YYYY, etc.)
-  const extractYear = (fecha: unknown): string | null => {
-    const s = String(fecha ?? '');
-    const m = s.match(/\b(19|20)\d{2}\b/);
-    return m ? m[0] : null;
-  };
-
   return rows.map(row => {
     const parsed = parseCargaRow(row, mapping);
-    // Si la fila trae fecha, usar solo el año para discriminar duplicados
-    const rowYear = hasFecha ? extractYear(getCell(row, mapping, 'fecha') ?? parsed.fecha) : null;
+    // Si la fila trae fecha, discriminar por año+mes
+    const rowYM = hasFecha ? extractYearMonth(getCell(row, mapping, 'fecha') ?? parsed.fecha) : null;
 
     let existing: Registro | undefined;
     if (hasCuil && parsed.cuil) {
-      existing = rowYear
-        ? byCuilYear.get(`${parsed.cuil}::${rowYear}`)
+      existing = rowYM
+        ? byCuilYear.get(`${parsed.cuil}::${rowYM}`)
         : byCuil.get(parsed.cuil);
     }
     if (!existing && hasNombre && parsed.nombre) {
       const nombre = normalizarNombre(parsed.nombre);
-      existing = rowYear
-        ? byNombreYear.get(`${nombre}::${rowYear}`)
+      existing = rowYM
+        ? byNombreYear.get(`${nombre}::${rowYM}`)
         : byNombre.get(nombre);
     }
 
