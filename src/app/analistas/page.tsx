@@ -1397,7 +1397,7 @@ export default function AnalistasPage() {
               </select>
               <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
               <select value={selectedAnio} onChange={e => setSelectedAnio(Number(e.target.value))} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
-                {Array.from({ length: new Date().getFullYear() + 1 - 2021 + 1 }, (_, i) => 2021 + i).map(a => <option key={a} value={a} style={{ background: '#111' }}>{a}</option>)}
+                {Array.from({ length: new Date().getFullYear() + 1 - 2016 + 1 }, (_, i) => 2016 + i).map(a => <option key={a} value={a} style={{ background: '#111' }}>{a}</option>)}
               </select>
             </div>
           </div>
