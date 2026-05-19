@@ -782,7 +782,7 @@ export default function AjustesPage() {
                 <div>
                   <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Año</label>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 1 - i).map(y => (
+                    {Array.from({ length: new Date().getFullYear() - 2021 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
                       <button key={y} onClick={() => setHistAnio(y)} style={{
                         padding: '10px 16px', borderRadius: '6px', border: '1px solid',
                         fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600,
@@ -901,7 +901,7 @@ export default function AjustesPage() {
                 </div>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <CustomSelect
-                    options={[2024, 2025, 2026, 2027].map(y => ({ label: String(y), value: y }))}
+                    options={Array.from({ length: new Date().getFullYear() + 1 - 2021 + 1 }, (_, i) => 2021 + i).map(y => ({ label: String(y), value: y }))}
                     value={objetivosAnio}
                     onChange={(v) => setObjetivosAnio(Number(v))}
                     width="110px"
