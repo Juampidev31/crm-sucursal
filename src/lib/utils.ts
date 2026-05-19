@@ -141,11 +141,13 @@ export const calcularComisiones = (
  * Ej: "jubilado" → "Jubilado" | "PAraná" → "Paraná"
  */
 export const capitalizarTexto = (value: string): string => {
-  return value
-    .trim()
+  const trailingSpace = value.endsWith(' ') ? ' ' : '';
+  const cleaned = value.trim();
+  if (!cleaned) return trailingSpace;
+  return cleaned
     .split(/\s+/)
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
+    .join(' ') + trailingSpace;
 };
 
 /**
