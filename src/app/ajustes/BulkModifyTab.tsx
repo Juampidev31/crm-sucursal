@@ -261,6 +261,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const [confirming, setConfirming] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [assignResult, setAssignResult] = useState<{ updated: number } | null>(null);
+  // Campos que el usuario marcó como "Sin especificar" por registro (no se cuentan como faltantes)
+  const [clearedByReg, setClearedByReg] = useState<Record<string, Set<string>>>({});
   const [assignError, setAssignError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState<'paste' | 'match' | 'assign'>('paste');
@@ -289,13 +291,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const totalRegistros = allMatchedIds.length;
   const totalSeleccionados = selectedIds.size;
   const { totalCompletos, totalConFaltantes } = useMemo(() => {
-    // Un campo se considera "atendido" si el usuario asignó algún valor (incluye SIN_ESPECIFICAR)
-    const addressed = (key: keyof CamposExcel) => {
-      const v = camposExcel[key];
-      return typeof v === 'string' && v.trim() !== '';
-    };
     let completos = 0, faltantes = 0;
     matchedRows.forEach(mr => mr.registros.forEach(r => {
+      const cleared = clearedByReg[r.id];
+      const addressed = (key: keyof CamposExcel) => {
+        if (cleared?.has(key)) return true;
+        const v = camposExcel[key];
+        return typeof v === 'string' && v.trim() !== '';
+      };
       const missing: string[] = [];
       if (!r.nombre?.trim()) missing.push('x');
       if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('x');
@@ -316,7 +319,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
       if (missing.length === 0) completos++; else faltantes++;
     }));
     return { totalCompletos: completos, totalConFaltantes: faltantes };
-  }, [matchedRows, camposExcel]);
+  }, [matchedRows, camposExcel, clearedByReg]);
   const allSelected = allMatchedIds.length > 0 && allMatchedIds.every(id => selectedIds.has(id));
   const someSelected = !allSelected && allMatchedIds.some(id => selectedIds.has(id));
 
@@ -358,6 +361,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     setConfirming(false);
     setCamposExcel({ ...EMPTY_CAMPOS_EXCEL });
     setSelectedIds(new Set());
+    setClearedByReg({});
     if (parsed.length > 0) setStep('match');
   };
 
@@ -377,7 +381,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   // Devuelve los campos obligatorios que faltan en un registro (según validarForm del modal).
   // Un campo asignado en camposExcel (incluido SIN_ESPECIFICAR) se considera atendido.
   const getMissingFields = (r: Registro): string[] => {
+    const cleared = clearedByReg[r.id];
     const addressed = (key: keyof CamposExcel) => {
+      if (cleared?.has(key)) return true;
       const v = camposExcel[key];
       return typeof v === 'string' && v.trim() !== '';
     };
@@ -474,6 +480,19 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     if (!error) {
       setAssignResult({ updated: idsToUpdate.length });
       const idsSet = new Set(idsToUpdate);
+      // Registrar campos puestos a null (Sin especificar) para no flaggearlos luego
+      const nulledFields = Object.entries(payload).filter(([, v]) => v === null).map(([k]) => k);
+      if (nulledFields.length > 0) {
+        setClearedByReg(prev => {
+          const next = { ...prev };
+          for (const id of idsToUpdate) {
+            const set = new Set(next[id] ?? []);
+            nulledFields.forEach(f => set.add(f));
+            next[id] = set;
+          }
+          return next;
+        });
+      }
       const updatedRegs = registros.filter(r => idsSet.has(r.id)).map(r => ({ ...r, ...payload }));
       mutateRegistros(prev =>
         prev.map(r => idsSet.has(r.id) ? { ...r, ...payload } : r)
@@ -1015,6 +1034,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
                     setSearched(false);
                     setSelectedIds(new Set());
                     setCamposExcel({ ...EMPTY_CAMPOS_EXCEL });
+                    setClearedByReg({});
                     setAssignResult(null);
                     setAssignError(null);
                     setConfirming(false);
