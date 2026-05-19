@@ -358,6 +358,20 @@ export default function AjustesPage() {
         });
         objUpserts.forEach(u => pushObjetivosChange('UPDATE', { ...u, id: undefined }));
       }
+
+      const zeroObjMonths = histRows
+        .map((_, mesIdx) => mesIdx)
+        .filter(mesIdx => !Number(histRows[mesIdx].meta_ventas) && !Number(histRows[mesIdx].meta_operaciones));
+
+      for (const mes of zeroObjMonths) {
+        await supabase.from('objetivos').delete().eq('analista', histAnalista).eq('anio', histAnio).eq('mes', mes);
+      }
+      if (zeroObjMonths.length > 0) {
+        setCtxObjetivos(prev => prev.filter(o =>
+          !(o.analista === histAnalista && o.anio === histAnio && zeroObjMonths.includes(o.mes))
+        ));
+      }
+
       showSuccess(`Histórico guardado para ${histAnalista}`);
     } catch (err: any) { showError(`Error: ${err.message}`); }
     setSavingHist(false);
