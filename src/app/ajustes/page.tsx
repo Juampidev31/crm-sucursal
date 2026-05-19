@@ -300,7 +300,7 @@ export default function AjustesPage() {
         .filter(mesIdx => !Number(histRows[mesIdx].meta_ventas) && !Number(histRows[mesIdx].meta_operaciones));
 
       // 4 operaciones en paralelo (1 query c/u, en vez de hasta 26 secuenciales)
-      const ops: Promise<any>[] = [];
+      const ops: PromiseLike<any>[] = [];
       if (upserts.length > 0) {
         ops.push(supabase.from('historico_ventas').upsert(upserts, { onConflict: 'analista,anio,mes' }));
       }
