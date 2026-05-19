@@ -202,9 +202,7 @@ export function procesarFilas(
   return rows.map(row => {
     const parsed = parseCargaRow(row, mapping);
     // Si la fila trae fecha, usar solo el año para discriminar duplicados
-    const rawFechaCell = hasFecha ? Object.entries(mapping).find(([, r]) => r === 'fecha')?.[0] : undefined;
-    const rawFecha = rawFechaCell !== undefined ? row.cells[Number(rawFechaCell)] : undefined;
-    const rowYear = hasFecha ? (extractYear(parsed.fecha) ?? extractYear(rawFecha)) : null;
+    const rowYear = hasFecha ? extractYear(getCell(row, mapping, 'fecha') ?? parsed.fecha) : null;
 
     let existing: Registro | undefined;
     if (hasCuil && parsed.cuil) {
