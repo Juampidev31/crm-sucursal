@@ -11,6 +11,7 @@ import { Line, Chart } from 'react-chartjs-2';
 import SelectReporte from '@/components/SelectReporte';
 import type { CobranzasData, TramoRow, MorosidadRow } from './data';
 import { Edit2, Save, X, Loader2 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
@@ -146,6 +147,7 @@ interface Props { data: CobranzasData; year: string; years: string[]; }
 
 export default function CobranzasClient({ data: initialData, year, years }: Props) {
   const router = useRouter();
+  const { isAdmin } = useAuth();
   const onYearChange = (y: string) => router.push(`/reportes/cobranzas?year=${y}`);
 
   const [editing, setEditing] = useState(false);
@@ -346,7 +348,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
                 <X size={14} /> CANCELAR
               </button>
             </>
-          ) : (
+          ) : isAdmin ? (
             <button
               onClick={startEditing}
               style={{
@@ -362,7 +364,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
             >
               <Edit2 size={14} /> EDITAR DATOS
             </button>
-          )}
+          ) : null}
         </div>
         <SelectReporte
           icon="calendar"
