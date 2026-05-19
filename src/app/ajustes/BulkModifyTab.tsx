@@ -263,6 +263,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
   const [assignResult, setAssignResult] = useState<{ updated: number } | null>(null);
   // Campos que el usuario marcó como "Sin especificar" por registro (no se cuentan como faltantes)
   const [clearedByReg, setClearedByReg] = useState<Record<string, Set<string>>>({});
+  // Filtro de fecha sobre la tabla de matched
+  const [fechaDesde, setFechaDesde] = useState<string>('');
+  const [fechaHasta, setFechaHasta] = useState<string>('');
   const [assignError, setAssignError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState<'paste' | 'match' | 'assign'>('paste');
@@ -272,15 +275,25 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
 
   const matchedRows = useMemo(() => {
     if (!searched || cuilCol === null || rows.length === 0) return [];
+    const inRange = (f: string | null | undefined): boolean => {
+      if (!fechaDesde && !fechaHasta) return true;
+      const fecha = (f ?? '').slice(0, 10);
+      if (!fecha) return false;
+      if (fechaDesde && fecha < fechaDesde) return false;
+      if (fechaHasta && fecha > fechaHasta) return false;
+      return true;
+    };
     return rows
       .map(r => {
         const cuil = normalizeCuil(r.cells[cuilCol] ?? '');
         const nombre = nombreCol !== null ? (r.cells[nombreCol] ?? '') : '';
-        const found = registros.filter(reg => normalizeCuil(reg.cuil) === cuil);
+        const found = registros
+          .filter(reg => normalizeCuil(reg.cuil) === cuil)
+          .filter(reg => inRange(reg.fecha));
         return { cuil, nombre, registros: found };
       })
       .filter(r => r.cuil !== '');
-  }, [searched, rows, cuilCol, nombreCol, registros]);
+  }, [searched, rows, cuilCol, nombreCol, registros, fechaDesde, fechaHasta]);
 
   const allMatchedIds = useMemo(
     () => matchedRows.flatMap(r => r.registros.map(reg => reg.id)),
@@ -674,6 +687,30 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
 
           {step === 'assign' && searched && (
             <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha:</span>
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={e => setFechaDesde(e.target.value)}
+                  title="Desde"
+                  style={{ fontSize: 11, padding: '4px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}
+                />
+                <span style={{ color: '#555', fontSize: 11 }}>–</span>
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={e => setFechaHasta(e.target.value)}
+                  title="Hasta"
+                  style={{ fontSize: 11, padding: '4px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}
+                />
+                {(fechaDesde || fechaHasta) && (
+                  <button
+                    onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
+                    style={{ fontSize: 10, padding: '4px 8px', background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, cursor: 'pointer' }}
+                  >Limpiar</button>
+                )}
+              </div>
               <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
                 {totalRegistros} registro{totalRegistros !== 1 ? 's' : ''} en total de {totalClientes} cliente{totalClientes !== 1 ? 's' : ''}
                 {' · '}
