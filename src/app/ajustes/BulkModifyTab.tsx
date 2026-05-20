@@ -562,29 +562,36 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
       </div>
 
       {expanded && (() => {
-        const stepBtn = (n: number, label: string, isActive: boolean, isDone: boolean, isDisabled: boolean, onClick: () => void): React.ReactNode => (
-          <button
-            key={n}
-            onClick={onClick}
-            disabled={isDisabled}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px',
-              background: isActive ? 'rgba(99,102,241,0.12)' : 'transparent',
-              border: `1px solid ${isActive ? 'rgba(99,102,241,0.4)' : isDone ? 'rgba(74,222,128,0.25)' : 'rgba(255,255,255,0.06)'}`,
-              borderRadius: 999, fontSize: 11, fontWeight: 700,
-              color: isActive ? '#a5b4fc' : isDone ? '#4ade80' : '#555',
-              cursor: isDisabled ? 'not-allowed' : 'pointer', opacity: isDisabled ? 0.4 : 1,
-            }}
-          >
-            <span style={{
-              width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10, fontWeight: 800,
-              background: isActive ? 'rgba(99,102,241,0.35)' : isDone ? 'rgba(74,222,128,0.25)' : 'rgba(255,255,255,0.05)',
-              color: isActive ? '#c7d2fe' : isDone ? '#4ade80' : '#666',
-            }}>{isDone && !isActive ? '✓' : n}</span>
-            {label}
-          </button>
-        );
+        const stepBtn = (n: number, label: string, isActive: boolean, isDone: boolean, isDisabled: boolean, onClick: () => void): React.ReactNode => {
+          const fill = isDone
+            ? { bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.35)', text: '#4ade80', badgeBg: 'rgba(74,222,128,0.20)', badgeText: '#4ade80' }
+            : isActive
+              ? { bg: '#141414', border: 'rgba(99,102,241,0.45)', text: '#c7d2fe', badgeBg: 'rgba(99,102,241,0.30)', badgeText: '#c7d2fe' }
+              : { bg: '#0e0e10', border: 'rgba(255,255,255,0.06)', text: '#555', badgeBg: 'rgba(255,255,255,0.04)', badgeText: '#666' };
+          return (
+            <button
+              key={n}
+              onClick={onClick}
+              disabled={isDisabled}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px',
+                background: fill.bg,
+                border: `1px solid ${fill.border}`,
+                borderRadius: 6, fontSize: 11, fontWeight: 700,
+                color: fill.text,
+                cursor: isDisabled ? 'not-allowed' : 'pointer', opacity: isDisabled ? 0.4 : 1,
+                transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+              }}
+            >
+              <span style={{
+                width: 18, height: 18, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, fontWeight: 800,
+                background: fill.badgeBg, color: fill.badgeText,
+              }}>{isDone && !isActive ? '✓' : n}</span>
+              {label}
+            </button>
+          );
+        };
         return (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
@@ -899,10 +906,10 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
           {step === 'assign' && searched && totalRegistros > 0 && !assignResult && (
             <div style={{
-              display: 'flex', flexDirection: 'column', gap: 10,
+              display: 'flex', flexDirection: 'column', gap: 14,
               position: 'sticky', bottom: 0, zIndex: 20,
               marginLeft: -20, marginRight: -20, marginBottom: -20,
-              padding: '12px 20px 16px',
+              padding: '18px 24px 22px',
               background: '#0e0e10',
               borderTop: '1px solid rgba(255,255,255,0.08)',
               boxShadow: '0 -8px 24px rgba(0,0,0,0.5)',
@@ -983,7 +990,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               </div>
               <div>
                 <label style={{ fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>Comentarios</label>
-                <textarea className="form-input" rows={2} value={camposExcel.comentarios} onChange={e => { setCamposExcel(p => ({ ...p, comentarios: e.target.value })); setConfirming(false); }} style={{ width: '100%', fontSize: 12, resize: 'vertical' }} />
+                <textarea className="form-input" rows={3} value={camposExcel.comentarios} onChange={e => { setCamposExcel(p => ({ ...p, comentarios: e.target.value })); setConfirming(false); }} style={{ width: '100%', fontSize: 12, resize: 'vertical' }} />
               </div>
 
               <div style={{
