@@ -7,7 +7,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import SelectReporte from '@/components/SelectReporte';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -307,15 +307,25 @@ export default function AnalistasPage() {
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
   const [rendimiento12MOpen, setRendimiento12MOpen] = useState(false);
+  const [anioRendimiento, setAnioRendimiento] = useState(now.getFullYear());
 
-  const ultimos12MesesKQ = useMemo(() => {
+  const aniosDisponiblesRendimiento = useMemo(() => {
+    const set = new Set<number>();
+    for (const r of registros) {
+      const y = r.fecha?.slice(0, 4);
+      if (y) set.add(Number(y));
+    }
+    for (const o of objetivos) set.add(o.anio);
+    set.add(now.getFullYear());
+    return Array.from(set).sort((a, b) => b - a);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registros, objetivos]);
+
+  const mesesAnioKQ = useMemo(() => {
     const buckets: { key: string; mes0: number; anio: number; label: string; monto: number; ops: number; metaK: number; metaQ: number }[] = [];
-    for (let i = 11; i >= 0; i--) {
-      let m = now.getMonth() - i;
-      let a = now.getFullYear();
-      while (m < 0) { m += 12; a--; }
-      const key = `${a}-${String(m + 1).padStart(2, '0')}`;
-      buckets.push({ key, mes0: m, anio: a, label: `${CONFIG.MESES_NOMBRES[m].slice(0, 3)} ${String(a).slice(2)}`, monto: 0, ops: 0, metaK: 0, metaQ: 0 });
+    for (let m = 0; m < 12; m++) {
+      const key = `${anioRendimiento}-${String(m + 1).padStart(2, '0')}`;
+      buckets.push({ key, mes0: m, anio: anioRendimiento, label: CONFIG.MESES_NOMBRES[m], monto: 0, ops: 0, metaK: 0, metaQ: 0 });
     }
     const idx = new Map(buckets.map((b, i) => [b.key, i]));
     for (const r of registros) {
@@ -333,8 +343,7 @@ export default function AnalistasPage() {
       b.metaQ = obj?.meta_operaciones ?? 0;
     }
     return buckets;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registros, objetivos, analista]);
+  }, [registros, objetivos, analista, anioRendimiento]);
 
 
 
@@ -2043,37 +2052,87 @@ export default function AnalistasPage() {
               boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
-                Rendimiento Últimos 12 Meses {analista !== 'PDV' && `— ${analista}`}
+                Rendimiento por Año {analista !== 'PDV' && `— ${analista}`}
               </div>
-              <button
-                type="button"
-                onClick={() => setRendimiento12MOpen(false)}
-                style={{
-                  background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 8, width: 32, height: 32,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#aaa', cursor: 'pointer',
-                }}
-              >
-                <X size={16} />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento);
+                    const next = aniosDisponiblesRendimiento[idx + 1];
+                    if (next !== undefined) setAnioRendimiento(next);
+                  }}
+                  disabled={aniosDisponiblesRendimiento.indexOf(anioRendimiento) >= aniosDisponiblesRendimiento.length - 1}
+                  style={{
+                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 8, width: 32, height: 32,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#aaa', cursor: 'pointer',
+                  }}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <select
+                  value={anioRendimiento}
+                  onChange={e => setAnioRendimiento(Number(e.target.value))}
+                  style={{
+                    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 8, padding: '6px 12px',
+                    color: '#fff', fontSize: 13, fontWeight: 700,
+                    cursor: 'pointer', minWidth: 90, textAlign: 'center',
+                  }}
+                >
+                  {aniosDisponiblesRendimiento.map(a => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento);
+                    const prev = aniosDisponiblesRendimiento[idx - 1];
+                    if (prev !== undefined) setAnioRendimiento(prev);
+                  }}
+                  disabled={aniosDisponiblesRendimiento.indexOf(anioRendimiento) <= 0}
+                  style={{
+                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 8, width: 32, height: 32,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#aaa', cursor: 'pointer',
+                  }}
+                >
+                  <ChevronRight size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRendimiento12MOpen(false)}
+                  style={{
+                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 8, width: 32, height: 32,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#aaa', cursor: 'pointer', marginLeft: 8,
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <Mini12Table
                 label="CAPITAL"
-                total={formatCurrency(ultimos12MesesKQ.reduce((s, b) => s + b.monto, 0))}
-                buckets={ultimos12MesesKQ}
+                total={formatCurrency(mesesAnioKQ.reduce((s, b) => s + b.monto, 0))}
+                buckets={mesesAnioKQ}
                 accessor={b => b.monto}
                 metaAccessor={b => b.metaK}
                 formatValue={v => formatCurrency(v)}
               />
               <Mini12Table
                 label="OPERACIONES"
-                total={String(ultimos12MesesKQ.reduce((s, b) => s + b.ops, 0))}
-                buckets={ultimos12MesesKQ}
+                total={String(mesesAnioKQ.reduce((s, b) => s + b.ops, 0))}
+                buckets={mesesAnioKQ}
                 accessor={b => b.ops}
                 metaAccessor={b => b.metaQ}
                 formatValue={v => String(v)}
