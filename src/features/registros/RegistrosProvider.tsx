@@ -13,6 +13,7 @@ type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 interface RegistrosCtx {
   registros: Registro[];
   loading: boolean;
+  loadingMore: boolean;
   applyRegistroChange: (type: ChangeType, registro: Registro) => void;
   mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
   bulkInsertRegistros: (newRegistros: Partial<Registro>[]) => Promise<void>;
@@ -33,39 +34,84 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const refreshIdRef = useRef(0);
 
   const refresh = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
     const cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,created_at,updated_at';
     const PAGE = 1000;
-    const all: unknown[] = [];
-    let from = 0;
-    let error: unknown = null;
-    while (from < REGISTROS_SAFETY_LIMIT) {
-      const { data: chunk, error: err } = await supabase
-        .from('registros')
-        .select(cols)
-        .order('fecha', { ascending: false })
-        .range(from, from + PAGE - 1);
-      if (err) { error = err; break; }
-      if (!chunk || chunk.length === 0) break;
-      all.push(...chunk);
-      if (chunk.length < PAGE) break;
-      from += PAGE;
-    }
-    const data = all;
-    if (error) reportError('refresh:registros', error as { message: string });
-    else if (data) {
+    const myId = ++refreshIdRef.current;
+
+    if (!silent) setLoading(true);
+
+    const parseChunk = (chunk: unknown[]) => {
       let dropped = 0;
-      const parsed = parseRegistros(data, (i, err, row) => {
+      const parsed = parseRegistros(chunk, (i, err, row) => {
         dropped++;
         const rowId = (row && typeof row === 'object' && 'id' in row) ? (row as { id: unknown }).id : '?';
         console.warn(`[RegistrosProvider] registro inválido [${i}] id=${rowId}:`, err.issues);
       });
-      if (dropped > 0) reportError('refresh:registros', { message: `${dropped} registro(s) descartado(s) por validación — revisá consola` });
-      setRegistros(parsed);
+      return { parsed, dropped };
+    };
+
+    // Chunk #1: bloqueamos el render hasta tenerlo (≈1 round-trip).
+    const { data: first, error: firstErr, count } = await supabase
+      .from('registros')
+      .select(cols, { count: 'exact' })
+      .order('fecha', { ascending: false })
+      .range(0, PAGE - 1);
+
+    if (refreshIdRef.current !== myId) return; // refresh nuevo invalidó este
+
+    if (firstErr) {
+      reportError('refresh:registros', firstErr as { message: string });
+      if (!silent) setLoading(false);
+      return;
     }
+
+    const { parsed: firstParsed, dropped: firstDropped } = parseChunk(first || []);
+    setRegistros(firstParsed);
     if (!silent) setLoading(false);
+    if (firstDropped > 0) reportError('refresh:registros', { message: `${firstDropped} registro(s) descartado(s) por validación — revisá consola` });
+
+    // Si no hay más páginas, terminamos.
+    const total = typeof count === 'number' ? count : (first?.length ?? 0);
+    if (!first || first.length < PAGE || total <= PAGE) return;
+
+    // Chunks #2..#N en paralelo.
+    setLoadingMore(true);
+    const lastIdx = Math.min(total, REGISTROS_SAFETY_LIMIT) - 1;
+    const ranges: Array<[number, number]> = [];
+    for (let from = PAGE; from <= lastIdx; from += PAGE) {
+      ranges.push([from, Math.min(from + PAGE - 1, lastIdx)]);
+    }
+
+    const results = await Promise.all(
+      ranges.map(([f, t]) =>
+        supabase.from('registros').select(cols).order('fecha', { ascending: false }).range(f, t)
+      )
+    );
+
+    if (refreshIdRef.current !== myId) return;
+
+    let totalDropped = 0;
+    const restRaw: unknown[] = [];
+    for (const { data: chunk, error: err } of results) {
+      if (err) { reportError('refresh:registros', err as { message: string }); continue; }
+      if (chunk) restRaw.push(...chunk);
+    }
+    const { parsed: restParsed, dropped: restDropped } = parseChunk(restRaw);
+    totalDropped += restDropped;
+
+    setRegistros(prev => {
+      // De-dup por id por si llegó algún realtime mientras tanto.
+      const seen = new Set(prev.map(r => r.id));
+      const merged = prev.slice();
+      for (const r of restParsed) if (!seen.has(r.id)) merged.push(r);
+      return merged;
+    });
+    if (totalDropped > 0) reportError('refresh:registros', { message: `${totalDropped} registro(s) descartado(s) por validación — revisá consola` });
+    setLoadingMore(false);
   }, [reportError]);
 
   useEffect(() => {
@@ -130,10 +176,10 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   }, [channelRef]);
 
   const value = useMemo(() => ({
-    registros, loading,
+    registros, loading, loadingMore,
     applyRegistroChange, mutateRegistros, bulkInsertRegistros, refresh, pushBulkRefresh, pushRegistroChange,
   }), [
-    registros, loading,
+    registros, loading, loadingMore,
     applyRegistroChange, mutateRegistros, bulkInsertRegistros, refresh, pushBulkRefresh, pushRegistroChange,
   ]);
 
@@ -147,7 +193,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 export function useRegistros(safe = false) {
   const ctx = useContext(RegistrosContext);
   if (!ctx) {
-    if (safe) return { registros: [], loading: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, bulkInsertRegistros: async () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {} };
+    if (safe) return { registros: [], loading: false, loadingMore: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, bulkInsertRegistros: async () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {} };
     throw new Error('useRegistros must be used within RegistrosProvider');
   }
   return ctx;
