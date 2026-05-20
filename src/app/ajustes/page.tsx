@@ -17,12 +17,20 @@ import {
   ChevronLeft, ChevronRight, RefreshCw, PieChart, Upload
 } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
-import ResumenMensualTab from './ResumenMensualTab';
-import BulkModifyTab from './BulkModifyTab';
-import MassiveDeleteTab from './MassiveDeleteTab';
-import AvisosTab from './AvisosTab';
-import VerificadorTab from './VerificadorTab';
-import CargaRapidaTab from './CargaRapidaTab';
+import dynamic from 'next/dynamic';
+
+const TabFallback = () => (
+  <div style={{ padding: 24, color: 'var(--gris)', fontSize: 13, fontFamily: "'Outfit', sans-serif" }}>
+    Cargando…
+  </div>
+);
+
+const ResumenMensualTab = dynamic(() => import('./ResumenMensualTab'), { ssr: false, loading: TabFallback });
+const BulkModifyTab     = dynamic(() => import('./BulkModifyTab'),     { ssr: false, loading: TabFallback });
+const MassiveDeleteTab  = dynamic(() => import('./MassiveDeleteTab'),  { ssr: false, loading: TabFallback });
+const AvisosTab         = dynamic(() => import('./AvisosTab'),         { ssr: false, loading: TabFallback });
+const VerificadorTab    = dynamic(() => import('./VerificadorTab'),    { ssr: false, loading: TabFallback });
+const CargaRapidaTab    = dynamic(() => import('./CargaRapidaTab'),    { ssr: false, loading: TabFallback });
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
