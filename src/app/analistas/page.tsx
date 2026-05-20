@@ -2156,11 +2156,11 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
   formatValue?: (v: number) => string;
 }) {
   const fmt = formatValue || ((v: number) => String(v));
-  const cumplStyle = (pct: number | null) => {
-    if (pct === null) return { color: '#666', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)' };
-    if (pct >= 100) return { color: '#4ade80', bg: 'rgba(74,222,128,0.12)', border: 'rgba(74,222,128,0.3)' };
-    if (pct >= 75)  return { color: '#fbbf24', bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.3)' };
-    return { color: '#f87171', bg: 'rgba(248,113,113,0.10)', border: 'rgba(248,113,113,0.3)' };
+  const dotColor = (pct: number | null) => {
+    if (pct === null) return '#555';
+    if (pct >= 100) return '#4ade80';
+    if (pct >= 75)  return '#fbbf24';
+    return '#f87171';
   };
   const th: React.CSSProperties = {
     padding: '10px 12px', fontSize: 10, fontWeight: 800,
@@ -2197,7 +2197,6 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
             const v = accessor(b);
             const meta = metaAccessor ? metaAccessor(b) : 0;
             const pct = meta > 0 ? (v / meta) * 100 : null;
-            const cs = cumplStyle(pct);
             return (
               <tr key={b.key}>
                 <td style={{ ...td, color: '#aaa', fontWeight: 600 }}>{b.label}</td>
@@ -2206,15 +2205,20 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
                 <td style={{ ...td, textAlign: 'right' }}>
                   {pct !== null ? (
                     <span style={{
-                      display: 'inline-block',
-                      padding: '3px 10px',
-                      borderRadius: 6,
-                      fontSize: 11, fontWeight: 800,
-                      color: cs.color,
-                      background: cs.bg,
-                      border: `1px solid ${cs.border}`,
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '4px 10px',
+                      borderRadius: 8,
+                      fontSize: 11, fontWeight: 700,
+                      color: '#e5e5e5',
+                      background: '#141414',
+                      border: '1px solid rgba(255,255,255,0.06)',
                     }}>
-                      {pct.toFixed(1)}%
+                      <span style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: dotColor(pct),
+                        boxShadow: `0 0 6px ${dotColor(pct)}`,
+                      }} />
+                      {pct.toFixed(2)}%
                     </span>
                   ) : (
                     <span style={{ color: '#444' }}>—</span>
