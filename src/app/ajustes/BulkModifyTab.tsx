@@ -545,7 +545,15 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   };
 
   return (
-    <div style={{
+    <div style={standalone ? {
+      height: 'calc(100vh - 180px)',
+      padding: '20px',
+      background: 'rgba(255,255,255,0.02)',
+      border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: '10px',
+      display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
+    } : {
       marginBottom: '28px', padding: '20px',
       background: 'rgba(255,255,255,0.02)',
       border: '1px solid rgba(255,255,255,0.06)',
@@ -709,7 +717,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           )}
 
           {step === 'assign' && searched && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha:</span>
                 <input
@@ -749,7 +757,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 .bulk-excel-row.is-selected > td,
                 .bulk-excel-row.is-selected:hover > td { background: rgba(74,222,128,0.12) !important; }
               `}</style>
-              <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 360px)', overflowY: 'auto' }}>
+              <div style={standalone ? { flex: 1, minHeight: 0, overflowX: 'auto', overflowY: 'auto' } : { overflowX: 'auto', maxHeight: 'calc(100vh - 360px)', overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead style={{ position: 'sticky', top: 0, background: '#111' }}>
                     <tr>
@@ -909,15 +917,11 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
           {step === 'assign' && searched && totalRegistros > 0 && !assignResult && (
             <div style={{
-              display: 'flex', flexDirection: 'column', gap: 14,
-              padding: '14px 16px',
+              display: 'flex', flexDirection: 'column', gap: 12,
+              padding: '14px 0 0',
               borderTop: '1px solid rgba(255,255,255,0.08)',
-              marginTop: 16,
-              position: 'sticky', bottom: 0, zIndex: 5,
-              background: '#0a0a0a',
-              boxShadow: '0 -8px 24px rgba(0,0,0,0.6)',
-              marginLeft: -20, marginRight: -20, marginBottom: -20,
-              borderBottomLeftRadius: 10, borderBottomRightRadius: 10,
+              marginTop: 12,
+              flexShrink: 0,
             }}>
               <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
