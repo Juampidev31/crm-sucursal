@@ -2037,7 +2037,7 @@ export default function AnalistasPage() {
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 18,
               padding: 24,
-              width: 'min(1180px, 100%)',
+              width: 'min(1480px, 100%)',
               maxHeight: '90vh',
               overflow: 'auto',
               boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
@@ -2062,21 +2062,21 @@ export default function AnalistasPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <Mini12ChartCard
-                label="VENTAS K — CAPITAL"
+              <Mini12Table
+                label="CAPITAL"
                 total={formatCurrency(ultimos12MesesKQ.reduce((s, b) => s + b.monto, 0))}
                 buckets={ultimos12MesesKQ}
                 accessor={b => b.monto}
                 metaAccessor={b => b.metaK}
                 formatValue={v => formatCurrency(v)}
               />
-              <Mini12ChartCard
-                label="VENTAS Q — OPERACIONES"
+              <Mini12Table
+                label="OPERACIONES"
                 total={String(ultimos12MesesKQ.reduce((s, b) => s + b.ops, 0))}
                 buckets={ultimos12MesesKQ}
                 accessor={b => b.ops}
                 metaAccessor={b => b.metaQ}
-                formatValue={v => `${v} ${v === 1 ? 'op' : 'ops'}`}
+                formatValue={v => String(v)}
               />
             </div>
           </div>
@@ -2088,7 +2088,7 @@ export default function AnalistasPage() {
 
 type Bucket12 = { key: string; label: string; monto: number; ops: number; metaK: number; metaQ: number };
 
-function Mini12ChartCard({ label, total, buckets, accessor, metaAccessor, formatValue }: {
+function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValue }: {
   label: string;
   total: string;
   buckets: Bucket12[];
@@ -2096,127 +2096,76 @@ function Mini12ChartCard({ label, total, buckets, accessor, metaAccessor, format
   metaAccessor?: (b: Bucket12) => number;
   formatValue?: (v: number) => string;
 }) {
-  const values = buckets.map(accessor);
-  const metas = metaAccessor ? buckets.map(metaAccessor) : [];
-  const max = Math.max(1, ...values, ...metas);
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const fmt = formatValue || ((v: number) => String(v));
+  const cumplStyle = (pct: number | null) => {
+    if (pct === null) return { color: '#666', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)' };
+    if (pct >= 100) return { color: '#4ade80', bg: 'rgba(74,222,128,0.12)', border: 'rgba(74,222,128,0.3)' };
+    if (pct >= 75)  return { color: '#fbbf24', bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.3)' };
+    return { color: '#f87171', bg: 'rgba(248,113,113,0.10)', border: 'rgba(248,113,113,0.3)' };
+  };
+  const th: React.CSSProperties = {
+    padding: '10px 12px', fontSize: 10, fontWeight: 800,
+    color: '#666', textTransform: 'uppercase', letterSpacing: '1px',
+    borderBottom: '1px solid rgba(255,255,255,0.06)', textAlign: 'left',
+  };
+  const td: React.CSSProperties = {
+    padding: '11px 12px', fontSize: 13, color: '#ccc',
+    borderBottom: '1px solid rgba(255,255,255,0.04)',
+  };
+
   return (
     <div style={{
       background: '#0a0a0a',
       border: '1px solid rgba(255,255,255,0.05)',
       borderRadius: 14,
       padding: '20px 22px',
-      display: 'flex', flexDirection: 'column', minHeight: 340,
+      display: 'flex', flexDirection: 'column',
     }}>
       <div style={{ fontSize: 11, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 20 }}>{total}</div>
+      <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 16 }}>{total}</div>
 
-      <div style={{ position: 'relative', flex: 1, minHeight: 200, paddingBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 4, height: '100%' }}>
-          {buckets.map((b, i) => {
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            <th style={th}>MES</th>
+            <th style={{ ...th, textAlign: 'center' }}>OBJETIVO</th>
+            <th style={{ ...th, textAlign: 'center' }}>ALCANCE</th>
+            <th style={{ ...th, textAlign: 'right' }}>CUMPL.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {buckets.map(b => {
             const v = accessor(b);
             const meta = metaAccessor ? metaAccessor(b) : 0;
-            const h = v > 0 ? Math.max(4, (v / max) * 100) : 2;
-            const mh = meta > 0 ? (meta / max) * 100 : 0;
-            const isHover = hoverIdx === i;
             const pct = meta > 0 ? (v / meta) * 100 : null;
+            const cs = cumplStyle(pct);
             return (
-              <div
-                key={b.key}
-                onMouseEnter={() => setHoverIdx(i)}
-                onMouseLeave={() => setHoverIdx(prev => (prev === i ? null : prev))}
-                style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', cursor: 'pointer' }}
-              >
-                <div style={{ position: 'relative', width: 16, height: '100%' }}>
-                  {meta <= 0 ? (
-                    <div style={{
-                      position: 'absolute', left: 0, right: 0, bottom: 0,
-                      height: `${h}%`,
-                      background: v > 0 ? (isHover ? '#86efac' : '#4ade80') : 'rgba(255,255,255,0.06)',
-                      borderRadius: 2,
-                      transition: 'height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s',
-                    }} />
+              <tr key={b.key}>
+                <td style={{ ...td, color: '#aaa', fontWeight: 600 }}>{b.label}</td>
+                <td style={{ ...td, textAlign: 'center', color: '#888' }}>{meta > 0 ? fmt(meta) : '—'}</td>
+                <td style={{ ...td, textAlign: 'center', color: '#fff', fontWeight: 700 }}>{fmt(v)}</td>
+                <td style={{ ...td, textAlign: 'right' }}>
+                  {pct !== null ? (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '3px 10px',
+                      borderRadius: 6,
+                      fontSize: 11, fontWeight: 800,
+                      color: cs.color,
+                      background: cs.bg,
+                      border: `1px solid ${cs.border}`,
+                    }}>
+                      {pct.toFixed(1)}%
+                    </span>
                   ) : (
-                    <>
-                      {/* Segmento rojo (0 → min(actual, meta)) */}
-                      <div style={{
-                        position: 'absolute', left: 0, right: 0, bottom: 0,
-                        height: `${Math.min(h, mh)}%`,
-                        background: isHover ? '#f87171' : '#ef4444',
-                        borderTopLeftRadius: h <= mh ? 2 : 0,
-                        borderTopRightRadius: h <= mh ? 2 : 0,
-                        borderBottomLeftRadius: 2, borderBottomRightRadius: 2,
-                        transition: 'height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s',
-                      }} />
-                      {/* Segmento verde (meta → actual) si supera */}
-                      {h > mh && (
-                        <div style={{
-                          position: 'absolute', left: 0, right: 0,
-                          bottom: `${mh}%`,
-                          height: `${h - mh}%`,
-                          background: isHover ? '#86efac' : '#4ade80',
-                          borderTopLeftRadius: 2, borderTopRightRadius: 2,
-                          transition: 'height 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s',
-                        }} />
-                      )}
-                      {/* Marcador blanco en el 100% (meta) */}
-                      <div style={{
-                        position: 'absolute',
-                        left: -3, right: -3,
-                        bottom: `calc(${mh}% - 1px)`,
-                        height: 2,
-                        background: '#fff',
-                        borderRadius: 1,
-                        boxShadow: '0 0 4px rgba(255,255,255,0.6)',
-                        pointerEvents: 'none',
-                      }} />
-                    </>
+                    <span style={{ color: '#444' }}>—</span>
                   )}
-                </div>
-                {isHover && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: `calc(${Math.max(h, mh)}% + 8px)`,
-                    left: '50%', transform: 'translateX(-50%)',
-                    background: '#111', border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: 6, padding: '8px 10px',
-                    fontSize: 11, color: '#fff', whiteSpace: 'nowrap',
-                    pointerEvents: 'none', zIndex: 3,
-                    boxShadow: '0 6px 20px rgba(0,0,0,0.5)',
-                    minWidth: 120,
-                  }}>
-                    <div style={{ fontSize: 9, color: '#888', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>{b.label}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: 2, background: '#4ade80' }} />
-                      <span style={{ color: '#888', fontSize: 10 }}>Real:</span>
-                      <span style={{ fontWeight: 800, marginLeft: 'auto' }}>{fmt(v)}</span>
-                    </div>
-                    {meta > 0 && (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                          <span style={{ width: 8, height: 2, background: '#fff' }} />
-                          <span style={{ color: '#888', fontSize: 10 }}>Meta:</span>
-                          <span style={{ fontWeight: 800, marginLeft: 'auto' }}>{fmt(meta)}</span>
-                        </div>
-                        <div style={{ marginTop: 4, fontSize: 10, color: pct! >= 100 ? '#4ade80' : '#fbbf24', fontWeight: 800, textAlign: 'right' }}>
-                          {pct!.toFixed(1)}% cumpl.
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+                </td>
+              </tr>
             );
           })}
-        </div>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 9, color: '#555', fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', gap: 4 }}>
-        {buckets.map(b => (
-          <div key={b.key} style={{ flex: 1, textAlign: 'center' }}>{b.label}</div>
-        ))}
-      </div>
+        </tbody>
+      </table>
     </div>
   );
 }
