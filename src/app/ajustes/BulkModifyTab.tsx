@@ -898,7 +898,15 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           )}
 
           {step === 'assign' && searched && totalRegistros > 0 && !assignResult && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: 10,
+              position: 'sticky', bottom: 0, zIndex: 20,
+              marginLeft: -20, marginRight: -20, marginBottom: -20,
+              padding: '12px 20px 16px',
+              background: '#0e0e10',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 -8px 24px rgba(0,0,0,0.5)',
+            }}>
               <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
               </div>
@@ -979,10 +987,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               </div>
 
               <div style={{
-                position: 'sticky', bottom: 0, zIndex: 5,
-                marginLeft: -20, marginRight: -20, marginBottom: -20,
-                padding: '12px 20px',
-                background: 'linear-gradient(to top, #0e0e10 70%, rgba(14,14,16,0.85))',
+                paddingTop: 8,
                 borderTop: '1px solid rgba(255,255,255,0.06)',
                 display: 'flex', flexDirection: 'column', gap: 8,
               }}>
