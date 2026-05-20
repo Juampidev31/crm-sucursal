@@ -1432,7 +1432,7 @@ export default function AnalistasPage() {
                   fontFamily: "'Outfit', sans-serif",
                 }}
               >
-                <TrendingUp size={13} /> Rendimiento Últ. 12M
+                <TrendingUp size={13} /> Rendimiento Histórico
               </button>
             </div>
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
