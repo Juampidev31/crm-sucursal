@@ -238,12 +238,10 @@ interface AsignarEmpleadorSectionProps {
   registros: Registro[];
   allEmpleadores: string[];
   mutateRegistros: (fn: (prev: Registro[]) => Registro[]) => void;
-  refresh: (silent?: boolean) => void;
-  applyRegistroChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', reg: Registro) => void;
-  pushRegistroChange: (type: 'INSERT' | 'UPDATE' | 'DELETE', reg: Registro) => void;
+  pushBulkRefresh: () => void;
 }
 
-function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, refresh, applyRegistroChange, pushRegistroChange }: AsignarEmpleadorSectionProps) {
+function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, pushBulkRefresh }: AsignarEmpleadorSectionProps) {
   const [expanded, setExpanded] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -344,8 +342,15 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
     }));
     return { totalCompletos: completos, totalConFaltantes: faltantes };
   }, [matchedRows, camposExcel, clearedByReg]);
-  const allSelected = allMatchedIds.length > 0 && allMatchedIds.every(id => selectedIds.has(id));
-  const someSelected = !allSelected && allMatchedIds.some(id => selectedIds.has(id));
+  const { allSelected, someSelected } = useMemo(() => {
+    if (allMatchedIds.length === 0) return { allSelected: false, someSelected: false };
+    let hits = 0;
+    for (const id of allMatchedIds) if (selectedIds.has(id)) hits++;
+    return {
+      allSelected: hits === allMatchedIds.length,
+      someSelected: hits > 0 && hits < allMatchedIds.length,
+    };
+  }, [allMatchedIds, selectedIds]);
 
   // Preserva el scroll de la ventana al togglear checkboxes
   const preservedScrollRef = useRef<number | null>(null);
@@ -517,15 +522,12 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, r
           return next;
         });
       }
-      const updatedRegs = registros.filter(r => idsSet.has(r.id)).map(r => ({ ...r, ...payload }));
+      // Update local state en un solo setState (O(N) sobre 6k registros, no O(N*M))
       mutateRegistros(prev =>
         prev.map(r => idsSet.has(r.id) ? { ...r, ...payload } : r)
       );
-      updatedRegs.forEach(reg => {
-        applyRegistroChange('UPDATE', reg);
-        pushRegistroChange('UPDATE', reg);
-      });
-      refresh(true);
+      // Un solo broadcast: los otros clientes hacen refresh, en vez de N mensajes individuales
+      pushBulkRefresh();
     } else {
       setAssignError(error.message);
     }
@@ -2540,9 +2542,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           registros={registros}
           allEmpleadores={allEmpleadores}
           mutateRegistros={mutateRegistros}
-          refresh={refresh}
-          applyRegistroChange={applyRegistroChange}
-          pushRegistroChange={pushRegistroChange}
+          pushBulkRefresh={pushBulkRefresh}
         />
       )}
 
