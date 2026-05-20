@@ -917,9 +917,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
               </div>
-              <style>{`.bulk-fields-row > div { min-width: 0; }`}</style>
-              <div className="bulk-fields-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, paddingBottom: 4 }}>
-                {(() => {
+              {(() => {
                   const labelStyle: React.CSSProperties = { fontSize: 9, color: '#888', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
                   const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
                   const setField = (key: keyof CamposExcel) => (v: string) => { setCamposExcel(p => ({ ...p, [key]: v })); setConfirming(false); };
@@ -939,40 +937,44 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   ];
                   return (
                     <>
-                      {selects.map(f => (
-                        <div key={f.key}>
-                          <label style={labelStyle}>{f.label}</label>
-                          <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
-                            <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
-                            <option value={SIN_ESPECIFICAR} style={{ background: '#1a1a1a', color: '#888' }}>Sin especificar (borrar)</option>
-                            {f.opts.map(o => <option key={o} value={o} style={{ background: '#1a1a1a', color: '#ddd' }}>{o}</option>)}
-                          </select>
+                      {/* Fila 1: Selects (6 columnas iguales) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 8 }}>
+                        {selects.map(f => (
+                          <div key={f.key} style={{ minWidth: 0 }}>
+                            <label style={labelStyle}>{f.label}</label>
+                            <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
+                              <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
+                              <option value={SIN_ESPECIFICAR} style={{ background: '#1a1a1a', color: '#888' }}>Sin especificar (borrar)</option>
+                              {f.opts.map(o => <option key={o} value={o} style={{ background: '#1a1a1a', color: '#ddd' }}>{o}</option>)}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Fila 2: Inputs con datalist + Fecha (5 columnas iguales) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
+                        {inputs.map(f => (
+                          <div key={f.key} style={{ minWidth: 0 }}>
+                            <label style={labelStyle}>{f.label}</label>
+                            <input
+                              className="form-input"
+                              list={`excel-dl-${f.key}`}
+                              value={camposExcel[f.key]}
+                              onChange={e => setField(f.key)(e.target.value)}
+                              style={{ width: '100%', fontSize: 12 }}
+                            />
+                            <datalist id={`excel-dl-${f.key}`}>
+                              {f.list.map(v => <option key={v} value={v} />)}
+                            </datalist>
+                          </div>
+                        ))}
+                        <div style={{ minWidth: 0 }}>
+                          <label style={labelStyle}>Fecha</label>
+                          <input type="date" className="form-input" value={camposExcel.fecha} onChange={e => setField('fecha')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
                         </div>
-                      ))}
-                      {inputs.map(f => (
-                        <div key={f.key}>
-                          <label style={labelStyle}>{f.label}</label>
-                          <input
-                            className="form-input"
-                            list={`excel-dl-${f.key}`}
-                            value={camposExcel[f.key]}
-                            onChange={e => setField(f.key)(e.target.value)}
-                            style={{ width: '100%', fontSize: 12 }}
-                          />
-                          <datalist id={`excel-dl-${f.key}`}>
-                            {f.list.map(v => <option key={v} value={v} />)}
-                          </datalist>
-                        </div>
-                      ))}
-
-                      <div>
-                        <label style={labelStyle}>Fecha</label>
-                        <input type="date" className="form-input" value={camposExcel.fecha} onChange={e => setField('fecha')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
                       </div>
                     </>
                   );
-                })()}
-              </div>
+              })()}
 
 
               <div style={{
