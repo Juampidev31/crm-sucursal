@@ -1,7 +1,34 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(select-object *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git stash)",
+      "Bash(git stash *)",
+      "Bash(git revert *)",
+      "Bash(node *)",
+      "Bash(npx *)",
+      "Bash(findstr *)",
+      "Bash(del *)",
+      "Bash(git show *)",
+      "Bash(powershell *)",
+      "Bash(move *)",
+      "Bash(git restore *)",
+      "Bash(robocopy *)",
+      "Bash(copy *)",
+      "Bash(git reset *)",
+      "Bash(mkdir *)",
+      "Bash(echo *)",
+      "Bash(type *)",
+      "Bash(git clean *)",
+      "Bash(select-string *)",
+      "WebSearch"
     ]
-  }
+  },
+  "$version": 3
 }

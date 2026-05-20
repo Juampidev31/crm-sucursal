@@ -37,7 +37,7 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
-type ActiveTab = 'alertas' | 'dias' | 'historico' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos' | 'verificador' | 'carga-rapida' | 'eliminacion-masiva';
+type ActiveTab = 'alertas' | 'dias' | 'historico' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos' | 'verificador' | 'carga-rapida' | 'eliminacion-masiva' | 'asignar-excel';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -497,6 +497,7 @@ export default function AjustesPage() {
             { id: 'resumen-mensual', label: 'Resumen Mensual', icon: BarChart3 },
             ...(isAdmin ? [
               { id: 'modificacion-masiva', label: 'Corrector', icon: ShieldCheck },
+              { id: 'asignar-excel', label: 'Asignar Excel', icon: Filter },
               { id: 'calif-score', label: 'Calif. x SCORE', icon: Users },
               { id: 'avisos', label: 'Avisos', icon: Bell },
               { id: 'verificador', label: 'Verificador', icon: Search },
@@ -1451,6 +1452,11 @@ export default function AjustesPage() {
           {/* TAB: MODIFICACIÓN MASIVA (solo admin) */}
           {activeTab === 'modificacion-masiva' && isAdmin && (
             <BulkModifyTab mode="corrector" />
+          )}
+
+          {/* TAB: ASIGNAR DESDE EXCEL (solo admin) */}
+          {activeTab === 'asignar-excel' && isAdmin && (
+            <BulkModifyTab mode="excel" />
           )}
 
           {/* TAB: CALIF. POR SCORE (solo admin) */}
