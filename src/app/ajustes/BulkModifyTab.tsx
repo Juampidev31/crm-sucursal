@@ -917,8 +917,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
               </div>
-              <style>{`.bulk-fields-row > div { flex: 0 0 150px; min-width: 150px; }`}</style>
-              <div className="bulk-fields-row" style={{ display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', gap: 10, paddingBottom: 4 }}>
+              <style>{`.bulk-fields-row > div { min-width: 0; }`}</style>
+              <div className="bulk-fields-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, paddingBottom: 4 }}>
                 {(() => {
                   const labelStyle: React.CSSProperties = { fontSize: 9, color: '#888', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
                   const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
@@ -964,22 +964,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                           </datalist>
                         </div>
                       ))}
-                      <div>
-                        <label style={labelStyle}>Es RE</label>
-                        <select value={camposExcel.es_re} onChange={e => setField('es_re')(e.target.value)} style={selectStyle}>
-                          <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
-                          <option value="si" style={{ background: '#1a1a1a', color: '#ddd' }}>Sí</option>
-                          <option value="no" style={{ background: '#1a1a1a', color: '#ddd' }}>No</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label style={labelStyle}>Puntaje</label>
-                        <input type="number" className="form-input" value={camposExcel.puntaje} onChange={e => setField('puntaje')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
-                      </div>
-                      <div>
-                        <label style={labelStyle}>Monto</label>
-                        <input type="number" className="form-input" value={camposExcel.monto} onChange={e => setField('monto')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
-                      </div>
+
                       <div>
                         <label style={labelStyle}>Fecha</label>
                         <input type="date" className="form-input" value={camposExcel.fecha} onChange={e => setField('fecha')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
@@ -988,10 +973,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   );
                 })()}
               </div>
-              <div>
-                <label style={{ fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>Comentarios</label>
-                <textarea className="form-input" rows={3} value={camposExcel.comentarios} onChange={e => { setCamposExcel(p => ({ ...p, comentarios: e.target.value })); setConfirming(false); }} style={{ width: '100%', fontSize: 12, resize: 'vertical' }} />
-              </div>
+
 
               <div style={{
                 paddingTop: 8,
