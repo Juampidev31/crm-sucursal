@@ -239,10 +239,11 @@ interface AsignarEmpleadorSectionProps {
   allEmpleadores: string[];
   mutateRegistros: (fn: (prev: Registro[]) => Registro[]) => void;
   pushBulkRefresh: () => void;
+  standalone?: boolean;
 }
 
-function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, pushBulkRefresh }: AsignarEmpleadorSectionProps) {
-  const [expanded, setExpanded] = useState(false);
+function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, pushBulkRefresh, standalone = false }: AsignarEmpleadorSectionProps) {
+  const [expanded, setExpanded] = useState(standalone);
   const [pastedText, setPastedText] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [cuilCol, setCuilCol] = useState<number | null>(null);
@@ -550,16 +551,18 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
       border: '1px solid rgba(255,255,255,0.06)',
       borderRadius: '10px',
     }}>
-      <div
-        onClick={() => setExpanded(v => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: expanded ? 16 : 0, cursor: 'pointer' }}
-      >
-        <Users size={18} color="#555" />
-        <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
-          Asignar Campos desde Excel
-          {expanded ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
-        </h4>
-      </div>
+      {!standalone && (
+        <div
+          onClick={() => setExpanded(v => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: expanded ? 16 : 0, cursor: 'pointer' }}
+        >
+          <Users size={18} color="#555" />
+          <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            Asignar Campos desde Excel
+            {expanded ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+          </h4>
+        </div>
+      )}
 
       {expanded && (() => {
         const stepBtn = (n: number, label: string, isActive: boolean, isDone: boolean, isDisabled: boolean, onClick: () => void): React.ReactNode => {
@@ -746,7 +749,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 .bulk-excel-row.is-selected > td,
                 .bulk-excel-row.is-selected:hover > td { background: rgba(74,222,128,0.12) !important; }
               `}</style>
-              <div style={{ overflowX: 'auto', maxHeight: 320, overflowY: 'auto' }}>
+              <div style={{ overflowX: 'auto', maxHeight: 'calc(100vh - 360px)', overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead style={{ position: 'sticky', top: 0, background: '#111' }}>
                     <tr>
@@ -907,17 +910,20 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           {step === 'assign' && searched && totalRegistros > 0 && !assignResult && (
             <div style={{
               display: 'flex', flexDirection: 'column', gap: 14,
-              position: 'sticky', bottom: 0, zIndex: 20,
-              marginLeft: -20, marginRight: -20, marginBottom: -20,
-              padding: '18px 24px 22px',
-              background: '#0e0e10',
+              padding: '14px 16px',
               borderTop: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: '0 -8px 24px rgba(0,0,0,0.5)',
+              marginTop: 16,
+              position: 'sticky', bottom: 0, zIndex: 5,
+              background: '#0a0a0a',
+              boxShadow: '0 -8px 24px rgba(0,0,0,0.6)',
+              marginLeft: -20, marginRight: -20, marginBottom: -20,
+              borderBottomLeftRadius: 10, borderBottomRightRadius: 10,
             }}>
               <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
               </div>
-              {(() => {
+              <div className="bulk-fields-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingBottom: 4 }}>
+                {(() => {
                   const labelStyle: React.CSSProperties = { fontSize: 9, color: '#888', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
                   const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
                   const setField = (key: keyof CamposExcel) => (v: string) => { setCamposExcel(p => ({ ...p, [key]: v })); setConfirming(false); };
@@ -937,44 +943,39 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   ];
                   return (
                     <>
-                      {/* Fila 1: Selects (6 columnas iguales) */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 8 }}>
-                        {selects.map(f => (
-                          <div key={f.key} style={{ minWidth: 0 }}>
-                            <label style={labelStyle}>{f.label}</label>
-                            <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
-                              <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
-                              <option value={SIN_ESPECIFICAR} style={{ background: '#1a1a1a', color: '#888' }}>Sin especificar (borrar)</option>
-                              {f.opts.map(o => <option key={o} value={o} style={{ background: '#1a1a1a', color: '#ddd' }}>{o}</option>)}
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                      {/* Fila 2: Inputs con datalist + Fecha (5 columnas iguales) */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
-                        {inputs.map(f => (
-                          <div key={f.key} style={{ minWidth: 0 }}>
-                            <label style={labelStyle}>{f.label}</label>
-                            <input
-                              className="form-input"
-                              list={`excel-dl-${f.key}`}
-                              value={camposExcel[f.key]}
-                              onChange={e => setField(f.key)(e.target.value)}
-                              style={{ width: '100%', fontSize: 12 }}
-                            />
-                            <datalist id={`excel-dl-${f.key}`}>
-                              {f.list.map(v => <option key={v} value={v} />)}
-                            </datalist>
-                          </div>
-                        ))}
-                        <div style={{ minWidth: 0 }}>
-                          <label style={labelStyle}>Fecha</label>
-                          <input type="date" className="form-input" value={camposExcel.fecha} onChange={e => setField('fecha')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
+                      {selects.map(f => (
+                        <div key={f.key}>
+                          <label style={labelStyle}>{f.label}</label>
+                          <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
+                            <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
+                            <option value={SIN_ESPECIFICAR} style={{ background: '#1a1a1a', color: '#888' }}>Sin especificar (borrar)</option>
+                            {f.opts.map(o => <option key={o} value={o} style={{ background: '#1a1a1a', color: '#ddd' }}>{o}</option>)}
+                          </select>
                         </div>
+                      ))}
+                      {inputs.map(f => (
+                        <div key={f.key}>
+                          <label style={labelStyle}>{f.label}</label>
+                          <input
+                            className="form-input"
+                            list={`excel-dl-${f.key}`}
+                            value={camposExcel[f.key]}
+                            onChange={e => setField(f.key)(e.target.value)}
+                            style={{ width: '100%', fontSize: 12 }}
+                          />
+                          <datalist id={`excel-dl-${f.key}`}>
+                            {f.list.map(v => <option key={v} value={v} />)}
+                          </datalist>
+                        </div>
+                      ))}
+                      <div>
+                        <label style={labelStyle}>Fecha</label>
+                        <input type="date" className="form-input" value={camposExcel.fecha} onChange={e => setField('fecha')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
                       </div>
                     </>
                   );
-              })()}
+                })()}
+              </div>
 
 
               <div style={{
@@ -1107,7 +1108,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   );
 }
 
-export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'corrector' | 'bulk' }) {
+export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'corrector' | 'bulk' | 'excel' }) {
   const [filtros, setFiltros] = useState<Filtros>(EMPTY_FILTROS);
   const [campos, setCampos] = useState<CamposAModificar>(EMPTY_CAMPOS);
   const [previewCount, setPreviewCount] = useState(0);
@@ -2533,12 +2534,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         </div>
       )}
 
-      {(mode === 'all' || mode === 'corrector') && (
+      {(mode === 'all' || mode === 'excel') && (
         <AsignarEmpleadorSection
           registros={registros}
           allEmpleadores={allEmpleadores}
           mutateRegistros={mutateRegistros}
           pushBulkRefresh={pushBulkRefresh}
+          standalone={mode === 'excel'}
         />
       )}
 
