@@ -1156,6 +1156,11 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [dependenciasSeleccionadas, setDependenciasSeleccionadas] = useState<string[]>([]);
   const [busquedaDependencia, setBusquedaDependencia] = useState('');
   const [correctorDependenciaExpandido, setCorrectorDependenciaExpandido] = useState(false);
+  const [reasignadorExpandido, setReasignadorExpandido] = useState(false);
+  const [reasignarEmpOrigen, setReasignarEmpOrigen] = useState('');
+  const [reasignarEmpDestino, setReasignarEmpDestino] = useState('');
+  const [reasignarDepDestino, setReasignarDepDestino] = useState('');
+  const [reasignarBusquedaOrigen, setReasignarBusquedaOrigen] = useState('');
   const [gruposLocalidadDescartados, setGruposLocalidadDescartados] = useState<Map<string, number>>(() => {
     if (typeof window === 'undefined') return new Map();
     try {
@@ -1820,6 +1825,73 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       pushBulkPatchByField('dependencia', oldVars, { dependencia: correctedName });
     }
   }, [dependenciasSeleccionadas, dependenciaCorreccion, mutateRegistros, pushBulkPatchByField]);
+
+  const empleadoresUnicos = useMemo(
+    () => Array.from(new Set(registros.map(r => r.empleador).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b)),
+    [registros]
+  );
+
+  const empleadoresUnicosFiltrados = useMemo(() => {
+    const q = reasignarBusquedaOrigen.trim().toLowerCase();
+    if (!q) return empleadoresUnicos;
+    return empleadoresUnicos.filter(e => e.toLowerCase().includes(q));
+  }, [empleadoresUnicos, reasignarBusquedaOrigen]);
+
+  const reasignarIds = useMemo(() => {
+    if (!reasignarEmpOrigen) return [] as string[];
+    return registros.filter(r => (r.empleador ?? '') === reasignarEmpOrigen).map(r => r.id);
+  }, [reasignarEmpOrigen, registros]);
+
+  const reasignarMasivo = useCallback(async () => {
+    const origen = reasignarEmpOrigen.trim();
+    const empDestino = reasignarEmpDestino.trim();
+    const depDestino = reasignarDepDestino.trim();
+
+    if (!origen) {
+      setToast({ message: 'Elegí el empleador origen', type: 'error' });
+      return;
+    }
+    if (!empDestino && !depDestino) {
+      setToast({ message: 'Definí al menos el empleador o la dependencia destino', type: 'error' });
+      return;
+    }
+    if (reasignarIds.length === 0) {
+      setToast({ message: 'No hay registros para reasignar', type: 'error' });
+      return;
+    }
+
+    setUpdating(true);
+    const patch: { empleador?: string; dependencia?: string } = {};
+    if (empDestino) patch.empleador = empDestino;
+    if (depDestino) patch.dependencia = depDestino;
+
+    const CHUNK = 500;
+    let actualizados = 0;
+    let errores = 0;
+    for (let i = 0; i < reasignarIds.length; i += CHUNK) {
+      const slice = reasignarIds.slice(i, i + CHUNK);
+      const { error } = await supabase.from('registros').update(patch).in('id', slice);
+      if (error) errores++;
+      else actualizados += slice.length;
+    }
+    setUpdating(false);
+
+    if (errores > 0) {
+      setToast({ message: `Reasignados ${actualizados}, ${errores} errores`, type: 'error' });
+      return;
+    }
+
+    const idsSet = new Set(reasignarIds);
+    const localPatch: Partial<Registro> = { ...patch };
+    mutateRegistros(prev => prev.map(r => idsSet.has(r.id) ? { ...r, ...localPatch } : r));
+    pushBulkUpdateIds(reasignarIds, localPatch);
+
+    setToast({ message: `${actualizados} registro(s) reasignados`, type: 'success' });
+    setReasignarEmpOrigen('');
+    setReasignarEmpDestino('');
+    setReasignarDepDestino('');
+    setReasignarBusquedaOrigen('');
+  }, [reasignarEmpOrigen, reasignarEmpDestino, reasignarDepDestino, reasignarIds, mutateRegistros, pushBulkUpdateIds]);
 
   useEffect(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
@@ -2532,6 +2604,142 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   <p>{busquedaDependencia ? 'No se encontraron resultados.' : 'No hay dependencias en la base.'}</p>
                 </div>
               )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── REASIGNADOR MASIVO ────────────────────────────────────────────── */}
+      {(mode === 'all' || mode === 'corrector') && (
+        <div style={{
+          marginBottom: '28px', padding: '20px',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: '10px',
+        }}>
+          <div
+            onClick={() => setReasignadorExpandido(!reasignadorExpandido)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: reasignadorExpandido ? 16 : 0, cursor: 'pointer' }}
+          >
+            <Filter size={18} color="#555" />
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+              Reasignar Empleador / Dependencia
+              {reasignadorExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+            </h4>
+          </div>
+
+          {reasignadorExpandido && (
+            <>
+              <div style={{ fontSize: '11px', color: '#555', marginBottom: 16, lineHeight: 1.5 }}>
+                Filtrá registros por empleador actual y reasignalos a un nuevo empleador y/o dependencia.
+              </div>
+
+              {/* Paso 1: elegir empleador origen */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  1) Empleador origen
+                </label>
+                <input
+                  className="form-input"
+                  placeholder="Buscar empleador..."
+                  value={reasignarBusquedaOrigen}
+                  onChange={e => setReasignarBusquedaOrigen(e.target.value)}
+                  style={{
+                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none', marginBottom: 8,
+                  }}
+                />
+                <div style={{
+                  maxHeight: 180, overflowY: 'auto',
+                  background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.04)',
+                  borderRadius: 8, padding: 8,
+                }}>
+                  {empleadoresUnicosFiltrados.length === 0 ? (
+                    <div style={{ color: '#555', fontSize: 12, padding: 8 }}>Sin resultados.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {empleadoresUnicosFiltrados.slice(0, 200).map(emp => {
+                        const sel = reasignarEmpOrigen === emp;
+                        const count = registros.filter(r => (r.empleador ?? '') === emp).length;
+                        return (
+                          <span
+                            key={emp}
+                            onClick={() => setReasignarEmpOrigen(sel ? '' : emp)}
+                            style={{
+                              padding: '4px 10px', borderRadius: 4, fontSize: 11,
+                              background: sel ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.04)',
+                              border: sel ? '1px solid #60a5fa' : '1px solid rgba(255,255,255,0.06)',
+                              color: sel ? '#60a5fa' : '#888',
+                              fontWeight: 600, cursor: 'pointer',
+                            }}
+                          >
+                            {emp} <span style={{ color: sel ? '#60a5fa' : '#555' }}>({count})</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Paso 2: destino */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                    2) Nuevo empleador
+                  </label>
+                  <input
+                    className="form-input"
+                    list="reasignar-emp-list"
+                    placeholder="Ej: Gobierno de la Provincia de Entre Ríos"
+                    value={reasignarEmpDestino}
+                    onChange={e => setReasignarEmpDestino(e.target.value)}
+                    style={{
+                      background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                    }}
+                  />
+                  <datalist id="reasignar-emp-list">
+                    {empleadoresUnicos.map(e => <option key={e} value={e} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                    Nueva dependencia (opcional)
+                  </label>
+                  <input
+                    className="form-input"
+                    placeholder="Ej: Jefatura de Policía de Entre Ríos"
+                    value={reasignarDepDestino}
+                    onChange={e => setReasignarDepDestino(e.target.value)}
+                    style={{
+                      background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {reasignarEmpOrigen && (
+                <div style={{ marginBottom: 12, fontSize: 11, color: '#60a5fa', fontWeight: 700 }}>
+                  {reasignarIds.length} registro(s) coinciden con &quot;{reasignarEmpOrigen}&quot;
+                </div>
+              )}
+
+              <button
+                onClick={reasignarMasivo}
+                disabled={updating || !reasignarEmpOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0}
+                style={{
+                  background: (!reasignarEmpOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0) ? '#333' : '#60a5fa',
+                  color: (!reasignarEmpOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0) ? '#666' : '#000',
+                  border: 'none', borderRadius: '6px', padding: '10px 24px',
+                  fontSize: '11px', fontWeight: 900,
+                  cursor: (updating || !reasignarEmpOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0) ? 'not-allowed' : 'pointer',
+                  textTransform: 'uppercase', letterSpacing: '1px',
+                }}
+              >
+                {updating ? 'REASIGNANDO...' : `REASIGNAR ${reasignarIds.length} REGISTRO(S)`}
+              </button>
             </>
           )}
         </div>
