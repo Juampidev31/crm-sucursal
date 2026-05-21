@@ -1569,9 +1569,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   }, []);
 
   // ── Cargar todos los empleadores con conteo ────────────────────────────
-  const cargarTodosEmpleadores = useCallback(async () => {
-    setEmpleadoresLoading(true);
-    setModalEmpleadoresOpen(true);
+  const cargarTodosEmpleadores = useCallback(async (silent = false) => {
+    if (!silent) {
+      setEmpleadoresLoading(true);
+      setModalEmpleadoresOpen(true);
+    }
 
     try {
       const { data, error } = await supabase
@@ -1651,13 +1653,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       setToast({ message: 'Error al cargar empleadores', type: 'error' });
       setEmpleadoresConConteo([]);
     } finally {
-      setEmpleadoresLoading(false);
+      if (!silent) setEmpleadoresLoading(false);
     }
   }, [getMaestroInfo]);
 
   useEffect(() => {
     if (!modalEmpleadoresOpen) return;
-    cargarTodosEmpleadores();
+    cargarTodosEmpleadores(true);
   }, [registros, modalEmpleadoresOpen, cargarTodosEmpleadores]);
 
   // ── Registros cargados hoy (Argentina) derivados del contexto ────────────
@@ -2187,7 +2189,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 </button>
               )}
               <button
-                onClick={cargarTodosEmpleadores}
+                onClick={() => cargarTodosEmpleadores()}
                 style={{
                   background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)',
                   color: '#fbbf24', borderRadius: '4px', padding: '4px 10px',
