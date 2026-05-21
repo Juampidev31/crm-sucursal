@@ -1194,7 +1194,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   // Estado para el modal de todos los empleadores
   const [modalEmpleadoresOpen, setModalEmpleadoresOpen] = useState(false);
   const [busquedaEmpleadorModal, setBusquedaEmpleadorModal] = useState('');
-  const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'publico' | 'privada' | 'fisica' | 'maestros' | 'otros'>('todos');
+  const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'gob_er' | 'muni' | 'min_salud' | 'consejo_educ' | 'sa' | 'srl' | 'sas' | 'se' | 'fisica'>('todos');
   const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number; tipo: string; categoria: string; masterName?: string; esDependencia?: boolean }[]>([]);
   const [empleadoresLoading, setEmpleadoresLoading] = useState(false);
 
@@ -3372,11 +3372,15 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {([
                  { key: 'todos', label: 'Todos' },
-                 { key: 'publico', label: 'Público' },
-                 { key: 'privada', label: 'Privado' },
+                 { key: 'gob_er', label: 'Gob. Entre Ríos' },
+                 { key: 'muni', label: 'Municipalidades' },
+                 { key: 'min_salud', label: 'Min. Salud' },
+                 { key: 'consejo_educ', label: 'Consejo Educ.' },
+                 { key: 'sa', label: 'S.A.' },
+                 { key: 'srl', label: 'S.R.L.' },
+                 { key: 'sas', label: 'S.A.S.' },
+                 { key: 'se', label: 'S.E.' },
                  { key: 'fisica', label: 'P. Física' },
-                 { key: 'maestros', label: 'Maestros' },
-                 { key: 'otros', label: 'Otros' },
                 ] as const).map(({ key, label }) => {
                   const activo = filtroTipoModal === key;
                   return (
@@ -3409,8 +3413,18 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               ) : (
                 <>
                   {(() => {
-                    const esSA = (n: string) => /\bS\.?A\.?\b/i.test(n);
-                    const esSRL = (n: string) => /\bS\.?R\.?L\.?\b/i.test(n);
+                    const normUp = (s: string) => (s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+                    const matchGobER = (s: string) => { const u = normUp(s); return u.includes('GOBIERNO') && u.includes('ENTRE RIOS'); };
+                    const matchMuni = (s: string) => normUp(s).includes('MUNICIPALIDAD');
+                    const matchMinSalud = (s: string) => { const u = normUp(s); return u.includes('MINISTERIO') && u.includes('SALUD'); };
+                    const matchConsejoEduc = (s: string) => { const u = normUp(s); return u.includes('CONSEJO') && u.includes('EDUCAC'); };
+                    const matchGroup = (e: typeof empleadoresConConteo[number], fn: (s: string) => boolean) =>
+                      fn(e.nombre) || (!!e.masterName && fn(e.masterName));
+                    const matchSA = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.A' || /\bS\.?A\.?\b(?!\.?[SE])/i.test(e.nombre);
+                    const matchSRL = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.R.L' || /\bS\.?R\.?L\.?\b/i.test(e.nombre);
+                    const matchSAS = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.A.S' || /\bS\.?A\.?S\.?\b/i.test(e.nombre);
+                    const matchSE = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.E' || /\bS\.?E\.?\b/i.test(e.nombre);
+                    const matchFisica = (e: typeof empleadoresConConteo[number]) => e.tipo === 'Persona Física';
 
                     let filtered = busquedaEmpleadorModal.trim()
                       ? empleadoresConConteo.filter(e =>
@@ -3420,11 +3434,15 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         )
                       : empleadoresConConteo;
 
-                    if (filtroTipoModal === 'publico') filtered = filtered.filter(e => e.tipo === 'Público');
-                    else if (filtroTipoModal === 'privada') filtered = filtered.filter(e => e.tipo === 'S.A' || e.tipo === 'S.R.L' || e.tipo === 'Privada');
-                    else if (filtroTipoModal === 'fisica') filtered = filtered.filter(e => e.tipo === 'Persona Física');
-                    else if (filtroTipoModal === 'maestros') filtered = filtered.filter(e => e.masterName === e.nombre);
-                    else if (filtroTipoModal === 'otros') filtered = filtered.filter(e => !['S.A', 'S.R.L', 'Público', 'Persona Física', 'Privada'].includes(e.tipo));
+                    if (filtroTipoModal === 'gob_er') filtered = filtered.filter(e => matchGroup(e, matchGobER));
+                    else if (filtroTipoModal === 'muni') filtered = filtered.filter(e => matchGroup(e, matchMuni));
+                    else if (filtroTipoModal === 'min_salud') filtered = filtered.filter(e => matchGroup(e, matchMinSalud));
+                    else if (filtroTipoModal === 'consejo_educ') filtered = filtered.filter(e => matchGroup(e, matchConsejoEduc));
+                    else if (filtroTipoModal === 'sa') filtered = filtered.filter(matchSA);
+                    else if (filtroTipoModal === 'srl') filtered = filtered.filter(matchSRL);
+                    else if (filtroTipoModal === 'sas') filtered = filtered.filter(matchSAS);
+                    else if (filtroTipoModal === 'se') filtered = filtered.filter(matchSE);
+                    else if (filtroTipoModal === 'fisica') filtered = filtered.filter(matchFisica);
 
                     const renderTable = (items: typeof filtered, title?: string, color?: string) => (
                       <div style={{ marginBottom: title ? 24 : 0 }}>
@@ -3525,19 +3543,6 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       return (
                         <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
                           <p>No se encontraron empleadores</p>
-                        </div>
-                      );
-                    }
-
-                    if (filtroTipoModal === 'privada') {
-                      const sa = filtered.filter(e => e.tipo === 'S.A');
-                      const srl = filtered.filter(e => e.tipo === 'S.R.L');
-                      const otras = filtered.filter(e => e.tipo === 'Privada');
-                      return (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          {sa.length > 0 && renderTable(sa, 'Sociedades Anónimas (S.A.)', '#fbbf24')}
-                          {srl.length > 0 && renderTable(srl, 'Sociedades de Resp. Limitada (S.R.L.)', '#fbbf24')}
-                          {otras.length > 0 && renderTable(otras, 'Otras Entidades Privadas', '#fbbf24')}
                         </div>
                       );
                     }
