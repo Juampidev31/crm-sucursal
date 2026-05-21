@@ -1655,6 +1655,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     }
   }, [getMaestroInfo]);
 
+  useEffect(() => {
+    if (!modalEmpleadoresOpen) return;
+    cargarTodosEmpleadores();
+  }, [registros, modalEmpleadoresOpen, cargarTodosEmpleadores]);
+
   // ── Registros cargados hoy (Argentina) derivados del contexto ────────────
   // Solo registros con empleador cargado, filtrados por rango de fechas.
   const registrosNuevosHoy = useMemo(() => {
