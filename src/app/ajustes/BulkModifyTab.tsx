@@ -1195,7 +1195,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [modalEmpleadoresOpen, setModalEmpleadoresOpen] = useState(false);
   const [busquedaEmpleadorModal, setBusquedaEmpleadorModal] = useState('');
   const [filtroTipoModal, setFiltroTipoModal] = useState<'todos' | 'gob_er' | 'muni' | 'min_salud' | 'consejo_educ' | 'sa' | 'srl' | 'sas' | 'se' | 'fisica'>('todos');
-  const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number; tipo: string; categoria: string; masterName?: string; esDependencia?: boolean }[]>([]);
+  const [empleadoresConConteo, setEmpleadoresConConteo] = useState<{ nombre: string; cantidad: number; tipo: string; categoria: string; masterName?: string; esDependencia?: boolean; empleadorParent?: string }[]>([]);
   const [empleadoresLoading, setEmpleadoresLoading] = useState(false);
 
   // Estado para "Nuevos hoy" - empleadores creados hoy
@@ -1587,12 +1587,29 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         // Contar ocurrencias de cada empleador
         const conteo = new Map<string, number>();
         const conteoDep = new Map<string, number>();
+        const depEmpleadorParents = new Map<string, Map<string, number>>();
         data.forEach(r => {
           const emp = r.empleador;
           conteo.set(emp, (conteo.get(emp) || 0) + 1);
           const dep = r.dependencia?.trim();
-          if (dep) conteoDep.set(dep, (conteoDep.get(dep) || 0) + 1);
+          if (dep) {
+            conteoDep.set(dep, (conteoDep.get(dep) || 0) + 1);
+            if (emp) {
+              const m = depEmpleadorParents.get(dep) ?? new Map<string, number>();
+              m.set(emp, (m.get(emp) || 0) + 1);
+              depEmpleadorParents.set(dep, m);
+            }
+          }
         });
+        const pickParent = (dep: string): string | undefined => {
+          const m = depEmpleadorParents.get(dep);
+          if (!m || m.size === 0) return undefined;
+          let best: [string, number] | null = null;
+          for (const entry of m.entries()) {
+            if (!best || entry[1] > best[1]) best = entry;
+          }
+          return best?.[0];
+        };
 
         // Convertir a array y enriquecer con info de maestro
         const empleadosArray = Array.from(conteo.entries())
@@ -1605,6 +1622,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               categoria: maestro.categoria,
               masterName: maestro.masterName,
               esDependencia: false,
+              empleadorParent: undefined as string | undefined,
             };
           })
           .sort((a, b) => b.cantidad - a.cantidad);
@@ -1614,7 +1632,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         conteoDep.forEach((cantidad, dep) => {
           if (!nombresExistentes.has(dep.toUpperCase())) {
             const maestro = getMaestroInfo(dep);
-            empleadosArray.push({ nombre: dep, cantidad, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName, esDependencia: true });
+            empleadosArray.push({ nombre: dep, cantidad, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName, esDependencia: true, empleadorParent: pickParent(dep) });
             nombresExistentes.add(dep.toUpperCase());
           }
         });
@@ -1623,7 +1641,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         for (const dep of DEPENDENCIAS_OFICIALES) {
           if (!nombresExistentes.has(dep.toUpperCase())) {
             const maestro = getMaestroInfo(dep);
-            empleadosArray.push({ nombre: dep, cantidad: 0, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName, esDependencia: true });
+            empleadosArray.push({ nombre: dep, cantidad: 0, tipo: maestro.tipo, categoria: maestro.categoria, masterName: maestro.masterName, esDependencia: true, empleadorParent: undefined });
           }
         }
 
@@ -3419,7 +3437,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     const matchMinSalud = (s: string) => { const u = normUp(s); return u.includes('MINISTERIO') && u.includes('SALUD'); };
                     const matchConsejoEduc = (s: string) => { const u = normUp(s); return u.includes('CONSEJO') && u.includes('EDUCAC'); };
                     const matchGroup = (e: typeof empleadoresConConteo[number], fn: (s: string) => boolean) =>
-                      fn(e.nombre) || (!!e.masterName && fn(e.masterName));
+                      fn(e.nombre) || (!!e.masterName && fn(e.masterName)) || (!!e.empleadorParent && fn(e.empleadorParent));
                     const matchSA = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.A' || /\bS\.?A\.?\b(?!\.?[SE])/i.test(e.nombre);
                     const matchSRL = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.R.L' || /\bS\.?R\.?L\.?\b/i.test(e.nombre);
                     const matchSAS = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.A.S' || /\bS\.?A\.?S\.?\b/i.test(e.nombre);
