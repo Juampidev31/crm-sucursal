@@ -326,7 +326,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
       const missing: string[] = [];
       if (!r.nombre?.trim()) missing.push('x');
       if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('x');
-      if (!addressed('analista') && !r.analista) missing.push('x');
       if (!addressed('estado') && !r.estado) missing.push('x');
       const req = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
       if (req) {
@@ -421,7 +420,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
     const missing: string[] = [];
     if (!r.nombre?.trim()) missing.push('nombre');
     if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('cuil');
-    if (!addressed('analista') && !r.analista) missing.push('analista');
     if (!addressed('estado') && !r.estado) missing.push('estado');
     const requiereTyA = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
     if (requiereTyA) {
