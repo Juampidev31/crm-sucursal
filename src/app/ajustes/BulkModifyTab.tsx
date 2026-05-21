@@ -3449,7 +3449,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     const matchSRL = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.R.L' || /\bS\.?R\.?L\.?\b/i.test(e.nombre);
                     const matchSAS = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.A.S' || /\bS\.?A\.?S\.?\b/i.test(e.nombre);
                     const matchSE = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.E' || /\bS\.?E\.?\b/i.test(e.nombre);
-                    const matchFisica = (e: typeof empleadoresConConteo[number]) => e.tipo === 'Persona Física';
+                    const matchFisica = (e: typeof empleadoresConConteo[number]) => {
+                      if (e.esDependencia) return false;
+                      return /^[A-ZÁÉÍÓÚÑa-záéíóúñ][A-ZÁÉÍÓÚÑa-záéíóúñ. -]*(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ][A-ZÁÉÍÓÚÑa-záéíóúñ. -]*)*\s*,\s*[A-ZÁÉÍÓÚÑa-záéíóúñ][A-ZÁÉÍÓÚÑa-záéíóúñ. -]*(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ][A-ZÁÉÍÓÚÑa-záéíóúñ. -]*)*\s*$/.test(e.nombre.trim());
+                    };
 
                     let filtered = busquedaEmpleadorModal.trim()
                       ? empleadoresConConteo.filter(e =>
