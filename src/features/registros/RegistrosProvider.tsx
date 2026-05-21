@@ -10,6 +10,9 @@ import { validateBroadcast } from '@/lib/broadcast-utils';
 
 type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 
+type RegistroPatch = Partial<Registro>;
+type FieldKey = keyof Registro;
+
 interface RegistrosCtx {
   registros: Registro[];
   loading: boolean;
@@ -20,6 +23,8 @@ interface RegistrosCtx {
   refresh: (silent?: boolean) => void;
   pushBulkRefresh: () => void;
   pushRegistroChange: (type: ChangeType, registro: Registro) => void;
+  pushBulkUpdateIds: (ids: string[], patch: RegistroPatch) => void;
+  pushBulkPatchByField: (field: FieldKey, oldValues: string[], patch: RegistroPatch) => void;
 }
 
 const RegistrosContext = createContext<RegistrosCtx | null>(null);
@@ -152,6 +157,19 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
         refresh(true);
         return;
       }
+      if (payload.type === 'BULK_UPDATE_IDS' && Array.isArray(payload.ids) && payload.patch && typeof payload.patch === 'object') {
+        const idsSet = new Set<string>(payload.ids as string[]);
+        const patch = payload.patch as RegistroPatch;
+        setRegistros(prev => prev.map(r => idsSet.has(r.id) ? { ...r, ...patch } : r));
+        return;
+      }
+      if (payload.type === 'BULK_PATCH_FIELD' && typeof payload.field === 'string' && Array.isArray(payload.oldValues) && payload.patch && typeof payload.patch === 'object') {
+        const field = payload.field as FieldKey;
+        const oldSet = new Set<string>(payload.oldValues as string[]);
+        const patch = payload.patch as RegistroPatch;
+        setRegistros(prev => prev.map(r => oldSet.has((r[field] as unknown as string) ?? '') ? { ...r, ...patch } : r));
+        return;
+      }
       const data = validateBroadcast('update', registroChangeSchema, payload);
       if (data) {
         applyRegistroChange(data.type, data.registro);
@@ -175,12 +193,30 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     });
   }, [channelRef]);
 
+  const pushBulkUpdateIds = useCallback((ids: string[], patch: RegistroPatch) => {
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'update',
+      payload: { type: 'BULK_UPDATE_IDS', ids, patch }
+    });
+  }, [channelRef]);
+
+  const pushBulkPatchByField = useCallback((field: FieldKey, oldValues: string[], patch: RegistroPatch) => {
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'update',
+      payload: { type: 'BULK_PATCH_FIELD', field, oldValues, patch }
+    });
+  }, [channelRef]);
+
   const value = useMemo(() => ({
     registros, loading, loadingMore,
     applyRegistroChange, mutateRegistros, bulkInsertRegistros, refresh, pushBulkRefresh, pushRegistroChange,
+    pushBulkUpdateIds, pushBulkPatchByField,
   }), [
     registros, loading, loadingMore,
     applyRegistroChange, mutateRegistros, bulkInsertRegistros, refresh, pushBulkRefresh, pushRegistroChange,
+    pushBulkUpdateIds, pushBulkPatchByField,
   ]);
 
   return (
@@ -193,7 +229,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 export function useRegistros(safe = false) {
   const ctx = useContext(RegistrosContext);
   if (!ctx) {
-    if (safe) return { registros: [], loading: false, loadingMore: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, bulkInsertRegistros: async () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {} };
+    if (safe) return { registros: [], loading: false, loadingMore: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, bulkInsertRegistros: async () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {}, pushBulkUpdateIds: () => {}, pushBulkPatchByField: () => {} };
     throw new Error('useRegistros must be used within RegistrosProvider');
   }
   return ctx;

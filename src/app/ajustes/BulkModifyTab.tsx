@@ -239,10 +239,11 @@ interface AsignarEmpleadorSectionProps {
   allEmpleadores: string[];
   mutateRegistros: (fn: (prev: Registro[]) => Registro[]) => void;
   pushBulkRefresh: () => void;
+  pushBulkUpdateIds: (ids: string[], patch: Partial<Registro>) => void;
   standalone?: boolean;
 }
 
-function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, pushBulkRefresh, standalone = false }: AsignarEmpleadorSectionProps) {
+function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, pushBulkRefresh, pushBulkUpdateIds, standalone = false }: AsignarEmpleadorSectionProps) {
   const [expanded, setExpanded] = useState(standalone);
   const [pastedText, setPastedText] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -527,8 +528,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
       mutateRegistros(prev =>
         prev.map(r => idsSet.has(r.id) ? { ...r, ...payload } : r)
       );
-      // Un solo broadcast: los otros clientes hacen refresh, en vez de N mensajes individuales
-      pushBulkRefresh();
+      // Broadcast incremental: receivers aplican el mismo patch sin refresh completo → sin flicker
+      pushBulkUpdateIds(idsToUpdate, payload);
     } else {
       setAssignError(error.message);
     }
@@ -1122,7 +1123,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { registros, mutateRegistros, pushBulkRefresh, refresh, applyRegistroChange, pushRegistroChange } = useRegistros();
+  const { registros, mutateRegistros, pushBulkRefresh, refresh, applyRegistroChange, pushRegistroChange, pushBulkUpdateIds, pushBulkPatchByField } = useRegistros();
 
   // Derivar datos de filtros directamente de registros (reactivo)
   const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);
@@ -1723,10 +1724,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         }
       }
 
-      // Broadcast para otras pestañas
-      pushBulkRefresh();
+      // Broadcast incremental: receivers aplican el patch por valor sin refresh completo
+      pushBulkPatchByField('empleador', oldVariants, { empleador: correctedName });
     }
-  }, [empleadoresSeleccionados, empleadorCorreccion, mutateRegistros, pushBulkRefresh, modalOpen, modalRegistros, modalGrupo, variantesConDuplicados, cargarRegistrosGrupo]);
+  }, [empleadoresSeleccionados, empleadorCorreccion, mutateRegistros, pushBulkPatchByField, modalOpen, modalRegistros, modalGrupo, variantesConDuplicados, cargarRegistrosGrupo]);
 
   const corregirLocalidad = useCallback(async () => {
     if (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) {
@@ -1756,9 +1757,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       mutateRegistros(prev => prev.map(r =>
         oldVars.includes(r.localidad ?? '') ? { ...r, localidad: correctedName } : r
       ));
-      pushBulkRefresh();
+      pushBulkPatchByField('localidad', oldVars, { localidad: correctedName });
     }
-  }, [localidadesSeleccionadas, localidadCorreccion, mutateRegistros, pushBulkRefresh]);
+  }, [localidadesSeleccionadas, localidadCorreccion, mutateRegistros, pushBulkPatchByField]);
 
   const agregarNuevaLocalidad = useCallback(async () => {
     if (!localidadCorreccion.trim()) {
@@ -1818,9 +1819,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       mutateRegistros(prev => prev.map(r =>
         oldVars.includes(r.dependencia ?? '') ? { ...r, dependencia: correctedName } : r
       ));
-      pushBulkRefresh();
+      pushBulkPatchByField('dependencia', oldVars, { dependencia: correctedName });
     }
-  }, [dependenciasSeleccionadas, dependenciaCorreccion, mutateRegistros, pushBulkRefresh]);
+  }, [dependenciasSeleccionadas, dependenciaCorreccion, mutateRegistros, pushBulkPatchByField]);
 
   useEffect(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
@@ -2544,6 +2545,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           allEmpleadores={allEmpleadores}
           mutateRegistros={mutateRegistros}
           pushBulkRefresh={pushBulkRefresh}
+          pushBulkUpdateIds={pushBulkUpdateIds}
           standalone={mode === 'excel'}
         />
       )}
