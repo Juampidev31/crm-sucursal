@@ -3460,7 +3460,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       if (!apellido || !dado) return false;
                       const palabrasTotal = nombre.split(/[\s,]+/).filter(Boolean).length;
                       if (palabrasTotal > 5) return false;
-                      return /^[A-ZÁÉÍÓÚÑa-záéíóúñ. -]+$/.test(nombre);
+                      return /^[A-ZÁÉÍÓÚÑa-záéíóúñ,. -]+$/.test(nombre);
                     };
 
                     let filtered = busquedaEmpleadorModal.trim()
