@@ -3449,9 +3449,18 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     const matchSRL = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.R.L' || /\bS\.?R\.?L\.?\b/i.test(e.nombre);
                     const matchSAS = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.A.S' || /\bS\.?A\.?S\.?\b/i.test(e.nombre);
                     const matchSE = (e: typeof empleadoresConConteo[number]) => e.tipo === 'S.E' || /\bS\.?E\.?\b/i.test(e.nombre);
+                    const ENTIDAD_KEYWORDS = /\b(INSTITUTO|FACULTAD|UNIVERSIDAD|FUERZA|HOSPITAL|BANCO|CENTRO|MINISTERIO|SECRETARIA|DIRECCION|MUNICIPALIDAD|GOBIERNO|CONSEJO|ESCUELA|COLEGIO|CLUB|ASOCIACION|MUTUAL|SINDICATO|UNION|CAJA|EMPRESA|COOPERATIVA|SOCIEDAD|FUNDACION|OBRA|PENSION|JUBILACION|ARGENTINA|NACIONAL|PROVINCIAL|MUNICIPAL|PARROQUIA|IGLESIA|ESTADO|COMERCIAL|INDUSTRIAL|SERVICIOS|TRANSPORTE|SEGUROS|CAMARA|HONORABLE|JUZGADO|SUBSECRETARIA|COMISION|AREA|DEPARTAMENTO|SUPERINTENDENCIA|GENDARMERIA|POLICIA|JEFATURA|TESORERIA|ADMINISTRACION|REGISTRO|TRIBUNAL|FISCALIA|DEFENSORIA|COPNAF|PAMI|ANSES|AFIP|ARCA|S\.A|S\.R\.L|S\.A\.S|S\.E|LTDA|CIA|E\.I\.R\.L)\b/i;
                     const matchFisica = (e: typeof empleadoresConConteo[number]) => {
                       if (e.esDependencia) return false;
-                      return /^[A-ZÁÉÍÓÚÑa-záéíóúñ][A-ZÁÉÍÓÚÑa-záéíóúñ. -]*(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ][A-ZÁÉÍÓÚÑa-záéíóúñ. -]*)*\s*,\s*[A-ZÁÉÍÓÚÑa-záéíóúñ][A-ZÁÉÍÓÚÑa-záéíóúñ. -]*(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ][A-ZÁÉÍÓÚÑa-záéíóúñ. -]*)*\s*$/.test(e.nombre.trim());
+                      const nombre = e.nombre.trim();
+                      if (ENTIDAD_KEYWORDS.test(nombre)) return false;
+                      const partes = nombre.split(',');
+                      if (partes.length !== 2) return false;
+                      const [apellido, dado] = partes.map(s => s.trim());
+                      if (!apellido || !dado) return false;
+                      const palabrasTotal = nombre.split(/[\s,]+/).filter(Boolean).length;
+                      if (palabrasTotal > 5) return false;
+                      return /^[A-ZÁÉÍÓÚÑa-záéíóúñ. -]+$/.test(nombre);
                     };
 
                     let filtered = busquedaEmpleadorModal.trim()
