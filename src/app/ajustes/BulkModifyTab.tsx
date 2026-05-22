@@ -1157,7 +1157,9 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [busquedaDependencia, setBusquedaDependencia] = useState('');
   const [correctorDependenciaExpandido, setCorrectorDependenciaExpandido] = useState(false);
   const [reasignadorExpandido, setReasignadorExpandido] = useState(false);
+  const [reasignarModo, setReasignarModo] = useState<'empleador' | 'dependencia'>('empleador');
   const [reasignarEmpOrigen, setReasignarEmpOrigen] = useState('');
+  const [reasignarDepOrigen, setReasignarDepOrigen] = useState('');
   const [reasignarEmpDestino, setReasignarEmpDestino] = useState('');
   const [reasignarDepDestino, setReasignarDepDestino] = useState('');
   const [reasignarBusquedaOrigen, setReasignarBusquedaOrigen] = useState('');
@@ -1862,18 +1864,33 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     return empleadoresUnicos.filter(e => e.toLowerCase().includes(q));
   }, [empleadoresUnicos, reasignarBusquedaOrigen]);
 
+  const dependenciasUnicas = useMemo(
+    () => Array.from(new Set(registros.map(r => r.dependencia).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b)),
+    [registros]
+  );
+  const dependenciasUnicasFiltradas = useMemo(() => {
+    const q = reasignarBusquedaOrigen.trim().toLowerCase();
+    if (!q) return dependenciasUnicas;
+    return dependenciasUnicas.filter(d => d.toLowerCase().includes(q));
+  }, [dependenciasUnicas, reasignarBusquedaOrigen]);
+
   const reasignarIds = useMemo(() => {
-    if (!reasignarEmpOrigen) return [] as string[];
-    return registros.filter(r => (r.empleador ?? '') === reasignarEmpOrigen).map(r => r.id);
-  }, [reasignarEmpOrigen, registros]);
+    if (reasignarModo === 'empleador') {
+      if (!reasignarEmpOrigen) return [] as string[];
+      return registros.filter(r => (r.empleador ?? '') === reasignarEmpOrigen).map(r => r.id);
+    } else {
+      if (!reasignarDepOrigen) return [] as string[];
+      return registros.filter(r => (r.dependencia ?? '') === reasignarDepOrigen).map(r => r.id);
+    }
+  }, [reasignarModo, reasignarEmpOrigen, reasignarDepOrigen, registros]);
 
   const reasignarMasivo = useCallback(async () => {
-    const origen = reasignarEmpOrigen.trim();
+    const origen = (reasignarModo === 'empleador' ? reasignarEmpOrigen : reasignarDepOrigen).trim();
     const empDestino = reasignarEmpDestino.trim();
     const depDestino = reasignarDepDestino.trim();
 
     if (!origen) {
-      setToast({ message: 'Elegí el empleador origen', type: 'error' });
+      setToast({ message: reasignarModo === 'empleador' ? 'Elegí el empleador origen' : 'Elegí la dependencia origen', type: 'error' });
       return;
     }
     if (!empDestino && !depDestino) {
@@ -1913,10 +1930,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
     setToast({ message: `${actualizados} registro(s) reasignados`, type: 'success' });
     setReasignarEmpOrigen('');
+    setReasignarDepOrigen('');
     setReasignarEmpDestino('');
     setReasignarDepDestino('');
     setReasignarBusquedaOrigen('');
-  }, [reasignarEmpOrigen, reasignarEmpDestino, reasignarDepDestino, reasignarIds, mutateRegistros, pushBulkUpdateIds]);
+  }, [reasignarModo, reasignarEmpOrigen, reasignarDepOrigen, reasignarEmpDestino, reasignarDepDestino, reasignarIds, mutateRegistros, pushBulkUpdateIds]);
 
   useEffect(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
@@ -2656,17 +2674,40 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           {reasignadorExpandido && (
             <>
               <div style={{ fontSize: '11px', color: '#555', marginBottom: 16, lineHeight: 1.5 }}>
-                Filtrá registros por empleador actual y reasignalos a un nuevo empleador y/o dependencia.
+                Filtrá registros por empleador o dependencia actual y reasignalos a un nuevo empleador y/o dependencia.
               </div>
 
-              {/* Paso 1: elegir empleador origen */}
+              {/* Toggle modo origen */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                {([{ key: 'empleador' as const, label: 'Por empleador' }, { key: 'dependencia' as const, label: 'Por dependencia' }]).map(({ key, label }) => {
+                  const activo = reasignarModo === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => { setReasignarModo(key); setReasignarEmpOrigen(''); setReasignarDepOrigen(''); setReasignarBusquedaOrigen(''); }}
+                      style={{
+                        background: activo ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${activo ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                        color: activo ? '#60a5fa' : '#666',
+                        borderRadius: '4px', padding: '4px 12px',
+                        fontSize: '10px', fontWeight: 800, cursor: 'pointer',
+                        textTransform: 'uppercase', letterSpacing: '0.5px',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Paso 1: elegir origen */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
-                  1) Empleador origen
+                  1) {reasignarModo === 'empleador' ? 'Empleador origen' : 'Dependencia origen'}
                 </label>
                 <input
                   className="form-input"
-                  placeholder="Buscar empleador..."
+                  placeholder={reasignarModo === 'empleador' ? 'Buscar empleador...' : 'Buscar dependencia...'}
                   value={reasignarBusquedaOrigen}
                   onChange={e => setReasignarBusquedaOrigen(e.target.value)}
                   style={{
@@ -2679,30 +2720,61 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.04)',
                   borderRadius: 8, padding: 8,
                 }}>
-                  {empleadoresUnicosFiltrados.length === 0 ? (
-                    <div style={{ color: '#555', fontSize: 12, padding: 8 }}>Sin resultados.</div>
+                  {reasignarModo === 'empleador' ? (
+                    empleadoresUnicosFiltrados.length === 0 ? (
+                      <div style={{ color: '#555', fontSize: 12, padding: 8 }}>Sin resultados.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {empleadoresUnicosFiltrados.slice(0, 200).map(emp => {
+                          const sel = reasignarEmpOrigen === emp;
+                          const count = registros.filter(r => (r.empleador ?? '') === emp).length;
+                          return (
+                            <span
+                              key={emp}
+                              onClick={() => setReasignarEmpOrigen(sel ? '' : emp)}
+                              style={{
+                                padding: '4px 10px', borderRadius: 4, fontSize: 11,
+                                background: sel ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.04)',
+                                border: sel ? '1px solid #60a5fa' : '1px solid rgba(255,255,255,0.06)',
+                                color: sel ? '#60a5fa' : '#888',
+                                fontWeight: 600, cursor: 'pointer',
+                              }}
+                            >
+                              {emp} <span style={{ color: sel ? '#60a5fa' : '#555' }}>({count})</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )
                   ) : (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {empleadoresUnicosFiltrados.slice(0, 200).map(emp => {
-                        const sel = reasignarEmpOrigen === emp;
-                        const count = registros.filter(r => (r.empleador ?? '') === emp).length;
-                        return (
-                          <span
-                            key={emp}
-                            onClick={() => setReasignarEmpOrigen(sel ? '' : emp)}
-                            style={{
-                              padding: '4px 10px', borderRadius: 4, fontSize: 11,
-                              background: sel ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.04)',
-                              border: sel ? '1px solid #60a5fa' : '1px solid rgba(255,255,255,0.06)',
-                              color: sel ? '#60a5fa' : '#888',
-                              fontWeight: 600, cursor: 'pointer',
-                            }}
-                          >
-                            {emp} <span style={{ color: sel ? '#60a5fa' : '#555' }}>({count})</span>
-                          </span>
-                        );
-                      })}
-                    </div>
+                    dependenciasUnicasFiltradas.length === 0 ? (
+                      <div style={{ color: '#555', fontSize: 12, padding: 8 }}>Sin resultados.</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {dependenciasUnicasFiltradas.slice(0, 200).map(dep => {
+                          const sel = reasignarDepOrigen === dep;
+                          const matches = registros.filter(r => (r.dependencia ?? '') === dep);
+                          const count = matches.length;
+                          const parentEmp = matches[0]?.empleador ?? '—';
+                          return (
+                            <span
+                              key={dep}
+                              onClick={() => setReasignarDepOrigen(sel ? '' : dep)}
+                              title={`Empleador actual: ${parentEmp}`}
+                              style={{
+                                padding: '4px 10px', borderRadius: 4, fontSize: 11,
+                                background: sel ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.04)',
+                                border: sel ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.06)',
+                                color: sel ? '#a78bfa' : '#888',
+                                fontWeight: 600, cursor: 'pointer',
+                              }}
+                            >
+                              {dep} <span style={{ color: sel ? '#a78bfa' : '#555' }}>({count})</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )
                   )}
                 </div>
               </div>
@@ -2745,26 +2817,32 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 </div>
               </div>
 
-              {reasignarEmpOrigen && (
+              {(reasignarEmpOrigen || reasignarDepOrigen) && (
                 <div style={{ marginBottom: 12, fontSize: 11, color: '#60a5fa', fontWeight: 700 }}>
-                  {reasignarIds.length} registro(s) coinciden con &quot;{reasignarEmpOrigen}&quot;
+                  {reasignarIds.length} registro(s) coinciden con &quot;{reasignarModo === 'empleador' ? reasignarEmpOrigen : reasignarDepOrigen}&quot;
                 </div>
               )}
 
-              <button
-                onClick={reasignarMasivo}
-                disabled={updating || !reasignarEmpOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0}
-                style={{
-                  background: (!reasignarEmpOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0) ? '#333' : '#60a5fa',
-                  color: (!reasignarEmpOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0) ? '#666' : '#000',
-                  border: 'none', borderRadius: '6px', padding: '10px 24px',
-                  fontSize: '11px', fontWeight: 900,
-                  cursor: (updating || !reasignarEmpOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0) ? 'not-allowed' : 'pointer',
-                  textTransform: 'uppercase', letterSpacing: '1px',
-                }}
-              >
-                {updating ? 'REASIGNANDO...' : `REASIGNAR ${reasignarIds.length} REGISTRO(S)`}
-              </button>
+              {(() => {
+                const hayOrigen = reasignarModo === 'empleador' ? !!reasignarEmpOrigen : !!reasignarDepOrigen;
+                const disabled = updating || !hayOrigen || (!reasignarEmpDestino.trim() && !reasignarDepDestino.trim()) || reasignarIds.length === 0;
+                return (
+                  <button
+                    onClick={reasignarMasivo}
+                    disabled={disabled}
+                    style={{
+                      background: disabled ? '#333' : '#60a5fa',
+                      color: disabled ? '#666' : '#000',
+                      border: 'none', borderRadius: '6px', padding: '10px 24px',
+                      fontSize: '11px', fontWeight: 900,
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                      textTransform: 'uppercase', letterSpacing: '1px',
+                    }}
+                  >
+                    {updating ? 'REASIGNANDO...' : `REASIGNAR ${reasignarIds.length} REGISTRO(S)`}
+                  </button>
+                );
+              })()}
             </>
           )}
         </div>
