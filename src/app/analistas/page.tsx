@@ -554,7 +554,11 @@ export default function AnalistasPage() {
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
-    const diasTransMes = Math.max(0, ...diasConfig.map(d => Number(d.dias_transcurridos) || 0));
+    // Total usa el entry 'Todos' como fuente canonica; fallback al max sobre analistas si no existe
+    const cfgTodos = diasConfig.find(d => d.analista === 'Todos');
+    const diasTransMes = cfgTodos
+      ? (Number(cfgTodos.dias_transcurridos) || 0)
+      : Math.max(0, ...diasConfig.map(d => Number(d.dias_transcurridos) || 0));
     const regs = filterByMonth(registros, selectedMes, selectedAnio);
     const ventas = regs.filter(isVenta);
     const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);

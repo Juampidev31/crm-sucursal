@@ -987,8 +987,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
-    // Dias transcurridos del mes (max sobre analistas — todos comparten calendario laboral)
-    const diasTransMes = Math.max(0, ...diasConfig.map(d => Number(d.dias_transcurridos) || 0));
+    // Dias transcurridos del mes: usa el entry 'Todos' como fuente canonica; fallback al max
+    const cfgTodos = diasConfig.find(d => d.analista === 'Todos');
+    const diasTransMes = cfgTodos
+      ? (Number(cfgTodos.dias_transcurridos) || 0)
+      : Math.max(0, ...diasConfig.map(d => Number(d.dias_transcurridos) || 0));
     const regs = filterByMonth(registros, selectedMes, selectedAnio);
     const ventas = regs.filter(isVenta);
     const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
