@@ -921,7 +921,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       const ventas = regsAnalista.filter(isVenta);
       const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
       const ops = ventas.length;
-      const ticket = ops > 0 ? capital / ops : 0;
       const conversion = regsAnalista.length > 0 ? (ops / regsAnalista.length) * 100 : 0;
 
       // Monto venta y Aprob CC por separado
@@ -952,6 +951,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       const diasHabiles = Number(diasCfg.dias_habiles) || 22;
       const diasTrans = Number(diasCfg.dias_transcurridos) || 0;
       const diasRestantes = Math.max(0, diasHabiles - diasTrans);
+
+      // Ticket promedio = total vendido (Venta + Aprob. CC) / dias habiles
+      const ticket = diasHabiles > 0 ? capital / diasHabiles : 0;
 
       // Proyección
       const ventaPorDia = diasTrans > 0 ? capital / diasTrans : null;
@@ -985,11 +987,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
+    // Dias habiles del mes (max sobre analistas — todos comparten calendario laboral)
+    const diasHabilesMes = Math.max(22, ...diasConfig.map(d => Number(d.dias_habiles) || 0));
     const regs = filterByMonth(registros, selectedMes, selectedAnio);
     const ventas = regs.filter(isVenta);
     const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const ops = ventas.length;
-    const ticket = ops > 0 ? capital / ops : 0;
+    // Ticket promedio = total vendido (Venta + Aprob. CC) / dias habiles
+    const ticket = diasHabilesMes > 0 ? capital / diasHabilesMes : 0;
     const clientes = regs.length;
     const conversion = clientes > 0 ? (ops / clientes) * 100 : 0;
 
@@ -1004,7 +1009,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const regsAnt = filterByMonth(registros, mesPrev, anioPrev);
     const capitalAnt = ventasAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const opsAnt = ventasAnt.length;
-    const ticketAnt = opsAnt > 0 ? capitalAnt / opsAnt : 0;
+    const ticketAnt = diasHabilesMes > 0 ? capitalAnt / diasHabilesMes : 0;
     const clientesAnt = regsAnt.length;
     const conversionAnt = clientesAnt > 0 ? (opsAnt / clientesAnt) * 100 : 0;
 
@@ -1023,7 +1028,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
 
     return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
   const distribucionAcuerdos = useMemo(() => {
