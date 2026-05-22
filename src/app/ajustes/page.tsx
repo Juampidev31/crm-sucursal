@@ -37,10 +37,11 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
-type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'auditoria' | 'avisos';
+type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
 type ConfigSubTab = 'alertas' | 'dias';
 type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score';
 type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
+type ActividadSubTab = 'auditoria' | 'avisos';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -89,6 +90,7 @@ export default function AjustesPage() {
   const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>('alertas');
   const [reportesSubTab, setReportesSubTab] = useState<ReportesSubTab>('historico');
   const [datosSubTab, setDatosSubTab] = useState<DatosSubTab>('modificacion-masiva');
+  const [actividadSubTab, setActividadSubTab] = useState<ActividadSubTab>('auditoria');
   const [alertasConfig, setAlertasConfig] = useState(CONFIG.ALERTAS_DEFAULT);
   const [diasValues, setDiasValues] = useState<Record<string, DiasEntry>>({});
   const [loading, setLoading] = useState(true);
@@ -247,7 +249,7 @@ export default function AjustesPage() {
 
   // Fetch datos para Auditoria + suscripción realtime
   useEffect(() => {
-    if (activeTab !== 'auditoria') return;
+    if (activeTab !== 'actividad' || actividadSubTab !== 'auditoria') return;
 
     setAuditoriaLoading(true);
     supabase
@@ -270,7 +272,7 @@ export default function AjustesPage() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeTab]);
+  }, [activeTab, actividadSubTab]);
 
   const limpiarLogAuditoria = async () => {
     if (!confirm('¿Estás seguro de que deseas eliminar todos los registros de auditoría? Esta acción no se puede deshacer.')) {
@@ -501,10 +503,7 @@ export default function AjustesPage() {
             { id: 'configuracion', label: 'Configuración', icon: Settings },
             { id: 'reportes', label: 'Reportes', icon: BarChart3 },
             { id: 'datos-masivos', label: 'Datos masivos', icon: Edit3 },
-            { id: 'auditoria', label: 'Auditoría', icon: Shield },
-            ...(isAdmin ? [
-              { id: 'avisos', label: 'Avisos', icon: Bell },
-            ] : []),
+            { id: 'actividad', label: 'Actividad', icon: Activity },
           ].map(t => (
             <button
               key={t.id}
@@ -1113,7 +1112,32 @@ export default function AjustesPage() {
           )}
 
           {/* TAB: AUDITORIA */}
-          {activeTab === 'auditoria' && (() => {
+          {activeTab === 'actividad' && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+              {([
+                { id: 'auditoria' as const, label: 'Auditoría', icon: Shield },
+                ...(isAdmin ? [{ id: 'avisos' as const, label: 'Avisos', icon: Bell }] : []),
+              ]).map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setActividadSubTab(t.id)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '6px 14px', borderRadius: 6,
+                    background: actividadSubTab === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    border: `1px solid ${actividadSubTab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    color: actividadSubTab === t.id ? '#fff' : 'var(--gris)',
+                    fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: actividadSubTab === t.id ? 700 : 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <t.icon size={13} style={{ opacity: actividadSubTab === t.id ? 1 : 0.7 }} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {activeTab === 'actividad' && actividadSubTab === 'auditoria' && (() => {
             // — helpers —
             const relativeTime = (iso: string) => {
               if (!iso) return '';
@@ -1551,7 +1575,7 @@ export default function AjustesPage() {
           )}
 
           {/* TAB: AVISOS POP-UP (solo admin) */}
-          {activeTab === 'avisos' && isAdmin && (
+          {activeTab === 'actividad' && actividadSubTab === 'avisos' && isAdmin && (
             <AvisosTab />
           )}
 
