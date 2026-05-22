@@ -37,7 +37,10 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
-type ActiveTab = 'alertas' | 'dias' | 'historico' | 'duplicados' | 'auditoria' | 'resumen-mensual' | 'modificacion-masiva' | 'calif-score' | 'avisos' | 'verificador' | 'carga-rapida' | 'eliminacion-masiva' | 'asignar-excel';
+type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'auditoria' | 'avisos';
+type ConfigSubTab = 'alertas' | 'dias';
+type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score';
+type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -82,7 +85,10 @@ export default function AjustesPage() {
   const router = useRouter();
   const { setFilter, limpiarFiltros, toggleEstado } = useFilter();
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('alertas');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('configuracion');
+  const [configSubTab, setConfigSubTab] = useState<ConfigSubTab>('alertas');
+  const [reportesSubTab, setReportesSubTab] = useState<ReportesSubTab>('historico');
+  const [datosSubTab, setDatosSubTab] = useState<DatosSubTab>('modificacion-masiva');
   const [alertasConfig, setAlertasConfig] = useState(CONFIG.ALERTAS_DEFAULT);
   const [diasValues, setDiasValues] = useState<Record<string, DiasEntry>>({});
   const [loading, setLoading] = useState(true);
@@ -118,10 +124,13 @@ export default function AjustesPage() {
   const [consultaAnalista, setConsultaAnalista] = useState('Luciana');
 
   useEffect(() => {
-    if (!isAdmin && activeTab === 'alertas') {
-      setActiveTab('dias');
+    if (!isAdmin && activeTab === 'configuracion' && configSubTab === 'alertas') {
+      setConfigSubTab('dias');
     }
-  }, [isAdmin, activeTab]);
+    if (!isAdmin && activeTab === 'datos-masivos' && datosSubTab !== 'duplicados') {
+      setDatosSubTab('duplicados');
+    }
+  }, [isAdmin, activeTab, configSubTab, datosSubTab]);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -220,12 +229,12 @@ export default function AjustesPage() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'historico') loadHistorico(histAnalista, histAnio);
-  }, [histAnalista, histAnio, loadHistorico, activeTab]);
+    if (activeTab === 'reportes' && reportesSubTab === 'historico') loadHistorico(histAnalista, histAnio);
+  }, [histAnalista, histAnio, loadHistorico, activeTab, reportesSubTab]);
 
   // Fetch datos para Duplicados
   useEffect(() => {
-    if (activeTab === 'duplicados') {
+    if (activeTab === 'datos-masivos' && datosSubTab === 'duplicados') {
       supabase
         .from('registros')
         .select('*')
@@ -234,7 +243,7 @@ export default function AjustesPage() {
           setDuplicadosRegistros(data || []);
         });
     }
-  }, [activeTab]);
+  }, [activeTab, datosSubTab]);
 
   // Fetch datos para Auditoria + suscripción realtime
   useEffect(() => {
@@ -489,20 +498,12 @@ export default function AjustesPage() {
       <div className="toolbar" style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {[
-            ...(isAdmin ? [{ id: 'alertas', label: 'Alertas', icon: Bell }] : []),
-            { id: 'dias', label: 'Días Hábiles', icon: Clock },
-            { id: 'historico', label: 'Histórico y Objetivos', icon: History },
-            { id: 'duplicados', label: 'Duplicados', icon: Copy },
+            { id: 'configuracion', label: 'Configuración', icon: Settings },
+            { id: 'reportes', label: 'Reportes', icon: BarChart3 },
+            { id: 'datos-masivos', label: 'Datos masivos', icon: Edit3 },
             { id: 'auditoria', label: 'Auditoría', icon: Shield },
-            { id: 'resumen-mensual', label: 'Resumen Mensual', icon: BarChart3 },
             ...(isAdmin ? [
-              { id: 'modificacion-masiva', label: 'Corrector', icon: ShieldCheck },
-              { id: 'asignar-excel', label: 'Asignar Excel', icon: Filter },
-              { id: 'calif-score', label: 'Calif. x SCORE', icon: Users },
               { id: 'avisos', label: 'Avisos', icon: Bell },
-              { id: 'verificador', label: 'Verificador', icon: Search },
-              { id: 'carga-rapida', label: 'Carga Rápida', icon: Upload },
-              { id: 'eliminacion-masiva', label: 'Borrado Masivo', icon: Trash2 },
             ] : []),
           ].map(t => (
             <button
@@ -537,7 +538,32 @@ export default function AjustesPage() {
         <div style={{ width: '100%' }}>
 
           {/* TAB: ALERTAS */}
-          {activeTab === 'alertas' && (
+          {activeTab === 'configuracion' && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+              {([
+                ...(isAdmin ? [{ id: 'alertas' as const, label: 'Alertas', icon: Bell }] : []),
+                { id: 'dias' as const, label: 'Días Hábiles', icon: Clock },
+              ]).map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setConfigSubTab(t.id)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '6px 14px', borderRadius: 6,
+                    background: configSubTab === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    border: `1px solid ${configSubTab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    color: configSubTab === t.id ? '#fff' : 'var(--gris)',
+                    fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: configSubTab === t.id ? 700 : 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <t.icon size={13} style={{ opacity: configSubTab === t.id ? 1 : 0.7 }} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {activeTab === 'configuracion' && configSubTab === 'alertas' && isAdmin && (
             <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
               <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
@@ -650,7 +676,7 @@ export default function AjustesPage() {
           )}
 
           {/* TAB: DIAS HABILES */}
-          {activeTab === 'dias' && (
+          {activeTab === 'configuracion' && configSubTab === 'dias' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
               {['Todos', ...CONFIG.ANALISTAS_DEFAULT].map(analista => {
                 const entry = diasValues[analista] || { dias_habiles: 22, dias_transcurridos: 0 };
@@ -699,7 +725,33 @@ export default function AjustesPage() {
           )}
 
           {/* TAB: HISTORICO */}
-          {activeTab === 'historico' && (
+          {activeTab === 'reportes' && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+              {([
+                { id: 'historico' as const, label: 'Histórico y Objetivos', icon: History },
+                { id: 'resumen-mensual' as const, label: 'Resumen Mensual', icon: BarChart3 },
+                ...(isAdmin ? [{ id: 'calif-score' as const, label: 'Calif. x SCORE', icon: Users }] : []),
+              ]).map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setReportesSubTab(t.id)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '6px 14px', borderRadius: 6,
+                    background: reportesSubTab === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    border: `1px solid ${reportesSubTab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    color: reportesSubTab === t.id ? '#fff' : 'var(--gris)',
+                    fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: reportesSubTab === t.id ? 700 : 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <t.icon size={13} style={{ opacity: reportesSubTab === t.id ? 1 : 0.7 }} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {activeTab === 'reportes' && reportesSubTab === 'historico' && (
             <div className="data-card" style={{ background: '#0a0a0a' }}>
               <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
@@ -841,7 +893,36 @@ export default function AjustesPage() {
           )}
 
           {/* TAB: DUPLICADOS */}
-          {activeTab === 'duplicados' && (
+          {activeTab === 'datos-masivos' && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+              {([
+                ...(isAdmin ? [{ id: 'modificacion-masiva' as const, label: 'Corrector', icon: ShieldCheck }] : []),
+                ...(isAdmin ? [{ id: 'asignar-excel' as const, label: 'Asignar Excel', icon: Filter }] : []),
+                ...(isAdmin ? [{ id: 'verificador' as const, label: 'Verificador', icon: Search }] : []),
+                ...(isAdmin ? [{ id: 'carga-rapida' as const, label: 'Carga Rápida', icon: Upload }] : []),
+                { id: 'duplicados' as const, label: 'Duplicados', icon: Copy },
+                ...(isAdmin ? [{ id: 'eliminacion-masiva' as const, label: 'Borrado Masivo', icon: Trash2 }] : []),
+              ]).map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setDatosSubTab(t.id)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '6px 14px', borderRadius: 6,
+                    background: datosSubTab === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    border: `1px solid ${datosSubTab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    color: datosSubTab === t.id ? '#fff' : 'var(--gris)',
+                    fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: datosSubTab === t.id ? 700 : 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <t.icon size={13} style={{ opacity: datosSubTab === t.id ? 1 : 0.7 }} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {activeTab === 'datos-masivos' && datosSubTab === 'duplicados' && (
             <div>
               <header className="dashboard-header" style={{ marginBottom: 24 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1439,7 +1520,7 @@ export default function AjustesPage() {
           })()}
 
           {/* TAB: RESUMEN MENSUAL */}
-          {activeTab === 'resumen-mensual' && (
+          {activeTab === 'reportes' && reportesSubTab === 'resumen-mensual' && (
             <ResumenMensualTab
               registros={ctxRegistros}
               objetivos={ctxObjetivos}
@@ -1450,22 +1531,22 @@ export default function AjustesPage() {
           )}
 
           {/* TAB: MODIFICACIÓN MASIVA (solo admin) */}
-          {activeTab === 'modificacion-masiva' && isAdmin && (
+          {activeTab === 'datos-masivos' && datosSubTab === 'modificacion-masiva' && isAdmin && (
             <BulkModifyTab mode="corrector" />
           )}
 
           {/* TAB: ASIGNAR DESDE EXCEL (solo admin) */}
-          {activeTab === 'asignar-excel' && isAdmin && (
+          {activeTab === 'datos-masivos' && datosSubTab === 'asignar-excel' && isAdmin && (
             <BulkModifyTab mode="excel" />
           )}
 
           {/* TAB: CALIF. POR SCORE (solo admin) */}
-          {activeTab === 'calif-score' && isAdmin && (
+          {activeTab === 'reportes' && reportesSubTab === 'calif-score' && isAdmin && (
             <BulkModifyTab mode="bulk" />
           )}
 
           {/* TAB: ELIMINACIÓN MASIVA (solo admin) */}
-          {activeTab === 'eliminacion-masiva' && isAdmin && (
+          {activeTab === 'datos-masivos' && datosSubTab === 'eliminacion-masiva' && isAdmin && (
             <MassiveDeleteTab />
           )}
 
@@ -1474,11 +1555,11 @@ export default function AjustesPage() {
             <AvisosTab />
           )}
 
-          {activeTab === 'verificador' && isAdmin && (
+          {activeTab === 'datos-masivos' && datosSubTab === 'verificador' && isAdmin && (
             <VerificadorTab />
           )}
 
-          {activeTab === 'carga-rapida' && isAdmin && (
+          {activeTab === 'datos-masivos' && datosSubTab === 'carga-rapida' && isAdmin && (
             <CargaRapidaTab />
           )}
 
