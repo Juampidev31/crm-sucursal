@@ -239,7 +239,11 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       if (e.key === 'Escape') {
         const modalOpen = !!document.querySelector('.modal-overlay');
         if (!modalOpen && pathname !== '/registros' && pathname !== '/login') {
-          router.push('/registros');
+          if (pathname?.startsWith('/ajustes')) {
+            router.back();
+          } else {
+            router.push('/registros');
+          }
         }
       }
     };
