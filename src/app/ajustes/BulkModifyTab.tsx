@@ -1664,6 +1664,19 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     cargarTodosEmpleadores(true);
   }, [registros, modalEmpleadoresOpen, cargarTodosEmpleadores]);
 
+  useEffect(() => {
+    if (!modalEmpleadoresOpen && !modalOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopImmediatePropagation();
+        if (modalEmpleadoresOpen) setModalEmpleadoresOpen(false);
+        else if (modalOpen) setModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handler, { capture: true });
+    return () => window.removeEventListener('keydown', handler, { capture: true } as EventListenerOptions);
+  }, [modalEmpleadoresOpen, modalOpen]);
+
   // ── Registros cargados hoy (Argentina) derivados del contexto ────────────
   // Solo registros con empleador cargado, filtrados por rango de fechas.
   const registrosNuevosHoy = useMemo(() => {
@@ -3319,6 +3332,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {/* MODAL DE REGISTROS DEL GRUPO */}
       {modalOpen && (
         <div
+          className="modal-overlay"
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
@@ -3418,6 +3432,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {/* MODAL DE TODOS LOS EMPLEADORES */}
       {modalEmpleadoresOpen && (
         <div
+          className="modal-overlay"
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,

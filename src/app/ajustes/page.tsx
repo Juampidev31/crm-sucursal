@@ -91,6 +91,30 @@ export default function AjustesPage() {
   const [reportesSubTab, setReportesSubTab] = useState<ReportesSubTab>('historico');
   const [datosSubTab, setDatosSubTab] = useState<DatosSubTab>('modificacion-masiva');
   const [actividadSubTab, setActividadSubTab] = useState<ActividadSubTab>('auditoria');
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => new Set());
+
+  // Keep-alive: visibilidad y montaje persistente de las tabs pesadas (componentes dinamicos)
+  const heavyVisibility = useMemo(() => ({
+    'resumen-mensual': activeTab === 'reportes' && reportesSubTab === 'resumen-mensual',
+    'bulk-corrector': activeTab === 'datos-masivos' && datosSubTab === 'modificacion-masiva' && isAdmin,
+    'bulk-excel': activeTab === 'datos-masivos' && datosSubTab === 'asignar-excel' && isAdmin,
+    'bulk-bulk': activeTab === 'reportes' && reportesSubTab === 'calif-score' && isAdmin,
+    'massive-delete': activeTab === 'datos-masivos' && datosSubTab === 'eliminacion-masiva' && isAdmin,
+    'avisos-tab': activeTab === 'actividad' && actividadSubTab === 'avisos' && isAdmin,
+    'verificador-tab': activeTab === 'datos-masivos' && datosSubTab === 'verificador' && isAdmin,
+    'carga-rapida-tab': activeTab === 'datos-masivos' && datosSubTab === 'carga-rapida' && isAdmin,
+  } as const), [activeTab, reportesSubTab, datosSubTab, actividadSubTab, isAdmin]);
+
+  useEffect(() => {
+    setVisitedTabs(prev => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const [k, v] of Object.entries(heavyVisibility)) {
+        if (v && !next.has(k)) { next.add(k); changed = true; }
+      }
+      return changed ? next : prev;
+    });
+  }, [heavyVisibility]);
   const [alertasConfig, setAlertasConfig] = useState(CONFIG.ALERTAS_DEFAULT);
   const [diasValues, setDiasValues] = useState<Record<string, DiasEntry>>({});
   const [loading, setLoading] = useState(true);
@@ -1543,48 +1567,52 @@ export default function AjustesPage() {
             );
           })()}
 
-          {/* TAB: RESUMEN MENSUAL */}
-          {activeTab === 'reportes' && reportesSubTab === 'resumen-mensual' && (
-            <ResumenMensualTab
-              registros={ctxRegistros}
-              objetivos={ctxObjetivos}
-              diasConfig={ctxDias}
-              onSuccess={showSuccess}
-              onError={showError}
-            />
+          {/* TABS PESADAS (componentes dinamicos) — KEEP-ALIVE: se montan al primer acceso y se ocultan con display:none */}
+          {visitedTabs.has('resumen-mensual') && (
+            <div style={{ display: heavyVisibility['resumen-mensual'] ? 'block' : 'none' }}>
+              <ResumenMensualTab
+                registros={ctxRegistros}
+                objetivos={ctxObjetivos}
+                diasConfig={ctxDias}
+                onSuccess={showSuccess}
+                onError={showError}
+              />
+            </div>
           )}
-
-          {/* TAB: MODIFICACIÓN MASIVA (solo admin) */}
-          {activeTab === 'datos-masivos' && datosSubTab === 'modificacion-masiva' && isAdmin && (
-            <BulkModifyTab mode="corrector" />
+          {visitedTabs.has('bulk-corrector') && (
+            <div style={{ display: heavyVisibility['bulk-corrector'] ? 'block' : 'none' }}>
+              <BulkModifyTab mode="corrector" />
+            </div>
           )}
-
-          {/* TAB: ASIGNAR DESDE EXCEL (solo admin) */}
-          {activeTab === 'datos-masivos' && datosSubTab === 'asignar-excel' && isAdmin && (
-            <BulkModifyTab mode="excel" />
+          {visitedTabs.has('bulk-excel') && (
+            <div style={{ display: heavyVisibility['bulk-excel'] ? 'block' : 'none' }}>
+              <BulkModifyTab mode="excel" />
+            </div>
           )}
-
-          {/* TAB: CALIF. POR SCORE (solo admin) */}
-          {activeTab === 'reportes' && reportesSubTab === 'calif-score' && isAdmin && (
-            <BulkModifyTab mode="bulk" />
+          {visitedTabs.has('bulk-bulk') && (
+            <div style={{ display: heavyVisibility['bulk-bulk'] ? 'block' : 'none' }}>
+              <BulkModifyTab mode="bulk" />
+            </div>
           )}
-
-          {/* TAB: ELIMINACIÓN MASIVA (solo admin) */}
-          {activeTab === 'datos-masivos' && datosSubTab === 'eliminacion-masiva' && isAdmin && (
-            <MassiveDeleteTab />
+          {visitedTabs.has('massive-delete') && (
+            <div style={{ display: heavyVisibility['massive-delete'] ? 'block' : 'none' }}>
+              <MassiveDeleteTab />
+            </div>
           )}
-
-          {/* TAB: AVISOS POP-UP (solo admin) */}
-          {activeTab === 'actividad' && actividadSubTab === 'avisos' && isAdmin && (
-            <AvisosTab />
+          {visitedTabs.has('avisos-tab') && (
+            <div style={{ display: heavyVisibility['avisos-tab'] ? 'block' : 'none' }}>
+              <AvisosTab />
+            </div>
           )}
-
-          {activeTab === 'datos-masivos' && datosSubTab === 'verificador' && isAdmin && (
-            <VerificadorTab />
+          {visitedTabs.has('verificador-tab') && (
+            <div style={{ display: heavyVisibility['verificador-tab'] ? 'block' : 'none' }}>
+              <VerificadorTab />
+            </div>
           )}
-
-          {activeTab === 'datos-masivos' && datosSubTab === 'carga-rapida' && isAdmin && (
-            <CargaRapidaTab />
+          {visitedTabs.has('carga-rapida-tab') && (
+            <div style={{ display: heavyVisibility['carga-rapida-tab'] ? 'block' : 'none' }}>
+              <CargaRapidaTab />
+            </div>
           )}
 
         </div>
