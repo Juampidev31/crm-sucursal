@@ -450,8 +450,8 @@ export default function AnalistasPage() {
       const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
       const tieneDiasAdmin = diasHabilesAdmin > 0 && diasTransAdmin > 0;
 
-      // Ticket promedio = total vendido (Venta + Aprob. CC) / dias habiles
-      const ticket = diasHabilesAdmin > 0 ? capital / diasHabilesAdmin : 0;
+      // Ticket promedio = total vendido (Venta + Aprob. CC) / dias transcurridos
+      const ticket = diasTransAdmin > 0 ? capital / diasTransAdmin : 0;
 
       const diasRestantes = Math.max(0, diasHabilesAdmin - diasTransAdmin);
       const ventaPorDia = tieneDiasAdmin ? capital / diasTransAdmin : null;
@@ -554,13 +554,13 @@ export default function AnalistasPage() {
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
-    const diasHabilesMes = Math.max(22, ...diasConfig.map(d => Number(d.dias_habiles) || 0));
+    const diasTransMes = Math.max(0, ...diasConfig.map(d => Number(d.dias_transcurridos) || 0));
     const regs = filterByMonth(registros, selectedMes, selectedAnio);
     const ventas = regs.filter(isVenta);
     const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const ops = ventas.length;
-    // Ticket promedio = total vendido (Venta + Aprob. CC) / dias habiles
-    const ticket = diasHabilesMes > 0 ? capital / diasHabilesMes : 0;
+    // Ticket promedio = total vendido (Venta + Aprob. CC) / dias transcurridos
+    const ticket = diasTransMes > 0 ? capital / diasTransMes : 0;
     const clientes = regs.length;
     const conversion = clientes > 0 ? (ops / clientes) * 100 : 0;
 
@@ -575,7 +575,7 @@ export default function AnalistasPage() {
     const regsAnt = filterByMonth(registros, mesPrev, anioPrev);
     const capitalAnt = ventasAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const opsAnt = ventasAnt.length;
-    const ticketAnt = diasHabilesMes > 0 ? capitalAnt / diasHabilesMes : 0;
+    const ticketAnt = diasTransMes > 0 ? capitalAnt / diasTransMes : 0;
     const clientesAnt = regsAnt.length;
     const conversionAnt = clientesAnt > 0 ? (opsAnt / clientesAnt) * 100 : 0;
 

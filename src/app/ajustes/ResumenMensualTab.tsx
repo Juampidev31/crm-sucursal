@@ -952,8 +952,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       const diasTrans = Number(diasCfg.dias_transcurridos) || 0;
       const diasRestantes = Math.max(0, diasHabiles - diasTrans);
 
-      // Ticket promedio = total vendido (Venta + Aprob. CC) / dias habiles
-      const ticket = diasHabiles > 0 ? capital / diasHabiles : 0;
+      // Ticket promedio = total vendido (Venta + Aprob. CC) / dias transcurridos
+      const ticket = diasTrans > 0 ? capital / diasTrans : 0;
 
       // Proyección
       const ventaPorDia = diasTrans > 0 ? capital / diasTrans : null;
@@ -987,14 +987,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
-    // Dias habiles del mes (max sobre analistas — todos comparten calendario laboral)
-    const diasHabilesMes = Math.max(22, ...diasConfig.map(d => Number(d.dias_habiles) || 0));
+    // Dias transcurridos del mes (max sobre analistas — todos comparten calendario laboral)
+    const diasTransMes = Math.max(0, ...diasConfig.map(d => Number(d.dias_transcurridos) || 0));
     const regs = filterByMonth(registros, selectedMes, selectedAnio);
     const ventas = regs.filter(isVenta);
     const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const ops = ventas.length;
-    // Ticket promedio = total vendido (Venta + Aprob. CC) / dias habiles
-    const ticket = diasHabilesMes > 0 ? capital / diasHabilesMes : 0;
+    // Ticket promedio = total vendido (Venta + Aprob. CC) / dias transcurridos
+    const ticket = diasTransMes > 0 ? capital / diasTransMes : 0;
     const clientes = regs.length;
     const conversion = clientes > 0 ? (ops / clientes) * 100 : 0;
 
@@ -1009,7 +1009,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const regsAnt = filterByMonth(registros, mesPrev, anioPrev);
     const capitalAnt = ventasAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     const opsAnt = ventasAnt.length;
-    const ticketAnt = diasHabilesMes > 0 ? capitalAnt / diasHabilesMes : 0;
+    const ticketAnt = diasTransMes > 0 ? capitalAnt / diasTransMes : 0;
     const clientesAnt = regsAnt.length;
     const conversionAnt = clientesAnt > 0 ? (opsAnt / clientesAnt) * 100 : 0;
 
