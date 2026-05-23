@@ -2234,7 +2234,8 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
             const meta = metaAccessor ? metaAccessor(b) : 0;
             const pct = meta > 0 ? (v / meta) * 100 : null;
             const prev = i > 0 ? accessor(buckets[i - 1]) : null;
-            const variacion = prev !== null && prev > 0 ? ((v - prev) / prev) * 100 : null;
+            const sinDatos = v === 0 && meta === 0;
+            const variacion = !sinDatos && prev !== null && prev > 0 ? ((v - prev) / prev) * 100 : null;
             const varColor = variacion === null ? '#444' : Math.abs(variacion) < 0.5 ? '#888' : variacion > 0 ? '#4ade80' : '#f87171';
             const varBg = variacion === null ? 'transparent' : Math.abs(variacion) < 0.5 ? 'rgba(255,255,255,0.04)' : variacion > 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
             return (
