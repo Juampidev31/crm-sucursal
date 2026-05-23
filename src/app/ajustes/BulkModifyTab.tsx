@@ -270,7 +270,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState<'paste' | 'match' | 'assign'>('paste');
 
-  const previewRows = rows.slice(0, 5);
+  const previewRows = rows;
   const colCount = rows[0]?.cells.length ?? 0;
 
   // Indexar registros por CUIL normalizado una sola vez (evita O(rows × registros))
@@ -602,7 +602,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
   return (
     <div style={standalone ? {
-      height: 'calc(100vh - 180px)',
+      height: 'calc(100vh - 400px)',
       padding: '20px',
       background: 'rgba(255,255,255,0.02)',
       border: '1px solid rgba(255,255,255,0.06)',
@@ -788,36 +788,52 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           </div>
 
           {step === 'paste' && (
-          <div style={{ marginBottom: 16 }}>
+          <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
               Pegar celdas de Excel (CUIL + Apellido/Nombre)
             </label>
             <textarea
               className="form-input"
-              rows={4}
+              rows={18}
               placeholder="Pegá acá las celdas copiadas de Excel..."
               value={pastedText}
               onChange={e => setPastedText(e.target.value)}
-              style={{ width: '100%', fontFamily: 'monospace', fontSize: 11, resize: 'vertical' }}
+              style={{ width: '100%', fontFamily: 'monospace', fontSize: 11, resize: 'vertical', minHeight: standalone ? 0 : 380, flex: standalone ? 1 : undefined }}
             />
-            <button
-              onClick={handleParse}
-              disabled={!pastedText.trim()}
-              style={{
-                marginTop: 8, padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                background: pastedText.trim() ? '#2d2f5e' : '#1a1a1a',
-                border: `1px solid ${pastedText.trim() ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: 6, cursor: pastedText.trim() ? 'pointer' : 'not-allowed',
-                color: pastedText.trim() ? '#a5b4fc' : '#444',
-              }}
-            >
-              Cargar
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, marginBottom: 4, flexShrink: 0 }}>
+              <button
+                onClick={handleParse}
+                disabled={!pastedText.trim()}
+                style={{
+                  padding: '6px 14px', fontSize: 12, fontWeight: 700,
+                  background: pastedText.trim() ? '#2d2f5e' : '#1a1a1a',
+                  border: `1px solid ${pastedText.trim() ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: 6, cursor: pastedText.trim() ? 'pointer' : 'not-allowed',
+                  color: pastedText.trim() ? '#a5b4fc' : '#444',
+                }}
+              >
+                Cargar
+              </button>
+              {pastedText && (
+                <button
+                  onClick={() => setPastedText('')}
+                  style={{
+                    padding: '6px 14px', fontSize: 12, fontWeight: 700,
+                    background: 'transparent', color: '#888',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 6, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <X size={12} /> Limpiar
+                </button>
+              )}
+            </div>
           </div>
           )}
 
           {step === 'match' && rows.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
                 {rows.length} fila{rows.length !== 1 ? 's' : ''} detectada{rows.length !== 1 ? 's' : ''}. Asigná las columnas:
               </div>
@@ -844,7 +860,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto', marginBottom: 12 }}>
+              <div style={standalone ? { flex: 1, minHeight: 0, overflowX: 'auto', overflowY: 'auto', marginBottom: 12 } : { overflowX: 'auto', marginBottom: 12 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
                   <thead>
                     <tr>
@@ -872,21 +888,35 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 </table>
               </div>
 
-              <button
-                onClick={handleSearch}
-                disabled={cuilCol === null}
-                style={{
-                  padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                  background: cuilCol !== null ? '#2d2f5e' : '#1a1a1a',
-                  border: `1px solid ${cuilCol !== null ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: 6, cursor: cuilCol !== null ? 'pointer' : 'not-allowed',
-                  color: cuilCol !== null ? '#a5b4fc' : '#444',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}
-              >
-                <Search size={12} />
-                Buscar en registros
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <button
+                  onClick={handleSearch}
+                  disabled={cuilCol === null}
+                  style={{
+                    padding: '6px 14px', fontSize: 12, fontWeight: 700,
+                    background: cuilCol !== null ? '#2d2f5e' : '#1a1a1a',
+                    border: `1px solid ${cuilCol !== null ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    borderRadius: 6, cursor: cuilCol !== null ? 'pointer' : 'not-allowed',
+                    color: cuilCol !== null ? '#a5b4fc' : '#444',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <Search size={12} />
+                  Buscar en registros
+                </button>
+                <button
+                  onClick={() => { setPastedText(''); setRows([]); setCuilCol(null); setNombreCol(null); setSearched(false); setStep('paste'); setSelectedIds(new Set()); setCamposExcel({ ...EMPTY_CAMPOS_EXCEL }); setClearedByReg({}); }}
+                  style={{
+                    padding: '6px 14px', fontSize: 12, fontWeight: 700,
+                    background: 'transparent', color: '#888',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 6, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  <X size={12} /> Limpiar
+                </button>
+              </div>
             </div>
           )}
 
@@ -2267,12 +2297,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         </div>
       )}
 
-      <div className="data-card" style={{ 
-        background: '#0a0a0a', 
-        border: '1px solid rgba(255,255,255,0.03)', 
+      <div className="data-card" style={{
+        background: '#0a0a0a',
+        border: '1px solid rgba(255,255,255,0.03)',
         width: '100%',
-        minHeight: 'calc(100vh - 200px)'
+        minHeight: mode === 'excel' ? 'auto' : 'calc(100vh - 200px)'
       }}>
+        {mode !== 'excel' && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -2349,6 +2380,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </button>
           </div>
         </div>
+        )}
 
         {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
         {(mode === 'all' || mode === 'corrector') && (

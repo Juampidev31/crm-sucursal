@@ -96,7 +96,7 @@ export default function VerificadorTab() {
             value={rawText}
             onChange={e => handlePaste(e.target.value)}
             placeholder="Copiá las celdas desde Excel y pegá aquí..."
-            rows={7}
+            rows={rows.length === 0 ? 18 : 8}
             style={{
               width: '100%', boxSizing: 'border-box',
               background: 'rgba(255,255,255,0.02)',

@@ -18,6 +18,7 @@ const STATUS_CONFIG = {
 
 export default function CargaRapidaTab() {
   const { registros, refresh, pushBulkRefresh } = useRegistros();
+  const [rawText, setRawText] = useState('');
   const [rows, setRows]       = useState<ParsedRow[]>([]);
   const [mapping, setMapping] = useState<CargaColumnMapping>({});
   const [processed, setProcessed] = useState(false);
@@ -46,6 +47,7 @@ export default function CargaRapidaTab() {
   }, [results]);
 
   const handlePaste = (text: string) => {
+    setRawText(text);
     setRows(parsePastedText(text));
     setMapping({});
     setProcessed(false);
@@ -54,6 +56,7 @@ export default function CargaRapidaTab() {
   };
 
   const handleReset = () => {
+    setRawText('');
     setRows([]);
     setMapping({});
     setProcessed(false);
@@ -117,15 +120,18 @@ export default function CargaRapidaTab() {
       </div>
 
       {/* Paste area */}
-      {rows.length === 0 && (
+      {!processed && (
         <textarea
+          value={rawText}
           placeholder="Pegá aquí los datos copiados de Excel o cualquier tabla (Ctrl+V)..."
           onPaste={e => { e.preventDefault(); handlePaste(e.clipboardData.getData('text')); }}
-          onChange={e => { if (e.target.value) handlePaste(e.target.value); }}
+          onChange={e => handlePaste(e.target.value)}
+          rows={rows.length === 0 ? 18 : 8}
           style={{
-            width: '100%', minHeight: 120, background: 'rgba(255,255,255,0.02)',
+            width: '100%', background: 'rgba(255,255,255,0.02)',
             border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 8,
-            color: '#666', fontSize: 13, padding: 16, resize: 'vertical', boxSizing: 'border-box',
+            color: rawText ? '#e5e5e5' : '#666', fontSize: 13, padding: 16, resize: 'vertical', boxSizing: 'border-box',
+            fontFamily: rawText ? 'monospace' : 'inherit',
           }}
         />
       )}
@@ -159,7 +165,7 @@ export default function CargaRapidaTab() {
                 </tr>
               </thead>
               <tbody>
-                {rows.slice(0, 5).map((row, ri) => (
+                {rows.slice(0, 8).map((row, ri) => (
                   <tr key={ri}>
                     {Array.from({ length: colCount }, (_, ci) => (
                       <td key={ci} style={{ padding: '5px 8px', color: '#555', borderBottom: '1px solid rgba(255,255,255,0.03)', whiteSpace: 'nowrap', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -171,6 +177,9 @@ export default function CargaRapidaTab() {
               </tbody>
             </table>
           </div>
+          {rows.length > 8 && (
+            <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>... y {rows.length - 8} filas más</p>
+          )}
           <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
               onClick={() => setProcessed(true)}
