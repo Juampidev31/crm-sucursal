@@ -127,7 +127,7 @@ export const calcularComisiones = (
   else if (pctO >= 0.80) porcentajeAdicional = 0.20;
   const comisionOperaciones = comisionCapital * porcentajeAdicional;
 
-  const comisionTotal = comisionCapital > 0 ? Math.min(comisionCapital + comisionOperaciones, 200_000) : 0;
+  const comisionTotal = comisionCapital > 0 ? Math.min(comisionCapital + comisionOperaciones, 250_000) : 0;
 
   return {
     comisionCapital,

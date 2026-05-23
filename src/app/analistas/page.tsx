@@ -483,6 +483,8 @@ export default function AnalistasPage() {
       let coefOps = 0;
       let incentivoCap = 0;
       let incentivoOps = 0;
+      let topeKQAplicado = false;
+      let topeKQExcedente = 0;
 
       if (tieneIncentivo) {
         if (cumplCapital !== null) {
@@ -503,10 +505,12 @@ export default function AnalistasPage() {
         // El incentivo de operaciones es un % del incentivo de capital VARIABLE (sin los 21470)
         incentivoOps = incentivoCapVariable * (coefOps === 0.0030 ? 0.30 : (coefOps === 0.0020 ? 0.20 : 0));
 
-        // Tope máximo combinado de $200,000 para K y Q
+        // Tope máximo combinado de $250,000 para K y Q
         const totalKQ = incentivoCap + incentivoOps;
-        if (totalKQ > 200000) {
-          const factor = 200000 / totalKQ;
+        if (totalKQ > 250000) {
+          topeKQAplicado = true;
+          topeKQExcedente = totalKQ - 250000;
+          const factor = 250000 / totalKQ;
           incentivoCap = incentivoCap * factor;
           incentivoOps = incentivoOps * factor;
         }
@@ -545,6 +549,7 @@ export default function AnalistasPage() {
         diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
         cumplProyCapital, cumplProyOps,
         coefCap, coefOps, incentivoCap, incentivoOps,
+        topeKQAplicado, topeKQExcedente,
         incentivoCobTr90, incentivoCobTr120, incentivoCobRefin,
         pctTr90, pctTr120, pctRefin,
         incentivoTotal
@@ -644,7 +649,9 @@ export default function AnalistasPage() {
       ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
       diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
       cumplProyCapital, cumplProyOps,
-      coefCap: 0, coefOps: 0, incentivoCap, incentivoOps, 
+      coefCap: 0, coefOps: 0, incentivoCap, incentivoOps,
+      topeKQAplicado: kpiPorAnalista.some(k => k.topeKQAplicado),
+      topeKQExcedente: kpiPorAnalista.reduce((s, k) => s + (k.topeKQExcedente || 0), 0),
       incentivoCobTr90, incentivoCobTr120, incentivoCobRefin,
       incentivoTotal
     };
@@ -1897,7 +1904,7 @@ export default function AnalistasPage() {
                     </table>
                     <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
                       * Se suma una base fija de $21,470 al incentivo de Capital.<br/>
-                      * El tope máximo combinado (K + Q) es de $200,000.
+                      * El tope máximo combinado (K + Q) es de $250,000.
                     </div>
                   </div>
 
@@ -2026,7 +2033,27 @@ export default function AnalistasPage() {
                           <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{k.cumplOps?.toFixed(1)}%</td>
                           <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.incentivoOps)}</td>
                           <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 15, color: '#fff', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.incentivoTotal)}</td>
+                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 15, color: '#fff', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                              {k.topeKQAplicado && (
+                                <span
+                                  title={`Tope $250.000 aplicado. Excedente sin pagar: ${formatCurrency(k.topeKQExcedente || 0)}`}
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    padding: '3px 8px', borderRadius: 6,
+                                    fontSize: 10, fontWeight: 800,
+                                    background: 'rgba(251,191,36,0.15)',
+                                    color: '#fbbf24',
+                                    border: '1px solid rgba(251,191,36,0.35)',
+                                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                                  }}
+                                >
+                                  TOPE
+                                </span>
+                              )}
+                              {formatCurrency(k.incentivoTotal)}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -2197,19 +2224,38 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
             <th style={th}>MES</th>
             <th style={{ ...th, textAlign: 'center' }}>OBJETIVO</th>
             <th style={{ ...th, textAlign: 'center' }}>ALCANCE</th>
+            <th style={{ ...th, textAlign: 'center' }}>VAR.</th>
             <th style={{ ...th, textAlign: 'right' }}>CUMPL.</th>
           </tr>
         </thead>
         <tbody>
-          {buckets.map(b => {
+          {buckets.map((b, i) => {
             const v = accessor(b);
             const meta = metaAccessor ? metaAccessor(b) : 0;
             const pct = meta > 0 ? (v / meta) * 100 : null;
+            const prev = i > 0 ? accessor(buckets[i - 1]) : null;
+            const variacion = prev !== null && prev > 0 ? ((v - prev) / prev) * 100 : null;
+            const varColor = variacion === null ? '#444' : Math.abs(variacion) < 0.5 ? '#888' : variacion > 0 ? '#4ade80' : '#f87171';
+            const varBg = variacion === null ? 'transparent' : Math.abs(variacion) < 0.5 ? 'rgba(255,255,255,0.04)' : variacion > 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
             return (
               <tr key={b.key}>
                 <td style={{ ...td, color: '#aaa', fontWeight: 600 }}>{b.label}</td>
                 <td style={{ ...td, textAlign: 'center', color: '#888' }}>{meta > 0 ? fmt(meta) : '—'}</td>
                 <td style={{ ...td, textAlign: 'center', color: '#fff', fontWeight: 700 }}>{fmt(v)}</td>
+                <td style={{ ...td, textAlign: 'center' }}>
+                  {variacion !== null ? (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '3px 8px', borderRadius: 6,
+                      fontSize: 11, fontWeight: 700,
+                      color: varColor, background: varBg,
+                    }}>
+                      {Math.abs(variacion) < 0.5 ? '—' : variacion > 0 ? '▲' : '▼'} {variacion >= 0 ? '+' : ''}{variacion.toFixed(1)}%
+                    </span>
+                  ) : (
+                    <span style={{ color: '#444' }}>—</span>
+                  )}
+                </td>
                 <td style={{ ...td, textAlign: 'right' }}>
                   {pct !== null ? (
                     <span style={{
