@@ -311,6 +311,50 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
     [matchedRows]
   );
 
+  // Filtro de completitud: todos | completos | faltantes
+  type FiltroCompletitud = 'todos' | 'completos' | 'faltantes';
+  const [filtroCompletitud, setFiltroCompletitud] = useState<FiltroCompletitud>('todos');
+
+  const isRegistroCompleto = useCallback((r: Registro): boolean => {
+    const cleared = clearedByReg[r.id];
+    const addressed = (key: keyof CamposExcel) => {
+      if (cleared?.has(key)) return true;
+      const v = camposExcel[key];
+      return typeof v === 'string' && v.trim() !== '';
+    };
+    if (!r.nombre?.trim()) return false;
+    if (!r.cuil?.trim() || r.cuil.length !== 11) return false;
+    if (!addressed('estado') && !r.estado) return false;
+    const req = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
+    if (req) {
+      if (!addressed('tipo_cliente') && !r.tipo_cliente) return false;
+      if (!addressed('acuerdo_precios') && !r.acuerdo_precios) return false;
+      if (!addressed('cuotas') && !r.cuotas?.trim()) return false;
+      if (!addressed('rango_etario') && !r.rango_etario) return false;
+      if (!addressed('sexo') && !r.sexo) return false;
+      if (!addressed('empleador') && !r.empleador?.trim()) return false;
+      if (!addressed('localidad') && !r.localidad?.trim()) return false;
+    }
+    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !addressed('dependencia') && !r.dependencia?.trim()) return false;
+    if (r.estado === 'derivado / rechazado cc' && !addressed('comentarios') && !r.comentarios?.trim()) return false;
+    return true;
+  }, [camposExcel, clearedByReg]);
+
+  const visibleMatchedRows = useMemo(() => {
+    if (filtroCompletitud === 'todos') return matchedRows;
+    return matchedRows
+      .map(mr => ({
+        ...mr,
+        registros: mr.registros.filter(r => filtroCompletitud === 'completos' ? isRegistroCompleto(r) : !isRegistroCompleto(r)),
+      }))
+      .filter(mr => mr.registros.length > 0);
+  }, [matchedRows, filtroCompletitud, isRegistroCompleto]);
+
+  const visibleAllIds = useMemo(
+    () => visibleMatchedRows.flatMap(r => r.registros.map(reg => reg.id)),
+    [visibleMatchedRows]
+  );
+
   const totalClientes = matchedRows.length;
   const totalRegistros = allMatchedIds.length;
   const totalSeleccionados = selectedIds.size;
@@ -344,14 +388,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
     return { totalCompletos: completos, totalConFaltantes: faltantes };
   }, [matchedRows, camposExcel, clearedByReg]);
   const { allSelected, someSelected } = useMemo(() => {
-    if (allMatchedIds.length === 0) return { allSelected: false, someSelected: false };
+    if (visibleAllIds.length === 0) return { allSelected: false, someSelected: false };
     let hits = 0;
-    for (const id of allMatchedIds) if (selectedIds.has(id)) hits++;
+    for (const id of visibleAllIds) if (selectedIds.has(id)) hits++;
     return {
-      allSelected: hits === allMatchedIds.length,
-      someSelected: hits > 0 && hits < allMatchedIds.length,
+      allSelected: hits === visibleAllIds.length,
+      someSelected: hits > 0 && hits < visibleAllIds.length,
     };
-  }, [allMatchedIds, selectedIds]);
+  }, [visibleAllIds, selectedIds]);
 
   // Preserva el scroll de la ventana al togglear checkboxes
   const preservedScrollRef = useRef<number | null>(null);
@@ -365,8 +409,21 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
   const toggleAll = () => {
     preserveScroll();
-    if (allSelected) setSelectedIds(new Set());
-    else setSelectedIds(new Set(allMatchedIds));
+    if (allSelected) {
+      // Deseleccionar solo los visibles
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        for (const id of visibleAllIds) next.delete(id);
+        return next;
+      });
+    } else {
+      // Agregar todos los visibles a la seleccion existente
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        for (const id of visibleAllIds) next.add(id);
+        return next;
+      });
+    }
   };
 
   const toggleClient = (ids: string[]) => {
@@ -572,44 +629,162 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
       )}
 
       {expanded && (() => {
-        const stepBtn = (n: number, label: string, isActive: boolean, isDone: boolean, isDisabled: boolean, onClick: () => void): React.ReactNode => {
-          const fill = isDone
-            ? { bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.35)', text: '#4ade80', badgeBg: 'rgba(74,222,128,0.20)', badgeText: '#4ade80' }
-            : isActive
-              ? { bg: '#141414', border: 'rgba(99,102,241,0.45)', text: '#c7d2fe', badgeBg: 'rgba(99,102,241,0.30)', badgeText: '#c7d2fe' }
-              : { bg: '#0e0e10', border: 'rgba(255,255,255,0.06)', text: '#555', badgeBg: 'rgba(255,255,255,0.04)', badgeText: '#666' };
+        const stepBtn = (n: number, label: string, isActive: boolean, isDone: boolean, isDisabled: boolean, onClick: () => void, isLast: boolean): React.ReactNode => {
+          const textColor = isActive
+            ? '#ffffff'
+            : isDone
+              ? '#a1a1aa'
+              : '#52525b';
+          const badgeBorder = isActive
+            ? '1px solid #ffffff'
+            : isDone
+              ? '1px solid rgba(161,161,170, 0.5)'
+              : '1px solid rgba(255,255,255,0.08)';
+          const badgeBg = isActive
+            ? 'rgba(255,255,255,0.08)'
+            : 'transparent';
+
           return (
             <button
               key={n}
               onClick={onClick}
               disabled={isDisabled}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px',
-                background: fill.bg,
-                border: `1px solid ${fill.border}`,
-                borderRadius: 6, fontSize: 11, fontWeight: 700,
-                color: fill.text,
-                cursor: isDisabled ? 'not-allowed' : 'pointer', opacity: isDisabled ? 0.4 : 1,
-                transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                padding: '10px 18px',
+                background: isActive ? 'rgba(255,255,255,0.02)' : 'transparent',
+                border: 'none',
+                borderRight: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                borderRadius: 0,
+                fontSize: 12,
+                fontWeight: isActive ? 700 : 500,
+                color: textColor,
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                opacity: isDisabled ? 0.35 : 1,
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap',
+                position: 'relative',
               }}
             >
               <span style={{
-                width: 18, height: 18, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 10, fontWeight: 800,
-                background: fill.badgeBg, color: fill.badgeText,
-              }}>{isDone && !isActive ? '✓' : n}</span>
-              {label}
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10,
+                fontWeight: 800,
+                border: badgeBorder,
+                background: badgeBg,
+                color: textColor,
+                transition: 'all 0.2s ease',
+              }}>
+                {n}
+              </span>
+              <span>{label}</span>
+              {isActive && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: '10%',
+                  right: '10%',
+                  height: '2px',
+                  background: '#ffffff',
+                  borderRadius: '2px 2px 0 0',
+                }} />
+              )}
             </button>
           );
         };
         return (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
-            {stepBtn(1, 'Pegar Excel', step === 'paste', rows.length > 0, false, () => setStep('paste'))}
-            <span style={{ color: '#333', fontSize: 12 }}>›</span>
-            {stepBtn(2, rows.length > 0 ? `Columnas (${rows.length} fila${rows.length !== 1 ? 's' : ''})` : 'Columnas', step === 'match', searched, rows.length === 0, () => { if (rows.length > 0) setStep('match'); })}
-            <span style={{ color: '#333', fontSize: 12 }}>›</span>
-            {stepBtn(3, searched ? `Asignar (${totalSeleccionados}/${totalRegistros})` : 'Asignar campos', step === 'assign', false, !searched, () => { if (searched) setStep('assign'); })}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 16,
+            background: 'rgba(255,255,255,0.01)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: 8,
+            padding: '4px 12px',
+            flexWrap: 'wrap',
+            gap: 16,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {stepBtn(1, 'Pegar Excel', step === 'paste', rows.length > 0, false, () => setStep('paste'), false)}
+              {stepBtn(2, rows.length > 0 ? `Columnas (${rows.length})` : 'Columnas', step === 'match', searched, rows.length === 0, () => { if (rows.length > 0) setStep('match'); }, false)}
+              {stepBtn(3, 'Asignar', step === 'assign', false, !searched, () => { if (searched) setStep('assign'); }, true)}
+            </div>
+
+            {step === 'assign' && searched && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto', flexWrap: 'wrap' }}>
+                {/* Fechas */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>FECHA:</span>
+                  <input
+                    type="date"
+                    value={fechaDesde}
+                    onChange={e => setFechaDesde(e.target.value)}
+                    style={{ fontSize: 11, padding: '3px 6px', background: '#121214', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
+                  />
+                  <span style={{ color: '#444', fontSize: 11 }}>–</span>
+                  <input
+                    type="date"
+                    value={fechaHasta}
+                    onChange={e => setFechaHasta(e.target.value)}
+                    style={{ fontSize: 11, padding: '3px 6px', background: '#121214', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
+                  />
+                  {(fechaDesde || fechaHasta) && (
+                    <button
+                      onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
+                      style={{ fontSize: 9, padding: '2px 6px', background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, cursor: 'pointer' }}
+                    >Limpiar</button>
+                  )}
+                </div>
+
+                {/* Separador */}
+                <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+
+                {/* Filtros de completitud */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {([
+                    { key: 'todos' as const, label: 'Todos', count: totalRegistros, color: '#a5b4fc', bg: 'rgba(165,180,252,0.08)' },
+                    { key: 'completos' as const, label: 'Completos', count: totalCompletos, color: '#4ade80', bg: 'rgba(74,222,128,0.08)' },
+                    { key: 'faltantes' as const, label: 'Faltantes', count: totalConFaltantes, color: '#f87171', bg: 'rgba(248,113,113,0.08)' },
+                  ]).map(({ key, label, count, color, bg }) => {
+                    const activo = filtroCompletitud === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setFiltroCompletitud(key)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 8,
+                          background: activo ? bg : 'transparent',
+                          border: `1px solid ${activo ? color : 'transparent'}`,
+                          color: activo ? color : '#777',
+                          borderRadius: 4, padding: '4px 10px',
+                          fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                          textTransform: 'uppercase', letterSpacing: '0.3px',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <span>{label}</span>
+                        <span style={{
+                          fontSize: 9, fontWeight: 900,
+                          background: activo ? color : 'rgba(255,255,255,0.06)',
+                          color: activo ? '#0a0a0a' : '#aaa',
+                          padding: '1px 6px', borderRadius: 8, minWidth: 18, textAlign: 'center',
+                        }}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {step === 'paste' && (
@@ -717,38 +892,32 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
           {step === 'assign' && searched && (
             <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 10, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha:</span>
-                <input
-                  type="date"
-                  value={fechaDesde}
-                  onChange={e => setFechaDesde(e.target.value)}
-                  title="Desde"
-                  style={{ fontSize: 11, padding: '4px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}
-                />
-                <span style={{ color: '#555', fontSize: 11 }}>–</span>
-                <input
-                  type="date"
-                  value={fechaHasta}
-                  onChange={e => setFechaHasta(e.target.value)}
-                  title="Hasta"
-                  style={{ fontSize: 11, padding: '4px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6 }}
-                />
-                {(fechaDesde || fechaHasta) && (
-                  <button
-                    onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
-                    style={{ fontSize: 10, padding: '4px 8px', background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, cursor: 'pointer' }}
-                  >Limpiar</button>
-                )}
-              </div>
-              <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
-                {totalRegistros} registro{totalRegistros !== 1 ? 's' : ''} en total de {totalClientes} cliente{totalClientes !== 1 ? 's' : ''}
-                {' · '}
-                <span style={{ color: '#4ade80', fontWeight: 700 }}>{totalCompletos} completo{totalCompletos !== 1 ? 's' : ''}</span>
-                {' · '}
-                <span style={{ color: '#f87171', fontWeight: 700 }}>{totalConFaltantes} con faltantes</span>
-                {' · '}
-                <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{totalSeleccionados} seleccionado{totalSeleccionados !== 1 ? 's' : ''}</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 8,
+                fontSize: 10,
+                color: '#666',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.3px',
+              }}>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  background: totalSeleccionados > 0 ? 'rgba(165,180,252,0.08)' : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${totalSeleccionados > 0 ? 'rgba(165,180,252,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                  color: totalSeleccionados > 0 ? '#a5b4fc' : '#555',
+                  fontWeight: 700,
+                }}>
+                  <span>{totalSeleccionados} seleccionados</span>
+                </div>
+                <span>•</span>
+                <span>{totalClientes} clientes en lista</span>
               </div>
               <style>{`
                 .bulk-excel-row { transition: background 80ms ease; }
@@ -820,7 +989,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                         );
                       };
 
-                      return matchedRows.flatMap((mr, i) => {
+                      return visibleMatchedRows.flatMap((mr, i) => {
                         const nombresDB = [...new Set(mr.registros.map(r => r.nombre).filter(Boolean))].join(' | ');
                         const nombreExcel = mr.nombre === mr.cuil ? '' : mr.nombre;
                         const nombreMostrar = nombresDB || nombreExcel || '—';
