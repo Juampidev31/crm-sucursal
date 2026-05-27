@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import AppShell from "@/components/AppShell";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
   title: "Sistema de Proyección de Ventas",
@@ -19,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable}`}>
+      <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
         <AuthProvider>
           <AppShell>
             {children}

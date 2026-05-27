@@ -202,13 +202,13 @@ const labelsPlugin: any = {
 
       ctx.save();
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px Outfit, sans-serif';
+      ctx.font = 'bold 11px Outfit, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = isStacked ? 'middle' : 'bottom';
 
       // Shadow for readability
-      ctx.shadowColor = 'rgba(0,0,0,1)';
-      ctx.shadowBlur = 5;
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 3;
 
       // Detección de porcentaje: solo mediante flag explícito
       const isPct = chart.config.options?._isPct === true;

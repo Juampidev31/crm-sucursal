@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { setSession } from '@/lib/auth';
 import { ExportXlsxModal } from '@/components/ExportXlsxModal';
+import { useSettings } from '@/features/settings/SettingsProvider';
 
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
@@ -112,6 +113,11 @@ export default function Sidebar({
   const { isAdmin, logout, refreshUser } = useAuth();
   const { pendingReminders } = useRecordatorios();
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, totalResults } = useFilter();
+  const { permisosConfig } = useSettings();
+
+  const canCreate = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'crear_registros')?.activo !== false;
+  const canExport = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'exportar_excel')?.activo !== false;
+
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showXlsxModal, setShowXlsxModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
@@ -189,22 +195,22 @@ export default function Sidebar({
       }}>
         {isRegistros && (
           <>
-            <div className="sidebar-icon-btn" data-label="Nuevo Registro">
-              <button
-                onClick={() => setIsCreationModalOpen(true)}
-                className="green-hover-btn"
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 52, height: 52,
-                  borderRadius: 13,
-                  background: 'rgba(255,255,255,0.04)',
-                  color: '#fff',
-                  border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
-                }}
-              >
-                <Plus size={26} strokeWidth={3} />
-              </button>
-            </div>
+            {canCreate && (
+              <div className="sidebar-icon-btn" data-label="Nuevo Registro">
+                <button
+                  onClick={() => setIsCreationModalOpen(true)}
+                  className="green-hover-btn"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 52, height: 52,
+                    borderRadius: 13,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    color: '#fff', cursor: 'pointer', transition: 'all 0.3s'
+                  }}
+                ><Plus size={24} strokeWidth={2} /></button>
+              </div>
+            )}
             <SidebarDivider />
           </>
         )}
@@ -285,7 +291,7 @@ export default function Sidebar({
               )}
             </div>
 
-            {isAdmin && (
+            {canExport && (
               <div className="sidebar-icon-btn" data-label="Exportar XLSX">
                 <button
                   onClick={() => setShowXlsxModal(true)}

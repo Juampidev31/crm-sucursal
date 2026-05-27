@@ -77,11 +77,11 @@ const labelsPlugin: any = {
 
       ctx.save();
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 10px Outfit, sans-serif';
+      ctx.font = 'bold 11px Outfit, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = isStacked ? 'middle' : 'bottom';
-      ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      ctx.shadowBlur = 4;
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 3;
 
       const isPct = chart.config.options?._isPct === true;
 
@@ -415,7 +415,7 @@ const ManualTextareaView = ({ label, value }: { label: string; value: string }) 
   </div>
 );
 
-export default function ResumenMensualInteractivo({ datos }: { datos: DatosGraficos }) {
+export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraficos }) {
   const { 
     kpiTotal, kpiPorAnalista, mesActual, mesAnterior, month, year, experienciaCliente, analisisComercial, 
     operacionProcesos, gestionesRealizadas, coordinacionSalidas, empresasEstrategicas, 
@@ -668,7 +668,7 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
         {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         {!collapsed[4] && (
           <div style={{ padding: '24px' }}>
-            <ManualTextareaView label="Interpretación del Período" value={analisisComercial || ''} />
+            <ManualTextareaView label="Outfitpretación del Período" value={analisisComercial || ''} />
           </div>
         )}
       </div>

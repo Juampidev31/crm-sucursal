@@ -38,7 +38,7 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
-type ConfigSubTab = 'alertas' | 'dias';
+type ConfigSubTab = 'alertas' | 'dias' | 'permisos';
 type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score';
 type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
 type ActividadSubTab = 'auditoria' | 'avisos';
@@ -79,6 +79,7 @@ export default function AjustesPage() {
   const {
     alertasConfig: ctxAlertas, mutateAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
     diasConfig: ctxDias, applyDiasConfigChange,
+    permisosConfig: ctxPermisos, applyPermisoConfigChange
   } = useSettings();
   const { objetivos: ctxObjetivos, mutateObjetivos: setCtxObjetivos, pushObjetivosChange } = useObjetivos();
   const { historicoVentas: ctxHistorico, mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange } = useHistorico();
@@ -120,6 +121,7 @@ export default function AjustesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingDias, setSavingDias] = useState<string | null>(null);
+  const [savingPermiso, setSavingPermiso] = useState<string | null>(null);
 
   const [histAnalista, setHistAnalista] = useState(CONFIG.ANALISTAS_DEFAULT[0]);
   const [histAnio, setHistAnio] = useState(new Date().getFullYear() - 1);
@@ -227,6 +229,21 @@ export default function AjustesPage() {
       showSuccess(`Días guardados para ${analista}`);
     } catch (err: any) { showError(`Error: ${err.message}`); }
     setSavingDias(null);
+  };
+
+  const togglePermiso = async (rol: string, permiso: string, current: boolean) => {
+    const key = `${rol}-${permiso}`;
+    setSavingPermiso(key);
+    try {
+      const config = { rol, permiso, activo: !current };
+      const { error } = await supabase.from('permisos_roles').upsert(config, { onConflict: 'rol,permiso' });
+      if (error) throw error;
+      applyPermisoConfigChange('UPDATE', config);
+      showSuccess(`Permiso ${config.activo ? 'activado' : 'desactivado'}`);
+    } catch (err: any) {
+      showError(`Error al actualizar permiso: ${err.message}`);
+    }
+    setSavingPermiso(null);
   };
 
   const loadHistorico = useCallback(async (anal: string, anio: number) => {
@@ -566,6 +583,7 @@ export default function AjustesPage() {
               {([
                 ...(isAdmin ? [{ id: 'alertas' as const, label: 'Alertas', icon: Bell }] : []),
                 { id: 'dias' as const, label: 'Días Hábiles', icon: Clock },
+                ...(isAdmin ? [{ id: 'permisos' as const, label: 'Roles y Permisos', icon: Shield }] : []),
               ]).map(t => (
                 <button
                   key={t.id}
@@ -744,6 +762,69 @@ export default function AjustesPage() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* TAB: PERMISOS */}
+          {activeTab === 'configuracion' && configSubTab === 'permisos' && isAdmin && (
+            <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div className="data-card-header" style={{ marginBottom: '32px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Roles y Permisos</h3>
+                <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Habilitá o deshabilitá funciones específicas para los analistas en tiempo real.</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                {['analista'].map(rol => {
+                  const LISTA_PERMISOS = [
+                    { id: 'crear_registros', label: 'Crear Registros', desc: 'Permite agregar nuevos registros.' },
+                    { id: 'editar_registros', label: 'Editar Registros', desc: 'Permite modificar registros existentes.' },
+                    { id: 'eliminar_registros', label: 'Eliminar Registros', desc: 'Permite borrar registros desde la tabla.' },
+                    { id: 'exportar_excel', label: 'Exportar a Excel', desc: 'Permite descargar el listado de registros.' },
+                  ];
+
+                  return (
+                    <div key={rol} style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', gridColumn: '1 / -1' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                        <User size={16} color="#60a5fa" />
+                        <h4 style={{ fontWeight: 800, fontSize: '15px', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rol: {rol}</h4>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                        {LISTA_PERMISOS.map(p => {
+                          const isActive = ctxPermisos.find(cp => cp.rol === rol && cp.permiso === p.id)?.activo ?? true;
+                          const isSaving = savingPermiso === `${rol}-${p.id}`;
+
+                          return (
+                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#ddd' }}>{p.label}</div>
+                                <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{p.desc}</div>
+                              </div>
+                              <button
+                                onClick={() => togglePermiso(rol, p.id, isActive)}
+                                disabled={isSaving}
+                                style={{
+                                  background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(248, 113, 113, 0.1)',
+                                  border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(248, 113, 113, 0.3)'}`,
+                                  color: isActive ? '#10b981' : '#f87171',
+                                  padding: '6px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
+                                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                                  opacity: isSaving ? 0.6 : 1,
+                                  transition: 'all 0.2s',
+                                  minWidth: '85px'
+                                }}
+                              >
+                                {isSaving ? '...' : isActive ? 'Activado' : 'Desactivado'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 

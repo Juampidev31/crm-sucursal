@@ -59,10 +59,19 @@ export const objetivoSchema = z.object({
   analista: z.string(),
   mes: z.coerce.number().int(),
   anio: z.coerce.number().int(),
-  meta_ventas: z.coerce.number(),
-  meta_operaciones: z.coerce.number(),
+  meta_ventas: z.number().nullable().optional(),
+  meta_operaciones: z.number().nullable().optional(),
 });
+
+export const permisoRolSchema = z.object({
+  id: z.string().uuid().optional(),
+  rol: z.string(),
+  permiso: z.string(),
+  activo: z.boolean(),
+});
+
 export type Objetivo = z.infer<typeof objetivoSchema>;
+export type PermisoRol = z.infer<typeof permisoRolSchema>;
 
 // ── AlertaConfig ──────────────────────────────────────────────────────────────
 export const alertaConfigSchema = z.object({

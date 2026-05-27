@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import {
-  AlertaConfig, DiasConfig,
-  alertaConfigSchema, diasConfigSchema, parseRows,
+  AlertaConfig, DiasConfig, PermisoRol,
+  alertaConfigSchema, diasConfigSchema, permisoRolSchema, parseRows,
 } from '@/types';
 import { validateBroadcast } from '@/lib/broadcast-utils';
 
@@ -16,9 +16,11 @@ type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 interface SettingsCtx {
   alertasConfig: AlertaConfig[];
   diasConfig: DiasConfig[];
+  permisosConfig: PermisoRol[];
   mutateAlertasConfig: (mapper: (prev: AlertaConfig[]) => AlertaConfig[]) => void;
   pushAlertasConfigChange: (type: ChangeType, config: AlertaConfig) => void;
   applyDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
+  applyPermisoConfigChange: (type: ChangeType, config: PermisoRol) => void;
 }
 
 const SettingsContext = createContext<SettingsCtx | null>(null);
@@ -26,6 +28,7 @@ const SettingsContext = createContext<SettingsCtx | null>(null);
 const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
 const alertaConfigChangeSchema = z.object({ type: changeType, config: alertaConfigSchema });
 const diasConfigChangeSchema = z.object({ type: changeType, config: diasConfigSchema });
+const permisoConfigChangeSchema = z.object({ type: changeType, config: permisoRolSchema });
 
 
 
@@ -33,11 +36,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();
   const [alertasConfig, setAlertasConfig] = useState<AlertaConfig[]>([]);
   const [diasConfig, setDiasConfig] = useState<DiasConfig[]>([]);
+  const [permisosConfig, setPermisosConfig] = useState<PermisoRol[]>([]);
 
   const fetchSettings = useCallback(async () => {
-    const [alertasR, diasR] = await Promise.all([
+    const [alertasR, diasR, permisosR] = await Promise.all([
       supabase.from('alertas_config').select('id,nombre,estado,dias,mensaje,color'),
       supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
+      supabase.from('permisos_roles').select('id,rol,permiso,activo'),
     ]);
 
     const validateAndSet = <T,>(
@@ -60,6 +65,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     else validateAndSet<AlertaConfig>('alertas_config', alertaConfigSchema, alertasR.data, setAlertasConfig);
     if (diasR.error) reportError('refresh:dias_habiles_config', diasR.error);
     else validateAndSet<DiasConfig>('dias_habiles_config', diasConfigSchema, diasR.data, setDiasConfig);
+    if (permisosR.error && permisosR.error.code !== '42P01') reportError('refresh:permisos_roles', permisosR.error);
+    else if (!permisosR.error) validateAndSet<PermisoRol>('permisos_roles', permisoRolSchema, permisosR.data, setPermisosConfig);
   }, [reportError]);
 
   const fetchRef = useRef(fetchSettings);
@@ -85,6 +92,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (type === 'DELETE') return prev.filter(d => d.analista !== config.analista);
         return prev.some(d => d.analista === config.analista)
           ? prev.map(d => d.analista === config.analista ? config : d)
+          : [...prev, config];
+      });
+    },
+    permiso_config_change: (payload) => {
+      const data = validateBroadcast('permiso_config_change', permisoConfigChangeSchema, payload);
+      if (!data) return;
+      const { type, config } = data;
+      setPermisosConfig(prev => {
+        if (type === 'DELETE') return prev.filter(p => !(p.rol === config.rol && p.permiso === config.permiso));
+        return prev.some(p => p.rol === config.rol && p.permiso === config.permiso)
+          ? prev.map(p => (p.rol === config.rol && p.permiso === config.permiso) ? config : p)
           : [...prev, config];
       });
     },
@@ -117,12 +135,26 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => { });
   }, [broadcastRef]);
 
+  const applyPermisoConfigChange = useCallback((type: ChangeType, config: PermisoRol) => {
+    setPermisosConfig(prev => {
+      if (type === 'DELETE') return prev.filter(p => !(p.rol === config.rol && p.permiso === config.permiso));
+      return prev.some(p => p.rol === config.rol && p.permiso === config.permiso)
+        ? prev.map(p => (p.rol === config.rol && p.permiso === config.permiso) ? config : p)
+        : [...prev, config];
+    });
+    broadcastRef.current?.send({
+      type: 'broadcast',
+      event: 'permiso_config_change',
+      payload: { type, config },
+    }).catch(() => { });
+  }, [broadcastRef]);
+
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
   const value = useMemo<SettingsCtx>(() => ({
-    alertasConfig, diasConfig,
-    mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange,
-  }), [alertasConfig, diasConfig, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange]);
+    alertasConfig, diasConfig, permisosConfig,
+    mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange,
+  }), [alertasConfig, diasConfig, permisosConfig, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

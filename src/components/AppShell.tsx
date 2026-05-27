@@ -271,7 +271,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
           height: '60px',
           width: '100%',
           background: '#000',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: 'none',
           display: 'flex',
           alignItems: 'center',
           padding: '0 32px',

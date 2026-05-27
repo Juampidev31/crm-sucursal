@@ -3,7 +3,7 @@
    ============================================================ */
 :root {
   /* Surfaces */
-  --bg:           #0a0a0b;
+  --bg:           #000000;
   --bg-elev-0:    #0e0e10;
   --bg-elev-1:    #131316;
   --bg-elev-2:    #181820;
@@ -48,7 +48,7 @@
   --r-1: 4px; --r-2: 6px; --r-3: 8px; --r-4: 10px; --r-5: 12px;
 
   /* Typography */
-  --font-sans: var(--font-sans, "Geist", -apple-system, BlinkMacSystemFont, sans-serif);
+  --font-sans: var(--font-outfit, "Outfit", -apple-system, BlinkMacSystemFont, sans-serif);
   --font-mono: var(--font-mono, "Geist Mono", "JetBrains Mono", ui-monospace, monospace);
 
   /* Layout */
@@ -88,6 +88,10 @@ body {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6, th {
+  color: var(--fg-muted);
 }
 
 .dashboard-container {

@@ -1561,7 +1561,20 @@ function MultiSelectDropdown({
 export default function RegistrosPage() {
   const { isAdmin } = useAuth();
   const { registros, applyRegistroChange, pushRegistroChange, loading, refresh } = useRegistros();
-  const { alertasConfig } = useSettings();
+  const { alertasConfig, permisosConfig } = useSettings();
+
+  const canDeleteRegistros = useMemo(() => {
+    if (isAdmin) return true;
+    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'eliminar_registros');
+    return perm ? perm.activo : true; // default true
+  }, [isAdmin, permisosConfig]);
+
+  const canEditRegistros = useMemo(() => {
+    if (isAdmin) return true;
+    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'editar_registros');
+    return perm ? perm.activo : true; // default true
+  }, [isAdmin, permisosConfig]);
+
   const {
     filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
@@ -1857,7 +1870,7 @@ export default function RegistrosPage() {
       {/* Table */}
       <div style={{
         width: '100%',
-        background: '#000', border: '1px solid rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.03)',
         borderRadius: '16px', overflow: 'hidden',
         boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
       }}>
@@ -1902,12 +1915,12 @@ export default function RegistrosPage() {
             )}
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.005)' }}>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-elev-0)' }}>
                   {['Cliente / CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
                     <th key={i} style={{
                       padding: '20px 24px',
                       fontSize: 11, fontWeight: 900,
-                      color: '#222',
+                      color: 'var(--fg-muted)',
                       textTransform: 'uppercase',
                       letterSpacing: '1.2px',
                       textAlign: (i === 0) ? 'left' : 'center',
@@ -2026,20 +2039,24 @@ export default function RegistrosPage() {
                             onMouseOver={e => { e.currentTarget.style.color = vencidoIds.has(reg.id) ? 'var(--rojo)' : '#fff'; }}
                             onMouseOut={e => { e.currentTarget.style.color = vencidoIds.has(reg.id) ? 'var(--rojo)' : '#444'; }}
                           ><Bell size={16} /></button>
-                          <button
-                            onClick={() => openEdit(reg)}
-                            style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
-                            title="Editar"
-                            onMouseOver={e => e.currentTarget.style.color = '#fff'}
-                            onMouseOut={e => e.currentTarget.style.color = '#444'}
-                          ><Edit2 size={16} /></button>
-                          <button
-                            onClick={() => setDeleteTarget(reg)}
-                            style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.1)', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
-                            title="Eliminar"
-                            onMouseOver={e => e.currentTarget.style.background = 'rgba(248,113,113,0.15)'}
-                            onMouseOut={e => e.currentTarget.style.background = 'rgba(248,113,113,0.05)'}
-                          ><Trash2 size={16} /></button>
+                          {canEditRegistros && (
+                            <button
+                              onClick={() => openEdit(reg)}
+                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                              title="Editar"
+                              onMouseOver={e => e.currentTarget.style.color = '#fff'}
+                              onMouseOut={e => e.currentTarget.style.color = '#444'}
+                            ><Edit2 size={16} /></button>
+                          )}
+                          {canDeleteRegistros && (
+                            <button
+                              onClick={() => setDeleteTarget(reg)}
+                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.1)', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                              title="Eliminar"
+                              onMouseOver={e => e.currentTarget.style.background = 'rgba(248,113,113,0.15)'}
+                              onMouseOut={e => e.currentTarget.style.background = 'rgba(248,113,113,0.05)'}
+                            ><Trash2 size={16} /></button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -2238,9 +2255,16 @@ export default function RegistrosPage() {
   );
 }
 const AuditModal = ({ isOpen, onClose, registros: dbRecords }: { isOpen: boolean, onClose: () => void, registros: Registro[] }) => {
-  const [file, setFile] = useState<File | null>(null);
   const [results, setResults] = useState<AuditResult[] | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const { permisosConfig } = useSettings();
+
+  const canDeleteRegistros = useMemo(() => {
+    if (isAdmin) return true;
+    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'eliminar_registros');
+    return perm ? perm.activo : true; // default true
+  }, [isAdmin, permisosConfig]);
+
   const { bulkInsertRegistros } = useRegistros();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -351,7 +351,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         <div style={{padding:24}}>
-          <TextView label="Interpretación del Período" value={analisisComercial||''} />
+          <TextView label="Outfitpretación del Período" value={analisisComercial||''} />
         </div>
       </div>
       <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>

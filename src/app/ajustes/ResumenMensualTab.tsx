@@ -202,13 +202,13 @@ const labelsPlugin: any = {
 
       ctx.save();
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px Outfit, sans-serif';
+      ctx.font = 'bold 11px Outfit, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = isStacked ? 'middle' : 'bottom';
 
       // Shadow for readability
-      ctx.shadowColor = 'rgba(0,0,0,1)';
-      ctx.shadowBlur = 5;
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 3;
 
       // Detección de porcentaje: solo mediante flag explícito
       const isPct = chart.config.options?._isPct === true;
@@ -1940,7 +1940,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
         </div>
 
-        {/* Divisor Interno */}
+        {/* Divisor Outfitno */}
         <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
 
         {/* Fila 2: Selectores de Período */}
@@ -2285,7 +2285,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
             {!collapsedSections[4] && (
               <ManualTextarea
-                label="Interpretación del Período"
+                label="Outfitpretación del Período"
                 value={resumen.analisis_comercial}
                 onChange={v => setResumen(p => ({ ...p, analisis_comercial: v }))}
                 placeholder="¿Por qué se vendió más o menos? Impacto de campañas, comportamiento del cliente, factores externos..."
