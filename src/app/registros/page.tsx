@@ -2257,13 +2257,7 @@ export default function RegistrosPage() {
 const AuditModal = ({ isOpen, onClose, registros: dbRecords }: { isOpen: boolean, onClose: () => void, registros: Registro[] }) => {
   const [results, setResults] = useState<AuditResult[] | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const { permisosConfig } = useSettings();
-
-  const canDeleteRegistros = useMemo(() => {
-    if (isAdmin) return true;
-    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'eliminar_registros');
-    return perm ? perm.activo : true; // default true
-  }, [isAdmin, permisosConfig]);
+  const [file, setFile] = useState<File | null>(null);
 
   const { bulkInsertRegistros } = useRegistros();
 
