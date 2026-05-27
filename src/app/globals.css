@@ -1,34 +1,76 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-html,
-body {
-  color-scheme: dark;
-}
-
+/* ============================================================
+   Núcleo · CRM Ventas — Design Tokens
+   ============================================================ */
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
-  color-scheme: dark;
+  /* Surfaces */
+  --bg:           #0a0a0b;
+  --bg-elev-0:    #0e0e10;
+  --bg-elev-1:    #131316;
+  --bg-elev-2:    #181820;
+  --bg-elev-3:    #1f1f28;
+  --bg-hover:     #1a1a22;
 
-  --verde: #ffffff;
-  --azul: #ffffff;
-  --rojo: #ef4444;
-  --naranja: #888888;
-  --dorado: #ffffff;
-  --gris: #666666;
-  --slate-blue: #444444;
-  --purple: #ffffff;
+  /* Borders */
+  --border:        #1f1f26;
+  --border-strong: #2a2a33;
+  --border-subtle: #16161c;
 
-  --card-bg: #000000;
-  --card-bg-elevated: #000000;
-  --border-color: rgba(255, 255, 255, 0.05);
-  --hover-bg: rgba(255, 255, 255, 0.04);
-  --main-color: #ffffff;
+  /* Text */
+  --fg:        #ededed;
+  --fg-muted:  #9a9aa3;
+  --fg-dim:    #6c6c76;
+  --fg-faint:  #46464e;
 
-  --font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --sidebar-width: 80px;
+  /* Accents */
+  --red:        oklch(0.62 0.19 25);
+  --red-soft:   oklch(0.30 0.10 25);
+  --red-bg:     oklch(0.22 0.08 25 / 0.35);
+  --amber:      oklch(0.78 0.16 75);
+  --amber-bg:   oklch(0.30 0.10 75 / 0.30);
+  --green:      oklch(0.72 0.16 152);
+  --green-bg:   oklch(0.28 0.10 152 / 0.30);
+  --blue:       oklch(0.72 0.13 240);
+  --blue-bg:    oklch(0.28 0.10 240 / 0.30);
+  --violet:     oklch(0.70 0.14 290);
+  --violet-bg:  oklch(0.28 0.10 290 / 0.30);
+
+  /* Score tiers */
+  --score-bajo:   oklch(0.65 0.20 30);
+  --score-medio:  oklch(0.80 0.16 75);
+  --score-alto:   oklch(0.72 0.16 152);
+  --score-riesgo: oklch(0.55 0.22 18);
+
+  /* Spacing (4px base) */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
+
+  /* Radii */
+  --r-1: 4px; --r-2: 6px; --r-3: 8px; --r-4: 10px; --r-5: 12px;
+
+  /* Typography */
+  --font-sans: var(--font-sans, "Geist", -apple-system, BlinkMacSystemFont, sans-serif);
+  --font-mono: var(--font-mono, "Geist Mono", "JetBrains Mono", ui-monospace, monospace);
+
+  /* Layout */
+  --sidebar-w:   232px;
+  --topbar-h:    52px;
+
+  /* Legacy aliases — mantener compatibilidad con código existente */
+  --background:           var(--bg);
+  --foreground:           var(--fg);
+  --card-bg:              var(--bg-elev-1);
+  --card-bg-elevated:     var(--bg-elev-2);
+  --border-color:         var(--border);
+  --hover-bg:             var(--bg-hover);
+  --main-color:           var(--fg);
+  --rojo:                 var(--red);
+  --gris:                 var(--fg-muted);
+  --font-family:          var(--font-sans);
+  --sidebar-width:        80px;
   --sidebar-expanded-width: 450px;
-  --sidebar-filters-width: 450px;
+  --sidebar-filters-width:  450px;
+
+  color-scheme: dark;
 }
 
 /* ============ GLOBAL RESET & RESPONSIVENESS ============ */
