@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useFilter } from '@/context/FilterContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { ESTADOS, ANALISTAS } from '@/context/FilterContext';
@@ -22,10 +22,10 @@ import { useSettings } from '@/features/settings/SettingsProvider';
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
 function NavItem({
-  href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = '#10b981', onNavigate,
+  href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = '#10b981',
   isMessage = false, avatarColor = '#ccc'
 }: {
-  href: string; icon?: React.ElementType; label: string; active?: boolean; badge?: number | string; onClick?: (e: React.MouseEvent) => void; indent?: boolean; rightIcon?: React.ElementType; badgeColor?: string; onNavigate?: () => void;
+  href: string; icon?: React.ElementType; label: string; active?: boolean; badge?: number | string; onClick?: (e: React.MouseEvent) => void; indent?: boolean; rightIcon?: React.ElementType; badgeColor?: string;
   isMessage?: boolean; avatarColor?: string;
 }) {
   return (
@@ -33,7 +33,6 @@ function NavItem({
       href={href}
       onClick={(e) => {
         if (onClick) onClick(e);
-        else if (onNavigate) onNavigate();
       }}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -42,6 +41,7 @@ function NavItem({
         color: active ? '#ffffff' : '#9a9a9a',
         background: 'transparent',
         textDecoration: 'none',
+        outline: 'none',
         transition: 'all 0.2s ease',
         marginBottom: 2
       }}
@@ -195,16 +195,15 @@ export default function Sidebar({
   onZoomIn,
   onZoomOut,
   onReset,
-  onNavigate
-}: { 
+}: {
   hidden?: boolean;
   zoom?: number;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onReset?: () => void;
-  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isAdmin, logout, refreshUser } = useAuth();
   const { pendingReminders } = useRecordatorios();
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, totalResults, filters, limpiarFiltros, toggleEstado } = useFilter();
@@ -288,7 +287,7 @@ export default function Sidebar({
         width: (showFilters || showCalculator) ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
         zIndex: 150,
         position: 'relative',
-        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
       }}
     >
       {/* Text + Icon Column */}
@@ -307,13 +306,19 @@ export default function Sidebar({
         <div style={{ fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: '1px', marginBottom: 8, paddingLeft: 16 }}>MENU</div>
 
         {/* Highlight Action (Like Personal/Business switch) */}
-        {isRegistros && canCreate && (
+        {canCreate && (
           <div style={{ marginBottom: 8 }}>
             <div style={{
               background: 'transparent', borderRadius: 16, display: 'flex', alignItems: 'center'
             }}>
               <button
-                onClick={() => setIsCreationModalOpen(true)}
+                onClick={() => {
+                  if (pathname !== '/registros') {
+                    router.push('/registros?create=true');
+                  } else {
+                    setIsCreationModalOpen(true);
+                  }
+                }}
                 style={{
                   flex: 1, padding: '12px 16px', borderRadius: 12,
                   background: '#10b981', color: '#000',
@@ -359,8 +364,8 @@ export default function Sidebar({
           />
           {reportesOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <NavItem href="/analistas" icon={Users} label="Analistas" active={pathname === '/analistas'} indent onNavigate={onNavigate} />
-              <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent onNavigate={onNavigate} />
+              <NavItem href="/analistas" icon={Users} label="Analistas" active={pathname === '/analistas'} indent />
+              <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent />
             </div>
           )}
         </div>

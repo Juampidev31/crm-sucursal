@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, memo } from 'react';
+import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
@@ -294,6 +295,7 @@ export default function AnalistasPage() {
   const { objetivos } = useObjetivos();
   const { diasConfig } = useSettings();
   const [analista, setAnalista] = useState<string>('PDV');
+  const chartsLoaded = useDeferredMount();
 
   const registros = useMemo(() => {
     return analista === 'PDV' ? allRegistros : allRegistros.filter(r => r.analista === analista);
@@ -1487,10 +1489,14 @@ export default function AnalistasPage() {
                       </div>
                     </div>
                     <div id="chart-capital-objetivo" style={{ height: 180 }}>
-                      {(() => {
-                        const opts = baseChartOpts('$', false, true, false, false, analista !== 'PDV');
-                        return <Bar data={chartCapitalVsObjetivo as any} options={opts} plugins={[labelsPlugin, referenceLinesPlugin]} />;
-                      })()}
+                      {chartsLoaded ? (
+                        (() => {
+                          const opts = baseChartOpts('$', false, true, false, false, analista !== 'PDV');
+                          return <Bar data={chartCapitalVsObjetivo as any} options={opts} plugins={[labelsPlugin, referenceLinesPlugin]} />;
+                        })()
+                      ) : (
+                        <ChartShimmer />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1527,13 +1533,21 @@ export default function AnalistasPage() {
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
                         <div id="chart-aperturas" style={{ height: 180, position: 'relative', width: '100%' }}>
-                          <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                          {chartsLoaded ? (
+                            <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                          ) : (
+                            <ChartShimmer />
+                          )}
                         </div>
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
                         <div id="chart-renovaciones" style={{ height: 180, position: 'relative', width: '100%' }}>
-                          <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                          {chartsLoaded ? (
+                            <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                          ) : (
+                            <ChartShimmer />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1568,7 +1582,11 @@ export default function AnalistasPage() {
                       </div>
                     </div>
                     <div id="chart-ticket-promedio" style={{ height: 180 }}>
-                      <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                      {chartsLoaded ? (
+                        <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                      ) : (
+                        <ChartShimmer />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1692,7 +1710,11 @@ export default function AnalistasPage() {
                         </div>
                       </div>
                       <div id="chart-cumplimiento" style={{ height: 280 }}>
-                        <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        {chartsLoaded ? (
+                          <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        ) : (
+                          <ChartShimmer />
+                        )}
                       </div>
                     </div>
 
@@ -1712,7 +1734,11 @@ export default function AnalistasPage() {
                         </div>
                       </div>
                       <div id="chart-variacion" style={{ height: 280 }}>
-                        <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        {chartsLoaded ? (
+                          <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        ) : (
+                          <ChartShimmer />
+                        )}
                       </div>
                     </div>
 
@@ -1763,7 +1789,7 @@ export default function AnalistasPage() {
                           }]
                         };
 
-                        return (
+                        return chartsLoaded ? (
                           <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <ModernDoughnut data={chartData} total={total} label="Acuerdos" unit=" Ops" />
                             <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
@@ -1778,6 +1804,8 @@ export default function AnalistasPage() {
                               })}
                             </div>
                           </div>
+                        ) : (
+                          <ChartShimmer style={{ height: 280 }} />
                         );
                       })()}
                     </div>
@@ -1794,7 +1822,7 @@ export default function AnalistasPage() {
                         const counts = chartEmpleoPublPriv.datasets[0].data as number[];
                         const total = counts.reduce((s, v) => s + v, 0);
                         
-                        return (
+                        return chartsLoaded ? (
                           <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <ModernDoughnut data={chartEmpleoPublPriv} total={total} label="Total" unit=" Ops" />
                             <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
@@ -1810,6 +1838,8 @@ export default function AnalistasPage() {
                               })}
                             </div>
                           </div>
+                        ) : (
+                          <ChartShimmer style={{ height: 280 }} />
                         );
                       })()}
                     </div>

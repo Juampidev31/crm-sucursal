@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { formatCurrency, calcularDiasHabilesAutomaticos } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import {
@@ -49,6 +50,8 @@ interface Props {
 
 export default function ProyeccionClient({ data, mesActual, anioActual, diaActual }: Props) {
   const [analistaSeleccionado, setAnalistaSeleccionado] = useState('PDV');
+  const chartsLoaded = useDeferredMount();
+
   const analistas = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
   const d = data[analistaSeleccionado];
 
@@ -169,7 +172,11 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
           Curva Acumulada — Ventas vs Meta
         </h3>
         <div style={{ height: '380px' }}>
-          <Line data={chartData} options={chartOptions} />
+          {chartsLoaded ? (
+            <Line data={chartData} options={chartOptions} />
+          ) : (
+            <ChartShimmer />
+          )}
         </div>
       </div>
 

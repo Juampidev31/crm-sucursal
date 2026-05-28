@@ -9,7 +9,7 @@ import { RecordatoriosProvider, useRecordatorios } from '@/features/recordatorio
 import { ObjetivosProvider } from '@/features/objetivos/ObjetivosProvider';
 import { HistoricoProvider } from '@/features/historico/HistoricoProvider';
 import { SettingsProvider } from '@/features/settings/SettingsProvider';
-import { FilterProvider } from '@/context/FilterContext';
+import { FilterProvider, useFilter } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
 import ZoomWrapper from './ZoomWrapper';
 import { Bell, X, AlertCircle, Columns, Menu, ChevronRight } from 'lucide-react';
@@ -193,6 +193,13 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const [mounted, setMounted] = useState(false);
   const [zoom, setZoom] = useState(0.9);
   const [sidebarHidden, setSidebarHidden] = useState(false);
+  const { setShowFilters } = useFilter();
+
+  // Auto-hide sidebar when entering reports
+  useEffect(() => {
+    setShowFilters(false);
+    setSidebarHidden(pathname === '/analistas' || pathname.startsWith('/reportes/'));
+  }, [pathname, setShowFilters]);
   
   useEffect(() => {
     setMounted(true);
@@ -360,7 +367,6 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
               onZoomIn={() => handleZoom(0.1)} 
               onZoomOut={() => handleZoom(-0.1)} 
               onReset={resetZoom} 
-              onNavigate={() => setSidebarHidden(true)}
             />
           </>
         )}
@@ -411,16 +417,12 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
               <ChevronRight size={18} strokeWidth={3} />
             </button>
           )}
-          <AnimatePresence mode="sync" initial={false}>
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{
-                duration: 0.18,
-                ease: [0.4, 0, 0.2, 1]
-              }}
+              initial={{ opacity: 0, x: 15 }}
+              animate={{ opacity: 1, x: 0, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } }}
+              exit={{ opacity: 0, x: -15, transition: { duration: 0.15, ease: [0.16, 1, 0.3, 1] } }}
               style={{
                 position: 'absolute',
                 inset: 0,
@@ -432,9 +434,9 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
               }}
             >
               {isSplitView && isAdmin && !isMinimal ? (
-                <SplitLayout 
-                  leftPath={leftPath} 
-                  rightPath={rightPath} 
+                <SplitLayout
+                  leftPath={leftPath}
+                  rightPath={rightPath}
                   onClose={toggleSplitView}
                   onPathsChange={(l, r) => {
                     setLeftPath(l);

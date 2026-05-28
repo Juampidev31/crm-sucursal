@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { useRouter } from 'next/navigation';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -164,6 +165,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
 
   // Deep-clone data for editing
   const [data, setData] = useState<CobranzasData>(initialData);
+  const chartsLoaded = useDeferredMount();
 
   // Ensure 12 rows always exist for editing
   const ensureRows = useCallback((rows: TramoRow[]): TramoRow[] => {
@@ -427,21 +429,33 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
         <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
           <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Cumplimiento por Tramo</h3>
           <div style={{ height: '260px' }}>
-            <Chart type="bar" data={cumplData} options={chartOpts('%') as any} />
+            {chartsLoaded ? (
+              <Chart type="bar" data={cumplData} options={chartOpts('%') as any} />
+            ) : (
+              <ChartShimmer />
+            )}
           </div>
         </div>
 
         <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
           <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Morosidad Anual</h3>
           <div style={{ height: '260px' }}>
-            <Line data={moresData} options={chartOpts('%') as any} />
+            {chartsLoaded ? (
+              <Line data={moresData} options={chartOpts('%') as any} />
+            ) : (
+              <ChartShimmer />
+            )}
           </div>
         </div>
 
         <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
           <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Variación Morosidad (+/-)</h3>
           <div style={{ height: '260px' }}>
-            <Chart type="bar" data={variationData} options={{ ...chartOpts(' p.p.'), maintainAspectRatio: false } as any} />
+            {chartsLoaded ? (
+              <Chart type="bar" data={variationData} options={{ ...chartOpts(' p.p.'), maintainAspectRatio: false } as any} />
+            ) : (
+              <ChartShimmer />
+            )}
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from '
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, Upload, CheckCircle2, Info, Plus } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, Upload, CheckCircle2, Info, Plus, Timer } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -15,6 +15,7 @@ import { AuditResult, parseCSVAudit, performAudit } from '@/lib/audit-import-uti
 import { corregirTildes } from '@/lib/correccion-tildes';
 import ModalPortal from '@/components/ModalPortal';
 import { getLocalidadesByCP, getCPByLocalidad, addCustomMapping } from '@/lib/codigos-postales';
+import { useSearchParams } from 'next/navigation';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -1608,6 +1609,7 @@ export default function RegistrosPage() {
   const { isAdmin } = useAuth();
   const { registros, applyRegistroChange, pushRegistroChange, loading, refresh } = useRegistros();
   const { alertasConfig, permisosConfig } = useSettings();
+  const searchParams = useSearchParams();
 
   const canDeleteRegistros = useMemo(() => {
     if (isAdmin) return true;
@@ -1628,6 +1630,15 @@ export default function RegistrosPage() {
     currentPage, setCurrentPage, setTotalResults,
     showFilters, setShowFilters,
   } = useFilter();
+
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setIsCreationModalOpen(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('create');
+      window.history.replaceState({}, '', url.pathname + url.search);
+    }
+  }, [searchParams, setIsCreationModalOpen]);
 
   const allAcuerdos = useMemo(() => {
     const set = new Set<string>();
@@ -1894,6 +1905,41 @@ export default function RegistrosPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  const isRevisionState = filters.estados.length === 1 && alertasConfig?.some(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase());
+  const activeConfig = isRevisionState ? alertasConfig?.find(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) : null;
+
+  let panelData = null;
+  if (isRevisionState && activeConfig) {
+    const total = filteredRegistros.length;
+    let vencidos = 0;
+    let maxDays = 0;
+    let sumDays = 0;
+    const nowTime = new Date().getTime();
+    
+    filteredRegistros.forEach(r => {
+      const dateStr = r.fecha || r.created_at;
+      if (dateStr) {
+        const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff > maxDays) maxDays = daysDiff;
+        if (daysDiff >= 0) sumDays += daysDiff;
+        if (daysDiff >= activeConfig.dias) vencidos++;
+      }
+    });
+
+    const avgDays = total > 0 ? Math.round(sumDays / total) : 0;
+    const salud = total > 0 ? Math.round(((total - vencidos) / total) * 100) : 100;
+
+    panelData = {
+      estado: filters.estados[0],
+      diasLimite: activeConfig.dias,
+      total,
+      vencidos,
+      maxDays,
+      avgDays,
+      salud
+    };
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0, width: '100%' }}>
 
@@ -1912,6 +1958,88 @@ export default function RegistrosPage() {
           </div>
         </div>
       )}
+
+      {/* Revision Panel */}
+      {panelData && (() => {
+        const hColor = panelData.salud === 100 ? '#10b981' : panelData.salud >= 80 ? '#fbbf24' : '#ef4444';
+        const hBg = panelData.salud === 100 ? 'rgba(16,185,129,0.15)' : panelData.salud >= 80 ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
+        const r = 26;
+        const circ = 2 * Math.PI * r;
+        const offset = circ - (panelData.salud / 100) * circ;
+        const isBad = panelData.vencidos > 0;
+
+        return (
+          <div style={{
+            background: 'var(--bg-elev-1)',
+            backgroundImage: `radial-gradient(ellipse at top left, ${hBg}, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)`,
+            border: '1px solid var(--border)',
+            borderTop: `1px solid ${hColor}50`,
+            borderRadius: '16px',
+            padding: '20px 32px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '32px',
+            boxShadow: `0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px ${hColor}15`,
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Health Ring */}
+            <div style={{ position: 'relative', width: 68, height: 68, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="68" height="68" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="34" cy="34" r={r} fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+                <circle cx="34" cy="34" r={r} fill="transparent" stroke={hColor} strokeWidth="6" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+              </svg>
+              <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '16px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.salud}%</span>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div style={{ flex: 1, zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(90deg, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {panelData.estado}
+                </h2>
+                <div style={{ background: isBad ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`, padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#34d399', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {isBad ? <AlertTriangle size={12} strokeWidth={3} /> : <CheckCircle2 size={12} strokeWidth={3} />}
+                  {isBad ? 'Requiere Atención' : 'OK'}
+                </div>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--fg-muted)', margin: 0, fontWeight: 500, letterSpacing: '0.2px', opacity: 0.8 }}>
+                Límite de gestión: <strong style={{ color: '#fff' }}>{panelData.diasLimite} {panelData.diasLimite === 1 ? 'día' : 'días'}</strong>. Supervisión de tiempos en curso.
+              </p>
+            </div>
+
+            {/* Metrics */}
+            <div style={{ display: 'flex', gap: '16px', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.total}</span>
+                </div>
+                <Hash size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vencidos</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? '#f87171' : '#fff', lineHeight: 1 }}>{panelData.vencidos}</span>
+                </div>
+                <Timer size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.15)' }} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Promedio Días</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.avgDays}</span>
+                </div>
+                <Activity size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Table */}
       <div style={{
