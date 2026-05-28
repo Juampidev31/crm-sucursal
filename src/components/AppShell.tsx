@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -12,7 +12,7 @@ import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { FilterProvider } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
 import ZoomWrapper from './ZoomWrapper';
-import { Bell, X, AlertCircle, Columns } from 'lucide-react';
+import { Bell, X, AlertCircle, Columns, Menu, ChevronRight } from 'lucide-react';
 import SplitLayout from './SplitLayout';
 import { formatDate } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -192,6 +192,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const { loading, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [zoom, setZoom] = useState(0.9);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   
   useEffect(() => {
     setMounted(true);
@@ -352,12 +353,16 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
 
       <div className="wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
         {!isMinimal && (
-          <Sidebar 
-            zoom={zoom} 
-            onZoomIn={() => handleZoom(0.1)} 
-            onZoomOut={() => handleZoom(-0.1)} 
-            onReset={resetZoom} 
-          />
+          <>
+            <Sidebar 
+              hidden={sidebarHidden}
+              zoom={zoom} 
+              onZoomIn={() => handleZoom(0.1)} 
+              onZoomOut={() => handleZoom(-0.1)} 
+              onReset={resetZoom} 
+              onNavigate={() => setSidebarHidden(true)}
+            />
+          </>
         )}
         <main
           className="content-wrapper"
@@ -367,6 +372,45 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
             position: 'relative'
           }}
         >
+          {!isMinimal && (
+            <button
+              onClick={() => setSidebarHidden(false)}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: 0,
+                zIndex: 300,
+                background: 'var(--bg-elev-1)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderLeft: 'none',
+                borderRadius: '0 12px 12px 0',
+                width: 28,
+                height: 56,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                cursor: 'pointer',
+                boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
+                transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                opacity: sidebarHidden ? 1 : 0,
+                pointerEvents: sidebarHidden ? 'auto' : 'none',
+                transform: sidebarHidden ? 'translateY(-50%) translateX(0)' : 'translateY(-50%) translateX(-28px)'
+              }}
+              onMouseEnter={e => {
+                if (!sidebarHidden) return;
+                e.currentTarget.style.width = '36px';
+                e.currentTarget.style.background = 'var(--bg-elev-2)';
+              }}
+              onMouseLeave={e => {
+                if (!sidebarHidden) return;
+                e.currentTarget.style.width = '28px';
+                e.currentTarget.style.background = 'var(--bg-elev-1)';
+              }}
+            >
+              <ChevronRight size={18} strokeWidth={3} />
+            </button>
+          )}
           <AnimatePresence mode="sync" initial={false}>
             <motion.div
               key={pathname}

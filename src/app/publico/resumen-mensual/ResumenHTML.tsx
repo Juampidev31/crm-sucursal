@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -9,66 +9,16 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
-import MetricasTab from '../../ajustes/MetricasTab';
+import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
-const calloutPlugin = {
-  id: 'calloutPlugin',
-  afterDraw(chart: any) {
-    const { ctx, chartArea: { top, left, width, height } } = chart;
-    const datasetMeta = chart.getDatasetMeta(0);
-    if (!datasetMeta || !datasetMeta.data || datasetMeta.data.length === 0) return;
-    
-    let total = 0;
-    chart.data.datasets[0].data.forEach((val: number) => { total += val; });
-    if (total === 0) return;
-
-    ctx.save();
-    datasetMeta.data.forEach((element: any, index: number) => {
-      const val = chart.data.datasets[0].data[index];
-      if (!val) return; // don't draw for 0
-      const pct = (val / total * 100).toFixed(2) + '%';
-      
-      const centerPoint = element.tooltipPosition();
-      const xCenter = left + width / 2;
-      const yCenter = top + height / 2;
-      const angle = Math.atan2(centerPoint.y - yCenter, centerPoint.x - xCenter);
-      
-      const radius = element.outerRadius;
-      
-      const xLineStart = xCenter + Math.cos(angle) * radius;
-      const yLineStart = yCenter + Math.sin(angle) * radius;
-      
-      const xLineMid = xCenter + Math.cos(angle) * (radius + 15);
-      const yLineMid = yCenter + Math.sin(angle) * (radius + 15);
-      
-      const isLeft = xLineMid < xCenter;
-      const xLineEnd = xLineMid + (isLeft ? -15 : 15);
-      
-      ctx.beginPath();
-      ctx.moveTo(xLineStart, yLineStart);
-      ctx.lineTo(xLineMid, yLineMid);
-      ctx.lineTo(xLineEnd, yLineMid);
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      
-      ctx.fillStyle = '#aaa';
-      ctx.font = '600 10px "Outfit", sans-serif';
-      ctx.textAlign = isLeft ? 'right' : 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(pct, xLineEnd + (isLeft ? -5 : 5), yLineMid);
-    });
-    ctx.restore();
-  }
-};
 
 const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
     layout: { padding: 40 },
-    cutout: '80%',
+    cutout: '88%',
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -90,7 +40,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
     elements: {
       arc: {
         borderWidth: 0,
-        borderRadius: 4,
+        borderRadius: 30,
       }
     }
   };
@@ -99,7 +49,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
 
   return (
     <div style={{ position: 'relative', height: '240px', width: '280px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
+      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',

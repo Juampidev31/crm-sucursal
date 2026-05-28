@@ -1,17 +1,9 @@
 ﻿import React from 'react';
 import Link from 'next/link';
-import { TrendingUp, CreditCard, ChevronRight, PieChart } from 'lucide-react';
+import { CreditCard, ChevronRight, PieChart } from 'lucide-react';
 
 export default function ReportesHubPage() {
   const reports = [
-    {
-      id: 'ventas',
-      title: 'Reporte de Ventas',
-      desc: 'Análisis detallado de operaciones cerradas, ticket promedio y desempeño por analista.',
-      icon: TrendingUp,
-      path: '/reportes/ventas',
-      stats: 'Actualizado hoy'
-    },
     {
       id: 'cobranzas',
       title: 'Reporte de Cobranzas',

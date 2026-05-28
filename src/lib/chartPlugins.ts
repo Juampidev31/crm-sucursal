@@ -51,3 +51,33 @@ export const calloutPlugin: Plugin<'doughnut'> = {
     ctx.restore();
   },
 };
+
+export const bgTrackPlugin: Plugin<'doughnut'> = {
+  id: 'bgTrackPlugin',
+  beforeDraw(chart: any) {
+    const { ctx } = chart;
+    const meta = chart.getDatasetMeta(0);
+    if (!meta?.data?.length) return;
+    const arc = meta.data[0] as any;
+    const x = arc.x;
+    const y = arc.y;
+    const outerRadius = arc.outerRadius;
+    const innerRadius = arc.innerRadius;
+    const thickness = outerRadius - innerRadius;
+    
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, innerRadius + thickness / 2, 0, 2 * Math.PI);
+    ctx.lineWidth = thickness;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+
+export const glowPlugin: Plugin<'doughnut'> = {
+  id: 'glowPlugin',
+  beforeDatasetDraw(chart: any) {
+    // Eliminado el efecto de iluminación de los donuts
+  }
+};

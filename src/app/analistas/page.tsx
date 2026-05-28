@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useMemo, memo } from 'react';
 import { Registro, Objetivo, CONFIG } from '@/types';
@@ -14,13 +14,13 @@ import {
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
-import { calloutPlugin } from '@/lib/chartPlugins';
+import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 
 const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = false }: { data: import('chart.js').ChartData<'doughnut'>, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
     layout: { padding: 36 },
-    cutout: '80%',
+    cutout: '88%',
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -42,7 +42,7 @@ const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = fals
     elements: {
       arc: {
         borderWidth: 0,
-        borderRadius: 4,
+        borderRadius: 30,
       }
     }
   };
@@ -51,7 +51,7 @@ const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = fals
 
   return (
     <div style={{ position: 'relative', height: '220px', width: '220px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
+      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -105,9 +105,10 @@ const DistBlock = ({
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
       </div>
       <div style={{ 
-        background: '#111111', 
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', 
         borderRadius: 10, 
         border: '1px solid rgba(255,255,255,0.04)', 
+        boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
         overflowX: 'hidden', 
         overflowY: 'hidden',
         display: 'flex',
@@ -1433,7 +1434,7 @@ export default function AnalistasPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: '#111111', position: 'relative' }}>
+          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)', position: 'relative' }}>
             <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 2 }}>
               <button
                 type="button"
@@ -1670,7 +1671,7 @@ export default function AnalistasPage() {
               </div>
 
           {/* ── SECCIÓN 2: GRÁFICOS ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
             {sectionHeader(2, '2. Gráficos', <BarChart3 size={15} color="#a78bfa" />)}
               <>
                 <div style={{ marginBottom: 28 }}>
@@ -1818,7 +1819,7 @@ export default function AnalistasPage() {
           </div>
 
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
@@ -1868,14 +1869,14 @@ export default function AnalistasPage() {
           </div>
 
           {/* ── SECCIÓN 4: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
             {sectionHeader(4, '4. Distribucion por Estado', <PieChart size={15} color="#4ade80" />)}
             <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />
           </div>
 
           {/* ── SECCIÓN 5: CÁLCULO DE INCENTIVOS ── */}
           {['luciana', 'victoria'].includes(analista.toLowerCase()) && (
-            <div className="data-card" style={{ background: '#111111' }}>
+            <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
             {sectionHeader(5, '5. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
               <div style={{ marginTop: 24 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 32 }}>

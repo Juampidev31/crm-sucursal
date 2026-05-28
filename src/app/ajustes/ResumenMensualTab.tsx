@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -13,64 +13,15 @@ import {
 } from 'chart.js';
 import AnalisisTemporalTab from './AnalisisTemporalTab';
 import MetricasTab from './MetricasTab';
+import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 import type { AnalisisTemporalState } from './AnalisisTemporalTab';
 
-const calloutPlugin = {
-  id: 'calloutPlugin',
-  afterDraw(chart: any) {
-    const { ctx, chartArea: { top, left, width, height } } = chart;
-    const datasetMeta = chart.getDatasetMeta(0);
-    if (!datasetMeta || !datasetMeta.data || datasetMeta.data.length === 0) return;
-    
-    let total = 0;
-    chart.data.datasets[0].data.forEach((val: number) => { total += val; });
-    if (total === 0) return;
-
-    ctx.save();
-    datasetMeta.data.forEach((element: any, index: number) => {
-      const val = chart.data.datasets[0].data[index];
-      if (!val) return; // don't draw for 0
-      const pct = (val / total * 100).toFixed(2) + '%';
-      
-      const centerPoint = element.tooltipPosition();
-      const xCenter = left + width / 2;
-      const yCenter = top + height / 2;
-      const angle = Math.atan2(centerPoint.y - yCenter, centerPoint.x - xCenter);
-      
-      const radius = element.outerRadius;
-      
-      const xLineStart = xCenter + Math.cos(angle) * radius;
-      const yLineStart = yCenter + Math.sin(angle) * radius;
-      
-      const xLineMid = xCenter + Math.cos(angle) * (radius + 15);
-      const yLineMid = yCenter + Math.sin(angle) * (radius + 15);
-      
-      const isLeft = xLineMid < xCenter;
-      const xLineEnd = xLineMid + (isLeft ? -15 : 15);
-      
-      ctx.beginPath();
-      ctx.moveTo(xLineStart, yLineStart);
-      ctx.lineTo(xLineMid, yLineMid);
-      ctx.lineTo(xLineEnd, yLineMid);
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      
-      ctx.fillStyle = '#aaa';
-      ctx.font = '600 10px "Outfit", sans-serif';
-      ctx.textAlign = isLeft ? 'right' : 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(pct, xLineEnd + (isLeft ? -5 : 5), yLineMid);
-    });
-    ctx.restore();
-  }
-};
 
 const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
     layout: { padding: 40 },
-    cutout: '80%',
+    cutout: '88%',
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -78,7 +29,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
         titleColor: '#fff',
         bodyColor: '#ccc',
         borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
+        borderWidth: 0,
         padding: 12,
         cornerRadius: 8,
         callbacks: {
@@ -89,11 +40,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
       }
     },
     maintainAspectRatio: false,
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 4,
-      }
+    elements: { arc: { borderWidth: 0,  }
     }
   };
 
@@ -101,7 +48,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
 
   return (
     <div style={{ position: 'relative', height: '240px', width: '280px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
+      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -1384,7 +1331,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             return label;
           }
         },
-        grid: { color: 'rgba(255,255,255,0.03)' }
+        grid: { display: false }, border: { display: false }
       },
       y: {
         stacked,
@@ -1400,10 +1347,24 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             return n + yLabel;
           }
         },
-        grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true,
+        grid: { display: false }, border: { display: false }, beginAtZero: true,
       },
     },
   });
+
+  // Helper: gradient
+  const getGradient = (context: any, colorStart: string, colorEnd: string) => {
+    const chart = context.chart;
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return null;
+    let horizontal = chart.config.options.indexAxis === 'y';
+    const gradient = horizontal 
+      ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
+      : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+    gradient.addColorStop(0, colorStart);
+    gradient.addColorStop(1, colorEnd);
+    return gradient;
+  };
 
   // Helper: línea de referencia 100%
   const refLine100 = (n: number) => ({
@@ -1411,7 +1372,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     label: 'Meta 100%',
     data: Array(n).fill(100),
     borderColor: '#ff3366',
-    borderWidth: 1.5,
+    borderWidth: 0,
     borderDash: [5, 4],
     pointRadius: 0,
     fill: false,
@@ -1427,10 +1388,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           label: `Capital ${mesActualLabel}`,
           data: kpiPorAnalista.map(k => k.cumplCapital ?? 0),
-          backgroundColor: 'rgba(96, 165, 250, 0.15)',
-          borderColor: 'rgba(96, 165, 250, 0.5)',
-          borderWidth: 1.5,
-          borderRadius: 4,
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
+          borderColor: '#10b981',
+          borderWidth: 0,
           order: 1,
         },
         {
@@ -1441,19 +1401,17 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          borderRadius: 4,
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0,
           order: 1,
         },
         {
           label: `Ops ${mesActualLabel}`,
           data: kpiPorAnalista.map(k => k.cumplOps ?? 0),
-          backgroundColor: 'rgba(167, 139, 250, 0.15)',
-          borderColor: 'rgba(167, 139, 250, 0.5)',
-          borderWidth: 1.5,
-          borderRadius: 4,
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
+          borderColor: '#06b6d4',
+          borderWidth: 0,
           order: 1,
         },
         {
@@ -1464,10 +1422,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
           }),
-          backgroundColor: 'rgba(255, 255, 255, 0.03)',
-          borderColor: 'rgba(255, 255, 255, 0.08)',
-          borderWidth: 1,
-          borderRadius: 4,
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0,
           order: 1, // Purpura oscuro
         },
         refLine100(labels.length),
@@ -1512,9 +1469,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         }),
         backgroundColor: colores[idx] || 'rgba(255,255,255,0.05)',
         borderColor: borderColores[idx] || 'rgba(255,255,255,0.2)',
-        borderWidth: 1.5,
-        borderRadius: 4,
-        maxBarThickness: 70,
+        borderWidth: 0,
       }))
     };
   }, [registros, selectedMes, selectedAnio, filterByMonth, isVenta]);
@@ -1533,18 +1488,23 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           label: mesActualLabel,
           data: top.map(d => d.cantidad),
-          backgroundColor: `${color}26`,
-          borderColor: `${color}80`,
-          borderWidth: 1.5,
-          borderRadius: 4, order: 1,
+          backgroundColor: (context: any) => {
+            const hex = color || '#ffffff';
+            let r=255,g=255,b=255;
+            if (hex.startsWith('#') && hex.length === 7) {
+              r = parseInt(hex.slice(1,3),16); g = parseInt(hex.slice(3,5),16); b = parseInt(hex.slice(5,7),16);
+            }
+            return getGradient(context, `rgba(${r},${g},${b},0.05)`, `rgba(${r},${g},${b},0.85)`);
+          },
+          borderColor: color,
+          borderWidth: 0, order: 1,
         },
         {
           label: mesAntLabel,
           data: top.map(d => anterior.get(d.label)?.cantidad ?? 0),
-          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          borderRadius: 4, order: 1,
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0, order: 1,
         },
       ],
     };
@@ -1576,20 +1536,18 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Capital ${mesActualLabel}`, 
           data: capitalAct, 
-          backgroundColor: 'rgba(0, 255, 136, 0.15)', 
-          borderColor: 'rgba(16, 185, 129, 0.5)',
-          borderWidth: 1.5,
-          borderRadius: 4, 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
+          borderColor: '#10b981',
+          borderWidth: 0, 
           order: 1, 
           maxBarThickness: 100 
         },
         { 
           label: `Capital ${mesAntLabel}`, 
           data: capitalAnt, 
-          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          borderRadius: 4, 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0, 
           order: 1, 
           maxBarThickness: 100 
         },
@@ -1618,20 +1576,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Ticket ${mesActualLabel}`, 
           data: [...kpiPorAnalista.map(k => k.ticket), kpiTotal.ticket], 
-          backgroundColor: 'rgba(255, 170, 0, 0.15)', 
-          borderColor: 'rgba(59, 130, 246, 0.5)',
-          borderWidth: 1.5,
-          borderRadius: 4, 
-          maxBarThickness: 100 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'),
+          borderColor: '#f59e0b',
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
         { 
           label: `Ticket ${mesAntLabel}`, 
           data: ticketAnt, 
-          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          borderRadius: 4, 
-          maxBarThickness: 100 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
       ],
     };
@@ -1650,18 +1604,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: capitalVar, 
           backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)'), 
           borderColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)'), 
-          borderWidth: 1.5,
-          borderRadius: 4, 
-          maxBarThickness: 100 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
         { 
           label: 'Variación Ops %', 
           data: opsVar, 
           backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.15)' : 'rgba(248,113,113,0.15)'), 
           borderColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.5)' : 'rgba(248,113,113,0.5)'), 
-          borderWidth: 1.5,
-          borderRadius: 4, 
-          maxBarThickness: 100 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
       ],
     };
@@ -1693,20 +1643,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Actual`, 
           data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], 
-          backgroundColor: 'rgba(96, 165, 250, 0.15)', 
-          borderColor: 'rgba(96, 165, 250, 0.5)',
-          borderWidth: 1.5,
-          borderRadius: 4, 
-          maxBarThickness: 70 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
+          borderColor: '#10b981',
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
         { 
           label: `Anterior`, 
           data: [...apertVsRenData.porAnalistaAnt.map(d => d.aperturas), apertVsRenData.ant.aperturas], 
-          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          borderRadius: 4, 
-          maxBarThickness: 70 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
       ],
     };
@@ -1720,20 +1666,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Actual`, 
           data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], 
-          backgroundColor: 'rgba(167, 139, 250, 0.15)', 
-          borderColor: 'rgba(167, 139, 250, 0.5)',
-          borderWidth: 1.5,
-          borderRadius: 4, 
-          maxBarThickness: 70 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
+          borderColor: '#06b6d4',
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
         { 
           label: `Anterior`, 
           data: [...apertVsRenData.porAnalistaAnt.map(d => d.renovaciones), apertVsRenData.ant.renovaciones], 
-          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          borderRadius: 4, 
-          maxBarThickness: 70 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
       ],
     };
@@ -1774,9 +1716,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         data: labels.map(l => dataPorAnalista.find(d => d.analista === an)?.counts[l] || 0),
         backgroundColor: colores[idx] || 'rgba(255, 255, 255, 0.05)',
         borderColor: borderColores[idx] || 'rgba(255, 255, 255, 0.2)',
-        borderWidth: 1.5,
-        borderRadius: 4,
-        maxBarThickness: 70,
+        borderWidth: 0,
       }))
     };
   }, [empleoPublPrivData]);
@@ -1803,19 +1743,17 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Conversión % ${mesActualLabel}`, 
           data: actual, 
-          backgroundColor: 'rgba(251, 191, 36, 0.15)', 
-          borderColor: 'rgba(251, 191, 36, 0.5)',
-          borderWidth: 1.5,
-          borderRadius: 4, 
+          backgroundColor: (context: any) => getGradient(context, 'rgba(139, 92, 246, 0.05)', 'rgba(139, 92, 246, 0.85)'),
+          borderColor: '#8b5cf6',
+          borderWidth: 0, 
           order: 1 
         },
         { 
           label: `Conversión % ${mesAntLabel}`, 
           data: anterior, 
-          backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          borderRadius: 4, 
+                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0, 
           order: 1 
         },
         refLine100(labels.length),
@@ -1850,7 +1788,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             'rgba(245, 158, 11, 0.4)', 
             'rgba(239, 68, 68, 0.4)'
           ],
-          borderWidth: 1.5,
+          borderWidth: 0,
           hoverOffset: 10,
           borderRadius: 4,
           spacing: 4
@@ -1875,8 +1813,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data, 
           backgroundColor: 'rgba(52, 211, 153, 0.15)', 
           borderColor: 'rgba(52, 211, 153, 0.5)',
-          borderWidth: 1.5,
-          borderRadius: 4, 
+          borderWidth: 0, 
           order: 1 
         },
         refLine100(labels.length),
@@ -1919,43 +1856,25 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.02)', padding: '4px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase' }}>Zoom</span>
-              <select 
-                value={selectedZoom}
-                onChange={e => setSelectedZoom(parseFloat(e.target.value))}
-                style={{ 
-                  background: 'transparent', border: 'none', color: '#888', 
-                  fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 700, 
-                  outline: 'none', cursor: 'pointer' 
-                }}
-              >
-                <option value="0.7">70%</option>
-                <option value="0.8">80%</option>
-                <option value="0.9">90%</option>
-                <option value="1">100%</option>
-                <option value="1.1">110%</option>
-                <option value="1.2">120%</option>
-              </select>
-            </div>
+            
             <button
               onClick={handleGenerarLink}
               style={{ 
                 display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, 
-                border: '1px solid rgba(52,211,153,0.2)', background: 'rgba(16, 185, 129, 0.04)', 
-                color: '#00ff88', fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 800, 
+                border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', 
+                color: '#fff', fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 800, 
                 cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 textTransform: 'uppercase', letterSpacing: '1px'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
-                e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
                 e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 255, 136, 0.15)';
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.5)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(16, 185, 129, 0.04)';
-                e.currentTarget.style.borderColor = 'rgba(52,211,153,0.2)';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
@@ -1968,22 +1887,25 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               disabled={saving}
               style={{ 
                 display: 'flex', alignItems: 'center', gap: 10, padding: '10px 24px', borderRadius: 12, 
-                border: 'none', background: '#fff', 
-                color: '#000', fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 900, 
+                border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)', 
+                color: '#fff', fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 900, 
                 cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 textTransform: 'uppercase', letterSpacing: '1.2px',
-                opacity: saving ? 0.7 : 1,
-                boxShadow: '0 4px 20px rgba(255,255,255,0.15)'
+                opacity: saving ? 0.7 : 1
               }}
               onMouseEnter={(e) => {
                 if (!saving) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
                   e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 12px 50px rgba(255,255,255,0.3)';
+                  e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.5)';
                 }
               }}
               onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(255,255,255,0.15)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
               <Save size={16} strokeWidth={2.5} />
@@ -2146,11 +2068,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       ) : (
         <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
             {!collapsedSections[1] && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
@@ -2165,7 +2087,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
                 </div>
               )}
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
                       <div style={{ display: 'flex', gap: 10 }}>
@@ -2179,12 +2101,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         </div>
                       </div>
                     </div>
-                    <div id="chart-capital-objetivo" style={{ height: 180 }}>
+                    <div id="chart-capital-objetivo" style={{ flex: 1, minHeight: 180, position: 'relative' }}>
                       <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
@@ -2199,7 +2121,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
                 </div>
               )}
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
                       <div style={{ display: 'flex', gap: 10 }}>
@@ -2216,20 +2138,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#00d4ff', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
-                        <div id="chart-aperturas" style={{ height: 140, position: 'relative', width: '100%' }}>
+                        <div id="chart-aperturas" style={{ flex: 1, minHeight: 140, position: 'relative', width: '100%' }}>
                           <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                         </div>
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
-                        <div id="chart-renovaciones" style={{ height: 140, position: 'relative', width: '100%' }}>
+                        <div id="chart-renovaciones" style={{ flex: 1, minHeight: 140, position: 'relative', width: '100%' }}>
                           <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
@@ -2243,7 +2165,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                     <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
                     {tendBadge(kpiTotal.tendClientes)}
                   </div>
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
                       <div style={{ display: 'flex', gap: 10 }}>
@@ -2257,7 +2179,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         </div>
                       </div>
                     </div>
-                    <div id="chart-ticket-promedio" style={{ height: 180 }}>
+                    <div id="chart-ticket-promedio" style={{ flex: 1, minHeight: 180, position: 'relative' }}>
                       <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
                     </div>
                   </div>
@@ -2267,7 +2189,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 2: VENTAS POR CATEGORÍA ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
               {!collapsedSections[2] && (
@@ -2327,13 +2249,13 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 3: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(3, '3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#00ff88" />)}
             {!collapsedSections[3] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} />}
           </div>
 
           {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
             {!collapsedSections[4] && (
               <ManualTextarea
@@ -2346,7 +2268,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
             {!collapsedSections[5] && (
               <ManualTextarea
@@ -2359,7 +2281,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
             {!collapsedSections[6] && (
               <>
@@ -2378,7 +2300,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#b266ff" />)}
             {!collapsedSections[7] && (
               <ManualTextarea
@@ -2391,7 +2313,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
             {!collapsedSections[8] && (
               <>
@@ -2403,7 +2325,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         const count = auditoriaData.filter(a => a.analista === analista).length;
                         return (
                           <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 4 }}>{analista}</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{analista}</div>
                             <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{count}</div>
                             <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
                           </div>
@@ -2423,7 +2345,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
             {!collapsedSections[9] && (
               <>
@@ -2523,7 +2445,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 10: RENDIMIENTO Y TENDENCIAS ── */}
-          <div className="data-card" style={{ background: '#111111' }}>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#00d4ff" />)}
             {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
           </div>

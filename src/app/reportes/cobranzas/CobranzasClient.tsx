@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -70,7 +70,7 @@ function TramoTable({
   onRowChange: (idx: number, field: keyof TramoRow, value: string) => void;
 }) {
   return (
-    <div style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', flex: 1, minWidth: '280px' }}>
+    <div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', flex: 1, minWidth: '280px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
       <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={{ width: '3px', height: '14px', background: color, borderRadius: '4px' }} />
         <span style={{ fontSize: '11px', fontWeight: 800, color: '#9a9aa3', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
@@ -424,21 +424,21 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
 
       {/* Charts */}
       <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
           <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Cumplimiento por Tramo</h3>
           <div style={{ height: '260px' }}>
             <Chart type="bar" data={cumplData} options={chartOpts('%') as any} />
           </div>
         </div>
 
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
           <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Morosidad Anual</h3>
           <div style={{ height: '260px' }}>
             <Line data={moresData} options={chartOpts('%') as any} />
           </div>
         </div>
 
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px' }}>
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
           <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Variación Morosidad (+/-)</h3>
           <div style={{ height: '260px' }}>
             <Chart type="bar" data={variationData} options={{ ...chartOpts(' p.p.'), maintainAspectRatio: false } as any} />
@@ -448,7 +448,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
 
       {/* Morosidad Detail Table */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden' }}>
+        <div style={{ flex: 1, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '11px', fontWeight: 800, color: '#9a9aa3', letterSpacing: '1px', textTransform: 'uppercase' }}>Detalle Morosidad</span>
             {editing && (

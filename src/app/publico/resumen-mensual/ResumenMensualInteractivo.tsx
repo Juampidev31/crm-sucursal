@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -12,65 +12,16 @@ import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarCh
 import AnalisisTemporalTab from '../../ajustes/AnalisisTemporalTab';
 import MetricasTab from '../../ajustes/MetricasTab';
 import type { AnalisisTemporalState } from '../../ajustes/AnalisisTemporalTab';
+import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
-const calloutPlugin = {
-  id: 'calloutPlugin',
-  afterDraw(chart: any) {
-    const { ctx, chartArea: { top, left, width, height } } = chart;
-    const datasetMeta = chart.getDatasetMeta(0);
-    if (!datasetMeta || !datasetMeta.data || datasetMeta.data.length === 0) return;
-    
-    let total = 0;
-    chart.data.datasets[0].data.forEach((val: number) => { total += val; });
-    if (total === 0) return;
-
-    ctx.save();
-    datasetMeta.data.forEach((element: any, index: number) => {
-      const val = chart.data.datasets[0].data[index];
-      if (!val) return; // don't draw for 0
-      const pct = (val / total * 100).toFixed(2) + '%';
-      
-      const centerPoint = element.tooltipPosition();
-      const xCenter = left + width / 2;
-      const yCenter = top + height / 2;
-      const angle = Math.atan2(centerPoint.y - yCenter, centerPoint.x - xCenter);
-      
-      const radius = element.outerRadius;
-      
-      const xLineStart = xCenter + Math.cos(angle) * radius;
-      const yLineStart = yCenter + Math.sin(angle) * radius;
-      
-      const xLineMid = xCenter + Math.cos(angle) * (radius + 15);
-      const yLineMid = yCenter + Math.sin(angle) * (radius + 15);
-      
-      const isLeft = xLineMid < xCenter;
-      const xLineEnd = xLineMid + (isLeft ? -15 : 15);
-      
-      ctx.beginPath();
-      ctx.moveTo(xLineStart, yLineStart);
-      ctx.lineTo(xLineMid, yLineMid);
-      ctx.lineTo(xLineEnd, yLineMid);
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      
-      ctx.fillStyle = '#aaa';
-      ctx.font = '600 10px "Outfit", sans-serif';
-      ctx.textAlign = isLeft ? 'right' : 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(pct, xLineEnd + (isLeft ? -5 : 5), yLineMid);
-    });
-    ctx.restore();
-  }
-};
 
 const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
     layout: { padding: 40 },
-    cutout: '80%',
+    cutout: '88%',
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -78,7 +29,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
         titleColor: '#fff',
         bodyColor: '#ccc',
         borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
+        borderWidth: 0,
         padding: 12,
         cornerRadius: 8,
         callbacks: {
@@ -89,11 +40,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
       }
     },
     maintainAspectRatio: false,
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 4,
-      }
+    elements: { arc: { borderWidth: 0,  }
     }
   };
 
@@ -101,7 +48,7 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
 
   return (
     <div style={{ position: 'relative', height: '240px', width: '280px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
+      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -289,7 +236,7 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
       titleColor: '#fff',
       bodyColor: '#aaa',
       borderColor: 'rgba(255,255,255,0.06)',
-      borderWidth: 1,
+      borderWidth: 0,
       enabled: true // Garantizamos que las tooltips estén activas
     },
     datalabels: { display: false } // Usamos nuestro plugin custom
@@ -300,7 +247,7 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
     x: {
       stacked,
       ticks: { color: '#555', font: { size: 10 }, padding: 8 },
-      grid: { color: 'rgba(255,255,255,0.03)' }
+      grid: { display: false }, border: { display: false }
     },
     y: {
       stacked,
@@ -317,7 +264,7 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
           return n + yLabel;
         }
       },
-      grid: { color: 'rgba(255,255,255,0.04)' },
+      grid: { display: false }, border: { display: false },
       beginAtZero: true
     },
   },
@@ -480,6 +427,48 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
     seccion10State
   } = datos;
 
+  
+  const addGradients = (chart: any) => {
+    if (!chart || !chart.datasets) return chart;
+    return {
+      ...chart,
+      datasets: chart.datasets.map((ds: any) => {
+        if (ds.type === 'line') return ds; // line chart uses transparent or specific gradient
+        const color = ds.borderColor || ds.backgroundColor;
+        if (!color || typeof color !== 'string') return ds;
+
+        return {
+          ...ds,
+          backgroundColor: (context: any) => {
+            const chartObj = context.chart;
+            const { ctx, chartArea } = chartObj;
+            if (!chartArea) return null;
+            let horizontal = chartObj.config.options.indexAxis === 'y';
+            const gradient = horizontal 
+              ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
+              : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+            
+            let r=255,g=255,b=255;
+            if (color.startsWith('#') && color.length === 7) {
+              r = parseInt(color.slice(1,3),16); g = parseInt(color.slice(3,5),16); b = parseInt(color.slice(5,7),16);
+            } else if (color.startsWith('rgba(')) {
+              const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+              if (m) { r=parseInt(m[1]); g=parseInt(m[2]); b=parseInt(m[3]); }
+            }
+            if (color === 'rgba(255, 255, 255, 0.15)' || (r===255 && g===255 && b===255 && color.includes('0.15'))) {
+              gradient.addColorStop(0, 'rgba(255, 255, 255, 0.0)');
+              gradient.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
+            } else {
+              gradient.addColorStop(0, `rgba(${r},${g},${b},0.05)`);
+              gradient.addColorStop(1, `rgba(${r},${g},${b},0.85)`);
+            }
+            return gradient;
+          }
+        };
+      })
+    };
+  };
+
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>(collapsedSections || { 10: true });
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
 
@@ -573,7 +562,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
                   </div>
                 </div>
                 <div style={{ height: 180 }}>
-                  <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true)} plugins={[labelsPlugin]} />
+                  <Bar data={addGradients(chartCapitalVsObjetivo) as any} options={baseChartOpts('$', false, true)} plugins={[labelsPlugin]} />
                 </div>
               </div>
             </div>
@@ -603,13 +592,13 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
                   <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                     <div style={{ fontSize: 9, fontWeight: 800, color: '#00d4ff', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase' }}>Aperturas</div>
                     <div style={{ height: 160 }}>
-                      {chartAperturas && <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />}
+                      {addGradients(chartAperturas) && <Bar data={addGradients(chartAperturas)} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />}
                     </div>
                   </div>
                   <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                     <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase' }}>Renov.</div>
                     <div style={{ height: 160 }}>
-                      {chartRenovaciones && <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />}
+                      {addGradients(chartRenovaciones) && <Bar data={addGradients(chartRenovaciones)} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />}
                     </div>
                   </div>
                 </div>
@@ -639,7 +628,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
                   </div>
                 </div>
                 <div style={{ height: 180 }}>
-                  <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true)} plugins={[labelsPlugin]} />
+                  <Bar data={addGradients(chartTicketPromedio) as any} options={baseChartOpts('$', false, true)} plugins={[labelsPlugin]} />
                 </div>
               </div>
             </div>

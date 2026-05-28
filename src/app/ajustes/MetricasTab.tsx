@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { formatCurrency, getStatusLabel } from '@/lib/utils';
@@ -10,7 +10,7 @@ import {
   Tooltip, Legend, ArcElement,
 } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
-import { calloutPlugin } from '@/lib/chartPlugins';
+import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 
 ChartJS.register(CategoryScale, LinearScale, Tooltip, Legend, ArcElement);
 
@@ -44,7 +44,7 @@ const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
 const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: number, label: string }) => {
   const options = {
     layout: { padding: 40 },
-    cutout: '82%',
+    cutout: '88%',
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -63,16 +63,15 @@ const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: nu
     maintainAspectRatio: false,
     elements: {
       arc: {
-        borderWidth: 2,
-        borderColor: '#111111',
-        borderRadius: 4,
+        borderWidth: 0,
+        borderRadius: 30,
       }
     }
   };
 
   return (
     <div style={{ position: 'relative', height: '260px', width: '280px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
+      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -244,7 +243,6 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
               margin: isSingle ? '0 auto' : '0',
               width: '100%'
             }}
-            className="metric-card-hover"
             >
               <div style={{ textAlign: 'center', flexShrink: 0 }}>
                 <ModernDoughnut 
@@ -315,14 +313,6 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
           );
         })}
       </div>
-
-      <style jsx global>{`
-        .metric-card-hover:hover {
-          transform: translateY(-5px);
-          border-color: rgba(255,255,255,0.08) !important;
-          background: rgba(255,255,255,0.015) !important;
-        }
-      `}</style>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -1960,18 +1960,21 @@ export default function RegistrosPage() {
                 </button>
               </div>
             )}
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+                <tr style={{ background: 'rgba(255,255,255,0.01)' }}>
                   {['Cliente / CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
                     <th key={i} style={{
                       padding: '20px 24px',
-                      fontSize: 11, fontWeight: 700,
+                      fontSize: 12, fontWeight: 800,
                       color: '#fff',
                       textTransform: 'uppercase',
                       letterSpacing: '1.5px',
                       textAlign: (i === 0) ? 'left' : 'center',
                       whiteSpace: 'nowrap',
+                      borderBottom: '1px solid var(--border)',
+                      borderTopLeftRadius: i === 0 ? 16 : 0,
+                      borderTopRightRadius: i === 7 ? 16 : 0,
                     }}>{h}</th>
                   ))}
                 </tr>
@@ -1993,7 +1996,7 @@ export default function RegistrosPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '12px', color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>{reg.cuil}</span>}
+                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '12px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{reg.cuil}</span>}
                             {reg.es_re && (
                               <span style={{
                                 fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
@@ -2018,7 +2021,7 @@ export default function RegistrosPage() {
                       </td>
 
                       {/* Analista */}
-                      <td style={{ padding: '18px 24px', fontSize: '13px', color: 'var(--fg-muted)', fontWeight: 500, textAlign: 'center' }}>
+                      <td style={{ padding: '18px 24px', fontSize: '13px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
                         {displayAnalista(reg.analista)}
                       </td>
 

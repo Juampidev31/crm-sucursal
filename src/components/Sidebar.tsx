@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useFilter } from '@/context/FilterContext';
@@ -22,23 +22,28 @@ import { useSettings } from '@/features/settings/SettingsProvider';
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
 function NavItem({
-  href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = '#ff5b37'
+  href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = '#10b981', onNavigate,
+  isMessage = false, avatarColor = '#ccc'
 }: {
-  href: string; icon: React.ElementType; label: string; active?: boolean; badge?: number | string; onClick?: (e: React.MouseEvent) => void; indent?: boolean; rightIcon?: React.ElementType; badgeColor?: string;
+  href: string; icon?: React.ElementType; label: string; active?: boolean; badge?: number | string; onClick?: (e: React.MouseEvent) => void; indent?: boolean; rightIcon?: React.ElementType; badgeColor?: string; onNavigate?: () => void;
+  isMessage?: boolean; avatarColor?: string;
 }) {
   return (
     <Link
       href={href}
-      onClick={onClick}
+      onClick={(e) => {
+        if (onClick) onClick(e);
+        else if (onNavigate) onNavigate();
+      }}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        width: '100%', padding: '14px 20px', paddingLeft: indent ? '46px' : '20px',
+        width: '100%', padding: '10px 16px', paddingLeft: indent ? '40px' : '16px',
         borderRadius: 16,
-        color: active ? '#ffffff' : '#d4d4d8',
-        background: active ? '#1a1a1a' : 'transparent',
+        color: active ? '#ffffff' : '#9a9a9a',
+        background: 'transparent',
         textDecoration: 'none',
         transition: 'all 0.2s ease',
-        marginBottom: 4
+        marginBottom: 2
       }}
       onMouseEnter={(e) => {
         if (!active) {
@@ -47,26 +52,32 @@ function NavItem({
       }}
       onMouseLeave={(e) => {
         if (!active) {
-          e.currentTarget.style.color = '#d4d4d8';
+          e.currentTarget.style.color = '#9a9a9a';
         }
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Icon size={18} strokeWidth={active ? 2.5 : 2} style={{ color: active ? '#ffffff' : 'currentColor' }} />
-        <span style={{ fontSize: 17, fontWeight: active ? 800 : 600, letterSpacing: '0.3px' }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {isMessage ? (
+          <div style={{ width: 24, height: 24, borderRadius: '50%', background: avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111', fontWeight: 800, fontSize: 11 }}>
+            {label.substring(0, 1)}
+          </div>
+        ) : (
+          Icon && <Icon size={18} strokeWidth={2} style={{ color: active ? '#ffffff' : '#777777' }} fill={active ? '#ffffff' : 'transparent'} />
+        )}
+        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.1px' }}>{label}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {badge ? (
           <span style={{
             background: badgeColor, color: '#fff',
-            fontSize: 10, fontWeight: 700,
+            fontSize: 10, fontWeight: 800,
             padding: '2px 8px', borderRadius: 12,
-            minWidth: 24, textAlign: 'center'
+            minWidth: 22, textAlign: 'center'
           }}>
             {badge}
           </span>
         ) : null}
-        {RightIcon && <RightIcon size={16} />}
+        {RightIcon && <RightIcon size={14} style={{ color: '#555' }} />}
       </div>
     </Link>
   );
@@ -183,19 +194,33 @@ export default function Sidebar({
   zoom,
   onZoomIn,
   onZoomOut,
-  onReset
+  onReset,
+  onNavigate
 }: { 
   hidden?: boolean;
   zoom?: number;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onReset?: () => void;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const { isAdmin, logout, refreshUser } = useAuth();
   const { pendingReminders } = useRecordatorios();
-  const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, totalResults } = useFilter();
+  const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, totalResults, filters, limpiarFiltros, toggleEstado } = useFilter();
   const { permisosConfig } = useSettings();
+  const { registros } = useRegistros(true);
+
+  const countsByState = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of registros) {
+      if (r.estado) {
+        const key = r.estado.toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [registros]);
 
   const canCreate = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'crear_registros')?.activo !== false;
   const canExport = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'exportar_excel')?.activo !== false;
@@ -255,8 +280,8 @@ export default function Sidebar({
   return (
     <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showFilters ? 'sidebar-expanded-filters' : ''}`}
       style={{
-        background: '#111111',
-        borderRight: '1px solid rgba(255,255,255,0.07)',
+        background: 'transparent',
+        borderRight: 'none',
         boxShadow: 'none',
         display: 'flex', flexDirection: 'row',
         alignItems: 'stretch',
@@ -273,31 +298,41 @@ export default function Sidebar({
         padding: '2px 16px 20px',
         flexShrink: 0,
         borderRight: (showFilters || showCalculator) ? '1px solid var(--border)' : 'none',
-        overflowY: 'auto',
+        overflowY: 'hidden',
         overflowX: 'hidden'
       }}>
-        {/* Brand Logo Removed */}
 
+
+        {/* Header MENU */}
+        <div style={{ fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: '1px', marginBottom: 8, paddingLeft: 16 }}>MENU</div>
 
         {/* Highlight Action (Like Personal/Business switch) */}
         {isRegistros && canCreate && (
-          <div style={{ padding: '0 4px 20px' }}>
+          <div style={{ marginBottom: 8 }}>
             <div style={{
-              background: 'var(--bg-elev-1)', borderRadius: 16, padding: 6, display: 'flex', alignItems: 'center'
+              background: 'transparent', borderRadius: 16, display: 'flex', alignItems: 'center'
             }}>
               <button
                 onClick={() => setIsCreationModalOpen(true)}
                 style={{
-                  flex: 1, padding: '12px', borderRadius: 12,
-                  background: 'rgba(255,255,255,0.04)', color: '#fff',
-                  border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'none',
-                  fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                  flex: 1, padding: '12px 16px', borderRadius: 12,
+                  background: '#10b981', color: '#000',
+                  border: 'none', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                 }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.3)';
+                  e.currentTarget.style.background = '#34d399';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.15)';
+                  e.currentTarget.style.background = '#10b981';
+                }}
               >
-                <Plus size={18} strokeWidth={2.5} />
+                <Plus size={18} strokeWidth={3} />
                 Nuevo Registro
               </button>
             </div>
@@ -305,13 +340,13 @@ export default function Sidebar({
         )}
 
         {/* Main Navigation */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <NavItem href="/registros" icon={Database} label="Registros" active={pathname === '/registros'} />
-          <NavItem href="/recordatorios" icon={Bell} label="Notificaciones" active={pathname === '/recordatorios'} badge={pendingReminders > 0 ? pendingReminders : undefined} badgeColor="#FF6433" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <NavItem href="/registros" icon={Database} label="Registros" active={pathname === '/registros' && filters.estados.length === 0} onClick={() => limpiarFiltros()} />
+          <NavItem href="/recordatorios" icon={Bell} label="Notificaciones" active={pathname === '/recordatorios'} badge={pendingReminders > 0 ? pendingReminders : undefined} badgeColor="#10b981" />
         </div>
 
         {/* Reports Submenu */}
-        <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
           <NavItem
             href="#"
             icon={BarChart2}
@@ -323,136 +358,71 @@ export default function Sidebar({
             badgeColor="#484B52"
           />
           {reportesOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <NavItem href="/analistas" icon={Users} label="Analistas" active={pathname === '/analistas'} indent />
-              <NavItem href="/reportes/ventas" icon={FileText} label="Ventas" active={pathname === '/reportes/ventas'} indent />
-              <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <NavItem href="/analistas" icon={Users} label="Analistas" active={pathname === '/analistas'} indent onNavigate={onNavigate} />
+              <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent onNavigate={onNavigate} />
             </div>
           )}
         </div>
 
-        <SidebarDivider />
-
-        {/* Contextual / Tool Navigation */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {isRegistros && (
-            <>
-              <NavItem
-                href="#"
-                icon={SlidersHorizontal}
-                label="Filtros"
-                active={showFilters}
-                onClick={(e) => { e.preventDefault(); setShowFilters(f => !f); }}
-              />
-              <div ref={pageSizeSelectorRef} style={{ position: 'relative' }}>
-                <NavItem
-                  href="#"
-                  icon={AlignJustify}
-                  label="Ver Filas"
-                  onClick={(e) => { e.preventDefault(); setShowPageSizeSelector(s => !s); }}
-                />
-                {showPageSizeSelector && (
-                  <div style={{
-                    position: 'absolute', left: '100%', top: 0, marginLeft: 8,
-                    background: 'var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 12, padding: 8, zIndex: 1000,
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-                    display: 'flex', flexDirection: 'column', gap: 4, minWidth: 140,
-                  }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', padding: '4px 8px', marginBottom: 4 }}>
-                      {totalResults} registros
-                    </div>
-                    <div style={{ height: 1, background: 'var(--border)', margin: '0 8px 4px' }} />
-                    {[25, 50, 100, 200, 999999].map(size => (
-                      <button
-                        key={size}
-                        onClick={() => { setPageSize(size); setShowPageSizeSelector(false); }}
-                        style={{
-                          padding: '8px 12px', background: pageSize === size ? 'var(--bg-elev-2)' : 'transparent',
-                          border: 'none', borderRadius: 8, color: pageSize === size ? '#fff' : 'var(--fg-muted)',
-                          fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        {size >= 1000 ? '∞ Todo' : `${size} filas`}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {canExport && (
-                <NavItem
-                  href="#"
-                  icon={FileSpreadsheet}
-                  label="Exportar"
-                  onClick={(e) => { e.preventDefault(); setShowXlsxModal(true); }}
-                />
-              )}
-            </>
-          )}
-
-          {isAdmin && (
-            <>
-              <NavItem
-                href="#"
-                icon={Calculator}
-                label="Incentivos"
-                active={showCalculator}
-                onClick={(e) => { e.preventDefault(); setShowCalculator(s => !s); if (showFilters) setShowFilters(false); }}
-              />
-              <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname === '/ajustes'} />
-            </>
+        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {isAdmin ? (
+            <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname.startsWith('/ajustes')} />
+          ) : (
+            <NavItem href="#" icon={Lock} label="Acceso Admin" onClick={(e) => { e.preventDefault(); setShowAdminModal(true); }} />
           )}
         </div>
 
-        <div style={{ flex: 1, minHeight: 32 }} />
+        <div style={{ fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: '1px', marginTop: 16, marginBottom: 8, paddingLeft: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          CLIENTES EN REVISIÓN
+          <div style={{ display: 'flex', gap: 8, paddingRight: 16 }}>
+             <ChevronDown size={12} style={{ transform: 'rotate(90deg)' }} />
+             <ChevronDown size={12} style={{ transform: 'rotate(-90deg)' }} />
+          </div>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 20, padding: '12px 8px', marginBottom: 12 }}>
+          {[
+            { label: 'Proyección', value: 'proyeccion', color: '#60a5fa' },
+            { label: 'Venta', value: 'venta', color: '#10b981' },
+            { label: 'En seguimiento', value: 'en seguimiento', color: '#fbbf24' },
+            { label: 'Score bajo', value: 'score bajo', color: '#f87171' },
+            { label: 'Afectaciones', value: 'afectaciones', color: '#c084fc' },
+            { label: 'Aprobado CC', value: 'derivado / aprobado cc', color: '#34d399' },
+            { label: 'Rechazado CC', value: 'derivado / rechazado cc', color: '#ef4444' }
+          ].map(s => (
+            <NavItem 
+              key={s.value} 
+              href="/registros" 
+              label={s.label} 
+              isMessage 
+              avatarColor={s.color} 
+              onClick={() => {
+                limpiarFiltros();
+                toggleEstado(s.value);
+              }}
+              active={pathname === '/registros' && filters.estados.length === 1 && filters.estados[0] === s.value}
+              badge={countsByState[s.value] > 0 ? countsByState[s.value] : undefined}
+              badgeColor="rgba(255,255,255,0.1)"
+            />
+          ))}
+        </div>
+
+        <div style={{ flex: 1, minHeight: 12 }} />
 
         {/* Zoom Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, marginBottom: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
-          <button onClick={onZoomOut} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.color='#fff'} onMouseLeave={e => e.currentTarget.style.color='#8f929d'} title="Alejar">
+        <div style={{
+          padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginTop: 'auto', background: 'rgba(255,255,255,0.02)', borderRadius: 16,
+        }}>
+          <button onClick={onZoomOut} style={{ background: 'transparent', border: 'none', color: '#777', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} title="Reducir resolución">
             <ZoomOut size={16} />
           </button>
-          <button onClick={onReset} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.5px' }} onMouseEnter={e => e.currentTarget.style.color='#fff'} onMouseLeave={e => e.currentTarget.style.color='#8f929d'} title="Restablecer">
+          <span style={{ color: '#aaa', fontSize: 11, fontWeight: 700, letterSpacing: '1px', userSelect: 'none', cursor: 'pointer' }} onClick={onReset} title="Restablecer">
             {Math.round((zoom || 1) * 100)}%
-          </button>
-          <button onClick={onZoomIn} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.color='#fff'} onMouseLeave={e => e.currentTarget.style.color='#8f929d'} title="Acercar">
+          </span>
+          <button onClick={onZoomIn} style={{ background: 'transparent', border: 'none', color: '#777', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} title="Aumentar resolución">
             <ZoomIn size={16} />
           </button>
-        </div>
-
-        {/* User Profile Footer (Fyneen style) */}
-        <div style={{
-          padding: '12px', display: 'flex', alignItems: 'center', gap: 12,
-          marginTop: 'auto', borderRadius: 16, cursor: 'pointer'
-        }}
-        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-        onClick={() => {
-          if (!isAdmin) {
-            setShowAccessDenied(true);
-          } else {
-            // For admin, maybe open settings or do nothing
-          }
-        }}
-        >
-          <div style={{ width: 40, height: 40, borderRadius: '12px', background: isAdmin ? 'linear-gradient(135deg, #FF9B42, #FF6433)' : '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0, boxShadow: isAdmin ? '0 4px 12px rgba(255, 100, 51, 0.3)' : 'none' }}>
-            <Settings size={20} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {isAdmin ? 'Panel de Control' : 'Panel de Control'}
-            </span>
-            <span style={{ fontSize: 12, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {isAdmin ? 'Modo Administrador' : 'Área Restringida'}
-            </span>
-          </div>
-          <div style={{ padding: 4, color: 'var(--fg-muted)' }}>
-            {isAdmin ? (
-              <LogOut size={16} onClick={(e) => { e.stopPropagation(); logout(); }} />
-            ) : (
-              <Lock size={16} onClick={(e) => { e.stopPropagation(); setShowAdminModal(true); }} />
-            )}
-          </div>
         </div>
       </div>
 
