@@ -1645,6 +1645,18 @@ export default function RegistrosPage() {
     return perm ? perm.activo : true; // default true
   }, [isAdmin, permisosConfig]);
 
+  const canSeeComentarios = useMemo(() => {
+    if (isAdmin) return true;
+    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'ver_comentarios');
+    return perm ? perm.activo : true; // default true
+  }, [isAdmin, permisosConfig]);
+
+  const canSeeRecordatorios = useMemo(() => {
+    if (isAdmin) return true;
+    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'ver_recordatorios');
+    return perm ? perm.activo : true; // default true
+  }, [isAdmin, permisosConfig]);
+
   const {
     filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
@@ -2232,18 +2244,20 @@ export default function RegistrosPage() {
                       {/* Acciones */}
                       <td style={{ padding: '18px 24px' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                          {reg.comentarios && reg.comentarios.trim() !== '' && (
+                          {canSeeComentarios && reg.comentarios && reg.comentarios.trim() !== '' && (
                             <button
                               onClick={() => setComentariosTarget(reg)}
                               className="table-action-btn"
                               title="Ver comentarios"
                             ><MessageSquare size={16} /></button>
                           )}
-                          <button
-                            onClick={() => setRecordatorioTarget(reg)}
-                            className={`table-action-btn ${vencidoIds.has(reg.id) ? 'btn-alert-active' : ''}`}
-                            title="Recordatorio"
-                          ><Bell size={16} /></button>
+                          {canSeeRecordatorios && (
+                            <button
+                              onClick={() => setRecordatorioTarget(reg)}
+                              className={`table-action-btn ${vencidoIds.has(reg.id) ? 'btn-alert-active' : ''}`}
+                              title="Recordatorio"
+                            ><Bell size={16} /></button>
+                          )}
                           {canEditRegistros && (
                             <button
                               onClick={() => openEdit(reg)}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -780,6 +780,8 @@ export default function AjustesPage() {
                     { id: 'editar_registros', label: 'Editar Registros', desc: 'Permite modificar registros existentes.' },
                     { id: 'eliminar_registros', label: 'Eliminar Registros', desc: 'Permite borrar registros desde la tabla.' },
                     { id: 'exportar_excel', label: 'Exportar a Excel', desc: 'Permite descargar el listado de registros.' },
+                    { id: 'ver_recordatorios', label: 'Ícono Recordatorios', desc: 'Permite visualizar el ícono de recordatorios.' },
+                    { id: 'ver_comentarios', label: 'Ícono Comentarios', desc: 'Permite visualizar el ícono de comentarios.' },
                   ];
 
                   return (
