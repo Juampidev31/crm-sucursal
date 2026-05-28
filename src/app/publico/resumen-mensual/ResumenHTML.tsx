@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
+import MetricasTab from '@/app/ajustes/MetricasTab';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
