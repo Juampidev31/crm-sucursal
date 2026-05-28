@@ -798,14 +798,32 @@ const RegistroModal = memo(function RegistroModal({
   return (
     <>
       <ModalPortal>
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <h3 className="modal-title">
-              <FileText size={18} style={{ color: 'var(--fg-muted)' }} />
+      <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="modal-content" onClick={e => e.stopPropagation()} style={{
+          background: 'var(--bg-elev-1)',
+          backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.08), transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)',
+          border: '1px solid var(--border)',
+          borderTop: '1px solid rgba(16,185,129,0.3)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px rgba(16,185,129,0.05)',
+          borderRadius: '16px',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <div className="modal-header" style={{
+            background: 'rgba(0,0,0,0.2)',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            padding: '24px 32px'
+          }}>
+            <h3 className="modal-title" style={{
+              fontSize: '20px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', margin: 0,
+              background: 'linear-gradient(90deg, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+              {editingId ? <Edit2 size={20} strokeWidth={2.5} style={{ color: '#34d399' }} /> : <Plus size={20} strokeWidth={2.5} style={{ color: '#34d399' }} />}
               {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
             </h3>
-            <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)' }}><X size={20} /></button>
+            <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px' }}><X size={18} /></button>
           </div>
           <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
             <div className="form-row-3">
@@ -1182,18 +1200,22 @@ const RegistroModal = memo(function RegistroModal({
               <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
             </p>
           </div>
-          <div className="modal-footer">
-            {errors._ && <span style={{ color: '#fff', fontSize: '12px', flex: 1, fontWeight: 700 }}>{errors._}</span>}
+          <div className="modal-footer" style={{
+            background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 32px'
+          }}>
+            {errors._ && <span style={{ color: '#f87171', fontSize: '13px', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={14} />{errors._}</span>}
+            {!errors._ && <div style={{ flex: 1 }} />}
             <button className="btn-secondary" onClick={onClose} style={{
-              background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
-              fontWeight: 700, padding: '12px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-            }}>CANCELAR</button>
+              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--fg-muted)',
+              fontWeight: 700, padding: '12px 24px', borderRadius: '10px', fontSize: '13px', letterSpacing: '0.5px', transition: 'all 0.2s'
+            }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>CANCELAR</button>
             <button className="btn-primary" onClick={() => guardar()} disabled={saving} style={{
-              background: 'var(--green)', color: '#000', border: 'none',
-              fontWeight: 800, padding: '12px 32px', borderRadius: '8px',
-              fontSize: '12px', letterSpacing: '0.5px'
+              background: 'linear-gradient(90deg, #34d399, #10b981)', color: '#000', border: 'none',
+              fontWeight: 800, padding: '12px 32px', borderRadius: '10px',
+              fontSize: '13px', letterSpacing: '0.5px', boxShadow: '0 4px 14px rgba(16,185,129,0.3)', transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', gap: '8px'
             }}>
-              <Save size={14} style={{ marginRight: 8 }} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
+              <Save size={16} strokeWidth={2.5} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
             </button>
           </div>
         </div>
