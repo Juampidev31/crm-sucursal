@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState } from 'react';
 import { formatCurrency } from '@/lib/utils';
@@ -16,8 +16,8 @@ import { Bar } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
 
-const VERDE = '#4CAF50';
-const ROJO = '#ef4444';
+const VERDE = '#34d399';
+const ROJO = '#f87171';
 
 interface Props {
   filtroMes: string;      // "YYYY-MM"
@@ -67,7 +67,7 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
     datasets: [{
       data: semanas.map(s => s.monto),
       backgroundColor: semanas.map(s =>
-        s.positivo ? 'rgba(76,175,80,0.85)' : 'rgba(239,68,68,0.75)'
+        s.positivo ? 'rgba(52, 211, 153, 0.85)' : 'rgba(248, 113, 113, 0.75)'
       ),
       borderRadius: 5,
       borderSkipped: false as const,
@@ -87,19 +87,27 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
     },
     scales: {
       x: {
-        ticks: { color: '#555', font: { size: 11 } },
+        ticks: { color: '#8f929d', font: { size: 10, weight: 600 } },
         grid: { display: false },
         border: { display: false },
       },
       y: {
         ticks: {
-          color: '#555',
-          font: { size: 10 },
+          color: '#8f929d',
+          font: { size: 10, weight: 600 },
           maxTicksLimit: 5,
-          callback: (v: string | number) =>
-            new Intl.NumberFormat('es-AR').format(Number(v)),
+          callback: (v: string | number) => {
+            const num = Number(v);
+            if (num >= 1000000) {
+              return (num / 1000000).toFixed(1).replace('.0', '') + 'M';
+            }
+            if (num >= 1000) {
+              return (num / 1000).toFixed(0) + 'k';
+            }
+            return v;
+          },
         },
-        grid: { color: 'rgba(255,255,255,0.03)' },
+        grid: { color: 'rgba(255,255,255,0.025)' },
         border: { display: false },
       },
     },
@@ -107,8 +115,8 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
 
   return (
     <div style={{
-      background: '#0a0a0a',
-      border: '1px solid rgba(255,255,255,0.03)',
+      background: '#0c0c0c',
+      border: '1px solid rgba(255,255,255,0.06)',
       borderRadius: '16px',
       overflow: 'hidden',
       marginBottom: '24px',
@@ -118,26 +126,26 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '12px 24px',
-        borderBottom: collapsed ? 'none' : '1px solid rgba(255,255,255,0.03)',
+        padding: '16px 24px',
+        borderBottom: collapsed ? 'none' : '1px solid rgba(255,255,255,0.06)',
       }}>
         <div>
           <div style={{
             fontSize: '11px',
-            color: '#fff',
-            fontWeight: 900,
-            letterSpacing: '2px',
+            color: '#8f929d',
+            fontWeight: 800,
+            letterSpacing: '1.5px',
             textTransform: 'uppercase',
           }}>
-            EVOLUCION SEMANAL
+            Evolución Semanal
           </div>
         </div>
 
         <button
           onClick={() => setCollapsed(c => !c)}
           style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.05)',
             borderRadius: '8px',
             width: '28px',
             height: '28px',
@@ -145,7 +153,7 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            color: '#555',
+            color: '#8f929d',
           }}
         >
           <svg
@@ -164,18 +172,18 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
           display: 'grid',
           gridTemplateColumns: 'repeat(4, 1fr) 300px',
           gap: '0',
-          padding: '12px 24px',
+          padding: '24px',
           alignItems: 'center',
         }}>
           {semanas.map(s => (
-            <div key={s.label} style={{ padding: '8px 12px', borderRight: '1px solid rgba(255,255,255,0.03)' }}>
+            <div key={s.label} style={{ padding: '0 24px 0 12px', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
               <div style={{
                 fontSize: '10px',
-                color: '#555',
+                color: '#64748b',
                 fontWeight: 800,
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
-                marginBottom: '4px',
+                marginBottom: '6px',
               }}>
                 {s.label}
               </div>
@@ -184,14 +192,14 @@ export function SeccionEstacionalidad({ filtroMes, filtroAnalista }: Props) {
                 fontWeight: 900,
                 color: '#fff',
                 letterSpacing: '-0.5px',
-                marginBottom: '4px',
+                marginBottom: '6px',
                 lineHeight: 1.1,
               }}>
                 {formatCurrency(s.monto)}
               </div>
               <div style={{
                 fontSize: '11px',
-                fontWeight: 700,
+                fontWeight: 800,
                 color: s.positivo ? VERDE : ROJO,
               }}>
                 {s.pct >= 0 ? '+' : ''}{s.pct.toFixed(1)}% vs promedio

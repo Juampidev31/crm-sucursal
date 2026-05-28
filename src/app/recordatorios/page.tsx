@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -215,7 +215,7 @@ export default function RecordatoriosPage() {
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: '6px', 
-                color: '#60a5fa',
+                color: '#00d4ff',
                 background: 'rgba(96, 165, 250, 0.1)',
                 border: '1px solid rgba(96, 165, 250, 0.2)'
               }}
@@ -235,21 +235,21 @@ export default function RecordatoriosPage() {
 
       {/* Stats rápidas */}
       <div className="cards-container" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
-          <div className="kpi-title" style={{ color: '#444' }}><Bell size={13} /> Total</div>
+        <div className="kpi-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div className="kpi-title" style={{ color: '#8f929d' }}><Bell size={13} /> Total</div>
           <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900 }}>{recordatorios.length}</div>
         </div>
-        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
-          <div className="kpi-title" style={{ color: '#444' }}><Clock size={13} /> Pendientes</div>
+        <div className="kpi-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div className="kpi-title" style={{ color: '#8f929d' }}><Clock size={13} /> Pendientes</div>
           <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: '#fff' }}>{pendientesCount}</div>
         </div>
-        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div className="kpi-title" style={{ color: '#444' }}><AlertCircle size={13} /> Vencidos</div>
-          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: '#f87171' }}>{vencidosCount}</div>
+        <div className="kpi-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="kpi-title" style={{ color: '#8f929d' }}><AlertCircle size={13} /> Vencidos</div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: '#ff3366' }}>{vencidosCount}</div>
         </div>
-        <div className="kpi-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.02)' }}>
-          <div className="kpi-title" style={{ color: '#444' }}><Check size={13} /> Completados</div>
-          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: 'rgba(255,255,255,0.4)' }}>
+        <div className="kpi-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.04)' }}>
+          <div className="kpi-title" style={{ color: '#8f929d' }}><Check size={13} /> Completados</div>
+          <div className="kpi-val" style={{ fontSize: '24px', fontWeight: 900, color: '#64748b' }}>
             {recordatorios.filter(r => r.mostrado).length}
           </div>
         </div>
@@ -338,54 +338,54 @@ export default function RecordatoriosPage() {
                 {/* Contenido */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 700, fontSize: '15px', color: rec.mostrado ? '#555' : '#fff' }}>
+                    <span style={{ fontWeight: 700, fontSize: '15px', color: rec.mostrado ? '#64748b' : '#fff' }}>
                       {rec.nombre}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#444' }}>CUIL: {rec.cuil}</span>
+                    <span style={{ fontSize: '11px', color: '#8f929d' }}>CUIL: {rec.cuil}</span>
                     {rec.estado && (
-                      <span
-                        className="status-badge"
-                        style={{ color: '#aaa', fontSize: '11px' }}
-                      >
-                        {getStatusLabel(rec.estado)}
-                      </span>
+                       <span
+                         className="status-badge"
+                         style={{ color: '#8f929d', fontSize: '11px' }}
+                       >
+                         {getStatusLabel(rec.estado)}
+                       </span>
                     )}
                     {!rec.mostrado && isVencido(rec.fecha_hora) && (
-                      <span style={{
-                        fontSize: '11px', fontWeight: 700, color: 'var(--rojo)',
-                        background: 'rgba(220,53,69,0.1)', padding: '2px 8px',
-                        borderRadius: '6px', border: '1px solid rgba(220,53,69,0.2)',
-                      }}>
-                        VENCIDO
-                      </span>
+                       <span style={{
+                         fontSize: '11px', fontWeight: 700, color: 'var(--rojo)',
+                         background: 'rgba(220,53,69,0.1)', padding: '2px 8px',
+                         borderRadius: '6px', border: '1px solid rgba(220,53,69,0.2)',
+                       }}>
+                         VENCIDO
+                       </span>
                     )}
                     {!rec.mostrado && isHoy(rec.fecha_hora) && !isVencido(rec.fecha_hora) && (
-                      <span style={{
-                        fontSize: '11px', fontWeight: 700, color: 'var(--naranja)',
-                        background: 'rgba(255,193,7,0.1)', padding: '2px 8px',
-                        borderRadius: '6px', border: '1px solid rgba(255,193,7,0.2)',
-                      }}>
-                        HOY
-                      </span>
+                       <span style={{
+                         fontSize: '11px', fontWeight: 700, color: 'var(--naranja)',
+                         background: 'rgba(255,193,7,0.1)', padding: '2px 8px',
+                         borderRadius: '6px', border: '1px solid rgba(255,193,7,0.2)',
+                       }}>
+                         HOY
+                       </span>
                     )}
                   </div>
 
                   {rec.nota && (
-                    <p style={{ fontSize: '13px', color: '#666', margin: '4px 0', lineHeight: '1.5' }}>
+                    <p style={{ fontSize: '13px', color: '#8f929d', margin: '4px 0', lineHeight: '1.5' }}>
                       {rec.nota}
                     </p>
                   )}
 
                   <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#444' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#8f929d' }}>
                       <Calendar size={12} />
-                      <span style={{ color: !rec.mostrado && isVencido(rec.fecha_hora) ? 'var(--rojo)' : '#555' }}>
+                      <span style={{ color: !rec.mostrado && isVencido(rec.fecha_hora) ? 'var(--rojo)' : '#8f929d' }}>
                         {formatDateTime(rec.fecha_hora)}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#444' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#8f929d' }}>
                       <User size={12} />
-                      <span style={{ color: '#555' }}>{rec.analista}</span>
+                      <span style={{ color: '#8f929d' }}>{rec.analista}</span>
                     </div>
                   </div>
                 </div>
@@ -407,7 +407,7 @@ export default function RecordatoriosPage() {
                       className="btn-icon"
                       onClick={() => handleRevertirCompletado(rec.id)}
                       title="Devolver a pendientes"
-                      style={{ color: '#60a5fa' }}
+                      style={{ color: '#00d4ff' }}
                     >
                       <RotateCcw size={16} />
                     </button>

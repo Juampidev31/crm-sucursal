@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { X, Download, Loader2, ArrowLeft, FileSpreadsheet } from 'lucide-react';
@@ -114,23 +114,23 @@ export function ExportXlsxModal({ open, onClose }: Props) {
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 14px', borderRadius: 8, boxSizing: 'border-box',
-    background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.15)',
+    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
     color: '#fff', fontSize: 15, outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
     display: 'block', marginBottom: 6,
-    fontSize: 9, fontWeight: 800, color: '#555',
+    fontSize: 9, fontWeight: 800, color: '#8f929d',
     textTransform: 'uppercase', letterSpacing: '0.5px',
   };
   const cellStyle: React.CSSProperties = {
-    padding: '8px 10px', fontSize: 12, color: '#ccc',
-    borderBottom: '1px solid rgba(255,255,255,0.05)', whiteSpace: 'nowrap',
+    padding: '8px 10px', fontSize: 12, color: '#fff',
+    borderBottom: '1px solid rgba(255,255,255,0.02)', whiteSpace: 'nowrap',
     overflow: 'hidden', textOverflow: 'ellipsis',
   };
   const headStyle: React.CSSProperties = {
-    padding: '8px 10px', fontSize: 9, fontWeight: 800, color: '#555',
+    padding: '8px 10px', fontSize: 9, fontWeight: 800, color: '#8f929d',
     textTransform: 'uppercase', letterSpacing: '0.5px',
-    borderBottom: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap',
+    borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap',
   };
 
   return (
@@ -145,7 +145,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <div style={{
-        background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+        background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)',
         borderRadius: 12, padding: '28px 24px',
         width: preview ? 1100 : 360, maxWidth: '97vw',
         boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
@@ -158,7 +158,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           {preview && (
             <button
               onClick={() => { setPreview(null); setError(''); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#666', padding: 0 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8f929d', padding: 0 }}
             >
               <ArrowLeft size={18} />
             </button>
@@ -167,7 +167,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
             {preview ? `Vista previa — ${preview.total} registros` : 'Exportar XLSX'}
           </span>
-          <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#444', marginLeft: 'auto' }}>
+          <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8f929d', marginLeft: 'auto' }}>
             <X size={18} />
           </button>
         </div>
@@ -176,11 +176,11 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           /* ── PASO 2: Tabla de registros ── */
           <>
             {preview.total === 0 ? (
-              <div style={{ color: '#555', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>
+              <div style={{ color: '#8f929d', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>
                 No hay registros con los filtros aplicados.
               </div>
             ) : (
-              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '60vh', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '60vh', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                   <colgroup>
                     <col style={{ width: 180 }} />
@@ -191,7 +191,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
                     <col style={{ width: 220 }} />
                     <col style={{ width: 220 }} />
                   </colgroup>
-                  <thead style={{ background: '#1a1a1a', position: 'sticky', top: 0, zIndex: 1 }}>
+                  <thead style={{ background: 'rgba(255,255,255,0.01)', position: 'sticky', top: 0, zIndex: 1 }}>
                     <tr>
                       <th style={headStyle}>Nombre</th>
                       <th style={headStyle}>CUIL</th>
@@ -204,7 +204,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
                   </thead>
                   <tbody>
                     {preview.registros.map((r, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                      <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
                         <td style={cellStyle} title={r.nombre}>{r.nombre || '—'}</td>
                         <td style={cellStyle}>{r.cuil || '—'}</td>
                         <td style={cellStyle}>{r.analista || '—'}</td>
@@ -226,9 +226,10 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               disabled={loading || preview.total === 0}
               style={{
                 width: '100%', padding: '10px',
-                background: preview.total === 0 ? 'rgba(255,255,255,0.1)' : '#fff',
-                color: preview.total === 0 ? '#555' : '#000',
-                border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 15,
+                background: preview.total === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(16, 185, 129, 0.15)',
+                color: preview.total === 0 ? '#64748b' : '#10b981',
+                border: preview.total === 0 ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius: 8, fontWeight: 700, fontSize: 15,
                 cursor: (loading || preview.total === 0) ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 opacity: loading ? 0.6 : 1,
@@ -274,9 +275,9 @@ export function ExportXlsxModal({ open, onClose }: Props) {
                       style={{
                         padding: '6px 10px', borderRadius: '8px',
                         fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                        background: isActive ? '#fff' : 'rgba(255,255,255,0.03)',
-                        color: isActive ? '#000' : '#666',
-                        border: `1px solid ${isActive ? '#fff' : 'rgba(255,255,255,0.06)'}`,
+                        background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
+                        color: isActive ? '#10b981' : '#8f929d',
+                        border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
                         transition: 'all 0.2s', whiteSpace: 'nowrap',
                       }}
                     >
@@ -302,7 +303,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               disabled={loading}
               style={{
                 marginTop: 4, width: '100%', padding: '10px',
-                background: '#fff', color: '#000', border: 'none',
+                background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)',
                 borderRadius: 8, fontWeight: 700, fontSize: 15,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -418,7 +418,7 @@ const PremiumSelect = ({
           top: 'calc(100% + 6px)',
           left: 0,
           right: 0,
-          background: '#0a0a0a',
+          background: '#0c0c0c',
           border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: '10px',
           boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
@@ -429,7 +429,7 @@ const PremiumSelect = ({
           {isSearchable && (
             <div style={{
               padding: '8px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid var(--border)',
               background: 'rgba(255,255,255,0.01)'
             }}>
               <div style={{ position: 'relative' }}>
@@ -526,7 +526,7 @@ const PremiumSelect = ({
                       color: '#86efac',
                       fontWeight: 800,
                       cursor: 'pointer',
-                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      borderTop: '1px solid var(--border)',
                       background: 'rgba(134, 239, 172, 0.02)',
                       marginTop: '4px',
                       display: 'flex',
@@ -579,7 +579,7 @@ const PremiumSelect = ({
                       color: '#86efac',
                       fontWeight: 800,
                       cursor: 'pointer',
-                      borderTop: '1px solid rgba(255,255,255,0.06)',
+                      borderTop: '1px solid var(--border)',
                       background: 'rgba(134, 239, 172, 0.02)',
                       marginTop: '4px',
                       display: 'flex',
@@ -801,10 +801,10 @@ const RegistroModal = memo(function RegistroModal({
         <div className="modal-content" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
             <h3 className="modal-title">
-              <FileText size={18} style={{ color: '#888' }} />
+              <FileText size={18} style={{ color: 'var(--fg-muted)' }} />
               {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
             </h3>
-            <button className="btn-icon" onClick={onClose} style={{ color: '#444' }}><X size={20} /></button>
+            <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)' }}><X size={20} /></button>
           </div>
           <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
             <div className="form-row-3">
@@ -1184,13 +1184,13 @@ const RegistroModal = memo(function RegistroModal({
           <div className="modal-footer">
             {errors._ && <span style={{ color: '#fff', fontSize: '12px', flex: 1, fontWeight: 700 }}>{errors._}</span>}
             <button className="btn-secondary" onClick={onClose} style={{
-              background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666',
-              fontWeight: 700, padding: '12px 24px', borderRadius: '10px'
+              background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+              fontWeight: 700, padding: '12px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
             }}>CANCELAR</button>
             <button className="btn-primary" onClick={() => guardar()} disabled={saving} style={{
-              background: '#fff', color: '#000', border: 'none',
-              fontWeight: 900, padding: '12px 32px', borderRadius: '10px',
-              fontSize: '13px', letterSpacing: '0.5px'
+              background: 'var(--green)', color: '#000', border: 'none',
+              fontWeight: 800, padding: '12px 32px', borderRadius: '8px',
+              fontSize: '12px', letterSpacing: '0.5px'
             }}>
               <Save size={14} style={{ marginRight: 8 }} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
             </button>
@@ -1207,19 +1207,19 @@ const RegistroModal = memo(function RegistroModal({
               <h3 className="modal-title" style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '0.5px', color: dupBlocked ? 'var(--rojo)' : '#f59e0b' }}>
                 {dupBlocked ? 'REGISTRO DUPLICADO' : 'REGISTRO EXISTENTE'}
               </h3>
-              {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: '#444' }}><X size={18} /></button>}
+              {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: 'var(--fg-muted)' }}><X size={18} /></button>}
             </div>
             <div className="modal-body" style={{ padding: '20px 28px' }}>
               <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <AlertCircle size={20} style={{ color: dupBlocked ? 'var(--rojo)' : '#f59e0b', flexShrink: 0, marginTop: 2 }} />
                 <div>
                   <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: 6 }}>{dupRecord.nombre}</p>
-                  <p style={{ fontSize: '13px', color: '#888', marginBottom: 10 }}>
-                    CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong style={{ color: '#ccc' }}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
+                  <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: 10 }}>
+                    CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong style={{ color: '#fff' }}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
                   </p>
                   {dupBlocked
-                    ? <p style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6 }}>Este cliente ya tiene un registro activo en ese estado. No se puede crear un duplicado. Modificá el registro existente para continuar.</p>
-                    : <p style={{ fontSize: '13px', color: '#aaa', lineHeight: 1.6 }}>Ya existe un registro con este CUIL o nombre. ¿Deseás guardar de todas formas?</p>
+                    ? <p style={{ fontSize: '13px', color: 'var(--fg-muted)', lineHeight: 1.6 }}>Este cliente ya tiene un registro activo en ese estado. No se puede crear un duplicado. Modificá el registro existente para continuar.</p>
+                    : <p style={{ fontSize: '13px', color: 'var(--fg-muted)', lineHeight: 1.6 }}>Ya existe un registro con este CUIL o nombre. ¿Deseás guardar de todas formas?</p>
                   }
                 </div>
               </div>
@@ -1228,7 +1228,7 @@ const RegistroModal = memo(function RegistroModal({
               {dupBlocked
                 ? <button className="btn-primary" onClick={() => setShowDupModal(false)} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>ENTENDIDO</button>
                 : <>
-                  <button className="btn-secondary" onClick={() => setShowDupModal(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666', fontWeight: 700, padding: '10px 20px', borderRadius: '10px', fontSize: '13px' }}>CANCELAR</button>
+                  <button className="btn-secondary" onClick={() => setShowDupModal(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg-muted)', fontWeight: 700, padding: '10px 20px', borderRadius: '10px', fontSize: '13px' }}>CANCELAR</button>
                   <button className="btn-primary" onClick={() => { setShowDupModal(false); guardar(true); }} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 900, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>GUARDAR DE TODAS FORMAS</button>
                 </>
               }
@@ -1290,13 +1290,13 @@ const RecordatorioModal = memo(function RecordatorioModal({
       <div className="modal-content" style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">
-            <Bell size={18} style={{ color: '#888' }} />
+            <Bell size={18} style={{ color: 'var(--fg-muted)' }} />
             Nuevo Recordatorio
           </h3>
           <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
         </div>
         <div className="modal-body">
-          <p style={{ fontSize: '13px', color: '#555', marginBottom: '20px' }}>{registro.nombre}</p>
+          <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: '20px' }}>{registro.nombre}</p>
           <div className="form-row">
             <Field label="Fecha *"><input className="form-input" type="date" value={recForm.fecha} onChange={e => setRecForm(p => ({ ...p, fecha: e.target.value }))} /></Field>
             <Field label="Hora *"><input className="form-input" type="time" value={recForm.hora} onChange={e => setRecForm(p => ({ ...p, hora: e.target.value }))} /></Field>
@@ -1309,10 +1309,12 @@ const RecordatorioModal = memo(function RecordatorioModal({
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={() => onClose(false)} style={{
-            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
+            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+            fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>CANCELAR</button>
           <button className="btn-primary" onClick={save} disabled={saving || !recForm.fecha || !recForm.hora} style={{
-            background: '#fff', color: '#000', border: 'none', fontWeight: 800
+            background: 'var(--green)', color: '#000', border: 'none', fontWeight: 800,
+            padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>AGENDAR</button>
         </div>
       </div>
@@ -1353,13 +1355,13 @@ const ComentariosModal = memo(function ComentariosModal({
       <div className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">
-            <MessageSquare size={18} style={{ color: '#888' }} />
+            <MessageSquare size={18} style={{ color: 'var(--fg-muted)' }} />
             Comentarios
           </h3>
           <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
         </div>
         <div className="modal-body">
-          <p style={{ fontSize: '13px', color: '#555', marginBottom: '16px', fontWeight: 600 }}>{registro.nombre}</p>
+          <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: '16px', fontWeight: 600 }}>{registro.nombre}</p>
           <Field label="Comentarios">
             <textarea
               className="form-input"
@@ -1374,10 +1376,12 @@ const ComentariosModal = memo(function ComentariosModal({
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={() => onClose(false)} style={{
-            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
+            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+            fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>CANCELAR</button>
           <button className="btn-primary" onClick={save} disabled={saving} style={{
-            background: '#fff', color: '#000', border: 'none', fontWeight: 800
+            background: 'var(--green)', color: '#000', border: 'none', fontWeight: 800,
+            padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>{saving ? 'GUARDANDO…' : 'GUARDAR'}</button>
         </div>
       </div>
@@ -1405,19 +1409,23 @@ const DeleteModal = memo(function DeleteModal({
             <AlertTriangle size={18} />
             ELIMINAR REGISTRO
           </h3>
-          <button className="btn-icon" onClick={onCancel} style={{ color: '#333' }}><X size={18} /></button>
+          <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)' }}><X size={18} /></button>
         </div>
         <div className="modal-body" style={{ padding: '32px 28px' }}>
-          <p style={{ fontSize: '14px', color: '#888', lineHeight: 1.8 }}>
+          <p style={{ fontSize: '14px', color: 'var(--fg-muted)', lineHeight: 1.8 }}>
             ¿Confirmar eliminación de <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?<br />
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#333', textTransform: 'uppercase', marginTop: '10px', display: 'block' }}>La acción es permanente.</span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginTop: '10px', display: 'block' }}>La acción es permanente.</span>
           </p>
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onCancel} style={{
-            background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#666'
+            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+            fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>CANCELAR</button>
-          <button className="btn-danger" onClick={onConfirm}>
+          <button className="btn-danger" onClick={onConfirm} style={{
+            background: '#ef4444', color: '#fff', border: 'none', fontWeight: 800,
+            padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
+          }}>
             ELIMINAR AHORA
           </button>
         </div>
@@ -1430,18 +1438,56 @@ const DeleteModal = memo(function DeleteModal({
 
 const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
   const label = STATUS_LABEL[estado?.toLowerCase()] ?? estado;
+  
+  // Custom styles for each status type
+  let color = 'var(--fg-muted)';
+  let bg = 'rgba(255,255,255,0.02)';
+  let border = '1px solid rgba(255,255,255,0.05)';
+  
+  const estLower = estado?.toLowerCase();
+  if (estLower === 'venta') {
+    color = '#6ee7b7'; // Bright Emerald
+    bg = 'rgba(16,185,129,0.18)';
+    border = '1px solid rgba(16,185,129,0.35)';
+  } else if (estLower === 'proyeccion') {
+    color = '#fcd34d'; // Bright Amber
+    bg = 'rgba(251,191,36,0.18)';
+    border = '1px solid rgba(251,191,36,0.35)';
+  } else if (estLower === 'en seguimiento') {
+    color = '#7dd3fc'; // Bright Sky Blue
+    bg = 'rgba(0, 212, 255, 0.18)';
+    border = '1px solid rgba(0, 212, 255, 0.35)';
+  } else if (estLower === 'derivado / aprobado cc') {
+    color = '#86efac'; // Bright Mint Green
+    bg = 'rgba(52,211,153,0.18)';
+    border = '1px solid rgba(52,211,153,0.35)';
+  } else if (estLower === 'derivado / rechazado cc' || estLower === 'no califica') {
+    color = '#fca5a5'; // Bright Red
+    bg = 'rgba(248,113,113,0.18)';
+    border = '1px solid rgba(248,113,113,0.35)';
+  } else if (estLower === 'score bajo') {
+    color = '#fdba74'; // Bright Orange
+    bg = 'rgba(249,115,22,0.18)';
+    border = '1px solid rgba(249,115,22,0.35)';
+  } else if (estLower === 'afectaciones') {
+    color = '#d8b4fe'; // Bright Violet
+    bg = 'rgba(178,102,255,0.18)';
+    border = '1px solid rgba(178,102,255,0.35)';
+  }
+
   return (
     <span style={{
       display: 'inline-block',
-      padding: '3px 10px',
-      borderRadius: 4,
-      fontSize: 11,
-      fontWeight: 600,
-      letterSpacing: '0.2px',
-      background: 'rgba(255,255,255,0.04)',
-      color: '#aaa',
-      border: '1px solid rgba(255,255,255,0.07)',
+      padding: '4px 10px',
+      borderRadius: '6px',
+      fontSize: '11px',
+      fontWeight: 700,
+      letterSpacing: '0.3px',
+      background: bg,
+      color: color,
+      border: border,
       whiteSpace: 'nowrap',
+      textTransform: 'uppercase',
     }}>
       {label}
     </span>
@@ -1476,9 +1522,9 @@ function MultiSelectDropdown({
         onClick={() => setOpen(!open)}
         style={{
           width: '100%', height: 38, fontSize: '13px', fontWeight: 600,
-          padding: '0 12px', background: '#0a0a0a',
-          border: open ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '6px', color: selected.length > 0 ? '#ccc' : '#aaa',
+          padding: '0 12px', background: '#0c0c0c',
+          border: '1px solid var(--border)',
+          borderRadius: '6px', color: selected.length > 0 ? '#fff' : 'var(--fg-muted)',
           outline: 'none', cursor: 'pointer', textAlign: 'left' as const,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
@@ -1492,16 +1538,16 @@ function MultiSelectDropdown({
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-          background: '#111', border: '1px solid rgba(255,255,255,0.08)',
+          background: '#0c0c0c', border: '1px solid var(--border)',
           borderRadius: '8px', zIndex: 100, overflow: 'hidden',
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
         }}>
           {/* Header con "Todos" y "Limpiar" */}
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+            padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)',
           }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
               {selected.length}/{items.length}
             </span>
             {selected.length > 0 && (
@@ -1536,14 +1582,14 @@ function MultiSelectDropdown({
                 >
                   <div style={{
                     width: 14, height: 14, borderRadius: 3,
-                    border: isSelected ? '1.5px solid #888' : '1.5px solid rgba(255,255,255,0.15)',
-                    background: isSelected ? '#888' : 'transparent',
+                    border: isSelected ? '1.5px solid var(--green)' : '1.5px solid rgba(255,255,255,0.15)',
+                    background: isSelected ? 'var(--green)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.15s', flexShrink: 0,
                   }}>
                     {isSelected && <span style={{ fontSize: 9, color: '#fff', fontWeight: 900 }}>✓</span>}
                   </div>
-                  <span style={{ fontSize: 12, color: isSelected ? '#ddd' : '#888', fontWeight: isSelected ? 700 : 500 }}>
+                  <span style={{ fontSize: 12, color: isSelected ? '#fff' : 'var(--fg-muted)', fontWeight: isSelected ? 700 : 500 }}>
                     {labels[item] ?? item}
                   </span>
                 </div>
@@ -1870,16 +1916,17 @@ export default function RegistrosPage() {
       {/* Table */}
       <div style={{
         width: '100%',
-        border: '1px solid rgba(255,255,255,0.03)',
+        background: 'var(--bg-elev-1)',
+        border: '1px solid var(--border)',
         borderRadius: '16px', overflow: 'hidden',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+        boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)'
       }}>
         {filteredRegistros.length === 0 && !loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12 }}>
-            <span style={{ fontSize: 40, color: '#111' }}>—</span>
-            <p style={{ fontSize: 16, color: '#444', fontWeight: 600 }}>No se encontraron registros coincidentes</p>
+            <span style={{ fontSize: 40, color: '#64748b' }}>—</span>
+            <p style={{ fontSize: 16, color: 'var(--fg-muted)', fontWeight: 600 }}>No se encontraron registros coincidentes</p>
             {hayFiltros && (
-              <button onClick={limpiarFiltros} style={{ background: 'transparent', border: '1px solid #222', color: '#666', padding: '10px 20px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', marginTop: '12px' }}>
+              <button onClick={limpiarFiltros} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)', padding: '10px 20px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', marginTop: '12px' }}>
                 <X size={14} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> LIMPIAR FILTROS
               </button>
             )}
@@ -1888,26 +1935,26 @@ export default function RegistrosPage() {
           <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
             {(isAdmin && hayFiltros) && (
               <div style={{
-                background: 'rgba(30, 60, 250, 0.05)',
-                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                background: 'rgba(16, 185, 129, 0.03)',
+                borderBottom: '1px solid rgba(16, 185, 129, 0.1)',
                 padding: '12px 24px',
                 display: 'flex', gap: '32px', alignItems: 'center',
               }}>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#777', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  Registros filtrados <span style={{ color: '#fff', fontSize: '14px', marginLeft: '8px' }}>{totales.cantidad}</span>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Registros filtrados <span style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
                 </span>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#777', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  Total acumulado <span style={{ color: '#fff', fontSize: '14px', marginLeft: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  Total acumulado <span style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>
                     {formatCurrency(totales.monto)}
                   </span>
                 </span>
                 <div style={{ flex: 1 }} />
                 <button onClick={limpiarFiltros} style={{
-                  background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#888', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
                   cursor: 'pointer', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', transition: '0.2s'
                 }}
                   onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = '#888'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
                 >
                   <X size={12} strokeWidth={3} /> Limpiar Filtros
                 </button>
@@ -1915,14 +1962,14 @@ export default function RegistrosPage() {
             )}
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-elev-0)' }}>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
                   {['Cliente / CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
                     <th key={i} style={{
                       padding: '20px 24px',
-                      fontSize: 11, fontWeight: 900,
-                      color: 'var(--fg-muted)',
+                      fontSize: 11, fontWeight: 700,
+                      color: '#fff',
                       textTransform: 'uppercase',
-                      letterSpacing: '1.2px',
+                      letterSpacing: '1.5px',
                       textAlign: (i === 0) ? 'left' : 'center',
                       whiteSpace: 'nowrap',
                     }}>{h}</th>
@@ -1936,32 +1983,33 @@ export default function RegistrosPage() {
                       key={reg.id}
                       className="hover-row"
                       style={{
-                        borderBottom: '1px solid rgba(255,255,255,0.02)',
+                        borderBottom: '1px solid rgba(255,255,255,0.04)',
                         transition: 'all 0.1s ease',
                         cursor: 'default',
                       }}
                     >
                       {/* Cliente */}
-                      <td style={{ padding: '18px 24px', minWidth: 220, textAlign: 'left' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '17px', fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>{reg.nombre}</span>
+                      <td style={{ padding: '18px 24px', minWidth: 240, textAlign: 'left' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '12px', color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', opacity: 0.7 }}>{reg.cuil}</span>}
                             {reg.es_re && (
                               <span style={{
-                                fontSize: '10px', fontWeight: 700, padding: '4px 10px', borderRadius: '2px',
-                                background: 'rgba(100, 100, 100, 0.15)', 
-                                color: '#22c55e', border: '1px solid rgba(100, 100, 100, 0.3)', 
-                                letterSpacing: '1.5px'
+                                fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
+                                background: 'rgba(16, 185, 129, 0.15)', 
+                                color: 'var(--green)', border: '1px solid rgba(16, 185, 129, 0.25)', 
+                                letterSpacing: '0.5px'
                               }}>RE</span>
                             )}
-                            {reg.cuil && <div className="cuil-text" style={{ fontSize: '13px', color: '#444', fontFamily: 'monospace', opacity: 0.8 }}>{reg.cuil}</div>}
                           </div>
                           {vencidoIds.has(reg.id) && (
                             <span style={{
-                              fontSize: '11px', fontWeight: 700, color: 'var(--rojo)',
-                              background: 'rgba(220,53,69,0.1)', padding: '2px 8px',
-                              borderRadius: '6px', border: '1px solid rgba(220,53,69,0.2)',
+                              fontSize: '10px', fontWeight: 700, color: 'var(--rojo)',
+                              background: 'rgba(220,53,69,0.08)', padding: '2px 6px',
+                              borderRadius: '4px', border: '1px solid rgba(220,53,69,0.2)',
                               display: 'inline-block', width: 'fit-content',
+                              marginTop: '2px'
                             }}>
                               Recordatorio vencido
                             </span>
@@ -1970,28 +2018,36 @@ export default function RegistrosPage() {
                       </td>
 
                       {/* Analista */}
-                      <td style={{ padding: '18px 24px', fontSize: '15px', color: '#888', fontWeight: 600, textAlign: 'center' }}>
+                      <td style={{ padding: '18px 24px', fontSize: '13px', color: 'var(--fg-muted)', fontWeight: 500, textAlign: 'center' }}>
                         {displayAnalista(reg.analista)}
                       </td>
 
                       {/* Fecha */}
                       <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '14px', color: '#fff', fontWeight: 600 }}>{formatDate(reg.fecha)}</div>
+                        <div style={{ fontSize: '13px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
                       </td>
 
                       {/* Score */}
                       <td style={{ padding: '18px 24px', textAlign: 'center' }}>
                         {reg.puntaje ? (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '15px', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{reg.puntaje}</span>
+                            <span style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              background: Number(reg.puntaje) >= 700 ? 'var(--green)' :
+                                          Number(reg.puntaje) >= 600 ? '#60a5fa' :
+                                          Number(reg.puntaje) >= 500 ? '#fbbf24' : '#ef4444'
+                            }} />
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
                           </div>
                         ) : (
-                          <span style={{ color: '#111', fontSize: 13 }}>—</span>
+                          <span style={{ color: '#46464e', fontSize: 13 }}>—</span>
                         )}
                       </td>
 
                       {/* Monto */}
-                      <td style={{ padding: '18px 24px', fontSize: '17px', fontWeight: 900, color: reg.monto == null ? '#444' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '18px 24px', fontSize: '14px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
                         {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
                       </td>
 
@@ -2003,15 +2059,15 @@ export default function RegistrosPage() {
                       {/* Tipo / Acuerdo */}
                       <td style={{ padding: '18px 24px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 800, color: reg.tipo_cliente ? '#fff' : '#222' }}>{reg.tipo_cliente || '—'}</span>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
                           <span style={{
                             fontSize: '10px',
                             fontWeight: 700,
                             color:
-                              reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? '#4ade80' :
+                              reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? 'var(--green)' :
                                 reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
                                   reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
-                                    '#333',
+                                    'var(--fg-muted)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.4px'
                           }}>
@@ -2026,35 +2082,27 @@ export default function RegistrosPage() {
                           {reg.comentarios && reg.comentarios.trim() !== '' && (
                             <button
                               onClick={() => setComentariosTarget(reg)}
-                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                              className="table-action-btn"
                               title="Ver comentarios"
-                              onMouseOver={e => e.currentTarget.style.color = '#fff'}
-                              onMouseOut={e => e.currentTarget.style.color = '#444'}
                             ><MessageSquare size={16} /></button>
                           )}
                           <button
                             onClick={() => setRecordatorioTarget(reg)}
-                            style={{ width: 38, height: 38, borderRadius: '10px', background: vencidoIds.has(reg.id) ? 'rgba(220,53,69,0.08)' : 'rgba(255,255,255,0.02)', border: vencidoIds.has(reg.id) ? '1px solid rgba(220,53,69,0.2)' : '1px solid rgba(255,255,255,0.05)', color: vencidoIds.has(reg.id) ? 'var(--rojo)' : '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                            className={`table-action-btn ${vencidoIds.has(reg.id) ? 'btn-alert-active' : ''}`}
                             title="Recordatorio"
-                            onMouseOver={e => { e.currentTarget.style.color = vencidoIds.has(reg.id) ? 'var(--rojo)' : '#fff'; }}
-                            onMouseOut={e => { e.currentTarget.style.color = vencidoIds.has(reg.id) ? 'var(--rojo)' : '#444'; }}
                           ><Bell size={16} /></button>
                           {canEditRegistros && (
                             <button
                               onClick={() => openEdit(reg)}
-                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: '#444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                              className="table-action-btn"
                               title="Editar"
-                              onMouseOver={e => e.currentTarget.style.color = '#fff'}
-                              onMouseOut={e => e.currentTarget.style.color = '#444'}
                             ><Edit2 size={16} /></button>
                           )}
                           {canDeleteRegistros && (
                             <button
                               onClick={() => setDeleteTarget(reg)}
-                              style={{ width: 38, height: 38, borderRadius: '10px', background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.1)', color: '#f87171', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
+                              className="table-action-btn btn-delete"
                               title="Eliminar"
-                              onMouseOver={e => e.currentTarget.style.background = 'rgba(248,113,113,0.15)'}
-                              onMouseOut={e => e.currentTarget.style.background = 'rgba(248,113,113,0.05)'}
                             ><Trash2 size={16} /></button>
                           )}
                         </div>
@@ -2073,10 +2121,10 @@ export default function RegistrosPage() {
                 justifyContent: 'space-between',
                 padding: '14px 20px',
                 borderTop: '1px solid rgba(255,255,255,0.04)',
-                background: 'rgba(255,255,255,0.01)',
+                background: 'transparent',
               }}>
                 {/* Info de registros */}
-                <div style={{ fontSize: '13px', color: '#888', fontWeight: 600 }}>
+                <div style={{ fontSize: '13px', color: 'var(--fg-muted)', fontWeight: 600 }}>
                   Mostrando {rangeEnd} de {filteredRegistros.length} registros
                 </div>
 
@@ -2085,30 +2133,7 @@ export default function RegistrosPage() {
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    style={{
-                      padding: '8px 16px',
-                      background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px',
-                      color: currentPage === 1 ? '#444' : '#888',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === 1 ? 0.4 : 1,
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => {
-                      if (currentPage !== 1) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                        e.currentTarget.style.color = '#fff';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (currentPage !== 1) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#888';
-                      }
-                    }}
+                    className="btn-pagination"
                   >
                     Primera
                   </button>
@@ -2116,36 +2141,13 @@ export default function RegistrosPage() {
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    style={{
-                      padding: '8px 16px',
-                      background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px',
-                      color: currentPage === 1 ? '#444' : '#888',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === 1 ? 0.4 : 1,
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => {
-                      if (currentPage !== 1) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                        e.currentTarget.style.color = '#fff';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (currentPage !== 1) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#888';
-                      }
-                    }}
+                    className="btn-pagination"
                   >
                     ← Anterior
                   </button>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '13px', color: '#fff', fontWeight: 700 }}>Página</span>
+                    <span style={{ fontSize: '13px', color: 'var(--fg-muted)', fontWeight: 600 }}>Página</span>
                     <input
                       type="number"
                       min="1"
@@ -2157,49 +2159,15 @@ export default function RegistrosPage() {
                           setCurrentPage(val);
                         }
                       }}
-                      style={{
-                        width: '50px',
-                        padding: '6px 10px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '6px',
-                        color: '#fff',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        textAlign: 'center',
-                        outline: 'none',
-                      }}
+                      className="pagination-input"
                     />
-                    <span style={{ fontSize: '13px', color: '#fff', fontWeight: 700 }}>de {totalPages}</span>
+                    <span style={{ fontSize: '13px', color: 'var(--fg-muted)', fontWeight: 600 }}>de {totalPages}</span>
                   </div>
 
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    style={{
-                      padding: '8px 16px',
-                      background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px',
-                      color: currentPage === totalPages ? '#444' : '#888',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === totalPages ? 0.4 : 1,
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => {
-                      if (currentPage !== totalPages) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                        e.currentTarget.style.color = '#fff';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (currentPage !== totalPages) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#888';
-                      }
-                    }}
+                    className="btn-pagination"
                   >
                     Siguiente →
                   </button>
@@ -2207,30 +2175,7 @@ export default function RegistrosPage() {
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    style={{
-                      padding: '8px 16px',
-                      background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '8px',
-                      color: currentPage === totalPages ? '#444' : '#888',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                      opacity: currentPage === totalPages ? 0.4 : 1,
-                      transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={e => {
-                      if (currentPage !== totalPages) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                        e.currentTarget.style.color = '#fff';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (currentPage !== totalPages) {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = '#888';
-                      }
-                    }}
+                    className="btn-pagination"
                   >
                     Última
                   </button>
@@ -2305,7 +2250,7 @@ const AuditModal = ({ isOpen, onClose, registros: dbRecords }: { isOpen: boolean
       <div className="modal-content" style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div className="modal-header">
           <div className="modal-title-container">
-            <Upload className="modal-title-icon" />
+            <Upload className="modal-title-icon" style={{ color: 'var(--green)' }} />
             <h2 className="modal-title">AUDITORÍA E IMPORTACIÓN</h2>
           </div>
           <button className="modal-close" onClick={onClose}><X /></button>
@@ -2313,55 +2258,55 @@ const AuditModal = ({ isOpen, onClose, registros: dbRecords }: { isOpen: boolean
 
         <div className="modal-body" style={{ flex: 1, overflowY: 'auto' }}>
           {!results ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: 12 }}>
-              <Upload size={48} style={{ color: '#666', marginBottom: 16 }} />
-              <p style={{ color: '#aaa', marginBottom: 20 }}>Selecciona un archivo CSV para auditar contra la base de datos.</p>
+            <div style={{ padding: '40px 20px', textAlign: 'center', border: '2px dashed rgba(255,255,255,0.06)', borderRadius: 12 }}>
+              <Upload size={48} style={{ color: '#46464e', marginBottom: 16 }} />
+              <p style={{ color: 'var(--fg-muted)', marginBottom: 20, fontSize: '13px' }}>Selecciona un archivo CSV para auditar contra la base de datos.</p>
               <input type="file" accept=".csv" onChange={handleFileChange} style={{ display: 'none' }} id="audit-file" />
-              <label htmlFor="audit-file" className="btn-primary" style={{ cursor: 'pointer', padding: '10px 24px' }}>
+              <label htmlFor="audit-file" className="btn-primary" style={{ cursor: 'pointer', padding: '10px 24px', background: 'var(--green)', color: '#000', borderRadius: '8px', fontSize: '12px', fontWeight: 800 }}>
                 SELECCIONAR ARCHIVO
               </label>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>NUEVOS</div>
-                  <div style={{ fontSize: 24, fontWeight: 700 }}>{results.filter(r => r.status === 'new').length}</div>
+                <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, letterSpacing: '0.5px' }}>NUEVOS</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{results.filter(r => r.status === 'new').length}</div>
                 </div>
-                <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.2)', padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: '#eab308', fontWeight: 600 }}>DIFERENCIAS</div>
-                  <div style={{ fontSize: 24, fontWeight: 700 }}>{results.filter(r => r.status === 'mismatch').length}</div>
+                <div style={{ background: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.2)', padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, letterSpacing: '0.5px' }}>DIFERENCIAS</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{results.filter(r => r.status === 'mismatch').length}</div>
                 </div>
-                <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 12, color: '#aaa', fontWeight: 600 }}>YA EXISTENTES</div>
-                  <div style={{ fontSize: 24, fontWeight: 700 }}>{results.filter(r => r.status === 'duplicate').length}</div>
+                <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>YA EXISTENTES</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{results.filter(r => r.status === 'duplicate').length}</div>
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}>
+              <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <thead style={{ background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <tr>
-                      <th style={{ padding: 12, textAlign: 'left' }}>Fecha</th>
-                      <th style={{ padding: 12, textAlign: 'left' }}>CUIL / Nombre</th>
-                      <th style={{ padding: 12, textAlign: 'left' }}>Importe</th>
-                      <th style={{ padding: 12, textAlign: 'left' }}>Estado</th>
+                      <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)' }}>Fecha</th>
+                      <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)' }}>CUIL / Nombre</th>
+                      <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)' }}>Importe</th>
+                      <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)' }}>Estado</th>
                     </tr>
                   </thead>
                   <tbody>
                     {results.slice(0, 100).map((res, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: 12 }}>{res.csvRecord.fecha}</td>
+                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                        <td style={{ padding: 12, color: '#fff' }}>{res.csvRecord.fecha}</td>
                         <td style={{ padding: 12 }}>
-                          <div style={{ fontWeight: 600 }}>{res.csvRecord.nombre}</div>
-                          <div style={{ fontSize: 11, color: '#888' }}>{res.csvRecord.cuil}</div>
+                          <div style={{ fontWeight: 600, color: '#fff' }}>{res.csvRecord.nombre}</div>
+                          <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'monospace' }}>{res.csvRecord.cuil}</div>
                         </td>
-                        <td style={{ padding: 12 }}>${res.csvRecord.monto?.toLocaleString()}</td>
+                        <td style={{ padding: 12, color: '#fff' }}>${res.csvRecord.monto?.toLocaleString()}</td>
                         <td style={{ padding: 12 }}>
-                          {res.status === 'new' && <span style={{ color: '#22c55e', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={14}/> Nuevo</span>}
-                          {res.status === 'duplicate' && <span style={{ color: '#888', display: 'flex', alignItems: 'center', gap: 4 }}><Info size={14}/> Existente</span>}
+                          {res.status === 'new' && <span style={{ color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={14}/> Nuevo</span>}
+                          {res.status === 'duplicate' && <span style={{ color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 4 }}><Info size={14}/> Existente</span>}
                           {res.status === 'mismatch' && (
-                            <span style={{ color: '#eab308', display: 'flex', alignItems: 'center', gap: 4, cursor: 'help' }} title={res.diffMessage}>
+                            <span style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 4, cursor: 'help' }} title={res.diffMessage}>
                               <AlertCircle size={14}/> Diferencia
                             </span>
                           )}
@@ -2372,19 +2317,26 @@ const AuditModal = ({ isOpen, onClose, registros: dbRecords }: { isOpen: boolean
                 </table>
               </div>
               {results.length > 100 && (
-                <p style={{ textAlign: 'center', fontSize: 11, color: '#666' }}>Mostrando los primeros 100 de {results.length} registros...</p>
+                <p style={{ textAlign: 'center', fontSize: 11, color: '#46464e' }}>Mostrando los primeros 100 de {results.length} registros...</p>
               )}
             </div>
           )}
         </div>
 
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose} disabled={isProcessing}>CANCELAR</button>
+          <button className="btn-secondary" onClick={onClose} disabled={isProcessing} style={{
+            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+            fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
+          }}>CANCELAR</button>
           {results && (
             <button 
               className="btn-primary" 
               onClick={handleImport} 
               disabled={isProcessing || results.filter(r => r.status === 'new').length === 0}
+              style={{
+                background: 'var(--green)', color: '#000', border: 'none', fontWeight: 800,
+                padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
+              }}
             >
               {isProcessing ? 'PROCESANDO...' : `IMPORTAR ${results.filter(r => r.status === 'new').length} NUEVOS`}
             </button>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
@@ -60,7 +60,7 @@ export default function ImportAuditTab() {
   const filteredResults = results?.filter(r => filterStatus === 'all' || r.status === filterStatus) || [];
 
   return (
-    <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', animation: 'fadeIn 0.3s ease-out' }}>
+    <div className="data-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)', animation: 'fadeIn 0.3s ease-out' }}>
       <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <div>
           <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Auditoría e Importación Masiva</h3>

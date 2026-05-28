@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -153,7 +153,7 @@ export default function AvisosTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* SECCIÓN 1: MENSAJES DIRECTOS */}
-      <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)' }}>
         <div className="data-card-header" style={{ marginBottom: '24px' }}>
           <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>1. Enviar Mensaje Pop-up (Directo)</h3>
           <p style={{ fontSize: '13px', color: 'var(--gris)' }}>Envía un mensaje rápido que aparecerá como popup al usuario.</p>
@@ -218,7 +218,7 @@ export default function AvisosTab() {
       </div>
 
       {/* SECCIÓN 2: EJECUTAR RECORDATORIOS EXISTENTES */}
-      <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)' }}>
         <div className="data-card-header" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>2. Ejecutar Recordatorios de Clientes</h3>
@@ -279,7 +279,7 @@ export default function AvisosTab() {
       </div>
 
       {/* HISTORIAL DE MENSAJES DIRECTOS */}
-      <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)' }}>
         <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Clock size={16} /> Últimos Mensajes Directos Enviados
         </h4>

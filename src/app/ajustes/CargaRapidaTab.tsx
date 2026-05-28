@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
@@ -11,7 +11,7 @@ import {
 } from '@/lib/carga-rapida-utils';
 
 const STATUS_CONFIG = {
-  new:    { label: 'Nuevo',     color: '#4ade80', Icon: CheckCircle2 },
+  new:    { label: 'Nuevo',     color: '#00ff88', Icon: CheckCircle2 },
   update: { label: 'Ya existe', color: '#fbbf24', Icon: AlertCircle  },
   skip:   { label: 'Ya existe', color: '#fbbf24', Icon: AlertCircle  },
 };
@@ -214,7 +214,7 @@ export default function CargaRapidaTab() {
           {/* Summary bar */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {[
-              { key: 'new',  label: `${summary.new} nuevos`,            color: '#4ade80' },
+              { key: 'new',  label: `${summary.new} nuevos`,            color: '#00ff88' },
               { key: 'skip', label: `${summary.skip} ya existen (se omiten)`, color: '#fbbf24' },
             ].map(s => (
               <div key={s.key} style={{ padding: '6px 14px', borderRadius: 6, background: 'rgba(255,255,255,0.03)', border: `1px solid ${s.color}22`, fontSize: 12, fontWeight: 700, color: s.color }}>
@@ -256,9 +256,9 @@ export default function CargaRapidaTab() {
                             {res.diffs.map((d, j) => (
                               <div key={j} style={{ fontSize: 11, color: '#888' }}>
                                 <span style={{ color: '#fbbf24', fontWeight: 700 }}>{d.label}:</span>{' '}
-                                <span style={{ color: '#f87171', textDecoration: 'line-through' }}>{d.oldValue || '—'}</span>
+                                <span style={{ color: '#ff3366', textDecoration: 'line-through' }}>{d.oldValue || '—'}</span>
                                 {' → '}
-                                <span style={{ color: '#4ade80' }}>{d.newValue || '—'}</span>
+                                <span style={{ color: '#00ff88' }}>{d.newValue || '—'}</span>
                               </div>
                             ))}
                           </div>
@@ -284,9 +284,9 @@ export default function CargaRapidaTab() {
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 padding: '10px 22px',
                 background: summary.new > 0 && !saving
-                  ? 'linear-gradient(135deg, #16a34a 0%, #4ade80 100%)'
+                  ? 'linear-gradient(135deg, #16a34a 0%, #00ff88 100%)'
                   : 'rgba(255,255,255,0.04)',
-                color: summary.new > 0 && !saving ? '#0a0a0a' : '#555',
+                color: summary.new > 0 && !saving ? '#111111' : '#555',
                 border: summary.new > 0 && !saving
                   ? '1px solid rgba(74,222,128,0.4)'
                   : '1px solid rgba(255,255,255,0.06)',
@@ -308,7 +308,7 @@ export default function CargaRapidaTab() {
           </div>
 
           {error && (
-            <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#f87171', fontSize: 12 }}>
+            <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, color: '#ff3366', fontSize: 12 }}>
               Error: {error}
             </div>
           )}
@@ -318,8 +318,8 @@ export default function CargaRapidaTab() {
       {/* Success state */}
       {saved && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 40 }}>
-          <CheckCircle2 size={40} color="#4ade80" />
-          <p style={{ color: '#4ade80', fontWeight: 700, fontSize: 16 }}>¡Carga completada!</p>
+          <CheckCircle2 size={40} color="#00ff88" />
+          <p style={{ color: '#00ff88', fontWeight: 700, fontSize: 16 }}>¡Carga completada!</p>
           <button onClick={handleReset} style={{ padding: '8px 20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#ccc', fontSize: 13, cursor: 'pointer' }}>
             Nueva carga
           </button>

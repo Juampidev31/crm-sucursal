@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
@@ -31,8 +31,8 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          background: '#000000',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: '#0c0c0c',
+          border: '1px solid rgba(255,255,255,0.06)',
           borderRadius: '4px',
           padding: '8px 12px',
           display: 'flex',
@@ -45,7 +45,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
           userSelect: 'none',
           transition: 'border-color 0.2s',
           height: '38px',
-          borderColor: isOpen ? '#fff' : 'rgba(255,255,255,0.08)',
+          borderColor: isOpen ? '#10b981' : 'rgba(255,255,255,0.06)',
         }}
       >
         <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -54,7 +54,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
         <ChevronDown size={14} style={{
           transform: isOpen ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.2s',
-          color: '#666'
+          color: '#8f929d'
         }} />
       </div>
 
@@ -64,11 +64,11 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
           top: 'calc(100% + 4px)',
           left: 0,
           width: '100%',
-          background: '#000000',
-          border: '1px solid rgba(255,255,255,0.12)',
+          background: '#0c0c0c',
+          border: '1px solid rgba(255,255,255,0.03)',
           borderRadius: '4px',
           zIndex: 100,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
           padding: '4px',
           maxHeight: '300px',
           overflowY: 'auto',
@@ -88,15 +88,15 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
                 fontSize: '12.5px',
                 fontWeight: 500,
                 cursor: opt.disabled ? 'default' : 'pointer',
-                color: opt.disabled ? '#444' : (opt.value === value ? '#fff' : '#999'),
-                background: opt.value === value ? 'rgba(255,255,255,0.08)' : 'transparent',
+                color: opt.disabled ? '#64748b' : (opt.value === value ? '#10b981' : '#8f929d'),
+                background: opt.value === value ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
                 transition: 'all 0.1s',
                 pointerEvents: opt.disabled ? 'none' : 'auto',
               }}
               onMouseEnter={e => {
                 if (opt.disabled) return;
                 if (opt.value !== value) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
                   e.currentTarget.style.color = '#fff';
                 }
               }}
@@ -104,7 +104,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
                 if (opt.disabled) return;
                 if (opt.value !== value) {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#999';
+                  e.currentTarget.style.color = '#8f929d';
                 }
               }}
             >

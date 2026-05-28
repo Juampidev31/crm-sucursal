@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -81,7 +81,7 @@ export default function MassiveDeleteTab() {
   };
 
   return (
-    <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,22,22,0.1)' }}>
+    <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,22,22,0.1)' }}>
       <div className="data-card-header" style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ background: 'rgba(255,0,0,0.1)', padding: '10px', borderRadius: '10px' }}>
@@ -186,7 +186,7 @@ export default function MassiveDeleteTab() {
               </button>
             </>
           ) : (
-            <div style={{ color: '#4ade80', fontSize: '16px', fontWeight: 700 }}>
+            <div style={{ color: '#00ff88', fontSize: '16px', fontWeight: 700 }}>
               <CheckCircle size={24} style={{ marginBottom: '8px' }} /><br />
               No se encontraron registros en este rango de fechas.
             </div>

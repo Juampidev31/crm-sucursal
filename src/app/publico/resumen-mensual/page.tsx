@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import type { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
 import { AlertTriangle } from 'lucide-react';
@@ -15,10 +15,10 @@ const parsePeriodo = (params: { anio?: string; mes?: string; zoom?: string }) =>
 };
 
 const ErrorScreen = ({ message }: { message: string }) => (
-  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', padding: '20px' }}>
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0c0c0c', padding: '20px' }}>
     <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '12px', padding: '40px', maxWidth: '500px', textAlign: 'center' }}>
       <div style={{ width: '48px', height: '48px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-        <AlertTriangle color="#ef4444" size={24} />
+        <AlertTriangle color="#ff3366" size={24} />
       </div>
       <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, marginBottom: '12px' }}>Error al cargar el reporte</h2>
       <p style={{ color: '#999', fontSize: '14px', lineHeight: '1.6' }}>{message}</p>
@@ -69,7 +69,7 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
   if ('error' in result) return <ErrorScreen message={result.error || 'Error desconocido'} />;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#ccc', fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#0c0c0c', color: '#ccc', fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <header style={{
         padding: '24px 40px',
         borderBottom: '1px solid rgba(255,255,255,0.04)',

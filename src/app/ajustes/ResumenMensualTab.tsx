@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -15,9 +15,61 @@ import AnalisisTemporalTab from './AnalisisTemporalTab';
 import MetricasTab from './MetricasTab';
 import type { AnalisisTemporalState } from './AnalisisTemporalTab';
 
+const calloutPlugin = {
+  id: 'calloutPlugin',
+  afterDraw(chart: any) {
+    const { ctx, chartArea: { top, left, width, height } } = chart;
+    const datasetMeta = chart.getDatasetMeta(0);
+    if (!datasetMeta || !datasetMeta.data || datasetMeta.data.length === 0) return;
+    
+    let total = 0;
+    chart.data.datasets[0].data.forEach((val: number) => { total += val; });
+    if (total === 0) return;
+
+    ctx.save();
+    datasetMeta.data.forEach((element: any, index: number) => {
+      const val = chart.data.datasets[0].data[index];
+      if (!val) return; // don't draw for 0
+      const pct = (val / total * 100).toFixed(2) + '%';
+      
+      const centerPoint = element.tooltipPosition();
+      const xCenter = left + width / 2;
+      const yCenter = top + height / 2;
+      const angle = Math.atan2(centerPoint.y - yCenter, centerPoint.x - xCenter);
+      
+      const radius = element.outerRadius;
+      
+      const xLineStart = xCenter + Math.cos(angle) * radius;
+      const yLineStart = yCenter + Math.sin(angle) * radius;
+      
+      const xLineMid = xCenter + Math.cos(angle) * (radius + 15);
+      const yLineMid = yCenter + Math.sin(angle) * (radius + 15);
+      
+      const isLeft = xLineMid < xCenter;
+      const xLineEnd = xLineMid + (isLeft ? -15 : 15);
+      
+      ctx.beginPath();
+      ctx.moveTo(xLineStart, yLineStart);
+      ctx.lineTo(xLineMid, yLineMid);
+      ctx.lineTo(xLineEnd, yLineMid);
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      
+      ctx.fillStyle = '#aaa';
+      ctx.font = '600 10px "Outfit", sans-serif';
+      ctx.textAlign = isLeft ? 'right' : 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pct, xLineEnd + (isLeft ? -5 : 5), yLineMid);
+    });
+    ctx.restore();
+  }
+};
+
 const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
+    layout: { padding: 40 },
     cutout: '80%',
     plugins: {
       legend: { display: false },
@@ -48,8 +100,8 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
   const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
 
   return (
-    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} />
+    <div style={{ position: 'relative', height: '240px', width: '280px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -102,7 +154,7 @@ const DistBlock = ({
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
       </div>
       <div style={{ 
-        background: '#0d0d0d', 
+        background: '#111111', 
         borderRadius: 10, 
         border: '1px solid rgba(255,255,255,0.04)', 
         overflowX: 'hidden', 
@@ -490,7 +542,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       // 7. CSS vars fix
       clone.innerHTML = clone.innerHTML
         .replace(/var\(--gris\)/g, '#666')
-        .replace(/var\(--rojo\)/g, '#f87171');
+        .replace(/var\(--rojo\)/g, '#ff3366');
 
       // 8. Preparar datos para interactividad
       const auditCounts: Record<string, number> = {};
@@ -767,7 +819,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     // 7. Resolver CSS vars residuales + fix grids para print
     clone.innerHTML = clone.innerHTML
       .replace(/var\(--gris\)/g, '#666')
-      .replace(/var\(--rojo\)/g, '#f87171')
+      .replace(/var\(--rojo\)/g, '#ff3366')
       .replace(/repeat\(auto-fit,\s*minmax\(\d+px,\s*1fr\)\)/g, 'repeat(2, 1fr)');
 
     // 8. Agregar break-inside: avoid a cada data-card y tarjeta interna
@@ -788,14 +840,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    html, body { margin: 0; padding: 0; background: #0a0a0a; color: #ccc; font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
+    html, body { margin: 0; padding: 0; background: #0c0c0c; color: #ccc; font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
     body { padding: 32px 40px; }
-    @page { margin: 10mm 12mm; size: A4 landscape; background: #0a0a0a; }
-    @media print { body { padding: 0; background: #0a0a0a; } }
+    @page { margin: 10mm 12mm; size: A4 landscape; background: #0c0c0c; }
+    @media print { body { padding: 0; background: #0c0c0c; } }
     /* Ocultar scrollbars, transiciones y cursores interactivos */
     * { scrollbar-width: none; transition: none !important; animation: none !important; cursor: default !important; }
     /* Clases del proyecto */
-    .data-card { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 24px; margin-bottom: 0; break-inside: avoid; page-break-inside: avoid; }
+    .data-card { background: #0c0c0c; border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 24px; margin-bottom: 0; break-inside: avoid; page-break-inside: avoid; }
     .data-table { width: 100%; border-collapse: collapse; text-align: left; }
     /* Ocultar el spinner y elementos no imprimibles */
     .spinner, [class*="no-print"] { display: none !important; }
@@ -846,12 +898,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   };
 
   const cumplColor = (pct: number | null) =>
-    pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+    pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
 
 
   const tendBadge = (pct: number | null) => {
     if (pct === null) return <span style={{ color: '#333' }}>—</span>;
-    const color = pct >= 0 ? '#34d399' : '#f87171';
+    const color = pct >= 0 ? '#34d399' : '#ff3366';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -1358,7 +1410,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     type: 'line' as const,
     label: 'Meta 100%',
     data: Array(n).fill(100),
-    borderColor: '#f87171',
+    borderColor: '#ff3366',
     borderWidth: 1.5,
     borderDash: [5, 4],
     pointRadius: 0,
@@ -1498,7 +1550,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     };
   };
 
-  const chartSexo = useMemo(() => buildCatChart(distSexo, distSexoAnt, '#f472b6'), [distSexo, distSexoAnt, mesActualLabel, mesAntLabel]);
+  const chartSexo = useMemo(() => buildCatChart(distSexo, distSexoAnt, '#b266ff'), [distSexo, distSexoAnt, mesActualLabel, mesAntLabel]);
 
   // ── Ranking analistas ─────────────────────────────────────────────────────
   const rankingAnalistas = useMemo(() =>
@@ -1524,7 +1576,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Capital ${mesActualLabel}`, 
           data: capitalAct, 
-          backgroundColor: 'rgba(16, 185, 129, 0.15)', 
+          backgroundColor: 'rgba(0, 255, 136, 0.15)', 
           borderColor: 'rgba(16, 185, 129, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4, 
@@ -1541,7 +1593,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           order: 1, 
           maxBarThickness: 100 
         },
-        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#f87171', fill: false, order: 0 },
+        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#ff3366', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#ff3366', fill: false, order: 0 },
       ],
     };
   }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, ventasMesAnt, mesActualLabel, mesAntLabel]);
@@ -1566,7 +1618,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         { 
           label: `Ticket ${mesActualLabel}`, 
           data: [...kpiPorAnalista.map(k => k.ticket), kpiTotal.ticket], 
-          backgroundColor: 'rgba(59, 130, 246, 0.15)', 
+          backgroundColor: 'rgba(255, 170, 0, 0.15)', 
           borderColor: 'rgba(59, 130, 246, 0.5)',
           borderWidth: 1.5,
           borderRadius: 4, 
@@ -1783,16 +1835,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           data: cerradas,
           backgroundColor: [
-            'rgba(16, 185, 129, 0.15)', 
-            'rgba(59, 130, 246, 0.15)', 
+            'rgba(0, 255, 136, 0.15)', 
+            'rgba(255, 170, 0, 0.15)', 
             'rgba(139, 92, 246, 0.15)', 
             'rgba(236, 72, 153, 0.15)', 
             'rgba(245, 158, 11, 0.15)', 
             'rgba(239, 68, 68, 0.15)'
           ],
           borderColor: [
-            'rgba(16, 185, 129, 0.4)', 
-            'rgba(59, 130, 246, 0.4)', 
+            'rgba(0, 255, 136, 0.8)', 
+            'rgba(255, 170, 0, 0.8)', 
             'rgba(139, 92, 246, 0.4)', 
             'rgba(236, 72, 153, 0.4)', 
             'rgba(245, 158, 11, 0.4)', 
@@ -1891,7 +1943,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               style={{ 
                 display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, 
                 border: '1px solid rgba(52,211,153,0.2)', background: 'rgba(16, 185, 129, 0.04)', 
-                color: '#10b981', fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 800, 
+                color: '#00ff88', fontFamily: "'Outfit', sans-serif", fontSize: 11, fontWeight: 800, 
                 cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 textTransform: 'uppercase', letterSpacing: '1px'
               }}
@@ -1899,7 +1951,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                 e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
                 e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.5)';
                 e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 10px 40px rgba(16, 185, 129, 0.15)';
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 255, 136, 0.15)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'rgba(16, 185, 129, 0.04)';
@@ -2016,9 +2068,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(16,185,129,0.03)', padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(16,185,129,0.1)' }}>
-             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', boxShadow: '0 0 15px rgba(16,185,129,0.6)' }} />
+             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 15px rgba(16,185,129,0.6)' }} />
              <span style={{ fontSize: '13px', fontWeight: 800, color: '#fff', letterSpacing: '0.5px' }}>
-               Periodo Activo: <span style={{ color: '#10b981', marginLeft: 4 }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]} {selectedAnio}</span>
+               Periodo Activo: <span style={{ color: '#00ff88', marginLeft: 4 }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]} {selectedAnio}</span>
              </span>
           </div>
         </div>
@@ -2028,7 +2080,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       {publicLink && (
         <div style={{
           background: 'rgba(16, 185, 129, 0.05)',
-          border: '1px solid rgba(16, 185, 129, 0.15)',
+          border: '1px solid rgba(0, 255, 136, 0.15)',
           borderRadius: '16px',
           padding: '24px 32px',
           display: 'flex',
@@ -2044,10 +2096,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               width: 44, height: 44, borderRadius: 12, background: 'rgba(16, 185, 129, 0.1)', 
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ff88" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
-              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+              <span style={{ fontSize: '10px', color: '#00ff88', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                 Link Público del Reporte Generado
               </span>
               <a href={publicLink} target="_blank" rel="noopener noreferrer" style={{
@@ -2068,8 +2120,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               }}
               style={{
                 padding: '12px 28px', borderRadius: '12px', border: 'none',
-                background: copied ? 'rgba(16, 185, 129, 0.2)' : '#10b981',
-                color: copied ? '#10b981' : '#000', fontSize: '12px', fontWeight: 900,
+                background: copied ? 'rgba(16, 185, 129, 0.2)' : '#00ff88',
+                color: copied ? '#00ff88' : '#000', fontSize: '12px', fontWeight: 900,
                 textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px',
                 transition: 'all 0.3s ease',
                 boxShadow: copied ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.3)'
@@ -2094,8 +2146,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       ) : (
         <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
+          <div className="data-card" style={{ background: '#111111' }}>
+            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
             {!collapsedSections[1] && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -2152,7 +2204,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                       <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
                       <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4ff' }} />
                           <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -2163,7 +2215,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: '#00d4ff', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
                         <div id="chart-aperturas" style={{ height: 140, position: 'relative', width: '100%' }}>
                           <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                         </div>
@@ -2215,7 +2267,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 2: VENTAS POR CATEGORÍA ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
               {!collapsedSections[2] && (
@@ -2261,10 +2313,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   const lo = isMensual ? distLocalidad : distLocalidadTotal;
                   return (
                     <>
-                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={ac} color="#f97316" totalMes={base} />
-                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={cu} color="#60a5fa" totalMes={base} />
+                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#ffaa00" />} datos={ac} color="#ffaa00" totalMes={base} />
+                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#00d4ff" />} datos={cu} color="#00d4ff" totalMes={base} />
                       <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={re} color="#34d399" totalMes={base} />
-                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={sx} color="#f472b6" totalMes={base} />
+                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#b266ff" />} datos={sx} color="#b266ff" totalMes={base} />
                       <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={em} color="#fbbf24" totalMes={base} />
                       <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={lo} color="#a78bfa" totalMes={base} />
                     </>
@@ -2275,13 +2327,13 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 3: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(3, '3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
+          <div className="data-card" style={{ background: '#111111' }}>
+            {sectionHeader(3, '3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#00ff88" />)}
             {!collapsedSections[3] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} />}
           </div>
 
           {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
             {!collapsedSections[4] && (
               <ManualTextarea
@@ -2294,7 +2346,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
             {!collapsedSections[5] && (
               <ManualTextarea
@@ -2307,7 +2359,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
             {!collapsedSections[6] && (
               <>
@@ -2326,8 +2378,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+          <div className="data-card" style={{ background: '#111111' }}>
+            {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#b266ff" />)}
             {!collapsedSections[7] && (
               <ManualTextarea
                 label="Reclamos y Satisfacción"
@@ -2339,7 +2391,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
             {!collapsedSections[8] && (
               <>
@@ -2371,7 +2423,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
             {!collapsedSections[9] && (
               <>
@@ -2416,7 +2468,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                             style={{ 
                               background: 'rgba(239,68,68,0.06)', 
                               border: '1px solid rgba(239,68,68,0.12)', 
-                              borderRadius: 8, color: '#f87171', 
+                              borderRadius: 8, color: '#ff3366', 
                               cursor: 'pointer', padding: '8px', 
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -2471,8 +2523,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 10: RENDIMIENTO Y TENDENCIAS ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
-            {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
+          <div className="data-card" style={{ background: '#111111' }}>
+            {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#00d4ff" />)}
             {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
           </div>
 

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -64,7 +64,7 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
       padding: '1px 6px',
       borderRadius: 4,
       marginTop: 2,
-      color: esCero ? '#888' : esPositivo ? '#4ade80' : '#f87171',
+      color: esCero ? '#888' : esPositivo ? '#00ff88' : '#ff3366',
       background: esCero ? 'rgba(255,255,255,0.05)' : esPositivo ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
     }}>
       {esCero ? '— 0%' : `${esPositivo ? '▲' : '▼'} ${valor >= 0 ? '+' : ''}${valor.toFixed(1)}%`}
@@ -605,7 +605,7 @@ export default function AjustesPage() {
             </div>
           )}
           {activeTab === 'configuracion' && configSubTab === 'alertas' && isAdmin && (
-            <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)' }}>
               <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
                   <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Gestión de Alertas</h3>
@@ -677,7 +677,7 @@ export default function AjustesPage() {
                 </table>
               </div>
 
-              <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', marginTop: '24px' }}>
+              <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)', marginTop: '24px' }}>
                 <div className="data-card-header" style={{ marginBottom: '24px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Consulta de Registros por Estado</h3>
                   <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Acceso rápido para revisar registros por analista y estado (Ej: Registros sin gestión / proyección)</p>
@@ -722,7 +722,7 @@ export default function AjustesPage() {
               {['Todos', ...CONFIG.ANALISTAS_DEFAULT].map(analista => {
                 const entry = diasValues[analista] || { dias_habiles: 22, dias_transcurridos: 0 };
                 return (
-                  <div key={analista} className="data-card" style={{ padding: '24px', background: '#0a0a0a' }}>
+                  <div key={analista} className="data-card" style={{ padding: '24px', background: '#111111' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                       <h4 style={{ fontWeight: 800, fontSize: '16px' }}>{analista === 'Todos' ? 'Punto de Venta' : analista}</h4>
                       <Clock size={14} color="#333" />
@@ -767,7 +767,7 @@ export default function AjustesPage() {
 
           {/* TAB: PERMISOS */}
           {activeTab === 'configuracion' && configSubTab === 'permisos' && isAdmin && (
-            <div className="data-card" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)' }}>
               <div className="data-card-header" style={{ marginBottom: '32px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Roles y Permisos</h3>
                 <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Habilitá o deshabilitá funciones específicas para los analistas en tiempo real.</p>
@@ -785,7 +785,7 @@ export default function AjustesPage() {
                   return (
                     <div key={rol} style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', gridColumn: '1 / -1' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                        <User size={16} color="#60a5fa" />
+                        <User size={16} color="#00d4ff" />
                         <h4 style={{ fontWeight: 800, fontSize: '15px', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rol: {rol}</h4>
                       </div>
 
@@ -806,7 +806,7 @@ export default function AjustesPage() {
                                 style={{
                                   background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(248, 113, 113, 0.1)',
                                   border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(248, 113, 113, 0.3)'}`,
-                                  color: isActive ? '#10b981' : '#f87171',
+                                  color: isActive ? '#00ff88' : '#ff3366',
                                   padding: '6px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
                                   cursor: isSaving ? 'not-allowed' : 'pointer',
                                   opacity: isSaving ? 0.6 : 1,
@@ -856,7 +856,7 @@ export default function AjustesPage() {
             </div>
           )}
           {activeTab === 'reportes' && reportesSubTab === 'historico' && (
-            <div className="data-card" style={{ background: '#0a0a0a' }}>
+            <div className="data-card" style={{ background: '#111111' }}>
               <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
                   <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Histórico y Objetivos</h3>
@@ -1110,7 +1110,7 @@ export default function AjustesPage() {
                     <div key={grupo.key} className="data-card" style={{ borderLeft: 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                         <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(239,68,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <AlertTriangle size={15} color="#ef4444" />
+                          <AlertTriangle size={15} color="#ff3366" />
                         </div>
                         <div>
                           <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
@@ -1278,7 +1278,7 @@ export default function AjustesPage() {
             };
             const accionColor = (accion: string) => {
               if (accion === 'Creación') return { bg: 'rgba(34,197,94,0.08)', color: '#22c55e', border: 'rgba(34,197,94,0.15)' };
-              if (accion === 'Eliminación') return { bg: 'rgba(239,68,68,0.08)', color: '#ef4444', border: 'rgba(239,68,68,0.15)' };
+              if (accion === 'Eliminación') return { bg: 'rgba(239,68,68,0.08)', color: '#ff3366', border: 'rgba(239,68,68,0.15)' };
               if (accion.includes('Recordatorio')) return { bg: 'rgba(168,85,247,0.08)', color: '#a855f7', border: 'rgba(168,85,247,0.15)' };
               return { bg: 'rgba(251,191,36,0.08)', color: '#fbbf24', border: 'rgba(251,191,36,0.15)' };
             };
@@ -1361,7 +1361,7 @@ export default function AjustesPage() {
                         fontSize: '11px', fontWeight: 700, border: 'none',
                         cursor: (limpiandoLog || !auditoriaRegistros?.length) ? 'not-allowed' : 'pointer',
                         background: limpiandoLog ? 'rgba(220,53,69,0.5)' : 'rgba(220,53,69,0.1)',
-                        color: limpiandoLog ? '#888' : '#ef4444',
+                        color: limpiandoLog ? '#888' : '#ff3366',
                         opacity: (limpiandoLog || !auditoriaRegistros?.length) ? 0.4 : 1, transition: 'all 0.2s',
                       }}>
                       <Trash2 size={13} /> {limpiandoLog ? 'Limpiando...' : 'Limpiar Todo'}
@@ -1376,11 +1376,11 @@ export default function AjustesPage() {
                     { label: 'HOY', value: todayCount, icon: <Calendar size={14} />, accent: '#22c55e' },
                     { label: 'CREACIONES', value: creaciones, icon: <Plus size={14} />, accent: '#22c55e' },
                     { label: 'EDICIONES', value: ediciones, icon: <Edit3 size={14} />, accent: '#fbbf24' },
-                    { label: 'ELIMINACIONES', value: eliminaciones, icon: <Trash2 size={14} />, accent: '#ef4444' },
+                    { label: 'ELIMINACIONES', value: eliminaciones, icon: <Trash2 size={14} />, accent: '#ff3366' },
                     { label: 'RECORDATORIOS', value: recordatorios, icon: <Bell size={14} />, accent: '#a855f7' },
                   ].map(kpi => (
                     <div key={kpi.label} style={{
-                      background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
+                      background: '#111111', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
                       padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1409,7 +1409,7 @@ export default function AjustesPage() {
 
                 {/* FILTERS TOOLBAR */}
                 <div style={{
-                  background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
+                  background: '#111111', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
                   padding: '16px 20px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end',
                 }}>
                   {/* Search */}
@@ -1489,7 +1489,7 @@ export default function AjustesPage() {
                 </div>
 
                 {/* DATA TABLE */}
-                <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6, overflow: 'hidden' }}>
                   {auditoriaLoading ? (
                     <div className="loading-container" style={{ minHeight: 200 }}><div className="spinner" /><span>Cargando registros...</span></div>
                   ) : !filtered.length ? (
@@ -1582,7 +1582,7 @@ export default function AjustesPage() {
                                           </div>
                                           {reg.valor_anterior && (
                                             <div style={{ gridColumn: '1 / -1' }}>
-                                              <div style={{ fontSize: '9px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Anterior</div>
+                                              <div style={{ fontSize: '9px', fontWeight: 800, color: '#ff3366', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Anterior</div>
                                               <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'transparent', borderRadius: 4, border: '1px solid rgba(239,68,68,0.2)', wordBreak: 'break-all' }}>{reg.valor_anterior}</div>
                                             </div>
                                           )}

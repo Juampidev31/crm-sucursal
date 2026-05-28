@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
@@ -14,15 +14,17 @@ import {
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
+import { calloutPlugin } from '@/lib/chartPlugins';
 
-const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: import('chart.js').ChartData<'doughnut'>, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
+const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = false }: { data: import('chart.js').ChartData<'doughnut'>, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
+    layout: { padding: 36 },
     cutout: '80%',
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#111',
+        backgroundColor: '#0c0c0c',
         titleColor: '#fff',
         bodyColor: '#ccc',
         borderColor: 'rgba(255,255,255,0.1)',
@@ -48,8 +50,8 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
   const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
 
   return (
-    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} />
+    <div style={{ position: 'relative', height: '220px', width: '220px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -62,7 +64,8 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
       </div>
     </div>
   );
-};
+});
+ModernDoughnut.displayName = 'ModernDoughnut';
 
 const DistBlock = ({ 
   titulo, icon, datos, color, totalMes, maxItems = 5
@@ -102,7 +105,7 @@ const DistBlock = ({
         <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
       </div>
       <div style={{ 
-        background: '#0d0d0d', 
+        background: '#111111', 
         borderRadius: 10, 
         border: '1px solid rgba(255,255,255,0.04)', 
         overflowX: 'hidden', 
@@ -120,10 +123,10 @@ const DistBlock = ({
             return (
               <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
-                  <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
+                  <span style={{ fontSize: 12, color: '#8f929d', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 10, color: '#444' }}>{formatCurrency(d.monto)}</span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: '#aaa', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                    <span style={{ fontSize: 10, color: '#8f929d' }}>{formatCurrency(d.monto)}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' as const }}>{pct.toFixed(0)}%</span>
                   </div>
                 </div>
@@ -146,10 +149,10 @@ const DistBlock = ({
             alignItems: 'center',
             flexShrink: 0
           }}>
-            <span style={{ fontSize: 10, color: '#999', fontWeight: 700, fontStyle: 'italic' }}>
+            <span style={{ fontSize: 10, color: '#8f929d', fontWeight: 700, fontStyle: 'italic' }}>
               * {noEspData.cantidad} sin especificar
             </span>
-            <span style={{ fontSize: 9, color: '#888', fontWeight: 600 }}>{formatCurrency(noEspData.monto)}</span>
+            <span style={{ fontSize: 9, color: '#8f929d', fontWeight: 600 }}>{formatCurrency(noEspData.monto)}</span>
           </div>
         )}
 
@@ -370,17 +373,17 @@ export default function AnalistasPage() {
   };
 
   const cumplColor = (pct: number | null) =>
-    pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+    pct === null ? '#64748b' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
 
   const tendBadge = (pct: number | null) => {
-    if (pct === null) return <span style={{ color: '#333' }}>—</span>;
+    if (pct === null) return <span style={{ color: '#64748b' }}>—</span>;
     const color = pct >= 0 ? '#34d399' : '#f87171';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
           <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
-        <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+        <span style={{ fontSize: 9, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
       </div>
     );
   };
@@ -908,7 +911,7 @@ export default function AnalistasPage() {
         align: 'end' as const,
         labels: { color: '#666', font: { size: 10 }, usePointStyle: true, padding: 10 }
       },
-      tooltip: { backgroundColor: '#111', titleColor: '#fff', bodyColor: '#aaa', borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1 },
+      tooltip: { backgroundColor: '#0c0c0c', titleColor: '#fff', bodyColor: '#aaa', borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1 },
       datalabels: {
         display: showLabels,
         align: stacked ? 'center' as const : 'top' as const,
@@ -1401,7 +1404,7 @@ export default function AnalistasPage() {
             </div>
             <div>
               <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Vista Analistas</div>
-              <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>Métricas detalladas por persona</div>
+              <div style={{ fontSize: 13, color: '#8f929d', marginTop: 2 }}>Métricas detalladas por persona</div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1417,11 +1420,11 @@ export default function AnalistasPage() {
             />
             <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '4px' }}>
               <select value={selectedMes} onChange={e => setSelectedMes(Number(e.target.value))} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
-                {CONFIG.MESES_NOMBRES.map((m, i) => <option key={m} value={i + 1} style={{ background: '#111' }}>{m}</option>)}
+                {CONFIG.MESES_NOMBRES.map((m, i) => <option key={m} value={i + 1} style={{ background: '#111111' }}>{m}</option>)}
               </select>
               <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
               <select value={selectedAnio} onChange={e => setSelectedAnio(Number(e.target.value))} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
-                {Array.from({ length: new Date().getFullYear() + 1 - 2016 + 1 }, (_, i) => 2016 + i).map(a => <option key={a} value={a} style={{ background: '#111' }}>{a}</option>)}
+                {Array.from({ length: new Date().getFullYear() + 1 - 2016 + 1 }, (_, i) => 2016 + i).map(a => <option key={a} value={a} style={{ background: '#111111' }}>{a}</option>)}
               </select>
             </div>
           </div>
@@ -1430,7 +1433,7 @@ export default function AnalistasPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: '#0a0a0a', position: 'relative' }}>
+          <div className="data-card" style={{ background: '#111111', position: 'relative' }}>
             <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 2 }}>
               <button
                 type="button"
@@ -1454,12 +1457,12 @@ export default function AnalistasPage() {
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
                     {tendBadge(kpiTotal.tendCapital)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
                     Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
                   </div>
                   {kpiTotal.cumplCapital !== null && (
@@ -1470,15 +1473,15 @@ export default function AnalistasPage() {
                   )}
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
                       <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
@@ -1491,12 +1494,12 @@ export default function AnalistasPage() {
                   </div>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
                     {tendBadge(kpiTotal.tendOps)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
                     Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
                   </div>
                   {kpiTotal.cumplOps !== null && (
@@ -1507,15 +1510,15 @@ export default function AnalistasPage() {
                   )}
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
                       <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
@@ -1536,30 +1539,30 @@ export default function AnalistasPage() {
                   </div>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
                     {tendBadge(kpiTotal.tendTicket)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#555' }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
+                    <div style={{ fontSize: 12, color: '#8f929d' }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
                     {tendBadge(kpiTotal.tendConversion)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
+                    <div style={{ fontSize: 11, color: '#8f929d' }}>{kpiTotal.clientes} clientes ingresados</div>
                     {tendBadge(kpiTotal.tendClientes)}
                   </div>
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
                       <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
@@ -1667,7 +1670,7 @@ export default function AnalistasPage() {
               </div>
 
           {/* ── SECCIÓN 2: GRÁFICOS ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             {sectionHeader(2, '2. Gráficos', <BarChart3 size={15} color="#a78bfa" />)}
               <>
                 <div style={{ marginBottom: 28 }}>
@@ -1815,7 +1818,7 @@ export default function AnalistasPage() {
           </div>
 
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
@@ -1865,14 +1868,14 @@ export default function AnalistasPage() {
           </div>
 
           {/* ── SECCIÓN 4: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
-          <div className="data-card" style={{ background: '#0a0a0a' }}>
+          <div className="data-card" style={{ background: '#111111' }}>
             {sectionHeader(4, '4. Distribucion por Estado', <PieChart size={15} color="#4ade80" />)}
             <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />
           </div>
 
           {/* ── SECCIÓN 5: CÁLCULO DE INCENTIVOS ── */}
           {['luciana', 'victoria'].includes(analista.toLowerCase()) && (
-            <div className="data-card" style={{ background: '#0a0a0a' }}>
+            <div className="data-card" style={{ background: '#111111' }}>
             {sectionHeader(5, '5. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
               <div style={{ marginTop: 24 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 32 }}>
@@ -1977,7 +1980,7 @@ export default function AnalistasPage() {
                             type="number" 
                             value={manualCobranzas.pctTr90 || ''} 
                             onChange={(e) => handleManualCobChange('pctTr90', e.target.value)}
-                            style={{ width: '100%', background: '#111', border: '1px solid #222', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                            style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                             placeholder="0%"
                           />
                         </div>
@@ -1987,7 +1990,7 @@ export default function AnalistasPage() {
                             type="number" 
                             value={manualCobranzas.pctTr120 || ''} 
                             onChange={(e) => handleManualCobChange('pctTr120', e.target.value)}
-                            style={{ width: '100%', background: '#111', border: '1px solid #222', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                            style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                             placeholder="0%"
                           />
                         </div>
@@ -1997,7 +2000,7 @@ export default function AnalistasPage() {
                             type="number" 
                             value={manualCobranzas.pctRefin || ''} 
                             onChange={(e) => handleManualCobChange('pctRefin', e.target.value)}
-                            style={{ width: '100%', background: '#111', border: '1px solid #222', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                            style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                             placeholder="0%"
                           />
                         </div>
@@ -2077,7 +2080,7 @@ export default function AnalistasPage() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: '#0a0a0a',
+              background: '#111111',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 18,
               padding: 24,
@@ -2113,7 +2116,7 @@ export default function AnalistasPage() {
                   value={anioRendimiento}
                   onChange={e => setAnioRendimiento(Number(e.target.value))}
                   style={{
-                    background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
+                    background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 8, padding: '6px 12px',
                     color: '#fff', fontSize: 13, fontWeight: 700,
                     cursor: 'pointer', minWidth: 90, textAlign: 'center',
@@ -2209,7 +2212,7 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
 
   return (
     <div style={{
-      background: '#0a0a0a',
+      background: '#111111',
       border: '1px solid rgba(255,255,255,0.05)',
       borderRadius: 14,
       padding: '20px 22px',
@@ -2235,12 +2238,12 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
             const pct = meta > 0 ? (v / meta) * 100 : null;
             const prev = i > 0 ? accessor(buckets[i - 1]) : null;
             const variacion = v > 0 && prev !== null && prev > 0 ? ((v - prev) / prev) * 100 : null;
-            const varColor = variacion === null ? '#444' : Math.abs(variacion) < 0.5 ? '#888' : variacion > 0 ? '#4ade80' : '#f87171';
+            const varColor = variacion === null ? '#64748b' : Math.abs(variacion) < 0.5 ? '#8f929d' : variacion > 0 ? '#4ade80' : '#f87171';
             const varBg = variacion === null ? 'transparent' : Math.abs(variacion) < 0.5 ? 'rgba(255,255,255,0.04)' : variacion > 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
             return (
               <tr key={b.key}>
-                <td style={{ ...td, color: '#aaa', fontWeight: 600 }}>{b.label}</td>
-                <td style={{ ...td, textAlign: 'center', color: '#888' }}>{meta > 0 ? fmt(meta) : '—'}</td>
+                <td style={{ ...td, color: '#8f929d', fontWeight: 600 }}>{b.label}</td>
+                <td style={{ ...td, textAlign: 'center', color: '#8f929d' }}>{meta > 0 ? fmt(meta) : '—'}</td>
                 <td style={{ ...td, textAlign: 'center', color: '#fff', fontWeight: 700 }}>{fmt(v)}</td>
                 <td style={{ ...td, textAlign: 'center' }}>
                   {variacion !== null ? (

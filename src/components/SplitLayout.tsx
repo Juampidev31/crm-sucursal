@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { X, ExternalLink, Layout } from 'lucide-react';
@@ -39,7 +39,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
       justifyContent: 'space-between'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Layout size={12} color="#555" />
+        <Layout size={12} color="#8f929d" />
         <select 
           value={currentPath}
           onChange={(e) => handleSelect(side, e.target.value)}
@@ -57,7 +57,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
           }}
         >
           {AVAILABLE_ROUTES.map(r => (
-            <option key={r.path} value={r.path} style={{ background: '#111', color: '#fff' }}>{r.label}</option>
+            <option key={r.path} value={r.path} style={{ background: '#0c0c0c', color: '#fff' }}>{r.label}</option>
           ))}
         </select>
       </div>
@@ -67,9 +67,9 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
           target="_blank" 
           rel="noopener noreferrer"
           title="Abrir en pestaña nueva"
-          style={{ color: '#444', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
+          style={{ color: '#8f929d', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
           onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#444'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#8f929d'}
         >
           <ExternalLink size={12} />
         </a>
@@ -83,7 +83,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
       flexDirection: 'column', 
       height: '100%', 
       width: '100%', 
-      background: '#000',
+      background: '#0c0c0c',
       overflow: 'hidden',
       position: 'relative'
     }}>
@@ -91,8 +91,8 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
       <div style={{
         height: '40px',
         width: '100%',
-        background: '#0a0a0a',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        background: '#0c0c0c',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -121,7 +121,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
             border: 'none',
             borderRadius: '6px',
             padding: '6px 12px',
-            color: '#ef4444',
+            color: '#ff3366',
             fontSize: '10px',
             fontWeight: 800,
             cursor: 'pointer',
@@ -131,7 +131,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
             transition: 'all 0.2s'
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; e.currentTarget.style.color = '#ff5f5f'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ef4444'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ff3366'; }}
         >
           SALIR DEL MODO SPLIT
           <X size={12} />

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { formatCurrency, getStatusLabel } from '@/lib/utils';
@@ -10,6 +10,7 @@ import {
   Tooltip, Legend, ArcElement,
 } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import { calloutPlugin } from '@/lib/chartPlugins';
 
 ChartJS.register(CategoryScale, LinearScale, Tooltip, Legend, ArcElement);
 
@@ -42,6 +43,7 @@ const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
 
 const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: number, label: string }) => {
   const options = {
+    layout: { padding: 40 },
     cutout: '82%',
     plugins: {
       legend: { display: false },
@@ -62,15 +64,15 @@ const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: nu
     elements: {
       arc: {
         borderWidth: 2,
-        borderColor: '#0a0a0a',
+        borderColor: '#111111',
         borderRadius: 4,
       }
     }
   };
 
   return (
-    <div style={{ position: 'relative', height: '220px', width: '220px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} />
+    <div style={{ position: 'relative', height: '260px', width: '280px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo } from 'react';
 import { formatCurrency, formatDate, displayAnalista } from '@/lib/utils';
@@ -77,7 +77,7 @@ export default function DuplicadosPage() {
     whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.15s',
     background: isActive ? 'rgba(0,120,212,0.1)' : 'rgba(255,255,255,0.01)',
     borderColor: isActive ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
-    color: isActive ? 'var(--azul)' : '#444',
+    color: isActive ? 'var(--azul)' : '#8f929d',
     textTransform: 'uppercase' as const, letterSpacing: '0.8px'
   });
 
@@ -133,7 +133,7 @@ export default function DuplicadosPage() {
       {loading ? (
         <div className="loading-container"><div className="spinner" /><span>Buscando registros...</span></div>
       ) : duplicados.length === 0 ? (
-        <div className="empty-state" style={{ background: '#000', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px', padding: '60px' }}>
+        <div className="empty-state" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px', padding: '60px' }}>
           <CheckCircle size={40} color="var(--verde)" style={{ margin: '0 auto 16px', opacity: 0.4 }} />
           <p style={{ color: 'var(--verde)', fontWeight: 800, fontSize: '16px', opacity: 0.8 }}>SISTEMA LIMPIO</p>
         </div>
@@ -149,7 +149,7 @@ export default function DuplicadosPage() {
                   <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
                     {grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre.toUpperCase()}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#444', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <div style={{ fontSize: '11px', color: '#8f929d', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {grupo.registros.length} duplicados detectados • {grupo.tipo}
                   </div>
                 </div>
@@ -171,14 +171,14 @@ export default function DuplicadosPage() {
                       <tr key={r.id}>
                         <td style={{ padding: '10px 16px' }}>
                           <div style={{ fontWeight: 700, color: i === 0 ? '#fff' : '#999' }}>{r.nombre}</div>
-                          <div style={{ fontSize: '10px', color: '#444', fontFamily: 'monospace' }}>{r.cuil}</div>
+                          <div style={{ fontSize: '10px', color: '#8f929d', fontFamily: 'monospace' }}>{r.cuil}</div>
                         </td>
-                        <td style={{ color: '#666', fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
+                        <td style={{ color: '#8f929d', fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
                         <td>
                           <span className="status-badge" style={{ fontSize: '9px', padding: '2px 8px' }}>{r.estado}</span>
                         </td>
                         <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--dorado)' }}>{formatCurrency(r.monto ?? 0)}</td>
-                        <td style={{ textAlign: 'center', color: '#555', fontSize: '11px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
+                        <td style={{ textAlign: 'center', color: '#8f929d', fontSize: '11px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
                       </tr>
                     ))}
                   </tbody>

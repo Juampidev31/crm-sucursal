@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -13,9 +13,61 @@ import MetricasTab from '../../ajustes/MetricasTab';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
+const calloutPlugin = {
+  id: 'calloutPlugin',
+  afterDraw(chart: any) {
+    const { ctx, chartArea: { top, left, width, height } } = chart;
+    const datasetMeta = chart.getDatasetMeta(0);
+    if (!datasetMeta || !datasetMeta.data || datasetMeta.data.length === 0) return;
+    
+    let total = 0;
+    chart.data.datasets[0].data.forEach((val: number) => { total += val; });
+    if (total === 0) return;
+
+    ctx.save();
+    datasetMeta.data.forEach((element: any, index: number) => {
+      const val = chart.data.datasets[0].data[index];
+      if (!val) return; // don't draw for 0
+      const pct = (val / total * 100).toFixed(2) + '%';
+      
+      const centerPoint = element.tooltipPosition();
+      const xCenter = left + width / 2;
+      const yCenter = top + height / 2;
+      const angle = Math.atan2(centerPoint.y - yCenter, centerPoint.x - xCenter);
+      
+      const radius = element.outerRadius;
+      
+      const xLineStart = xCenter + Math.cos(angle) * radius;
+      const yLineStart = yCenter + Math.sin(angle) * radius;
+      
+      const xLineMid = xCenter + Math.cos(angle) * (radius + 15);
+      const yLineMid = yCenter + Math.sin(angle) * (radius + 15);
+      
+      const isLeft = xLineMid < xCenter;
+      const xLineEnd = xLineMid + (isLeft ? -15 : 15);
+      
+      ctx.beginPath();
+      ctx.moveTo(xLineStart, yLineStart);
+      ctx.lineTo(xLineMid, yLineMid);
+      ctx.lineTo(xLineEnd, yLineMid);
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      
+      ctx.fillStyle = '#aaa';
+      ctx.font = '600 10px "Outfit", sans-serif';
+      ctx.textAlign = isLeft ? 'right' : 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pct, xLineEnd + (isLeft ? -5 : 5), yLineMid);
+    });
+    ctx.restore();
+  }
+};
+
 const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
+    layout: { padding: 40 },
     cutout: '80%',
     plugins: {
       legend: { display: false },
@@ -46,8 +98,8 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
   const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
 
   return (
-    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} />
+    <div style={{ position: 'relative', height: '240px', width: '280px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -94,12 +146,12 @@ const baseChartOpts = (show = true) => ({
             y: { ticks: { color: '#555', font: { size: 10 }, precision: 0 }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } },
 });
 
-const cumplColor = (pct: number | null) => !pct ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+const cumplColor = (pct: number | null) => !pct ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
 
 
 const tendBadge = (pct: number | null) => {
   if (pct === null) return <span style={{ color: '#333' }}>—</span>;
-  const color = pct >= 0 ? '#34d399' : '#f87171';
+  const color = pct >= 0 ? '#34d399' : '#ff3366';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -232,7 +284,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
     labels: [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'],
     datasets: [
       { label: `Capital ${mesActual}`, data: [...kpiPorAnalista.map((k: any)=>k.capital), kpiTotal.capital], backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4 },
-      { type: 'line' as const, label: 'Objetivo', data: [...kpiPorAnalista.map((k: any)=>k.metaCapital||0), kpiTotal.metaCapital||0], borderColor: '#f87171', borderWidth: 2, borderDash: [5,4], pointRadius: 4, fill: false },
+      { type: 'line' as const, label: 'Objetivo', data: [...kpiPorAnalista.map((k: any)=>k.metaCapital||0), kpiTotal.metaCapital||0], borderColor: '#ff3366', borderWidth: 2, borderDash: [5,4], pointRadius: 4, fill: false },
     ],
   };
 
@@ -260,8 +312,8 @@ export default function ResumenHTML({ datos }: { datos: any }) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:24}}>
       {/* 1. TABLERO */}
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+        {sectionHeader('1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:16}}>
           <div style={{background:'rgba(255,255,255,0.02)',borderRadius:10,padding:20,border:'1px solid rgba(255,255,255,0.04)'}}>
@@ -315,7 +367,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
 
 
       {/* 3. VENTAS POR CATEGORÍA */}
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20 }}>
             <Tag size={15} color="#fb923c" />
@@ -328,10 +380,10 @@ export default function ResumenHTML({ datos }: { datos: any }) {
         </div>
         <div style={{padding:24}}>
           <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
-            {distAcuerdos?.length && <DistBlock title="Acuerdo" icon={<PieChart size={12} color="#f97316" />} data={distAcuerdos} color="#f97316" total={total} />}
-            {distCuotas?.length && <DistBlock title="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} data={distCuotas} color="#60a5fa" total={total} />}
+            {distAcuerdos?.length && <DistBlock title="Acuerdo" icon={<PieChart size={12} color="#ffaa00" />} data={distAcuerdos} color="#ffaa00" total={total} />}
+            {distCuotas?.length && <DistBlock title="Cuotas" icon={<BarChart3 size={12} color="#00d4ff" />} data={distCuotas} color="#00d4ff" total={total} />}
             {distRangoEtario?.length && <DistBlock title="Rango Etario" icon={<Users size={12} color="#34d399" />} data={distRangoEtario} color="#34d399" total={total} />}
-            {distSexo?.length && <DistBlock title="Sexo" icon={<Users size={12} color="#f472b6" />} data={distSexo} color="#f472b6" total={total} />}
+            {distSexo?.length && <DistBlock title="Sexo" icon={<Users size={12} color="#b266ff" />} data={distSexo} color="#b266ff" total={total} />}
             {distEmpleador?.length && <DistBlock title="Empleador" icon={<Shield size={12} color="#fbbf24" />} data={distEmpleador} color="#fbbf24" total={total} />}
             {distLocalidad?.length && <DistBlock title="Localidad" icon={<FileText size={12} color="#a78bfa" />} data={distLocalidad} color="#a78bfa" total={total} />}
           </div>
@@ -340,27 +392,27 @@ export default function ResumenHTML({ datos }: { datos: any }) {
 
 
       {/* 4. RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL */}
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+        {sectionHeader('3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#00ff88" />)}
         <div style={{padding:24}}>
           <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
         </div>
       </div>
 
       {/* 5. ANÁLISIS COMERCIAL */}
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         <div style={{padding:24}}>
           <TextView label="Outfitpretación del Período" value={analisisComercial||''} />
         </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
         <div style={{padding:24}}>
           <TextView label="Procedimientos" value={operacionProcesos||''} />
         </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
@@ -370,13 +422,13 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           </div>
         </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+        {sectionHeader('7. Experiencia del Cliente', <FileText size={15} color="#b266ff" />)}
         <div style={{padding:24}}>
           <TextView label="Reclamos y Satisfacción" value={experienciaCliente||''} />
         </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))',gap:16}}>
@@ -387,7 +439,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
           </div>
         </div>
       </div>
-      <div style={{background:'#0a0a0a',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('9. Plan de Acción', <Target size={15} color="#fb923c" />)}
         <div style={{padding:24}}>
           {planAcciones?.length ? (

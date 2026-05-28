@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ import {
   AlignJustify, BarChart2, FileText,
   DollarSign, Settings, Bell, Lock, LogOut, Plus,
   SlidersHorizontal, ChevronDown, ChevronUp, X, Calculator,
-  ZoomIn, ZoomOut, Maximize, FileSpreadsheet
+  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -22,74 +22,156 @@ import { useSettings } from '@/features/settings/SettingsProvider';
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
 function NavItem({
-  href, icon: Icon, label, active, badge, onClick
+  href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = '#ff5b37'
 }: {
-  href: string; icon: React.ElementType; label: string; active?: boolean; badge?: number; onClick?: (e: React.MouseEvent) => void;
+  href: string; icon: React.ElementType; label: string; active?: boolean; badge?: number | string; onClick?: (e: React.MouseEvent) => void; indent?: boolean; rightIcon?: React.ElementType; badgeColor?: string;
 }) {
   return (
-    <div className="sidebar-icon-btn" data-label={label}>
-      <Link
-        href={href}
-        onClick={onClick}
-        className={`green-hover-btn ${active ? 'active-item' : ''}`}
-        style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 52, height: 52,
-          borderRadius: 14,
-          color: active ? '#fff' : '#444',
-          background: active
-            ? 'linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)'
-            : 'rgba(255,255,255,0.02)',
-          position: 'relative',
-          textDecoration: 'none',
-          border: `1px solid ${active ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)'}`,
-          boxShadow: active ? '0 10px 20px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.05)' : 'none',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-        }}
-      >
-        <Icon
-          size={active ? 24 : 22}
-          strokeWidth={active ? 2.5 : 2}
-          style={{ opacity: active ? 1 : 0.6 }}
-        />
-        {badge && badge > 0 ? (
+    <Link
+      href={href}
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        width: '100%', padding: '14px 20px', paddingLeft: indent ? '46px' : '20px',
+        borderRadius: 16,
+        color: active ? '#ffffff' : '#d4d4d8',
+        background: active ? '#1a1a1a' : 'transparent',
+        textDecoration: 'none',
+        transition: 'all 0.2s ease',
+        marginBottom: 4
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.color = '#ffffff';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.color = '#d4d4d8';
+        }
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <Icon size={18} strokeWidth={active ? 2.5 : 2} style={{ color: active ? '#ffffff' : 'currentColor' }} />
+        <span style={{ fontSize: 17, fontWeight: active ? 800 : 600, letterSpacing: '0.3px' }}>{label}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {badge ? (
           <span style={{
-            position: 'absolute', top: 6, right: 6,
-            background: '#ef4444', color: '#fff',
-            fontSize: 10, fontWeight: 900,
-            width: 18, height: 18, borderRadius: 10,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.5)', border: '2px solid #000'
+            background: badgeColor, color: '#fff',
+            fontSize: 10, fontWeight: 700,
+            padding: '2px 8px', borderRadius: 12,
+            minWidth: 24, textAlign: 'center'
           }}>
             {badge}
           </span>
         ) : null}
-      </Link>
-    </div>
+        {RightIcon && <RightIcon size={16} />}
+      </div>
+    </Link>
   );
 }
 
 function SidebarDivider() {
+  return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '16px 20px' }} />;
+}
+
+// ── Modal overlay shared shell ────────────────────────────────────────────────
+
+const MODAL_OVERLAY_STYLE: React.CSSProperties = {
+  position: 'fixed', inset: 0, zIndex: 9999,
+  background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: '20px 16px',
+};
+
+const MODAL_CARD_STYLE: React.CSSProperties = {
+  background: 'var(--bg-elev-2)', border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 24, padding: '32px',
+  boxShadow: '0 24px 80px rgba(0,0,0,0.8)', margin: 'auto',
+  fontFamily: 'var(--font-outfit), sans-serif',
+};
+
+function AdminLoginModal({
+  passwordRef, password, error, onChange, onSubmit, onClose,
+}: {
+  passwordRef: React.RefObject<HTMLInputElement | null>;
+  password: string;
+  error: boolean;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  onClose: () => void;
+}) {
   return (
-    <div style={{
-      width: 36, height: 1, flexShrink: 0,
-      background: 'transparent', margin: '8px 0',
-      position: 'relative', overflow: 'visible',
-    }}>
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 24, height: 1,
-        background: 'rgba(255,255,255,0.05)',
-        borderRadius: 1,
-      }} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 4, height: 4,
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '50%',
-      }} />
+    <div style={MODAL_OVERLAY_STYLE} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ ...MODAL_CARD_STYLE, width: 360 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,155,66,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FF9B42' }}>
+            <Lock size={20} />
+          </div>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>Acceso JUAN PABLO</span>
+        </div>
+        <input
+          ref={passwordRef}
+          type="password"
+          value={password}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') onSubmit(); if (e.key === 'Escape') onClose(); }}
+          placeholder="Contraseña de administrador"
+          style={{
+            width: '100%', padding: '14px 16px', borderRadius: 12,
+            background: '#0c0c0c', border: `1px solid ${error ? '#ff3366' : 'rgba(255,255,255,0.1)'}`,
+            color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box',
+            fontFamily: 'inherit',
+          }}
+        />
+        {error && (
+          <div style={{ color: '#ff3366', fontSize: 13, marginTop: 8, fontWeight: 500 }}>Contraseña incorrecta</div>
+        )}
+        <button
+          onClick={onSubmit}
+          style={{
+            marginTop: 24, width: '100%', padding: '14px',
+            background: '#5e6cff', color: '#fff', border: 'none',
+            borderRadius: 12, fontWeight: 600, fontSize: 15, cursor: 'pointer',
+            fontFamily: 'inherit', transition: 'transform 0.2s',
+            boxShadow: '0 8px 24px rgba(94, 108, 255, 0.25)',
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+        >
+          Iniciar Sesión
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AccessDeniedModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={MODAL_OVERLAY_STYLE} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ ...MODAL_CARD_STYLE, width: 320, textAlign: 'center' }}>
+        <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,91,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FF5B37', margin: '0 auto 16px' }}>
+          <Lock size={24} />
+        </div>
+        <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Sin acceso</h3>
+        <p style={{ color: 'var(--fg-muted)', fontSize: 14, lineHeight: 1.4, marginBottom: 24 }}>
+          No tienes los permisos necesarios para acceder al Panel de Control de la sucursal.
+        </p>
+        <button
+          onClick={onClose}
+          style={{
+            width: '100%', padding: '12px',
+            background: '#2c2d33', color: '#fff', border: 'none',
+            borderRadius: 12, fontWeight: 600, fontSize: 14, cursor: 'pointer',
+            fontFamily: 'inherit', transition: 'background 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+          onMouseLeave={e => e.currentTarget.style.background = '#2c2d33'}
+        >
+          Entendido
+        </button>
+      </div>
     </div>
   );
 }
@@ -119,13 +201,16 @@ export default function Sidebar({
   const canExport = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'exportar_excel')?.activo !== false;
 
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showAccessDenied, setShowAccessDenied] = useState(false);
   const [showXlsxModal, setShowXlsxModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const pageSizeSelectorRef = useRef<HTMLDivElement>(null);
   const isRegistros = pathname === '/registros';
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [reportesOpen, setReportesOpen] = useState(true);
 
   useEffect(() => {
     if (showAdminModal) {
@@ -136,12 +221,10 @@ export default function Sidebar({
   }, [showAdminModal]);
 
   useEffect(() => {
+    if (!showPageSizeSelector) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (showPageSizeSelector) {
-        const target = e.target as HTMLElement;
-        if (!target.closest('[title="Filas por página"]') && !target.closest('[style*="position: absolute"]')) {
-          setShowPageSizeSelector(false);
-        }
+      if (pageSizeSelectorRef.current && !pageSizeSelectorRef.current.contains(e.target as Node)) {
+        setShowPageSizeSelector(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -172,10 +255,10 @@ export default function Sidebar({
   return (
     <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showFilters ? 'sidebar-expanded-filters' : ''}`}
       style={{
-        background: '#070707',
-        borderRight: '1px solid rgba(255,255,255,0.02)',
-        boxShadow: 'inset -20px 0 40px rgba(0,0,0,0.5)',
-        display: 'flex', flexDirection: 'row', // Change to row to support side panel
+        background: '#111111',
+        borderRight: '1px solid rgba(255,255,255,0.07)',
+        boxShadow: 'none',
+        display: 'flex', flexDirection: 'row',
         alignItems: 'stretch',
         width: (showFilters || showCalculator) ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
         zIndex: 150,
@@ -183,251 +266,193 @@ export default function Sidebar({
         transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
-      {/* Icon Column */}
+      {/* Text + Icon Column */}
       <div style={{
         width: 'var(--sidebar-width)',
         display: 'flex', flexDirection: 'column',
-        alignItems: 'center',
-        paddingTop: 24,
-        gap: 10,
+        padding: '2px 16px 20px',
         flexShrink: 0,
-        borderRight: (showFilters || showCalculator) ? '1px solid rgba(255,255,255,0.03)' : 'none',
+        borderRight: (showFilters || showCalculator) ? '1px solid var(--border)' : 'none',
+        overflowY: 'auto',
+        overflowX: 'hidden'
       }}>
-        {isRegistros && (
-          <>
-            {canCreate && (
-              <div className="sidebar-icon-btn" data-label="Nuevo Registro">
-                <button
-                  onClick={() => setIsCreationModalOpen(true)}
-                  className="green-hover-btn"
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 52, height: 52,
-                    borderRadius: 13,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    color: '#fff', cursor: 'pointer', transition: 'all 0.3s'
-                  }}
-                ><Plus size={24} strokeWidth={2} /></button>
-              </div>
-            )}
-            <SidebarDivider />
-          </>
-        )}
+        {/* Brand Logo Removed */}
 
-        <NavItem
-          href="/registros"
-          icon={AlignJustify}
-          label="Registros"
-          active={pathname === '/registros'}
-        />
-        <NavItem href="/analistas" icon={BarChart2} label="Reportes" active={pathname === '/analistas'} />
-        <NavItem href="/recordatorios" icon={Bell} label="Recordatorios" active={pathname === '/recordatorios'} badge={pendingReminders} />
 
-        <SidebarDivider />
-
-        <NavItem href="/reportes/ventas" icon={FileText} label="Ventas" active={pathname === '/reportes/ventas'} />
-        <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} />
-
-        <SidebarDivider />
-
-        {isRegistros && (
-          <>
-            <div style={{ position: 'relative' }}>
+        {/* Highlight Action (Like Personal/Business switch) */}
+        {isRegistros && canCreate && (
+          <div style={{ padding: '0 4px 20px' }}>
+            <div style={{
+              background: 'var(--bg-elev-1)', borderRadius: 16, padding: 6, display: 'flex', alignItems: 'center'
+            }}>
               <button
-                onClick={() => setShowPageSizeSelector(s => !s)}
-                className="green-hover-btn"
+                onClick={() => setIsCreationModalOpen(true)}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 52, height: 52,
-                  borderRadius: 13,
-                  background: showPageSizeSelector ? 'rgba(134, 239, 172, 0.15)' : 'rgba(255,255,255,0.04)',
-                  color: showPageSizeSelector ? '#86efac' : '#888',
-                  border: `1px solid ${showPageSizeSelector ? 'rgba(134, 239, 172, 0.2)' : 'rgba(255,255,255,0.05)'}`,
-                  cursor: 'pointer',
+                  flex: 1, padding: '12px', borderRadius: 12,
+                  background: 'rgba(255,255,255,0.04)', color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.06)', boxShadow: 'none',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                 }}
-                title={`Filas por página: ${totalResults} registros`}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'none'}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>Ver</span>
-                  <span style={{ fontSize: pageSize >= 1000 ? 18 : 14, fontWeight: 900 }}>{pageSize >= 1000 ? '∞' : pageSize}</span>
-                </div>
+                <Plus size={18} strokeWidth={2.5} />
+                Nuevo Registro
               </button>
-              {showPageSizeSelector && (
-                <div style={{
-                  position: 'absolute', left: '60px', bottom: 0,
-                  background: '#111', border: '1px solid rgba(255,255,255,0.15)',
-                  borderRadius: 10, padding: 8, zIndex: 1000,
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
-                  display: 'flex', flexDirection: 'column', gap: 4,
-                  minWidth: 120,
-                }}>
-                  <div style={{
-                    fontSize: 9, fontWeight: 800, color: '#555',
-                    textTransform: 'uppercase', letterSpacing: '0.5px',
-                    padding: '4px 8px', marginBottom: 4,
-                  }}>
-                    {totalResults} registros
-                  </div>
-                  <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 8px 4px' }} />
-                  {[25, 50, 100, 200, 999999].map(size => (
-                    <button
-                      key={size}
-                      onClick={() => { setPageSize(size); setShowPageSizeSelector(false); }}
-                      style={{
-                        padding: '8px 16px',
-                        background: pageSize === size ? 'rgba(255,255,255,0.15)' : 'transparent',
-                        border: 'none', borderRadius: 6,
-                        color: pageSize === size ? '#fff' : '#888',
-                        fontSize: 12, fontWeight: 700,
-                        cursor: 'pointer', textAlign: 'left',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {size >= 1000 ? '∞ Todo' : `${size} filas`}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-
-            {canExport && (
-              <div className="sidebar-icon-btn" data-label="Exportar XLSX">
-                <button
-                  onClick={() => setShowXlsxModal(true)}
-                  className="green-hover-btn"
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 52, height: 52,
-                    borderRadius: 13,
-                    background: 'rgba(255,255,255,0.04)', color: '#888',
-                    border: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer',
-                  }}
-                >
-                  <FileSpreadsheet size={22} strokeWidth={2} />
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        <ExportXlsxModal open={showXlsxModal} onClose={() => setShowXlsxModal(false)} />
-
-        <SidebarDivider />
-
-        <NavItem
-          href="#"
-          icon={SlidersHorizontal}
-          label="Filtros Avanzados"
-          active={showFilters}
-          onClick={(e) => {
-            e.preventDefault();
-            setShowFilters(f => !f);
-          }}
-        />
-
-        {isAdmin && (
-          <>
-            <SidebarDivider />
-            <NavItem
-              href="#"
-              icon={Calculator}
-              label="Calculadora Incentivos"
-              active={showCalculator}
-              onClick={(e) => {
-                e.preventDefault();
-                setShowCalculator(s => !s);
-                if (showFilters) setShowFilters(false);
-              }}
-            />
-            <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname === '/ajustes'} />
-          </>
-        )}
-
-        <div style={{ flex: 1 }} />
-        
-        {/* Zoom Controls Section */}
-        {zoom !== undefined && (
-          <div style={{
-            padding: '0 0 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-             <button
-              onClick={onZoomIn}
-              className="green-hover-btn"
-              title="Aumentar Zoom (Ctrl +)"
-              style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-                color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-              }}
-            >
-              <ZoomIn size={16} />
-            </button>
-
-            <div style={{ fontSize: '10px', fontWeight: 900, color: '#333', textAlign: 'center', minWidth: '40px' }}>
-              {Math.round(zoom * 100)}%
-            </div>
-
-            <button
-              onClick={onZoomOut}
-              className="green-hover-btn"
-              title="Disminuir Zoom (Ctrl -)"
-              style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-                color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-              }}
-            >
-              <ZoomOut size={16} />
-            </button>
-
-            <button
-              onClick={onReset}
-              className="green-hover-btn"
-              title="Resetear Zoom (Ctrl 0)"
-              style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
-                color: '#666', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-              }}
-            >
-              <Maximize size={14} />
-            </button>
           </div>
         )}
 
-        <div style={{ padding: '0 0 32px' }}>
-          {isAdmin ? (
-            <button
-              onClick={() => { logout(); }}
-              title="Salir del modo admin"
-              className="green-hover-btn"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#333', width: '100%', height: 40,
-              }}
-            >
-              <LogOut size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowAdminModal(true)}
-              title="Acceso unico JUAN PABLO"
-              className="green-hover-btn"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#333', width: '100%', height: 40,
-              }}
-            >
-              <Lock size={18} strokeWidth={2} style={{ opacity: 0.5 }} />
-            </button>
+        {/* Main Navigation */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <NavItem href="/registros" icon={Database} label="Registros" active={pathname === '/registros'} />
+          <NavItem href="/recordatorios" icon={Bell} label="Notificaciones" active={pathname === '/recordatorios'} badge={pendingReminders > 0 ? pendingReminders : undefined} badgeColor="#FF6433" />
+        </div>
+
+        {/* Reports Submenu */}
+        <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <NavItem
+            href="#"
+            icon={BarChart2}
+            label="Reportes"
+            active={pathname.includes('/reportes') || pathname.includes('/analistas')}
+            onClick={(e) => { e.preventDefault(); setReportesOpen(!reportesOpen); }}
+            rightIcon={reportesOpen ? ChevronUp : ChevronDown}
+            badge={reportesOpen ? '' : '3'}
+            badgeColor="#484B52"
+          />
+          {reportesOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <NavItem href="/analistas" icon={Users} label="Analistas" active={pathname === '/analistas'} indent />
+              <NavItem href="/reportes/ventas" icon={FileText} label="Ventas" active={pathname === '/reportes/ventas'} indent />
+              <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent />
+            </div>
           )}
+        </div>
+
+        <SidebarDivider />
+
+        {/* Contextual / Tool Navigation */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {isRegistros && (
+            <>
+              <NavItem
+                href="#"
+                icon={SlidersHorizontal}
+                label="Filtros"
+                active={showFilters}
+                onClick={(e) => { e.preventDefault(); setShowFilters(f => !f); }}
+              />
+              <div ref={pageSizeSelectorRef} style={{ position: 'relative' }}>
+                <NavItem
+                  href="#"
+                  icon={AlignJustify}
+                  label="Ver Filas"
+                  onClick={(e) => { e.preventDefault(); setShowPageSizeSelector(s => !s); }}
+                />
+                {showPageSizeSelector && (
+                  <div style={{
+                    position: 'absolute', left: '100%', top: 0, marginLeft: 8,
+                    background: 'var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 12, padding: 8, zIndex: 1000,
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                    display: 'flex', flexDirection: 'column', gap: 4, minWidth: 140,
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', padding: '4px 8px', marginBottom: 4 }}>
+                      {totalResults} registros
+                    </div>
+                    <div style={{ height: 1, background: 'var(--border)', margin: '0 8px 4px' }} />
+                    {[25, 50, 100, 200, 999999].map(size => (
+                      <button
+                        key={size}
+                        onClick={() => { setPageSize(size); setShowPageSizeSelector(false); }}
+                        style={{
+                          padding: '8px 12px', background: pageSize === size ? 'var(--bg-elev-2)' : 'transparent',
+                          border: 'none', borderRadius: 8, color: pageSize === size ? '#fff' : 'var(--fg-muted)',
+                          fontSize: 13, fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                          fontFamily: 'inherit'
+                        }}
+                      >
+                        {size >= 1000 ? '∞ Todo' : `${size} filas`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {canExport && (
+                <NavItem
+                  href="#"
+                  icon={FileSpreadsheet}
+                  label="Exportar"
+                  onClick={(e) => { e.preventDefault(); setShowXlsxModal(true); }}
+                />
+              )}
+            </>
+          )}
+
+          {isAdmin && (
+            <>
+              <NavItem
+                href="#"
+                icon={Calculator}
+                label="Incentivos"
+                active={showCalculator}
+                onClick={(e) => { e.preventDefault(); setShowCalculator(s => !s); if (showFilters) setShowFilters(false); }}
+              />
+              <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname === '/ajustes'} />
+            </>
+          )}
+        </div>
+
+        <div style={{ flex: 1, minHeight: 32 }} />
+
+        {/* Zoom Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, marginBottom: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
+          <button onClick={onZoomOut} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.color='#fff'} onMouseLeave={e => e.currentTarget.style.color='#8f929d'} title="Alejar">
+            <ZoomOut size={16} />
+          </button>
+          <button onClick={onReset} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '0.5px' }} onMouseEnter={e => e.currentTarget.style.color='#fff'} onMouseLeave={e => e.currentTarget.style.color='#8f929d'} title="Restablecer">
+            {Math.round((zoom || 1) * 100)}%
+          </button>
+          <button onClick={onZoomIn} style={{ background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} onMouseEnter={e => e.currentTarget.style.color='#fff'} onMouseLeave={e => e.currentTarget.style.color='#8f929d'} title="Acercar">
+            <ZoomIn size={16} />
+          </button>
+        </div>
+
+        {/* User Profile Footer (Fyneen style) */}
+        <div style={{
+          padding: '12px', display: 'flex', alignItems: 'center', gap: 12,
+          marginTop: 'auto', borderRadius: 16, cursor: 'pointer'
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        onClick={() => {
+          if (!isAdmin) {
+            setShowAccessDenied(true);
+          } else {
+            // For admin, maybe open settings or do nothing
+          }
+        }}
+        >
+          <div style={{ width: 40, height: 40, borderRadius: '12px', background: isAdmin ? 'linear-gradient(135deg, #FF9B42, #FF6433)' : '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0, boxShadow: isAdmin ? '0 4px 12px rgba(255, 100, 51, 0.3)' : 'none' }}>
+            <Settings size={20} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {isAdmin ? 'Panel de Control' : 'Panel de Control'}
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {isAdmin ? 'Modo Administrador' : 'Área Restringida'}
+            </span>
+          </div>
+          <div style={{ padding: 4, color: 'var(--fg-muted)' }}>
+            {isAdmin ? (
+              <LogOut size={16} onClick={(e) => { e.stopPropagation(); logout(); }} />
+            ) : (
+              <Lock size={16} onClick={(e) => { e.stopPropagation(); setShowAdminModal(true); }} />
+            )}
+          </div>
         </div>
       </div>
 
@@ -436,18 +461,19 @@ export default function Sidebar({
         <div style={{
           flex: 1,
           display: 'flex', flexDirection: 'column',
-          background: 'rgba(255,255,255,0.005)',
+          background: 'var(--bg-elev-1)',
+          borderLeft: '1px solid rgba(255,255,255,0.05)',
           overflow: 'hidden',
-          animation: 'fadeIn 0.4s ease-out'
+          animation: 'fadeIn 0.2s ease-out'
         }}>
           <div style={{
-            padding: '28px 24px 20px',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            padding: '32px 24px 20px',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
-            <span style={{ fontSize: '13px', fontWeight: 900, color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>Filtros Avanzados</span>
-            <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer' }}>
-              <SlidersHorizontal size={16} />
+            <span style={{ fontSize: '16px', fontWeight: 600, color: '#ffffff' }}>Filtros Avanzados</span>
+            <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
+              <X size={20} />
             </button>
           </div>
 
@@ -462,18 +488,19 @@ export default function Sidebar({
         <div style={{
           flex: 1,
           display: 'flex', flexDirection: 'column',
-          background: 'rgba(255,255,255,0.005)',
+          background: 'var(--bg-elev-1)',
+          borderLeft: '1px solid rgba(255,255,255,0.05)',
           overflow: 'hidden',
-          animation: 'fadeIn 0.4s ease-out'
+          animation: 'fadeIn 0.2s ease-out'
         }}>
           <div style={{
-            padding: '28px 24px 20px',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            padding: '32px 24px 20px',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
-            <span style={{ fontSize: '13px', fontWeight: 900, color: '#fff', letterSpacing: '1px', textTransform: 'uppercase' }}>Calculadora Sucursal B</span>
-            <button onClick={() => setShowCalculator(false)} style={{ background: 'transparent', border: 'none', color: '#444', cursor: 'pointer' }}>
-              <Calculator size={16} />
+            <span style={{ fontSize: '16px', fontWeight: 600, color: '#ffffff' }}>Calculadora Sucursal B</span>
+            <button onClick={() => setShowCalculator(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
+              <X size={20} />
             </button>
           </div>
 
@@ -484,53 +511,18 @@ export default function Sidebar({
       )}
 
       {showAdminModal && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)',
-            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-            overflowY: 'auto', padding: '20px 16px',
-          }}
-          onClick={e => { if (e.target === e.currentTarget) setShowAdminModal(false); }}
-        >
-          <div style={{
-            background: '#111', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 12, padding: '32px 28px', width: 320,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <Lock size={18} style={{ color: '#fff' }} />
-              <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Acceso unico JUAN PABLO</span>
-            </div>
-            <input
-              ref={passwordInputRef}
-              type="password"
-              value={adminPassword}
-              onChange={e => { setAdminPassword(e.target.value); setAdminError(false); }}
-              onKeyDown={e => { if (e.key === 'Enter') handleAdminLogin(); if (e.key === 'Escape') setShowAdminModal(false); }}
-              placeholder="Contraseña"
-              style={{
-                width: '100%', padding: '10px 14px', borderRadius: 8,
-                background: '#1a1a1a', border: `1px solid ${adminError ? '#e53e3e' : 'rgba(255,255,255,0.15)'}`,
-                color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box',
-              }}
-            />
-            {adminError && (
-              <div style={{ color: '#e53e3e', fontSize: 13, marginTop: 8 }}>Contraseña incorrecta</div>
-            )}
-            <button
-              onClick={handleAdminLogin}
-              style={{
-                marginTop: 16, width: '100%', padding: '10px',
-                background: '#fff', color: '#000', border: 'none',
-                borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: 'pointer',
-              }}
-            >
-              Ingresar
-            </button>
-          </div>
-        </div>
+        <AdminLoginModal
+          passwordRef={passwordInputRef}
+          password={adminPassword}
+          error={adminError}
+          onChange={v => { setAdminPassword(v); setAdminError(false); }}
+          onSubmit={handleAdminLogin}
+          onClose={() => setShowAdminModal(false)}
+        />
+      )}
+
+      {showAccessDenied && (
+        <AccessDeniedModal onClose={() => setShowAccessDenied(false)} />
       )}
     </aside>
   );
@@ -541,7 +533,7 @@ export default function Sidebar({
 const FilterAccordion = ({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    <div style={{ marginBottom: 12, background: 'rgba(255,255,255,0.01)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.02)', overflow: 'hidden' }}>
+    <div style={{ marginBottom: 12, background: 'rgba(255,255,255,0.01)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -570,16 +562,16 @@ const FiltersContent = () => {
 
   const chipStyle = (active: boolean) => ({
     padding: '8px 14px', borderRadius: '10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-    background: active ? '#fff' : 'rgba(255,255,255,0.03)',
-    color: active ? '#000' : '#666',
-    border: `1px solid ${active ? '#fff' : 'rgba(255,255,255,0.06)'}`,
+    background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
+    color: active ? '#10b981' : '#8f929d',
+    border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
     transition: 'all 0.2s', whiteSpace: 'nowrap'
   } as React.CSSProperties);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '16px' }}>
-      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.02)' }}>
-        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>BÚSQUEDA GENERAL</label>
+      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <label style={{ display: 'block', fontSize: '9px', color: 'var(--fg-muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>BÚSQUEDA GENERAL</label>
         <input
           className="form-input"
           placeholder="Nombre, CUIL..."
@@ -592,18 +584,18 @@ const FiltersContent = () => {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <FilterAccordion title="Gestión" defaultOpen>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ANALISTA</label>
+            <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ANALISTA</label>
             <select
               value={filters.analista}
               onChange={e => setFilter('analista', e.target.value)}
-              style={{ width: '100%', height: 40, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: '#888', outline: 'none', cursor: 'pointer' }}
+              style={{ width: '100%', height: 40, background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', color: '#eaeaea', outline: 'none', cursor: 'pointer' }}
             >
               <option value="">Todos los analistas</option>
               {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ESTADOS</label>
+            <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ESTADOS</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {ESTADOS.map(st => (
                 <span key={st} onClick={() => toggleEstado(st)} style={chipStyle(filters.estados.includes(st))}>{STATUS_LABEL[st] || st}</span>
@@ -614,23 +606,23 @@ const FiltersContent = () => {
 
         <FilterAccordion title="Sistema" defaultOpen>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ACUERDO DE PRECIOS</label>
+            <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ACUERDO DE PRECIOS</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {allAcuerdos.length > 0 ? allAcuerdos.map(a => (
                 <span key={a} onClick={() => toggleAcuerdoPrecios(a)} style={chipStyle(filters.acuerdoPrecios.includes(a))}>{a}</span>
-              )) : <span style={{ fontSize: '11px', color: '#333' }}>Sin acuerdos registrados</span>}
+              )) : <span style={{ fontSize: '11px', color: '#64748b' }}>Sin acuerdos registrados</span>}
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 14 }}>
             <div>
-              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>SCORE MIN/MAX</label>
+              <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>SCORE MIN/MAX</label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input type="number" placeholder="Mín" className="form-input" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
                 <input type="number" placeholder="Máx" className="form-input" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
               </div>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>MONTO MIN/MAX</label>
+              <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>MONTO MIN/MAX</label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input type="number" placeholder="Mín" className="form-input" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
                 <input type="number" placeholder="Máx" className="form-input" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
@@ -639,15 +631,15 @@ const FiltersContent = () => {
           </div>
         </FilterAccordion>
 
-        <div style={{ marginBottom: 12, background: 'rgba(255,255,255,0.01)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.02)', padding: '16px' }}>
+        <div style={{ marginBottom: 12, background: 'rgba(255,255,255,0.01)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', padding: '16px' }}>
           <label style={{ display: 'block', fontSize: '10px', color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>PERÍODO</label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA DESDE</label>
+              <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA DESDE</label>
               <input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '8px', color: '#444', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA HASTA</label>
+              <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA HASTA</label>
               <input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
             </div>
           </div>
@@ -659,7 +651,7 @@ const FiltersContent = () => {
           onClick={limpiarFiltros}
           style={{
             width: '100%', padding: '14px', background: 'rgba(248,113,113,0.06)',
-            border: '1px solid rgba(248,113,113,0.12)', color: '#f87171', borderRadius: '12px',
+            border: '1px solid rgba(248,113,113,0.12)', color: '#ff3366', borderRadius: '12px',
             fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px',
             cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
           }}
@@ -717,7 +709,7 @@ const CalculadoraContent = () => {
 
   const inputRow = (label: string, key: keyof typeof pacts) => (
     <div style={{ marginBottom: 16 }}>
-      <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>{label} (%)</label>
+      <label style={{ display: 'block', fontSize: '9px', color: 'var(--fg-muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>{label} (%)</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <input
           type="number"
@@ -726,7 +718,7 @@ const CalculadoraContent = () => {
           onChange={e => setPacts(p => ({ ...p, [key]: e.target.value }))}
           style={{ width: '64px', height: 40, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', color: '#fff', textAlign: 'center', fontSize: 13, outline: 'none' }}
         />
-        <div style={{ flex: 1, textAlign: 'right', fontSize: 13, fontWeight: 800, color: results[key] > 0 ? '#34d399' : '#333' }}>
+        <div style={{ flex: 1, textAlign: 'right', fontSize: 13, fontWeight: 800, color: results[key] > 0 ? '#10b981' : '#64748b' }}>
           {results[key] > 0 ? `$ ${results[key].toLocaleString('es-AR')}` : '—'}
         </div>
       </div>
@@ -735,14 +727,14 @@ const CalculadoraContent = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.02)', marginBottom: 20 }}>
+      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}>
         <div style={{ fontSize: 10, fontWeight: 900, color: '#fb923c', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 0.5 }}>Venta</div>
         {inputRow('Capital', 'capital')}
         {inputRow('Operación', 'operacion')}
       </div>
 
-      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.02)', marginBottom: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 900, color: '#60a5fa', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 0.5 }}>Cobranzas</div>
+      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}>
+        <div style={{ fontSize: 10, fontWeight: 900, color: '#00d4ff', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 0.5 }}>Cobranzas</div>
         {inputRow('Recupero 90-119', 'recupero90')}
         {inputRow('Recupero 120-209', 'recupero120')}
         {inputRow('REFI', 'refi')}
@@ -750,13 +742,13 @@ const CalculadoraContent = () => {
 
       <div style={{ marginTop: 'auto', padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: '#444', textTransform: 'uppercase' }}>Sueldo Fijo</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#888' }}>$ {SUELDO_FIJO.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+          <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Sueldo Fijo</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#eaeaea' }}>$ {SUELDO_FIJO.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
         </div>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: '#444', textTransform: 'uppercase' }}>Comisiones</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#34d399' }}>$ {comisiones.toLocaleString('es-AR')}</span>
+          <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Comisiones</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#10b981' }}>$ {comisiones.toLocaleString('es-AR')}</span>
         </div>
 
         <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '16px 0' }} />
@@ -765,7 +757,7 @@ const CalculadoraContent = () => {
           <span style={{ fontSize: 10, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Cobrar</span>
           <span style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>$ {totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
         </div>
-        <div style={{ fontSize: 9, color: '#333', textAlign: 'right' }}>Sucursal B</div>
+        <div style={{ fontSize: 9, color: '#64748b', textAlign: 'right' }}>Sucursal B</div>
       </div>
     </div>
   );

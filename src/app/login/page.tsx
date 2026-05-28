@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -39,7 +39,7 @@ export default function LoginPage() {
       fontFamily: "'Outfit', sans-serif",
     }}>
       <form onSubmit={handleLogin} autoComplete="off" style={{
-        background: '#0a0a0a',
+        background: '#0c0c0c',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: '16px', padding: '40px',
         width: '100%', maxWidth: '320px',
@@ -65,7 +65,7 @@ export default function LoginPage() {
             fontFamily: "'Outfit', sans-serif",
           }}
         />
-        {error && <div style={{ color: '#f87171', fontSize: '13px' }}>{error}</div>}
+        {error && <div style={{ color: '#ff3366', fontSize: '13px' }}>{error}</div>}
         <button type="submit" style={{
           background: '#f7e479', color: '#000', border: 'none',
           borderRadius: '10px', padding: '12px',

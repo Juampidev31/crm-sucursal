@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Registro, CONFIG } from '@/types';
@@ -72,7 +72,7 @@ const VariacionBadge = ({ valor }: { valor: number }) => {
         <span style={{ color: '#888' }}>— 0%</span>
       ) : (
         <>
-          <span style={{ color: esPositivo ? '#4ade80' : '#f87171' }}>
+          <span style={{ color: esPositivo ? '#00ff88' : '#ff3366' }}>
             {esPositivo ? '▲' : '▼'}
           </span>
           {` ${valor >= 0 ? '+' : ''}${valor.toFixed(1)}%`}
@@ -796,7 +796,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       {/* Filters Header Card */}
       {!hideFilters && (
         <div style={{
-          background: '#0a0a0a',
+          background: '#111111',
           border: '1px solid rgba(255,255,255,0.03)',
           borderRadius: '8px',
           padding: '10px 20px',
@@ -825,7 +825,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   type="date"
                   value={fechaDesde}
                   onChange={e => { setFechaDesde(e.target.value); setPeriodo(-10); }}
-                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
+                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#111111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -834,7 +834,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   type="date"
                   value={fechaHasta}
                   onChange={e => { setFechaHasta(e.target.value); setPeriodo(-10); }}
-                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
+                  style={{ width: '150px', height: '34px', borderRadius: '6px', background: '#111111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '12px', padding: '0 10px', outline: 'none' }}
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start' }}>
@@ -868,7 +868,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     border: `1px solid ${mostrarVariaciones ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.1)'}`,
                     borderRadius: '12px',
                     padding: '8px 16px',
-                    color: mostrarVariaciones ? '#3b82f6' : '#888',
+                    color: mostrarVariaciones ? '#ffaa00' : '#888',
                     fontSize: '11px',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -878,7 +878,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     transition: 'all 0.2s'
                   }}
                 >
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: mostrarVariaciones ? '#3b82f6' : '#555' }} />
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: mostrarVariaciones ? '#ffaa00' : '#555' }} />
                   {mostrarVariaciones ? 'Variaciones: ON' : 'Variaciones: OFF'}
                 </button>
               </div>
@@ -963,7 +963,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   {s.val2 !== undefined && (
                     <div style={{ flex: 1, borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: 32 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444' }} />
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff3366' }} />
                         <div style={{ fontSize: 9, color: '#888', fontWeight: 700 }}>{analistaFil2.toUpperCase()}</div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -1117,7 +1117,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
       </div>
 
       {/* Evolucion semanal */}
-      <div id="seccion-estacionalidad" style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '16px 20px', marginBottom: '20px' }}>
+      <div id="seccion-estacionalidad" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -1141,7 +1141,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                   {mostrarVariaciones && dateRangeAnterior && w.prevTotal !== undefined && (
                     <>
                       <div style={{ fontSize: '10px', fontWeight: 700, color: '#fff', marginTop: '4px' }}>
-                        <span style={{ color: w.vsPrev >= 0 ? '#22c55e' : '#ef4444' }}>{w.vsPrev >= 0 ? '↑' : '↓'}</span> {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
+                        <span style={{ color: w.vsPrev >= 0 ? '#22c55e' : '#ff3366' }}>{w.vsPrev >= 0 ? '↑' : '↓'}</span> {Math.abs(w.vsPrev).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
                       </div>
                       <div style={{ fontSize: '9px', color: '#444', marginTop: '2px', fontWeight: 600 }}>
                         Ant: {fmt(w.prevTotal)}
@@ -1158,7 +1158,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                     {mostrarVariaciones && dateRangeAnterior && w.prevTotal2 !== undefined && (
                       <>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: '#fff', marginTop: '4px' }}>
-                          <span style={{ color: w.vsPrev2 >= 0 ? '#22c55e' : '#ef4444' }}>{w.vsPrev2 >= 0 ? '↑' : '↓'}</span> {Math.abs(w.vsPrev2).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
+                          <span style={{ color: w.vsPrev2 >= 0 ? '#22c55e' : '#ff3366' }}>{w.vsPrev2 >= 0 ? '↑' : '↓'}</span> {Math.abs(w.vsPrev2).toFixed(1)}% <span style={{ opacity: 0.4, fontSize: '8px', marginLeft: '2px', fontWeight: 500 }}>{vsLabel}</span>
                         </div>
                         <div style={{ fontSize: '9px', color: '#444', marginTop: '2px', fontWeight: 600 }}>
                           Ant: {fmt(w.prevTotal2)}
@@ -1238,7 +1238,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
 
       {/* Por día de semana + Acuerdo de Precios */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
+        <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -1273,7 +1273,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
           </div>
         </div>
 
-        <div style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
+        <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '8px', padding: '24px' }}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 3, height: 14, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }} />
@@ -1328,7 +1328,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Riesgo Bajo</div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>
-                    <span style={{ color: '#4ade80', marginRight: 4 }}>●</span>
+                    <span style={{ color: '#00ff88', marginRight: 4 }}>●</span>
                     {((totalBajo / total) * 100).toFixed(1)}%
                   </div>
                   <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalBajo)}</div>
@@ -1336,7 +1336,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Riesgo Medio</div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>
-                    <span style={{ color: '#ef4444', marginRight: 4 }}>●</span>
+                    <span style={{ color: '#ff3366', marginRight: 4 }}>●</span>
                     {((totalMedio / total) * 100).toFixed(1)}%
                   </div>
                   <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalMedio)}</div>
@@ -1344,7 +1344,7 @@ export default function AnalisisTemporalTab({ registros, isPublic, initialMonth,
                 <div style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase' }}>Premium</div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginTop: 2 }}>
-                    <span style={{ color: '#60a5fa', marginRight: 4 }}>●</span>
+                    <span style={{ color: '#00d4ff', marginRight: 4 }}>●</span>
                     {((totalPremium / total) * 100).toFixed(1)}%
                   </div>
                   <div style={{ fontSize: 10, color: '#666' }}>{formatCurrency(totalPremium)}</div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -15,9 +15,61 @@ import type { AnalisisTemporalState } from '../../ajustes/AnalisisTemporalTab';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
+const calloutPlugin = {
+  id: 'calloutPlugin',
+  afterDraw(chart: any) {
+    const { ctx, chartArea: { top, left, width, height } } = chart;
+    const datasetMeta = chart.getDatasetMeta(0);
+    if (!datasetMeta || !datasetMeta.data || datasetMeta.data.length === 0) return;
+    
+    let total = 0;
+    chart.data.datasets[0].data.forEach((val: number) => { total += val; });
+    if (total === 0) return;
+
+    ctx.save();
+    datasetMeta.data.forEach((element: any, index: number) => {
+      const val = chart.data.datasets[0].data[index];
+      if (!val) return; // don't draw for 0
+      const pct = (val / total * 100).toFixed(2) + '%';
+      
+      const centerPoint = element.tooltipPosition();
+      const xCenter = left + width / 2;
+      const yCenter = top + height / 2;
+      const angle = Math.atan2(centerPoint.y - yCenter, centerPoint.x - xCenter);
+      
+      const radius = element.outerRadius;
+      
+      const xLineStart = xCenter + Math.cos(angle) * radius;
+      const yLineStart = yCenter + Math.sin(angle) * radius;
+      
+      const xLineMid = xCenter + Math.cos(angle) * (radius + 15);
+      const yLineMid = yCenter + Math.sin(angle) * (radius + 15);
+      
+      const isLeft = xLineMid < xCenter;
+      const xLineEnd = xLineMid + (isLeft ? -15 : 15);
+      
+      ctx.beginPath();
+      ctx.moveTo(xLineStart, yLineStart);
+      ctx.lineTo(xLineMid, yLineMid);
+      ctx.lineTo(xLineEnd, yLineMid);
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      
+      ctx.fillStyle = '#aaa';
+      ctx.font = '600 10px "Outfit", sans-serif';
+      ctx.textAlign = isLeft ? 'right' : 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pct, xLineEnd + (isLeft ? -5 : 5), yLineMid);
+    });
+    ctx.restore();
+  }
+};
+
 const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
   const options = {
+    layout: { padding: 40 },
     cutout: '80%',
     plugins: {
       legend: { display: false },
@@ -48,8 +100,8 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
   const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
 
   return (
-    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} />
+    <div style={{ position: 'relative', height: '240px', width: '280px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} plugins={[calloutPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -272,11 +324,11 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
 });
 
 const cumplColor = (pct: number | null) =>
-  pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+  pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
 
 const tendBadge = (pct: number | null) => {
   if (pct === null) return <span style={{ color: '#333' }}>—</span>;
-  const color = pct >= 0 ? '#34d399' : '#f87171';
+  const color = pct >= 0 ? '#34d399' : '#ff3366';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -475,7 +527,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
 
   const tendBadge = (pct: number | null) => {
     if (pct === null) return <span style={{ color: '#333' }}>—</span>;
-    const color = pct >= 0 ? '#34d399' : '#f87171';
+    const color = pct >= 0 ? '#34d399' : '#ff3366';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -494,8 +546,8 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       
       {/* SECCIÓN 1: TABLERO */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
+        {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
         {!collapsed[1] && (
           <div style={{ padding: '24px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginBottom: 24 }}>
@@ -543,13 +595,13 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase', letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <LegendPill color="#60a5fa" label={mesActual} />
+                    <LegendPill color="#00d4ff" label={mesActual} />
                     <LegendPill color="rgba(30, 58, 138, 0.9)" label={mesAnterior} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
                   <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase' }}>Aperturas</div>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: '#00d4ff', textAlign: 'center', marginBottom: 8, textTransform: 'uppercase' }}>Aperturas</div>
                     <div style={{ height: 160 }}>
                       {chartAperturas && <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true)} plugins={[labelsPlugin]} />}
                     </div>
@@ -598,7 +650,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
 
 
       {/* SECCIÓN 2: VENTAS POR CATEGORÍA */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}
         {!collapsed[2] && (
           <div style={{ padding: '24px' }}>
@@ -639,10 +691,10 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
               const base = isMensual ? totalMes : (ac ?? cu ?? re ?? sx ?? em ?? lo ?? []).reduce((s: number, d: { monto: number }) => s + d.monto, 0);
               return (
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  {ac && <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={ac} color="#f97316" totalMes={base} />}
-                  {cu && <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={cu} color="#60a5fa" totalMes={base} />}
+                  {ac && <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#ffaa00" />} datos={ac} color="#ffaa00" totalMes={base} />}
+                  {cu && <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#00d4ff" />} datos={cu} color="#00d4ff" totalMes={base} />}
                   {re && <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={re} color="#34d399" totalMes={base} />}
-                  {sx && <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={sx} color="#f472b6" totalMes={base} />}
+                  {sx && <DistBlock titulo="Sexo" icon={<Users size={12} color="#b266ff" />} datos={sx} color="#b266ff" totalMes={base} />}
                   {em && <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={em} color="#fbbf24" totalMes={base} />}
                   {lo && <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={lo} color="#a78bfa" totalMes={base} />}
                 </div>
@@ -654,8 +706,8 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
 
 
       {/* SECCIÓN 3: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(3, '3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#4ade80" />)}
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
+        {sectionHeader(3, '3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#00ff88" />)}
         {!collapsed[3] && (
           <div style={{ padding: '24px' }}>
             <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
@@ -664,7 +716,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       </div>
 
       {/* SECCIÓN 4: ANÁLISIS COMERCIAL */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         {!collapsed[4] && (
           <div style={{ padding: '24px' }}>
@@ -674,7 +726,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       </div>
 
       {/* SECCIÓN 5: OPERACIÓN Y PROCESOS */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
         {!collapsed[5] && (
           <div style={{ padding: '24px' }}>
@@ -684,7 +736,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       </div>
 
       {/* SECCIÓN 6: GESTIÓN COMERCIAL */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
         {!collapsed[6] && (
           <div style={{ padding: '24px' }}>
@@ -703,8 +755,8 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       </div>
 
       {/* SECCIÓN 7: EXPERIENCIA DEL CLIENTE */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#f472b6" />)}
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
+        {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#b266ff" />)}
         {!collapsed[7] && (
           <div style={{ padding: '24px' }}>
             <ManualTextareaView label="Reclamos y Satisfacción" value={experienciaCliente || ''} />
@@ -713,7 +765,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       </div>
 
       {/* SECCIÓN 8: GESTIÓN DEL EQUIPO */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
         {!collapsed[8] && (
           <div style={{ padding: '24px' }}>
@@ -742,7 +794,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       </div>
 
       {/* SECCIÓN 9: PLAN DE ACCIÓN */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
         {!collapsed[9] && (
           <div style={{ padding: '24px' }}>
@@ -772,8 +824,8 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       </div>
 
       {/* SECCIÓN 10: RENDIMIENTO Y TENDENCIAS */}
-      <div className="data-card" style={{ background: '#0a0a0a', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#60a5fa" />)}
+      <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
+        {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#00d4ff" />)}
         {!collapsed[10] && (
           <div style={{ padding: '24px' }}>
             {registros && registros.length > 0 ? (

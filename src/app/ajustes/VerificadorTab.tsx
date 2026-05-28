@@ -38,9 +38,9 @@ const ROLE_ORDER: ColumnRole[] = [
 ];
 
 const STATUS_CONFIG = {
-  found:     { label: 'Encontrado',        color: '#4ade80', Icon: CheckCircle2 },
+  found:     { label: 'Encontrado',        color: '#00ff88', Icon: CheckCircle2 },
   mismatch:  { label: 'Importe diferente', color: '#fbbf24', Icon: AlertCircle  },
-  not_found: { label: 'No encontrado',     color: '#f87171', Icon: XCircle      },
+  not_found: { label: 'No encontrado',     color: '#ff3366', Icon: XCircle      },
 };
 
 export default function VerificadorTab() {
@@ -400,7 +400,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
           borderRadius: 8,
           transition: 'all 0.15s',
         }}>
-          <span style={{ fontSize: 12, color: '#f87171', fontWeight: 600 }}>
+          <span style={{ fontSize: 12, color: '#ff3366', fontWeight: 600 }}>
             {duplicateCount} CUIL{duplicateCount > 1 ? 's' : ''} duplicado{duplicateCount > 1 ? 's' : ''} —{' '}
             {selectedForDeletion.size} seleccionado{selectedForDeletion.size !== 1 ? 's' : ''} para eliminar
           </span>
@@ -416,7 +416,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                 border: `1px solid ${selectedForDeletion.size === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(248,113,113,0.3)'}`,
                 borderRadius: 6,
                 cursor: selectedForDeletion.size === 0 ? 'not-allowed' : 'pointer',
-                color: selectedForDeletion.size === 0 ? '#555' : '#f87171',
+                color: selectedForDeletion.size === 0 ? '#555' : '#ff3366',
                 fontSize: 12, fontWeight: 700,
               }}
             >
@@ -465,7 +465,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
           background: 'rgba(74,222,128,0.08)',
           border: '1px solid rgba(74,222,128,0.2)',
           borderRadius: 8,
-          fontSize: 12, color: '#4ade80', fontWeight: 600,
+          fontSize: 12, color: '#00ff88', fontWeight: 600,
         }}>
           ✓ {deleteResult.deleted} registro{deleteResult.deleted > 1 ? 's' : ''} eliminado{deleteResult.deleted > 1 ? 's' : ''} correctamente.
         </div>
@@ -477,7 +477,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
           background: 'rgba(248,113,113,0.08)',
           border: '1px solid rgba(248,113,113,0.25)',
           borderRadius: 8,
-          fontSize: 12, color: '#f87171', fontWeight: 600,
+          fontSize: 12, color: '#ff3366', fontWeight: 600,
         }}>
           Error al eliminar: {deleteError}
         </div>
@@ -545,7 +545,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
       <div>
         <div style={{ fontSize: 11, color: '#555', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
           Estado (seleccioná los que querés filtrar)
-          {selectedStatuses.size > 0 && <span style={{ color: '#4ade80', marginLeft: 8 }}>· {selectedStatuses.size} seleccionado{selectedStatuses.size > 1 ? 's' : ''}</span>}
+          {selectedStatuses.size > 0 && <span style={{ color: '#00ff88', marginLeft: 8 }}>· {selectedStatuses.size} seleccionado{selectedStatuses.size > 1 ? 's' : ''}</span>}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {STATUS_OPTS.map(({ key, label }) => {
@@ -630,7 +630,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                         type="checkbox"
                         checked={selectedForDeletion.has(resultIdx)}
                         onChange={() => toggleSelected(resultIdx)}
-                        style={{ cursor: 'pointer', accentColor: '#f87171', width: 14, height: 14 }}
+                        style={{ cursor: 'pointer', accentColor: '#ff3366', width: 14, height: 14 }}
                       />
                     )}
                   </td>

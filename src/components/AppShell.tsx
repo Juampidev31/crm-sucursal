@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ErrorProvider, useDataError } from '@/context/ErrorContext';
@@ -17,6 +17,53 @@ import SplitLayout from './SplitLayout';
 import { formatDate } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Toast card compartido por DataErrorToast y ReminderAlertPopup
+type ToastSide = 'left' | 'right';
+function ToastCard({
+  side, accentColor, icon, iconTint, title, subtitle, body, onClose, zIndex = 1000,
+}: {
+  side: ToastSide;
+  accentColor: string;
+  icon: React.ReactNode;
+  iconTint: string;
+  title: string;
+  subtitle?: string;
+  body?: string;
+  onClose: () => void;
+  zIndex?: number;
+}) {
+  return (
+    <div style={{
+      position: 'fixed', bottom: '24px', [side]: '24px', zIndex,
+      background: 'var(--bg)', color: '#fff', padding: '14px 18px',
+      borderRadius: '12px', boxShadow: '0 8px 40px rgba(0,0,0,0.8)',
+      display: 'flex', alignItems: 'flex-start', gap: '14px', maxWidth: '420px',
+      animation: 'slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+      border: '1px solid rgba(255,255,255,0.03)',
+      borderLeft: `3px solid ${accentColor}`,
+    }}>
+      <div style={{
+        width: '32px', height: '32px', background: iconTint,
+        borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        {icon}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>{title}</div>
+        {subtitle && (
+          <div style={{ fontSize: '11px', color: 'var(--fg-dim)', marginTop: '2px', fontFamily: 'monospace' }}>{subtitle}</div>
+        )}
+        {body && (
+          <div style={{ fontSize: '12px', color: 'var(--fg-muted)', marginTop: '4px', wordBreak: 'break-word' }}>{body}</div>
+        )}
+      </div>
+      <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', flexShrink: 0 }}>
+        <X size={16} />
+      </button>
+    </div>
+  );
+}
+
 // Toast global para errores reportados desde cualquier feature/context
 const DataErrorToast = () => {
   const { lastError, clearError } = useDataError();
@@ -30,30 +77,17 @@ const DataErrorToast = () => {
   if (!lastError) return null;
 
   return (
-    <div style={{
-      position: 'fixed', bottom: '24px', left: '24px', zIndex: 1001,
-      background: '#0a0a0a', color: '#fff', padding: '14px 18px',
-      borderRadius: '12px', boxShadow: '0 8px 40px rgba(0,0,0,0.8)',
-      display: 'flex', alignItems: 'flex-start', gap: '14px', maxWidth: '420px',
-      animation: 'slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderLeft: '3px solid var(--rojo)',
-    }}>
-      <div style={{
-        width: '32px', height: '32px', background: 'rgba(220,53,69,0.1)',
-        borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      }}>
-        <AlertCircle size={16} style={{ color: 'var(--rojo)' }} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>Error al sincronizar datos</div>
-        <div style={{ fontSize: '11px', color: '#666', marginTop: '2px', fontFamily: 'monospace' }}>{lastError.scope}</div>
-        <div style={{ fontSize: '12px', color: '#aaa', marginTop: '4px', wordBreak: 'break-word' }}>{lastError.message}</div>
-      </div>
-      <button onClick={clearError} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', flexShrink: 0 }}>
-        <X size={16} />
-      </button>
-    </div>
+    <ToastCard
+      side="left"
+      accentColor="var(--rojo)"
+      iconTint="rgba(220,53,69,0.1)"
+      icon={<AlertCircle size={16} style={{ color: 'var(--rojo)' }} />}
+      title="Error al sincronizar datos"
+      subtitle={lastError.scope}
+      body={lastError.message}
+      onClose={clearError}
+      zIndex={1001}
+    />
   );
 };
 
@@ -84,7 +118,7 @@ const ReminderAlertPopup = () => {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           style={{
-            background: '#0a0a0a', border: `1px solid ${isAvisoAdmin ? 'var(--azul)' : 'rgba(255,255,255,0.1)'}`,
+            background: 'var(--bg)', border: `1px solid ${isAvisoAdmin ? 'var(--azul)' : 'rgba(255,255,255,0.03)'}`,
             borderRadius: '20px', padding: '32px', maxWidth: '500px', width: '100%',
             boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
             display: 'flex', flexDirection: 'column', gap: '20px',
@@ -104,13 +138,13 @@ const ReminderAlertPopup = () => {
               {isAvisoAdmin ? 'MENSAJE DEL ADMINISTRADOR' : 'Recordatorio Pendiente'}
             </h3>
             {!isAvisoAdmin && (
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#555', marginBottom: '16px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--fg-dim)', marginBottom: '16px' }}>
                 {reminderAlert.nombre} | CUIL: {reminderAlert.cuil}
               </div>
             )}
             <p style={{ 
-              fontSize: '16px', color: '#ccc', lineHeight: '1.6', 
-              background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px' 
+              fontSize: '16px', color: 'var(--fg)', lineHeight: '1.6', 
+              background: 'rgba(255,255,255,0.015)', padding: '16px', borderRadius: '12px' 
             }}>
               {reminderAlert.nota || 'Sin descripción adicional.'}
             </p>
@@ -140,29 +174,15 @@ const ReminderAlertPopup = () => {
   if (!showToast || pendingReminders === 0) return null;
 
   return (
-    <div style={{
-      position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
-      background: '#0a0a0a', color: '#fff', padding: '16px 20px',
-      borderRadius: '12px', boxShadow: '0 8px 40px rgba(0,0,0,0.8)',
-      display: 'flex', alignItems: 'center', gap: '16px',
-      animation: 'slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderLeft: '3px solid var(--naranja)',
-    }}>
-      <div style={{
-        width: '36px', height: '36px', background: 'rgba(245,158,11,0.1)',
-        borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      }}>
-        <Bell size={16} style={{ color: 'var(--naranja)' }} />
-      </div>
-      <div>
-        <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>Recordatorios Pendientes</div>
-        <div style={{ fontSize: '12px', color: '#555', marginTop: '2px' }}>{pendingReminders} {pendingReminders === 1 ? 'recordatorio' : 'recordatorios'} sin revisar</div>
-      </div>
-      <button onClick={() => setShowToast(false)} style={{ background: 'none', border: 'none', color: '#444', cursor: 'pointer', marginLeft: '8px' }}>
-        <X size={16} />
-      </button>
-    </div>
+    <ToastCard
+      side="right"
+      accentColor="var(--naranja)"
+      iconTint="rgba(245,158,11,0.1)"
+      icon={<Bell size={16} style={{ color: 'var(--naranja)' }} />}
+      title="Recordatorios Pendientes"
+      subtitle={`${pendingReminders} ${pendingReminders === 1 ? 'recordatorio' : 'recordatorios'} sin revisar`}
+      onClose={() => setShowToast(false)}
+    />
   );
 };
 
@@ -182,18 +202,18 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     }
   }, []);
 
-  const handleZoom = (delta: number) => {
+  const handleZoom = useCallback((delta: number) => {
     setZoom(prev => {
       const next = Math.max(0.3, Math.min(3, prev + delta));
       localStorage.setItem('app_zoom_level', next.toString());
       return next;
     });
-  };
+  }, []);
 
-  const resetZoom = () => {
+  const resetZoom = useCallback(() => {
     setZoom(0.9);
     localStorage.setItem('app_zoom_level', '0.9');
-  };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -205,7 +225,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleZoom, resetZoom]);
   
   const isLoginPage = pathname === '/login';
   const isPublicRoute = pathname.startsWith('/publico');
@@ -270,8 +290,8 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
         <header style={{
           height: '60px',
           width: '100%',
-          background: '#000',
-          borderBottom: 'none',
+          background: 'transparent',
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
           display: 'flex',
           alignItems: 'center',
           padding: '0 32px',
@@ -292,9 +312,9 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
             flex: 1,
             justifyContent: 'center'
           }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#555', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sistema de</span>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--fg-muted)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sistema de</span>
             <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#333', letterSpacing: '1px' }}>y</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--fg-dim)', letterSpacing: '1px' }}>y</span>
             <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
           </div>
 
@@ -303,27 +323,27 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
               <button 
                 onClick={toggleSplitView}
                 style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.05)',
                   borderRadius: '8px',
                   padding: '6px 12px',
-                  color: '#aaa',
+                  color: 'var(--fg-muted)',
                   fontSize: '11px',
                   fontWeight: 700,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  transition: 'background 0.2s, color 0.2s'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#aaa'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
               >
                 <Columns size={14} />
                 MODO SPLIT
               </button>
             )}
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#333', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
               {formatDate(new Date().toISOString())}
             </div>
           </div>

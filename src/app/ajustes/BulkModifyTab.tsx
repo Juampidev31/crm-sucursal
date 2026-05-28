@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -729,14 +729,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     type="date"
                     value={fechaDesde}
                     onChange={e => setFechaDesde(e.target.value)}
-                    style={{ fontSize: 11, padding: '3px 6px', background: '#121214', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
+                    style={{ fontSize: 11, padding: '3px 6px', background: '#121212', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
                   />
                   <span style={{ color: '#444', fontSize: 11 }}>–</span>
                   <input
                     type="date"
                     value={fechaHasta}
                     onChange={e => setFechaHasta(e.target.value)}
-                    style={{ fontSize: 11, padding: '3px 6px', background: '#121214', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
+                    style={{ fontSize: 11, padding: '3px 6px', background: '#121212', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
                   />
                   {(fechaDesde || fechaHasta) && (
                     <button
@@ -753,8 +753,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {([
                     { key: 'todos' as const, label: 'Todos', count: totalRegistros, color: '#a5b4fc', bg: 'rgba(165,180,252,0.08)' },
-                    { key: 'completos' as const, label: 'Completos', count: totalCompletos, color: '#4ade80', bg: 'rgba(74,222,128,0.08)' },
-                    { key: 'faltantes' as const, label: 'Faltantes', count: totalConFaltantes, color: '#f87171', bg: 'rgba(248,113,113,0.08)' },
+                    { key: 'completos' as const, label: 'Completos', count: totalCompletos, color: '#00ff88', bg: 'rgba(74,222,128,0.08)' },
+                    { key: 'faltantes' as const, label: 'Faltantes', count: totalConFaltantes, color: '#ff3366', bg: 'rgba(248,113,113,0.08)' },
                   ]).map(({ key, label, count, color, bg }) => {
                     const activo = filtroCompletitud === key;
                     return (
@@ -776,7 +776,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                         <span style={{
                           fontSize: 9, fontWeight: 900,
                           background: activo ? color : 'rgba(255,255,255,0.06)',
-                          color: activo ? '#0a0a0a' : '#aaa',
+                          color: activo ? '#111111' : '#aaa',
                           padding: '1px 6px', borderRadius: 8, minWidth: 18, textAlign: 'center',
                         }}>{count}</span>
                       </button>
@@ -806,7 +806,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 disabled={!pastedText.trim()}
                 style={{
                   padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                  background: pastedText.trim() ? '#2d2f5e' : '#1a1a1a',
+                  background: pastedText.trim() ? '#2d2f5e' : '#111111',
                   border: `1px solid ${pastedText.trim() ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
                   borderRadius: 6, cursor: pastedText.trim() ? 'pointer' : 'not-allowed',
                   color: pastedText.trim() ? '#a5b4fc' : '#444',
@@ -847,7 +847,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     onChange={e => { setCuilCol(e.target.value === '' ? null : Number(e.target.value)); setSearched(false); }}
                     style={{
                       fontSize: 12, padding: '6px 10px', borderRadius: 6,
-                      background: '#1a1a1a', color: '#ccc',
+                      background: '#111111', color: '#ccc',
                       border: '1px solid rgba(255,255,255,0.12)', outline: 'none',
                       cursor: 'pointer', minWidth: 180,
                     }}
@@ -894,7 +894,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   disabled={cuilCol === null}
                   style={{
                     padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: cuilCol !== null ? '#2d2f5e' : '#1a1a1a',
+                    background: cuilCol !== null ? '#2d2f5e' : '#111111',
                     border: `1px solid ${cuilCol !== null ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
                     borderRadius: 6, cursor: cuilCol !== null ? 'pointer' : 'not-allowed',
                     color: cuilCol !== null ? '#a5b4fc' : '#444',
@@ -995,7 +995,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                       };
                       const renderFaltantes = (missing: string[], isSelected: boolean) => {
                         if (missing.length === 0) {
-                          return <span style={{ fontSize: 10, color: '#4ade80', fontWeight: 700 }}>✓ Completo</span>;
+                          return <span style={{ fontSize: 10, color: '#00ff88', fontWeight: 700 }}>✓ Completo</span>;
                         }
                         const fixed = isSelected ? missing.filter(willFill) : [];
                         const stillMissing = isSelected ? missing.filter(f => !willFill(f)) : missing;
@@ -1004,14 +1004,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                             {fixed.map(f => (
                               <span key={f} style={{
                                 fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                background: 'rgba(74,222,128,0.12)', color: '#4ade80',
+                                background: 'rgba(74,222,128,0.12)', color: '#00ff88',
                                 border: '1px solid rgba(74,222,128,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px',
                               }} title="Se completará al aplicar">✓ {f}</span>
                             ))}
                             {stillMissing.map(f => (
                               <span key={f} style={{
                                 fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                background: 'rgba(248,113,113,0.12)', color: '#f87171',
+                                background: 'rgba(248,113,113,0.12)', color: '#ff3366',
                                 border: '1px solid rgba(248,113,113,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px',
                               }}>{f}</span>
                             ))}
@@ -1127,7 +1127,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               <div className="bulk-fields-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingBottom: 4 }}>
                 {(() => {
                   const labelStyle: React.CSSProperties = { fontSize: 9, color: '#888', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
-                  const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#1a1a1a', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
+                  const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#111111', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
                   const setField = (key: keyof CamposExcel) => (v: string) => { setCamposExcel(p => ({ ...p, [key]: v })); setConfirming(false); };
                   const selects: Array<{ key: keyof CamposExcel; label: string; opts: readonly string[] }> = [
                     { key: 'analista', label: 'Analista', opts: ANALISTAS },
@@ -1149,9 +1149,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                         <div key={f.key}>
                           <label style={labelStyle}>{f.label}</label>
                           <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
-                            <option value="" style={{ background: '#1a1a1a', color: '#888' }}>— no cambiar —</option>
-                            <option value={SIN_ESPECIFICAR} style={{ background: '#1a1a1a', color: '#888' }}>Sin especificar (borrar)</option>
-                            {f.opts.map(o => <option key={o} value={o} style={{ background: '#1a1a1a', color: '#ddd' }}>{o}</option>)}
+                            <option value="" style={{ background: '#111111', color: '#888' }}>— no cambiar —</option>
+                            <option value={SIN_ESPECIFICAR} style={{ background: '#111111', color: '#888' }}>Sin especificar (borrar)</option>
+                            {f.opts.map(o => <option key={o} value={o} style={{ background: '#111111', color: '#ddd' }}>{o}</option>)}
                           </select>
                         </div>
                       ))}
@@ -1188,7 +1188,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
                   <span style={{ color: '#888' }}>
                     <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{totalSeleccionados}</span> seleccionado{totalSeleccionados !== 1 ? 's' : ''}
-                    {hayCampos && <> · <span style={{ color: '#4ade80' }}>{Object.keys(payloadPreview).length} campo{Object.keys(payloadPreview).length !== 1 ? 's' : ''}</span></>}
+                    {hayCampos && <> · <span style={{ color: '#00ff88' }}>{Object.keys(payloadPreview).length} campo{Object.keys(payloadPreview).length !== 1 ? 's' : ''}</span></>}
                   </span>
                   {hayCampos && (
                     <span style={{ color: '#a5b4fc', fontSize: 10 }}>
@@ -1203,7 +1203,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   disabled={!hayCampos || totalSeleccionados === 0}
                   style={{
                     alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: hayCampos && totalSeleccionados > 0 ? '#2d2f5e' : '#1a1a1a',
+                    background: hayCampos && totalSeleccionados > 0 ? '#2d2f5e' : '#111111',
                     border: `1px solid ${hayCampos && totalSeleccionados > 0 ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
                     borderRadius: 6, cursor: hayCampos && totalSeleccionados > 0 ? 'pointer' : 'not-allowed',
                     color: hayCampos && totalSeleccionados > 0 ? '#a5b4fc' : '#444',
@@ -1213,7 +1213,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 </button>
               ) : (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, color: '#f87171', fontWeight: 600 }}>
+                  <span style={{ fontSize: 12, color: '#ff3366', fontWeight: 600 }}>
                     ⚠ Se actualizarán {totalSeleccionados} registro{totalSeleccionados !== 1 ? 's' : ''}
                   </span>
                   <button
@@ -1221,7 +1221,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     disabled={assigning}
                     style={{
                       padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                      background: assigning ? '#1a1a1a' : '#5a1a1a',
+                      background: assigning ? '#111111' : '#5a1a1a',
                       border: '1px solid rgba(248,113,113,0.5)',
                       borderRadius: 6, cursor: assigning ? 'not-allowed' : 'pointer',
                       color: '#fff',
@@ -1245,7 +1245,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               )}
 
               {assignError && (
-                <div style={{ fontSize: 12, color: '#f87171', padding: '8px 12px', background: 'rgba(248,113,113,0.08)', borderRadius: 6 }}>
+                <div style={{ fontSize: 12, color: '#ff3366', padding: '8px 12px', background: 'rgba(248,113,113,0.08)', borderRadius: 6 }}>
                   Error: {assignError}
                 </div>
               )}
@@ -1257,7 +1257,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
             <div style={{
               padding: '10px 16px', background: 'rgba(74,222,128,0.08)',
               border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8,
-              fontSize: 12, color: '#4ade80', fontWeight: 600,
+              fontSize: 12, color: '#00ff88', fontWeight: 600,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
             }}>
               <span>✓ {assignResult.updated} registro{assignResult.updated !== 1 ? 's' : ''} actualizado{assignResult.updated !== 1 ? 's' : ''}.</span>
@@ -1272,7 +1272,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   style={{
                     padding: '5px 12px', fontSize: 11, fontWeight: 700,
                     background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)',
-                    borderRadius: 6, cursor: 'pointer', color: '#4ade80',
+                    borderRadius: 6, cursor: 'pointer', color: '#00ff88',
                   }}
                 >
                   Seguir con estos registros
@@ -2287,9 +2287,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '12px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+            background: toast.type === 'success' ? 'rgba(0, 255, 136, 0.15)' : 'rgba(239,68,68,0.15)',
             border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-            color: toast.type === 'success' ? '#34d399' : '#f87171',
+            color: toast.type === 'success' ? '#34d399' : '#ff3366',
           }}>
             {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}
             {toast.message}
@@ -2298,7 +2298,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       )}
 
       <div className="data-card" style={{
-        background: '#0a0a0a',
+        background: '#111111',
         border: '1px solid rgba(255,255,255,0.03)',
         width: '100%',
         minHeight: mode === 'excel' ? 'auto' : 'calc(100vh - 200px)'
@@ -2337,7 +2337,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               Nuevos hoy
               {contadorNuevosHoy > 0 && (
                 <span style={{ 
-                  background: 'rgba(16,185,129,0.15)', 
+                  background: 'rgba(0, 255, 136, 0.15)', 
                   color: '#34d399', 
                   padding: '1px 5px', 
                   borderRadius: 4, 
@@ -2358,7 +2358,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               borderRadius: '6px',
               fontSize: '10px',
               fontWeight: 800,
-              color: variantesConDuplicados.length > 0 ? '#ef4444' : '#555',
+              color: variantesConDuplicados.length > 0 ? '#ff3366' : '#555',
               textTransform: 'uppercase',
             }}>
               {variantesConDuplicados.length > 0 ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
@@ -2395,9 +2395,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorExpandido ? 16 : 0, cursor: 'pointer' }}
           >
             {variantesConDuplicados.length > 0
-              ? <AlertTriangle size={18} color="#ef4444" />
+              ? <AlertTriangle size={18} color="#ff3366" />
               : <CheckCircle size={18} color="#555" />}
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ef4444' : '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ff3366' : '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
               {variantesConDuplicados.length > 0
                 ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
                 : 'Corrector de Empleador — Sin duplicados'}
@@ -2412,7 +2412,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   onClick={restaurarDescartados}
                   style={{
                     background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                    color: '#60a5fa', borderRadius: '4px', padding: '4px 10px',
+                    color: '#00d4ff', borderRadius: '4px', padding: '4px 10px',
                     fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                     textTransform: 'uppercase', letterSpacing: '0.5px',
                   }}
@@ -2513,7 +2513,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                           title="Ver todos los registros de este grupo"
                           style={{
                             background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                            color: '#60a5fa', borderRadius: '4px', padding: '2px 8px',
+                            color: '#00d4ff', borderRadius: '4px', padding: '2px 8px',
                             fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                             textTransform: 'uppercase', letterSpacing: '0.5px',
                             display: 'flex', alignItems: 'center', gap: 4,
@@ -2646,7 +2646,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   }}
                   disabled={updating || !localidadCorreccion.trim()}
                   style={{
-                    background: (!localidadCorreccion.trim()) ? '#333' : 'rgba(16,185,129,0.15)',
+                    background: (!localidadCorreccion.trim()) ? '#333' : 'rgba(0, 255, 136, 0.15)',
                     color: (!localidadCorreccion.trim()) ? '#666' : '#34d399',
                     border: '1px solid rgba(16,185,129,0.3)',
                     borderRadius: '6px', padding: '10px 24px',
@@ -2902,7 +2902,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       style={{
                         background: activo ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
                         border: `1px solid ${activo ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                        color: activo ? '#60a5fa' : '#666',
+                        color: activo ? '#00d4ff' : '#666',
                         borderRadius: '4px', padding: '4px 12px',
                         fontSize: '10px', fontWeight: 800, cursor: 'pointer',
                         textTransform: 'uppercase', letterSpacing: '0.5px',
@@ -2949,12 +2949,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               style={{
                                 padding: '4px 10px', borderRadius: 4, fontSize: 11,
                                 background: sel ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.04)',
-                                border: sel ? '1px solid #60a5fa' : '1px solid rgba(255,255,255,0.06)',
-                                color: sel ? '#60a5fa' : '#888',
+                                border: sel ? '1px solid #00d4ff' : '1px solid rgba(255,255,255,0.06)',
+                                color: sel ? '#00d4ff' : '#888',
                                 fontWeight: 600, cursor: 'pointer',
                               }}
                             >
-                              {emp} <span style={{ color: sel ? '#60a5fa' : '#555' }}>({count})</span>
+                              {emp} <span style={{ color: sel ? '#00d4ff' : '#555' }}>({count})</span>
                             </span>
                           );
                         })}
@@ -3032,7 +3032,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               </div>
 
               {(reasignarEmpOrigen || reasignarDepOrigen) && (
-                <div style={{ marginBottom: 12, fontSize: 11, color: '#60a5fa', fontWeight: 700 }}>
+                <div style={{ marginBottom: 12, fontSize: 11, color: '#00d4ff', fontWeight: 700 }}>
                   {reasignarIds.length} registro(s) coinciden con &quot;{reasignarModo === 'empleador' ? reasignarEmpOrigen : reasignarDepOrigen}&quot;
                 </div>
               )}
@@ -3045,7 +3045,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     onClick={reasignarMasivo}
                     disabled={disabled}
                     style={{
-                      background: disabled ? '#333' : '#60a5fa',
+                      background: disabled ? '#333' : '#00d4ff',
                       color: disabled ? '#666' : '#000',
                       border: 'none', borderRadius: '6px', padding: '10px 24px',
                       fontSize: '11px', fontWeight: 900,
@@ -3084,7 +3084,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 marginBottom: '20px', display: 'flex', alignItems: 'center', gap: 8,
                 flexWrap: 'wrap',
               }}>
-                <Filter size={14} style={{ color: '#60a5fa', flexShrink: 0 }} />
+                <Filter size={14} style={{ color: '#00d4ff', flexShrink: 0 }} />
                 <span style={{ fontSize: '11px', fontWeight: 700, color: '#888', marginRight: 8 }}>Filtros activos:</span>
                 {filtros.estados.map(e => (
                   <span key={e} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{STATUS_LABEL[e] ?? e}</span>
@@ -3113,7 +3113,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
                   <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ESTADO (seleccioná los que querés filtrar)</label>
                   {filtros.estados.length > 0 && (
-                    <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 700 }}>· {filtros.estados.length} seleccionado{filtros.estados.length > 1 ? 's' : ''}</span>
+                    <span style={{ fontSize: '10px', color: '#00d4ff', fontWeight: 700 }}>· {filtros.estados.length} seleccionado{filtros.estados.length > 1 ? 's' : ''}</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -3130,7 +3130,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
                   <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ANALISTA</label>
                   {filtros.analistas.length > 0 && (
-                    <span style={{ fontSize: '10px', color: '#60a5fa', fontWeight: 700 }}>· {filtros.analistas.length} seleccionado{filtros.analistas.length > 1 ? 's' : ''}</span>
+                    <span style={{ fontSize: '10px', color: '#00d4ff', fontWeight: 700 }}>· {filtros.analistas.length} seleccionado{filtros.analistas.length > 1 ? 's' : ''}</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -3298,7 +3298,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             onClick={() => setFiltros(p => ({ ...p, empleador: [] }))}
                             style={{
                               background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                              color: '#f87171', borderRadius: '4px', padding: '3px 8px',
+                              color: '#ff3366', borderRadius: '4px', padding: '3px 8px',
                               fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                               textTransform: 'uppercase', letterSpacing: '0.5px',
                             }}
@@ -3544,7 +3544,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         >
           <div
             style={{
-              background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
+              background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 12, width: '100%', maxWidth: 1200,
               maxHeight: '90vh', display: 'flex', flexDirection: 'column',
             }}
@@ -3579,7 +3579,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <div style={{ padding: 24, overflow: 'auto', flex: 1 }}>
               {modalLoading ? (
                 <div style={{ textAlign: 'center', padding: 40 }}>
-                  <Loader2 size={32} className="animate-spin" style={{ color: '#60a5fa', margin: '0 auto 12px' }} />
+                  <Loader2 size={32} className="animate-spin" style={{ color: '#00d4ff', margin: '0 auto 12px' }} />
                   <p style={{ color: '#888', fontSize: 13 }}>Cargando registros...</p>
                 </div>
               ) : modalRegistros.length === 0 ? (
@@ -3618,7 +3618,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             {STATUS_LABEL[r.estado] ?? r.estado}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 700 }}>{r.puntaje ?? '-'}</td>
+                        <td style={{ padding: '10px 12px', color: '#00d4ff', fontWeight: 700 }}>{r.puntaje ?? '-'}</td>
                         <td style={{ padding: '10px 12px', color: '#888' }}>{r.analista || '-'}</td>
                       </tr>
                     ))}
@@ -3644,7 +3644,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         >
           <div
             style={{
-              background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)',
+              background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 12, width: '100%', maxWidth: 1200,
               maxHeight: '92vh', display: 'flex', flexDirection: 'column',
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
@@ -3726,7 +3726,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <div style={{ padding: 24, overflow: 'auto', flex: 1 }}>
               {empleadoresLoading ? (
                 <div style={{ textAlign: 'center', padding: 40 }}>
-                  <Loader2 size={32} className="animate-spin" style={{ color: '#60a5fa', margin: '0 auto 12px' }} />
+                  <Loader2 size={32} className="animate-spin" style={{ color: '#00d4ff', margin: '0 auto 12px' }} />
                   <p style={{ color: '#888', fontSize: 13 }}>Cargando empleadores...</p>
                 </div>
               ) : (
@@ -3826,7 +3826,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                     </td>
                                     <td style={{ padding: '12px' }}>
                                       <span style={{ 
-                                        color: emp.categoria === 'Estado' ? '#60a5fa' : '#888',
+                                        color: emp.categoria === 'Estado' ? '#00d4ff' : '#888',
                                         fontSize: '11px', fontWeight: 600 
                                       }}>
                                         {emp.categoria}
@@ -3882,7 +3882,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     const dependencias = filtered.filter(e => e.esDependencia);
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {empleadores.length > 0 && renderTable(empleadores, 'Empleadores', '#60a5fa')}
+                        {empleadores.length > 0 && renderTable(empleadores, 'Empleadores', '#00d4ff')}
                         {dependencias.length > 0 && renderTable(dependencias, 'Dependencias', '#a78bfa')}
                       </div>
                     );
@@ -3907,7 +3907,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         >
           <div
             style={{
-              background: '#0a0a0a', border: '1px solid rgba(16,185,129,0.2)',
+              background: '#111111', border: '1px solid rgba(16,185,129,0.2)',
               borderRadius: 12, width: '100%', maxWidth: 900,
               maxHeight: '90vh', display: 'flex', flexDirection: 'column',
             }}
@@ -3975,7 +3975,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   }}
                   style={{
                     background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-                    color: '#f87171', borderRadius: 6, padding: '8px 12px',
+                    color: '#ff3366', borderRadius: 6, padding: '8px 12px',
                     fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
                     fontWeight: 700,
                   }}
