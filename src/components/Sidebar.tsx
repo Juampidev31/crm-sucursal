@@ -389,7 +389,10 @@ export default function Sidebar({
 
         <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
           {isAdmin ? (
-            <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname.startsWith('/ajustes')} />
+            <>
+              <NavItem href="#" icon={Calculator} label="Calculadora" active={showCalculator} onClick={(e) => { e.preventDefault(); setShowCalculator(!showCalculator); }} />
+              <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname.startsWith('/ajustes')} />
+            </>
           ) : (
             <NavItem href="#" icon={Lock} label="Acceso Admin" onClick={(e) => { e.preventDefault(); setShowAdminModal(true); }} />
           )}
