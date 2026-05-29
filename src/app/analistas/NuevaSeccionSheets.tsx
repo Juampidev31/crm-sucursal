@@ -116,13 +116,16 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
   return (
     <div className="data-card relative z-10 w-full" style={{
       margin: 0,
-      minHeight: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 400,
+      height: '100%',
       background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)',
       boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
       padding: 24,
       borderRadius: 16,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexShrink: 0 }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Tag size={15} color="#34d399" />
           <h2 style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#fff', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
@@ -171,7 +174,7 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', flex: 1, minHeight: '100%' }}>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', flex: 1, minHeight: 0 }}>
         {loading ? (
           <div className="flex items-center justify-center w-full text-zinc-500 text-sm" style={{ height: '100%' }}>Cargando datos...</div>
         ) : (
@@ -186,11 +189,11 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
 }
 
 function DistBlockSheets({ 
-  titulo, icon, datos, color, maxItems = 10
+  titulo, icon, datos, color
 }: { 
   titulo: string; icon: React.ReactNode; 
   datos: { label: string; cantidad: number }[]; 
-  color: string; maxItems?: number;
+  color: string;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -205,8 +208,7 @@ function DistBlockSheets({
   });
 
   const totalCant = validData.reduce((s, d) => s + d.cantidad, 0);
-  const displayData = expanded ? validData : validData.slice(0, maxItems);
-  const hasMore = validData.length > maxItems;
+  const displayData = validData;
 
   return (
     <div style={{ 
@@ -214,7 +216,7 @@ function DistBlockSheets({
       minWidth: 240, 
       display: 'flex', 
       flexDirection: 'column',
-      minHeight: '100%',
+      minHeight: 0,
       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
       {titulo && (
@@ -233,10 +235,10 @@ function DistBlockSheets({
         display: 'flex',
         flexDirection: 'column',
         flex: 1, 
-        height: '100%',
+        minHeight: 0,
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
-        <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'hidden' }}>
+        <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto' }}>
           {displayData.map((d, i) => {
             const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
             return (
@@ -256,48 +258,10 @@ function DistBlockSheets({
           })}
         </div>
         
-        {noEspData && noEspData.cantidad > 0 && (
-          <div style={{ 
-            padding: '8px 14px', 
-            background: 'rgba(255,255,255,0.01)', 
-            borderTop: '1px solid rgba(255,255,255,0.03)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexShrink: 0
-          }}>
-            <span style={{ fontSize: 10, color: '#8f929d', fontWeight: 700, fontStyle: 'italic' }}>
-              * {noEspData.cantidad} sin especificar
-            </span>
+        {noEspData && (
+          <div style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+            <span style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>* {noEspData.cantidad} sin especificar</span>
           </div>
-        )}
-
-        {hasMore && (
-          <button 
-            onClick={() => setExpanded(!expanded)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: 'rgba(255,255,255,0.04)',
-              border: 'none',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-              color: color,
-              fontSize: '10px',
-              fontWeight: 900,
-              textTransform: 'uppercase',
-              letterSpacing: '1.5px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              transition: 'all 0.3s ease',
-              flexShrink: 0
-            }}
-          >
-            {expanded ? 'Ver menos' : `Ver todos (${validData.length})`}
-            <ChevronDown size={12} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
-          </button>
         )}
       </div>
     </div>
