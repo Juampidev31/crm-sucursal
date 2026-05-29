@@ -42,7 +42,7 @@ const MESES = [
 const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
 
 const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: number, label: string }) => {
-  const options = {
+  const options: any = {
     clip: false,
     layout: { padding: 70 },
     cutout: '88%',
