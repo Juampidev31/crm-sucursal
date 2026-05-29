@@ -159,13 +159,21 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
   };
 
   const views = useMemo(() => {
-    // Si se fuerza un analista específico (que no sea PDV), mostrar solo ese
     if (propAnalista && propAnalista !== 'PDV') {
       return [{ 
         id: propAnalista.toLowerCase(), 
         label: propAnalista.toUpperCase(), 
         analista: propAnalista,
         data: getStatsForAnalista(propAnalista)
+      }];
+    }
+
+    if (propAnalista === 'PDV') {
+      return [{ 
+        id: 'todos', 
+        label: 'TOTAL GENERAL', 
+        analista: '',
+        data: getStatsForAnalista('')
       }];
     }
 
