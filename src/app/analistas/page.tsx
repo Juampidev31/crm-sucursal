@@ -901,6 +901,20 @@ export default function AnalistasPage() {
   const mesActualLabel = CONFIG.MESES_NOMBRES[selectedMes - 1].slice(0, 3);
   const mesAntLabel = CONFIG.MESES_NOMBRES[mesPrev - 1].slice(0, 3);
 
+  // Helper: gradient
+  const getGradient = (context: any, colorStart: string, colorEnd: string) => {
+    const chart = context.chart;
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return null;
+    let horizontal = chart.config.options.indexAxis === 'y';
+    const gradient = horizontal 
+      ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
+      : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+    gradient.addColorStop(0, colorStart);
+    gradient.addColorStop(1, colorEnd);
+    return gradient;
+  };
+
   const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, showLegend = false, stacked = false, hideXLabels = false): any => ({
     responsive: true,
     maintainAspectRatio: false,
@@ -1006,9 +1020,9 @@ export default function AnalistasPage() {
         {
           label: `Capital ${mesActualLabel}`,
           data: kpiCards.map(k => k.cumplCapital ?? 0),
-          backgroundColor: 'rgba(96, 165, 250, 0.15)',
-          borderColor: 'rgba(96, 165, 250, 0.5)',
-          borderWidth: 1.5,
+          backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
+          borderColor: '#10b981',
+          borderWidth: 0,
           borderRadius: 4, order: 1,
         },
         {
@@ -1020,17 +1034,17 @@ export default function AnalistasPage() {
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-          backgroundColor: 'rgba(30, 58, 138, 0.1)',
-          borderColor: 'rgba(30, 58, 138, 0.4)',
-          borderWidth: 1.5,
+          backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0,
           borderRadius: 4, order: 1,
         },
         {
           label: `Ops ${mesActualLabel}`,
           data: kpiCards.map(k => k.cumplOps ?? 0),
-          backgroundColor: 'rgba(167, 139, 250, 0.15)',
-          borderColor: 'rgba(167, 139, 250, 0.5)',
-          borderWidth: 1.5,
+          backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
+          borderColor: '#06b6d4',
+          borderWidth: 0,
           borderRadius: 4, order: 1,
         },
         {
@@ -1042,9 +1056,9 @@ export default function AnalistasPage() {
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
           }),
-          backgroundColor: 'rgba(76, 29, 149, 0.1)',
-          borderColor: 'rgba(76, 29, 149, 0.4)',
-          borderWidth: 1.5,
+          backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0,
           borderRadius: 4, order: 1, // Purpura oscuro
         },
         refLine100(labels.length),
@@ -1155,8 +1169,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.4)', borderWidth: 1.5, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: '#10b981', borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
         { 
           type: 'line' as const, label: 'Objetivo ($)', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 1,
           horizontalReferenceValue: isSingle ? objetivo[0] : undefined 
@@ -1186,8 +1200,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Ticket ${mesActualLabel}`, data: ticketAct, backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.4)', borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Ticket ${mesActualLabel}`, data: ticketAct, backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'), borderColor: '#f59e0b', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
@@ -1254,8 +1268,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Actual`, data: actual, backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.4)', borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Anterior`, data: anterior, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: '#10b981', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, apertVsRenData, analista]);
@@ -1271,8 +1285,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Actual`, data: actual, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.4)', borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Anterior`, data: anterior, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderColor: 'rgba(255, 255, 255, 0.1)', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(59, 130, 246, 0.05)', 'rgba(59, 130, 246, 0.85)'), borderColor: '#3b82f6', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, apertVsRenData, analista]);

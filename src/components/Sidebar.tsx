@@ -255,6 +255,11 @@ export default function Sidebar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showPageSizeSelector]);
 
+  useEffect(() => {
+    setShowFilters(false);
+    setShowCalculator(false);
+  }, [pathname, setShowFilters]);
+
   const handleAdminLogin = async () => {
     try {
       const res = await fetch('/api/admin/login', {

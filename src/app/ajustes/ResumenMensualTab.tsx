@@ -2101,7 +2101,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         </div>
                       </div>
                     </div>
-                    <div id="chart-capital-objetivo" style={{ flex: 1, minHeight: 180, position: 'relative' }}>
+                    <div id="chart-capital-objetivo" style={{ height: 200, position: 'relative', width: '100%' }}>
                       <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
                     </div>
                   </div>
@@ -2135,16 +2135,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
-                      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1, minHeight: 0 }}>
+                      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#00d4ff', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
-                        <div id="chart-aperturas" style={{ flex: 1, minHeight: 140, position: 'relative', width: '100%' }}>
+                        <div id="chart-aperturas" style={{ height: 200, position: 'relative', width: '100%' }}>
                           <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                         </div>
                       </div>
-                      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
-                        <div id="chart-renovaciones" style={{ flex: 1, minHeight: 140, position: 'relative', width: '100%' }}>
+                        <div id="chart-renovaciones" style={{ height: 200, position: 'relative', width: '100%' }}>
                           <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                         </div>
                       </div>
@@ -2179,7 +2179,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         </div>
                       </div>
                     </div>
-                    <div id="chart-ticket-promedio" style={{ flex: 1, minHeight: 180, position: 'relative' }}>
+                    <div id="chart-ticket-promedio" style={{ height: 200, position: 'relative', width: '100%' }}>
                       <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
                     </div>
                   </div>

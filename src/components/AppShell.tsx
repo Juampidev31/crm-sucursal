@@ -195,10 +195,10 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const { setShowFilters } = useFilter();
 
-  // Auto-hide sidebar when entering reports
+  // Auto-hide sidebar when entering reports or settings
   useEffect(() => {
     setShowFilters(false);
-    setSidebarHidden(pathname === '/analistas' || pathname.startsWith('/reportes/'));
+    setSidebarHidden(pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/'));
   }, [pathname, setShowFilters]);
   
   useEffect(() => {
