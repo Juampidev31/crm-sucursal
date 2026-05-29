@@ -1940,9 +1940,7 @@ export default function AnalistasPage() {
               {sectionHeader(4, '4. Distribucion por Estado', <PieChart size={15} color="#4ade80" />)}
               <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />
             </div>
-            <div style={{ height: '100%' }}>
-              <NuevaSeccionSheets analista={analista} />
-            </div>
+            <NuevaSeccionSheets analista={analista} />
           </div>
 
           {/* ── SECCIÓN 5: CÁLCULO DE INCENTIVOS ── */}
