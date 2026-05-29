@@ -48,7 +48,7 @@ const ModernDoughnut = ({ data, totalOps, label }: { data: any, totalOps: number
 
   return (
     <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto 16px auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
+      <Doughnut data={data} options={options} plugins={[bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
