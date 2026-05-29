@@ -844,6 +844,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     return e === 'venta' || e.includes('aprobado cc');
   };
 
+  const isCerrado = (r: Registro) => {
+    const e = (r.estado ?? '').toLowerCase().trim();
+    return e !== 'proyeccion' && e !== 'en seguimiento' && e !== '';
+  };
+
   const cumplColor = (pct: number | null) =>
     pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
 
@@ -920,7 +925,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       const ventas = regsAnalista.filter(isVenta);
       const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
       const ops = ventas.length;
-      const conversion = regsAnalista.length > 0 ? (ops / regsAnalista.length) * 100 : 0;
+      const cerrados = regsAnalista.filter(isCerrado).length;
+      const conversion = cerrados > 0 ? (ops / cerrados) * 100 : 0;
 
       // Monto venta y Aprob CC por separado
       const montoVenta = regsAnalista
@@ -998,7 +1004,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     // Ticket promedio = total vendido (Venta + Aprob. CC) / dias transcurridos
     const ticket = diasTransMes > 0 ? capital / diasTransMes : 0;
     const clientes = regs.length;
-    const conversion = clientes > 0 ? (ops / clientes) * 100 : 0;
+    const cerrados = regs.filter(isCerrado).length;
+    const conversion = cerrados > 0 ? (ops / cerrados) * 100 : 0;
 
     const montoVenta = regs
       .filter(r => (r.estado ?? '').toLowerCase() === 'venta')
@@ -1013,7 +1020,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const opsAnt = ventasAnt.length;
     const ticketAnt = diasTransMes > 0 ? capitalAnt / diasTransMes : 0;
     const clientesAnt = regsAnt.length;
-    const conversionAnt = clientesAnt > 0 ? (opsAnt / clientesAnt) * 100 : 0;
+    const cerradosAnt = regsAnt.filter(isCerrado).length;
+    const conversionAnt = cerradosAnt > 0 ? (opsAnt / cerradosAnt) * 100 : 0;
 
     const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
     const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
