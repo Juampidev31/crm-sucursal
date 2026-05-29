@@ -18,9 +18,16 @@ const hexToRgba = (hex: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const CHART_PALETTE = [
+  '#34d399', '#60a5fa', '#a78bfa', '#f472b6', '#fb923c', 
+  '#facc15', '#2dd4bf', '#fb7185', '#818cf8', '#4ade80',
+  '#c084fc', '#38bdf8', '#f87171', '#a3e635', '#e879f9',
+  '#fde047', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6'
+];
+
 const ModernDoughnut = ({ data, totalOps, label }: { data: any, totalOps: number, label: string }) => {
   const options = {
-    layout: { padding: 30 },
+    layout: { padding: 60 },
     cutout: '88%',
     plugins: {
       legend: { display: false },
@@ -47,8 +54,8 @@ const ModernDoughnut = ({ data, totalOps, label }: { data: any, totalOps: number
   };
 
   return (
-    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto 16px auto' }}>
-      <Doughnut data={data} options={options} plugins={[bgTrackPlugin, glowPlugin]} />
+    <div style={{ position: 'relative', height: '250px', width: '100%', margin: '0 auto 16px auto' }}>
+      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)', textAlign: 'center',
@@ -307,10 +314,7 @@ function DistBlockSheets({
               labels: validData.map(d => d.label?.trim()),
               datasets: [{
                 data: validData.map(d => d.cantidad),
-                backgroundColor: validData.map((_, i) => {
-                  const alpha = Math.max(0.15, 1 - (i * (0.85 / Math.max(1, validData.length - 1))));
-                  return hexToRgba(color, alpha);
-                }),
+                backgroundColor: validData.map((_, i) => CHART_PALETTE[i % CHART_PALETTE.length]),
                 hoverOffset: 15,
                 borderRadius: 6,
                 spacing: 4
@@ -321,17 +325,21 @@ function DistBlockSheets({
         <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto' }}>
           {displayData.map((d, i) => {
             const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
+            const itemColor = CHART_PALETTE[i % CHART_PALETTE.length];
             return (
               <div key={i} style={{ padding: '9px 14px', borderBottom: 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
-                  <span style={{ fontSize: 12, color: '#8f929d', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: itemColor, flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: '#8f929d', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
+                  </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                     <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: itemColor, minWidth: 34, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
                   </div>
                 </div>
                 <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: color, opacity: 0.6, borderRadius: 2 }} />
+                  <div style={{ height: '100%', width: `${pct}%`, background: itemColor, opacity: 0.8, borderRadius: 2 }} />
                 </div>
               </div>
             );

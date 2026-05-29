@@ -20,29 +20,36 @@ export const calloutPlugin: Plugin<'doughnut'> = {
       const val = (chart.data.datasets[0].data as number[])[index];
       if (!val) return;
 
-      const pct = (val / total * 100).toFixed(1) + '%';
+      const pctValue = (val / total * 100);
+      
+      // Skip callout for very tiny slices if there are many items, to prevent unreadable text blobs
+      if (datasetMeta.data.length > 5 && pctValue < 1.0) return;
+
+      const pct = pctValue.toFixed(1) + '%';
       const centerPoint = (element as unknown as { tooltipPosition(): { x: number; y: number } }).tooltipPosition();
       const xCenter = left + width / 2;
       const yCenter = top + height / 2;
       const angle = Math.atan2(centerPoint.y - yCenter, centerPoint.x - xCenter);
       const radius = (element as unknown as { outerRadius: number }).outerRadius;
 
+      // Stagger lengths so overlapping text gets separated vertically and horizontally
+      const stagger = datasetMeta.data.length > 4 ? (index % 4) * 16 : 0;
       const xLineStart = xCenter + Math.cos(angle) * radius;
       const yLineStart = yCenter + Math.sin(angle) * radius;
-      const xLineMid = xCenter + Math.cos(angle) * (radius + 14);
-      const yLineMid = yCenter + Math.sin(angle) * (radius + 14);
+      const xLineMid = xCenter + Math.cos(angle) * (radius + 12 + stagger);
+      const yLineMid = yCenter + Math.sin(angle) * (radius + 12 + stagger);
       const isLeft = xLineMid < xCenter;
-      const xLineEnd = xLineMid + (isLeft ? -12 : 12);
+      const xLineEnd = xLineMid + (isLeft ? -10 : 10);
 
       ctx.beginPath();
       ctx.moveTo(xLineStart, yLineStart);
       ctx.lineTo(xLineMid, yLineMid);
       ctx.lineTo(xLineEnd, yLineMid);
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.fillStyle = '#aaa';
+      ctx.fillStyle = '#bbb';
       ctx.font = '600 10px "Outfit", sans-serif';
       ctx.textAlign = isLeft ? 'right' : 'left';
       ctx.textBaseline = 'middle';
