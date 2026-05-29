@@ -2135,14 +2135,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                      <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1 }}>
+                      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#00d4ff', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
                         <div id="chart-aperturas" style={{ flex: 1, minHeight: 140, position: 'relative', width: '100%' }}>
                           <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                         </div>
                       </div>
-                      <div style={{ minWidth: 0 }}>
+                      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                         <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
                         <div id="chart-renovaciones" style={{ flex: 1, minHeight: 140, position: 'relative', width: '100%' }}>
                           <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />

@@ -581,8 +581,8 @@ const FiltersContent = () => {
               onChange={e => setFilter('analista', e.target.value)}
               style={{ width: '100%', height: 40, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: '#eaeaea', outline: 'none', cursor: 'pointer' }}
             >
-              <option value="">Todos los analistas</option>
-              {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
+              <option value="" style={{ background: '#1a1a1a', color: '#fff' }}>Todos los analistas</option>
+              {ANALISTAS.map(an => <option key={an} value={an} style={{ background: '#1a1a1a', color: '#fff' }}>{an}</option>)}
             </select>
           </div>
           <div>
@@ -627,11 +627,11 @@ const FiltersContent = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA DESDE</label>
-              <input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
+              <input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', colorScheme: 'dark' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA HASTA</label>
-              <input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
+              <input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', colorScheme: 'dark' }} />
             </div>
           </div>
         </div>
