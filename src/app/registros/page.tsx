@@ -331,7 +331,8 @@ const PremiumSelect = ({
   groups,
   onAddCustom,
   error,
-  disabled = false
+  disabled = false,
+  style
 }: {
   value: string;
   onChange: (val: string) => void;
@@ -342,6 +343,7 @@ const PremiumSelect = ({
   onAddCustom?: () => void;
   error?: string;
   disabled?: boolean;
+  style?: React.CSSProperties;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -382,7 +384,16 @@ const PremiumSelect = ({
       <div
         tabIndex={disabled ? -1 : 0}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        onKeyDown={e => { if (!disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setIsOpen(o => !o); } if (e.key === 'Escape') setIsOpen(false); }}
+        onKeyDown={e => { 
+          if (!disabled && (e.key === 'Enter' || e.key === ' ')) { 
+            e.preventDefault(); 
+            setIsOpen(o => !o); 
+          } 
+          if (e.key === 'Escape') {
+            e.stopPropagation();
+            setIsOpen(false);
+          }
+        }}
         style={{
           width: '100%',
           minHeight: '40px',
@@ -399,6 +410,7 @@ const PremiumSelect = ({
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           opacity: disabled ? 0.6 : 1,
           outline: 'none',
+          ...style
         }}
       >
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1665,6 +1677,8 @@ export default function RegistrosPage() {
     showFilters, setShowFilters,
   } = useFilter();
 
+  const [showInlineFilters, setShowInlineFilters] = useState(false);
+
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
       setIsCreationModalOpen(true);
@@ -1756,6 +1770,10 @@ export default function RegistrosPage() {
         if (modalOpen) {
           return;
         }
+        if (showInlineFilters) {
+          setShowInlineFilters(false);
+          return;
+        }
         if (hayFiltros) {
           limpiarFiltros();
         } else if (showFilters) {
@@ -1765,7 +1783,7 @@ export default function RegistrosPage() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hayFiltros, limpiarFiltros, showFilters, setShowFilters, modalOpen]);
+  }, [hayFiltros, limpiarFiltros, showFilters, setShowFilters, modalOpen, showInlineFilters]);
 
 
 
@@ -2095,31 +2113,89 @@ export default function RegistrosPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
-            {((isAdmin || isRevisionState) && hayFiltros) && (
+            {isRevisionState && (
               <div style={{
-                background: 'rgba(16, 185, 129, 0.03)',
-                borderBottom: '1px solid rgba(16, 185, 129, 0.1)',
-                padding: '12px 24px',
-                display: 'flex', gap: '32px', alignItems: 'center',
+                background: hayFiltros ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0) 100%)' : 'rgba(255, 255, 255, 0.01)',
+                borderBottom: `1px solid ${hayFiltros ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.03)'}`,
+                display: 'flex', flexDirection: 'column'
               }}>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  Registros filtrados <span style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
-                </span>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  Total acumulado <span style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>
-                    {formatCurrency(totales.monto)}
-                  </span>
-                </span>
-                <div style={{ flex: 1 }} />
-                <button onClick={limpiarFiltros} style={{
-                  background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
-                  cursor: 'pointer', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', transition: '0.2s'
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
-                >
-                  <X size={12} strokeWidth={3} /> Limpiar Filtros
-                </button>
+                <div style={{ padding: '12px 24px', display: 'flex', gap: '32px', alignItems: 'center' }}>
+                  {hayFiltros ? (
+                    <>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                        Registros filtrados <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
+                      </span>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                        Total acumulado <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>
+                          {formatCurrency(totales.monto)}
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                      Todos los registros <span style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
+                    </span>
+                  )}
+                  <div style={{ flex: 1 }} />
+                  
+                  {isRevisionState && (
+                    <button
+                      onClick={() => setShowInlineFilters(p => !p)}
+                      style={{
+                        background: showInlineFilters ? 'rgba(255,255,255,0.1)' : 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: showInlineFilters ? '#fff' : 'var(--fg-muted)', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
+                        cursor: 'pointer', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', transition: '0.2s'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+                      onMouseLeave={e => { if(!showInlineFilters){ e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; } }}
+                    >
+                      <SlidersHorizontal size={12} strokeWidth={3} /> {showInlineFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}
+                    </button>
+                  )}
+                </div>
+                
+                {/* INLINE FILTERS EXPANDABLE AREA */}
+                {isRevisionState && showInlineFilters && (
+                  <div style={{
+                    padding: '0 24px 20px 24px',
+                    display: 'flex', gap: '24px', flexWrap: 'wrap',
+                    animation: 'selectFade 0.2s ease-out'
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 200px' }}>
+                      <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Búsqueda General</label>
+                      <input placeholder="Nombre, CUIL..." value={filters.search} onChange={e => setFilter('search', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 200px' }}>
+                      <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista</label>
+                      <PremiumSelect 
+                        value={filters.analista} 
+                        onChange={v => setFilter('analista', v)} 
+                        options={ANALISTAS} 
+                        placeholder="Todos los analistas" 
+                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', minHeight: '36px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', flex: '1 1 200px' }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                         <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha Desde</label>
+                         <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                         <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha Hasta</label>
+                         <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                       </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', flex: '1 1 200px' }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                         <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score Mín</label>
+                         <input type="number" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                       </div>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                         <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score Máx</label>
+                         <input type="number" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                       </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>

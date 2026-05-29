@@ -347,6 +347,18 @@ export default function Sidebar({
         {/* Main Navigation */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           <NavItem href="/registros" icon={Database} label="Registros" active={pathname === '/registros' && filters.estados.length === 0} onClick={() => limpiarFiltros()} />
+          
+          {pathname === '/registros' && filters.estados.length === 0 && (
+            <NavItem 
+              href="#" 
+              icon={SlidersHorizontal} 
+              label="Filtros Avanzados" 
+              indent
+              active={showFilters} 
+              onClick={(e) => { e.preventDefault(); setShowFilters(!showFilters); }} 
+            />
+          )}
+
           <NavItem href="/recordatorios" icon={Bell} label="Notificaciones" active={pathname === '/recordatorios'} badge={pendingReminders > 0 ? pendingReminders : undefined} badgeColor="#10b981" />
         </div>
 
@@ -438,6 +450,8 @@ export default function Sidebar({
           display: 'flex', flexDirection: 'column',
           background: 'var(--bg-elev-1)',
           borderLeft: '1px solid rgba(255,255,255,0.05)',
+          borderTopRightRadius: '24px',
+          borderBottomRightRadius: '24px',
           overflow: 'hidden',
           animation: 'fadeIn 0.2s ease-out'
         }}>
@@ -465,6 +479,8 @@ export default function Sidebar({
           display: 'flex', flexDirection: 'column',
           background: 'var(--bg-elev-1)',
           borderLeft: '1px solid rgba(255,255,255,0.05)',
+          borderTopRightRadius: '24px',
+          borderBottomRightRadius: '24px',
           overflow: 'hidden',
           animation: 'fadeIn 0.2s ease-out'
         }}>
@@ -552,7 +568,7 @@ const FiltersContent = () => {
           placeholder="Nombre, CUIL..."
           value={filters.search}
           onChange={e => setFilter('search', e.target.value)}
-          style={{ width: '100%', height: 42, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px' }}
+          style={{ width: '100%', height: 42, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}
         />
       </div>
 
@@ -563,7 +579,7 @@ const FiltersContent = () => {
             <select
               value={filters.analista}
               onChange={e => setFilter('analista', e.target.value)}
-              style={{ width: '100%', height: 40, background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', color: '#eaeaea', outline: 'none', cursor: 'pointer' }}
+              style={{ width: '100%', height: 40, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: '#eaeaea', outline: 'none', cursor: 'pointer' }}
             >
               <option value="">Todos los analistas</option>
               {ANALISTAS.map(an => <option key={an} value={an}>{an}</option>)}
@@ -592,15 +608,15 @@ const FiltersContent = () => {
             <div>
               <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>SCORE MIN/MAX</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="number" placeholder="Mín" className="form-input" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
-                <input type="number" placeholder="Máx" className="form-input" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+                <input type="number" placeholder="Mín" className="form-input" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <input type="number" placeholder="Máx" className="form-input" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>MONTO MIN/MAX</label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="number" placeholder="Mín" className="form-input" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
-                <input type="number" placeholder="Máx" className="form-input" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+                <input type="number" placeholder="Mín" className="form-input" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <input type="number" placeholder="Máx" className="form-input" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
               </div>
             </div>
           </div>
@@ -611,11 +627,11 @@ const FiltersContent = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA DESDE</label>
-              <input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+              <input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA HASTA</label>
-              <input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px' }} />
+              <input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
             </div>
           </div>
         </div>
