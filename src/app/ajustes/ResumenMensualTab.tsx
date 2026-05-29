@@ -858,10 +858,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const color = pct >= 0 ? '#34d399' : '#ff3366';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
           <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
-        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
       </div>
     );
   };
@@ -1300,7 +1300,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: horizontal ? 'y' as const : 'x' as const,
-    layout: { padding: { top: showLabels ? 50 : 20, bottom: 5 } },
+    layout: { padding: { top: showLabels ? 50 : 20, bottom: 0 } },
     _isPct: yLabel.includes('%'), // Flag explícito para el plugin
     plugins: {
       legend: {
@@ -1336,6 +1336,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         stacked,
         ticks: {
           color: '#555', font: { size: 10 },
+          maxRotation: 0, minRotation: 0, padding: 0, autoSkip: false,
           callback: function (this: any, val: any) {
             let label = this.getLabelForValue(val);
             if (label === undefined) label = val;

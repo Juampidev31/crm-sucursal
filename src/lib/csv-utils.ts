@@ -1,15 +1,42 @@
 export function parseCSV(text: string): string[][] {
-  return text.split('\n').map(line => {
-    const cols: string[] = [];
-    let inQuote = false, cur = '';
-    for (const c of line) {
-      if (c === '"') { inQuote = !inQuote; }
-      else if (c === ',' && !inQuote) { cols.push(cur); cur = ''; }
-      else cur += c;
+  const rows: string[][] = [];
+  let cols: string[] = [];
+  let inQuote = false;
+  let cur = '';
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    
+    if (c === '"') {
+      if (inQuote && text[i+1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuote = !inQuote;
+      }
+    } 
+    else if (c === ',' && !inQuote) {
+      cols.push(cur);
+      cur = '';
+    } 
+    else if ((c === '\n' || c === '\r') && !inQuote) {
+      if (c === '\r' && text[i+1] === '\n') i++;
+      cols.push(cur);
+      rows.push(cols);
+      cols = [];
+      cur = '';
+    } 
+    else {
+      cur += c;
     }
+  }
+  
+  if (cur !== '' || cols.length > 0) {
     cols.push(cur);
-    return cols;
-  });
+    rows.push(cols);
+  }
+  
+  return rows.filter(row => row.length > 1 || row[0] !== ''); // filter empty rows
 }
 
 export function clean(v: string): string {

@@ -70,7 +70,7 @@ const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: nu
   };
 
   return (
-    <div style={{ position: 'relative', height: '260px', width: '280px', margin: '0 auto' }}>
+    <div style={{ position: 'relative', height: '220px', width: '220px', margin: '0 auto' }}>
       <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
@@ -185,14 +185,13 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
   if (loading) return <div className="loading-container"><div className="spinner" /></div>;
 
   return (
-    <div style={{ width: '100%', padding: '8px' }}>
-      <div className="data-card-header" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '40px' }}>
-
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px 20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div style={{ width: '100%' }}>
+      <div className="data-card-header" style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '-52px', marginBottom: '16px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>MES</label>
             <select 
-              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
+              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
               value={internalMes} 
               onChange={e => setInternalMes(e.target.value)}
             >
@@ -201,12 +200,12 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
             </select>
           </div>
           
-          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.05)' }} />
+          <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.05)' }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>AÑO</label>
             <select 
-              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
+              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
               value={internalAnio} 
               onChange={e => setInternalAnio(Number(e.target.value))}
             >
@@ -232,19 +231,17 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
               background: 'rgba(255,255,255,0.01)', 
               borderRadius: '28px', 
               border: '1px solid rgba(255,255,255,0.03)',
-              padding: isSingle ? '56px 64px' : '32px',
+              padding: isSingle ? '24px' : '32px',
               display: 'flex',
               flexDirection: isSingle ? 'row' : 'column',
               alignItems: isSingle ? 'center' : 'stretch',
-              justifyContent: 'center',
-              gap: isSingle ? '80px' : '32px',
+              flexWrap: isSingle ? 'wrap' : 'nowrap',
+              gap: isSingle ? '24px' : '32px',
               transition: 'transform 0.3s ease, border-color 0.3s ease',
-              maxWidth: isSingle ? '1200px' : 'none',
-              margin: isSingle ? '0 auto' : '0',
               width: '100%'
             }}
             >
-              <div style={{ textAlign: 'center', flexShrink: 0 }}>
+              <div style={{ textAlign: 'center', flex: isSingle ? '0 0 280px' : 'auto' }}>
                 <ModernDoughnut 
                   data={view.data.doughnutData} 
                   totalMonto={view.data.totalMonto} 
@@ -253,31 +250,31 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                 <div style={{ marginTop: '20px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                   {view.data.totalOps} OPERACIONES TOTALES
                 </div>
-                
-                {isSingle && (
-                   <div style={{ marginTop: '32px', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                      <div style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>Ticket Promedio Gral.</div>
-                      <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff' }}>{formatCurrency(avgTicket)}</div>
-                   </div>
-                )}
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, minWidth: isSingle ? '400px' : 'auto' }}>
-                {isSingle && (
-                   <div style={{ marginBottom: '12px', display: 'flex', gap: '12px' }}>
-                      <div style={{ flex: 1, padding: '16px', background: 'linear-gradient(135deg, rgba(74,222,128,0.1) 0%, rgba(74,222,128,0) 100%)', borderRadius: '16px', border: '1px solid rgba(74,222,128,0.1)' }}>
-                        <div style={{ fontSize: '9px', color: '#34d399', fontWeight: 900, textTransform: 'uppercase', marginBottom: '4px' }}>Mejor Desempeño</div>
-                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>{topState.label}</div>
-                        <div style={{ fontSize: '11px', color: '#34d399', fontWeight: 700 }}>{formatCurrency(topState.monto)}</div>
-                      </div>
-                      <div style={{ flex: 1, padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ fontSize: '9px', color: '#666', fontWeight: 900, textTransform: 'uppercase', marginBottom: '4px' }}>Cierre del Mes</div>
-                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>{view.data.totalOps} Ops</div>
-                        <div style={{ fontSize: '11px', color: '#888', fontWeight: 700 }}>Finalizadas</div>
-                      </div>
-                   </div>
-                )}
+              {isSingle && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: '1 1 280px' }}>
+                  <div style={{ padding: '24px', background: 'linear-gradient(135deg, rgba(74,222,128,0.08) 0%, rgba(74,222,128,0) 100%)', borderRadius: '20px', border: '1px solid rgba(74,222,128,0.1)' }}>
+                    <div style={{ fontSize: '10px', color: '#34d399', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Mejor Desempeño</div>
+                    <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{topState.label}</div>
+                    <div style={{ fontSize: '13px', color: '#34d399', fontWeight: 700, marginTop: '2px' }}>{formatCurrency(topState.monto)}</div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ flex: 1, padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ fontSize: '9px', color: '#666', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Cierre del Mes</div>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{view.data.totalOps} Ops</div>
+                      <div style={{ fontSize: '11px', color: '#888', fontWeight: 700, marginTop: '2px' }}>Finalizadas</div>
+                    </div>
+                    <div style={{ flex: 1, padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ fontSize: '9px', color: '#666', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Ticket Promedio</div>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{formatCurrency(avgTicket)}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: isSingle ? '1.5 1 400px' : '1' }}>
                 {view.data.stats.filter(s => s.ops > 0).map(s => {
                   const pct = view.data.totalMonto > 0 ? (s.monto / view.data.totalMonto * 100).toFixed(0) : '0';
                   const tick = s.ops > 0 ? s.monto / s.ops : 0;

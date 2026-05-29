@@ -16,6 +16,7 @@ import {
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
+import NuevaSeccionSheets from './NuevaSeccionSheets';
 
 const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = false }: { data: import('chart.js').ChartData<'doughnut'>, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
@@ -388,10 +389,10 @@ export default function AnalistasPage() {
     const color = pct >= 0 ? '#34d399' : '#f87171';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
+        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
           <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
-        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
       </div>
     );
   };
@@ -935,7 +936,7 @@ export default function AnalistasPage() {
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: horizontal ? 'y' as const : 'x' as const,
-    layout: { padding: { top: showLabels ? 50 : 20, bottom: 5 } },
+    layout: { padding: { top: showLabels ? 50 : 20, bottom: 0 } },
     _isPct: yLabel.includes('%'), // Flag explícito para el plugin
     plugins: {
       legend: {
@@ -973,6 +974,7 @@ export default function AnalistasPage() {
         ticks: {
           display: !hideXLabels,
           color: '#555', font: { size: 10 },
+          maxRotation: 0, minRotation: 0, padding: 0, autoSkip: false,
           callback: function (this: any, val: any) {
             let label = this.getLabelForValue(val);
             if (label === undefined) label = val;
@@ -1932,10 +1934,15 @@ export default function AnalistasPage() {
             </div>
           </div>
 
-          {/* ── SECCIÓN 4: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
-          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-            {sectionHeader(4, '4. Distribucion por Estado', <PieChart size={15} color="#4ade80" />)}
-            <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />
+          {/* ── SECCIÓN 4 Y SHEETS: GRID ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 32 }}>
+            <div className="data-card" style={{ margin: 0, height: '100%', background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+              {sectionHeader(4, '4. Distribucion por Estado', <PieChart size={15} color="#4ade80" />)}
+              <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />
+            </div>
+            <div style={{ height: '100%' }}>
+              <NuevaSeccionSheets analista={analista} />
+            </div>
           </div>
 
           {/* ── SECCIÓN 5: CÁLCULO DE INCENTIVOS ── */}
