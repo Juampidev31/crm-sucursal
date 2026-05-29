@@ -170,7 +170,7 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
             const pct = totalCant ? (d.cantidad/totalCant)*100 : 0;
             const pctM = total ? (d.monto/total)*100 : 0;
             return (
-              <div key={i} style={{ padding: '9px 14px', borderBottom: i < displayData.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none' }}>
+              <div key={i} style={{ padding: '9px 14px', borderBottom: 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
                   <span style={{ fontSize: 12, color: '#888', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{(d.label?.trim() === 'Sin dato' ? 'No especificado' : d.label?.trim()) || 'No especificado'}</span>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>

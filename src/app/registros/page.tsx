@@ -2095,7 +2095,7 @@ export default function RegistrosPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
-            {(isAdmin && hayFiltros) && (
+            {((isAdmin || isRevisionState) && hayFiltros) && (
               <div style={{
                 background: 'rgba(16, 185, 129, 0.03)',
                 borderBottom: '1px solid rgba(16, 185, 129, 0.1)',
