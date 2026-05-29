@@ -100,7 +100,7 @@ const baseChartOpts = (show = true) => ({
 const cumplColor = (pct: number | null) => !pct ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
 
 
-const tendBadge = (pct: number | null) => {
+const tendBadge = (pct: number | null, showLabel = true) => {
   if (pct === null) return <span style={{ color: '#333' }}>—</span>;
   const color = pct >= 0 ? '#34d399' : '#ff3366';
   return (
@@ -108,7 +108,7 @@ const tendBadge = (pct: number | null) => {
       <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
         <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
       </span>
-      <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+      {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
     </div>
   );
 };
@@ -303,12 +303,16 @@ export default function ResumenHTML({ datos }: { datos: any }) {
               {tendBadge(kpiTotal.tendTicket)}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-              <div style={{fontSize:12,color:'#555'}}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
-              {tendBadge(kpiTotal.tendConversion)}
+              <div style={{fontSize:12,color:'#555'}} title="Ventas sobre clientes ingresados en el mes (cohorte)">Conversión: {(kpiTotal.conversionGlobal ?? kpiTotal.conversion).toFixed(1)}%</div>
+              {tendBadge(kpiTotal.tendConversionGlobal ?? kpiTotal.tendConversion, false)}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+              <div style={{fontSize:12,color:'#555'}} title="Ventas sobre casos decididos (excluye leads aún abiertos)">Tasa de cierre: {kpiTotal.conversion.toFixed(1)}%</div>
+              {tendBadge(kpiTotal.tendConversion, false)}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
               <div style={{fontSize:11,color:'#444'}}>{kpiTotal.clientes} clientes</div>
-              {tendBadge(kpiTotal.tendClientes)}
+              {tendBadge(kpiTotal.tendClientes, false)}
             </div>
             <div style={{marginTop:24,height:180}}><Bar data={chartTicket as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
           </div>

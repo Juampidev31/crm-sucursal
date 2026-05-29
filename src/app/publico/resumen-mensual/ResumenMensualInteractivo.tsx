@@ -121,6 +121,7 @@ interface KPITotal {
   ops: number;
   ticket: number;
   conversion: number;
+  conversionGlobal?: number;
   clientes: number;
   metaCapital: number;
   metaOps: number;
@@ -130,6 +131,7 @@ interface KPITotal {
   tendOps: number | null;
   tendTicket: number | null;
   tendConversion: number | null;
+  tendConversionGlobal?: number | null;
   tendClientes: number | null;
   restanteCapital: number | null;
   restanteOps: number | null;
@@ -514,7 +516,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
   );
 
 
-  const tendBadge = (pct: number | null) => {
+  const tendBadge = (pct: number | null, showLabel = true) => {
     if (pct === null) return <span style={{ color: '#333' }}>—</span>;
     const color = pct >= 0 ? '#34d399' : '#ff3366';
     return (
@@ -522,7 +524,7 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
         <span style={{ fontSize: 10, fontWeight: 800, color, background: `${color}18`, padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
           {pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
         </span>
-        <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
       </div>
     );
   };
@@ -612,12 +614,16 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
                 {tendBadge(kpiTotal.tendTicket)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                <div style={{ fontSize: 12, color: '#555' }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
-                {tendBadge(kpiTotal.tendConversion)}
+                <div style={{ fontSize: 12, color: '#555' }} title="Ventas sobre clientes ingresados en el mes (cohorte)">Conversión: {(kpiTotal.conversionGlobal ?? kpiTotal.conversion).toFixed(1)}%</div>
+                {tendBadge(kpiTotal.tendConversionGlobal ?? kpiTotal.tendConversion, false)}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                <div style={{ fontSize: 12, color: '#555' }} title="Ventas sobre casos decididos (excluye leads aún abiertos)">Tasa de cierre: {kpiTotal.conversion.toFixed(1)}%</div>
+                {tendBadge(kpiTotal.tendConversion, false)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
                 <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
-                {tendBadge(kpiTotal.tendClientes)}
+                {tendBadge(kpiTotal.tendClientes, false)}
               </div>
               <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>

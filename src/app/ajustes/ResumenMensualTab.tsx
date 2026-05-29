@@ -853,7 +853,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
 
 
-  const tendBadge = (pct: number | null) => {
+  const tendBadge = (pct: number | null, showLabel = true) => {
     if (pct === null) return <span style={{ color: '#333' }}>—</span>;
     const color = pct >= 0 ? '#34d399' : '#ff3366';
     return (
@@ -861,7 +861,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
           <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
-        <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>
+        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
       </div>
     );
   };
@@ -926,7 +926,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
       const ops = ventas.length;
       const cerrados = regsAnalista.filter(isCerrado).length;
+      // Tasa de cierre: ventas sobre casos decididos (excluye leads aún abiertos)
       const conversion = cerrados > 0 ? (ops / cerrados) * 100 : 0;
+      // Conversión global por cohorte: ventas sobre clientes ingresados en el mes
+      const conversionGlobal = regsAnalista.length > 0 ? (ops / regsAnalista.length) * 100 : 0;
 
       // Monto venta y Aprob CC por separado
       const montoVenta = regsAnalista
@@ -971,7 +974,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       const metaDiariaOps = diasRestantes > 0 ? (metaOps - ops) / diasRestantes : null;
 
       return { 
-        analista, capital, ops, ticket, conversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps, 
+        analista, capital, ops, ticket, conversion, conversionGlobal, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, tendCapital, tendOps,
         clientesIngresados: regsAnalista.length,
         montoVenta,
         montoAprobCC,
@@ -1005,7 +1008,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const ticket = diasTransMes > 0 ? capital / diasTransMes : 0;
     const clientes = regs.length;
     const cerrados = regs.filter(isCerrado).length;
+    // Tasa de cierre: ventas sobre casos decididos (excluye leads aún abiertos)
     const conversion = cerrados > 0 ? (ops / cerrados) * 100 : 0;
+    // Conversión global por cohorte: ventas sobre clientes ingresados en el mes
+    const conversionGlobal = clientes > 0 ? (ops / clientes) * 100 : 0;
 
     const montoVenta = regs
       .filter(r => (r.estado ?? '').toLowerCase() === 'venta')
@@ -1022,12 +1028,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const clientesAnt = regsAnt.length;
     const cerradosAnt = regsAnt.filter(isCerrado).length;
     const conversionAnt = cerradosAnt > 0 ? (opsAnt / cerradosAnt) * 100 : 0;
+    const conversionGlobalAnt = clientesAnt > 0 ? (opsAnt / clientesAnt) * 100 : 0;
 
     const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
     const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
     const tendTicket = ticketAnt > 0 ? ((ticket - ticketAnt) / ticketAnt) * 100 : null;
     const tendClientes = clientesAnt > 0 ? ((clientes - clientesAnt) / clientesAnt) * 100 : null;
     const tendConversion = conversionAnt > 0 ? ((conversion - conversionAnt) / conversionAnt) * 100 : null;
+    const tendConversionGlobal = conversionGlobalAnt > 0 ? ((conversionGlobal - conversionGlobalAnt) / conversionGlobalAnt) * 100 : null;
 
     const obj = objetivos.find(o => o.analista === 'PDV' && o.mes === selectedMes - 1 && o.anio === selectedAnio);
     const metaCapital = obj?.meta_ventas ?? 0;
@@ -1037,7 +1045,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const cumplOps = metaOps > 0 ? (ops / metaOps) * 100 : null;
     const restanteOps = metaOps > 0 ? Math.max(0, 100 - (ops / metaOps) * 100) : null;
 
-    return { capital, ops, ticket, conversion, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
+    return { capital, ops, ticket, conversion, conversionGlobal, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion, tendConversionGlobal, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
@@ -1732,7 +1740,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   // ── Chart 10: % Total Conversión ─────────────────────────────────────────
   const chartConversionTotal = useMemo(() => {
     const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
-    const actual = [...kpiPorAnalista.map(k => k.conversion), kpiTotal.conversion];
+    const actual = [...kpiPorAnalista.map(k => k.conversionGlobal), kpiTotal.conversionGlobal];
     const anterior = [
       ...kpiPorAnalista.map(k => {
         const regsAnt = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista);
@@ -2166,12 +2174,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                     {tendBadge(kpiTotal.tendTicket)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#555' }}>Conversión: {kpiTotal.conversion.toFixed(1)}%</div>
-                    {tendBadge(kpiTotal.tendConversion)}
+                    <div style={{ fontSize: 12, color: '#555' }} title="Ventas sobre clientes ingresados en el mes (cohorte)">Conversión: {(kpiTotal.conversionGlobal ?? 0).toFixed(1)}%</div>
+                    {tendBadge(kpiTotal.tendConversionGlobal, false)}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                    <div style={{ fontSize: 12, color: '#555' }} title="Ventas sobre casos decididos (excluye leads aún abiertos)">Tasa de cierre: {kpiTotal.conversion.toFixed(1)}%</div>
+                    {tendBadge(kpiTotal.tendConversion, false)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
                     <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
-                    {tendBadge(kpiTotal.tendClientes)}
+                    {tendBadge(kpiTotal.tendClientes, false)}
                   </div>
                   <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
