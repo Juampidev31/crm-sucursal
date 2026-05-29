@@ -11,7 +11,7 @@ import {
   AlignJustify, BarChart2, FileText,
   DollarSign, Settings, Bell, Lock, LogOut, Plus,
   SlidersHorizontal, ChevronDown, ChevronUp, X, Calculator,
-  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database
+  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -381,7 +381,7 @@ export default function Sidebar({
           />
           {reportesOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <NavItem href="/analistas" icon={Users} label="Analistas" active={pathname === '/analistas'} indent />
+              <NavItem href="/analistas" icon={TrendingUp} label="Ventas" active={pathname === '/analistas'} indent />
               <NavItem href="/reportes/cobranzas" icon={DollarSign} label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent />
             </div>
           )}
