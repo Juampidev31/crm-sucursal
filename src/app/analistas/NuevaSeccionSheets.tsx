@@ -1,6 +1,67 @@
 'use client';
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { FileText, ChevronDown, Tag } from 'lucide-react';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale,
+  Tooltip, Legend, ArcElement,
+} from 'chart.js';
+import { Doughnut } from 'react-chartjs-2';
+import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
+
+ChartJS.register(CategoryScale, LinearScale, Tooltip, Legend, ArcElement);
+
+const hexToRgba = (hex: string, alpha: number) => {
+  if (hex.length !== 7) return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const ModernDoughnut = ({ data, totalOps, label }: { data: any, totalOps: number, label: string }) => {
+  const options = {
+    layout: { padding: 30 },
+    cutout: '88%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111',
+        titleColor: '#fff',
+        bodyColor: '#ccc',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: (ctx: any) => ` ${ctx.label}: ${ctx.raw} ops`
+        }
+      }
+    },
+    maintainAspectRatio: false,
+    elements: {
+      arc: {
+        borderWidth: 0,
+        borderRadius: 30,
+      }
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', height: '180px', width: '180px', margin: '0 auto 16px auto' }}>
+      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)', textAlign: 'center',
+        width: '100%', pointerEvents: 'none'
+      }}>
+        <div style={{ fontSize: '10px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+          {totalOps}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function NuevaSeccionSheets({ analista }: { analista: string }) {
   const [dataSources, setDataSources] = useState<Record<string, string[][]>>({});
@@ -238,6 +299,25 @@ function DistBlockSheets({
         minHeight: 0,
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
+        <div style={{ padding: '24px 0 8px 0', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+          <ModernDoughnut 
+            label="Total Ops" 
+            totalOps={totalCant} 
+            data={{
+              labels: validData.map(d => d.label?.trim()),
+              datasets: [{
+                data: validData.map(d => d.cantidad),
+                backgroundColor: validData.map((_, i) => {
+                  const alpha = Math.max(0.15, 1 - (i * (0.85 / Math.max(1, validData.length - 1))));
+                  return hexToRgba(color, alpha);
+                }),
+                hoverOffset: 15,
+                borderRadius: 6,
+                spacing: 4
+              }]
+            }} 
+          />
+        </div>
         <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto' }}>
           {displayData.map((d, i) => {
             const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
