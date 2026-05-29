@@ -43,7 +43,8 @@ const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
 
 const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: number, label: string }) => {
   const options = {
-    layout: { padding: 40 },
+    clip: false,
+    layout: { padding: 70 },
     cutout: '88%',
     plugins: {
       legend: { display: false },
@@ -70,7 +71,7 @@ const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: nu
   };
 
   return (
-    <div style={{ position: 'relative', height: '220px', width: '220px', margin: '0 auto' }}>
+    <div style={{ position: 'relative', height: '280px', width: '280px', margin: '0 auto' }}>
       <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
@@ -241,15 +242,14 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
               border: '1px solid rgba(255,255,255,0.03)',
               padding: isSingle ? '24px' : '32px',
               display: 'flex',
-              flexDirection: isSingle ? 'row' : 'column',
-              alignItems: isSingle ? 'center' : 'stretch',
-              flexWrap: isSingle ? 'wrap' : 'nowrap',
+              flexDirection: 'column',
+              alignItems: 'stretch',
               gap: isSingle ? '24px' : '32px',
               transition: 'transform 0.3s ease, border-color 0.3s ease',
               width: '100%'
             }}
             >
-              <div style={{ textAlign: 'center', flex: isSingle ? '0 0 280px' : 'auto' }}>
+              <div style={{ textAlign: 'center', width: '100%' }}>
                 <ModernDoughnut 
                   data={view.data.doughnutData} 
                   totalMonto={view.data.totalMonto} 
@@ -260,29 +260,9 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                 </div>
               </div>
 
-              {isSingle && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: '1 1 280px' }}>
-                  <div style={{ padding: '24px', background: 'linear-gradient(135deg, rgba(74,222,128,0.08) 0%, rgba(74,222,128,0) 100%)', borderRadius: '20px', border: '1px solid rgba(74,222,128,0.1)' }}>
-                    <div style={{ fontSize: '10px', color: '#34d399', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Mejor Desempeño</div>
-                    <div style={{ fontSize: '20px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>{topState.label}</div>
-                    <div style={{ fontSize: '13px', color: '#34d399', fontWeight: 700, marginTop: '2px' }}>{formatCurrency(topState.monto)}</div>
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '16px' }}>
-                    <div style={{ flex: 1, padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ fontSize: '9px', color: '#666', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Cierre del Mes</div>
-                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{view.data.totalOps} Ops</div>
-                      <div style={{ fontSize: '11px', color: '#888', fontWeight: 700, marginTop: '2px' }}>Finalizadas</div>
-                    </div>
-                    <div style={{ flex: 1, padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ fontSize: '9px', color: '#666', fontWeight: 900, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Ticket Promedio</div>
-                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>{formatCurrency(avgTicket)}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: isSingle ? '1.5 1 400px' : '1' }}>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                 {view.data.stats.filter(s => s.ops > 0).map(s => {
                   const pct = view.data.totalMonto > 0 ? (s.monto / view.data.totalMonto * 100).toFixed(0) : '0';
                   const tick = s.ops > 0 ? s.monto / s.ops : 0;
