@@ -214,18 +214,17 @@ export default function SeccionGraficosResumen({
     ventas.forEach(r => counts[classify(r)]++);
     
     const labels = ['Público', 'Privado', 'Sin dato'];
-    const filtered = labels.filter(l => (counts[l] ?? 0) > 0);
     
     return {
       chartEmpleoData: {
-        labels: filtered,
+        labels: labels,
         datasets: [{
-          data: filtered.map(l => counts[l] ?? 0),
-          backgroundColor: filtered.map(l => l === 'Público' ? '#10b981' : l === 'Privado' ? '#3b82f6' : 'rgba(100,100,100,0.5)'),
+          data: labels.map(l => counts[l] ?? 0),
+          backgroundColor: labels.map(l => l === 'Público' ? '#10b981' : l === 'Privado' ? '#3b82f6' : 'rgba(255,255,255,0.15)'),
           borderWidth: 0, hoverOffset: 10, borderRadius: 4, spacing: 4
         }],
       },
-      chartEmpleoTotal: filtered.reduce((a, b) => a + (counts[b] ?? 0), 0)
+      chartEmpleoTotal: labels.reduce((a, b) => a + (counts[b] ?? 0), 0)
     };
   }, [allRegistros, selectedMes, selectedAnio]);
 

@@ -171,7 +171,8 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
   }, [filteredData]);
 
   if (!loading && (!data || data.length === 0)) {
-    return null;
+    // Renderizamos igual para que no desaparezca la sección
+    // return null;
   }
 
   const MESES = [
@@ -247,8 +248,8 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
           <div className="flex items-center justify-center w-full text-zinc-500 text-sm" style={{ height: '100%' }}>Cargando datos...</div>
         ) : (
           <>
-            <DistBlockSheets titulo={data?.[0]?.[0] || 'TIPO DE CLIENTE'} icon={<FileText size={12} color="#34d399" />} datos={stats} color="#34d399" />
-            <DistBlockSheets titulo={data?.[0]?.[5] || 'MEDIO DE CONTACTO'} icon={<Tag size={12} color="#60a5fa" />} datos={statsColF} color="#60a5fa" />
+            <DistBlockSheets titulo="TIPO DE CLIENTE" icon={<FileText size={12} color="#34d399" />} datos={stats} color="#34d399" />
+            <DistBlockSheets titulo="POR DONDE NOS CONOCIO" icon={<Tag size={12} color="#60a5fa" />} datos={statsColF} color="#60a5fa" />
           </>
         )}
       </div>
