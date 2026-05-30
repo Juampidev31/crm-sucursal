@@ -521,12 +521,12 @@ export default function AnalistasPage() {
         // El incentivo de operaciones es un % del incentivo de capital VARIABLE (sin los 21470)
         incentivoOps = incentivoCapVariable * (coefOps === 0.0030 ? 0.30 : (coefOps === 0.0020 ? 0.20 : 0));
 
-        // Tope máximo combinado de $250,000 para K y Q
+        // Tope máximo de $200,000 para Ventas (K y Q)
         const totalKQ = incentivoCap + incentivoOps;
-        if (totalKQ > 250000) {
+        if (totalKQ > 200000) {
           topeKQAplicado = true;
-          topeKQExcedente = totalKQ - 250000;
-          const factor = 250000 / totalKQ;
+          topeKQExcedente = totalKQ - 200000;
+          const factor = 200000 / totalKQ;
           incentivoCap = incentivoCap * factor;
           incentivoOps = incentivoOps * factor;
         }
@@ -552,6 +552,15 @@ export default function AnalistasPage() {
         // Refinanciacion
         if (pctRefin >= 110) incentivoCobRefin = 16667;
         else if (pctRefin >= 90) incentivoCobRefin = 12643;
+
+        // Tope máximo de $50,000 para Cobranzas
+        const totalCobranzas = incentivoCobTr90 + incentivoCobTr120 + incentivoCobRefin;
+        if (totalCobranzas > 50000) {
+          const factorCob = 50000 / totalCobranzas;
+          incentivoCobTr90 = incentivoCobTr90 * factorCob;
+          incentivoCobTr120 = incentivoCobTr120 * factorCob;
+          incentivoCobRefin = incentivoCobRefin * factorCob;
+        }
       }
 
       const incentivoTotal = incentivoCap + incentivoOps + incentivoCobTr90 + incentivoCobTr120 + incentivoCobRefin;
@@ -1978,8 +1987,8 @@ export default function AnalistasPage() {
                       </tbody>
                     </table>
                     <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
-                      * Se suma una base fija de $21,470 al incentivo de Capital.<br/>
-                      * El tope máximo combinado (K + Q) es de $250,000.
+                      * El tope máximo para Ventas (K + Q) es de $200,000.<br/>
+                      * El tope máximo para Cobranzas es de $50,000 (Tope total: $250,000).
                     </div>
                   </div>
 

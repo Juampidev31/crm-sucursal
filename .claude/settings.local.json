@@ -21,7 +21,9 @@
       "Bash(vercel --version)",
       "Bash(git -C \"C:\\\\Users\\\\HP\\\\.gemini\\\\antigravity\\\\scratch\\\\Proyeccion y ventas ORIGINAL\\\\next-ventas\" diff 439e708..63df961 --name-only)",
       "Bash(git -C \"C:\\\\Users\\\\HP\\\\.gemini\\\\antigravity\\\\scratch\\\\Proyeccion y ventas ORIGINAL\\\\next-ventas\" diff 439e708..63df961 -- src/app/ajustes/CargaRapidaTab.tsx)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(ls -1 *.js)",
+      "Bash(echo \"RC=$?\")"
     ]
   }
 }

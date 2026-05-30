@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import type { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
 import { AlertTriangle } from 'lucide-react';
@@ -69,9 +69,9 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
   if ('error' in result) return <ErrorScreen message={result.error || 'Error desconocido'} />;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0c0c0c', color: '#ccc', fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#0c0c0c', color: '#ccc', fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
       <header style={{
-        padding: '24px 40px',
+        padding: '24px',
         borderBottom: '1px solid rgba(255,255,255,0.04)',
         background: 'rgba(0,0,0,0.8)',
         backdropFilter: 'blur(10px)',
@@ -89,7 +89,11 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
         </div>
       </header>
 
-      <main style={{ padding: '32px 40px', width: '100%', maxWidth: 'none', margin: '0' }}>
+      <main style={{ padding: '32px 24px', width: '100%', maxWidth: '100%', margin: '0' }}>
+        <style dangerouslySetInnerHTML={{ __html: `
+          .data-card { width: 100% !important; max-width: 100% !important; }
+          #resumen-reporte-body { width: 100% !important; max-width: 100% !important; }
+        `}} />
         {result.datos ? (
           <ResumenMensualInteractivo datos={result.datos} />
         ) : (
