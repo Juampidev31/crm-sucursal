@@ -418,7 +418,7 @@ const ManualTextareaView = ({ label, value }: { label: string; value: string }) 
   </div>
 );
 
-export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraficos }) {
+export default function ResumenMensualInteractivo({ datos }: { datos: DatosGraficos }) {
   const { 
     kpiTotal, kpiPorAnalista, mesActual, mesAnterior, month, year, experienciaCliente, analisisComercial, 
     operacionProcesos, gestionesRealizadas, coordinacionSalidas, empresasEstrategicas, 
