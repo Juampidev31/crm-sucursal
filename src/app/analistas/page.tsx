@@ -1438,8 +1438,10 @@ export default function AnalistasPage() {
               <BarChart3 size={24} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Vista Analistas</div>
-              <div style={{ fontSize: 13, color: '#8f929d', marginTop: 2 }}>Métricas detalladas por persona</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+                {analista === 'PDV' ? 'PDV' : analista.charAt(0).toUpperCase() + analista.slice(1).toLowerCase()}
+              </div>
+              <div style={{ fontSize: 13, color: '#8f929d', marginTop: 2 }}>Métricas</div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1448,7 +1450,7 @@ export default function AnalistasPage() {
               value={analista}
               onChange={v => setAnalista(String(v))}
               options={[
-                { label: 'Vista Global (PDV)', value: 'PDV' },
+                { label: 'PDV', value: 'PDV' },
                 ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a.toUpperCase(), value: a }))
               ]}
               width="220px"

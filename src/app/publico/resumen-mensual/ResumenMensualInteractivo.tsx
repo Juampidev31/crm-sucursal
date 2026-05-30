@@ -12,6 +12,8 @@ import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarCh
 import AnalisisTemporalTab from '../../ajustes/AnalisisTemporalTab';
 import MetricasTab from '../../ajustes/MetricasTab';
 import type { AnalisisTemporalState } from '../../ajustes/AnalisisTemporalTab';
+import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
+import SeccionGraficosResumen from '@/app/ajustes/SeccionGraficosResumen';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
@@ -540,8 +542,8 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
         {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
         {!collapsed[1] && (
-          <div style={{ padding: '24px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginBottom: 24 }}>
+          <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginBottom: 24, padding: '24px 24px 0 24px' }}>
             <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -639,7 +641,15 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
               </div>
             </div>
           </div>
+          <div style={{ padding: '0 24px 24px 24px' }}>
+            <SeccionGraficosResumen 
+              kpiTotal={kpiTotal} 
+              selectedMes={month} 
+              selectedAnio={year} 
+              allRegistros={registros || []} 
+            />
           </div>
+          </>
         )}
       </div>
 
@@ -700,12 +710,15 @@ export default function ResumenMensualOutfitactivo({ datos }: { datos: DatosGraf
       </div>
 
 
-      {/* SECCIÓN 3: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL */}
+      {/* SECCIÓN 3: DISTRIBUCIÓN POR ESTADO Y CATEGORÍAS */}
       <div className="data-card" style={{ background: '#0c0c0c', padding: 0, overflow: 'hidden' }}>
-        {sectionHeader(3, '3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#00ff88" />)}
+        {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#00ff88" />)}
         {!collapsed[3] && (
           <div style={{ padding: '24px' }}>
-            <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+              <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} analista="PDV" />
+              <NuevaSeccionSheets analista="PDV" />
+            </div>
           </div>
         )}
       </div>

@@ -11,6 +11,8 @@ import { CONFIG } from '@/types';
 import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 import MetricasTab from '@/app/ajustes/MetricasTab';
+import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
+import SeccionGraficosResumen from '@/app/ajustes/SeccionGraficosResumen';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
@@ -263,7 +265,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:24}}>
       {/* 1. TABLERO */}
-      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
+      <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)',marginBottom:24}}>
         {sectionHeader('1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
         <div style={{padding:24}}>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:16}}>
@@ -316,6 +318,14 @@ export default function ResumenHTML({ datos }: { datos: any }) {
             </div>
             <div style={{marginTop:24,height:180}}><Bar data={chartTicket as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
           </div>
+          <div style={{ marginTop: 24 }}>
+            <SeccionGraficosResumen 
+              kpiTotal={kpiTotal} 
+              selectedMes={month} 
+              selectedAnio={year} 
+              allRegistros={registros || []} 
+            />
+          </div>
         </div>
       </div>
 
@@ -346,11 +356,14 @@ export default function ResumenHTML({ datos }: { datos: any }) {
       </div>
 
 
-      {/* 4. RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL */}
+      {/* 3. DISTRIBUCIÓN POR ESTADO Y CATEGORÍAS */}
       <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        {sectionHeader('3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#00ff88" />)}
+        {sectionHeader('3. Distribución por estado y categorías', <PieChart size={15} color="#00ff88" />)}
         <div style={{padding:24}}>
-          <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px' }}>
+            <MetricasTab selectedMes={month} selectedAnio={year} registros={registros} analista="PDV" />
+            <NuevaSeccionSheets analista="PDV" />
+          </div>
         </div>
       </div>
 

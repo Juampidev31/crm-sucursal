@@ -13,6 +13,8 @@ import {
 } from 'chart.js';
 import AnalisisTemporalTab from './AnalisisTemporalTab';
 import MetricasTab from './MetricasTab';
+import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
+import SeccionGraficosResumen from './SeccionGraficosResumen';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 import type { AnalisisTemporalState } from './AnalisisTemporalTab';
 
@@ -2005,13 +2007,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               </div>
             </div>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'rgba(16,185,129,0.03)', padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(16,185,129,0.1)' }}>
-             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 15px rgba(16,185,129,0.6)' }} />
-             <span style={{ fontSize: '13px', fontWeight: 800, color: '#fff', letterSpacing: '0.5px' }}>
-               Periodo Activo: <span style={{ color: '#00ff88', marginLeft: 4 }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]} {selectedAnio}</span>
-             </span>
-          </div>
         </div>
       </div>
 
@@ -2055,7 +2050,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               onClick={() => {
                 navigator.clipboard.writeText(publicLink);
                 setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
+                setTimeout(() => {
+                  setCopied(false);
+                  setPublicLink('');
+                }, 2000);
               }}
               style={{
                 padding: '12px 28px', borderRadius: '12px', border: 'none',
@@ -2088,7 +2086,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
             {!collapsedSections[1] && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
+              <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24, padding: '24px 32px 0 32px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -2206,6 +2205,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   </div>
                 </div>
               </div>
+              <div style={{ padding: '0 32px 24px 32px' }}>
+                {/* ── SECCIÓN GRÁFICOS ── */}
+                <SeccionGraficosResumen 
+                  kpiTotal={kpiTotal} 
+                  selectedMes={selectedMes} 
+                  selectedAnio={selectedAnio} 
+                  allRegistros={registros} 
+                />
+              </div>
+              </>
             )}
           </div>
 
@@ -2269,10 +2278,15 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             )}
           </div>
 
-          {/* ── SECCIÓN 3: RENDIMIENTO DISTRIBUIDO POR ANALISTA Y TOTAL GENERAL ── */}
+          {/* ── SECCIÓN 3: DISTRIBUCIÓN POR ESTADO Y CATEGORÍAS ── */}
           <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(3, '3. Rendimiento distribuido por analista y total general', <PieChart size={15} color="#00ff88" />)}
-            {!collapsedSections[3] && <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} />}
+            {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#00ff88" />)}
+            {!collapsedSections[3] && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', padding: '0 24px 24px 24px' }}>
+                <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" />
+                <NuevaSeccionSheets analista="PDV" />
+              </div>
+            )}
           </div>
 
           {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
