@@ -506,7 +506,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         monto: r.monto,
         analista: r.analista,
         estado: r.estado,
-        acuerdo_precios: r.acuerdo_precios
+        acuerdo_precios: r.acuerdo_precios,
+        empleador: r.empleador,
+        dependencia: r.dependencia
       }));
 
       const datosParaCompartir = {
@@ -622,7 +624,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       monto: r.monto,
       analista: r.analista,
       estado: r.estado,
-      acuerdo_precios: r.acuerdo_precios
+      acuerdo_precios: r.acuerdo_precios,
+      empleador: r.empleador,
+      dependencia: r.dependencia
     }));
 
     const datosParaCompartir = {
