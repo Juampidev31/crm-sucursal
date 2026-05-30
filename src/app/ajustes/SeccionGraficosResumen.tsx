@@ -208,7 +208,7 @@ export default function SeccionGraficosResumen({
     const ventas = filterByMonth(allRegistros, selectedMes, selectedAnio).filter(isVenta);
     const classify = (r: any) => {
       const e = (r.empleador ?? '').toLowerCase();
-      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'No especificado' : 'Privado';
+      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'Sin dato' : 'Privado';
     };
     const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
     ventas.forEach(r => counts[classify(r)]++);

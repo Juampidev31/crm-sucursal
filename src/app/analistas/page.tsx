@@ -1325,7 +1325,7 @@ export default function AnalistasPage() {
     const ant = ventasMesAnt.filter(isVenta);
     const classify = (r: typeof ventas[0]) => {
       const e = (r.empleador ?? '').toLowerCase();
-      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'No especificado' : 'Privado';
+      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'Sin dato' : 'Privado';
     };
     const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
     const countsAnt: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
