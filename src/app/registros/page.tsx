@@ -2232,9 +2232,9 @@ export default function RegistrosPage() {
                       {/* Cliente */}
                       <td style={{ padding: '18px 24px', minWidth: 240, textAlign: 'left' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
+                          <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '12px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{reg.cuil}</span>}
+                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '13.5px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{reg.cuil}</span>}
                             {reg.es_re && (
                               <span style={{
                                 fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
@@ -2259,13 +2259,13 @@ export default function RegistrosPage() {
                       </td>
 
                       {/* Analista */}
-                      <td style={{ padding: '18px 24px', fontSize: '13px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
+                      <td style={{ padding: '18px 24px', fontSize: '15.5px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
                         {displayAnalista(reg.analista)}
                       </td>
 
                       {/* Fecha */}
                       <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '13px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
+                        <div style={{ fontSize: '15.5px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
                       </td>
 
                       {/* Score */}
@@ -2280,15 +2280,15 @@ export default function RegistrosPage() {
                                           Number(reg.puntaje) >= 600 ? '#60a5fa' :
                                           Number(reg.puntaje) >= 500 ? '#fbbf24' : '#ef4444'
                             }} />
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
+                            <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
                           </div>
                         ) : (
-                          <span style={{ color: '#46464e', fontSize: 13 }}>—</span>
+                          <span style={{ color: '#46464e', fontSize: 15.5 }}>—</span>
                         )}
                       </td>
 
                       {/* Monto */}
-                      <td style={{ padding: '18px 24px', fontSize: '14px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <td style={{ padding: '18px 24px', fontSize: '15.5px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
                         {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
                       </td>
 
@@ -2300,9 +2300,9 @@ export default function RegistrosPage() {
                       {/* Tipo / Acuerdo */}
                       <td style={{ padding: '18px 24px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
+                          <span style={{ fontSize: '15.5px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
                           <span style={{
-                            fontSize: '10px',
+                            fontSize: '12px',
                             fontWeight: 700,
                             color:
                               reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? 'var(--green)' :

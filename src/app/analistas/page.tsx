@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, useEffect } from 'react';
 import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
-import SelectReporte from '@/components/SelectReporte';
 import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
@@ -288,14 +287,27 @@ const referenceLinesPlugin: any = {
   }
 };
  
-const now = new Date();
+import { useSearchParams } from 'next/navigation';
 
+const now = new Date();
 
 export default function AnalistasPage() {
   const { registros: allRegistros, loading } = useRegistros();
   const { objetivos } = useObjetivos();
   const { diasConfig } = useSettings();
+  
+  const searchParams = useSearchParams();
   const [analista, setAnalista] = useState<string>('PDV');
+
+  useEffect(() => {
+    const queryAnalista = searchParams?.get('analista');
+    if (queryAnalista) {
+      setAnalista(queryAnalista);
+    } else {
+      setAnalista('PDV');
+    }
+  }, [searchParams]);
+
   const chartsLoaded = useDeferredMount();
 
   const registros = useMemo(() => {
@@ -1454,16 +1466,6 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <SelectReporte
-              icon="user"
-              value={analista}
-              onChange={v => setAnalista(String(v))}
-              options={[
-                { label: 'PDV', value: 'PDV' },
-                ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a.toUpperCase(), value: a }))
-              ]}
-              width="220px"
-            />
             <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '4px' }}>
               <select value={selectedMes} onChange={e => setSelectedMes(Number(e.target.value))} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
                 {CONFIG.MESES_NOMBRES.map((m, i) => <option key={m} value={i + 1} style={{ background: '#111111' }}>{m}</option>)}
