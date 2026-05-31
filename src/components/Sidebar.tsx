@@ -11,7 +11,7 @@ import {
   AlignJustify, BarChart2, FileText,
   DollarSign, Settings, Bell, Lock, LogOut, Plus,
   SlidersHorizontal, ChevronDown, ChevronUp, X, Calculator,
-  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, AlertCircle, Activity
+  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, AlertCircle, Activity, FolderSearch
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -33,10 +33,10 @@ const REGISTRO_STATES = [
 
 function NavItem({
   href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = '#10b981',
-  isMessage = false, avatarColor = '#ccc', isTreeItem = false, isLastTreeItem = false, isDoubleTreeItem = false, iconColor
+  isMessage = false, avatarColor = '#ccc', isTreeItem = false, isLastTreeItem = false, isDoubleTreeItem = false, isTripleTreeItem = false, iconColor
 }: {
   href: string; icon?: React.ElementType; label: string; active?: boolean; badge?: number | string; onClick?: (e: React.MouseEvent) => void; indent?: boolean; rightIcon?: React.ElementType; badgeColor?: string;
-  isMessage?: boolean; avatarColor?: string; isTreeItem?: boolean; isLastTreeItem?: boolean; isDoubleTreeItem?: boolean; iconColor?: string;
+  isMessage?: boolean; avatarColor?: string; isTreeItem?: boolean; isLastTreeItem?: boolean; isDoubleTreeItem?: boolean; isTripleTreeItem?: boolean; iconColor?: string;
 }) {
   return (
     <Link
@@ -47,7 +47,7 @@ function NavItem({
       style={{
         position: 'relative',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        width: '100%', padding: '10px 16px', paddingLeft: indent ? (isDoubleTreeItem ? '66px' : (isTreeItem ? '46px' : '40px')) : '16px',
+        width: '100%', padding: '10px 16px', paddingLeft: indent ? (isTripleTreeItem ? '86px' : (isDoubleTreeItem ? '66px' : (isTreeItem ? '46px' : '40px'))) : '16px',
         borderRadius: 16,
         color: active ? '#ffffff' : '#9a9a9a',
         background: 'transparent',
@@ -134,6 +134,56 @@ function NavItem({
             <div style={{
               position: 'absolute',
               left: 54,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 4,
+              height: 4,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.2)',
+              zIndex: 0
+            }} />
+          </>
+        </>
+      )}
+      {isTripleTreeItem && (
+        <>
+          <div style={{
+            position: 'absolute',
+            left: 24,
+            top: 0,
+            bottom: -2,
+            borderLeft: '1px solid rgba(255,255,255,0.15)',
+            zIndex: 0
+          }} />
+          <div style={{
+            position: 'absolute',
+            left: 44,
+            top: 0,
+            bottom: -2,
+            borderLeft: '1px solid rgba(255,255,255,0.15)',
+            zIndex: 0
+          }} />
+          <div style={{
+            position: 'absolute',
+            left: 64,
+            top: 0,
+            bottom: isLastTreeItem ? '50%' : -2,
+            borderLeft: '1px solid rgba(255,255,255,0.15)',
+            borderBottomLeftRadius: isLastTreeItem ? 12 : 0,
+            zIndex: 0
+          }} />
+          <>
+            <div style={{
+              position: 'absolute',
+              left: 64,
+              top: '50%',
+              width: 10,
+              borderTop: '1px solid rgba(255,255,255,0.15)',
+              zIndex: 0
+            }} />
+            <div style={{
+              position: 'absolute',
+              left: 74,
               top: '50%',
               transform: 'translateY(-50%)',
               width: 4,
@@ -357,7 +407,8 @@ export default function Sidebar({
   const [ventasOpen, setVentasOpen] = useState(true);
   const [lucianaOpen, setLucianaOpen] = useState(false);
   const [victoriaOpen, setVictoriaOpen] = useState(false);
-  const [adminMenuOpen, setAdminMenuOpen] = useState(true);
+  const [revisionOpen, setRevisionOpen] = useState(false);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
   const [registrosOpen, setRegistrosOpen] = useState(true);
 
@@ -493,70 +544,103 @@ export default function Sidebar({
                 icon={Users} 
                 label="Luciana" 
                 active={pathname === '/registros' && filters.analista.toLowerCase() === 'luciana' && filters.estados.length === 0} 
-                onClick={() => { limpiarFiltros(); setFilter('analista', 'Luciana'); setLucianaOpen(!lucianaOpen); }} 
+                onClick={() => { limpiarFiltros(); setFilter('analista', 'Luciana'); }} 
                 indent 
                 isTreeItem 
-                rightIcon={lucianaOpen ? ChevronUp : ChevronDown}
               />
-              {lucianaOpen && REGISTRO_STATES.map((s, idx) => (
-                <NavItem 
-                  key={s.value}
-                  href="/registros" 
-                  label={s.label} 
-                  isMessage
-                  avatarColor={s.color}
-                  badge={countsByLuciana[s.value] > 0 ? countsByLuciana[s.value] : undefined} 
-                  badgeColor="rgba(255,255,255,0.1)" 
-                  active={pathname === '/registros' && filters.analista.toLowerCase() === 'luciana' && filters.estados.includes(s.value)} 
-                  onClick={() => { limpiarFiltros(); setFilter('analista', 'Luciana'); toggleEstado(s.value); }} 
-                  indent 
-                  isDoubleTreeItem 
-                  isLastTreeItem={idx === REGISTRO_STATES.length - 1} 
-                />
-              ))}
               <NavItem 
                 href="/registros" 
                 icon={Users} 
                 label="Victoria" 
                 active={pathname === '/registros' && filters.analista.toLowerCase() === 'victoria' && filters.estados.length === 0} 
-                onClick={() => { limpiarFiltros(); setFilter('analista', 'Victoria'); setVictoriaOpen(!victoriaOpen); }} 
+                onClick={() => { limpiarFiltros(); setFilter('analista', 'Victoria'); }} 
                 indent 
                 isTreeItem 
-                isLastTreeItem={!victoriaOpen && !(pathname === '/registros' && filters.estados.length === 0)}
-                rightIcon={victoriaOpen ? ChevronUp : ChevronDown}
               />
-              {victoriaOpen && REGISTRO_STATES.map((s, idx) => (
+              <NavItem 
+                href="#" 
+                icon={FolderSearch} 
+                iconColor="#f472b6"
+                label="Clientes en revisión" 
+                onClick={(e) => { e.preventDefault(); setRevisionOpen(!revisionOpen); }} 
+                indent 
+                isTreeItem 
+                isLastTreeItem={!revisionOpen}
+                rightIcon={revisionOpen ? ChevronUp : ChevronDown}
+              />
+              {revisionOpen && REGISTRO_STATES.map((s, idx) => (
                 <NavItem 
                   key={s.value}
                   href="/registros" 
                   label={s.label} 
                   isMessage
                   avatarColor={s.color}
-                  badge={countsByVictoria[s.value] > 0 ? countsByVictoria[s.value] : undefined} 
+                  badge={countsByState[s.value] > 0 ? countsByState[s.value] : undefined} 
                   badgeColor="rgba(255,255,255,0.1)" 
-                  active={pathname === '/registros' && filters.analista.toLowerCase() === 'victoria' && filters.estados.includes(s.value)} 
-                  onClick={() => { limpiarFiltros(); setFilter('analista', 'Victoria'); toggleEstado(s.value); }} 
+                  active={pathname === '/registros' && filters.estados.includes(s.value)} 
+                  onClick={() => { limpiarFiltros(); toggleEstado(s.value); }} 
                   indent 
                   isDoubleTreeItem 
                   isLastTreeItem={idx === REGISTRO_STATES.length - 1 && !(pathname === '/registros' && filters.estados.length === 0)} 
                 />
               ))}
-              {pathname === '/registros' && filters.estados.length === 0 && (
-                <NavItem 
-                  href="#" 
-                  icon={SlidersHorizontal} 
-                  label="Filtros Avanzados" 
-                  indent
-                  isTreeItem
-                  isLastTreeItem
-                  active={showFilters} 
-                  onClick={(e) => { e.preventDefault(); setShowFilters(!showFilters); }} 
-                />
-              )}
             </div>
           )}
 
-          <NavItem href="/recordatorios" icon={Bell} iconColor="#f59e0b" label="Notificaciones" active={pathname === '/recordatorios'} badge={pendingReminders > 0 ? pendingReminders : undefined} badgeColor="#10b981" />
+
+
+        </div>
+
+        {/* Reports Submenu */}
+        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <NavItem
+            href="#"
+            icon={BarChart2}
+            iconColor="#3b82f6"
+            label="Reportes"
+            active={pathname.includes('/reportes') || pathname.includes('/analistas')}
+            onClick={(e) => { e.preventDefault(); setReportesOpen(!reportesOpen); }}
+            rightIcon={reportesOpen ? ChevronUp : ChevronDown}
+            badge={reportesOpen ? '' : '3'}
+            badgeColor="#484B52"
+          />
+          {reportesOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <NavItem 
+                href="/analistas?analista=PDV" 
+                icon={TrendingUp} 
+                iconColor="#8b5cf6"
+                label="Ventas" 
+                active={pathname === '/analistas'} 
+                indent 
+                isTreeItem 
+                onClick={(e) => { e.preventDefault(); setVentasOpen(!ventasOpen); }}
+                rightIcon={ventasOpen ? ChevronUp : ChevronDown}
+              />
+              {ventasOpen && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  <NavItem href="/analistas?analista=PDV" icon={TrendingUp} label="PDV" active={pathname === '/analistas' && currentAnalistaPage === 'PDV'} indent isDoubleTreeItem />
+                  <NavItem href="/analistas?analista=Luciana" icon={TrendingUp} label="Luciana" active={pathname === '/analistas' && currentAnalistaPage === 'Luciana'} indent isDoubleTreeItem />
+                  <NavItem href="/analistas?analista=Victoria" icon={TrendingUp} label="Victoria" active={pathname === '/analistas' && currentAnalistaPage === 'Victoria'} indent isDoubleTreeItem isLastTreeItem />
+                </div>
+              )}
+              <NavItem href="/reportes/cobranzas" icon={DollarSign} iconColor="#f59e0b" label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent isTreeItem isLastTreeItem />
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {pathname === '/registros' && filters.estados.length === 0 && (
+            <NavItem 
+              href="#" 
+              icon={SlidersHorizontal} 
+              iconColor="#a855f7"
+              label="Filtros Avanzados" 
+              active={showFilters} 
+              onClick={(e) => { e.preventDefault(); setShowFilters(!showFilters); }} 
+            />
+          )}
+          <NavItem href="/recordatorios" icon={Bell} iconColor="#ef4444" label="Notificaciones" active={pathname === '/recordatorios'} badge={pendingReminders > 0 ? pendingReminders : undefined} badgeColor="#10b981" />
 
           {isRegistros && (
             <div style={{ position: 'relative' }} ref={pageSizeSelectorRef}>
@@ -609,75 +693,27 @@ export default function Sidebar({
               )}
             </div>
           )}
-
         </div>
 
-        {/* Reports Submenu */}
-        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <NavItem
-            href="#"
-            icon={BarChart2}
-            iconColor="#3b82f6"
-            label="Reportes"
-            active={pathname.includes('/reportes') || pathname.includes('/analistas')}
-            onClick={(e) => { e.preventDefault(); setReportesOpen(!reportesOpen); }}
-            rightIcon={reportesOpen ? ChevronUp : ChevronDown}
-            badge={reportesOpen ? '' : '3'}
-            badgeColor="#484B52"
-          />
-          {reportesOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <NavItem 
-                href="/analistas?analista=PDV" 
-                icon={TrendingUp} 
-                iconColor="#8b5cf6"
-                label="Ventas" 
-                active={pathname === '/analistas'} 
-                indent 
-                isTreeItem 
-                onClick={(e) => { e.preventDefault(); setVentasOpen(!ventasOpen); }}
-                rightIcon={ventasOpen ? ChevronUp : ChevronDown}
-              />
-              {ventasOpen && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  <NavItem href="/analistas?analista=PDV" icon={TrendingUp} label="PDV" active={pathname === '/analistas' && currentAnalistaPage === 'PDV'} indent isDoubleTreeItem />
-                  <NavItem href="/analistas?analista=Luciana" icon={TrendingUp} label="Luciana" active={pathname === '/analistas' && currentAnalistaPage === 'Luciana'} indent isDoubleTreeItem />
-                  <NavItem href="/analistas?analista=Victoria" icon={TrendingUp} label="Victoria" active={pathname === '/analistas' && currentAnalistaPage === 'Victoria'} indent isDoubleTreeItem isLastTreeItem />
-                </div>
-              )}
-              <NavItem href="/reportes/cobranzas" icon={DollarSign} iconColor="#f59e0b" label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent isTreeItem isLastTreeItem />
-            </div>
-          )}
-        </div>
+        <div style={{ flex: 1, minHeight: 12 }} />
 
-        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 8 }}>
           {isAdmin ? (
             <>
               <NavItem href="#" icon={Calculator} label="Calculadora" active={showCalculator} onClick={(e) => { e.preventDefault(); setShowCalculator(!showCalculator); }} />
               <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname.startsWith('/ajustes')} />
             </>
           ) : (
-            <>
+            <div style={{ opacity: 0.5 }}>
               <NavItem 
                 href="#" 
                 icon={Lock} 
                 label="Acceso Admin" 
-                onClick={(e) => { e.preventDefault(); setAdminMenuOpen(!adminMenuOpen); }} 
-                rightIcon={adminMenuOpen ? ChevronUp : ChevronDown}
+                onClick={(e) => { e.preventDefault(); setShowAdminModal(true); }} 
               />
-              {adminMenuOpen && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                   <NavItem href="#" label="Configuración" icon={Settings} onClick={(e) => { e.preventDefault(); setShowAdminModal(true); }} indent isTreeItem />
-                   <NavItem href="#" label="Reportes" icon={BarChart2} onClick={(e) => { e.preventDefault(); setShowAdminModal(true); }} indent isTreeItem />
-                   <NavItem href="#" label="Datos masivos" icon={Database} onClick={(e) => { e.preventDefault(); setShowAdminModal(true); }} indent isTreeItem />
-                   <NavItem href="#" label="Actividad" icon={Activity} onClick={(e) => { e.preventDefault(); setShowAdminModal(true); }} indent isTreeItem isLastTreeItem />
-                </div>
-              )}
-            </>
+            </div>
           )}
         </div>
-
-        <div style={{ flex: 1, minHeight: 12 }} />
 
         {/* Zoom Controls */}
         <div style={{

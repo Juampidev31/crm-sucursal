@@ -581,32 +581,41 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
           <div style={{ flex: 1 }}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
           {!collapsedSections[2] && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <span style={{ fontSize: 11, color: '#444' }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>
-              {!readOnly && (
-                <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
-                  {(['mensual', 'total'] as const).map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setPeriodoSec3(p)}
-                      style={{
-                        padding: '4px 14px',
-                        borderRadius: 6,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: 10,
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.8px',
-                        background: periodoSec3 === p ? '#fb923c' : 'transparent',
-                        color: periodoSec3 === p ? '#000' : '#555',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      {p === 'mensual' ? 'Mes' : 'Total'}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <span style={{ fontSize: 11, color: '#444', fontWeight: 600 }}>
+                {periodoSec3 === 'mensual'
+                  ? (() => {
+                      const isVentaLocal = (r: any) => {
+                        const e = (r.estado || '').toLowerCase().trim();
+                        return e === 'venta' || e.includes('aprobado cc') || e.includes('derivado');
+                      };
+                      const v = ventasMes.filter(isVentaLocal);
+                      return `MES: Solo Venta y Aprob. CC (${v.length} ops · ${formatCurrency(v.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`;
+                    })()
+                  : `TOTAL: Todos los estados (${registros.length} ops · ${formatCurrency(registros.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`}
+              </span>
+              <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+                {(['mensual', 'total'] as const).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriodoSec3(p)}
+                    style={{
+                      padding: '4px 14px',
+                      borderRadius: 6,
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 10,
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.8px',
+                      background: periodoSec3 === p ? '#fb923c' : 'transparent',
+                      color: periodoSec3 === p ? '#000' : '#555',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {p === 'mensual' ? 'Mes' : 'Total'}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

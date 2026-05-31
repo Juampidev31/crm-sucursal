@@ -728,8 +728,8 @@ export default function AnalistasPage() {
       
       return null;
     };
-    for (const r of filterByMonth(allRegistros, selectedMes, selectedAnio)) {
-      const isV = isVenta(r);
+    for (const r of filterByMonth(allRegistros, selectedMes, selectedAnio).filter(isVenta)) {
+      const isV = true;
       const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
       if (matched) {
         tipos[matched].monto += Number(r.monto) || 0;
@@ -774,7 +774,7 @@ export default function AnalistasPage() {
 
   const distEmpleador = useMemo(() => {
     const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
-    for (const r of ventasMes) {
+    for (const r of ventasMes.filter(isVenta)) {
       const raw = (r.empleador ?? '').trim();
       const key = normalizarEmpleador(raw);
       const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
@@ -798,9 +798,9 @@ export default function AnalistasPage() {
   }, [ventasMes]);
 
   const distCuotas = useMemo(() => distPor('cuotas', ventasMes.filter(isVenta)), [ventasMes]);
-  const distRangoEtario = useMemo(() => distPor('rango_etario'), [ventasMes]);
-  const distSexo = useMemo(() => distPor('sexo'), [ventasMes]);
-  const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
+  const distRangoEtario = useMemo(() => distPor('rango_etario', ventasMes.filter(isVenta)), [ventasMes]);
+  const distSexo = useMemo(() => distPor('sexo', ventasMes.filter(isVenta)), [ventasMes]);
+  const distLocalidad = useMemo(() => distPor('localidad', ventasMes.filter(isVenta)), [ventasMes]);
   const distEstados = useMemo(() => {
     const map = new Map<string, { monto: number; cantidad: number }>();
     for (const r of ventasMes) {
@@ -1902,7 +1902,14 @@ export default function AnalistasPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <span style={{ fontSize: 11, color: '#444' }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>
+                <span style={{ fontSize: 11, color: '#444', fontWeight: 600 }}>
+                  {periodoSec3 === 'mensual'
+                    ? (() => {
+                        const v = ventasMes.filter(isVenta);
+                        return `MES: Solo Venta y Aprob. CC (${v.length} ops · ${formatCurrency(v.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`;
+                      })()
+                    : `TOTAL: Todos los estados (${registros.length} ops · ${formatCurrency(registros.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`}
+                </span>
                 <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
                   {(['mensual', 'total'] as const).map(p => (
                     <button

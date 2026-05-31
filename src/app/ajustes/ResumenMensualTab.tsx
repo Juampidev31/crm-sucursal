@@ -1127,7 +1127,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   const distEmpleador = useMemo(() => {
     const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
-    for (const r of ventasMes) {
+    for (const r of ventasMes.filter(isVenta)) {
       const raw = (r.empleador ?? '').trim();
       const key = normalizarEmpleador(raw);
       const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
@@ -1151,9 +1151,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   }, [ventasMes]);
 
   const distCuotas = useMemo(() => distPor('cuotas', ventasMes.filter(isVenta)), [ventasMes]);
-  const distRangoEtario = useMemo(() => distPor('rango_etario'), [ventasMes]);
-  const distSexo = useMemo(() => distPor('sexo'), [ventasMes]);
-  const distLocalidad = useMemo(() => distPor('localidad'), [ventasMes]);
+  const distRangoEtario = useMemo(() => distPor('rango_etario', ventasMes.filter(isVenta)), [ventasMes]);
+  const distSexo = useMemo(() => distPor('sexo', ventasMes.filter(isVenta)), [ventasMes]);
+  const distLocalidad = useMemo(() => distPor('localidad', ventasMes.filter(isVenta)), [ventasMes]);
   const distEstados = useMemo(() => {
     const map = new Map<string, { monto: number; cantidad: number }>();
     for (const r of ventasMes) {
@@ -1188,10 +1188,36 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       .map(([label, data]) => ({ label, ...data }));
   }, [ventasMes]);
   const distAcuerdos = useMemo(() => {
-    return Object.entries(distribucionAcuerdos)
+    const tipos: Record<string, { monto: number; cantidad: number }> = {
+      'PREMIUM': { monto: 0, cantidad: 0 },
+      'Riesgo MEDIO': { monto: 0, cantidad: 0 },
+      'Riesgo BAJO': { monto: 0, cantidad: 0 },
+      'No califica/Excepcion': { monto: 0, cantidad: 0 },
+      'No califica': { monto: 0, cantidad: 0 },
+    };
+    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
+      const ac = (acuerdo || '').toLowerCase().trim();
+      const es = (estado || '').toLowerCase().trim();
+      const esRechazo = ac.includes('no califica') || ac === 'n/c' ||
+                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+      if (esRechazo) return isV ? 'No califica/Excepcion' : 'No califica';
+      if (ac.includes('bajo')) return 'Riesgo BAJO';
+      if (ac.includes('medio')) return 'Riesgo MEDIO';
+      if (ac.includes('premium')) return 'PREMIUM';
+      return null;
+    };
+    for (const r of ventasMes.filter(isVenta)) {
+      const isV = true;
+      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+      if (matched) {
+        tipos[matched].monto += Number(r.monto) || 0;
+        tipos[matched].cantidad += 1;
+      }
+    }
+    return Object.entries(tipos)
       .map(([label, data]) => ({ label, ...data }))
       .sort((a, b) => b.cantidad - a.cantidad);
-  }, [distribucionAcuerdos]);
+  }, [ventasMes]);
 
   // ── Distribuciones totales (todos los registros) ──────────────────────────
   const distCuotasTotal = useMemo(() => distPor('cuotas', registros.filter(isVenta)), [registros]);
@@ -2228,7 +2254,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               <div style={{ flex: 1 }}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
               {!collapsedSections[2] && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <span style={{ fontSize: 11, color: '#444' }}>{ventasMes.length} ops · {formatCurrency(ventasMes.reduce((s, r) => s + (Number(r.monto) || 0), 0))}</span>
+                  <span style={{ fontSize: 11, color: '#444', fontWeight: 600 }}>
+                    {periodoSec3 === 'mensual'
+                      ? (() => {
+                          const v = ventasMes.filter(isVenta);
+                          return `MES: Solo Venta y Aprob. CC (${v.length} ops · ${formatCurrency(v.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`;
+                        })()
+                      : `TOTAL: Todos los estados (${registros.length} ops · ${formatCurrency(registros.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`}
+                  </span>
                   <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
                     {(['mensual', 'total'] as const).map(p => (
                       <button
