@@ -701,6 +701,7 @@ export default function Sidebar({
           {isAdmin ? (
             <>
               <NavItem href="#" icon={Calculator} label="Calculadora" active={showCalculator} onClick={(e) => { e.preventDefault(); setShowCalculator(!showCalculator); }} />
+              <NavItem href="#" icon={FileSpreadsheet} iconColor="#10b981" label="Descargar XLSX" onClick={(e) => { e.preventDefault(); setShowXlsxModal(true); }} />
               <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname.startsWith('/ajustes')} />
             </>
           ) : (
@@ -804,6 +805,8 @@ export default function Sidebar({
       {showAccessDenied && (
         <AccessDeniedModal onClose={() => setShowAccessDenied(false)} />
       )}
+
+      <ExportXlsxModal open={showXlsxModal} onClose={() => setShowXlsxModal(false)} />
     </aside>
   );
 }
