@@ -123,6 +123,33 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
+  // ── Suscripción Realtime: detecta cambios desde cualquier cliente (móvil, app externa, etc.) ──
+  useEffect(() => {
+    const channel = supabase
+      .channel('registros-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'registros' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const parsed = registroSchema.safeParse(payload.new);
+            if (parsed.success) applyRegistroChange('INSERT', parsed.data);
+          } else if (payload.eventType === 'UPDATE') {
+            const parsed = registroSchema.safeParse(payload.new);
+            if (parsed.success) applyRegistroChange('UPDATE', parsed.data);
+          } else if (payload.eventType === 'DELETE') {
+            const parsed = registroSchema.safeParse(payload.old);
+            if (parsed.success) applyRegistroChange('DELETE', parsed.data);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [applyRegistroChange]);
+
   const mutateRegistros = useCallback((mapper: (prev: Registro[]) => Registro[]) => {
     setRegistros(mapper);
   }, []);
