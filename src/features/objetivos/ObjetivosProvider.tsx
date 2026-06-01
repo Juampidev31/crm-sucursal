@@ -76,6 +76,19 @@ export function ObjetivosProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { fetchObjetivos(); }, [fetchObjetivos]);
 
+  // ── Realtime: detecta cambios externos (móvil, otra app) ─────────────────
+  useEffect(() => {
+    const channel = supabase
+      .channel('objetivos-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'objetivos' },
+        () => { fetchRef.current(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const value = useMemo<ObjetivosCtx>(() => ({
     objetivos, mutateObjetivos, pushObjetivosChange,
   }), [objetivos, mutateObjetivos, pushObjetivosChange]);

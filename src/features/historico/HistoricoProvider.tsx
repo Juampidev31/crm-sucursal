@@ -76,6 +76,19 @@ export function HistoricoProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { fetchHistorico(); }, [fetchHistorico]);
 
+  // ── Realtime: detecta cambios externos (móvil, otra app) ─────────────────
+  useEffect(() => {
+    const channel = supabase
+      .channel('historico-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'historico_ventas' },
+        () => { fetchRef.current(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const value = useMemo<HistoricoCtx>(() => ({
     historicoVentas, mutateHistoricoVentas, pushHistoricoChange,
   }), [historicoVentas, mutateHistoricoVentas, pushHistoricoChange]);
