@@ -123,33 +123,6 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
-  // ── Suscripción Realtime: detecta cambios desde cualquier cliente (móvil, app externa, etc.) ──
-  useEffect(() => {
-    const channel = supabase
-      .channel('registros-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'registros' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const parsed = registroSchema.safeParse(payload.new);
-            if (parsed.success) applyRegistroChange('INSERT', parsed.data);
-          } else if (payload.eventType === 'UPDATE') {
-            const parsed = registroSchema.safeParse(payload.new);
-            if (parsed.success) applyRegistroChange('UPDATE', parsed.data);
-          } else if (payload.eventType === 'DELETE') {
-            const parsed = registroSchema.safeParse(payload.old);
-            if (parsed.success) applyRegistroChange('DELETE', parsed.data);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [applyRegistroChange]);
-
   const mutateRegistros = useCallback((mapper: (prev: Registro[]) => Registro[]) => {
     setRegistros(mapper);
   }, []);
@@ -167,15 +140,40 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 
       const exists = prev.findIndex(r => r.id === reg.id);
       if (exists >= 0) {
-        // UPDATE: replace in-place without re-sorting (date rarely changes)
         const next = [...prev];
         next[exists] = reg;
         return next;
       }
 
-      // INSERT: prepend and let the page-level sort handle ordering
       return [reg, ...prev];
     });
+  }, []);
+
+  // ── Realtime: detecta cambios externos (móvil, otra app) ─────────────────
+  const applyChangeRef = useRef(applyRegistroChange);
+  useEffect(() => { applyChangeRef.current = applyRegistroChange; }, [applyRegistroChange]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('registros-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'registros' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const parsed = registroSchema.safeParse(payload.new);
+            if (parsed.success) applyChangeRef.current('INSERT', parsed.data);
+          } else if (payload.eventType === 'UPDATE') {
+            const parsed = registroSchema.safeParse(payload.new);
+            if (parsed.success) applyChangeRef.current('UPDATE', parsed.data);
+          } else if (payload.eventType === 'DELETE') {
+            const parsed = registroSchema.safeParse(payload.old);
+            if (parsed.success) applyChangeRef.current('DELETE', parsed.data);
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const channelRef = useRealtimeBroadcast('registros-updates', {
