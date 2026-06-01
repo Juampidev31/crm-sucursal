@@ -330,6 +330,7 @@ export default function AnalistasPage() {
   const [rendimiento12MOpen, setRendimiento12MOpen] = useState(false);
   const [anioRendimiento, setAnioRendimiento] = useState<number | 'TODOS'>(now.getFullYear());
   const [mesRendimiento, setMesRendimiento] = useState<number | 'TODOS'>('TODOS');
+  const [hiddenCols, setHiddenCols] = useState<string[]>([]);
 
   const aniosDisponiblesRendimiento = useMemo(() => {
     const set = new Set<number>();
@@ -2202,6 +2203,29 @@ export default function AnalistasPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {isAdmin && (
+                  <div style={{ display: 'flex', gap: 4, marginRight: 16, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 8 }}>
+                    {['OBJETIVO', 'ALCANCE', 'VAR.', 'CUMPL.'].map(col => {
+                      const isHidden = hiddenCols.includes(col);
+                      return (
+                        <button
+                          key={col}
+                          onClick={() => setHiddenCols(prev => isHidden ? prev.filter(c => c !== col) : [...prev, col])}
+                          style={{
+                            background: isHidden ? 'transparent' : 'rgba(255,255,255,0.1)',
+                            color: isHidden ? '#555' : '#aaa',
+                            border: 'none', borderRadius: 6, padding: '4px 8px',
+                            fontSize: 10, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
+                            textDecoration: isHidden ? 'line-through' : 'none'
+                          }}
+                          title={isHidden ? `Mostrar columna ${col}` : `Ocultar columna ${col}`}
+                        >
+                          {col}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {isAdmin && (
                   <select
                     value={mesRendimiento}
                     onChange={e => {
@@ -2308,6 +2332,7 @@ export default function AnalistasPage() {
                           accessor={b => b.monto}
                           metaAccessor={b => b.metaK}
                           formatValue={v => formatCurrency(v)}
+                          hiddenCols={hiddenCols}
                         />
                         <Mini12Table
                           label="OPERACIONES"
@@ -2316,6 +2341,7 @@ export default function AnalistasPage() {
                           accessor={b => b.ops}
                           metaAccessor={b => b.metaQ}
                           formatValue={v => String(v)}
+                          hiddenCols={hiddenCols}
                         />
                       </div>
                     </div>
@@ -2331,6 +2357,7 @@ export default function AnalistasPage() {
                   accessor={b => b.monto}
                   metaAccessor={b => b.metaK}
                   formatValue={v => formatCurrency(v)}
+                  hiddenCols={hiddenCols}
                 />
                 <Mini12Table
                   label="OPERACIONES"
@@ -2339,6 +2366,7 @@ export default function AnalistasPage() {
                   accessor={b => b.ops}
                   metaAccessor={b => b.metaQ}
                   formatValue={v => String(v)}
+                  hiddenCols={hiddenCols}
                 />
               </div>
             )}
@@ -2351,13 +2379,14 @@ export default function AnalistasPage() {
 
 type Bucket12 = { key: string; label: string; monto: number; ops: number; metaK: number; metaQ: number };
 
-function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValue }: {
+function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValue, hiddenCols = [] }: {
   label: string;
   total: string;
   buckets: Bucket12[];
   accessor: (b: Bucket12) => number;
   metaAccessor?: (b: Bucket12) => number;
   formatValue?: (v: number) => string;
+  hiddenCols?: string[];
 }) {
   const fmt = formatValue || ((v: number) => String(v));
   const dotColor = (pct: number | null) => {
@@ -2391,10 +2420,10 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
         <thead>
           <tr>
             <th style={th}>MES</th>
-            <th style={{ ...th, textAlign: 'center' }}>OBJETIVO</th>
-            <th style={{ ...th, textAlign: 'center' }}>ALCANCE</th>
-            <th style={{ ...th, textAlign: 'center' }}>VAR.</th>
-            <th style={{ ...th, textAlign: 'right' }}>CUMPL.</th>
+            {!hiddenCols.includes('OBJETIVO') && <th style={{ ...th, textAlign: 'center' }}>OBJETIVO</th>}
+            {!hiddenCols.includes('ALCANCE') && <th style={{ ...th, textAlign: 'center' }}>ALCANCE</th>}
+            {!hiddenCols.includes('VAR.') && <th style={{ ...th, textAlign: 'center' }}>VAR.</th>}
+            {!hiddenCols.includes('CUMPL.') && <th style={{ ...th, textAlign: 'right' }}>CUMPL.</th>}
           </tr>
         </thead>
         <tbody>
@@ -2409,9 +2438,9 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
             return (
               <tr key={b.key}>
                 <td style={{ ...td, color: '#8f929d', fontWeight: 600 }}>{b.label}</td>
-                <td style={{ ...td, textAlign: 'center', color: '#8f929d' }}>{meta > 0 ? fmt(meta) : '—'}</td>
-                <td style={{ ...td, textAlign: 'center', color: '#fff', fontWeight: 700 }}>{fmt(v)}</td>
-                <td style={{ ...td, textAlign: 'center' }}>
+                {!hiddenCols.includes('OBJETIVO') && <td style={{ ...td, textAlign: 'center', color: '#8f929d' }}>{meta > 0 ? fmt(meta) : '—'}</td>}
+                {!hiddenCols.includes('ALCANCE') && <td style={{ ...td, textAlign: 'center', color: '#fff', fontWeight: 700 }}>{fmt(v)}</td>}
+                {!hiddenCols.includes('VAR.') && <td style={{ ...td, textAlign: 'center' }}>
                   {variacion !== null ? (
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -2424,8 +2453,8 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
                   ) : (
                     <span style={{ color: '#444' }}>—</span>
                   )}
-                </td>
-                <td style={{ ...td, textAlign: 'right' }}>
+                </td>}
+                {!hiddenCols.includes('CUMPL.') && <td style={{ ...td, textAlign: 'right' }}>
                   {pct !== null ? (
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -2446,7 +2475,7 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
                   ) : (
                     <span style={{ color: '#444' }}>—</span>
                   )}
-                </td>
+                </td>}
               </tr>
             );
           })}
