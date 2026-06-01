@@ -2204,7 +2204,11 @@ export default function AnalistasPage() {
                 {isAdmin && (
                   <select
                     value={mesRendimiento}
-                    onChange={e => setMesRendimiento(e.target.value === 'TODOS' ? 'TODOS' : Number(e.target.value))}
+                    onChange={e => {
+                      const val = e.target.value === 'TODOS' ? 'TODOS' : Number(e.target.value);
+                      setMesRendimiento(val);
+                      if (val !== 'TODOS') setAnioRendimiento('TODOS');
+                    }}
                     style={{
                       background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: 8, padding: '6px 12px',
