@@ -9,10 +9,10 @@ import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
 import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X, Plus, Trash2, Bell, Edit3, Clock } from 'lucide-react';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
-  LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
+  LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
@@ -193,7 +193,30 @@ const DistBlock = ({
 };
 
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler);
+
+// ─ Plugin inline: sombreado para líneas ─
+const lineShadowPlugin: any = {
+  id: 'lineShadowPlugin',
+  beforeDatasetDraw(chart: any, args: any) {
+    const { ctx } = chart;
+    ctx.save();
+    if (args.index === 0) {
+      ctx.shadowColor = 'rgba(16, 185, 129, 0.4)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 4;
+    } else if (args.index === 1) {
+      ctx.shadowColor = 'rgba(251, 146, 60, 0.3)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 2;
+    }
+  },
+  afterDatasetDraw(chart: any) {
+    chart.ctx.restore();
+  }
+};
 
 // ── Plugin inline: data labels on bars ───────────────────────────────────
 const labelsPlugin: any = {
@@ -328,6 +351,8 @@ export default function AnalistasPage() {
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
+  const [periodoAcuerdos, setPeriodoAcuerdos] = useState<'mensual' | 'total'>('total');
+  const [periodoEmpleo, setPeriodoEmpleo] = useState<'mensual' | 'total'>('total');
   const [rendimiento12MOpen, setRendimiento12MOpen] = useState(false);
   const [anioRendimiento, setAnioRendimiento] = useState<number | 'TODOS'>(now.getFullYear());
   const [mesRendimiento, setMesRendimiento] = useState<number | 'TODOS'>('TODOS');
@@ -1301,18 +1326,101 @@ export default function AnalistasPage() {
     const allVentas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
     const allAnt = ventasMesAnt.filter(isVenta);
     return {
+      // Apertura/Renovación viven en el booleano es_re (true = renovación), no en tipo_cliente (vacío en la DB)
       porAnalista: analistasParaMostrar.map(analista => {
         const v = allVentas.filter(r => r.analista === analista);
-        return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
+        return { analista, aperturas: v.filter(r => !r.es_re).length, renovaciones: v.filter(r => r.es_re).length };
       }),
       porAnalistaAnt: analistasParaMostrar.map(analista => {
         const v = allAnt.filter(r => r.analista === analista);
-        return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
+        return { analista, aperturas: v.filter(r => !r.es_re).length, renovaciones: v.filter(r => r.es_re).length };
       }),
-      total: { aperturas: allVentas.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allVentas.filter(r => r.tipo_cliente === 'Renovacion').length },
-      ant: { aperturas: allAnt.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allAnt.filter(r => r.tipo_cliente === 'Renovacion').length },
+      total: { aperturas: allVentas.filter(r => !r.es_re).length, renovaciones: allVentas.filter(r => r.es_re).length },
+      ant: { aperturas: allAnt.filter(r => !r.es_re).length, renovaciones: allAnt.filter(r => r.es_re).length },
     };
   }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
+
+  const chartProgreso = useMemo(() => {
+    const regsMes = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
+    
+    const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = selectedMes === (today.getMonth() + 1) && selectedAnio === today.getFullYear();
+    const maxDay = isCurrentMonth ? today.getDate() : daysInMonth;
+
+    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+    
+    let cumulative = 0;
+    const realData = labels.map((_, i) => {
+      const day = i + 1;
+      if (day > maxDay) return null;
+      const dayRegs = regsMes.filter(r => {
+        if (!r.fecha) return false;
+        const d = new Date(r.fecha + 'T12:00:00');
+        return d.getDate() === day;
+      });
+      const dayTotal = dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      cumulative += dayTotal;
+      return cumulative;
+    });
+
+    const meta = kpiTotal.metaCapital;
+    const idealData = labels.map((_, i) => (meta / daysInMonth) * (i + 1));
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Vendido',
+          data: realData,
+          borderColor: '#10b981',
+          borderWidth: 2,
+          pointRadius: 2,
+          fill: false,
+          tension: 0.2
+        },
+        {
+          label: 'Ideal',
+          data: idealData,
+          borderColor: '#fb923c',
+          borderWidth: 1,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false,
+          tension: 0
+        }
+      ]
+    };
+  }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital, isVenta]);
+
+  const chartProgresoOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'top' as const, labels: { color: '#ccc', font: { size: 10 } } },
+      tooltip: {
+        backgroundColor: '#0c0c0c',
+        titleColor: '#fff',
+        bodyColor: '#ccc',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: (ctx: any) => {
+            const v = ctx.raw;
+            return ctx.datasetIndex === 0 
+              ? `Vendido: ${formatCurrency(v)}` 
+              : `Ideal: ${formatCurrency(v)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } }
+    },
+    interaction: { mode: 'index' as const, intersect: false }
+  };
 
   const chartAperturas = useMemo(() => {
     const labels = chartLabels;
@@ -1351,7 +1459,7 @@ export default function AnalistasPage() {
   // ── Chart 8: % Empleo Público / Privado ──────────────────────────────────
   const empleoPublPrivData = useMemo(() => {
     const PUBLICO = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
-    const ventas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
+    const ventas = periodoEmpleo === 'mensual' ? ventasMes.filter(isVenta) : registros;
     const ant = ventasMesAnt.filter(isVenta);
     const classify = (r: typeof ventas[0]) => {
       const e = (r.empleador ?? '').toLowerCase();
@@ -1362,7 +1470,7 @@ export default function AnalistasPage() {
     ventas.forEach(r => counts[classify(r)]++);
     ant.forEach(r => countsAnt[classify(r)]++);
     return { counts, countsAnt };
-  }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
+  }, [registros, ventasMes, periodoEmpleo, ventasMesAnt]);
 
   const chartEmpleoPublPriv = useMemo(() => {
     const { counts } = empleoPublPrivData;
@@ -1466,14 +1574,14 @@ export default function AnalistasPage() {
       <div style={{ 
         background: 'rgba(255,255,255,0.01)',
         border: '1px solid rgba(255,255,255,0.04)',
-        borderRadius: '24px',
-        padding: '24px 32px',
+        borderRadius: '16px',
+        padding: '12px 24px',
         boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
-        marginBottom: '24px'
+        marginBottom: '16px'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <div style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.02)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.02)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)' }}>
               <BarChart3 size={24} color="#fff" />
             </div>
             <div>
@@ -1507,9 +1615,10 @@ export default function AnalistasPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '6px 12px', borderRadius: 8,
-                  background: 'rgba(96,165,250,0.08)',
-                  border: '1px solid rgba(96,165,250,0.25)',
-                  color: '#60a5fa',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: '#ffffff',
+                  boxShadow: '0 0 10px rgba(255,255,255,0.1)',
                   fontSize: 11, fontWeight: 800, letterSpacing: '0.6px',
                   textTransform: 'uppercase',
                   cursor: 'pointer',
@@ -1660,98 +1769,105 @@ export default function AnalistasPage() {
               </div>
 
                 {/* ── BLOQUE DE PROYECCIÓN ── */}
-                <div style={{ 
-                  background: 'rgba(255,255,255,0.02)', 
-                  borderRadius: 12, 
-                  padding: '20px 24px', 
-                  border: '1px solid rgba(255,255,255,0.04)',
-                  marginTop: 12
-                }}>
-                  {kpiTotal.esMesActual && !kpiTotal.tieneDiasAdmin ? (
-                    <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
-                      Cargá días hábiles en Ajustes para ver proyección
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      <div style={{ display: 'flex', gap: 32 }}>
-                        <div style={{ flex: 1 }}>
-                          {kpiTotal.metaDiariaCapital !== null && (
-                            <>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Venta / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
-                              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.metaDiariaCapital)}</div>
-                              {kpiTotal.ventaPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {formatCurrency(kpiTotal.ventaPorDia)}</div>}
-                            </>
-                          )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginTop: 12, alignItems: 'stretch' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    {kpiTotal.esMesActual && !kpiTotal.tieneDiasAdmin ? (
+                      <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
+                        Cargá días hábiles en Ajustes para ver proyección
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', gap: 32 }}>
+                          <div style={{ flex: 1 }}>
+                            {kpiTotal.metaDiariaCapital !== null && (
+                              <>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Venta / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.metaDiariaCapital)}</div>
+                                {kpiTotal.ventaPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {formatCurrency(kpiTotal.ventaPorDia)}</div>}
+                              </>
+                            )}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            {kpiTotal.metaDiariaOps !== null && (
+                              <>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ops. / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{Math.round(kpiTotal.metaDiariaOps)}</div>
+                                {kpiTotal.opsPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {Math.round(kpiTotal.opsPorDia)}</div>}
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ flex: 1 }}>
-                          {kpiTotal.metaDiariaOps !== null && (
-                            <>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ops. / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
-                              <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{Math.round(kpiTotal.metaDiariaOps)}</div>
-                              {kpiTotal.opsPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {Math.round(kpiTotal.opsPorDia)}</div>}
-                            </>
-                          )}
+                        
+                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+
+                        <div style={{ display: 'flex', gap: 32 }}>
+                          <div style={{ flex: 1 }}>
+                            {kpiTotal.proyCapital !== null && (
+                              <>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                                  <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.proyCapital >= kpiTotal.metaCapital ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.proyCapital)}</div>
+                                  {kpiTotal.cumplProyCapital !== null && (
+                                    <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.cumplProyCapital >= 100 ? '#10b981' : '#f87171' }}>
+                                      ({kpiTotal.cumplProyCapital.toFixed(2)}%)
+                                    </span>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            {kpiTotal.proyOps !== null && (
+                              <>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                                  <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.proyOps)}</div>
+                                  {kpiTotal.cumplProyOps !== null && (
+                                    <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.cumplProyOps >= 100 ? '#10b981' : '#f87171' }}>
+                                      ({kpiTotal.cumplProyOps.toFixed(2)}%)
+                                    </span>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+
+                        <div style={{ display: 'flex', gap: 32 }}>
+                          <div style={{ flex: 1 }}>
+                            {kpiTotal.faltaCapital !== null && (
+                              <>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (K)</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.faltaCapital)}</div>
+                              </>
+                            )}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            {kpiTotal.faltaOps !== null && (
+                              <>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (Q)</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.faltaOps || 0)}</div>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      
-                      <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
-
-                      <div style={{ display: 'flex', gap: 32 }}>
-                        <div style={{ flex: 1 }}>
-                          {kpiTotal.proyCapital !== null && (
-                            <>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
-                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.esMesActual ? (kpiTotal.proyCapital >= kpiTotal.metaCapital ? '#10b981' : '#f87171') : '#ccc' }}>{formatCurrency(kpiTotal.proyCapital)}</div>
-                                {kpiTotal.cumplProyCapital !== null && (
-                                  <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.esMesActual ? (kpiTotal.cumplProyCapital >= 100 ? '#10b981' : '#f87171') : '#444' }}>
-                                    ({kpiTotal.cumplProyCapital.toFixed(2)}%)
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          {kpiTotal.proyOps !== null && (
-                            <>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
-                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.esMesActual ? (kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171') : '#ccc' }}>{Math.round(kpiTotal.proyOps)}</div>
-                                {kpiTotal.cumplProyOps !== null && (
-                                  <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.esMesActual ? (kpiTotal.cumplProyOps >= 100 ? '#10b981' : '#f87171') : '#444' }}>
-                                    ({kpiTotal.cumplProyOps.toFixed(2)}%)
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
-
-                      <div style={{ display: 'flex', gap: 32 }}>
-                        <div style={{ flex: 1 }}>
-                          {kpiTotal.faltaCapital !== null && (
-                            <>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (K)</div>
-                              <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.faltaCapital)}</div>
-                            </>
-                          )}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          {kpiTotal.faltaOps !== null && (
-                            <>
-                              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (Q)</div>
-                              <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.faltaOps || 0)}</div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
                     )}
                   </div>
+                  
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Progreso vs Ideal</div>
+                    <div style={{ flex: 1, minHeight: 220, position: 'relative', width: '100%' }}>
+                      {chartsLoaded ? (
+                        <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} />
+                      ) : (
+                        <ChartShimmer />
+                      )}
+                    </div>
+                  </div>
+                </div>
                 </>
               </div>
 
@@ -1817,16 +1933,34 @@ export default function AnalistasPage() {
                           Distribución de Acuerdos
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
-                           <Users size={12} color="#666" />
-                           <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>
-                             {analista === 'PDV' ? kpiTotal.ops : (kpiPorAnalista.find(k => k.analista === analista)?.ops ?? 0)} TOTAL
-                           </span>
+                          <button
+                            onClick={() => setPeriodoAcuerdos('mensual')}
+                            style={{
+                              padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
+                              background: periodoAcuerdos === 'mensual' ? '#fb923c' : 'transparent',
+                              color: periodoAcuerdos === 'mensual' ? '#000' : '#666',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            MES
+                          </button>
+                          <button
+                            onClick={() => setPeriodoAcuerdos('total')}
+                            style={{
+                              padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
+                              background: periodoAcuerdos === 'total' ? '#fb923c' : 'transparent',
+                              color: periodoAcuerdos === 'total' ? '#000' : '#666',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            TOTAL
+                          </button>
                         </div>
                       </div>
                       {(() => {
-                        const isGlobal = analista === 'PDV';
-                        const sourceRegs = filterByMonth(allRegistros, selectedMes, selectedAnio);
-                        const regs = isGlobal ? sourceRegs : sourceRegs.filter(r => r.analista === analista);
+                        const regs = periodoAcuerdos === 'mensual' ? ventasMes.filter(isVenta) : registros;
                         
                         const categories = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica'];
                         const bgColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
@@ -1879,11 +2013,39 @@ export default function AnalistasPage() {
 
                     {/* 4. Empleo */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                        <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-                        <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
-                          % Empleo Público / Privado
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+                            % Empleo Público / Privado
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={() => setPeriodoEmpleo('mensual')}
+                            style={{
+                              padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
+                              background: periodoEmpleo === 'mensual' ? '#fb923c' : 'transparent',
+                              color: periodoEmpleo === 'mensual' ? '#000' : '#666',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            MES
+                          </button>
+                          <button
+                            onClick={() => setPeriodoEmpleo('total')}
+                            style={{
+                              padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
+                              background: periodoEmpleo === 'total' ? '#fb923c' : 'transparent',
+                              color: periodoEmpleo === 'total' ? '#000' : '#666',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            TOTAL
+                          </button>
+                        </div>
                       </div>
                       {(() => {
                         const counts = chartEmpleoPublPriv.datasets[0].data as number[];
