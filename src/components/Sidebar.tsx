@@ -10,7 +10,7 @@ import { STATUS_LABEL } from '@/lib/utils';
 import {
   AlignJustify, BarChart2, FileText,
   DollarSign, Settings, Bell, Lock, LogOut, Plus,
-  SlidersHorizontal, ChevronDown, ChevronUp, X, Calculator,
+  SlidersHorizontal, ChevronDown, ChevronUp, ChevronLeft, X, Calculator,
   ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, AlertCircle, Activity, FolderSearch
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -342,12 +342,14 @@ export default function Sidebar({
   onZoomIn,
   onZoomOut,
   onReset,
+  onHide,
 }: {
   hidden?: boolean;
   zoom?: number;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onReset?: () => void;
+  onHide?: () => void;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -484,7 +486,20 @@ export default function Sidebar({
 
 
         {/* Header MENU */}
-        <div style={{ fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: '1px', marginBottom: 8, paddingLeft: 16 }}>MENU</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingLeft: 16, paddingRight: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: '1px' }}>MENU</div>
+          {onHide && (
+            <button 
+              onClick={onHide} 
+              style={{ background: 'transparent', border: 'none', color: '#777', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '4px', transition: 'background 0.2s' }} 
+              title="Ocultar menú"
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <ChevronLeft size={16} />
+            </button>
+          )}
+        </div>
 
         {/* Highlight Action (Like Personal/Business switch) */}
         {canCreate && (

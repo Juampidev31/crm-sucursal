@@ -190,16 +190,17 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loading, isAdmin } = useAuth();
+  const isMinimal = searchParams.get('minimal') === 'true';
   const [mounted, setMounted] = useState(false);
   const [zoom, setZoom] = useState(0.9);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/'));
   const { setShowFilters } = useFilter();
 
   // Auto-hide sidebar when entering reports or settings
   useEffect(() => {
     setShowFilters(false);
-    setSidebarHidden(pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/'));
-  }, [pathname, setShowFilters]);
+    setSidebarHidden(isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/'));
+  }, [pathname, setShowFilters, isMinimal]);
   
   useEffect(() => {
     setMounted(true);
@@ -237,7 +238,6 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   
   const isLoginPage = pathname === '/login';
   const isPublicRoute = pathname.startsWith('/publico');
-  const isMinimal = searchParams.get('minimal') === 'true';
 
   // Estados para Split View
   const [isSplitView, setIsSplitView] = useState(false);
@@ -359,16 +359,15 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       )}
 
       <div className="wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
-        {!isMinimal && (
-          <>
-            <Sidebar 
-              hidden={sidebarHidden}
-              zoom={zoom} 
-              onZoomIn={() => handleZoom(0.1)} 
-              onZoomOut={() => handleZoom(-0.1)} 
-              onReset={resetZoom} 
-            />
-          </>
+        {(!isSplitView || isMinimal) && (
+          <Sidebar 
+            hidden={sidebarHidden}
+            onHide={() => setSidebarHidden(true)}
+            zoom={zoom} 
+            onZoomIn={() => handleZoom(0.1)} 
+            onZoomOut={() => handleZoom(-0.1)} 
+            onReset={resetZoom} 
+          />
         )}
         <main
           className="content-wrapper"
@@ -378,7 +377,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
             position: 'relative'
           }}
         >
-          {!isMinimal && (
+          {(!isSplitView || isMinimal) && (
             <button
               onClick={() => setSidebarHidden(false)}
               style={{

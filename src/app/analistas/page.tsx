@@ -7,6 +7,7 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
+import { useAuth } from '@/context/AuthContext';
 import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
@@ -295,6 +296,7 @@ export default function AnalistasPage() {
   const { registros: allRegistros, loading } = useRegistros();
   const { objetivos } = useObjetivos();
   const { diasConfig } = useSettings();
+  const { isAdmin } = useAuth();
   
   const searchParams = useSearchParams();
   const [analista, setAnalista] = useState<string>('PDV');
@@ -326,7 +328,8 @@ export default function AnalistasPage() {
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
   const [rendimiento12MOpen, setRendimiento12MOpen] = useState(false);
-  const [anioRendimiento, setAnioRendimiento] = useState(now.getFullYear());
+  const [anioRendimiento, setAnioRendimiento] = useState<number | 'TODOS'>(now.getFullYear());
+  const [mesRendimiento, setMesRendimiento] = useState<number | 'TODOS'>('TODOS');
 
   const aniosDisponiblesRendimiento = useMemo(() => {
     const set = new Set<number>();
@@ -342,10 +345,23 @@ export default function AnalistasPage() {
 
   const mesesAnioKQ = useMemo(() => {
     const buckets: { key: string; mes0: number; anio: number; label: string; monto: number; ops: number; metaK: number; metaQ: number }[] = [];
-    for (let m = 0; m < 12; m++) {
-      const key = `${anioRendimiento}-${String(m + 1).padStart(2, '0')}`;
-      buckets.push({ key, mes0: m, anio: anioRendimiento, label: CONFIG.MESES_NOMBRES[m], monto: 0, ops: 0, metaK: 0, metaQ: 0 });
+    
+    const aniosToInclude = anioRendimiento === 'TODOS' ? aniosDisponiblesRendimiento.slice().sort((a,b) => a - b) : [anioRendimiento];
+    const mesesToInclude = mesRendimiento === 'TODOS' ? Array.from({length: 12}, (_, i) => i) : [mesRendimiento as number];
+
+    for (const y of aniosToInclude) {
+      for (const m of mesesToInclude) {
+        const key = `${y}-${String(m + 1).padStart(2, '0')}`;
+        buckets.push({ 
+           key, 
+           mes0: m, 
+           anio: y, 
+           label: anioRendimiento === 'TODOS' ? `${CONFIG.MESES_NOMBRES[m]} ${y}` : CONFIG.MESES_NOMBRES[m], 
+           monto: 0, ops: 0, metaK: 0, metaQ: 0 
+        });
+      }
     }
+
     const idx = new Map(buckets.map((b, i) => [b.key, i]));
     for (const r of registros) {
       if (!(r.estado?.toLowerCase() === 'venta' || r.estado?.toLowerCase().includes('aprobado cc'))) continue;
@@ -362,7 +378,7 @@ export default function AnalistasPage() {
       b.metaQ = obj?.meta_operaciones ?? 0;
     }
     return buckets;
-  }, [registros, objetivos, analista, anioRendimiento]);
+  }, [registros, objetivos, analista, anioRendimiento, mesRendimiento, aniosDisponiblesRendimiento]);
 
 
 
@@ -2185,14 +2201,33 @@ export default function AnalistasPage() {
                 Rendimiento por Año {analista !== 'PDV' && `— ${analista}`}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {isAdmin && (
+                  <select
+                    value={mesRendimiento}
+                    onChange={e => setMesRendimiento(e.target.value === 'TODOS' ? 'TODOS' : Number(e.target.value))}
+                    style={{
+                      background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 8, padding: '6px 12px',
+                      color: '#fff', fontSize: 13, fontWeight: 700,
+                      cursor: 'pointer', minWidth: 120, textAlign: 'center',
+                    }}
+                  >
+                    <option value="TODOS">Todos los Meses</option>
+                    {CONFIG.MESES_NOMBRES.map((m: string, i: number) => (
+                      <option key={i} value={i}>{m}</option>
+                    ))}
+                  </select>
+                )}
+
                 <button
                   type="button"
                   onClick={() => {
-                    const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento);
+                    if (anioRendimiento === 'TODOS') return;
+                    const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento as number);
                     const next = aniosDisponiblesRendimiento[idx + 1];
                     if (next !== undefined) setAnioRendimiento(next);
                   }}
-                  disabled={aniosDisponiblesRendimiento.indexOf(anioRendimiento) >= aniosDisponiblesRendimiento.length - 1}
+                  disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) >= aniosDisponiblesRendimiento.length - 1}
                   style={{
                     background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 8, width: 32, height: 32,
@@ -2204,7 +2239,7 @@ export default function AnalistasPage() {
                 </button>
                 <select
                   value={anioRendimiento}
-                  onChange={e => setAnioRendimiento(Number(e.target.value))}
+                  onChange={e => setAnioRendimiento(e.target.value === 'TODOS' ? 'TODOS' : Number(e.target.value))}
                   style={{
                     background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 8, padding: '6px 12px',
@@ -2212,6 +2247,7 @@ export default function AnalistasPage() {
                     cursor: 'pointer', minWidth: 90, textAlign: 'center',
                   }}
                 >
+                  {isAdmin && <option value="TODOS">Todos los Años</option>}
                   {aniosDisponiblesRendimiento.map(a => (
                     <option key={a} value={a}>{a}</option>
                   ))}
@@ -2219,11 +2255,12 @@ export default function AnalistasPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento);
+                    if (anioRendimiento === 'TODOS') return;
+                    const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento as number);
                     const prev = aniosDisponiblesRendimiento[idx - 1];
                     if (prev !== undefined) setAnioRendimiento(prev);
                   }}
-                  disabled={aniosDisponiblesRendimiento.indexOf(anioRendimiento) <= 0}
+                  disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) <= 0}
                   style={{
                     background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
                     borderRadius: 8, width: 32, height: 32,
@@ -2248,24 +2285,59 @@ export default function AnalistasPage() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <Mini12Table
-                label="CAPITAL"
-                total={formatCurrency(mesesAnioKQ.reduce((s, b) => s + b.monto, 0))}
-                buckets={mesesAnioKQ}
-                accessor={b => b.monto}
-                metaAccessor={b => b.metaK}
-                formatValue={v => formatCurrency(v)}
-              />
-              <Mini12Table
-                label="OPERACIONES"
-                total={String(mesesAnioKQ.reduce((s, b) => s + b.ops, 0))}
-                buckets={mesesAnioKQ}
-                accessor={b => b.ops}
-                metaAccessor={b => b.metaQ}
-                formatValue={v => String(v)}
-              />
-            </div>
+            {anioRendimiento === 'TODOS' && mesRendimiento === 'TODOS' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                {aniosDisponiblesRendimiento.slice().sort((a,b) => b - a).map(anio => {
+                  const bucketsYear = mesesAnioKQ.filter(b => b.anio === anio);
+                  if (bucketsYear.length === 0) return null;
+                  return (
+                    <div key={anio}>
+                      <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 4, height: 16, background: '#a78bfa', borderRadius: 4 }} />
+                        AÑO {anio}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <Mini12Table
+                          label="CAPITAL"
+                          total={formatCurrency(bucketsYear.reduce((s, b) => s + b.monto, 0))}
+                          buckets={bucketsYear}
+                          accessor={b => b.monto}
+                          metaAccessor={b => b.metaK}
+                          formatValue={v => formatCurrency(v)}
+                        />
+                        <Mini12Table
+                          label="OPERACIONES"
+                          total={String(bucketsYear.reduce((s, b) => s + b.ops, 0))}
+                          buckets={bucketsYear}
+                          accessor={b => b.ops}
+                          metaAccessor={b => b.metaQ}
+                          formatValue={v => String(v)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <Mini12Table
+                  label="CAPITAL"
+                  total={formatCurrency(mesesAnioKQ.reduce((s, b) => s + b.monto, 0))}
+                  buckets={mesesAnioKQ}
+                  accessor={b => b.monto}
+                  metaAccessor={b => b.metaK}
+                  formatValue={v => formatCurrency(v)}
+                />
+                <Mini12Table
+                  label="OPERACIONES"
+                  total={String(mesesAnioKQ.reduce((s, b) => s + b.ops, 0))}
+                  buckets={mesesAnioKQ}
+                  accessor={b => b.ops}
+                  metaAccessor={b => b.metaQ}
+                  formatValue={v => String(v)}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
