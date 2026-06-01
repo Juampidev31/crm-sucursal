@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X, Plus, Trash2, Bell, Edit3, Clock } from 'lucide-react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -17,6 +17,7 @@ import {
 import MetricasTab from '@/app/ajustes/MetricasTab';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 import NuevaSeccionSheets from './NuevaSeccionSheets';
+import { supabase } from '@/lib/supabase';
 
 const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = false }: { data: import('chart.js').ChartData<'doughnut'>, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
@@ -745,7 +746,7 @@ export default function AnalistasPage() {
       
       return null;
     };
-    for (const r of filterByMonth(allRegistros, selectedMes, selectedAnio).filter(isVenta)) {
+    for (const r of filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta)) {
       const isV = true;
       const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
       if (matched) {
@@ -754,7 +755,7 @@ export default function AnalistasPage() {
       }
     }
     return tipos;
-  }, [allRegistros, selectedMes, selectedAnio]);
+  }, [registros, selectedMes, selectedAnio]);
 
   // ── Distribuciones demográficas (ventas del mes) ─────────────────────────
   const ventasMes = useMemo(() =>
@@ -899,13 +900,13 @@ export default function AnalistasPage() {
       if (ac.includes('premium')) return 'PREMIUM';
       return null;
     };
-    for (const r of allRegistros) {
+    for (const r of registros) {
       const isV = isVenta(r);
       const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
       if (matched) { tipos[matched].monto += Number(r.monto) || 0; tipos[matched].cantidad += 1; }
     }
     return Object.entries(tipos).map(([label, data]) => ({ label, ...data })).sort((a, b) => b.cantidad - a.cantidad);
-  }, [allRegistros]);
+  }, [registros]);
 
   // ── Distribuciones mes anterior ───────────────────────────────────────────
   const ventasMesAnt = useMemo(() =>
@@ -2376,6 +2377,8 @@ export default function AnalistasPage() {
     </div>
   );
 }
+
+
 
 type Bucket12 = { key: string; label: string; monto: number; ops: number; metaK: number; metaQ: number };
 
