@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     let q = supabase
       .from('registros')
       .select('nombre,cuil,analista,estado,monto,fecha,puntaje,es_re,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,comentarios,fecha_score,created_at')
-      .order('fecha', { ascending: false });
+      .order('fecha', { ascending: true });
     if (fechaDesde) q = q.gte('fecha', fechaDesde);
     if (fechaHasta) q = q.lte('fecha', fechaHasta);
     if (empleador?.trim()) q = q.ilike('empleador', `%${empleador.trim()}%`);
