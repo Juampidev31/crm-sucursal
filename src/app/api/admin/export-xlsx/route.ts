@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { utils, write } from 'xlsx';
+import ExcelJS from 'exceljs';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   const PAGE = 1000;
   const SAFETY_LIMIT = 100000;
-  let all: Record<string, unknown>[] = [];
+  let all: Record<string, any>[] = [];
   let from = 0;
   while (from < SAFETY_LIMIT) {
     const { data: chunk, error } = await buildQuery().range(from, from + PAGE - 1);
@@ -120,10 +120,88 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ total: all.length, registros });
   }
 
-  const ws = utils.json_to_sheet(all);
-  const wb = utils.book_new();
-  utils.book_append_sheet(wb, ws, 'Registros');
-  const buffer = write(wb, { type: 'buffer', bookType: 'xlsx' });
+  // Generación del Excel con ExcelJS
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Registros');
+
+  // Definir las columnas
+  worksheet.columns = [
+    { header: 'Fecha', key: 'fecha', width: 25 },
+    { header: 'Nombre', key: 'nombre', width: 36.71 },
+    { header: 'CUIL', key: 'cuil', width: 25 },
+    { header: 'Monto', key: 'monto', width: 25 },
+    { header: 'Analista', key: 'analista', width: 25 },
+    { header: 'Estado', key: 'estado', width: 25 },
+    { header: 'Score', key: 'puntaje', width: 25 },
+    { header: 'Empleador', key: 'empleador', width: 25 },
+    { header: 'Tipo Cliente', key: 'tipo_cliente', width: 25 },
+    { header: 'Acuerdo Precios', key: 'acuerdo_precios', width: 25 },
+    { header: 'Comentarios', key: 'comentarios', width: 25 },
+  ];
+
+  // Formatear datos antes de agregar
+  const formattedData = all.map(r => {
+    // Convertir fecha de string a Date object para que Excel lo detecte nativamente
+    let fechaFormat: Date | string = r.fecha;
+    if (r.fecha && typeof r.fecha === 'string') {
+      // Si la fecha incluye hora (ej. de supabase timestamp), solo tomar la parte de fecha
+      const datePart = r.fecha.split('T')[0];
+      const parts = datePart.split('-');
+      if (parts.length === 3) {
+        // new Date(year, monthIndex, day)
+        fechaFormat = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      }
+    }
+
+    return {
+      ...r,
+      fecha: fechaFormat,
+      // Convertir CUIL a Number para evitar advertencia de texto en Excel
+      cuil: r.cuil ? Number(r.cuil) : null,
+      monto: r.monto ? Number(r.monto) : null,
+      puntaje: r.puntaje ? Number(r.puntaje) : null,
+    };
+  });
+
+  // Agregar filas
+  worksheet.addRows(formattedData);
+
+  // Aplicar estilos a las filas
+  worksheet.eachRow((row, rowNumber) => {
+    row.eachCell((cell, colNumber) => {
+      // Fuente Outfit, centrada
+      cell.font = { name: 'Outfit', size: 11 };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+      // Formato de fecha para la primera columna
+      if (rowNumber > 1 && colNumber === 1) {
+        cell.numFmt = 'dd/mm/yyyy';
+      }
+
+      // Formato para evitar notación científica en CUIL (columna 3)
+      if (rowNumber > 1 && colNumber === 3) {
+        cell.numFmt = '0';
+      }
+
+      // Formato de moneda para la columna Monto (columna 4)
+      if (rowNumber > 1 && colNumber === 4) {
+        cell.numFmt = '"$"#,##0.00';
+      }
+
+      // Estilo especial para la cabecera (Fila 1)
+      if (rowNumber === 1) {
+        cell.font = { name: 'Outfit', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF059669' } // Emerald 600
+        };
+      }
+    });
+  });
+
+
+  const buffer = await workbook.xlsx.writeBuffer();
 
   const today = new Date().toISOString().slice(0, 10);
   return new NextResponse(buffer, {
@@ -134,3 +212,4 @@ export async function POST(req: NextRequest) {
     },
   });
 }
+
