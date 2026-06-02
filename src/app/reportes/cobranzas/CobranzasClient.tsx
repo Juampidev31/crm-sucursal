@@ -33,9 +33,9 @@ function parsePctLocal(v: string): number | null {
 // ── Editable Cell ────────────────────────────────────────────────────────────
 
 function EditCell({
-  value, onChange, align = 'right', placeholder = '', width = '80px'
+  value, onChange, onBlur, align = 'right', placeholder = '', width = '80px'
 }: {
-  value: string; onChange: (v: string) => void; align?: 'left' | 'right' | 'center'; placeholder?: string; width?: string;
+  value: string; onChange: (v: string) => void; onBlur?: () => void; align?: 'left' | 'right' | 'center'; placeholder?: string; width?: string;
 }) {
   return (
     <input
@@ -57,7 +57,10 @@ function EditCell({
         transition: 'border-color 0.2s',
       }}
       onFocus={e => e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'}
-      onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+      onBlur={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+        if (onBlur) onBlur();
+      }}
     />
   );
 }
@@ -116,7 +119,10 @@ function TramoTable({
                 </td>
                 <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                   {editing ? (
-                    <EditCell value={r.cumplimiento} onChange={v => onRowChange(i, 'cumplimiento', v)} placeholder="0%" width="70px" />
+                    <span style={{ color: '#fff', fontWeight: 800, fontSize: '11px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ color: c }}>●</span>
+                      {r.cumplimiento !== '-' ? r.cumplimiento : '0%'}
+                    </span>
                   ) : (
                     r.pct !== null ? (
                       <span style={{ color: '#fff', fontWeight: 800, fontSize: '11px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -209,6 +215,24 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
     setData(prev => {
       const rows = [...prev[tramo]];
       rows[idx] = { ...rows[idx], [field]: value };
+      
+      if (field === 'objetivo' || field === 'recupero') {
+        const objStr = rows[idx].objetivo;
+        const recStr = rows[idx].recupero;
+        if (objStr && recStr && objStr !== '-' && recStr !== '-') {
+          const obj = parseFloat(objStr.replace(/\./g, '').replace(',', '.'));
+          const rec = parseFloat(recStr.replace(/\./g, '').replace(',', '.'));
+          if (!isNaN(obj) && !isNaN(rec) && obj !== 0) {
+            const pct = (rec / obj) * 100;
+            rows[idx].cumplimiento = pct.toFixed(1).replace('.', ',') + '%';
+            rows[idx].pct = pct;
+          } else {
+            rows[idx].cumplimiento = '-';
+            rows[idx].pct = null;
+          }
+        }
+      }
+
       if (field === 'cumplimiento') {
         rows[idx].pct = parsePctLocal(value);
       }
@@ -223,6 +247,26 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
       if (field === 'current') { row.current = value; row.currentPct = parsePctLocal(value); }
       else if (field === 'anterior') { row.anterior = value; row.anteriorPct = parsePctLocal(value); }
       else if (field === 'mediaEmp') { row.mediaEmp = value; row.mediaPct = parsePctLocal(value); }
+      rows[idx] = row;
+      return { ...prev, morosidad: rows };
+    });
+  }, []);
+
+  const formatMorosidadPct = useCallback((idx: number, field: 'current' | 'anterior' | 'mediaEmp') => {
+    setData(prev => {
+      const rows = [...prev.morosidad];
+      const row = { ...rows[idx] };
+      let val = row[field];
+      if (val && val !== '-' && !val.includes('%')) {
+        const num = parseFloat(val.replace(/\./g, '').replace(',', '.'));
+        if (!isNaN(num)) {
+          const formatted = num.toFixed(2).replace('.', ',') + '%';
+          row[field] = formatted;
+          if (field === 'current') row.currentPct = num;
+          if (field === 'anterior') row.anteriorPct = num;
+          if (field === 'mediaEmp') row.mediaPct = num;
+        }
+      }
       rows[idx] = row;
       return { ...prev, morosidad: rows };
     });
@@ -520,7 +564,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                       {editing ? (
-                        <EditCell value={r.current} onChange={v => updateMorosidad(i, 'current', v)} placeholder="0%" width="70px" />
+                        <EditCell value={r.current} onChange={v => updateMorosidad(i, 'current', v)} onBlur={() => formatMorosidadPct(i, 'current')} placeholder="0%" width="70px" />
                       ) : (
                         r.currentPct !== null ? (
                           <span style={{ color: '#fff', fontWeight: 800, fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '3px 9px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -532,14 +576,14 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                       {editing ? (
-                        <EditCell value={r.anterior} onChange={v => updateMorosidad(i, 'anterior', v)} placeholder="0%" width="70px" />
+                        <EditCell value={r.anterior} onChange={v => updateMorosidad(i, 'anterior', v)} onBlur={() => formatMorosidadPct(i, 'anterior')} placeholder="0%" width="70px" />
                       ) : (
                         <span style={{ color: '#9a9aa3', fontWeight: 600 }}>{r.anteriorPct !== null ? r.anterior : '—'}</span>
                       )}
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                       {editing ? (
-                        <EditCell value={r.mediaEmp} onChange={v => updateMorosidad(i, 'mediaEmp', v)} placeholder="0%" width="70px" />
+                        <EditCell value={r.mediaEmp} onChange={v => updateMorosidad(i, 'mediaEmp', v)} onBlur={() => formatMorosidadPct(i, 'mediaEmp')} placeholder="0%" width="70px" />
                       ) : (
                         <span style={{ color: '#9a9aa3', fontWeight: 600 }}>{r.mediaPct !== null ? r.mediaEmp : '—'}</span>
                       )}

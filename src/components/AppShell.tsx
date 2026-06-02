@@ -192,7 +192,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const { loading, isAdmin } = useAuth();
   const isMinimal = searchParams.get('minimal') === 'true';
   const [mounted, setMounted] = useState(false);
-  const [zoom, setZoom] = useState(0.9);
+  const [zooms, setZooms] = useState<Record<string, number>>({});
   const [sidebarHidden, setSidebarHidden] = useState(isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/'));
   const { setShowFilters } = useFilter();
 
@@ -204,25 +204,39 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem('app_zoom_level');
+    const saved = localStorage.getItem('app_zoom_levels');
     if (saved) {
-      const parsed = parseFloat(saved);
-      if (!isNaN(parsed)) setZoom(parsed);
+      try {
+        setZooms(JSON.parse(saved));
+      } catch (e) {}
+    } else {
+      const oldZoom = localStorage.getItem('app_zoom_level');
+      if (oldZoom) {
+        const parsed = parseFloat(oldZoom);
+        if (!isNaN(parsed)) setZooms({ [pathname]: parsed });
+      }
     }
   }, []);
 
+  const currentZoom = zooms[pathname] || 0.9;
+
   const handleZoom = useCallback((delta: number) => {
-    setZoom(prev => {
-      const next = Math.max(0.3, Math.min(3, prev + delta));
-      localStorage.setItem('app_zoom_level', next.toString());
-      return next;
+    setZooms(prev => {
+      const current = prev[pathname] || 0.9;
+      const next = Math.max(0.3, Math.min(3, current + delta));
+      const newZooms = { ...prev, [pathname]: next };
+      localStorage.setItem('app_zoom_levels', JSON.stringify(newZooms));
+      return newZooms;
     });
-  }, []);
+  }, [pathname]);
 
   const resetZoom = useCallback(() => {
-    setZoom(0.9);
-    localStorage.setItem('app_zoom_level', '0.9');
-  }, []);
+    setZooms(prev => {
+      const newZooms = { ...prev, [pathname]: 0.9 };
+      localStorage.setItem('app_zoom_levels', JSON.stringify(newZooms));
+      return newZooms;
+    });
+  }, [pathname]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -363,7 +377,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
           <Sidebar 
             hidden={sidebarHidden}
             onHide={() => setSidebarHidden(true)}
-            zoom={zoom} 
+            zoom={currentZoom} 
             onZoomIn={() => handleZoom(0.1)} 
             onZoomOut={() => handleZoom(-0.1)} 
             onReset={resetZoom} 
@@ -445,7 +459,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                   }}
                 />
               ) : (
-                <ZoomWrapper zoom={zoom}>
+                <ZoomWrapper zoom={currentZoom}>
                   {children}
                 </ZoomWrapper>
               )}

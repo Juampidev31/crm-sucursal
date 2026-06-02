@@ -1,13 +1,16 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { X, Download, Loader2, ArrowLeft, FileSpreadsheet } from 'lucide-react';
+import CustomSelect from '@/components/CustomSelect';
 
 const ESTADOS = [
   'proyeccion', 'venta', 'en seguimiento', 'score bajo',
   'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc',
 ];
 const ANALISTAS = ['Luciana', 'Victoria'];
+const ALERTAS_OPCIONES = ['Proyecciones', 'En seguimiento', 'Score bajo', 'Afectaciones', 'Derivado Aprobado CC', 'Derivado Rechazado CC'];
+const CLIENTE_OPCIONES = ['Nuevo', 'Renovación'];
 
 interface Props {
   open: boolean;
@@ -32,21 +35,31 @@ interface PreviewData {
 export function ExportXlsxModal({ open, onClose }: Props) {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+  const [fechaScoreDesde, setFechaScoreDesde] = useState('');
+  const [fechaScoreHasta, setFechaScoreHasta] = useState('');
+  const [search, setSearch] = useState('');
   const [empleador, setEmpleador] = useState('');
   const [estados, setEstados] = useState<string[]>([]);
+  const [tipoAlerta, setTipoAlerta] = useState<string[]>([]);
+  const [tipoCliente, setTipoCliente] = useState<string[]>([]);
+  const [acuerdoPrecios, setAcuerdoPrecios] = useState('');
+  const [montoMin, setMontoMin] = useState('');
+  const [montoMax, setMontoMax] = useState('');
+  const [scoreMin, setScoreMin] = useState('');
+  const [scoreMax, setScoreMax] = useState('');
   const [analista, setAnalista] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<PreviewData | null>(null);
 
-  const toggleEstado = (estado: string) => {
-    setEstados(prev =>
-      prev.includes(estado) ? prev.filter(e => e !== estado) : [...prev, estado]
-    );
+  const toggleArray = (val: string, setFn: React.Dispatch<React.SetStateAction<string[]>>) => {
+    setFn(prev => prev.includes(val) ? prev.filter(e => e !== val) : [...prev, val]);
   };
 
   const buildBody = (isPreview: boolean) => ({
-    fechaDesde, fechaHasta, empleador, estados, analista,
+    fechaDesde, fechaHasta, empleador, estados, analista, search,
+    fechaScoreDesde, fechaScoreHasta, montoMin, montoMax, scoreMin, scoreMax,
+    tipoCliente, acuerdoPrecios: acuerdoPrecios ? [acuerdoPrecios] : [], tipoAlerta,
     ...(isPreview ? { preview: true } : {}),
   });
 
@@ -113,22 +126,22 @@ export function ExportXlsxModal({ open, onClose }: Props) {
   if (!open) return null;
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 14px', borderRadius: 8, boxSizing: 'border-box',
+    width: '100%', padding: '12px 16px', borderRadius: 10, boxSizing: 'border-box',
     background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-    color: '#fff', fontSize: 15, outline: 'none',
+    color: '#fff', fontSize: 16, outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
-    display: 'block', marginBottom: 6,
-    fontSize: 9, fontWeight: 800, color: '#8f929d',
-    textTransform: 'uppercase', letterSpacing: '0.5px',
+    display: 'block', marginBottom: 8,
+    fontSize: 11, fontWeight: 700, color: '#a1a5b3',
+    textTransform: 'uppercase', letterSpacing: '0.8px',
   };
   const cellStyle: React.CSSProperties = {
-    padding: '8px 10px', fontSize: 12, color: '#fff',
+    padding: '10px 12px', fontSize: 13, color: '#fff',
     borderBottom: '1px solid rgba(255,255,255,0.02)', whiteSpace: 'nowrap',
     overflow: 'hidden', textOverflow: 'ellipsis',
   };
   const headStyle: React.CSSProperties = {
-    padding: '8px 10px', fontSize: 9, fontWeight: 800, color: '#8f929d',
+    padding: '10px 12px', fontSize: 11, fontWeight: 800, color: '#8f929d',
     textTransform: 'uppercase', letterSpacing: '0.5px',
     borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap',
   };
@@ -146,10 +159,10 @@ export function ExportXlsxModal({ open, onClose }: Props) {
     >
       <div style={{
         background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)',
-        borderRadius: 12, padding: '28px 24px',
-        width: preview ? 1100 : 360, maxWidth: '97vw',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.8)', margin: 'auto',
-        display: 'flex', flexDirection: 'column', gap: 20,
+        borderRadius: 16, padding: '36px 32px',
+        width: preview ? 1200 : 960, maxWidth: '97vw',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.8)', margin: 'auto',
+        display: 'flex', flexDirection: 'column', gap: 24,
         transition: 'width 0.2s',
       }}>
 
@@ -163,12 +176,12 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               <ArrowLeft size={18} />
             </button>
           )}
-          <Download size={18} style={{ color: '#fff' }} />
-          <span style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
-            {preview ? `Vista previa — ${preview.total} registros` : 'Exportar XLSX'}
+          <Download size={24} style={{ color: '#fff' }} />
+          <span style={{ color: '#fff', fontWeight: 800, fontSize: 20 }}>
+            {preview ? `Vista previa — ${preview.total} registros` : 'Exportar XLSX Avanzado'}
           </span>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8f929d', marginLeft: 'auto' }}>
-            <X size={18} />
+            <X size={24} />
           </button>
         </div>
 
@@ -242,58 +255,129 @@ export function ExportXlsxModal({ open, onClose }: Props) {
         ) : (
           /* ── PASO 1: Filtros ── */
           <>
-            <div>
-              <label style={labelStyle}>Fecha desde</label>
-              <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} style={inputStyle} />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Fecha hasta</label>
-              <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={inputStyle} />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Empleador (opcional)</label>
-              <input
-                type="text"
-                value={empleador}
-                onChange={e => setEmpleador(e.target.value)}
-                placeholder="Dejar vacío para todos"
-                style={inputStyle}
-              />
-            </div>
-
-            <div>
-              <label style={labelStyle}>Estados (opcional)</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {ESTADOS.map(est => {
-                  const isActive = estados.includes(est);
-                  return (
-                    <span
-                      key={est}
-                      onClick={() => toggleEstado(est)}
-                      style={{
-                        padding: '6px 10px', borderRadius: '8px',
-                        fontSize: '11px', fontWeight: 700, cursor: 'pointer',
-                        background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
-                        color: isActive ? '#10b981' : '#8f929d',
-                        border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
-                        transition: 'all 0.2s', whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {est}
-                    </span>
-                  );
-                })}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px 32px' }}>
+              <div>
+                <label style={labelStyle}>Búsqueda General</label>
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nombre, CUIL, etc." style={inputStyle} />
               </div>
-            </div>
+              
+              <div>
+                <label style={labelStyle}>Analista</label>
+                <div style={{ transform: 'scale(1.15)', transformOrigin: 'top left', width: '87%' }}>
+                  <CustomSelect
+                    value={analista}
+                    onChange={(val) => setAnalista(String(val))}
+                    options={[{ value: '', label: 'Todos' }, ...ANALISTAS.map(a => ({ value: a, label: a }))]}
+                    width="100%"
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label style={labelStyle}>Analista (opcional)</label>
-              <select value={analista} onChange={e => setAnalista(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-                <option value="">Todos los analistas</option>
-                {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Monto Mín</label>
+                  <input type="number" value={montoMin} onChange={e => setMontoMin(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Monto Máx</label>
+                  <input type="number" value={montoMax} onChange={e => setMontoMax(e.target.value)} style={inputStyle} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Fecha Desde</label>
+                  <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Fecha Hasta</label>
+                  <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} style={inputStyle} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Score Mín</label>
+                  <input type="number" value={scoreMin} onChange={e => setScoreMin(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Score Máx</label>
+                  <input type="number" value={scoreMax} onChange={e => setScoreMax(e.target.value)} style={inputStyle} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Fecha Score Desde</label>
+                  <input type="date" value={fechaScoreDesde} onChange={e => setFechaScoreDesde(e.target.value)} style={inputStyle} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Fecha Score Hasta</label>
+                  <input type="date" value={fechaScoreHasta} onChange={e => setFechaScoreHasta(e.target.value)} style={inputStyle} />
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Tipo de Cliente</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {CLIENTE_OPCIONES.map(tc => {
+                    const isActive = tipoCliente.includes(tc);
+                    return (
+                      <span key={tc} onClick={() => toggleArray(tc, setTipoCliente)}
+                        style={{
+                          padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                          background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
+                          color: isActive ? '#10b981' : '#8f929d',
+                          border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
+                          transition: 'all 0.2s', whiteSpace: 'nowrap',
+                        }}>{tc}</span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Acuerdo de Precios</label>
+                <input type="text" value={acuerdoPrecios} onChange={e => setAcuerdoPrecios(e.target.value)} placeholder="Ej. Comercial, Convenio..." style={inputStyle} />
+              </div>
+
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelStyle}>Estados</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {ESTADOS.map(est => {
+                    const isActive = estados.includes(est);
+                    return (
+                      <span key={est} onClick={() => toggleArray(est, setEstados)}
+                        style={{
+                          padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                          background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
+                          color: isActive ? '#10b981' : '#8f929d',
+                          border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
+                          transition: 'all 0.2s', whiteSpace: 'nowrap',
+                        }}>{est}</span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelStyle}>Tipo de Alerta</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {ALERTAS_OPCIONES.map(al => {
+                    const isActive = tipoAlerta.includes(al);
+                    return (
+                      <span key={al} onClick={() => toggleArray(al, setTipoAlerta)}
+                        style={{
+                          padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                          background: isActive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.02)',
+                          color: isActive ? '#f87171' : '#8f929d',
+                          border: `1px solid ${isActive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.06)'}`,
+                          transition: 'all 0.2s', whiteSpace: 'nowrap',
+                        }}>{al}</span>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: 0 }}>{error}</p>}
@@ -302,16 +386,16 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               onClick={handlePreview}
               disabled={loading}
               style={{
-                marginTop: 4, width: '100%', padding: '10px',
+                marginTop: 8, width: '100%', padding: '16px',
                 background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)',
-                borderRadius: 8, fontWeight: 700, fontSize: 15,
+                borderRadius: 12, fontWeight: 800, fontSize: 18,
                 cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
                 opacity: loading ? 0.6 : 1,
               }}
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
-              {loading ? 'Cargando...' : 'Vista previa'}
+              {loading ? <Loader2 size={20} className="animate-spin" /> : <FileSpreadsheet size={20} />}
+              {loading ? 'Consultando Registros...' : 'Vista previa de Exportación'}
             </button>
           </>
         )}

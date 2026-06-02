@@ -23,31 +23,49 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { fechaDesde, fechaHasta, empleador, estados, analista, preview } = await req.json() as {
+  const { fechaDesde, fechaHasta, empleador, estados, analista, preview, search, montoMin, montoMax, fechaScoreDesde, fechaScoreHasta, scoreMin, scoreMax, tipoCliente, acuerdoPrecios, tipoAlerta } = await req.json() as {
     fechaDesde?: string;
     fechaHasta?: string;
     empleador?: string;
     estados?: string[];
     analista?: string;
     preview?: boolean;
+    search?: string;
+    montoMin?: string;
+    montoMax?: string;
+    fechaScoreDesde?: string;
+    fechaScoreHasta?: string;
+    scoreMin?: string;
+    scoreMax?: string;
+    tipoCliente?: string[];
+    acuerdoPrecios?: string[];
+    tipoAlerta?: string[];
   };
 
   const buildQuery = () => {
     let q = supabase
       .from('registros')
-      .select('nombre,cuil,analista,estado,monto,fecha,puntaje,es_re,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,comentarios')
+      .select('nombre,cuil,analista,estado,monto,fecha,puntaje,es_re,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,comentarios,fecha_score,created_at')
       .order('fecha', { ascending: false });
     if (fechaDesde) q = q.gte('fecha', fechaDesde);
     if (fechaHasta) q = q.lte('fecha', fechaHasta);
     if (empleador?.trim()) q = q.ilike('empleador', `%${empleador.trim()}%`);
     if (estados && estados.length > 0) q = q.in('estado', estados);
     if (analista?.trim()) q = q.eq('analista', analista.trim());
+    if (montoMin) q = q.gte('monto', montoMin);
+    if (montoMax) q = q.lte('monto', montoMax);
+    if (fechaScoreDesde) q = q.gte('fecha_score', fechaScoreDesde);
+    if (fechaScoreHasta) q = q.lte('fecha_score', fechaScoreHasta);
+    if (scoreMin) q = q.gte('puntaje', scoreMin);
+    if (scoreMax) q = q.lte('puntaje', scoreMax);
+    if (tipoCliente && tipoCliente.length > 0) q = q.in('tipo_cliente', tipoCliente);
+    if (acuerdoPrecios && acuerdoPrecios.length > 0) q = q.in('acuerdo_precios', acuerdoPrecios);
     return q;
   };
 
   const PAGE = 1000;
   const SAFETY_LIMIT = 100000;
-  const all: Record<string, unknown>[] = [];
+  let all: Record<string, unknown>[] = [];
   let from = 0;
   while (from < SAFETY_LIMIT) {
     const { data: chunk, error } = await buildQuery().range(from, from + PAGE - 1);
@@ -56,6 +74,37 @@ export async function POST(req: NextRequest) {
     all.push(...chunk);
     if (chunk.length < PAGE) break;
     from += PAGE;
+  }
+
+  // Memory filters (Search & Alertas)
+  if (search || (tipoAlerta && tipoAlerta.length > 0)) {
+    const s = search ? search.toLowerCase() : '';
+    let alertasConfig: any[] = [];
+    if (tipoAlerta && tipoAlerta.length > 0) {
+       const { data } = await supabase.from('alertas_config').select('*');
+       if (data) alertasConfig = data;
+    }
+    const nowTime = new Date().getTime();
+
+    all = all.filter(r => {
+      // General Search
+      if (s) {
+        const text = `${r.nombre || ''}|${r.cuil || ''}|${r.analista || ''}|${r.empleador || ''}|${r.estado || ''}|${r.localidad || ''}|${r.dependencia || ''}|${r.comentarios || ''}`.toLowerCase();
+        if (!text.includes(s)) return false;
+      }
+      
+      // Tipo Alerta
+      if (tipoAlerta && tipoAlerta.length > 0 && alertasConfig.length > 0) {
+        const config = alertasConfig.find(a => a.estado.toLowerCase() === String(r.estado || '').toLowerCase());
+        if (!config || !tipoAlerta.includes(config.nombre)) return false;
+        const dateStr = (r.fecha || r.created_at) as string;
+        if (!dateStr) return false;
+        const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff < config.dias) return false;
+      }
+
+      return true;
+    });
   }
 
   if (preview) {

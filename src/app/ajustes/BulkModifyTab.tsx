@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -2207,6 +2207,40 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     setStep('confirm');
   }, [filtros]);
 
+  const [undoState, setUndoState] = useState<{ id: string; updates: Record<string, unknown> }[] | null>(null);
+  const [undoing, setUndoing] = useState(false);
+
+  const handleUndo = async () => {
+    if (!undoState) return;
+    setUndoing(true);
+    
+    // Group updates to minimize Supabase calls
+    const groups: Record<string, { updates: Record<string, unknown>, ids: string[] }> = {};
+    for (const item of undoState) {
+       const key = JSON.stringify(item.updates);
+       if (!groups[key]) groups[key] = { updates: item.updates, ids: [] };
+       groups[key].ids.push(item.id);
+    }
+
+    let restored = 0;
+    const BATCH_SIZE = 500;
+    for (const group of Object.values(groups)) {
+       for (let i = 0; i < group.ids.length; i += BATCH_SIZE) {
+          const batch = group.ids.slice(i, i + BATCH_SIZE);
+          const { error } = await supabase.from('registros').update(group.updates).in('id', batch);
+          if (!error) restored += batch.length;
+       }
+    }
+
+    setUndoing(false);
+    setUndoState(null);
+    setUpdatedCount(0);
+    refresh(true);
+    pushBulkRefresh();
+    setToast({ message: `Se restauraron ${restored} registros a su estado anterior.`, type: 'success' });
+    setStep('filter');
+  };
+
   const handleUpdate = async () => {
     setUpdating(true);
     let updated = 0;
@@ -2233,6 +2267,18 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       setUpdating(false);
       return;
     }
+
+    // -- Undo Backup --
+    const keysToBackup = Object.keys(updates) as (keyof Registro)[];
+    const backup = Array.from(previewIds).map(id => {
+       const oldReg = registros.find(r => r.id === id);
+       const oldUpdates: Record<string, unknown> = {};
+       keysToBackup.forEach(k => {
+          oldUpdates[k] = oldReg ? (oldReg[k] ?? null) : null;
+       });
+       return { id, updates: oldUpdates };
+    });
+    setUndoState(backup);
 
     // Usar update masivo con .in() en lugar de uno por uno
     const idArray = Array.from(previewIds);
@@ -2303,15 +2349,15 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         width: '100%',
         minHeight: mode === 'excel' ? 'auto' : 'calc(100vh - 200px)'
       }}>
-        {mode !== 'excel' && (
+        {mode === 'corrector' && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              {mode === 'bulk' ? <Users size={20} style={{ color: '#888' }} /> : <ShieldCheck size={20} style={{ color: '#fbbf24' }} />}
-              {mode === 'bulk' ? 'Calif. x SCORE' : 'Corrector'}
+              <ShieldCheck size={20} style={{ color: '#fbbf24' }} />
+              Corrector
             </h3>
             <p style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>
-              {mode === 'bulk' ? 'Filtra registros por cualquier condición y actualiza campos masivamente' : 'Detecta y corrige variantes de nombres para unificar la base'}
+              Detecta y corrige variantes de nombres para unificar la base
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -2369,11 +2415,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <button
               onClick={resetAll}
               style={{
-                background: 'transparent', border: '1px solid rgba(255,255,255,0.08)',
-                color: '#666', borderRadius: '6px', padding: '6px 14px',
+                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                color: '#888', borderRadius: '6px', padding: '6px 12px',
                 fontSize: '10px', fontWeight: 800, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '6px',
-                textTransform: 'uppercase',
               }}
             >
               <X size={12} /> Resetear
@@ -3073,8 +3117,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         />
       )}
 
-        {/* STEP 1: FILTROS */}
-        {(mode === 'all' || mode === 'bulk') && step === 'filter' && (
+        {/* STEP 1: FILTROS (General / Legacy) */}
+        {mode === 'all' && step === 'filter' && (
           <>
             {/* Resumen de filtros activos */}
             {(filtros.estados.length > 0 || filtros.analistas.length > 0 || filtros.scoreMin || filtros.scoreMax || filtros.acuerdoPrecios.length > 0 || filtros.fechaDesde || filtros.fechaHasta) && (
@@ -3379,8 +3423,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           </>
         )}
 
-        {/* STEP 2: CONFIRMAR - Seleccionar campos a modificar */}
-        {(mode === 'all' || mode === 'bulk') && step === 'confirm' && (
+        {/* STEP 2: CONFIRMAR (General / Legacy) */}
+        {mode === 'all' && step === 'confirm' && (
           <>
             <div style={{
               padding: '16px 20px', background: 'rgba(250,204,21,0.06)',
@@ -3506,8 +3550,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           </>
         )}
 
-        {/* STEP 3: DONE */}
-        {(mode === 'all' || mode === 'bulk') && step === 'done' && (
+        {/* STEP 3: DONE (General / Legacy) */}
+        {mode === 'all' && step === 'done' && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px' }} />
             <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: 8 }}>
@@ -3528,6 +3572,233 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </button>
           </div>
         )}
+
+        {/* --- NUEVO FLUJO MINIMALISTA: CALIF x SCORE (mode === 'bulk') --- */}
+        {mode === 'bulk' && step === 'filter' && (
+          <div style={{ maxWidth: 640, margin: '40px auto' }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '40px 32px', marginBottom: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+               <h4 style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
+                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#00d4ff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>1</span>
+                 Definir Rango de Score
+               </h4>
+               
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
+                 <div>
+                   <label style={{ display: 'block', fontSize: '10px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>SCORE MÍNIMO</label>
+                   <input className="form-input" type="number" placeholder="Ej: 0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))} style={{ fontSize: 20, padding: '16px', background: '#0a0a0a', textAlign: 'center', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, outline: 'none', width: '100%' }} />
+                 </div>
+                 <div>
+                   <label style={{ display: 'block', fontSize: '10px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>SCORE MÁXIMO</label>
+                   <input className="form-input" type="number" placeholder="Ej: 499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))} style={{ fontSize: 20, padding: '16px', background: '#0a0a0a', textAlign: 'center', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, outline: 'none', width: '100%' }} />
+                 </div>
+               </div>
+
+               <div style={{ marginTop: 24, paddingBottom: 24 }}>
+                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ background: 'transparent', border: 'none', color: '#00d4ff', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+                   {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                   Filtros Avanzados (Opcional)
+                 </button>
+               </div>
+               
+               {showAdvancedFilters && (
+                  <div style={{ marginTop: 8, marginBottom: 32, paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', textAlign: 'left' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Estado</label>
+                        <select className="form-select" value={filtros.estados[0] || ''} onChange={e => setFiltros(p => ({ ...p, estados: e.target.value ? [e.target.value] : [] }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                          <option value="">Todos</option>
+                          {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Analista</label>
+                        <select className="form-select" value={filtros.analistas[0] || ''} onChange={e => setFiltros(p => ({ ...p, analistas: e.target.value ? [e.target.value] : [] }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                          <option value="">Todos</option>
+                          {allAnalistas.map(a => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Fecha Desde</label>
+                        <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Fecha Hasta</label>
+                        <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                      </div>
+                    </div>
+                  </div>
+               )}
+
+               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                 <button
+                   onClick={previewRecords}
+                   disabled={!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta}
+                   style={{
+                     background: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? '#222' : '#fff',
+                     color: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? '#555' : '#000',
+                     border: 'none', fontWeight: 900, padding: '16px 48px', borderRadius: '30px',
+                     fontSize: 12, letterSpacing: '0.5px', cursor: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'not-allowed' : 'pointer',
+                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                     boxShadow: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'none' : '0 4px 14px rgba(255,255,255,0.2)',
+                   }}
+                 >
+                   BUSCAR REGISTROS
+                 </button>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {mode === 'bulk' && step === 'confirm' && (
+          <div style={{ maxWidth: 720, margin: '40px auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+               <h2 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-1px', color: '#fff', marginBottom: 8 }}>{previewCount}</h2>
+               <p style={{ color: '#888', fontSize: 14, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Registros Encontrados</p>
+               <div style={{ display: 'inline-block', marginTop: 12, padding: '4px 12px', background: 'rgba(0, 212, 255, 0.1)', color: '#00d4ff', borderRadius: 20, fontSize: 11, fontWeight: 800 }}>
+                 Score: {filtros.scoreMin || '0'} a {filtros.scoreMax || '∞'}
+               </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '40px 32px', marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+               <h4 style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
+                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#34d399', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>2</span>
+                 Asignar Calificación
+               </h4>
+               
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                  {ACUERDOS_OPCIONES.map(a => {
+                    const isSelected = campos.acuerdo_precios === a;
+                    return (
+                      <button key={a} onClick={() => setCampos(p => ({ ...p, acuerdo_precios: a }))} style={{
+                         padding: '24px 16px', borderRadius: 16, border: '1px solid',
+                         background: isSelected ? '#fff' : 'rgba(255,255,255,0.02)',
+                         color: isSelected ? '#000' : '#888',
+                         borderColor: isSelected ? '#fff' : 'rgba(255,255,255,0.06)',
+                         fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
+                         textAlign: 'center', outline: 'none'
+                      }}>
+                        {a}
+                      </button>
+                    );
+                  })}
+               </div>
+
+               <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+                   {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                   Otras Modificaciones Masivas (Avanzado)
+                 </button>
+                 
+                 {showAdvancedFilters && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: 32, textAlign: 'left' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Estado</label>
+                          <select className="form-select" value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                            <option value="">— No modificar —</option>
+                            <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
+                            {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Analista</label>
+                          <select className="form-select" value={campos.analista} onChange={e => setCampos(p => ({ ...p, analista: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                            <option value="">— No modificar —</option>
+                            <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
+                            {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Tipo Cliente</label>
+                          <select className="form-select" value={campos.tipo_cliente} onChange={e => setCampos(p => ({ ...p, tipo_cliente: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                            <option value="">— No modificar —</option>
+                            <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
+                            {TIPO_CLIENTE_OPCIONES.map(t => <option key={t} value={t}>{t === 'Renovacion' ? 'Renovación' : t}</option>)}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Cuotas</label>
+                          <input className="form-input" placeholder="Ej: 12, 24, 36" value={campos.cuotas} onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                        </div>
+
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Empleador</label>
+                          <input className="form-input" placeholder="Nombre del empleador" value={campos.empleador} onChange={e => setCampos(p => ({ ...p, empleador: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                        </div>
+                    </div>
+                 )}
+               </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+              <button onClick={() => setStep('filter')} style={{ background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.1)', padding: '16px 32px', borderRadius: '30px', fontSize: 12, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
+                ATRÁS
+              </button>
+              <button
+                onClick={handleUpdate}
+                disabled={updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)}
+                style={{
+                  background: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#222' : '#34d399',
+                  color: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#555' : '#000',
+                  border: 'none', fontWeight: 900, padding: '16px 40px', borderRadius: '30px',
+                  fontSize: 12, letterSpacing: '0.5px', cursor: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)',
+                }}
+              >
+                {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {updating ? 'APLICANDO...' : (campos.acuerdo_precios ? 'APLICAR CALIFICACIÓN' : 'APLICAR MODIFICACIONES')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {mode === 'bulk' && step === 'done' && (
+          <div style={{ textAlign: 'center', padding: '64px 20px', maxWidth: 600, margin: '0 auto' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+              <CheckCircle size={40} style={{ color: '#34d399' }} />
+            </div>
+            <h3 style={{ fontSize: '28px', fontWeight: 900, color: '#fff', marginBottom: 12, letterSpacing: '-0.5px' }}>
+              ¡Actualización Exitosa!
+            </h3>
+            <p style={{ fontSize: '15px', color: '#888', marginBottom: 40, lineHeight: 1.5 }}>
+              Se asignó la calificación exitosamente a <strong style={{ color: '#fff' }}>{updatedCount}</strong> registros.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+              {undoState && (
+                <button
+                  onClick={handleUndo}
+                  disabled={undoing}
+                  style={{
+                    background: 'transparent', color: '#ff3366', border: '1px solid rgba(255,51,102,0.3)',
+                    fontWeight: 900, padding: '16px 32px', borderRadius: '30px',
+                    fontSize: '12px', cursor: undoing ? 'not-allowed' : 'pointer', letterSpacing: '0.5px',
+                    display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
+                    opacity: undoing ? 0.6 : 1,
+                  }}
+                >
+                  {undoing ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
+                  {undoing ? 'RESTAURANDO...' : 'DESHACER ÚLTIMA ACCIÓN'}
+                </button>
+              )}
+              <button
+                onClick={resetAll}
+                style={{
+                  background: '#fff', color: '#000', border: 'none',
+                  fontWeight: 900, padding: '16px 40px', borderRadius: '30px',
+                  fontSize: '12px', cursor: 'pointer', letterSpacing: '0.5px',
+                  boxShadow: '0 4px 14px rgba(255,255,255,0.2)',
+                }}
+              >
+                NUEVA ASIGNACIÓN
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* MODAL DE REGISTROS DEL GRUPO */}

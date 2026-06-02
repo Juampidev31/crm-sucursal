@@ -1029,192 +1029,147 @@ export default function AjustesPage() {
             </div>
           )}
           {activeTab === 'datos-masivos' && datosSubTab === 'duplicados' && (
-            <div>
-              <header className="dashboard-header" style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: 4, height: 18, borderRadius: 2, background: 'var(--azul)' }} />
-                  <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Detección de Duplicados</h2>
+            <div style={{ width: '100%', margin: '0 auto', padding: '20px 0 60px' }}>
+              <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <Copy size={28} />
                 </div>
-                {duplicados.length > 0 && (
-                  <div style={{ fontSize: '12px', color: '#999', fontWeight: 700 }}>
-                    {duplicados.length} duplicados potenciales encontrados
-                  </div>
-                )}
-              </header>
+                <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Detección de Duplicados</h2>
+                <p style={{ color: '#888', fontSize: 13, marginTop: 8, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  {duplicados.length} Grupos Potenciales Encontrados
+                </p>
+              </div>
 
-              {/* Toolbar */}
-              <div className="toolbar-container" style={{ marginBottom: '24px', padding: '16px 20px', background: '#000', border: '1px solid var(--border-color)', borderRadius: 6 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '40px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      <ShieldCheck size={13} color="var(--azul)" />
-                      <span style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase' }}>Estados</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '4px 0', scrollbarWidth: 'none', flex: 1 }}>
+              {/* Minimalist Filters */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '24px', marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filtrar por Estados</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {allEstados.map(e => (
-                        <button key={e} onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)} style={chipStyle(selectedEstados.includes(e))}>
+                        <button key={e} onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)} style={{
+                          background: selectedEstados.includes(e) ? '#fff' : 'rgba(255,255,255,0.03)',
+                          color: selectedEstados.includes(e) ? '#000' : '#888',
+                          border: `1px solid ${selectedEstados.includes(e) ? '#fff' : 'rgba(255,255,255,0.08)'}`,
+                          padding: '6px 12px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                        }}>
                           {e}
                         </button>
                       ))}
                     </div>
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <User size={13} color="var(--azul)" />
-                      <span style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase' }}>Analistas</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filtrar por Analistas</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {allAnalistas.map(a => (
-                        <button key={a} onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)} style={chipStyle(selectedAnalistas.includes(a))}>
+                        <button key={a} onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)} style={{
+                          background: selectedAnalistas.includes(a) ? '#fff' : 'rgba(255,255,255,0.03)',
+                          color: selectedAnalistas.includes(a) ? '#000' : '#888',
+                          border: `1px solid ${selectedAnalistas.includes(a) ? '#fff' : 'rgba(255,255,255,0.08)'}`,
+                          padding: '6px 12px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                        }}>
                           {displayAnalista(a)}
                         </button>
                       ))}
                     </div>
                   </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Calendar size={13} color="var(--azul)" />
-                      <span style={{ fontSize: '10px', color: 'var(--gris)', fontWeight: 800, textTransform: 'uppercase' }}>Fecha</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <input 
-                        type="date" 
-                        className="form-input" 
-                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', fontSize: '11px', padding: '6px 10px', color: '#ccc' }}
-                        value={duplicadosFechaDesde} 
-                        onChange={e => setDuplicadosFechaDesde(e.target.value)} 
-                        title="Desde"
-                      />
-                      <span style={{ color: '#555', fontSize: '10px' }}>-</span>
-                      <input 
-                        type="date" 
-                        className="form-input" 
-                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', fontSize: '11px', padding: '6px 10px', color: '#ccc' }}
-                        value={duplicadosFechaHasta} 
-                        onChange={e => setDuplicadosFechaHasta(e.target.value)} 
-                        title="Hasta"
-                      />
+                  <div>
+                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Rango de Fecha</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input type="date" value={duplicadosFechaDesde} onChange={e => setDuplicadosFechaDesde(e.target.value)} style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', padding: '10px', borderRadius: 8, fontSize: 11, outline: 'none' }} />
+                      <span style={{ color: '#444' }}>-</span>
+                      <input type="date" value={duplicadosFechaHasta} onChange={e => setDuplicadosFechaHasta(e.target.value)} style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', padding: '10px', borderRadius: 8, fontSize: 11, outline: 'none' }} />
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Duplicados List */}
               {duplicados.length === 0 ? (
-                <div className="empty-state">
-                  <CheckCircle size={40} color="var(--verde)" style={{ opacity: 0.3, marginBottom: '12px' }} />
-                  <p style={{ color: 'var(--verde)', fontWeight: 800, fontSize: '14px' }}>POOL LIMPIO</p>
-                </div>
+                 <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                    <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px', opacity: 0.8 }} />
+                    <p style={{ color: '#34d399', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Pool Limpio</p>
+                    <p style={{ color: '#666', fontSize: 12, marginTop: 8 }}>No se encontraron registros duplicados con estos filtros.</p>
+                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {duplicados.map(grupo => (
-                    <div key={grupo.key} className="data-card" style={{ borderLeft: 'none' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(239,68,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <AlertTriangle size={15} color="#ff3366" />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
-                            {grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre?.toUpperCase()}
-                          </div>
-                          <div style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase' }}>
-                            {grupo.registros.length} duplicados • filtrado por {grupo.tipo}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ overflowX: 'auto' }}>
-                        <table className="data-table" style={{ tableLayout: 'fixed' }}>
-                          <thead>
-                            <tr>
-                              <th style={{ textAlign: 'left', width: '35%', fontSize: '10px', color: '#555' }}>Cliente / Identificación</th>
-                              <th style={{ textAlign: 'left', width: '15%', fontSize: '10px', color: '#555' }}>Analista</th>
-                              <th style={{ textAlign: 'left', width: '20%', fontSize: '10px', color: '#555' }}>Estado</th>
-                              <th style={{ textAlign: 'right', width: '15%', fontSize: '10px', color: '#555' }}>Monto</th>
-                              <th style={{ textAlign: 'center', width: '15%', fontSize: '10px', color: '#555' }}>Fecha</th>
-                            </tr>
-                          </thead>
-                          <tbody>
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: 24 }}>
+                   {duplicados.map(grupo => (
+                      <div key={grupo.key} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                            <div>
+                               <h4 style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 4 }}>{grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre?.toUpperCase()}</h4>
+                               <div style={{ fontSize: 10, color: '#888', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                 Coincidencia por {grupo.tipo}
+                               </div>
+                            </div>
+                            <div style={{ background: 'rgba(255,51,102,0.1)', color: '#ff3366', fontSize: 11, fontWeight: 900, padding: '6px 12px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <AlertTriangle size={12} /> {grupo.registros.length} Registros
+                            </div>
+                         </div>
+                         
+                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
                             {grupo.registros.map((r: any) => (
-                              <tr key={r.id}>
-                                <td style={{ padding: '8px 16px', overflow: 'hidden' }}>
-                                  <div style={{ fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{r.nombre}</div>
-                                  <div style={{ fontSize: '10px', color: '#666', fontFamily: 'monospace', marginTop: '2px' }}>{r.cuil}</div>
-                                </td>
-                                <td style={{ color: 'var(--gris)', fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{displayAnalista(r.analista)}</td>
-                                <td style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                                  <span className="status-badge" style={{ fontSize: '9px', padding: '2px 8px' }}>{r.estado}</span>
-                                </td>
-                                <td style={{ textAlign: 'right', fontWeight: 800, color: '#fff', whiteSpace: 'nowrap' }}>{formatCurrency(r.monto)}</td>
-                                <td style={{ textAlign: 'center', color: '#888', fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
-                              </tr>
+                               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, transition: 'all 0.2s' }}>
+                                  <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+                                    <div style={{ color: '#eee', fontSize: 13, fontWeight: 700, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.nombre}</div>
+                                    <div style={{ color: '#666', fontSize: 11, fontWeight: 500, fontFamily: 'monospace' }}>{r.cuil} • {displayAnalista(r.analista)}</div>
+                                  </div>
+                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                    <div style={{ color: '#fff', fontSize: 14, fontWeight: 900, marginBottom: 4 }}>{formatCurrency(r.monto)}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                                      <span style={{ color: '#34d399', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{r.estado}</span>
+                                      <span style={{ color: '#555', fontSize: 10 }}>{r.fecha ? formatDate(r.fecha) : '—'}</span>
+                                    </div>
+                                  </div>
+                               </div>
                             ))}
-                          </tbody>
-                        </table>
+                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                   ))}
+                 </div>
               )}
 
-              {/* ── Variantes de Empleador ─────────────────────────────────── */}
-              <div style={{ marginTop: '32px' }}>
-                <header className="dashboard-header" style={{ marginBottom: 24 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: 4, height: 18, borderRadius: 2, background: '#fbbf24' }} />
-                    <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Variantes de Empleador</h2>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#999', fontWeight: 700 }}>
-                    {variantesEmpleador.length > 0
-                      ? `${variantesEmpleador.length} empleadores con variantes`
-                      : 'Sin variantes detectadas'}
-                  </div>
-                </header>
+              {/* Variantes de Empleador */}
+              <div style={{ marginTop: 80, textAlign: 'center', marginBottom: 40 }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(251,191,36,0.1)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <Users size={28} />
+                </div>
+                <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Variantes de Empleador</h2>
+                <p style={{ color: '#888', fontSize: 13, marginTop: 8, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  {variantesEmpleador.length} Grupos con Discrepancias
+                </p>
+              </div>
 
-                {variantesEmpleador.length === 0 ? (
-                  <div className="empty-state" style={{ padding: '40px 20px' }}>
-                    <CheckCircle size={40} color="var(--verde)" style={{ opacity: 0.3, marginBottom: '12px' }} />
-                    <p style={{ color: 'var(--verde)', fontWeight: 800, fontSize: '14px' }}>TODOS LOS EMPLEADORES ESTÁN NORMALIZADOS</p>
-                    <p style={{ color: '#666', fontSize: '12px', marginTop: '8px' }}>No se encontraron empleadores con múltiples formas de escritura.</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {variantesEmpleador.map((v, i) => (
-                      <div key={i} className="data-card" style={{ borderLeft: 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
-                          <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(251,191,36,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <AlertTriangle size={15} color="#fbbf24" />
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
-                              {v.normalizado}
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#444', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>
-                              {v.variantes.length} variantes • {v.cantidad} registros • {formatCurrency(v.monto)}
-                            </div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                              {v.variantes.map((varName, j) => (
-                                <span key={j} style={{
-                                  padding: '4px 10px',
-                                  borderRadius: '4px',
-                                  fontSize: '11px',
-                                  background: 'rgba(255,255,255,0.04)',
-                                  border: '1px solid rgba(255,255,255,0.06)',
-                                  color: '#888',
-                                  fontWeight: 600,
-                                }}>
-                                  {varName}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
+              {variantesEmpleador.length === 0 ? (
+                 <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                    <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px', opacity: 0.8 }} />
+                    <p style={{ color: '#34d399', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Completamente Normalizado</p>
+                    <p style={{ color: '#666', fontSize: 12, marginTop: 8 }}>No se encontraron empleadores con múltiples formas de escritura.</p>
+                 </div>
+              ) : (
+                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 16 }}>
+                   {variantesEmpleador.map((v, i) => (
+                      <div key={i} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                           <div>
+                              <h4 style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', marginBottom: 6 }}>{v.normalizado}</h4>
+                              <p style={{ fontSize: 11, color: '#888', fontWeight: 600 }}>{v.cantidad} Registros Afectados • {formatCurrency(v.monto)}</p>
+                           </div>
+                           <div style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', fontSize: 11, fontWeight: 900, padding: '6px 12px', borderRadius: 20 }}>
+                             {v.variantes.length} Variantes
+                           </div>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                           {v.variantes.map((varName, j) => (
+                              <span key={j} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '8px 14px', color: '#ccc', fontSize: 12, fontWeight: 600 }}>
+                                {varName}
+                              </span>
+                           ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                   ))}
+                 </div>
+              )}
             </div>
           )}
 
@@ -1259,16 +1214,6 @@ export default function AjustesPage() {
               return formatDateTime(iso);
             };
 
-            const extractNameFromDetails = (reg: any) => {
-              if (reg.nombre) return reg.nombre;
-              if (reg.accion === 'Creación' && reg.valor_nuevo) return reg.valor_nuevo.split(' | ')[0];
-              if (reg.accion === 'Eliminación' && reg.valor_anterior) return reg.valor_anterior.split(' | ')[0];
-              if (reg.accion.includes('Recordatorio') && (reg.valor_nuevo || reg.valor_anterior)) {
-                return (reg.valor_nuevo || reg.valor_anterior).split(' | ')[0];
-              }
-              return null;
-            };
-
             const accionIcon = (accion: string) => {
               switch (accion) {
                 case 'Creación': return <Plus size={12} />;
@@ -1278,11 +1223,28 @@ export default function AjustesPage() {
                 default: return <Edit3 size={12} />;
               }
             };
+
             const accionColor = (accion: string) => {
               if (accion === 'Creación') return { bg: 'rgba(34,197,94,0.08)', color: '#22c55e', border: 'rgba(34,197,94,0.15)' };
               if (accion === 'Eliminación') return { bg: 'rgba(239,68,68,0.08)', color: '#ff3366', border: 'rgba(239,68,68,0.15)' };
-              if (accion.includes('Recordatorio')) return { bg: 'rgba(168,85,247,0.08)', color: '#a855f7', border: 'rgba(168,85,247,0.15)' };
+              if (accion?.includes('Recordatorio')) return { bg: 'rgba(168,85,247,0.08)', color: '#a855f7', border: 'rgba(168,85,247,0.15)' };
               return { bg: 'rgba(251,191,36,0.08)', color: '#fbbf24', border: 'rgba(251,191,36,0.15)' };
+            };
+
+            const renderDetalle = (reg: any) => {
+              if (reg.accion === 'Creación') return <span style={{ color: '#888' }}>Nuevo registro</span>;
+              if (reg.accion === 'Eliminación') return <span style={{ color: '#888' }}>Registro eliminado</span>;
+              if (reg.valor_anterior || reg.valor_nuevo) {
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', flexWrap: 'wrap' }}>
+                    {reg.campo_modificado && <span style={{ color: '#666', fontWeight: 600 }}>{reg.campo_modificado}:</span>}
+                    {reg.valor_anterior && <span style={{ color: '#ff3366', textDecoration: 'line-through', opacity: 0.8 }}>{reg.valor_anterior}</span>}
+                    {reg.valor_anterior && reg.valor_nuevo && <ArrowRight size={10} color="#666" />}
+                    {reg.valor_nuevo && <span style={{ color: '#22c55e' }}>{reg.valor_nuevo}</span>}
+                  </div>
+                );
+              }
+              return <span style={{ color: '#888' }}>{reg.campo_modificado || '—'}</span>;
             };
 
             // — filtering —
@@ -1290,38 +1252,29 @@ export default function AjustesPage() {
             const periodoMs: Record<string, number> = { 'hoy': 86400000, '7d': 604800000, '30d': 2592000000, 'todo': Infinity };
             const cutoff = now - (periodoMs[auditFilterPeriodo] || Infinity);
 
-            const allAcciones = [...new Set((auditoriaRegistros || []).map((r: any) => r.accion).filter(Boolean))];
+            const allAcciones = [...new Set((auditoriaRegistros || [])
+              .map((r: any) => r.accion)
+              .filter((a: any) => a && !['Favorito añadido', 'Favorito quitado'].includes(a))
+            )];
+            const allAuditAnalistas = [...new Set((auditoriaRegistros || []).map((r: any) => r.analista).filter(Boolean))];
 
             const filtered = (auditoriaRegistros || []).filter((reg: any) => {
+              if (['Favorito añadido', 'Favorito quitado'].includes(reg.accion)) return false;
               if (auditFilterAccion !== 'todas' && reg.accion !== auditFilterAccion) return false;
               if (auditFilterAnalista !== 'todos' && reg.analista !== auditFilterAnalista) return false;
               if (reg.fecha_hora && new Date(reg.fecha_hora).getTime() < cutoff) return false;
               if (auditSearch) {
                 const q = auditSearch.toLowerCase();
                 const hay = [reg.analista, reg.accion, reg.campo_modificado, reg.valor_nuevo, reg.valor_anterior, reg.id_registro, reg.nombre, reg.cuil]
-                  .filter(Boolean).some((v: string) => v.toLowerCase().includes(q));
+                  .filter(Boolean).some((v: string) => String(v).toLowerCase().includes(q));
                 if (!hay) return false;
               }
               return true;
             });
 
-            const allAuditAnalistas = [...new Set((auditoriaRegistros || []).map((r: any) => r.analista).filter(Boolean))];
-
             const totalPages = Math.max(1, Math.ceil(filtered.length / AUDIT_PAGE_SIZE));
             const safePage = Math.min(auditPage, totalPages);
             const paged = filtered.slice((safePage - 1) * AUDIT_PAGE_SIZE, safePage * AUDIT_PAGE_SIZE);
-
-            // — KPI stats (calculated from filtered data) —
-            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-            const todayCount = filtered.filter((r: any) => r.fecha_hora && new Date(r.fecha_hora) >= todayStart).length;
-            const creaciones = filtered.filter((r: any) => r.accion === 'Creación').length;
-            const ediciones = filtered.filter((r: any) => !['Creación', 'Eliminación'].includes(r.accion) && !r.accion?.includes('Recordatorio')).length;
-            const eliminaciones = filtered.filter((r: any) => r.accion === 'Eliminación').length;
-            const recordatorios = filtered.filter((r: any) => r.accion?.includes('Recordatorio')).length;
-
-            const analystCounts: Record<string, number> = {};
-            filtered.forEach((r: any) => { if (r.analista) analystCounts[r.analista] = (analystCounts[r.analista] || 0) + 1; });
-            const topAnalyst = Object.entries(analystCounts).sort((a, b) => b[1] - a[1])[0];
 
             // — CSV export —
             const exportCSV = () => {
@@ -1330,7 +1283,7 @@ export default function AjustesPage() {
                   r.fecha_hora || '', r.nombre || '', r.cuil || '', r.id_registro || '', r.analista || '', r.accion || '',
                   r.campo_modificado || '', r.valor_anterior || '', r.valor_nuevo || ''
                 ]);
-              const csv = [headers, ...rows].map(r => r.map((c: string) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+              const csv = [headers, ...rows].map(r => r.map((c: string) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
               const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
@@ -1346,10 +1299,10 @@ export default function AjustesPage() {
                     <div style={{ width: 4, height: 28, borderRadius: 2, background: '#fff' }} />
                     <div>
                       <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Log de Auditoría</h1>
-                      <p style={{ fontSize: '12px', color: '#555', marginTop: 2 }}>Registro completo de actividad del sistema en tiempo real</p>
+                      <p style={{ fontSize: '12px', color: '#555', marginTop: 2 }}>Registro de actividad del sistema</p>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 12 }}>
                     <button onClick={exportCSV} disabled={!filtered.length} style={{
                       display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6,
                       fontSize: '11px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.08)',
@@ -1371,123 +1324,62 @@ export default function AjustesPage() {
                   </div>
                 </header>
 
-                {/* KPI CARDS */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 20 }}>
-                  {[
-                    { label: 'TOTAL EVENTOS', value: filtered.length, icon: <BarChart3 size={14} />, accent: '#fff' },
-                    { label: 'HOY', value: todayCount, icon: <Calendar size={14} />, accent: '#22c55e' },
-                    { label: 'CREACIONES', value: creaciones, icon: <Plus size={14} />, accent: '#22c55e' },
-                    { label: 'EDICIONES', value: ediciones, icon: <Edit3 size={14} />, accent: '#fbbf24' },
-                    { label: 'ELIMINACIONES', value: eliminaciones, icon: <Trash2 size={14} />, accent: '#ff3366' },
-                    { label: 'RECORDATORIOS', value: recordatorios, icon: <Bell size={14} />, accent: '#a855f7' },
-                  ].map(kpi => (
-                    <div key={kpi.label} style={{
-                      background: '#111111', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
-                      padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10,
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '9px', fontWeight: 800, color: '#555', letterSpacing: '0.8px', textTransform: 'uppercase' }}>{kpi.label}</span>
-                        <span style={{ color: kpi.accent, opacity: 0.6 }}>{kpi.icon}</span>
-                      </div>
-                      <div style={{ fontSize: '22px', fontWeight: 900, color: kpi.accent, letterSpacing: '-1px' }}>{kpi.value}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* TOP ANALYST STRIP */}
-                {topAnalyst && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 18px', marginBottom: 20,
-                    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
-                  }}>
-                    <User size={13} color="#555" />
-                    <span style={{ fontSize: '11px', color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista más activo:</span>
-                    <span style={{ fontSize: '12px', fontWeight: 800, color: '#fff' }}>{topAnalyst[0]}</span>
-                    <span style={{ fontSize: '11px', color: '#555' }}>({topAnalyst[1]} eventos)</span>
-                    <div style={{ flex: 1 }} />
-                    <span style={{ fontSize: '10px', color: '#333' }}>{allAuditAnalistas.length} analistas registrados</span>
-                  </div>
-                )}
-
                 {/* FILTERS TOOLBAR */}
                 <div style={{
-                  background: '#111111', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6,
-                  padding: '16px 20px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-end',
+                  display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center',
+                  paddingBottom: 20, marginBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.04)'
                 }}>
-                  {/* Search */}
-                  <div style={{ flex: '1 1 220px', minWidth: 180 }}>
-                    <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Buscar</label>
-                    <div style={{ position: 'relative' }}>
-                      <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#444' }} />
-                      <input
-                        value={auditSearch} onChange={e => { setAuditSearch(e.target.value); setAuditPage(1); }}
-                        placeholder="Cliente, analista, acción..."
-                        style={{
-                          width: '100%', padding: '8px 10px 8px 32px', background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, color: '#ccc',
-                          fontSize: '12px', fontFamily: "'Outfit', sans-serif", outline: 'none',
-                        }}
-                      />
-                    </div>
+                  <div style={{ position: 'relative', flex: '1 1 200px' }}>
+                    <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+                    <input
+                      value={auditSearch} onChange={e => { setAuditSearch(e.target.value); setAuditPage(1); }}
+                      placeholder="Buscar cliente, analista o acción..."
+                      style={{
+                        width: '100%', padding: '8px 12px 8px 36px', background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#eaeaea',
+                        fontSize: '12px', outline: 'none', transition: 'all 0.2s'
+                      }}
+                      onFocus={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
+                      onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                    />
                   </div>
+                  
+                  <select
+                    value={auditFilterAccion} onChange={e => { setAuditFilterAccion(e.target.value); setAuditPage(1); }}
+                    style={{
+                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                      color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer',
+                      minWidth: 140
+                    }}
+                  >
+                    <option style={{ background: '#111', color: '#fff' }} value="todas">Todas las acciones</option>
+                    {allAcciones.map(a => <option style={{ background: '#111', color: '#fff' }} key={a} value={a}>{a}</option>)}
+                  </select>
 
-                  {/* Acción */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Acción</label>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {['todas', ...allAcciones].map(a => (
-                        <button key={a} onClick={() => { setAuditFilterAccion(a); setAuditPage(1); }} style={{
-                          padding: '5px 10px', borderRadius: 4, border: '1px solid',
-                          fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                          fontFamily: "'Outfit', sans-serif", whiteSpace: 'nowrap',
-                          borderColor: auditFilterAccion === a ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
-                          background: auditFilterAccion === a ? '#fff' : 'transparent',
-                          color: auditFilterAccion === a ? '#000' : '#666',
-                        }}>{a === 'todas' ? 'Todas' : a}</button>
-                      ))}
-                    </div>
-                  </div>
+                  <select
+                    value={auditFilterAnalista} onChange={e => { setAuditFilterAnalista(e.target.value); setAuditPage(1); }}
+                    style={{
+                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                      color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer',
+                      minWidth: 140
+                    }}
+                  >
+                    <option style={{ background: '#111', color: '#fff' }} value="todos">Todos los analistas</option>
+                    {allAuditAnalistas.map(a => <option style={{ background: '#111', color: '#fff' }} key={a} value={a}>{a}</option>)}
+                  </select>
 
-                  {/* Analista */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista</label>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {['todos', ...allAuditAnalistas].map(a => (
-                        <button key={a} onClick={() => { setAuditFilterAnalista(a); setAuditPage(1); }} style={{
-                          padding: '5px 10px', borderRadius: 4, border: '1px solid',
-                          fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                          fontFamily: "'Outfit', sans-serif", whiteSpace: 'nowrap',
-                          borderColor: auditFilterAnalista === a ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
-                          background: auditFilterAnalista === a ? '#fff' : 'transparent',
-                          color: auditFilterAnalista === a ? '#000' : '#666',
-                        }}>{a === 'todos' ? 'Todos' : a}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Período */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Período</label>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {[{ k: 'hoy', l: 'Hoy' }, { k: '7d', l: '7 días' }, { k: '30d', l: '30 días' }, { k: 'todo', l: 'Todo' }].map(p => (
-                        <button key={p.k} onClick={() => { setAuditFilterPeriodo(p.k); setAuditPage(1); }} style={{
-                          padding: '5px 10px', borderRadius: 4, border: '1px solid',
-                          fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                          fontFamily: "'Outfit', sans-serif",
-                          borderColor: auditFilterPeriodo === p.k ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.04)',
-                          background: auditFilterPeriodo === p.k ? '#fff' : 'transparent',
-                          color: auditFilterPeriodo === p.k ? '#000' : '#666',
-                        }}>{p.l}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Results Count */}
-                  <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'flex-end' }}>
-                    <span style={{ fontSize: '11px', color: '#444', fontWeight: 600 }}>
-                      {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
+                  <select
+                    value={auditFilterPeriodo} onChange={e => { setAuditFilterPeriodo(e.target.value); setAuditPage(1); }}
+                    style={{
+                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                      color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer',
+                      minWidth: 120
+                    }}
+                  >
+                    {[{ k: 'hoy', l: 'Hoy' }, { k: '7d', l: 'Últimos 7 días' }, { k: '30d', l: 'Últimos 30 días' }, { k: 'todo', l: 'Todo' }].map(p => (
+                      <option style={{ background: '#111', color: '#fff' }} key={p.k} value={p.k}>{p.l}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* DATA TABLE */}
@@ -1498,107 +1390,55 @@ export default function AjustesPage() {
                     <div className="empty-state" style={{ minHeight: 200 }}>
                       <Shield size={36} color="#333" style={{ marginBottom: 8 }} />
                       <p style={{ fontWeight: 800, fontSize: '13px', color: '#444' }}>{auditSearch || auditFilterAccion !== 'todas' || auditFilterAnalista !== 'todos' || auditFilterPeriodo !== 'todo' ? 'Sin resultados para los filtros aplicados' : 'No hay registros de auditoría'}</p>
-                      <p style={{ fontSize: '11px', color: '#333', marginTop: 4 }}>Las acciones del sistema aparecerán aquí automáticamente.</p>
                     </div>
                   ) : (
                     <>
                       <div style={{ overflowX: 'auto' }}>
-                        <table className="data-table" style={{ marginBottom: 0, tableLayout: 'fixed' }}>
+                        <table className="data-table" style={{ marginBottom: 0, tableLayout: 'fixed', minWidth: 1200 }}>
                           <thead>
-                            <tr>
-                              <th style={{ width: 45, textAlign: 'center', padding: '10px 8px' }} />
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '18%' }}>Fecha / Hora</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '15%' }}>Analista</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '15%' }}>CUIL</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '22%' }}>Acción</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '10px 14px', width: '30%' }}>Campo</th>
+                            <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Fecha</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Analista</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '180px' }}>Acción</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '240px' }}>Cliente</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px' }}>Detalles</th>
                             </tr>
                           </thead>
                           <tbody>
                             {paged.map((reg: any, idx: number) => {
                               const rowKey = reg.id ?? `${reg.fecha_hora}-${idx}`;
-                              const isExpanded = auditExpandedRow === rowKey;
                               const ac = accionColor(reg.accion);
                               return (
-                                <React.Fragment key={rowKey}>
-                                  <tr
-                                    onClick={() => setAuditExpandedRow(isExpanded ? null : rowKey)}
-                                    style={{
-                                      cursor: 'pointer', transition: 'background 0.15s',
-                                      background: isExpanded ? 'rgba(255,255,255,0.02)' : 'transparent',
-                                      borderBottom: isExpanded ? 'none' : '1px solid rgba(255,255,255,0.03)',
-                                    }}
-                                    onMouseEnter={e => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)'; }}
-                                    onMouseLeave={e => { if (!isExpanded) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                                  >
-                                    <td style={{ textAlign: 'center', padding: '10px 8px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                      <ChevronRight size={12} color="#444" style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }} />
-                                    </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#ccc', whiteSpace: 'nowrap' }}>{formatDateTime(reg.fecha_hora)}</div>
-                                      <div style={{ fontSize: '10px', color: '#444', marginTop: 1, whiteSpace: 'nowrap' }}>{relativeTime(reg.fecha_hora)}</div>
-                                    </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                          <User size={11} color="#666" />
-                                        </div>
-                                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#ccc', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{reg.analista || reg.id_analista || '—'}</span>
-                                      </div>
-                                    </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', fontSize: '12px', color: '#22c55e', fontWeight: 700, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                      {reg.cuil || '—'}
-                                    </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                      <span style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                                        padding: '4px 10px', borderRadius: 4, fontSize: '10px', fontWeight: 700,
-                                        background: ac.bg, color: ac.color, border: `1px solid ${ac.border}`,
-                                        letterSpacing: '0.3px', whiteSpace: 'nowrap'
-                                      }}>
-                                        {accionIcon(reg.accion)}
-                                        {reg.accion}
-                                      </span>
-                                    </td>
-                                    <td style={{ padding: '10px 14px', verticalAlign: 'middle', fontSize: '12px', color: '#888', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                      {reg.campo_modificado || '—'}
-                                    </td>
-                                  </tr>
-
-                                  {/* EXPANDED DETAIL ROW */}
-                                  {isExpanded && (
-                                    <tr style={{ background: 'transparent' }}>
-                                      <td colSpan={6} style={{ padding: '0 14px 16px 54px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                        <div style={{
-                                          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                                          gap: 16, padding: '16px 20px', background: 'transparent',
-                                          borderRadius: 6, border: '1px solid rgba(255,255,255,0.04)',
-                                        }}>
-                                          <div>
-                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Analista (ID)</div>
-                                            <div style={{ fontSize: '11px', color: '#888' }}>{reg.id_analista || reg.analista || '—'}</div>
-                                          </div>
-                                          <div>
-                                            <div style={{ fontSize: '9px', fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>CUIL / Cliente</div>
-                                            <div style={{ fontSize: '11px', color: '#22c55e', fontWeight: 700 }}>{reg.cuil || '—'} {reg.nombre ? `| ${reg.nombre}` : ''}</div>
-                                          </div>
-                                          {reg.valor_anterior && (
-                                            <div style={{ gridColumn: '1 / -1' }}>
-                                              <div style={{ fontSize: '9px', fontWeight: 800, color: '#ff3366', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Anterior</div>
-                                              <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'transparent', borderRadius: 4, border: '1px solid rgba(239,68,68,0.2)', wordBreak: 'break-all' }}>{reg.valor_anterior}</div>
-                                            </div>
-                                          )}
-                                          {reg.valor_nuevo && (
-                                            <div style={{ gridColumn: '1 / -1' }}>
-                                              <div style={{ fontSize: '9px', fontWeight: 800, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 6 }}>Valor Nuevo</div>
-                                              <div style={{ fontSize: '11px', color: '#999', padding: '8px 12px', background: 'transparent', borderRadius: 4, border: '1px solid rgba(34,197,94,0.2)', wordBreak: 'break-all' }}>{reg.valor_nuevo}</div>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  )}
-                                </React.Fragment>
+                                <tr
+                                  key={rowKey}
+                                  style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)'; }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                                >
+                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                    <div style={{ fontSize: '12px', color: '#eaeaea', whiteSpace: 'nowrap', fontWeight: 600 }}>{relativeTime(reg.fecha_hora)}</div>
+                                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap' }}>{formatDateTime(reg.fecha_hora).split(',')[0]}</div>
+                                  </td>
+                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                    <span style={{ fontSize: '12px', color: '#ccc', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', display: 'block' }}>{reg.analista || reg.id_analista || '—'}</span>
+                                  </td>
+                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                    <span style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                                      fontSize: '11px', fontWeight: 700, color: ac.color, whiteSpace: 'nowrap'
+                                    }}>
+                                      {accionIcon(reg.accion)}
+                                      {reg.accion}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                    <div style={{ fontSize: '12px', color: '#eaeaea', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{reg.nombre || '—'}</div>
+                                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{reg.cuil || '—'}</div>
+                                  </td>
+                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                    {renderDetalle(reg)}
+                                  </td>
+                                </tr>
                               );
                             })}
                           </tbody>
@@ -1608,15 +1448,15 @@ export default function AjustesPage() {
                       {/* PAGINATION */}
                       <div style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.04)',
+                        padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(0,0,0,0.2)'
                       }}>
-                        <span style={{ fontSize: '11px', color: '#444' }}>
+                        <span style={{ fontSize: '11px', color: '#555', fontWeight: 600 }}>
                           Mostrando {(safePage - 1) * AUDIT_PAGE_SIZE + 1}–{Math.min(safePage * AUDIT_PAGE_SIZE, filtered.length)} de {filtered.length}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <button onClick={() => setAuditPage(p => Math.max(1, p - 1))} disabled={safePage <= 1} style={{
-                            width: 30, height: 30, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
-                            background: 'rgba(255,255,255,0.03)', color: safePage <= 1 ? '#333' : '#888',
+                            width: 28, height: 28, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
+                            background: 'rgba(255,255,255,0.02)', color: safePage <= 1 ? '#333' : '#888',
                             cursor: safePage <= 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}><ChevronLeft size={14} /></button>
                           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -1627,18 +1467,18 @@ export default function AjustesPage() {
                             else page = safePage - 2 + i;
                             return (
                               <button key={page} onClick={() => setAuditPage(page)} style={{
-                                width: 30, height: 30, borderRadius: 4, border: '1px solid',
+                                width: 28, height: 28, borderRadius: 4, border: '1px solid',
                                 fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
                                 fontFamily: "'Outfit', sans-serif",
                                 borderColor: safePage === page ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)',
-                                background: safePage === page ? '#fff' : 'rgba(255,255,255,0.03)',
+                                background: safePage === page ? '#fff' : 'rgba(255,255,255,0.02)',
                                 color: safePage === page ? '#000' : '#666',
                               }}>{page}</button>
                             );
                           })}
                           <button onClick={() => setAuditPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} style={{
-                            width: 30, height: 30, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
-                            background: 'rgba(255,255,255,0.03)', color: safePage >= totalPages ? '#333' : '#888',
+                            width: 28, height: 28, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
+                            background: 'rgba(255,255,255,0.02)', color: safePage >= totalPages ? '#333' : '#888',
                             cursor: safePage >= totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}><ChevronRight size={14} /></button>
                         </div>
