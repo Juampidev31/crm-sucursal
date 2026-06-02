@@ -317,6 +317,7 @@ import { useSearchParams } from 'next/navigation';
 const now = new Date();
 
 export default function AnalistasPage() {
+  console.log("Triggering Vercel deployment for real...");
   const { registros: allRegistros, loading } = useRegistros();
   const { objetivos } = useObjetivos();
   const { diasConfig } = useSettings();
