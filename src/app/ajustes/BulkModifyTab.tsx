@@ -8,7 +8,7 @@ import { CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
-  Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck
+  Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download
 } from 'lucide-react';
 import { parsePastedText, normalizeCuil, ParsedRow } from '@/lib/verificador-utils';
 import { Registro } from '@/types';
@@ -3935,16 +3935,43 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   {empleadoresConConteo.filter(e => !e.esDependencia).length} empleadores · {empleadoresConConteo.filter(e => e.esDependencia).length} dependencias
                 </p>
               </div>
-              <button
-                onClick={() => setModalEmpleadoresOpen(false)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#888', borderRadius: 6, padding: '8px 12px',
-                  fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                }}
-              >
-                <X size={14} /> Cerrar
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => {
+                    import('xlsx').then((XLSX) => {
+                      const data = empleadoresConConteo.map(e => ({
+                        Empresa: e.nombre,
+                        Tipo: e.tipo,
+                        Categoría: e.categoria,
+                        'Es Dependencia': e.esDependencia ? 'Sí' : 'No',
+                        Cantidad: e.cantidad
+                      }));
+                      const ws = XLSX.utils.json_to_sheet(data);
+                      const wb = XLSX.utils.book_new();
+                      XLSX.utils.book_append_sheet(wb, ws, "Empleadores");
+                      XLSX.writeFile(wb, "Empleadores_y_Dependencias.xlsx");
+                    });
+                  }}
+                  style={{
+                    background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)',
+                    color: '#34d399', borderRadius: 6, padding: '8px 12px',
+                    fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                    fontWeight: 700
+                  }}
+                >
+                  <Download size={14} /> Descargar XLSX
+                </button>
+                <button
+                  onClick={() => setModalEmpleadoresOpen(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#888', borderRadius: 6, padding: '8px 12px',
+                    fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  <X size={14} /> Cerrar
+                </button>
+              </div>
             </div>
 
             {/* Buscador + filtros tipo */}

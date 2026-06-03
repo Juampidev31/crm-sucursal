@@ -1411,6 +1411,15 @@ export default function AnalistasPage() {
             return ctx.datasetIndex === 0 
               ? `Vendido: ${formatCurrency(v)}` 
               : `Ideal: ${formatCurrency(v)}`;
+          },
+          footer: (tooltipItems: any[]) => {
+             const index = tooltipItems[0].dataIndex;
+             const vendido = tooltipItems[0].chart.data.datasets[0].data[index];
+             const ideal = tooltipItems[0].chart.data.datasets[1].data[index];
+             if (vendido == null || ideal == null || ideal === 0) return '';
+             const pct = ((vendido / ideal) - 1) * 100;
+             const sign = pct >= 0 ? '+' : '';
+             return `Variación: ${sign}${pct.toFixed(1)}%`;
           }
         }
       }
