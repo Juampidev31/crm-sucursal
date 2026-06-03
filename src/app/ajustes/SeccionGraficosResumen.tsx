@@ -147,10 +147,10 @@ export default function SeccionGraficosResumen({
     return {
       labels: [''],
       datasets: [
-        { label: `Capital ${mesActualLabel}`, data: [kpiTotal.cumplCapital || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Capital ${mesAntLabel}`, data: [kpiTotal.cumplCapitalAnt || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Ops ${mesActualLabel}`, data: [kpiTotal.cumplOps || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Ops ${mesAntLabel}`, data: [kpiTotal.cumplOpsAnt || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        { label: `Capital ${mesActualLabel}`, data: [kpiTotal.cumplCapital || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 45 },
+        { label: `Capital ${mesAntLabel}`, data: [kpiTotal.cumplCapitalAnt || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 45 },
+        { label: `Ops ${mesActualLabel}`, data: [kpiTotal.cumplOps || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 45 },
+        { label: `Ops ${mesAntLabel}`, data: [kpiTotal.cumplOpsAnt || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 45 },
       ],
     };
   }, [kpiTotal, mesActualLabel, mesAntLabel]);
@@ -164,14 +164,14 @@ export default function SeccionGraficosResumen({
           data: [kpiTotal.tendCapital ?? 0], 
           backgroundColor: (kpiTotal.tendCapital >= 0) ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)', 
           borderColor: (kpiTotal.tendCapital >= 0) ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)', 
-          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 
+          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 45 
         },
         { 
           label: 'Variación Ops %', 
           data: [kpiTotal.tendOps ?? 0], 
           backgroundColor: (kpiTotal.tendOps >= 0) ? 'rgba(167,139,250,0.15)' : 'rgba(248,113,113,0.15)', 
           borderColor: (kpiTotal.tendOps >= 0) ? 'rgba(167,139,250,0.5)' : 'rgba(248,113,113,0.5)', 
-          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 
+          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 45 
         },
       ],
     };
@@ -246,7 +246,7 @@ export default function SeccionGraficosResumen({
               </div>
             </div>
           </div>
-          <div style={{ height: 280 }}>
+          <div style={{ height: 180 }}>
             <Bar data={chartCumplimiento as any} options={baseChartOpts('%', true)} plugins={[labelsPlugin, referenceLinesPlugin]} />
           </div>
         </div>
@@ -266,7 +266,7 @@ export default function SeccionGraficosResumen({
               </div>
             </div>
           </div>
-          <div style={{ height: 280 }}>
+          <div style={{ height: 180 }}>
             <Bar data={chartVariacion as any} options={baseChartOpts('%', true)} plugins={[labelsPlugin, referenceLinesPlugin]} />
           </div>
         </div>

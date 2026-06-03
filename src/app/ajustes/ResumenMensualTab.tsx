@@ -1589,7 +1589,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           borderColor: '#10b981',
           borderWidth: 0, 
           order: 1, 
-          maxBarThickness: 100 
+          maxBarThickness: 45 
         },
         { 
           label: `Capital ${mesAntLabel}`, 
@@ -1598,7 +1598,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           borderColor: 'rgba(255, 255, 255, 0.15)',
           borderWidth: 0, 
           order: 1, 
-          maxBarThickness: 100 
+          maxBarThickness: 45 
         },
         { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#ff3366', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#ff3366', fill: false, order: 0 },
       ],

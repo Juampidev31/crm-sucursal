@@ -66,6 +66,7 @@ const addGradients = (chart: any) => {
 
       return {
         ...ds,
+        maxBarThickness: 45,
         backgroundColor: (context: any) => {
           const chartObj = context.chart;
           const { ctx, chartArea } = chartObj;

@@ -51,7 +51,7 @@ const labelsPlugin: any = {
         if (isPct) {
           label = Math.round(val) + '%';
         } else if (v >= 1000) {
-          label = val.toLocaleString('es-AR');
+          label = Math.round(val).toLocaleString('es-AR');
         } else {
           label = (val < 10 && val > 0 && !Number.isInteger(val)) ? val.toFixed(1).replace('.', ',') : Math.round(val).toString();
         }
