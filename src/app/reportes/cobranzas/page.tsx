@@ -35,5 +35,5 @@ export default async function ReporteCobranzasPage({ searchParams }: { searchPar
 
   if (!data) notFound();
 
-  return <CobranzasClient data={data} year={year} years={COBRANZAS_YEARS} />;
+  return <CobranzasClient key={year} data={data} year={year} years={COBRANZAS_YEARS} />;
 }
