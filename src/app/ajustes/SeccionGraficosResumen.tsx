@@ -230,7 +230,7 @@ export default function SeccionGraficosResumen({
   }, [allRegistros, selectedMes, selectedAnio]);
 
   return (
-    <div style={{ marginBottom: 28 }}>
+    <div style={{ marginBottom: 0 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
         {/* 1. Cumplimiento */}
         <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>

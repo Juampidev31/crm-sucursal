@@ -562,7 +562,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
               </div>
             </div>
           </div>
-          <div style={{ padding: '0 32px 24px 32px' }}>
+          <div style={{ padding: '0 32px 0 32px' }}>
             {/* ── SECCIÓN GRÁFICOS ── */}
             <SeccionGraficosResumen
               kpiTotal={kpiTotal}
