@@ -352,8 +352,8 @@ export default function AnalistasPage() {
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
-  const [periodoAcuerdos, setPeriodoAcuerdos] = useState<'mensual' | 'total'>('total');
-  const [periodoEmpleo, setPeriodoEmpleo] = useState<'mensual' | 'total'>('total');
+  const [periodoAcuerdos, setPeriodoAcuerdos] = useState<'mensual' | 'total'>('mensual');
+  const [periodoEmpleo, setPeriodoEmpleo] = useState<'mensual' | 'total'>('mensual');
   const [rendimiento12MOpen, setRendimiento12MOpen] = useState(false);
   const [anioRendimiento, setAnioRendimiento] = useState<number | 'TODOS'>(now.getFullYear());
   const [mesRendimiento, setMesRendimiento] = useState<number | 'TODOS'>('TODOS');
