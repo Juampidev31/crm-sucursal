@@ -1397,7 +1397,7 @@ export default function AjustesPage() {
                         <table className="data-table" style={{ marginBottom: 0, tableLayout: 'fixed', minWidth: 1200 }}>
                           <thead>
                             <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Fecha</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Fecha / Hora</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Analista</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '180px' }}>Acción</th>
                               <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '240px' }}>Cliente</th>
@@ -1417,7 +1417,7 @@ export default function AjustesPage() {
                                 >
                                   <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
                                     <div style={{ fontSize: '12px', color: '#eaeaea', whiteSpace: 'nowrap', fontWeight: 600 }}>{relativeTime(reg.fecha_hora)}</div>
-                                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap' }}>{formatDateTime(reg.fecha_hora).split(',')[0]}</div>
+                                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap' }}>{formatDateTime(reg.fecha_hora)}</div>
                                   </td>
                                   <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
                                     <span style={{ fontSize: '12px', color: '#ccc', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', display: 'block' }}>{reg.analista || reg.id_analista || '—'}</span>

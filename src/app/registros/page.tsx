@@ -1216,7 +1216,11 @@ const RegistroModal = memo(function RegistroModal({
             background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 32px'
           }}>
             {errors._ && <span style={{ color: '#f87171', fontSize: '13px', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={14} />{errors._}</span>}
-            {!errors._ && <div style={{ flex: 1 }} />}
+            {!errors._ && (
+              <div style={{ flex: 1, fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center' }}>
+                Registro creado con fecha {initialData.created_at ? new Date(initialData.created_at).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR')} y hora {initialData.created_at ? new Date(initialData.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
             <button className="btn-secondary" onClick={onClose} style={{
               background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--fg-muted)',
               fontWeight: 700, padding: '12px 24px', borderRadius: '10px', fontSize: '13px', letterSpacing: '0.5px', transition: 'all 0.2s'
