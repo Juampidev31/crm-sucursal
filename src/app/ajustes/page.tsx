@@ -31,6 +31,7 @@ const MassiveDeleteTab  = dynamic(() => import('./MassiveDeleteTab'),  { ssr: fa
 const AvisosTab         = dynamic(() => import('./AvisosTab'),         { ssr: false, loading: TabFallback });
 const VerificadorTab    = dynamic(() => import('./VerificadorTab'),    { ssr: false, loading: TabFallback });
 const CargaRapidaTab    = dynamic(() => import('./CargaRapidaTab'),    { ssr: false, loading: TabFallback });
+const CarteraAnalistaTab = dynamic(() => import('./CarteraAnalistaTab'), { ssr: false, loading: TabFallback });
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
@@ -39,7 +40,7 @@ type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | s
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
 type ConfigSubTab = 'alertas' | 'dias' | 'permisos';
-type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score';
+type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score' | 'cartera-analista';
 type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
 type ActividadSubTab = 'auditoria' | 'avisos';
 
@@ -100,6 +101,7 @@ export default function AjustesPage() {
     'bulk-corrector': activeTab === 'datos-masivos' && datosSubTab === 'modificacion-masiva' && isAdmin,
     'bulk-excel': activeTab === 'datos-masivos' && datosSubTab === 'asignar-excel' && isAdmin,
     'bulk-bulk': activeTab === 'reportes' && reportesSubTab === 'calif-score' && isAdmin,
+    'cartera-tab': activeTab === 'reportes' && reportesSubTab === 'cartera-analista' && isAdmin,
     'massive-delete': activeTab === 'datos-masivos' && datosSubTab === 'eliminacion-masiva' && isAdmin,
     'avisos-tab': activeTab === 'actividad' && actividadSubTab === 'avisos' && isAdmin,
     'verificador-tab': activeTab === 'datos-masivos' && datosSubTab === 'verificador' && isAdmin,
@@ -837,6 +839,7 @@ export default function AjustesPage() {
                 { id: 'historico' as const, label: 'Histórico y Objetivos', icon: History },
                 { id: 'resumen-mensual' as const, label: 'Resumen Mensual', icon: BarChart3 },
                 ...(isAdmin ? [{ id: 'calif-score' as const, label: 'Calif. x SCORE', icon: Users }] : []),
+                ...(isAdmin ? [{ id: 'cartera-analista' as const, label: 'Cartera por Analista', icon: PieChart }] : []),
               ]).map(t => (
                 <button
                   key={t.id}
@@ -1515,6 +1518,11 @@ export default function AjustesPage() {
           {visitedTabs.has('bulk-bulk') && (
             <div style={{ display: heavyVisibility['bulk-bulk'] ? 'block' : 'none' }}>
               <BulkModifyTab mode="bulk" />
+            </div>
+          )}
+          {visitedTabs.has('cartera-tab') && (
+            <div style={{ display: heavyVisibility['cartera-tab'] ? 'block' : 'none' }}>
+              <CarteraAnalistaTab />
             </div>
           )}
           {visitedTabs.has('massive-delete') && (
