@@ -718,6 +718,18 @@ export default function AnalistasPage() {
     const cumplProyCapital = metaCapital > 0 ? (proyCapital !== null ? (proyCapital / metaCapital) * 100 : null) : null;
     const cumplProyOps = metaOps > 0 ? (proyOps !== null ? (proyOps / metaOps) * 100 : null) : null;
 
+    // ── Mes anterior a la misma fecha (comparación acumulada al mismo día) ────
+    // Día de corte: hoy si es el mes en curso, sino el último día con datos del mes seleccionado
+    const diaCorte = esMesActual
+      ? hoy.getDate()
+      : (regs.reduce((max, r) => Math.max(max, Number(r.fecha?.slice(8, 10)) || 0), 0)
+         || new Date(selectedAnio, selectedMes, 0).getDate());
+    const ventasAntFecha = ventasAnt.filter(r => (Number(r.fecha?.slice(8, 10)) || 0) <= diaCorte);
+    const capitalAntFecha = ventasAntFecha.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    const opsAntFecha = ventasAntFecha.length;
+    const varCapitalFecha = capitalAntFecha > 0 ? ((capital - capitalAntFecha) / capitalAntFecha) * 100 : null;
+    const varOpsFecha = opsAntFecha > 0 ? ((ops - opsAntFecha) / opsAntFecha) * 100 : null;
+
     // Cálculo de incentivos global - Suma de individuales (Solo Luciana y Victoria)
     const incentivoCap = kpiPorAnalista.reduce((s, k) => s + (k.incentivoCap || 0), 0);
     const incentivoOps = kpiPorAnalista.reduce((s, k) => s + (k.incentivoOps || 0), 0);
@@ -737,6 +749,7 @@ export default function AnalistasPage() {
       ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
       diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
       cumplProyCapital, cumplProyOps,
+      diaCorte, capitalAntFecha, opsAntFecha, varCapitalFecha, varOpsFecha,
       coefCap: 0, coefOps: 0, incentivoCap, incentivoOps,
       topeKQAplicado: kpiPorAnalista.some(k => k.topeKQAplicado),
       topeKQExcedente: kpiPorAnalista.reduce((s, k) => s + (k.topeKQExcedente || 0), 0),
@@ -1791,7 +1804,8 @@ export default function AnalistasPage() {
                         Cargá días hábiles en Ajustes para ver proyección
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', gap: 32, flex: 1 }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 2, justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', gap: 32 }}>
                           <div style={{ flex: 1 }}>
                             {kpiTotal.metaDiariaCapital !== null && (
@@ -1868,10 +1882,42 @@ export default function AnalistasPage() {
                             )}
                           </div>
                         </div>
+
+                       </div>
+
+                       <div style={{ width: 1, background: 'rgba(255,255,255,0.06)', alignSelf: 'stretch' }} />
+
+                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20 }}>
+                         <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+                           {CONFIG.MESES_NOMBRES[mesPrev - 1]} al día {kpiTotal.diaCorte}
+                         </div>
+                         <div>
+                           <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ventas (K)</div>
+                           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                             <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capitalAntFecha)}</div>
+                             {kpiTotal.varCapitalFecha !== null && (
+                               <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.varCapitalFecha >= 0 ? '#10b981' : '#f87171' }}>
+                                 {kpiTotal.varCapitalFecha >= 0 ? '▲' : '▼'} {Math.abs(kpiTotal.varCapitalFecha).toFixed(2)}%
+                               </span>
+                             )}
+                           </div>
+                         </div>
+                         <div>
+                           <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Operaciones (Q)</div>
+                           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                             <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{kpiTotal.opsAntFecha}</div>
+                             {kpiTotal.varOpsFecha !== null && (
+                               <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.varOpsFecha >= 0 ? '#10b981' : '#f87171' }}>
+                                 {kpiTotal.varOpsFecha >= 0 ? '▲' : '▼'} {Math.abs(kpiTotal.varOpsFecha).toFixed(2)}%
+                               </span>
+                             )}
+                           </div>
+                         </div>
+                       </div>
                       </div>
                     )}
                   </div>
-                  
+
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Progreso vs Ideal</div>
                     <div style={{ flex: 1, minHeight: 220, position: 'relative', width: '100%' }}>
