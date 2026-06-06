@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Registro, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
+import { useSettings } from '@/features/settings/SettingsProvider';
 import { formatCurrency } from '@/lib/utils';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { Briefcase, Users, Filter, PieChart, BarChart3, Shield, FileText, ChevronDown } from 'lucide-react';
@@ -20,39 +21,37 @@ type Metrics = {
   ingresados: number;
   aprobadosQ: number; aprobadosK: number;
   ventasQ: number; ventasK: number;
-  aprobCCQ: number;
-  enSegQ: number; enSegMonto: number;
   ticket: number;
   tasaCierre: number | null;
   conversionTotal: number | null;
   scorePromedio: number;
   pctRenov: number;
+  pctAperturas: number;
 };
 
-function computeMetrics(regs: Registro[]): Metrics {
+function computeMetrics(regs: Registro[], diasTrans: number): Metrics {
   const ingresados = regs.length;
   const aprobados = regs.filter(isAprobado);
   const ventas = regs.filter(isVentaPura);
-  const aprobCC = regs.filter(isAprobCC);
-  const enSeg = regs.filter(isEnSeg);
   const aprobadosK = sumMonto(aprobados);
-  const aprobadosQ = aprobados.length;
 
   const conScore = regs.filter(r => (Number(r.puntaje) || 0) > 0);
   const scorePromedio = conScore.length > 0 ? conScore.reduce((s, r) => s + (Number(r.puntaje) || 0), 0) / conScore.length : 0;
-  const renovQ = regs.filter(r => r.es_re).length;
+  
+  const renovQ = regs.filter(r => r.tipo_cliente === 'Renovacion').length;
+  const aperturasQ = regs.filter(r => r.tipo_cliente === 'Apertura').length;
+  const baseTipos = (aperturasQ + renovQ) || ingresados;
 
   return {
     ingresados,
-    aprobadosQ, aprobadosK,
+    aprobadosQ: aprobados.length, aprobadosK,
     ventasQ: ventas.length, ventasK: sumMonto(ventas),
-    aprobCCQ: aprobCC.length,
-    enSegQ: enSeg.length, enSegMonto: sumMonto(enSeg),
-    ticket: aprobadosQ > 0 ? aprobadosK / aprobadosQ : 0,
+    ticket: diasTrans > 0 ? aprobadosK / diasTrans : 0,
     tasaCierre: tasaCierrePct(regs),
     conversionTotal: conversionTotalPct(regs),
     scorePromedio,
-    pctRenov: ingresados > 0 ? (renovQ / ingresados) * 100 : 0,
+    pctRenov: baseTipos > 0 ? (renovQ / baseTipos) * 100 : 0,
+    pctAperturas: baseTipos > 0 ? (aperturasQ / baseTipos) * 100 : 0,
   };
 }
 
@@ -207,6 +206,7 @@ const now = new Date();
 
 export default function CarteraAnalistaTab() {
   const { registros } = useRegistros();
+  const { diasConfig } = useSettings();
 
   const aniosDisponibles = useMemo(() => {
     const set = new Set<number>();
@@ -230,10 +230,22 @@ export default function CarteraAnalistaTab() {
     return true;
   }), [registros, anio, mes]);
 
-  const filas = useMemo(() => ({
-    porAnalista: CONFIG.ANALISTAS_DEFAULT.map(a => ({ analista: a, metrics: computeMetrics(regsPeriodo.filter(r => r.analista === a)) })),
-    total: { analista: 'PDV', metrics: computeMetrics(regsPeriodo) },
-  }), [regsPeriodo]);
+  const filas = useMemo(() => {
+    const cfgTodos = diasConfig.find(d => d.analista === 'Todos') || { dias_transcurridos: 0 };
+    const diasTransTodos = Number(cfgTodos.dias_transcurridos) || Math.max(0, ...diasConfig.map(d => Number(d.dias_transcurridos) || 0));
+
+    return {
+      porAnalista: CONFIG.ANALISTAS_DEFAULT.map(a => {
+        const diasCfg = diasConfig.find(d => d.analista === a) || { dias_transcurridos: 0 };
+        const diasTrans = Number(diasCfg.dias_transcurridos) || 0;
+        return {
+          analista: a,
+          metrics: computeMetrics(regsPeriodo.filter(r => r.analista === a), diasTrans)
+        };
+      }),
+      total: { analista: 'PDV', metrics: computeMetrics(regsPeriodo, diasTransTodos) },
+    };
+  }, [regsPeriodo, diasConfig]);
 
   const regsSel = useMemo(() =>
     selected === 'PDV' ? regsPeriodo : regsPeriodo.filter(r => r.analista === selected),
@@ -283,9 +295,9 @@ export default function CarteraAnalistaTab() {
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               {[
                 { h: 'Analista' }, { h: 'Ingresados' }, { h: 'Ventas (Q)' }, { h: 'Capital (K)' },
-                { h: 'Ticket' }, { h: 'En seguim. (Q)' }, { h: 'En seguim. ($)' }, { h: 'Aprob. CC (Q)' },
+                { h: 'Ticket' },
                 { h: 'Tasa cierre', sub: 'Efectividad' }, { h: 'Conv. total', sub: 'Avance pipeline' },
-                { h: 'Score prom.' }, { h: '% Renov.' },
+                { h: 'Score prom.' }, { h: '% Renov.' }, { h: '% Aperturas' },
               ].map(({ h, sub }, i) => (
                 <th key={h} style={{ ...thStyle, textAlign: i === 0 ? 'left' : 'right' }}>
                   {h}
@@ -310,13 +322,11 @@ export default function CarteraAnalistaTab() {
                   <td style={tdStyle}>{m.aprobadosQ}</td>
                   <td style={tdStyle}>{formatCurrency(m.aprobadosK)}</td>
                   <td style={tdStyle}>{formatCurrency(m.ticket)}</td>
-                  <td style={tdStyle}>{m.enSegQ}</td>
-                  <td style={tdStyle}>{formatCurrency(m.enSegMonto)}</td>
-                  <td style={tdStyle}>{m.aprobCCQ}</td>
                   <td style={{ ...tdStyle, color: cumplColor(m.tasaCierre) }}>{m.tasaCierre === null ? '—' : `${m.tasaCierre.toFixed(0)}%`}</td>
                   <td style={{ ...tdStyle, color: cumplColor(m.conversionTotal) }}>{m.conversionTotal === null ? '—' : `${m.conversionTotal.toFixed(0)}%`}</td>
                   <td style={tdStyle}>{m.scorePromedio ? Math.round(m.scorePromedio) : '—'}</td>
                   <td style={tdStyle}>{m.pctRenov.toFixed(0)}%</td>
+                  <td style={tdStyle}>{m.pctAperturas.toFixed(0)}%</td>
                 </tr>
               );
             })}
