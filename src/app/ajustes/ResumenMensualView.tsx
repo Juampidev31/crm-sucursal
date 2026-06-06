@@ -531,11 +531,11 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
                 {tendBadge(kpiTotal.tendTicket)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                <div style={{ fontSize: 12, color: '#555' }} title="Ventas sobre clientes ingresados en el mes (cohorte)">Conversión: {(kpiTotal.conversionGlobal ?? 0).toFixed(1)}%</div>
+                <div style={{ fontSize: 12, color: '#555' }} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {(kpiTotal.conversionGlobal ?? 0).toFixed(1)}%</div>
                 {tendBadge(kpiTotal.tendConversionGlobal, false)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                <div style={{ fontSize: 12, color: '#555' }} title="Ventas sobre casos decididos (excluye leads aún abiertos)">Tasa de cierre: {kpiTotal.conversion.toFixed(1)}%</div>
+                <div style={{ fontSize: 12, color: '#555' }} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
                 {tendBadge(kpiTotal.tendConversion, false)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>

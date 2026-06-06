@@ -4,18 +4,15 @@ import React, { useMemo, useState } from 'react';
 import { Registro, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
+import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { Briefcase, Users, Filter, PieChart, BarChart3, Shield, FileText, ChevronDown } from 'lucide-react';
 
 // ── Clasificadores de estado ──────────────────────────────────────────────
 const low = (s?: string | null) => (s ?? '').toLowerCase().trim();
-const isVentaPura  = (r: Registro) => low(r.estado) === 'venta';
-const isAprobCC    = (r: Registro) => low(r.estado).includes('aprobado cc');
-const isAprobado   = (r: Registro) => isVentaPura(r) || isAprobCC(r);
-const isEnSeg      = (r: Registro) => low(r.estado) === 'en seguimiento';
-const isCerrado    = (r: Registro) => {
-  const e = low(r.estado);
-  return e !== 'proyeccion' && e !== 'en seguimiento' && e !== '';
-};
+const isVentaPura   = (r: Registro) => low(r.estado) === 'venta';
+const isAprobCC     = (r: Registro) => low(r.estado).includes('aprobado cc');
+const isAprobado    = (r: Registro) => isVentaPura(r) || isAprobCC(r);
+const isEnSeg       = (r: Registro) => low(r.estado) === 'en seguimiento';
 
 const sumMonto = (regs: Registro[]) => regs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
 
@@ -25,10 +22,9 @@ type Metrics = {
   ventasQ: number; ventasK: number;
   aprobCCQ: number;
   enSegQ: number; enSegMonto: number;
-  cerrados: number;
   ticket: number;
   tasaCierre: number | null;
-  conversionGlobal: number | null;
+  conversionTotal: number | null;
   scorePromedio: number;
   pctRenov: number;
 };
@@ -39,9 +35,9 @@ function computeMetrics(regs: Registro[]): Metrics {
   const ventas = regs.filter(isVentaPura);
   const aprobCC = regs.filter(isAprobCC);
   const enSeg = regs.filter(isEnSeg);
-  const cerrados = regs.filter(isCerrado).length;
   const aprobadosK = sumMonto(aprobados);
   const aprobadosQ = aprobados.length;
+
   const conScore = regs.filter(r => (Number(r.puntaje) || 0) > 0);
   const scorePromedio = conScore.length > 0 ? conScore.reduce((s, r) => s + (Number(r.puntaje) || 0), 0) / conScore.length : 0;
   const renovQ = regs.filter(r => r.es_re).length;
@@ -52,10 +48,9 @@ function computeMetrics(regs: Registro[]): Metrics {
     ventasQ: ventas.length, ventasK: sumMonto(ventas),
     aprobCCQ: aprobCC.length,
     enSegQ: enSeg.length, enSegMonto: sumMonto(enSeg),
-    cerrados,
     ticket: aprobadosQ > 0 ? aprobadosK / aprobadosQ : 0,
-    tasaCierre: cerrados > 0 ? (aprobadosQ / cerrados) * 100 : null,
-    conversionGlobal: ingresados > 0 ? (aprobadosQ / ingresados) * 100 : null,
+    tasaCierre: tasaCierrePct(regs),
+    conversionTotal: conversionTotalPct(regs),
     scorePromedio,
     pctRenov: ingresados > 0 ? (renovQ / ingresados) * 100 : 0,
   };
@@ -286,8 +281,16 @@ export default function CarteraAnalistaTab() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              {['Analista', 'Ingresados', 'Ventas (Q)', 'Capital (K)', 'Ticket', 'En seguim. (Q)', 'En seguim. ($)', 'Aprob. CC (Q)', 'Tasa cierre', 'Conv. global', 'Score prom.', '% Renov.'].map((h, i) => (
-                <th key={h} style={{ ...thStyle, textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>
+              {[
+                { h: 'Analista' }, { h: 'Ingresados' }, { h: 'Ventas (Q)' }, { h: 'Capital (K)' },
+                { h: 'Ticket' }, { h: 'En seguim. (Q)' }, { h: 'En seguim. ($)' }, { h: 'Aprob. CC (Q)' },
+                { h: 'Tasa cierre', sub: 'Efectividad' }, { h: 'Conv. total', sub: 'Avance pipeline' },
+                { h: 'Score prom.' }, { h: '% Renov.' },
+              ].map(({ h, sub }, i) => (
+                <th key={h} style={{ ...thStyle, textAlign: i === 0 ? 'left' : 'right' }}>
+                  {h}
+                  {sub && <div style={{ fontSize: 8, fontWeight: 700, color: '#5b6470', marginTop: 2, textTransform: 'none', letterSpacing: 0 }}>{sub}</div>}
+                </th>
               ))}
             </tr>
           </thead>
@@ -311,7 +314,7 @@ export default function CarteraAnalistaTab() {
                   <td style={tdStyle}>{formatCurrency(m.enSegMonto)}</td>
                   <td style={tdStyle}>{m.aprobCCQ}</td>
                   <td style={{ ...tdStyle, color: cumplColor(m.tasaCierre) }}>{m.tasaCierre === null ? '—' : `${m.tasaCierre.toFixed(0)}%`}</td>
-                  <td style={{ ...tdStyle, color: cumplColor(m.conversionGlobal) }}>{m.conversionGlobal === null ? '—' : `${m.conversionGlobal.toFixed(0)}%`}</td>
+                  <td style={{ ...tdStyle, color: cumplColor(m.conversionTotal) }}>{m.conversionTotal === null ? '—' : `${m.conversionTotal.toFixed(0)}%`}</td>
                   <td style={tdStyle}>{m.scorePromedio ? Math.round(m.scorePromedio) : '—'}</td>
                   <td style={tdStyle}>{m.pctRenov.toFixed(0)}%</td>
                 </tr>
@@ -319,7 +322,6 @@ export default function CarteraAnalistaTab() {
             })}
           </tbody>
         </table>
-        <p style={{ fontSize: 11, color: '#555', marginTop: 8, fontStyle: 'italic' }}>Tocá una fila para ver la cartera del analista. Ventas = Venta + Aprobado CC.</p>
       </div>
 
       {/* ── SECCIÓN 2: Cartera por Categoría (réplica de /analistas) ── */}

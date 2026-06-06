@@ -5,6 +5,7 @@ import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
+import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
@@ -432,11 +433,6 @@ export default function AnalistasPage() {
     return e === 'venta' || e.includes('aprobado cc');
   };
 
-  const isCerrado = (r: Registro) => {
-    const e = (r.estado ?? '').toLowerCase().trim();
-    return e !== 'proyeccion' && e !== 'en seguimiento' && e !== '';
-  };
-
   const cumplColor = (pct: number | null) =>
     pct === null ? '#64748b' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
 
@@ -485,11 +481,9 @@ export default function AnalistasPage() {
       const ventas = regsAnalista.filter(isVenta);
       const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
       const ops = ventas.length;
-      const cerrados = regsAnalista.filter(isCerrado).length;
-      // Tasa de cierre: ventas sobre casos decididos (excluye leads aún abiertos)
-      const conversion = cerrados > 0 ? (ops / cerrados) * 100 : 0;
-      // Conversión global por cohorte: ventas sobre clientes ingresados en el mes
-      const conversionGlobal = regsAnalista.length > 0 ? (ops / regsAnalista.length) * 100 : 0;
+      // Tasa de cierre (efectividad) y conversión total del embudo — fórmula centralizada
+      const conversion = tasaCierrePct(regsAnalista) ?? 0;
+      const conversionGlobal = conversionTotalPct(regsAnalista) ?? 0;
 
       // Monto venta y Aprob CC por separado
       const montoVenta = regsAnalista
@@ -652,11 +646,9 @@ export default function AnalistasPage() {
     // Ticket promedio = total vendido (Venta + Aprob. CC) / dias transcurridos
     const ticket = diasTransMes > 0 ? capital / diasTransMes : 0;
     const clientes = regs.length;
-    const cerrados = regs.filter(isCerrado).length;
-    // Tasa de cierre: ventas sobre casos decididos (excluye leads aún abiertos)
-    const conversion = cerrados > 0 ? (ops / cerrados) * 100 : 0;
-    // Conversión global por cohorte: ventas sobre clientes ingresados en el mes
-    const conversionGlobal = clientes > 0 ? (ops / clientes) * 100 : 0;
+    // Tasa de cierre (efectividad) y conversión total del embudo — fórmula centralizada
+    const conversion = tasaCierrePct(regs) ?? 0;
+    const conversionGlobal = conversionTotalPct(regs) ?? 0;
 
     const montoVenta = regs
       .filter(r => (r.estado ?? '').toLowerCase() === 'venta')
@@ -671,9 +663,8 @@ export default function AnalistasPage() {
     const opsAnt = ventasAnt.length;
     const ticketAnt = diasTransMes > 0 ? capitalAnt / diasTransMes : 0;
     const clientesAnt = regsAnt.length;
-    const cerradosAnt = regsAnt.filter(isCerrado).length;
-    const conversionAnt = cerradosAnt > 0 ? (opsAnt / cerradosAnt) * 100 : 0;
-    const conversionGlobalAnt = clientesAnt > 0 ? (opsAnt / clientesAnt) * 100 : 0;
+    const conversionAnt = tasaCierrePct(regsAnt) ?? 0;
+    const conversionGlobalAnt = conversionTotalPct(regsAnt) ?? 0;
 
     const tendCapital = capitalAnt > 0 ? ((capital - capitalAnt) / capitalAnt) * 100 : null;
     const tendOps = opsAnt > 0 ? ((ops - opsAnt) / opsAnt) * 100 : null;
@@ -1521,14 +1512,12 @@ export default function AnalistasPage() {
     const anterior = [
       ...kpiPorAnalista.map(k => {
         const regsAnt = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista);
-        const ventasAnt = regsAnt.filter(isVenta);
-        return regsAnt.length > 0 ? (ventasAnt.length / regsAnt.length) * 100 : 0;
+        return conversionTotalPct(regsAnt) ?? 0;
       })
     ];
     if (analista === 'PDV') {
       const regsAntTotal = filterByMonth(allRegistros, mesPrev, anioPrev);
-      const ventasAntTotal = regsAntTotal.filter(isVenta);
-      anterior.push(regsAntTotal.length > 0 ? (ventasAntTotal.length / regsAntTotal.length) * 100 : 0);
+      anterior.push(conversionTotalPct(regsAntTotal) ?? 0);
     }
 
     return {
@@ -1760,11 +1749,11 @@ export default function AnalistasPage() {
                     {tendBadge(kpiTotal.tendTicket)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#8f929d' }} title="Ventas sobre clientes ingresados en el mes (cohorte)">Conversión: {kpiTotal.conversionGlobal.toFixed(1)}%</div>
+                    <div style={{ fontSize: 12, color: '#8f929d' }} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {kpiTotal.conversionGlobal.toFixed(1)}%</div>
                     {tendBadge(kpiTotal.tendConversionGlobal, false)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#8f929d' }} title="Ventas sobre casos decididos (excluye leads aún abiertos)">Tasa de cierre: {kpiTotal.conversion.toFixed(1)}%</div>
+                    <div style={{ fontSize: 12, color: '#8f929d' }} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
                     {tendBadge(kpiTotal.tendConversion, false)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
