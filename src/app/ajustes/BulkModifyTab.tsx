@@ -8,7 +8,7 @@ import { CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
-  Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download
+  Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download, Pencil
 } from 'lucide-react';
 import { parsePastedText, normalizeCuil, ParsedRow } from '@/lib/verificador-utils';
 import { Registro } from '@/types';
@@ -1327,6 +1327,8 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const allAnalistas = useMemo(() => Array.from(new Set(registros.map(r => r.analista).filter(Boolean))).sort(), [registros]);
   const allAcuerdos = useMemo(() => Array.from(new Set(registros.map(r => r.acuerdo_precios).filter(Boolean))).sort() as string[], [registros]);
   const allTipos = useMemo(() => Array.from(new Set(registros.map(r => r.tipo_cliente).filter(Boolean))).sort() as string[], [registros]);
+  const allEmpleadoresList = useMemo(() => Array.from(new Set(registros.map(r => r.empleador?.trim()).filter(Boolean))).sort() as string[], [registros]);
+  const allDependenciasList = useMemo(() => Array.from(new Set(registros.map(r => r.dependencia?.trim()).filter(Boolean))).sort() as string[], [registros]);
   const allLocalidades = useMemo(() => Array.from(new Set(registros.map(r => r.localidad).filter(Boolean))).sort() as string[], [registros]);
   const allEmpleadores = useMemo(() => Array.from(new Set(registros.map(r => r.empleador).filter(Boolean))).sort() as string[], [registros]);
   const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
@@ -1404,6 +1406,11 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [empleadoresHoy, setEmpleadoresHoy] = useState<{ cuil: string; nombre: string; empleador: string; dependencia: string; id: string }[]>([]);
   const [loadingEmpleadoresHoy, setLoadingEmpleadoresHoy] = useState(false);
   const [contadorNuevosHoy, setContadorNuevosHoy] = useState(0);
+  // Edición inline dentro de "Nuevos hoy"
+  const [editandoHoyId, setEditandoHoyId] = useState<string | null>(null);
+  const [editHoyEmpleador, setEditHoyEmpleador] = useState('');
+  const [editHoyDependencia, setEditHoyDependencia] = useState('');
+  const [guardandoHoy, setGuardandoHoy] = useState(false);
   const [fechaDesdeHoy, setFechaDesdeHoy] = useState<string>(() =>
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
   );
@@ -1901,6 +1908,44 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   const cargarEmpleadoresHoy = useCallback(() => {
     setShowEmpleadoresHoy(true);
   }, []);
+
+  // Iniciar edición inline de una fila de "Nuevos hoy"
+  const iniciarEdicionHoy = useCallback((r: { id: string; empleador: string; dependencia: string }) => {
+    setEditandoHoyId(r.id);
+    setEditHoyEmpleador(r.empleador || '');
+    setEditHoyDependencia(r.dependencia || '');
+  }, []);
+
+  const cancelarEdicionHoy = useCallback(() => {
+    setEditandoHoyId(null);
+    setEditHoyEmpleador('');
+    setEditHoyDependencia('');
+  }, []);
+
+  // Guardar edición inline: persiste en DB, actualiza contexto y broadcast
+  const guardarEdicionHoy = useCallback(async (id: string) => {
+    const full = registros.find(r => r.id === id);
+    if (!full) return;
+    const empleador = editHoyEmpleador.trim();
+    const dependencia = editHoyDependencia.trim();
+    setGuardandoHoy(true);
+    try {
+      const { error } = await supabase
+        .from('registros')
+        .update({ empleador, dependencia })
+        .eq('id', id);
+      if (error) throw error;
+      const updated = { ...full, empleador, dependencia };
+      mutateRegistros(prev => prev.map(r => (r.id === id ? updated : r)));
+      pushRegistroChange('UPDATE', updated);
+      setEditandoHoyId(null);
+      setToast({ message: 'Registro actualizado', type: 'success' });
+    } catch {
+      setToast({ message: 'Error al actualizar el registro', type: 'error' });
+    } finally {
+      setGuardandoHoy(false);
+    }
+  }, [registros, editHoyEmpleador, editHoyDependencia, mutateRegistros, pushRegistroChange]);
 
   // Sincronizar lista del modal reactivamente con filtros de fecha
   useEffect(() => {
@@ -4304,6 +4349,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   <p>No se encontraron registros creados hoy.</p>
                 </div>
               ) : (
+                <>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -4311,25 +4357,68 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Apellido y Nombre</th>
                       <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
                       <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Dependencia</th>
+                      <th style={{ textAlign: 'right', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {empleadoresHoy.map((r, idx) => (
+                    {empleadoresHoy.map((r, idx) => {
+                      const editing = editandoHoyId === r.id;
+                      const inputStyle: React.CSSProperties = {
+                        width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
+                        color: '#fff', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none',
+                      };
+                      const iconBtn = (bg: string, border: string, color: string): React.CSSProperties => ({
+                        background: bg, border: `1px solid ${border}`, color, borderRadius: 6,
+                        padding: '5px 7px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
+                      });
+                      return (
                       <tr
                         key={r.id}
                         style={{
                           borderBottom: '1px solid rgba(255,255,255,0.03)',
-                          background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
+                          background: editing ? 'rgba(16,185,129,0.06)' : (idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent'),
                         }}
                       >
                         <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace', fontSize: 12 }}>{r.cuil || '-'}</td>
                         <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600, fontSize: 12 }}>{r.nombre || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: 600, fontSize: 12 }}>{r.empleador}</td>
-                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 600, fontSize: 12 }}>{r.dependencia || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: 600, fontSize: 12 }}>
+                          {editing
+                            ? <input autoFocus list="nuevos-hoy-empleadores" value={editHoyEmpleador} onChange={e => setEditHoyEmpleador(e.target.value)} placeholder="Elegí o escribí…" style={inputStyle} />
+                            : (r.empleador || '-')}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 600, fontSize: 12 }}>
+                          {editing
+                            ? <input list="nuevos-hoy-dependencias" value={editHoyDependencia} onChange={e => setEditHoyDependencia(e.target.value)} placeholder="Elegí o escribí…" style={inputStyle} />
+                            : (r.dependencia || '-')}
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          {editing ? (
+                            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                              <button onClick={() => guardarEdicionHoy(r.id)} disabled={guardandoHoy} title="Guardar" style={iconBtn('rgba(16,185,129,0.12)', 'rgba(16,185,129,0.35)', '#34d399')}>
+                                {guardandoHoy ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                              </button>
+                              <button onClick={cancelarEdicionHoy} disabled={guardandoHoy} title="Cancelar" style={iconBtn('rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)', '#888')}>
+                                <X size={13} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button onClick={() => iniciarEdicionHoy(r)} title="Editar" style={iconBtn('rgba(96,165,250,0.1)', 'rgba(96,165,250,0.3)', '#60a5fa')}>
+                              <Pencil size={13} />
+                            </button>
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
+                <datalist id="nuevos-hoy-empleadores">
+                  {allEmpleadoresList.map(e => <option key={e} value={e} />)}
+                </datalist>
+                <datalist id="nuevos-hoy-dependencias">
+                  {allDependenciasList.map(d => <option key={d} value={d} />)}
+                </datalist>
+                </>
               )}
             </div>
           </div>
