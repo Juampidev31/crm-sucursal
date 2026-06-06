@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect, useDeferredValue } from 'react';
 import { supabase } from '@/lib/supabase';
 import { STATUS_LABEL } from '@/lib/utils';
 import { ESTADOS } from '@/context/FilterContext';
@@ -1466,27 +1466,41 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [editandoHoyId, setEditandoHoyId] = useState<string | null>(null);
   const [editHoyEmpleador, setEditHoyEmpleador] = useState('');
   const [editHoyDependencia, setEditHoyDependencia] = useState('');
-  const [guardandoHoy, setGuardandoHoy] = useState(false);
 
-  // Dependencias disponibles según el Empleador elegido en la edición.
-  // Si el empleador coincide (sin acentos/mayúsculas), lista TODAS sus dependencias cargadas.
+  // Mapa empleador(normalizado) → dependencias, precomputado UNA vez sobre registros.
+  // Evita recorrer todos los registros en cada tecla al editar.
+  const depsByEmpleador = useMemo(() => {
+    const norm = (s?: string | null) => (s ?? '')
+      .normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
+      .toUpperCase().replace(/\s+/g, ' ').trim();
+    const m = new Map<string, Set<string>>();
+    for (const r of registros) {
+      const ne = norm(r.empleador);
+      const d = r.dependencia?.trim();
+      if (!ne || !d) continue;
+      let set = m.get(ne);
+      if (!set) { set = new Set<string>(); m.set(ne, set); }
+      set.add(d);
+    }
+    return m;
+  }, [registros]);
+
+  // Dependencias del empleador elegido: lookup O(1) (exacto) con fallback difuso
+  // que recorre solo las claves únicas del mapa (no todos los registros).
   const dependenciasParaEmpleador = useMemo(() => {
     const norm = (s?: string | null) => (s ?? '')
       .normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
       .toUpperCase().replace(/\s+/g, ' ').trim();
     const target = norm(editHoyEmpleador);
     if (!target) return [] as string[];
+    const exact = depsByEmpleador.get(target);
+    if (exact) return Array.from(exact).sort((a, b) => a.localeCompare(b));
     const set = new Set<string>();
-    for (const r of registros) {
-      const ne = norm(r.empleador);
-      if (!ne) continue;
-      if (ne === target || ne.includes(target) || target.includes(ne)) {
-        const d = r.dependencia?.trim();
-        if (d) set.add(d);
-      }
+    for (const [emp, deps] of depsByEmpleador) {
+      if (emp.includes(target) || target.includes(emp)) deps.forEach(d => set.add(d));
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [registros, editHoyEmpleador]);
+  }, [depsByEmpleador, editHoyEmpleador]);
   const [fechaDesdeHoy, setFechaDesdeHoy] = useState<string>(() =>
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
   );
@@ -1961,6 +1975,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
   // ── Registros cargados hoy (Argentina) derivados del contexto ────────────
   // Solo registros con empleador cargado, filtrados por rango de fechas.
+  // Valores diferidos: el input de fecha responde al instante; el filtrado pesado
+  // se computa en baja prioridad sin bloquear la UI.
+  const fechaDesdeDef = useDeferredValue(fechaDesdeHoy);
+  const fechaHastaDef = useDeferredValue(fechaHastaHoy);
   const registrosNuevosHoy = useMemo(() => {
     const toArgDateStr = (iso: string) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
@@ -1971,9 +1989,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       const ref = r.fecha ?? r.created_at ?? null;
       if (!ref) return false;
       const dateStr = toArgDateStr(ref);
-      return dateStr >= fechaDesdeHoy && dateStr <= fechaHastaHoy;
+      return dateStr >= fechaDesdeDef && dateStr <= fechaHastaDef;
     });
-  }, [registros, fechaDesdeHoy, fechaHastaHoy]);
+  }, [registros, fechaDesdeDef, fechaHastaDef]);
 
   // Mantener contador sincronizado con el useMemo
   useEffect(() => {
@@ -1998,29 +2016,33 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     setEditHoyDependencia('');
   }, []);
 
-  // Guardar edición inline: persiste en DB, actualiza contexto y broadcast
-  const guardarEdicionHoy = useCallback(async (id: string) => {
-    const full = registros.find(r => r.id === id);
-    if (!full) return;
+  // Guardar edición inline — OPTIMISTA: actualiza la fila y cierra el editor al
+  // instante; persiste en DB y sincroniza el contexto en segundo plano.
+  const guardarEdicionHoy = useCallback((id: string) => {
     const empleador = editHoyEmpleador.trim();
     const dependencia = editHoyDependencia.trim();
-    setGuardandoHoy(true);
-    try {
-      const { error } = await supabase
-        .from('registros')
-        .update({ empleador, dependencia })
-        .eq('id', id);
-      if (error) throw error;
-      const updated = { ...full, empleador, dependencia };
-      mutateRegistros(prev => prev.map(r => (r.id === id ? updated : r)));
-      pushRegistroChange('UPDATE', updated);
-      setEditandoHoyId(null);
-      setToast({ message: 'Registro actualizado', type: 'success' });
-    } catch {
-      setToast({ message: 'Error al actualizar el registro', type: 'error' });
-    } finally {
-      setGuardandoHoy(false);
-    }
+    // 1) UI instantánea
+    setEmpleadoresHoy(prev => prev.map(r => (r.id === id ? { ...r, empleador, dependencia } : r)));
+    setEditandoHoyId(null);
+    // 2) Persistir + sincronizar sin bloquear el render
+    setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('registros')
+          .update({ empleador, dependencia })
+          .eq('id', id);
+        if (error) throw error;
+        const full = registros.find(r => r.id === id);
+        if (full) {
+          const updated = { ...full, empleador, dependencia };
+          mutateRegistros(prev => prev.map(r => (r.id === id ? updated : r)));
+          pushRegistroChange('UPDATE', updated);
+        }
+        setToast({ message: 'Registro actualizado', type: 'success' });
+      } catch {
+        setToast({ message: 'Error al actualizar el registro', type: 'error' });
+      }
+    }, 0);
   }, [registros, editHoyEmpleador, editHoyDependencia, mutateRegistros, pushRegistroChange]);
 
   // Sincronizar lista del modal reactivamente con filtros de fecha
@@ -4465,10 +4487,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {editing ? (
                             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                              <button onClick={() => guardarEdicionHoy(r.id)} disabled={guardandoHoy} title="Guardar" style={iconBtn('rgba(16,185,129,0.12)', 'rgba(16,185,129,0.35)', '#34d399')}>
-                                {guardandoHoy ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                              <button onClick={() => guardarEdicionHoy(r.id)} title="Guardar" style={iconBtn('rgba(16,185,129,0.12)', 'rgba(16,185,129,0.35)', '#34d399')}>
+                                <Save size={13} />
                               </button>
-                              <button onClick={cancelarEdicionHoy} disabled={guardandoHoy} title="Cancelar" style={iconBtn('rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)', '#888')}>
+                              <button onClick={cancelarEdicionHoy} title="Cancelar" style={iconBtn('rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)', '#888')}>
                                 <X size={13} />
                               </button>
                             </div>
