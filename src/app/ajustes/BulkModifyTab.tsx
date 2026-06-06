@@ -1401,7 +1401,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
 
   // Estado para "Nuevos hoy" - empleadores creados hoy
   const [showEmpleadoresHoy, setShowEmpleadoresHoy] = useState(false);
-  const [empleadoresHoy, setEmpleadoresHoy] = useState<{ cuil: string; nombre: string; empleador: string; id: string }[]>([]);
+  const [empleadoresHoy, setEmpleadoresHoy] = useState<{ cuil: string; nombre: string; empleador: string; dependencia: string; id: string }[]>([]);
   const [loadingEmpleadoresHoy, setLoadingEmpleadoresHoy] = useState(false);
   const [contadorNuevosHoy, setContadorNuevosHoy] = useState(0);
   const [fechaDesdeHoy, setFechaDesdeHoy] = useState<string>(() =>
@@ -1911,6 +1911,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         cuil: r.cuil,
         nombre: r.nombre,
         empleador: r.empleador || '',
+        dependencia: r.dependencia || '',
       }))
     );
   }, [showEmpleadoresHoy, registrosNuevosHoy]);
@@ -4309,6 +4310,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
                       <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Apellido y Nombre</th>
                       <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Dependencia</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4323,6 +4325,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace', fontSize: 12 }}>{r.cuil || '-'}</td>
                         <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600, fontSize: 12 }}>{r.nombre || '-'}</td>
                         <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: 600, fontSize: 12 }}>{r.empleador}</td>
+                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 600, fontSize: 12 }}>{r.dependencia || '-'}</td>
                       </tr>
                     ))}
                   </tbody>

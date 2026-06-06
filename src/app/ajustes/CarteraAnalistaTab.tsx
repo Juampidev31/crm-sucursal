@@ -304,8 +304,8 @@ export default function CarteraAnalistaTab() {
                 }}>
                   <td style={{ ...tdStyle, textAlign: 'left', color: '#fff', fontWeight: isTotal ? 800 : 700 }}>{isTotal ? 'TOTAL (PDV)' : analista}</td>
                   <td style={tdStyle}>{m.ingresados}</td>
-                  <td style={tdStyle}>{m.ventasQ}</td>
-                  <td style={tdStyle}>{formatCurrency(m.ventasK)}</td>
+                  <td style={tdStyle}>{m.aprobadosQ}</td>
+                  <td style={tdStyle}>{formatCurrency(m.aprobadosK)}</td>
                   <td style={tdStyle}>{formatCurrency(m.ticket)}</td>
                   <td style={tdStyle}>{m.enSegQ}</td>
                   <td style={tdStyle}>{formatCurrency(m.enSegMonto)}</td>

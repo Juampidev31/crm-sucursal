@@ -15,8 +15,35 @@
  */
 
 const { execSync } = require('child_process');
+const path = require('path');
 
 const PORT = process.env.PORT || 3000;
+const PROJECT_ROOT = path.resolve(__dirname, '..');
+
+/**
+ * Find ORPHANED Next.js node processes belonging to THIS project that are no
+ * longer listening on the port (compiler workers / a dead `next dev` parent
+ * left behind by a closed terminal or a sleeping PC). These don't show up in
+ * netstat but pile up day after day and exhaust RAM, hanging compilation.
+ *
+ * Scoped by the project path so MCP servers, VS Code and other node tooling
+ * are never touched.
+ */
+function getProjectNextPids() {
+  const rootEsc = PROJECT_ROOT.replace(/'/g, "''");
+  const ps = `Get-CimInstance Win32_Process -Filter "Name='node.exe'" | `
+    + `Where-Object { $_.CommandLine -like '*${rootEsc}*' -and $_.CommandLine -like '*next*' } | `
+    + `Select-Object -ExpandProperty ProcessId`;
+  try {
+    const out = execSync(`powershell -NoProfile -Command "${ps}"`, { encoding: 'utf8' });
+    return out
+      .split('\n')
+      .map(s => parseInt(s.trim(), 10))
+      .filter(pid => pid > 0 && pid !== process.pid && pid !== process.ppid);
+  } catch {
+    return [];
+  }
+}
 
 function getListeningPids(port) {
   try {
@@ -58,15 +85,22 @@ function sleep(ms) {
 async function main() {
   console.log(`[kill-port] Checking port ${PORT}…`);
 
-  const pids = getListeningPids(PORT);
-
-  if (pids.length === 0) {
+  // 1) Kill whatever is LISTENING on the port.
+  const portPids = getListeningPids(PORT);
+  if (portPids.length === 0) {
     console.log(`[kill-port] Port ${PORT} is free ✓`);
-    return;
+  } else {
+    console.log(`[kill-port] Found ${portPids.length} process(es) on port ${PORT}: ${portPids.join(', ')}`);
+    killPids(portPids);
   }
 
-  console.log(`[kill-port] Found ${pids.length} process(es) on port ${PORT}: ${pids.join(', ')}`);
-  killPids(pids);
+  // 2) Kill ORPHANED Next.js processes of this project that survive elsewhere
+  //    (not listening on the port) — the real cause of the daily "no carga".
+  const orphanPids = getProjectNextPids().filter(pid => !portPids.includes(pid));
+  if (orphanPids.length > 0) {
+    console.log(`[kill-port] Found ${orphanPids.length} orphaned Next process(es): ${orphanPids.join(', ')}`);
+    killPids(orphanPids);
+  }
 
   // Give the OS a moment to fully release the port
   await sleep(1000);
