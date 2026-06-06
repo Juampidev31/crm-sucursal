@@ -2117,7 +2117,7 @@ export default function RegistrosPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
-            {true && (
+            {hayFiltros && (
               <div style={{
                 background: hayFiltros ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0) 100%)' : 'rgba(255, 255, 255, 0.01)',
                 borderBottom: `1px solid ${hayFiltros ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.03)'}`,
