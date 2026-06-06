@@ -15,6 +15,62 @@ import { Registro } from '@/types';
 
 const ANALISTAS = CONFIG.ANALISTAS_DEFAULT;
 
+// Combo editable buscable: al hacer foco muestra TODAS las opciones; filtra al tipear
+// y permite ingresar un valor nuevo (texto libre).
+function ComboEditable({ value, onChange, options, placeholder, accent }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder?: string;
+  accent: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  const norm = (s: string) => s.normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '').toLowerCase();
+  const q = typed ? norm(value.trim()) : '';
+  const filtered = (q ? options.filter(o => norm(o).includes(q)) : options).slice(0, 200);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <input
+        value={value}
+        onChange={e => { onChange(e.target.value); setTyped(true); setOpen(true); }}
+        onFocus={() => { setOpen(true); setTyped(false); }}
+        onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}
+        placeholder={placeholder}
+        autoComplete="off"
+        style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none' }}
+      />
+      {open && filtered.length > 0 && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 2px)', left: 0, width: '100%', minWidth: 220, maxHeight: 220, overflowY: 'auto', background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', padding: 4 }}>
+          {filtered.map(o => (
+            <div
+              key={o}
+              onMouseDown={e => { e.preventDefault(); onChange(o); setOpen(false); }}
+              style={{ padding: '6px 8px', borderRadius: 4, fontSize: 12, color: norm(o) === norm(value) ? accent : '#cbd0da', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              {o}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const EMPLEADORES_MAESTROS: Record<string, { tipo: string, categoria: string }> = {
   "ENERGÍA DE ENTRE RÍOS S.A": { "tipo": "S.A", "categoria": "Privada" },
   "INC S.A": { "tipo": "S.A", "categoria": "Privada" },
@@ -1411,6 +1467,26 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [editHoyEmpleador, setEditHoyEmpleador] = useState('');
   const [editHoyDependencia, setEditHoyDependencia] = useState('');
   const [guardandoHoy, setGuardandoHoy] = useState(false);
+
+  // Dependencias disponibles según el Empleador elegido en la edición.
+  // Si el empleador coincide (sin acentos/mayúsculas), lista TODAS sus dependencias cargadas.
+  const dependenciasParaEmpleador = useMemo(() => {
+    const norm = (s?: string | null) => (s ?? '')
+      .normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
+      .toUpperCase().replace(/\s+/g, ' ').trim();
+    const target = norm(editHoyEmpleador);
+    if (!target) return [] as string[];
+    const set = new Set<string>();
+    for (const r of registros) {
+      const ne = norm(r.empleador);
+      if (!ne) continue;
+      if (ne === target || ne.includes(target) || target.includes(ne)) {
+        const d = r.dependencia?.trim();
+        if (d) set.add(d);
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [registros, editHoyEmpleador]);
   const [fechaDesdeHoy, setFechaDesdeHoy] = useState<string>(() =>
     new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
   );
@@ -4349,7 +4425,6 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   <p>No se encontraron registros creados hoy.</p>
                 </div>
               ) : (
-                <>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
@@ -4363,10 +4438,6 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   <tbody>
                     {empleadoresHoy.map((r, idx) => {
                       const editing = editandoHoyId === r.id;
-                      const inputStyle: React.CSSProperties = {
-                        width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
-                        color: '#fff', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none',
-                      };
                       const iconBtn = (bg: string, border: string, color: string): React.CSSProperties => ({
                         background: bg, border: `1px solid ${border}`, color, borderRadius: 6,
                         padding: '5px 7px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
@@ -4381,14 +4452,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       >
                         <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace', fontSize: 12 }}>{r.cuil || '-'}</td>
                         <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600, fontSize: 12 }}>{r.nombre || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: 600, fontSize: 12 }}>
+                        <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: 600, fontSize: 12, minWidth: 220 }}>
                           {editing
-                            ? <input autoFocus list="nuevos-hoy-empleadores" value={editHoyEmpleador} onChange={e => setEditHoyEmpleador(e.target.value)} placeholder="Elegí o escribí…" style={inputStyle} />
+                            ? <ComboEditable value={editHoyEmpleador} onChange={setEditHoyEmpleador} options={allEmpleadoresList} placeholder="Elegí o escribí…" accent="#34d399" />
                             : (r.empleador || '-')}
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 600, fontSize: 12 }}>
+                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 600, fontSize: 12, minWidth: 220 }}>
                           {editing
-                            ? <input list="nuevos-hoy-dependencias" value={editHoyDependencia} onChange={e => setEditHoyDependencia(e.target.value)} placeholder="Elegí o escribí…" style={inputStyle} />
+                            ? <ComboEditable value={editHoyDependencia} onChange={setEditHoyDependencia} options={dependenciasParaEmpleador.length > 0 ? dependenciasParaEmpleador : allDependenciasList} placeholder="Elegí o escribí…" accent="#60a5fa" />
                             : (r.dependencia || '-')}
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
@@ -4412,13 +4483,6 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     })}
                   </tbody>
                 </table>
-                <datalist id="nuevos-hoy-empleadores">
-                  {allEmpleadoresList.map(e => <option key={e} value={e} />)}
-                </datalist>
-                <datalist id="nuevos-hoy-dependencias">
-                  {allDependenciasList.map(d => <option key={d} value={d} />)}
-                </datalist>
-                </>
               )}
             </div>
           </div>
