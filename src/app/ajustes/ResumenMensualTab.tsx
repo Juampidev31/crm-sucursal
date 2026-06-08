@@ -2736,7 +2736,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         fontWeight: 800,
                         textTransform: 'uppercase',
                         letterSpacing: '0.8px',
-                        background: filtroActividad === f ? '#00d4ff' : 'transparent',
+                        background: filtroActividad === f ? '#fff' : 'transparent',
                         color: filtroActividad === f ? '#000' : '#555',
                         transition: 'all 0.2s ease',
                         fontFamily: "'Outfit', sans-serif"
@@ -2755,7 +2755,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>
                     Venta Diaria {filtroActividad === 'PDV' ? 'Pura (Total PDV)' : `— ${filtroActividad}`}
                   </div>
-                  <div style={{ flex: 1, position: 'relative', width: '100%', minHeight: 250 }}>
+                  <div style={{ position: 'relative', width: '100%', height: 220 }}>
                     <Line data={chartVentaDiaria} options={chartVentaDiariaOptions as any} />
                   </div>
                 </div>
