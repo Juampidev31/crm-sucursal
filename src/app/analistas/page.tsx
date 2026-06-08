@@ -1563,6 +1563,53 @@ export default function AnalistasPage() {
     };
   }, [empleoPublPrivData]);
 
+  // ── Chart 9: Ticket Promedio por Ingresos ───────────────────────────────
+  const chartIngresosVsTicket = useMemo(() => {
+    const buckets = ['Menos de $300k', '$300k - $600k', '$600k - $1M', 'Más de $1M'];
+    const ventas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
+    const ventasFiltradas = analista === 'PDV' ? ventas : ventas.filter(r => r.analista === analista);
+
+    const dataActual = buckets.map(b => {
+      const bVentas = ventasFiltradas.filter(r => r.ingresos === b);
+      if (bVentas.length === 0) return 0;
+      const sum = bVentas.reduce((acc, r) => acc + (Number(r.monto) || 0), 0);
+      return sum / bVentas.length;
+    });
+
+    const ant = ventasMesAnt.filter(isVenta);
+    const antFiltradas = analista === 'PDV' ? ant : ant.filter(r => r.analista === analista);
+    const dataAnt = buckets.map(b => {
+      const bVentas = antFiltradas.filter(r => r.ingresos === b);
+      if (bVentas.length === 0) return 0;
+      const sum = bVentas.reduce((acc, r) => acc + (Number(r.monto) || 0), 0);
+      return sum / bVentas.length;
+    });
+
+    return {
+      labels: buckets,
+      datasets: [
+        {
+          label: `Ticket ${mesActualLabel}`,
+          data: dataActual,
+          backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
+          borderColor: '#10b981',
+          borderWidth: 0,
+          borderRadius: 4,
+          maxBarThickness: 70
+        },
+        {
+          label: `Ticket ${mesAntLabel}`,
+          data: dataAnt,
+          backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          borderColor: 'rgba(255, 255, 255, 0.15)',
+          borderWidth: 0,
+          borderRadius: 4,
+          maxBarThickness: 70
+        }
+      ]
+    };
+  }, [registros, selectedMes, selectedAnio, ventasMesAnt, mesActualLabel, mesAntLabel, analista]);
+
   // ── Chart 10: % Total Conversión ─────────────────────────────────────────
   const chartConversionTotal = useMemo(() => {
     const labels = chartLabels;
@@ -2035,8 +2082,31 @@ export default function AnalistasPage() {
                       </div>
                     </div>
 
-                    {/* 3. Embudo */}
-                    {/* 3. Acuerdos por Analista */}
+                    {/* 4. Ticket Promedio por Ingresos */}
+                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Ticket Promedio vs Ingresos</div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="chart-ticket-ingresos" style={{ height: 280 }}>
+                        {chartsLoaded ? (
+                          <Bar data={chartIngresosVsTicket as any} options={baseChartOpts('$', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        ) : (
+                          <ChartShimmer />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 5. Acuerdos por Analista */}
                     <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                         <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
