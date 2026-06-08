@@ -7,17 +7,16 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
 } from 'chart.js';
-import AnalisisTemporalTab from './AnalisisTemporalTab';
 import MetricasTab from './MetricasTab';
 import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
 import SeccionGraficosResumen from './SeccionGraficosResumen';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
-import type { AnalisisTemporalState } from './AnalisisTemporalTab';
+import { useAuth } from '@/context/AuthContext';
 
 
 const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
@@ -322,7 +321,7 @@ const ManualTextarea = ({ label, value, onChange, placeholder }: {
 );
 
 export default function ResumenMensualTab({ registros, objetivos, diasConfig, onSuccess, onError }: Props) {
-  const [seccion10State, setSeccion10State] = useState<AnalisisTemporalState | null>(null);
+  const { isAdmin } = useAuth();
 
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
@@ -1878,6 +1877,127 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     };
   }, [resumen.presupuestos_por_analista, kpiPorAnalista, refLine100]);
 
+  // ── Chart Venta Diaria Pura ──────────────────────────────────────────────────
+  const chartVentaDiaria = useMemo(() => {
+    // Definimos isVenta local por si acaso
+    const _isVenta = (r: Registro) => r.estado === 'Venta' || r.estado === 'Aprob. CC';
+    const regsMes = registros.filter(r => {
+      if (!r.fecha) return false;
+      const d = new Date(r.fecha + 'T12:00:00');
+      return d.getMonth() + 1 === selectedMes && d.getFullYear() === selectedAnio;
+    }).filter(_isVenta);
+
+    const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
+    const isCurrentMonth = selectedMes === (now.getMonth() + 1) && selectedAnio === now.getFullYear();
+    const maxDay = isCurrentMonth ? now.getDate() : daysInMonth;
+
+    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+    const realData = labels.map((_, i) => {
+      const day = i + 1;
+      if (day > maxDay) return null;
+      const dayRegs = regsMes.filter(r => {
+        if (!r.fecha) return false;
+        const d = new Date(r.fecha + 'T12:00:00');
+        return d.getDate() === day;
+      });
+      return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Venta',
+          data: realData,
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          borderColor: '#10b981',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: '#10b981',
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    };
+  }, [registros, selectedMes, selectedAnio]);
+
+  const chartVentaDiariaOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 14, weight: 800, family: "'Outfit', sans-serif" },
+        bodyColor: '#34d399',
+        bodyFont: { size: 16, weight: 700, family: "'Outfit', sans-serif" },
+        padding: 16,
+        cornerRadius: 12,
+        callbacks: {
+          title: (items: any[]) => `Día ${items[0].label}`,
+          label: (ctx: any) => formatCurrency(ctx.raw)
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } }
+    },
+    interaction: { mode: 'index' as const, intersect: false }
+  };
+
+  const heatmapData = useMemo(() => {
+    const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
+    const firstDay = new Date(selectedAnio, selectedMes - 1, 1).getDay();
+    const offset = firstDay === 0 ? 6 : firstDay - 1; // Lunes = 0
+
+    const rawData = chartVentaDiaria.datasets[0].data.map(v => Number(v) || 0);
+    const maxVal = Math.max(...rawData, 1);
+
+    const weeks: (number | null)[][] = [];
+    let currentWeek: (number | null)[] = [];
+    for (let i = 0; i < offset; i++) currentWeek.push(null);
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+      currentWeek.push(d);
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+    }
+    if (currentWeek.length > 0) {
+      while (currentWeek.length < 7) currentWeek.push(null);
+      weeks.push(currentWeek);
+    }
+
+    const weekTotals = weeks.map(week => {
+      return week.reduce((sum, day) => {
+        if (day === null) return sum;
+        return sum + rawData[day - 1];
+      }, 0);
+    });
+
+    const totalPeriodo = rawData.reduce((s, v) => s + v, 0);
+
+    const daySums = [0, 0, 0, 0, 0, 0, 0];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dObj = new Date(selectedAnio, selectedMes - 1, d);
+      const idx = dObj.getDay() === 0 ? 6 : dObj.getDay() - 1;
+      daySums[idx] += rawData[d - 1];
+    }
+    const maxDayIdx = daySums.indexOf(Math.max(...daySums));
+    const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const diaMasActivo = totalPeriodo > 0 ? dayNames[maxDayIdx] : '—';
+
+    return { offset, data: rawData, maxVal, daysInMonth, weeks, weekTotals, totalPeriodo, diaMasActivo };
+  }, [chartVentaDiaria, selectedMes, selectedAnio]);
+
+  const formatK = (val: number) => {
+    if (!val) return '';
+    return '$' + (val / 1000).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + 'K';
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', paddingTop: '32px' }}>
 
@@ -2524,11 +2644,120 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             )}
           </div>
 
-          {/* ── SECCIÓN 10: RENDIMIENTO Y TENDENCIAS ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#00d4ff" />)}
-            {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
-          </div>
+          {/* ── SECCIÓN 10: VENTA DIARIA PURA ── */}
+          {isAdmin && (
+            <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
+              {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#00d4ff" />)}
+              {!collapsedSections[10] && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', padding: '0 24px 24px 24px' }}>
+                  
+                  {/* Gráfico de Líneas */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Venta Diaria Pura</div>
+                    <div style={{ minHeight: 300, position: 'relative', width: '100%' }}>
+                      <Line data={chartVentaDiaria} options={chartVentaDiariaOptions as any} />
+                    </div>
+                  </div>
+
+                  {/* Mapa de Actividad (Diseño Screenshot) */}
+                  <div style={{ background: '#111111', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                    
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+                      <div style={{ width: 3, height: 16, background: '#10b981', marginRight: 8, borderRadius: 2 }} />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>MAPA DE ACTIVIDAD</div>
+                        <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>Ventas por día — mes actual</div>
+                      </div>
+                    </div>
+
+                    {/* Grid de Actividad */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                      {/* Headers de Días */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6, marginBottom: 4 }}>
+                        <div />
+                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
+                          <div key={d} style={{ fontSize: 10, color: '#555', textAlign: 'center', fontWeight: 700 }}>{d}</div>
+                        ))}
+                        <div style={{ fontSize: 10, color: '#555', textAlign: 'right', fontWeight: 800 }}>TOTAL</div>
+                      </div>
+
+                      {/* Semanas */}
+                      {heatmapData.weeks.map((week, wIdx) => (
+                        <div key={wIdx} style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6 }}>
+                          {/* Label de semana */}
+                          <div style={{ fontSize: 10, color: '#444', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            S{wIdx + 1}
+                          </div>
+                          
+                          {/* Días (solo Lun a Sáb = índices 0 a 5) */}
+                          {week.slice(0, 6).map((day, dIdx) => {
+                            if (day === null) {
+                              return <div key={dIdx} style={{ background: '#131514', borderRadius: 4, height: 50 }} />;
+                            }
+                            
+                            const val = heatmapData.data[day - 1];
+                            const isFuture = day > (selectedMes === (now.getMonth() + 1) && selectedAnio === now.getFullYear() ? now.getDate() : heatmapData.daysInMonth);
+                            
+                            if (isFuture) {
+                              return <div key={dIdx} style={{ background: '#131514', borderRadius: 4, height: 50, border: '1px solid rgba(255,255,255,0.02)' }} />;
+                            }
+
+                            const intensity = val === 0 ? 0 : Math.max(0.15, val / heatmapData.maxVal);
+                            const bg = val === 0 ? '#151917' : `rgba(22, 163, 74, ${intensity})`;
+                            const textColor = val === 0 ? 'transparent' : '#fff';
+                            
+                            return (
+                              <div
+                                key={dIdx}
+                                title={`Día ${day}: ${formatCurrency(val)}`}
+                                style={{
+                                  background: bg,
+                                  borderRadius: 4,
+                                  height: 50,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 11,
+                                  fontWeight: 800,
+                                  color: textColor,
+                                  boxShadow: val > 0 ? `inset 0 0 0 1px rgba(255,255,255,0.1)` : 'none',
+                                  transition: 'transform 0.2s',
+                                  cursor: 'pointer'
+                                }}
+                                onMouseEnter={e => { if (val > 0) e.currentTarget.style.transform = 'scale(1.05)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                              >
+                                {formatK(val)}
+                              </div>
+                            );
+                          })}
+
+                          {/* Total de la Semana */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 12, fontWeight: 900, color: '#fff' }}>
+                            {formatK(heatmapData.weekTotals[wIdx]) || '$0K'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Stats Footer */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>DÍA MÁS ACTIVO</div>
+                        <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{heatmapData.diaMasActivo}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>TOTAL PERÍODO</div>
+                        <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{formatCurrency(heatmapData.totalPeriodo)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+          )}
 
 
         </div>

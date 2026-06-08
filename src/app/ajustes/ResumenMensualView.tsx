@@ -10,11 +10,9 @@ import { CONFIG } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
-import AnalisisTemporalTab from './AnalisisTemporalTab';
 import MetricasTab from './MetricasTab';
 import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
 import SeccionGraficosResumen from './SeccionGraficosResumen';
-import type { AnalisisTemporalState } from './AnalisisTemporalTab';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
@@ -383,8 +381,7 @@ export interface ResumenMensualViewProps {
   // textos del resumen
   resumen: ResumenTextos;
   setResumen: React.Dispatch<React.SetStateAction<any>>;
-  // sección 10
-  setSeccion10State: (s: AnalisisTemporalState | null) => void;
+  // sección 10 (removida)
 }
 
 export default function ResumenMensualView(props: ResumenMensualViewProps) {
@@ -398,7 +395,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
     distAcuerdos, distAcuerdosTotal, distCuotas, distCuotasTotal,
     distRangoEtario, distRangoEtarioTotal, distSexo, distSexoTotal,
     distEmpleador, distEmpleadorTotal, distLocalidad, distLocalidadTotal,
-    resumen, setResumen, setSeccion10State,
+    resumen, setResumen,
   } = props;
 
   const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
@@ -877,11 +874,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
         )}
       </div>
 
-      {/* ── SECCIÓN 10: RENDIMIENTO Y TENDENCIAS ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-        {sectionHeader(10, '10. Rendimiento y Tendencias', <BarChart3 size={15} color="#00d4ff" />)}
-        {!collapsedSections[10] && <AnalisisTemporalTab registros={registros} initialMonth={selectedMes} initialYear={selectedAnio} onStateChange={setSeccion10State} />}
-      </div>
+      {/* SECCIÓN 10 REMOVIDA PARA LA VISTA PÚBLICA */}
     </div>
   );
 }
