@@ -32,15 +32,24 @@ const ModernDoughnut = ({ data, totalOps, label }: { data: any, totalOps: number
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#111',
-        titleColor: '#fff',
-        bodyColor: '#ccc',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        padding: 12,
-        cornerRadius: 8,
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleAlign: 'center',
+        titleMarginBottom: 16,
+        bodyColor: '#f1f5f9',
+        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodySpacing: 10,
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 2,
+        padding: 24,
+        cornerRadius: 16,
+        boxPadding: 8,
+        usePointStyle: true,
         callbacks: {
-          label: (ctx: any) => ` ${ctx.label}: ${ctx.raw} ops`
+          label: (context: any) => {
+            return ` ${context.label}: ${context.raw} ops`;
+          }
         }
       }
     },

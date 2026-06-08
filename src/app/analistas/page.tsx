@@ -28,16 +28,23 @@ const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = fals
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#0c0c0c',
-        titleColor: '#fff',
-        bodyColor: '#ccc',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        padding: 12,
-        cornerRadius: 8,
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleAlign: 'center',
+        titleMarginBottom: 16,
+        bodyColor: '#f1f5f9',
+        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodySpacing: 10,
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 2,
+        padding: 24,
+        cornerRadius: 16,
+        boxPadding: 8,
+        usePointStyle: true,
         callbacks: {
           label: (context: any) => {
-            return `${context.raw}`;
+            return ` ${context.raw}`;
           }
         }
       }
@@ -1014,7 +1021,22 @@ export default function AnalistasPage() {
         align: 'end' as const,
         labels: { color: '#666', font: { size: 10 }, usePointStyle: true, padding: 10 }
       },
-      tooltip: { backgroundColor: '#0c0c0c', titleColor: '#fff', bodyColor: '#aaa', borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1 },
+      tooltip: {
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleAlign: 'center',
+        titleMarginBottom: 16,
+        bodyColor: '#f1f5f9',
+        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodySpacing: 10,
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 2,
+        padding: 24,
+        cornerRadius: 16,
+        boxPadding: 8,
+        usePointStyle: true,
+      },
       datalabels: {
         display: showLabels,
         align: stacked ? 'center' as const : 'top' as const,
@@ -1403,18 +1425,32 @@ export default function AnalistasPage() {
     plugins: {
       legend: { display: true, position: 'top' as const, labels: { color: '#ccc', font: { size: 10 } } },
       tooltip: {
-        backgroundColor: '#0c0c0c',
-        titleColor: '#fff',
-        bodyColor: '#ccc',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        padding: 12,
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleAlign: 'center',
+        titleMarginBottom: 16,
+        bodyColor: '#f1f5f9',
+        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodySpacing: 10,
+        footerColor: '#34d399',
+        footerFont: { size: 16, weight: 900, family: "'Outfit', sans-serif" },
+        footerMarginTop: 16,
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 2,
+        padding: 24,
+        cornerRadius: 16,
+        boxPadding: 8,
+        usePointStyle: true,
         callbacks: {
+          title: (tooltipItems: any[]) => {
+            return `Día ${tooltipItems[0].label}`;
+          },
           label: (ctx: any) => {
             const v = ctx.raw;
             return ctx.datasetIndex === 0 
-              ? `Vendido: ${formatCurrency(v)}` 
-              : `Ideal: ${formatCurrency(v)}`;
+              ? ` Vendido: ${formatCurrency(v)}` 
+              : ` Ideal: ${formatCurrency(v)}`;
           },
           footer: (tooltipItems: any[]) => {
              const index = tooltipItems[0].dataIndex;
@@ -1422,8 +1458,8 @@ export default function AnalistasPage() {
              const ideal = tooltipItems[0].chart.data.datasets[1].data[index];
              if (vendido == null || ideal == null || ideal === 0) return '';
              const pct = ((vendido / ideal) - 1) * 100;
-             const sign = pct >= 0 ? '+' : '';
-             return `Variación: ${sign}${pct.toFixed(1)}%`;
+             const sign = pct > 0 ? '+' : '';
+             return `➔ Variación: ${sign}${pct.toFixed(1)}%`;
           }
         }
       }
