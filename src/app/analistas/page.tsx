@@ -1469,7 +1469,7 @@ export default function AnalistasPage() {
               if (daily != null) {
                 return [
                   ` Acumulado: ${formatCurrency(v)}`,
-                  ` Venta del día: ${formatCurrency(daily)}`
+                  ` ↳ Venta del día: ${formatCurrency(daily)}`
                 ];
               }
               return ` Acumulado: ${formatCurrency(v)}`;
