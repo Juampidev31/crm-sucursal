@@ -1377,15 +1377,20 @@ export default function AnalistasPage() {
     const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
     
     let cumulative = 0;
+    const dailyData: (number | null)[] = [];
     const realData = labels.map((_, i) => {
       const day = i + 1;
-      if (day > maxDay) return null;
+      if (day > maxDay) {
+        dailyData.push(null);
+        return null;
+      }
       const dayRegs = regsMes.filter(r => {
         if (!r.fecha) return false;
         const d = new Date(r.fecha + 'T12:00:00');
         return d.getDate() === day;
       });
       const dayTotal = dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      dailyData.push(dayTotal);
       cumulative += dayTotal;
       return cumulative;
     });
@@ -1399,6 +1404,7 @@ export default function AnalistasPage() {
         {
           label: 'Vendido',
           data: realData,
+          dailyData,
           borderColor: '#10b981',
           borderWidth: 2,
           pointRadius: 2,
@@ -1457,9 +1463,17 @@ export default function AnalistasPage() {
           },
           label: (ctx: any) => {
             const v = ctx.raw;
-            return ctx.datasetIndex === 0 
-              ? ` Vendido: ${formatCurrency(v)}` 
-              : ` Ideal: ${formatCurrency(v)}`;
+            if (ctx.datasetIndex === 0) {
+              const daily = ctx.dataset.dailyData?.[ctx.dataIndex];
+              if (daily != null) {
+                return [
+                  ` Acumulado: ${formatCurrency(v)}`,
+                  ` Venta del día: ${formatCurrency(daily)}`
+                ];
+              }
+              return ` Acumulado: ${formatCurrency(v)}`;
+            }
+            return ` Ideal: ${formatCurrency(v)}`;
           },
           footer: (tooltipItems: any[]) => {
              const index = tooltipItems[0].dataIndex;
