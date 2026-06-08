@@ -2755,7 +2755,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>
                     Venta Diaria {filtroActividad === 'PDV' ? 'Pura (Total PDV)' : `— ${filtroActividad}`}
                   </div>
-                  <div style={{ position: 'relative', width: '100%', height: 280 }}>
+                  <div style={{ flex: 1, position: 'relative', width: '100%' }}>
                     <Line data={chartVentaDiaria} options={chartVentaDiariaOptions as any} />
                   </div>
                 </div>
