@@ -1909,22 +1909,22 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           {
             label: 'Luciana',
             data: dataLuciana,
-            backgroundColor: 'rgba(168, 85, 247, 0.1)',
-            borderColor: '#a855f7',
+            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+            borderColor: '#06b6d4',
             borderWidth: 2,
             pointRadius: 4,
-            pointBackgroundColor: '#a855f7',
+            pointBackgroundColor: '#06b6d4',
             fill: true,
             tension: 0.3
           },
           {
             label: 'Victoria',
             data: dataVictoria,
-            backgroundColor: 'rgba(236, 72, 153, 0.1)',
-            borderColor: '#ec4899',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            borderColor: '#f59e0b',
             borderWidth: 2,
             pointRadius: 4,
-            pointBackgroundColor: '#ec4899',
+            pointBackgroundColor: '#f59e0b',
             fill: true,
             tension: 0.3
           }
@@ -1947,8 +1947,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     let color = '#10b981';
     let bgColor = 'rgba(16, 185, 129, 0.1)';
     if (filtroActividad === 'PDV') { color = '#10b981'; bgColor = 'rgba(16, 185, 129, 0.1)'; }
-    if (filtroActividad === 'Luciana') { color = '#a855f7'; bgColor = 'rgba(168, 85, 247, 0.1)'; }
-    if (filtroActividad === 'Victoria') { color = '#ec4899'; bgColor = 'rgba(236, 72, 153, 0.1)'; }
+    if (filtroActividad === 'Luciana') { color = '#06b6d4'; bgColor = 'rgba(6, 182, 212, 0.1)'; }
+    if (filtroActividad === 'Victoria') { color = '#f59e0b'; bgColor = 'rgba(245, 158, 11, 0.1)'; }
 
     return {
       labels,
@@ -2711,18 +2711,13 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
           {/* ── SECCIÓN 10: VENTA DIARIA PURA ── */}
           <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: collapsedSections[10] ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button onClick={() => toggleSection(10)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 4 }}>
-                  {collapsedSections[10] ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                </button>
-                <BarChart3 size={15} color="#00d4ff" />
-                <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>10. Venta Diaria y Actividad</h3>
-              </div>
+            {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#00d4ff" />)}
 
-              {!collapsedSections[10] && (
-                <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 8 }}>
-                  {['PDV', 'Luciana', 'Victoria', 'Comparativa'].map(f => (
+            {!collapsedSections[10] && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '0 24px 24px 24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 8 }}>
+                    {['PDV', 'Luciana', 'Victoria', 'Comparativa'].map(f => (
                     <button
                       key={f}
                       onClick={() => setFiltroActividad(f as any)}
@@ -2737,15 +2732,13 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                       {f}
                     </button>
                   ))}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {!collapsedSections[10] && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', padding: '24px' }}>
-                
-                {/* Gráfico de Líneas */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+                  
+                  {/* Gráfico de Líneas */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>
                     Venta Diaria {filtroActividad === 'PDV' ? 'Pura (Total PDV)' : `— ${filtroActividad}`}
                   </div>
@@ -2849,6 +2842,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   </div>
                 </div>
 
+                </div>
               </div>
             )}
           </div>
