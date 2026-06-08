@@ -35,7 +35,7 @@ const ModernDoughnut = ({ data, totalOps, label }: { data: any, totalOps: number
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
         titleColor: '#ffffff',
         titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
-        titleAlign: 'center',
+        titleAlign: 'center' as const,
         titleMarginBottom: 16,
         bodyColor: '#f1f5f9',
         bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
