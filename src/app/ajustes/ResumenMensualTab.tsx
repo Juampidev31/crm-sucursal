@@ -1944,9 +1944,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     });
 
-    let color = '#3b82f6';
-    let bgColor = 'rgba(59, 130, 246, 0.1)';
-    if (filtroActividad === 'PDV') { color = '#3b82f6'; bgColor = 'rgba(59, 130, 246, 0.1)'; }
+    let color = '#10b981';
+    let bgColor = 'rgba(16, 185, 129, 0.1)';
+    if (filtroActividad === 'PDV') { color = '#10b981'; bgColor = 'rgba(16, 185, 129, 0.1)'; }
     if (filtroActividad === 'Luciana') { color = '#a855f7'; bgColor = 'rgba(168, 85, 247, 0.1)'; }
     if (filtroActividad === 'Victoria') { color = '#ec4899'; bgColor = 'rgba(236, 72, 153, 0.1)'; }
 
@@ -1996,7 +1996,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     },
     scales: {
       x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 } } },
-      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } }
+      y: { 
+        beginAtZero: true,
+        min: 0,
+        grid: { color: 'rgba(255,255,255,0.05)' }, 
+        ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } 
+      }
     },
     interaction: { mode: 'index' as const, intersect: false }
   };
