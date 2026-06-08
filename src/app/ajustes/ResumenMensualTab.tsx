@@ -1877,11 +1877,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── Chart Venta Diaria Pura ──────────────────────────────────────────────────
   const chartVentaDiaria = useMemo(() => {
-    const regsMes = registros.filter(r => {
-      if (!r.fecha) return false;
-      const d = new Date(r.fecha + 'T12:00:00');
-      return d.getMonth() + 1 === selectedMes && d.getFullYear() === selectedAnio;
-    }).filter(isVenta);
+    const regsMes = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
 
     const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
     const isCurrentMonth = selectedMes === (now.getMonth() + 1) && selectedAnio === now.getFullYear();
@@ -1891,11 +1887,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const realData = labels.map((_, i) => {
       const day = i + 1;
       if (day > maxDay) return null;
-      const dayRegs = regsMes.filter(r => {
-        if (!r.fecha) return false;
-        const d = new Date(r.fecha + 'T12:00:00');
-        return d.getDate() === day;
-      });
+      const dayStr = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayRegs = regsMes.filter(r => r.fecha?.slice(0, 10) === dayStr);
       return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     });
 
