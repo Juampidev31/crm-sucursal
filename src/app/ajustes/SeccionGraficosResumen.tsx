@@ -152,7 +152,7 @@ export default function SeccionGraficosResumen({
     } },
     scales: {
       x: { display: false },
-      y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666', font: { size: 9 }, callback: (v: any) => v + yLabel }, border: { display: false } }
+      y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666', font: { size: 9 }, callback: (v: any) => v + yLabel }, border: { display: false }, beginAtZero: true }
     }
   });
 

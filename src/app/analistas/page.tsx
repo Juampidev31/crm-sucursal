@@ -1433,7 +1433,16 @@ export default function AnalistasPage() {
         bodyColor: '#f1f5f9',
         bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
         bodySpacing: 10,
-        footerColor: '#34d399',
+        footerColor: (ctx: any) => {
+          const tooltipItems = ctx.tooltip.dataPoints;
+          if (!tooltipItems || !tooltipItems[0]) return '#34d399';
+          const index = tooltipItems[0].dataIndex;
+          const vendido = tooltipItems[0].chart.data.datasets[0].data[index];
+          const ideal = tooltipItems[0].chart.data.datasets[1].data[index];
+          if (vendido == null || ideal == null || ideal === 0) return '#34d399';
+          const pct = ((vendido / ideal) - 1) * 100;
+          return pct < 0 ? '#f87171' : '#34d399';
+        },
         footerFont: { size: 16, weight: 900, family: "'Outfit', sans-serif" },
         footerMarginTop: 16,
         borderColor: 'rgba(255,255,255,0.15)',

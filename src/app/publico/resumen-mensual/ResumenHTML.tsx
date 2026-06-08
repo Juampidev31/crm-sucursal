@@ -340,14 +340,14 @@ export default function ResumenHTML({ datos }: { datos: any }) {
             </div>
             <div style={{marginTop:24,height:180}}><Bar data={chartTicket as any} options={baseChartOpts(true)} plugins={[labelsPlugin]} /></div>
           </div>
-          <div style={{ marginTop: 24 }}>
-            <SeccionGraficosResumen 
-              kpiTotal={kpiTotal} 
-              selectedMes={month} 
-              selectedAnio={year} 
-              allRegistros={registros || []} 
-            />
-          </div>
+        </div>
+        <div style={{ marginTop: 24 }}>
+          <SeccionGraficosResumen 
+            kpiTotal={kpiTotal} 
+            selectedMes={month} 
+            selectedAnio={year} 
+            allRegistros={registros || []} 
+          />
         </div>
       </div>
 
