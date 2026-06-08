@@ -23,6 +23,7 @@ export const registroSchema = z.object({
   empleador: z.string().nullish().transform(v => v ?? undefined),
   dependencia: z.string().nullish().transform(v => v ?? undefined),
   localidad: z.string().nullish().transform(v => v ?? undefined),
+  ingresos: z.string().nullish().transform(v => v ?? undefined),
   created_at: z.string().nullish().transform(v => v ?? undefined),
   updated_at: z.string().nullish().transform(v => v ?? undefined),
 });

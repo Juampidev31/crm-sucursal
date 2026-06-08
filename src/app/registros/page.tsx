@@ -270,6 +270,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.sexo) errs.sexo = 'Requerido';
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
+  if (requiereTipoYAcuerdo && !form.ingresos?.trim()) errs.ingresos = 'Requerido';
   
   if ((esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador) || esMinisterioDesarrolloHumano(form.empleador)) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
@@ -776,7 +777,7 @@ const RegistroModal = memo(function RegistroModal({
       const { error } = await supabase.from('registros').update(payload).eq('id', editingId);
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
       // Auditar todos los cambios en una sola entrada
-      const AUDIT_FIELDS = ['nombre', 'cuil', 'analista', 'estado', 'monto', 'fecha', 'fecha_score', 'puntaje', 'es_re', 'comentarios', 'tipo_cliente', 'acuerdo_precios', 'cuotas', 'rango_etario', 'sexo', 'empleador', 'dependencia', 'localidad'] as const;
+      const AUDIT_FIELDS = ['nombre', 'cuil', 'analista', 'estado', 'monto', 'fecha', 'fecha_score', 'puntaje', 'es_re', 'comentarios', 'tipo_cliente', 'acuerdo_precios', 'cuotas', 'rango_etario', 'sexo', 'empleador', 'dependencia', 'localidad', 'ingresos'] as const;
       const cambios = AUDIT_FIELDS.filter(field => String((initialData as Record<string, unknown>)[field] ?? '') !== String((payload as Record<string, unknown>)[field] ?? ''));
       if (cambios.length > 0) {
         logAudit({
@@ -1131,6 +1132,16 @@ const RegistroModal = memo(function RegistroModal({
                     </div>
                   );
                 })()}
+              </Field>
+            </div>
+            <div className="form-row-3">
+              <Field label={`Ingresos declarados${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.ingresos}>
+                <PremiumSelect
+                  value={form.ingresos || ''}
+                  onChange={val => set('ingresos', val)}
+                  options={['Menos de $300k', '$300k - $600k', '$600k - $1M', 'Más de $1M']}
+                  placeholder="— Sin especificar —"
+                />
               </Field>
             </div>
             {(esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador) || esMinisterioDesarrolloHumano(form.empleador)) && (
