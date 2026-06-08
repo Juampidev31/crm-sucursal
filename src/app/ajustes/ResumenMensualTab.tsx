@@ -2643,119 +2643,117 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 10: VENTA DIARIA PURA ── */}
-          {isAdmin && (
-            <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-              {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#00d4ff" />)}
-              {!collapsedSections[10] && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', padding: '0 24px 24px 24px' }}>
-                  
-                  {/* Gráfico de Líneas */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Venta Diaria Pura</div>
-                    <div style={{ minHeight: 300, position: 'relative', width: '100%' }}>
-                      <Line data={chartVentaDiaria} options={chartVentaDiariaOptions as any} />
-                    </div>
+          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#00d4ff" />)}
+            {!collapsedSections[10] && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', padding: '0 24px 24px 24px' }}>
+                
+                {/* Gráfico de Líneas */}
+                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Venta Diaria Pura</div>
+                  <div style={{ minHeight: 300, position: 'relative', width: '100%' }}>
+                    <Line data={chartVentaDiaria} options={chartVentaDiariaOptions as any} />
                   </div>
-
-                  {/* Mapa de Actividad (Diseño Screenshot) */}
-                  <div style={{ background: '#111111', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
-                    
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
-                      <div style={{ width: 3, height: 16, background: '#10b981', marginRight: 8, borderRadius: 2 }} />
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>MAPA DE ACTIVIDAD</div>
-                        <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>Ventas por día — mes actual</div>
-                      </div>
-                    </div>
-
-                    {/* Grid de Actividad */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
-                      {/* Headers de Días */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6, marginBottom: 4 }}>
-                        <div />
-                        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
-                          <div key={d} style={{ fontSize: 10, color: '#555', textAlign: 'center', fontWeight: 700 }}>{d}</div>
-                        ))}
-                        <div style={{ fontSize: 10, color: '#555', textAlign: 'right', fontWeight: 800 }}>TOTAL</div>
-                      </div>
-
-                      {/* Semanas */}
-                      {heatmapData.weeks.map((week, wIdx) => (
-                        <div key={wIdx} style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6 }}>
-                          {/* Label de semana */}
-                          <div style={{ fontSize: 10, color: '#444', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            S{wIdx + 1}
-                          </div>
-                          
-                          {/* Días (solo Lun a Sáb = índices 0 a 5) */}
-                          {week.slice(0, 6).map((day, dIdx) => {
-                            if (day === null) {
-                              return <div key={dIdx} style={{ background: '#131514', borderRadius: 4, height: 50 }} />;
-                            }
-                            
-                            const val = heatmapData.data[day - 1];
-                            const isFuture = day > (selectedMes === (now.getMonth() + 1) && selectedAnio === now.getFullYear() ? now.getDate() : heatmapData.daysInMonth);
-                            
-                            if (isFuture) {
-                              return <div key={dIdx} style={{ background: '#131514', borderRadius: 4, height: 50, border: '1px solid rgba(255,255,255,0.02)' }} />;
-                            }
-
-                            const intensity = val === 0 ? 0 : Math.max(0.15, val / heatmapData.maxVal);
-                            const bg = val === 0 ? '#151917' : `rgba(22, 163, 74, ${intensity})`;
-                            const textColor = val === 0 ? 'transparent' : '#fff';
-                            
-                            return (
-                              <div
-                                key={dIdx}
-                                title={`Día ${day}: ${formatCurrency(val)}`}
-                                style={{
-                                  background: bg,
-                                  borderRadius: 4,
-                                  height: 50,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: 11,
-                                  fontWeight: 800,
-                                  color: textColor,
-                                  boxShadow: val > 0 ? `inset 0 0 0 1px rgba(255,255,255,0.1)` : 'none',
-                                  transition: 'transform 0.2s',
-                                  cursor: 'pointer'
-                                }}
-                                onMouseEnter={e => { if (val > 0) e.currentTarget.style.transform = 'scale(1.05)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                              >
-                                {formatK(val)}
-                              </div>
-                            );
-                          })}
-
-                          {/* Total de la Semana */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 12, fontWeight: 900, color: '#fff' }}>
-                            {formatK(heatmapData.weekTotals[wIdx]) || '$0K'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Stats Footer */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div>
-                        <div style={{ fontSize: 10, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>DÍA MÁS ACTIVO</div>
-                        <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{heatmapData.diaMasActivo}</div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 10, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>TOTAL PERÍODO</div>
-                        <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{formatCurrency(heatmapData.totalPeriodo)}</div>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
-              )}
-            </div>
-          )}
+
+                {/* Mapa de Actividad (Diseño Screenshot) */}
+                <div style={{ background: '#111111', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                  
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+                    <div style={{ width: 3, height: 16, background: '#10b981', marginRight: 8, borderRadius: 2 }} />
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>MAPA DE ACTIVIDAD</div>
+                      <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>Ventas por día — mes actual</div>
+                    </div>
+                  </div>
+
+                  {/* Grid de Actividad */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                    {/* Headers de Días */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6, marginBottom: 4 }}>
+                      <div />
+                      {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
+                        <div key={d} style={{ fontSize: 10, color: '#555', textAlign: 'center', fontWeight: 700 }}>{d}</div>
+                      ))}
+                      <div style={{ fontSize: 10, color: '#555', textAlign: 'right', fontWeight: 800 }}>TOTAL</div>
+                    </div>
+
+                    {/* Semanas */}
+                    {heatmapData.weeks.map((week, wIdx) => (
+                      <div key={wIdx} style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6 }}>
+                        {/* Label de semana */}
+                        <div style={{ fontSize: 10, color: '#444', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          S{wIdx + 1}
+                        </div>
+                        
+                        {/* Días (solo Lun a Sáb = índices 0 a 5) */}
+                        {week.slice(0, 6).map((day, dIdx) => {
+                          if (day === null) {
+                            return <div key={dIdx} style={{ background: '#131514', borderRadius: 4, height: 50 }} />;
+                          }
+                          
+                          const val = heatmapData.data[day - 1];
+                          const isFuture = day > (selectedMes === (now.getMonth() + 1) && selectedAnio === now.getFullYear() ? now.getDate() : heatmapData.daysInMonth);
+                          
+                          if (isFuture) {
+                            return <div key={dIdx} style={{ background: '#131514', borderRadius: 4, height: 50, border: '1px solid rgba(255,255,255,0.02)' }} />;
+                          }
+
+                          const intensity = val === 0 ? 0 : Math.max(0.15, val / heatmapData.maxVal);
+                          const bg = val === 0 ? '#151917' : `rgba(22, 163, 74, ${intensity})`;
+                          const textColor = val === 0 ? 'transparent' : '#fff';
+                          
+                          return (
+                            <div
+                              key={dIdx}
+                              title={`Día ${day}: ${formatCurrency(val)}`}
+                              style={{
+                                background: bg,
+                                borderRadius: 4,
+                                height: 50,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: 11,
+                                fontWeight: 800,
+                                color: textColor,
+                                boxShadow: val > 0 ? `inset 0 0 0 1px rgba(255,255,255,0.1)` : 'none',
+                                transition: 'transform 0.2s',
+                                cursor: 'pointer'
+                              }}
+                              onMouseEnter={e => { if (val > 0) e.currentTarget.style.transform = 'scale(1.05)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                            >
+                              {formatK(val)}
+                            </div>
+                          );
+                        })}
+
+                        {/* Total de la Semana */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 12, fontWeight: 900, color: '#fff' }}>
+                          {formatK(heatmapData.weekTotals[wIdx]) || '$0K'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Stats Footer */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>DÍA MÁS ACTIVO</div>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{heatmapData.diaMasActivo}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>TOTAL PERÍODO</div>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{formatCurrency(heatmapData.totalPeriodo)}</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </div>
 
 
         </div>
