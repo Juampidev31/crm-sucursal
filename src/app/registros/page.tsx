@@ -1968,6 +1968,7 @@ export default function RegistrosPage() {
   if (isRevisionState && activeConfig) {
     const total = filteredRegistros.length;
     let vencidos = 0;
+    let montoVencidos = 0;
     let maxDays = 0;
     let sumDays = 0;
     const nowTime = new Date().getTime();
@@ -1978,7 +1979,10 @@ export default function RegistrosPage() {
         const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff > maxDays) maxDays = daysDiff;
         if (daysDiff >= 0) sumDays += daysDiff;
-        if (daysDiff >= activeConfig.dias) vencidos++;
+        if (daysDiff >= activeConfig.dias) {
+          vencidos++;
+          montoVencidos += Number(r.monto) || 0;
+        }
       }
     });
 
@@ -1989,7 +1993,9 @@ export default function RegistrosPage() {
       estado: filters.estados[0],
       diasLimite: activeConfig.dias,
       total,
+      montoTotal: totales.monto,
       vencidos,
+      montoVencidos,
       maxDays,
       avgDays,
       salud
@@ -2068,7 +2074,7 @@ export default function RegistrosPage() {
             </div>
 
             {/* Metrics */}
-            <div style={{ display: 'flex', gap: '16px', zIndex: 1 }}>
+            <div style={{ display: 'flex', gap: '16px', zIndex: 1, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
@@ -2077,12 +2083,28 @@ export default function RegistrosPage() {
                 <Hash size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
               </div>
 
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Total</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoTotal)}</span>
+                </div>
+                <DollarSign size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vencidos</span>
                   <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? '#f87171' : '#fff', lineHeight: 1 }}>{panelData.vencidos}</span>
                 </div>
                 <Timer size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.15)' }} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Vencidos</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? '#f87171' : '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoVencidos)}</span>
+                </div>
+                <DollarSign size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.15)' }} />
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
@@ -2119,12 +2141,12 @@ export default function RegistrosPage() {
           <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
             {hayFiltros && (
               <div style={{
-                background: hayFiltros ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0) 100%)' : 'rgba(255, 255, 255, 0.01)',
-                borderBottom: `1px solid ${hayFiltros ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.03)'}`,
+                background: isRevisionState ? 'transparent' : hayFiltros ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0) 100%)' : 'rgba(255, 255, 255, 0.01)',
+                borderBottom: isRevisionState ? '1px solid rgba(255, 255, 255, 0.03)' : `1px solid ${hayFiltros ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.03)'}`,
                 display: 'flex', flexDirection: 'column'
               }}>
-                <div style={{ padding: '12px 24px', display: 'flex', gap: '32px', alignItems: 'center' }}>
-                  {hayFiltros ? (
+                <div style={{ padding: '12px 24px', display: 'flex', gap: '32px', alignItems: 'center', minHeight: isRevisionState ? '56px' : 'auto' }}>
+                  {isRevisionState ? null : hayFiltros ? (
                     <>
                       <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
                         Registros filtrados <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
