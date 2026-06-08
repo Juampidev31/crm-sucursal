@@ -1877,13 +1877,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── Chart Venta Diaria Pura ──────────────────────────────────────────────────
   const chartVentaDiaria = useMemo(() => {
-    // Definimos isVenta local por si acaso
-    const _isVenta = (r: Registro) => r.estado === 'Venta' || r.estado === 'Aprob. CC';
     const regsMes = registros.filter(r => {
       if (!r.fecha) return false;
       const d = new Date(r.fecha + 'T12:00:00');
       return d.getMonth() + 1 === selectedMes && d.getFullYear() === selectedAnio;
-    }).filter(_isVenta);
+    }).filter(isVenta);
 
     const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
     const isCurrentMonth = selectedMes === (now.getMonth() + 1) && selectedAnio === now.getFullYear();
