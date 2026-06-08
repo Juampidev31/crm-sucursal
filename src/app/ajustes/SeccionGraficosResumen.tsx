@@ -67,13 +67,20 @@ export const ModernDoughnut = ({ data, total, label, unit = '', showPercent = fa
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#111',
-        titleColor: '#fff',
-        bodyColor: '#ccc',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        padding: 12,
-        cornerRadius: 8,
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleAlign: 'center' as const,
+        titleMarginBottom: 16,
+        bodyColor: '#f1f5f9',
+        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodySpacing: 10,
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 2,
+        padding: 24,
+        cornerRadius: 16,
+        boxPadding: 8,
+        usePointStyle: true,
         callbacks: {
           label: (ctx: any) => {
             const val = ctx.raw;
@@ -127,7 +134,22 @@ export default function SeccionGraficosResumen({
     maintainAspectRatio: false,
     _isPct: isPct,
     layout: { padding: { bottom: 0 } },
-    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    plugins: { legend: { display: false }, tooltip: {
+      backgroundColor: 'rgba(10, 10, 15, 0.95)',
+      titleColor: '#ffffff',
+      titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+      titleAlign: 'center' as const,
+      titleMarginBottom: 16,
+      bodyColor: '#f1f5f9',
+      bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+      bodySpacing: 10,
+      borderColor: 'rgba(255,255,255,0.15)',
+      borderWidth: 2,
+      padding: 24,
+      cornerRadius: 16,
+      boxPadding: 8,
+      usePointStyle: true,
+    } },
     scales: {
       x: { display: false },
       y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666', font: { size: 9 }, callback: (v: any) => v + yLabel }, border: { display: false } }

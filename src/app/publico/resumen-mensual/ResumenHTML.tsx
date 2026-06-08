@@ -25,16 +25,23 @@ const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: 
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#111',
-        titleColor: '#fff',
-        bodyColor: '#ccc',
-        borderColor: 'rgba(255,255,255,0.1)',
-        borderWidth: 1,
-        padding: 12,
-        cornerRadius: 8,
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleAlign: 'center' as const,
+        titleMarginBottom: 16,
+        bodyColor: '#f1f5f9',
+        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodySpacing: 10,
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 2,
+        padding: 24,
+        cornerRadius: 16,
+        boxPadding: 8,
+        usePointStyle: true,
         callbacks: {
           label: (context: any) => {
-            return `${context.raw}`;
+            return ` ${context.raw}`;
           }
         }
       }
@@ -93,7 +100,22 @@ const labelsPlugin: any = {
 const baseChartOpts = (show = true) => ({
   responsive: true, maintainAspectRatio: false,
   layout: { padding: { top: show ? 50 : 20, bottom: 5 } },
-  plugins: { legend: { display: false }, tooltip: { backgroundColor: '#111', titleColor: '#fff', bodyColor: '#aaa' } },
+  plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleAlign: 'center' as const,
+        titleMarginBottom: 16,
+        bodyColor: '#f1f5f9',
+        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodySpacing: 10,
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 2,
+        padding: 24,
+        cornerRadius: 16,
+        boxPadding: 8,
+        usePointStyle: true,
+  } },
   categoryPercentage: 0.8, barPercentage: 0.7,
   scales: { x: { ticks: { color: '#555', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.03)' } },
             y: { ticks: { color: '#555', font: { size: 10 }, precision: 0 }, grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } },
