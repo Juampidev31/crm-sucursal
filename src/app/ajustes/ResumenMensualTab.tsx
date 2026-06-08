@@ -6,7 +6,7 @@ import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
-import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
+import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown, ChevronRight } from 'lucide-react';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -334,6 +334,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const [copied, setCopied] = useState(false);
   const [selectedZoom, setSelectedZoom] = useState(1);
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
+  const [filtroActividad, setFiltroActividad] = useState<'PDV' | 'Luciana' | 'Victoria' | 'Comparativa'>('PDV');
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
     1: true,
     2: true,
@@ -1884,48 +1885,112 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const maxDay = isCurrentMonth ? now.getDate() : daysInMonth;
 
     const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+    
+    if (filtroActividad === 'Comparativa') {
+      const dataLuciana = labels.map((_, i) => {
+        const day = i + 1;
+        if (day > maxDay) return null;
+        const dayStr = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayRegs = regsMes.filter(r => r.fecha?.slice(0, 10) === dayStr && r.analista === 'Luciana');
+        return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      });
+
+      const dataVictoria = labels.map((_, i) => {
+        const day = i + 1;
+        if (day > maxDay) return null;
+        const dayStr = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayRegs = regsMes.filter(r => r.fecha?.slice(0, 10) === dayStr && r.analista === 'Victoria');
+        return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      });
+
+      return {
+        labels,
+        datasets: [
+          {
+            label: 'Luciana',
+            data: dataLuciana,
+            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+            borderColor: '#a855f7',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#a855f7',
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: 'Victoria',
+            data: dataVictoria,
+            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+            borderColor: '#ec4899',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#ec4899',
+            fill: true,
+            tension: 0.3
+          }
+        ]
+      };
+    }
+
     const realData = labels.map((_, i) => {
       const day = i + 1;
       if (day > maxDay) return null;
       const dayStr = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayRegs = regsMes.filter(r => r.fecha?.slice(0, 10) === dayStr);
+      const dayRegs = regsMes.filter(r => {
+        if (r.fecha?.slice(0, 10) !== dayStr) return false;
+        if (filtroActividad === 'PDV') return true; // PDV = Total
+        return r.analista === filtroActividad;
+      });
       return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     });
+
+    let color = '#3b82f6';
+    let bgColor = 'rgba(59, 130, 246, 0.1)';
+    if (filtroActividad === 'PDV') { color = '#3b82f6'; bgColor = 'rgba(59, 130, 246, 0.1)'; }
+    if (filtroActividad === 'Luciana') { color = '#a855f7'; bgColor = 'rgba(168, 85, 247, 0.1)'; }
+    if (filtroActividad === 'Victoria') { color = '#ec4899'; bgColor = 'rgba(236, 72, 153, 0.1)'; }
 
     return {
       labels,
       datasets: [
         {
-          label: 'Venta',
+          label: filtroActividad === 'PDV' ? 'Venta Total PDV' : `Venta ${filtroActividad}`,
           data: realData,
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          borderColor: '#10b981',
+          backgroundColor: bgColor,
+          borderColor: color,
           borderWidth: 2,
           pointRadius: 4,
-          pointBackgroundColor: '#10b981',
+          pointBackgroundColor: color,
           fill: true,
           tension: 0.3
         }
       ]
     };
-  }, [registros, selectedMes, selectedAnio]);
+  }, [registros, selectedMes, selectedAnio, filtroActividad]);
 
   const chartVentaDiariaOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
+      legend: { 
+        display: filtroActividad === 'Comparativa',
+        labels: { color: '#fff', font: { family: "'Outfit', sans-serif" } }
+      },
       tooltip: {
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
         titleColor: '#ffffff',
         titleFont: { size: 14, weight: 800, family: "'Outfit', sans-serif" },
-        bodyColor: '#34d399',
+        bodyColor: '#fff',
         bodyFont: { size: 16, weight: 700, family: "'Outfit', sans-serif" },
         padding: 16,
         cornerRadius: 12,
         callbacks: {
           title: (items: any[]) => `Día ${items[0].label}`,
-          label: (ctx: any) => formatCurrency(ctx.raw)
+          label: (ctx: any) => {
+            return filtroActividad === 'Comparativa' 
+              ? `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+              : formatCurrency(ctx.raw);
+          }
         }
       }
     },
@@ -1941,7 +2006,13 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const firstDay = new Date(selectedAnio, selectedMes - 1, 1).getDay();
     const offset = firstDay === 0 ? 6 : firstDay - 1; // Lunes = 0
 
-    const rawData = chartVentaDiaria.datasets[0].data.map(v => Number(v) || 0);
+    const rawData = chartVentaDiaria.datasets[0].data.map((v, i) => {
+      let sum = Number(v) || 0;
+      if (chartVentaDiaria.datasets[1]) {
+        sum += Number(chartVentaDiaria.datasets[1].data[i]) || 0;
+      }
+      return sum;
+    });
     const maxVal = Math.max(...rawData, 1);
 
     const weeks: (number | null)[][] = [];
@@ -2635,13 +2706,44 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
           {/* ── SECCIÓN 10: VENTA DIARIA PURA ── */}
           <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#00d4ff" />)}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: collapsedSections[10] ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button onClick={() => toggleSection(10)} style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 4 }}>
+                  {collapsedSections[10] ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                </button>
+                <BarChart3 size={15} color="#00d4ff" />
+                <h3 style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>10. Venta Diaria y Actividad</h3>
+              </div>
+
+              {!collapsedSections[10] && (
+                <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 8 }}>
+                  {['PDV', 'Luciana', 'Victoria', 'Comparativa'].map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setFiltroActividad(f as any)}
+                      style={{
+                        padding: '6px 12px', borderRadius: 6, border: 'none',
+                        background: filtroActividad === f ? '#fff' : 'transparent',
+                        color: filtroActividad === f ? '#000' : '#888',
+                        fontSize: 11, fontWeight: 800, cursor: 'pointer',
+                        transition: 'all 0.2s', fontFamily: "'Outfit', sans-serif"
+                      }}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {!collapsedSections[10] && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', padding: '0 24px 24px 24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', padding: '24px' }}>
                 
                 {/* Gráfico de Líneas */}
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Venta Diaria Pura</div>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>
+                    Venta Diaria {filtroActividad === 'PDV' ? 'Pura (Total PDV)' : `— ${filtroActividad}`}
+                  </div>
                   <div style={{ minHeight: 300, position: 'relative', width: '100%' }}>
                     <Line data={chartVentaDiaria} options={chartVentaDiariaOptions as any} />
                   </div>
