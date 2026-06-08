@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo } from 'react';
 import ResumenMensualView from '../../ajustes/ResumenMensualView';
-import type { AnalisisTemporalState } from '../../ajustes/AnalisisTemporalTab';
 
 interface DatosGraficos {
   kpiTotal: any;
@@ -52,7 +51,6 @@ interface DatosGraficos {
   distLocalidadTotal?: Array<{ label: string; monto: number; cantidad: number }>;
   distEmpleadorTotal?: Array<{ label: string; monto: number; cantidad: number }>;
   distAcuerdosTotal?: Array<{ label: string; monto: number; cantidad: number }>;
-  seccion10State?: AnalisisTemporalState | null;
 }
 
 const addGradients = (chart: any) => {
@@ -171,7 +169,6 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
       distLocalidadTotal={datos.distLocalidadTotal || []}
       resumen={resumen}
       setResumen={setResumen}
-      setSeccion10State={() => {}}
     />
   );
 }
