@@ -2722,17 +2722,24 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             {!collapsedSections[10] && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '0 24px 24px 24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <div style={{ display: 'flex', gap: 8, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 8 }}>
+                  <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: 3, borderRadius: 8 }}>
                     {['PDV', 'Luciana', 'Victoria', 'Comparativa'].map(f => (
                     <button
                       key={f}
                       onClick={() => setFiltroActividad(f as any)}
                       style={{
-                        padding: '6px 12px', borderRadius: 6, border: 'none',
-                        background: filtroActividad === f ? '#fff' : 'transparent',
-                        color: filtroActividad === f ? '#000' : '#888',
-                        fontSize: 11, fontWeight: 800, cursor: 'pointer',
-                        transition: 'all 0.2s', fontFamily: "'Outfit', sans-serif"
+                        padding: '4px 14px',
+                        borderRadius: 6,
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 10,
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.8px',
+                        background: filtroActividad === f ? '#00d4ff' : 'transparent',
+                        color: filtroActividad === f ? '#000' : '#555',
+                        transition: 'all 0.2s ease',
+                        fontFamily: "'Outfit', sans-serif"
                       }}
                     >
                       {f}
