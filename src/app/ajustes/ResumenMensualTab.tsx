@@ -1971,6 +1971,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const chartVentaDiariaOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { bottom: 0 } },
     plugins: {
       legend: { 
         display: filtroActividad === 'Comparativa',
@@ -1995,12 +1996,17 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       }
     },
     scales: {
-      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 } } },
+      x: { 
+        offset: false,
+        grid: { color: 'rgba(255,255,255,0.05)' }, 
+        ticks: { color: '#888', font: { size: 9 } } 
+      },
       y: { 
         beginAtZero: true,
         min: 0,
+        grace: 0,
         grid: { color: 'rgba(255,255,255,0.05)' }, 
-        ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } 
+        ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v), padding: 0 } 
       }
     },
     interaction: { mode: 'index' as const, intersect: false }
@@ -2742,7 +2748,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>
                     Venta Diaria {filtroActividad === 'PDV' ? 'Pura (Total PDV)' : `— ${filtroActividad}`}
                   </div>
-                  <div style={{ minHeight: 300, position: 'relative', width: '100%' }}>
+                  <div style={{ flex: 1, position: 'relative', width: '100%', minHeight: 250 }}>
                     <Line data={chartVentaDiaria} options={chartVentaDiariaOptions as any} />
                   </div>
                 </div>
