@@ -1192,20 +1192,14 @@ const RegistroModal = memo(function RegistroModal({
                 />
               </Field>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <label className="toggle-card">
-                <span className="toggle-switch">
-                  <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} />
-                  <span className="toggle-slider" />
-                </span>
-                <span className="toggle-label"><FileText size={14} />Resumen Ejecutivo (RE)</span>
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginTop: '8px', marginBottom: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#fff', fontSize: '13px', fontWeight: 700 }}>
+                <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#10b981' }} />
+                <FileText size={16} style={{ color: '#10b981' }} /> Resumen Ejecutivo (RE)
               </label>
-              <label className="toggle-card">
-                <span className="toggle-switch">
-                  <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} />
-                  <span className="toggle-slider" />
-                </span>
-                <span className="toggle-label"><AlertTriangle size={14} />Agendar Recordatorio</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#fff', fontSize: '13px', fontWeight: 700 }}>
+                <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#f59e0b' }} />
+                <AlertTriangle size={16} style={{ color: '#f59e0b' }} /> Agendar Recordatorio
               </label>
             </div>
             <p className="modal-required-legend" style={{ color: 'var(--rojo)' }}>
