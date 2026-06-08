@@ -1431,6 +1431,7 @@ export default function AnalistasPage() {
     plugins: {
       legend: { display: true, position: 'top' as const, labels: { color: '#ccc', font: { size: 10 } } },
       tooltip: {
+        itemSort: (a: any, b: any) => b.datasetIndex - a.datasetIndex,
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
         titleColor: '#ffffff',
         titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
