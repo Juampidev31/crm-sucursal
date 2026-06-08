@@ -566,7 +566,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         distLocalidadTotal,
         distEmpleadorTotal,
         distAcuerdosTotal,
-        seccion10State: seccion10State,
       };
 
       // 9. Guardar snapshot y datos
@@ -684,7 +683,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       distLocalidadTotal,
       distEmpleadorTotal,
       distAcuerdosTotal,
-      seccion10State: seccion10State,
     };
 
     const payload = {
@@ -1972,7 +1970,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     }
 
     const weekTotals = weeks.map(week => {
-      return week.reduce((sum, day) => {
+      return week.reduce((sum: number, day) => {
         if (day === null) return sum;
         return sum + rawData[day - 1];
       }, 0);
