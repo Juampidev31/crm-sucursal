@@ -24,26 +24,45 @@ function cumplColor(pct: number | null): string {
   return '#f87171';
 }
 
-function parseNumberRobust(v: string): number {
-  if (!v) return NaN;
-  let str = String(v).replace(/[^0-9.,-]/g, '');
-  const lastDot = str.lastIndexOf('.');
-  const lastComma = str.lastIndexOf(',');
-  
-  if (lastComma > lastDot) {
-    str = str.replace(/\./g, '');
-    const c = str.lastIndexOf(',');
-    str = str.substring(0, c) + '.' + str.substring(c + 1);
-    str = str.replace(/,/g, '');
-  } else if (lastDot > lastComma) {
-    const dotCount = (str.match(/\./g) || []).length;
-    if (dotCount > 1 || /\.\d{3}$/.test(str)) {
-      str = str.replace(/\./g, '');
+function parseNumberRobust(v: string | number | null | undefined): number {
+  if (v === null || v === undefined) return NaN;
+  if (typeof v === 'number') return v;
+  let str = String(v);
+  const isAcc = /^\\s*\\(.*\\)\\s*$/.test(str);
+  str = str.replace(/[^0-9.,-]/g, '');
+  if (!str) return NaN;
+  const isNeg = isAcc || str.includes('-');
+  str = str.replace(/-/g, '');
+  const ld = str.lastIndexOf('.');
+  const lc = str.lastIndexOf(',');
+  if (lc > ld) {
+    const cc = (str.match(/,/g) || []).length;
+    if (cc > 1 && !/,\\d{1,2}$/.test(str)) {
+      str = str.replace(/,/g, '');
+    } else if (cc > 1 && /,\\d{1,2}$/.test(str)) {
+      const c = str.lastIndexOf(',');
+      str = str.substring(0, c).replace(/,/g, '') + '.' + str.substring(c + 1);
+    } else {
+      str = str.replace(/\\./g, '');
+      const c = str.lastIndexOf(',');
+      str = str.substring(0, c) + '.' + str.substring(c + 1);
+    }
+  } else if (ld > lc) {
+    const dc = (str.match(/\\./g) || []).length;
+    if (dc > 1 && !/\\.\\d{1,2}$/.test(str)) {
+      str = str.replace(/\\./g, '');
+    } else if (dc > 1 && /\\.\\d{1,2}$/.test(str)) {
+      const d = str.lastIndexOf('.');
+      str = str.substring(0, d).replace(/\\./g, '') + '.' + str.substring(d + 1);
+    } else if (/\\.\\d{3}$/.test(str)) {
+      str = str.replace(/\\./g, '');
     } else {
       str = str.replace(/,/g, '');
     }
   }
-  return parseFloat(str);
+  let num = parseFloat(str);
+  if (isNeg && !isNaN(num)) num = -num;
+  return num;
 }
 
 function parsePctLocal(v: string): number | null {
