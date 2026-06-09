@@ -25,7 +25,7 @@ function cumplColor(pct: number | null): string {
 }
 
 function parsePctLocal(v: string): number | null {
-  const s = (v || '').trim().replace('%', '').replace(',', '.');
+  const s = (v || '').replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.');
   const n = parseFloat(s);
   return isNaN(n) ? null : n;
 }
@@ -220,8 +220,8 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
         const objStr = rows[idx].objetivo;
         const recStr = rows[idx].recupero;
         if (objStr && recStr && objStr !== '-' && recStr !== '-') {
-          const obj = parseFloat(objStr.replace(/\./g, '').replace(',', '.'));
-          const rec = parseFloat(recStr.replace(/\./g, '').replace(',', '.'));
+          const obj = parseFloat(objStr.replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.'));
+          const rec = parseFloat(recStr.replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.'));
           if (!isNaN(obj) && !isNaN(rec) && obj !== 0) {
             const pct = (rec / obj) * 100;
             rows[idx].cumplimiento = pct.toFixed(1).replace('.', ',') + '%';
@@ -258,7 +258,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
       const row = { ...rows[idx] };
       let val = row[field];
       if (val && val !== '-' && !val.includes('%')) {
-        const num = parseFloat(val.replace(/\./g, '').replace(',', '.'));
+        const num = parseFloat(val.replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.'));
         if (!isNaN(num)) {
           const formatted = num.toFixed(2).replace('.', ',') + '%';
           row[field] = formatted;

@@ -48,7 +48,7 @@ export function cleanCurrency(v: string): string {
 }
 
 export function parsePct(v: string): number | null {
-  const s = clean(v).replace('%', '').replace(',', '.');
+  const s = clean(v).replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.');
   const n = parseFloat(s);
   return isNaN(n) ? null : n;
 }
