@@ -47,8 +47,29 @@ export function cleanCurrency(v: string): string {
   return (v || '').trim().replace(/^\$/, '');
 }
 
+export function parseNumberRobust(v: string): number {
+  if (!v) return NaN;
+  let str = String(v).replace(/[^0-9.,-]/g, '');
+  const lastDot = str.lastIndexOf('.');
+  const lastComma = str.lastIndexOf(',');
+  
+  if (lastComma > lastDot) {
+    str = str.replace(/\./g, '');
+    const c = str.lastIndexOf(',');
+    str = str.substring(0, c) + '.' + str.substring(c + 1);
+    str = str.replace(/,/g, '');
+  } else if (lastDot > lastComma) {
+    const dotCount = (str.match(/\./g) || []).length;
+    if (dotCount > 1 || /\.\d{3}$/.test(str)) {
+      str = str.replace(/\./g, '');
+    } else {
+      str = str.replace(/,/g, '');
+    }
+  }
+  return parseFloat(str);
+}
+
 export function parsePct(v: string): number | null {
-  const s = clean(v).replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.');
-  const n = parseFloat(s);
+  const n = parseNumberRobust(v);
   return isNaN(n) ? null : n;
 }

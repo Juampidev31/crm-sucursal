@@ -24,9 +24,30 @@ function cumplColor(pct: number | null): string {
   return '#f87171';
 }
 
+function parseNumberRobust(v: string): number {
+  if (!v) return NaN;
+  let str = String(v).replace(/[^0-9.,-]/g, '');
+  const lastDot = str.lastIndexOf('.');
+  const lastComma = str.lastIndexOf(',');
+  
+  if (lastComma > lastDot) {
+    str = str.replace(/\./g, '');
+    const c = str.lastIndexOf(',');
+    str = str.substring(0, c) + '.' + str.substring(c + 1);
+    str = str.replace(/,/g, '');
+  } else if (lastDot > lastComma) {
+    const dotCount = (str.match(/\./g) || []).length;
+    if (dotCount > 1 || /\.\d{3}$/.test(str)) {
+      str = str.replace(/\./g, '');
+    } else {
+      str = str.replace(/,/g, '');
+    }
+  }
+  return parseFloat(str);
+}
+
 function parsePctLocal(v: string): number | null {
-  const s = (v || '').replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.');
-  const n = parseFloat(s);
+  const n = parseNumberRobust(v);
   return isNaN(n) ? null : n;
 }
 
@@ -220,8 +241,8 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
         const objStr = rows[idx].objetivo;
         const recStr = rows[idx].recupero;
         if (objStr && recStr && objStr !== '-' && recStr !== '-') {
-          const obj = parseFloat(objStr.replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.'));
-          const rec = parseFloat(recStr.replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.'));
+          const obj = parseNumberRobust(objStr);
+          const rec = parseNumberRobust(recStr);
           if (!isNaN(obj) && !isNaN(rec) && obj !== 0) {
             const pct = (rec / obj) * 100;
             rows[idx].cumplimiento = pct.toFixed(1).replace('.', ',') + '%';
@@ -258,7 +279,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
       const row = { ...rows[idx] };
       let val = row[field];
       if (val && val !== '-' && !val.includes('%')) {
-        const num = parseFloat(val.replace(/\./g, '').replace(/[^0-9,-]/g, '').replace(',', '.'));
+        const num = parseNumberRobust(val);
         if (!isNaN(num)) {
           const formatted = num.toFixed(2).replace('.', ',') + '%';
           row[field] = formatted;
