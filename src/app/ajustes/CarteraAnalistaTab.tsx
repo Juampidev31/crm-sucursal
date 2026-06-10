@@ -8,12 +8,21 @@ import { formatCurrency } from '@/lib/utils';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { Briefcase, Users, Filter, PieChart, BarChart3, Shield, FileText, ChevronDown } from 'lucide-react';
 
+
 // ── Clasificadores de estado ──────────────────────────────────────────────
 const low = (s?: string | null) => (s ?? '').toLowerCase().trim();
 const isVentaPura   = (r: Registro) => low(r.estado) === 'venta';
 const isAprobCC     = (r: Registro) => low(r.estado).includes('aprobado cc');
 const isAprobado    = (r: Registro) => isVentaPura(r) || isAprobCC(r);
 const isEnSeg       = (r: Registro) => low(r.estado) === 'en seguimiento';
+const isEstadoScore = (r: Registro) => {
+  const e = low(r.estado);
+  return e === 'venta' || 
+         e.includes('aprobado cc') || e.includes('aprob. cc') ||
+         e === 'proyección' || e === 'proyeccion' ||
+         e === 'en seguimiento' || 
+         e === 'afectaciones';
+};
 
 const sumMonto = (regs: Registro[]) => regs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
 
@@ -35,7 +44,7 @@ function computeMetrics(regs: Registro[], diasTrans: number): Metrics {
   const ventas = regs.filter(isVentaPura);
   const aprobadosK = sumMonto(aprobados);
 
-  const conScore = regs.filter(r => (Number(r.puntaje) || 0) > 0);
+  const conScore = regs.filter(r => (Number(r.puntaje) || 0) > 0 && isEstadoScore(r));
   const scorePromedio = conScore.length > 0 ? conScore.reduce((s, r) => s + (Number(r.puntaje) || 0), 0) / conScore.length : 0;
   
   const renovQ = regs.filter(r => r.tipo_cliente === 'Renovacion').length;
@@ -197,6 +206,59 @@ const DistBlock: React.FC<{
             <ChevronDown size={12} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s ease' }} />
           </button>
         )}
+      </div>
+    </div>
+  );
+};
+
+const ModernDoughnut = ({ data, totalValue, label }: { data: any, totalValue: number | string, label: string }) => {
+  const options: any = {
+    clip: false,
+    layout: { padding: 40 },
+    cutout: '85%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#ffffff',
+        titleFont: { size: 16, weight: 900, family: "'Outfit', sans-serif" },
+        titleAlign: 'center' as const,
+        titleMarginBottom: 12,
+        bodyColor: '#f1f5f9',
+        bodyFont: { size: 14, weight: 600, family: "'Outfit', sans-serif" },
+        bodySpacing: 8,
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 2,
+        padding: 16,
+        cornerRadius: 12,
+        boxPadding: 6,
+        usePointStyle: true,
+        callbacks: {
+          label: (ctx: any) => ` ${ctx.label}: ${Math.round(Number(ctx.raw))}`
+        }
+      }
+    },
+    maintainAspectRatio: false,
+    elements: {
+      arc: {
+        borderWidth: 0,
+        borderRadius: 20,
+      }
+    }
+  };
+
+  return (
+    <div style={{ position: 'relative', height: '220px', width: '220px', margin: '0 auto' }}>
+      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)', textAlign: 'center',
+        width: '100%', pointerEvents: 'none'
+      }}>
+        <div style={{ fontSize: '10px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+          {totalValue}
+        </div>
       </div>
     </div>
   );
@@ -370,6 +432,7 @@ export default function CarteraAnalistaTab() {
           <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={dLocalidad} color="#a78bfa" totalMes={base} />
         </div>
       </div>
+
     </div>
   );
 }

@@ -460,14 +460,14 @@ export default function Sidebar({
   };
 
   return (
-    <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showFilters ? 'sidebar-expanded-filters' : ''}`}
+    <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showCalculator ? 'sidebar-expanded-filters' : ''}`}
       style={{
         background: 'transparent',
         borderRight: 'none',
         boxShadow: 'none',
         display: 'flex', flexDirection: 'row',
         alignItems: 'stretch',
-        width: (showFilters || showCalculator) ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
+        width: showCalculator ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
         zIndex: 150,
         position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
@@ -476,10 +476,10 @@ export default function Sidebar({
       {/* Text + Icon Column */}
       <div style={{
         width: 'var(--sidebar-width)',
-        display: 'flex', flexDirection: 'column',
+        display: showFilters ? 'none' : 'flex', flexDirection: 'column',
         padding: '2px 16px 20px',
         flexShrink: 0,
-        borderRight: (showFilters || showCalculator) ? '1px solid var(--border)' : 'none',
+        borderRight: showCalculator ? '1px solid var(--border)' : 'none',
         overflowY: 'hidden',
         overflowX: 'hidden'
       }}>
@@ -758,7 +758,7 @@ export default function Sidebar({
           borderTopRightRadius: '24px',
           borderBottomRightRadius: '24px',
           overflow: 'hidden',
-          animation: 'fadeIn 0.2s ease-out'
+          animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
         }}>
           <div style={{
             padding: '32px 24px 20px',
@@ -787,7 +787,7 @@ export default function Sidebar({
           borderTopRightRadius: '24px',
           borderBottomRightRadius: '24px',
           overflow: 'hidden',
-          animation: 'fadeIn 0.2s ease-out'
+          animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
         }}>
           <div style={{
             padding: '32px 24px 20px',

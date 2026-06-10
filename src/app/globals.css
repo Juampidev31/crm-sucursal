@@ -66,7 +66,7 @@
   --rojo:                 var(--red);
   --gris:                 var(--fg-muted);
   --font-family:          var(--font-sans);
-  --sidebar-width:        300px;
+  --sidebar-width:        350px;
   --sidebar-expanded-width: 650px;
   --sidebar-filters-width:  650px;
 
@@ -936,6 +936,11 @@ input:checked+.toggle-slider:before {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* Split View — hide iframe scrollbars */
