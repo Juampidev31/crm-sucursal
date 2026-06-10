@@ -3,15 +3,14 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useFilter } from '@/context/FilterContext';
+import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
-import { ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { STATUS_LABEL } from '@/lib/utils';
 import {
-  AlignJustify, BarChart2, FileText,
-  DollarSign, Settings, Bell, Lock, LogOut, Plus,
+  AlignJustify, BarChart2,
+  DollarSign, Settings, Bell, Lock, Plus,
   SlidersHorizontal, ChevronDown, ChevronUp, ChevronLeft, X, Calculator,
-  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, AlertCircle, Activity, FolderSearch
+  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, FolderSearch
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -33,10 +32,10 @@ const REGISTRO_STATES = [
 
 function NavItem({
   href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = '#10b981',
-  isMessage = false, avatarColor = '#ccc', isTreeItem = false, isLastTreeItem = false, isDoubleTreeItem = false, isTripleTreeItem = false, iconColor
+  isMessage = false, avatarColor = '#ccc', isTreeItem = false, isLastTreeItem = false, isDoubleTreeItem = false, iconColor
 }: {
   href: string; icon?: React.ElementType; label: string; active?: boolean; badge?: number | string; onClick?: (e: React.MouseEvent) => void; indent?: boolean; rightIcon?: React.ElementType; badgeColor?: string;
-  isMessage?: boolean; avatarColor?: string; isTreeItem?: boolean; isLastTreeItem?: boolean; isDoubleTreeItem?: boolean; isTripleTreeItem?: boolean; iconColor?: string;
+  isMessage?: boolean; avatarColor?: string; isTreeItem?: boolean; isLastTreeItem?: boolean; isDoubleTreeItem?: boolean; iconColor?: string;
 }) {
   return (
     <Link
@@ -47,7 +46,7 @@ function NavItem({
       style={{
         position: 'relative',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        width: '100%', padding: '10px 16px', paddingLeft: indent ? (isTripleTreeItem ? '86px' : (isDoubleTreeItem ? '66px' : (isTreeItem ? '46px' : '40px'))) : '16px',
+        width: '100%', padding: '10px 16px', paddingLeft: indent ? (isDoubleTreeItem ? '66px' : (isTreeItem ? '46px' : '40px')) : '16px',
         borderRadius: 16,
         color: active ? '#ffffff' : '#9a9a9a',
         background: 'transparent',
@@ -122,77 +121,25 @@ function NavItem({
             borderBottomLeftRadius: isLastTreeItem ? 12 : 0,
             zIndex: 0
           }} />
-          <>
-            <div style={{
-              position: 'absolute',
-              left: 44,
-              top: '50%',
-              width: 10,
-              borderTop: '1px solid rgba(255,255,255,0.15)',
-              zIndex: 0
-            }} />
-            <div style={{
-              position: 'absolute',
-              left: 54,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: 4,
-              height: 4,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)',
-              zIndex: 0
-            }} />
-          </>
-        </>
-      )}
-      {isTripleTreeItem && (
-        <>
-          <div style={{
-            position: 'absolute',
-            left: 24,
-            top: 0,
-            bottom: -2,
-            borderLeft: '1px solid rgba(255,255,255,0.15)',
-            zIndex: 0
-          }} />
           <div style={{
             position: 'absolute',
             left: 44,
-            top: 0,
-            bottom: -2,
-            borderLeft: '1px solid rgba(255,255,255,0.15)',
+            top: '50%',
+            width: 10,
+            borderTop: '1px solid rgba(255,255,255,0.15)',
             zIndex: 0
           }} />
           <div style={{
             position: 'absolute',
-            left: 64,
-            top: 0,
-            bottom: isLastTreeItem ? '50%' : -2,
-            borderLeft: '1px solid rgba(255,255,255,0.15)',
-            borderBottomLeftRadius: isLastTreeItem ? 12 : 0,
+            left: 54,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: 4,
+            height: 4,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.2)',
             zIndex: 0
           }} />
-          <>
-            <div style={{
-              position: 'absolute',
-              left: 64,
-              top: '50%',
-              width: 10,
-              borderTop: '1px solid rgba(255,255,255,0.15)',
-              zIndex: 0
-            }} />
-            <div style={{
-              position: 'absolute',
-              left: 74,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: 4,
-              height: 4,
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)',
-              zIndex: 0
-            }} />
-          </>
         </>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, zIndex: 1, position: 'relative' }}>
@@ -305,35 +252,6 @@ function AdminLoginModal({
   );
 }
 
-function AccessDeniedModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div style={MODAL_OVERLAY_STYLE} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ ...MODAL_CARD_STYLE, width: 320, textAlign: 'center' }}>
-        <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,91,55,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FF5B37', margin: '0 auto 16px' }}>
-          <Lock size={24} />
-        </div>
-        <h3 style={{ color: '#fff', fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Sin acceso</h3>
-        <p style={{ color: 'var(--fg-muted)', fontSize: 14, lineHeight: 1.4, marginBottom: 24 }}>
-          No tienes los permisos necesarios para acceder al Panel de Control de la sucursal.
-        </p>
-        <button
-          onClick={onClose}
-          style={{
-            width: '100%', padding: '12px',
-            background: '#2c2d33', color: '#fff', border: 'none',
-            borderRadius: 12, fontWeight: 600, fontSize: 14, cursor: 'pointer',
-            fontFamily: 'inherit', transition: 'background 0.2s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-          onMouseLeave={e => e.currentTarget.style.background = '#2c2d33'}
-        >
-          Entendido
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 export default function Sidebar({ 
@@ -354,10 +272,10 @@ export default function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAdmin, logout, refreshUser } = useAuth();
+  const { isAdmin, refreshUser } = useAuth();
   const currentAnalistaPage = searchParams?.get('analista') || 'PDV';
   const { pendingReminders } = useRecordatorios();
-  const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, totalResults, filters, limpiarFiltros, toggleEstado, setFilter } = useFilter();
+  const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, filters, limpiarFiltros, toggleEstado, setFilter } = useFilter();
   const { permisosConfig } = useSettings();
   const { registros } = useRegistros(true);
 
@@ -372,31 +290,9 @@ export default function Sidebar({
     return counts;
   }, [registros]);
 
-  const countsByLuciana = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const r of registros) {
-      if (r.analista?.toLowerCase() === 'luciana' && r.estado) {
-        counts[r.estado.toLowerCase()] = (counts[r.estado.toLowerCase()] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [registros]);
-
-  const countsByVictoria = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const r of registros) {
-      if (r.analista?.toLowerCase() === 'victoria' && r.estado) {
-        counts[r.estado.toLowerCase()] = (counts[r.estado.toLowerCase()] || 0) + 1;
-      }
-    }
-    return counts;
-  }, [registros]);
-
   const canCreate = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'crear_registros')?.activo !== false;
-  const canExport = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'exportar_excel')?.activo !== false;
 
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const [showAccessDenied, setShowAccessDenied] = useState(false);
   const [showXlsxModal, setShowXlsxModal] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState(false);
@@ -407,11 +303,7 @@ export default function Sidebar({
   const [showCalculator, setShowCalculator] = useState(false);
   const [reportesOpen, setReportesOpen] = useState(true);
   const [ventasOpen, setVentasOpen] = useState(true);
-  const [lucianaOpen, setLucianaOpen] = useState(false);
-  const [victoriaOpen, setVictoriaOpen] = useState(false);
   const [revisionOpen, setRevisionOpen] = useState(false);
-  const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-
   const [registrosOpen, setRegistrosOpen] = useState(true);
 
   useEffect(() => {
@@ -817,10 +709,6 @@ export default function Sidebar({
         />
       )}
 
-      {showAccessDenied && (
-        <AccessDeniedModal onClose={() => setShowAccessDenied(false)} />
-      )}
-
       <ExportXlsxModal open={showXlsxModal} onClose={() => setShowXlsxModal(false)} />
     </aside>
   );
@@ -851,7 +739,6 @@ const FilterAccordion = ({ title, children, defaultOpen = false }: { title: stri
 const FiltersContent = () => {
   const { filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros } = useFilter();
   const { registros } = useRegistros();
-  const { isAdmin } = useAuth();
   const allAcuerdos = React.useMemo(() => {
     const set = new Set<string>();
     registros.forEach(r => { if (r.acuerdo_precios) set.add(r.acuerdo_precios); });

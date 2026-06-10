@@ -31,7 +31,7 @@ const MassiveDeleteTab  = dynamic(() => import('./MassiveDeleteTab'),  { ssr: fa
 const AvisosTab         = dynamic(() => import('./AvisosTab'),         { ssr: false, loading: TabFallback });
 const VerificadorTab    = dynamic(() => import('./VerificadorTab'),    { ssr: false, loading: TabFallback });
 const CargaRapidaTab    = dynamic(() => import('./CargaRapidaTab'),    { ssr: false, loading: TabFallback });
-const CarteraAnalistaTab = dynamic(() => import('./CarteraAnalistaTab'), { ssr: false, loading: TabFallback });
+
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
@@ -839,7 +839,7 @@ export default function AjustesPage() {
                 { id: 'historico' as const, label: 'Histórico y Objetivos', icon: History },
                 { id: 'resumen-mensual' as const, label: 'Resumen Mensual', icon: BarChart3 },
                 ...(isAdmin ? [{ id: 'calif-score' as const, label: 'Calif. x SCORE', icon: Users }] : []),
-                ...(isAdmin ? [{ id: 'cartera-analista' as const, label: 'Cartera por Analista', icon: PieChart }] : []),
+
               ]).map(t => (
                 <button
                   key={t.id}
@@ -1520,11 +1520,7 @@ export default function AjustesPage() {
               <BulkModifyTab mode="bulk" />
             </div>
           )}
-          {visitedTabs.has('cartera-tab') && (
-            <div style={{ display: heavyVisibility['cartera-tab'] ? 'block' : 'none' }}>
-              <CarteraAnalistaTab />
-            </div>
-          )}
+
           {visitedTabs.has('massive-delete') && (
             <div style={{ display: heavyVisibility['massive-delete'] ? 'block' : 'none' }}>
               <MassiveDeleteTab />
