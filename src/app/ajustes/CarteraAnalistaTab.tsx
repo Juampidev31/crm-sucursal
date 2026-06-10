@@ -211,58 +211,6 @@ const DistBlock: React.FC<{
   );
 };
 
-const ModernDoughnut = ({ data, totalValue, label }: { data: any, totalValue: number | string, label: string }) => {
-  const options: any = {
-    clip: false,
-    layout: { padding: 40 },
-    cutout: '85%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
-        titleFont: { size: 16, weight: 900, family: "'Outfit', sans-serif" },
-        titleAlign: 'center' as const,
-        titleMarginBottom: 12,
-        bodyColor: '#f1f5f9',
-        bodyFont: { size: 14, weight: 600, family: "'Outfit', sans-serif" },
-        bodySpacing: 8,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
-        padding: 16,
-        cornerRadius: 12,
-        boxPadding: 6,
-        usePointStyle: true,
-        callbacks: {
-          label: (ctx: any) => ` ${ctx.label}: ${Math.round(Number(ctx.raw))}`
-        }
-      }
-    },
-    maintainAspectRatio: false,
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 20,
-      }
-    }
-  };
-
-  return (
-    <div style={{ position: 'relative', height: '220px', width: '220px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)', textAlign: 'center',
-        width: '100%', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '10px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
-          {totalValue}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const now = new Date();
 
