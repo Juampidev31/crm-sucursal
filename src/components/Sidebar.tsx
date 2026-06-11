@@ -364,7 +364,7 @@ export default function Sidebar({
         zIndex: 150,
         position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
-      }}
+      } as React.CSSProperties}
     >
       <div style={{
         display: 'flex',
