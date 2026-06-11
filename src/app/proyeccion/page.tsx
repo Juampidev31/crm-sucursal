@@ -43,13 +43,12 @@ async function buildProyeccion() {
 
   const mkEntry = (metaV: number, metaO: number): ProyeccionData => ({
     ventasCerradas: 0, opCerradas: 0, metaMensual: metaV, metaMensualOps: metaO,
-    carteraTotal: 0, totalProyecciones: 0, totalProyeccionesOp: 0,
+    totalProyecciones: 0, totalProyeccionesOp: 0,
     enSeguimientoMonto: 0, enSeguimientoOp: 0, scoreBajoMonto: 0, scoreBajoOp: 0,
     afectacionesMonto: 0, afectacionesOp: 0, derivadoAprobadoMonto: 0, derivadoAprobadoOp: 0,
     derivadoRechazadoMonto: 0, derivadoRechazadoOp: 0,
     comisionCapital: 0, comisionOperaciones: 0, comisionTotal: 0,
     ventasAcumuladas: Array(ultimoDiaMes).fill(null),
-    opsAcumuladas: Array(ultimoDiaMes).fill(null),
     diasDelMes: ultimoDiaMes, diasTranscurridos: maxDiaCalculo, alcanceActual: 0,
   });
 
@@ -58,7 +57,6 @@ async function buildProyeccion() {
   const metaOPDV = Number(objPDV?.meta_operaciones) || 0;
   const result: Record<string, ProyeccionData> = { 'PDV': mkEntry(metaVPDV, metaOPDV) };
   const datosDiariosMonto: Record<string, number[]> = { 'PDV': Array(ultimoDiaMes).fill(0) };
-  const datosDiariosOps: Record<string, number[]> = { 'PDV': Array(ultimoDiaMes).fill(0) };
 
   CONFIG.ANALISTAS_DEFAULT.forEach(a => {
     const obj = objetivos.find(o => o.analista === a);
@@ -66,7 +64,6 @@ async function buildProyeccion() {
     const metaO = Number(obj?.meta_operaciones) || 0;
     result[a] = mkEntry(metaV, metaO);
     datosDiariosMonto[a] = Array(ultimoDiaMes).fill(0);
-    datosDiariosOps[a] = Array(ultimoDiaMes).fill(0);
   });
 
   regs.forEach(fila => {
@@ -87,15 +84,11 @@ async function buildProyeccion() {
     if (esVenta) {
       result[analistaValido].ventasCerradas += monto;
       result[analistaValido].opCerradas += 1;
-      result[analistaValido].carteraTotal += monto;
       result['PDV'].ventasCerradas += monto;
       result['PDV'].opCerradas += 1;
-      result['PDV'].carteraTotal += monto;
       if (diaReg >= 1 && diaReg <= ultimoDiaMes) {
         datosDiariosMonto[analistaValido][diaReg - 1] += monto;
-        datosDiariosOps[analistaValido][diaReg - 1] += 1;
         datosDiariosMonto['PDV'][diaReg - 1] += monto;
-        datosDiariosOps['PDV'][diaReg - 1] += 1;
       }
       if (estadoNorm.includes('aprobado cc')) {
         result[analistaValido].derivadoAprobadoMonto += monto;
@@ -104,8 +97,6 @@ async function buildProyeccion() {
         result['PDV'].derivadoAprobadoOp += 1;
       }
     } else if (estadosActivos.includes(estadoNorm)) {
-      result[analistaValido].carteraTotal += monto;
-      result['PDV'].carteraTotal += monto;
       const mapEntry = ESTADOS_MAP[estadoNorm];
       if (mapEntry) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,15 +117,12 @@ async function buildProyeccion() {
       result[key].comisionOperaciones = c.comisionOperaciones;
       result[key].comisionTotal = c.comisionTotal;
     }
-    let acumMonto = 0, acumOps = 0;
+    let acumMonto = 0;
     const daily = datosDiariosMonto[key] || Array(ultimoDiaMes).fill(0);
-    const dailyOps = datosDiariosOps[key] || Array(ultimoDiaMes).fill(0);
     for (let i = 0; i < ultimoDiaMes; i++) {
       if (i < maxDiaCalculo) {
         acumMonto += daily[i];
-        acumOps += dailyOps[i];
         result[key].ventasAcumuladas[i] = acumMonto;
-        result[key].opsAcumuladas[i] = acumOps;
       }
     }
     result[key].alcanceActual = result[key].metaMensual > 0

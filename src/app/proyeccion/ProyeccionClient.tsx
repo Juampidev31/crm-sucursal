@@ -6,19 +6,18 @@ import { formatCurrency, calcularDiasHabilesAutomaticos } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement,
-  Title, Tooltip, Legend, Filler,
+  Tooltip, Legend, Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { TrendingUp, Target, Users, DollarSign } from 'lucide-react';
 
-ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend, Filler);
+ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend, Filler);
 
 export interface ProyeccionData {
   ventasCerradas: number;
   opCerradas: number;
   metaMensual: number;
   metaMensualOps: number;
-  carteraTotal: number;
   totalProyecciones: number;
   totalProyeccionesOp: number;
   enSeguimientoMonto: number;
@@ -35,7 +34,6 @@ export interface ProyeccionData {
   comisionOperaciones: number;
   comisionTotal: number;
   ventasAcumuladas: (number | null)[];
-  opsAcumuladas: (number | null)[];
   diasDelMes: number;
   diasTranscurridos: number;
   alcanceActual: number;

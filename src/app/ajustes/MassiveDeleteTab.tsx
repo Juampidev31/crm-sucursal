@@ -8,6 +8,20 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { Trash2, AlertTriangle, Calendar, Search, ShieldAlert, CheckCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
+// Única fuente de verdad para el rango: preview y delete deben apuntar siempre a las mismas filas
+const buildRangeFilter = (desde: string, hasta: string) =>
+  `and(fecha.gte.${desde},fecha.lte.${hasta}),and(fecha.is.null,created_at.gte.${desde},created_at.lte.${hasta}T23:59:59)`;
+
+const DateField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
+  <div className="form-group">
+    <label className="form-label" style={{ color: 'var(--gris)', fontSize: '11px', textTransform: 'uppercase' }}>{label}</label>
+    <div style={{ position: 'relative' }}>
+      <Calendar size={14} style={{ position: 'absolute', left: '12px', top: '14px', color: '#555' }} />
+      <input type="date" className="form-input" style={{ paddingLeft: '38px' }} value={value} onChange={e => onChange(e.target.value)} />
+    </div>
+  </div>
+);
+
 export default function MassiveDeleteTab() {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -28,7 +42,7 @@ export default function MassiveDeleteTab() {
       const { count: c, error } = await supabase
         .from('registros')
         .select('*', { count: 'exact', head: true })
-        .or(`and(fecha.gte.${fechaDesde},fecha.lte.${fechaHasta}),and(fecha.is.null,created_at.gte.${fechaDesde},created_at.lte.${fechaHasta}T23:59:59)`);
+        .or(buildRangeFilter(fechaDesde, fechaHasta));
 
       if (error) throw error;
       setCount(c);
@@ -56,7 +70,7 @@ export default function MassiveDeleteTab() {
       const { error } = await supabase
         .from('registros')
         .delete()
-        .or(`and(fecha.gte.${fechaDesde},fecha.lte.${fechaHasta}),and(fecha.is.null,created_at.gte.${fechaDesde},created_at.lte.${fechaHasta}T23:59:59)`);
+        .or(buildRangeFilter(fechaDesde, fechaHasta));
 
       if (error) throw error;
 
@@ -104,39 +118,9 @@ export default function MassiveDeleteTab() {
         border: '1px solid rgba(255,255,255,0.05)',
         marginBottom: '32px'
       }}>
-        <div className="form-group">
-          <label className="form-label" style={{ color: 'var(--gris)', fontSize: '11px', textTransform: 'uppercase' }}>Desde Fecha</label>
-          <div style={{ position: 'relative' }}>
-            <Calendar size={14} style={{ position: 'absolute', left: '12px', top: '14px', color: '#555' }} />
-            <input 
-              type="date" 
-              className="form-input" 
-              style={{ paddingLeft: '38px' }} 
-              value={fechaDesde}
-              onChange={e => {
-                setFechaDesde(e.target.value);
-                setCount(null);
-              }}
-            />
-          </div>
-        </div>
+        <DateField label="Desde Fecha" value={fechaDesde} onChange={v => { setFechaDesde(v); setCount(null); }} />
 
-        <div className="form-group">
-          <label className="form-label" style={{ color: 'var(--gris)', fontSize: '11px', textTransform: 'uppercase' }}>Hasta Fecha</label>
-          <div style={{ position: 'relative' }}>
-            <Calendar size={14} style={{ position: 'absolute', left: '12px', top: '14px', color: '#555' }} />
-            <input 
-              type="date" 
-              className="form-input" 
-              style={{ paddingLeft: '38px' }} 
-              value={fechaHasta}
-              onChange={e => {
-                setFechaHasta(e.target.value);
-                setCount(null);
-              }}
-            />
-          </div>
-        </div>
+        <DateField label="Hasta Fecha" value={fechaHasta} onChange={v => { setFechaHasta(v); setCount(null); }} />
 
         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
           <button 

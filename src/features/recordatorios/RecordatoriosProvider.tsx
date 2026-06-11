@@ -30,7 +30,6 @@ interface RecordatoriosCtx {
   markReminderCompleted: (id: string) => Promise<void>;
   adjustPendingReminders: (delta: number) => void;
   pushRecordatorioChange: (type: ChangeType, recordatorio: Recordatorio | ReminderAlertData) => void;
-  forceCheckDue: () => void;
   forceShowPopup: (recordatorio: ReminderAlertData) => void;
 }
 
@@ -103,7 +102,6 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
       }
 
       const { data, error } = await query;
-      console.log('[RecordatoriosProvider] checkDueReminders result:', { count: data?.length, analista: selectedAnalista || user.username });
 
       if (error) {
         if (error.message?.includes('fetch')) {
@@ -131,7 +129,7 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
     } catch (err) {
       console.warn('[RecordatoriosProvider] Error inesperado en checkDueReminders:', err);
     }
-  }, [reportError, user]);
+  }, [reportError, user, filterCtx?.filters.analista]);
 
   const clearReminderAlert = useCallback(() => setReminderAlert(null), []);
 
@@ -155,7 +153,6 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
 
   const broadcastRef = useRealtimeBroadcast('crm-broadcast', {
     recordatorio_change: (payload) => {
-      console.log('[RecordatoriosProvider] Broadcast recibido:', payload);
       const data = validateBroadcast('recordatorio_change', recordatorioChangeSchema, payload);
       if (!data) return;
       const { type, mostrado, recordatorio } = data;
@@ -168,12 +165,10 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
       if (type === 'INSERT' && !mostrado) setPendingReminders(n => n + 1);
       else if (type === 'UPDATE' && mostrado) setPendingReminders(n => Math.max(0, n - 1));
       else if (type === 'DELETE') setPendingReminders(n => Math.max(0, n - 1));
-      
-      console.log('[RecordatoriosProvider] Ejecutando checkDueReminders...');
+
       checkDueRef.current();
     },
     force_show_popup: (payload) => {
-      console.log('[RecordatoriosProvider] Broadcast force_show_popup recibido:', payload);
       const rec = payload.recordatorio as ReminderAlertData;
       if (!rec) return;
 
@@ -211,10 +206,6 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
     }
   }, [broadcastRef]);
 
-  const forceCheckDue = useCallback(() => {
-    checkDueRef.current();
-  }, []);
-
   // Fetch inicial + polling de vencidos cada 60s
   useEffect(() => {
     fetchCount();
@@ -225,10 +216,10 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
 
   const value = useMemo<RecordatoriosCtx>(() => ({
     pendingReminders, reminderAlert,
-    clearReminderAlert, markReminderCompleted, adjustPendingReminders, pushRecordatorioChange, forceCheckDue, forceShowPopup,
+    clearReminderAlert, markReminderCompleted, adjustPendingReminders, pushRecordatorioChange, forceShowPopup,
   }), [
     pendingReminders, reminderAlert,
-    clearReminderAlert, markReminderCompleted, adjustPendingReminders, pushRecordatorioChange, forceCheckDue, forceShowPopup,
+    clearReminderAlert, markReminderCompleted, adjustPendingReminders, pushRecordatorioChange, forceShowPopup,
   ]);
 
   return <RecordatoriosContext.Provider value={value}>{children}</RecordatoriosContext.Provider>;
