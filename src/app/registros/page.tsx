@@ -4,14 +4,13 @@ import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from '
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, ChevronLeft, ChevronRight, Download, FileText, TrendingUp, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, Upload, CheckCircle2, Info, Plus, Timer } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, CheckCircle2, Plus, Timer } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
 import { logAudit } from '@/lib/audit';
-import { AuditResult, parseCSVAudit, performAudit } from '@/lib/audit-import-utils';
 import { corregirTildes } from '@/lib/correccion-tildes';
 import ModalPortal from '@/components/ModalPortal';
 import { getLocalidadesByCP, getCPByLocalidad, addCustomMapping } from '@/lib/codigos-postales';
@@ -38,7 +37,6 @@ const FIELD_LABELS: Record<string, string> = {
   sexo: 'Sexo', empleador: 'Empleador', dependencia: 'Dependencia', localidad: 'Localidad',
 };
 
-const LOCALIDADES_POR_DEFECTO = ['Paraná'];
 const DEPENDENCIAS_POR_DEFECTO = [
   'Ministerio de Salud de Entre Rios',
   'Consejo General de Educación de Entre Rios',
@@ -211,12 +209,6 @@ function esMinisterioSalud(s?: string) {
   return u.includes('MINISTERIO') && u.includes('SALUD');
 }
 
-function esMunicipalidadParana(s?: string) {
-  if (!s) return false;
-  const u = norm(s);
-  return u.includes('MUNICIPALIDAD') && u.includes('PARANA');
-}
-
 function esMunicipalidad(s?: string) {
   if (!s) return false;
   return norm(s).includes('MUNICIPALIDAD');
@@ -248,6 +240,13 @@ if (esMunicipalidad(empleador)) return DEPENDENCIAS_MUNICIPALIDAD_PARANA;
   return DEPENDENCIAS_POR_DEFECTO;
 }
 
+// Empleadores que exigen cargar la dependencia/repartición
+function requiereDependencia(empleador?: string): boolean {
+  return esGobiernoProvincial(empleador) || esMunicipalidad(empleador) ||
+         esConsejoEducacion(empleador) || esMinisterioSalud(empleador) ||
+         esMinisterioDesarrolloHumano(empleador);
+}
+
 // ── Validation ────────────────────────────────────────────────────────────────
 
 function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, string> {
@@ -271,7 +270,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
   if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
   
-  if ((esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador) || esMinisterioDesarrolloHumano(form.empleador)) && !form.dependencia?.trim()) {
+  if (requiereDependencia(form.empleador) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
   }
 
@@ -378,6 +377,32 @@ const PremiumSelect = ({
     setIsOpen(false);
     setSearch("");
   };
+
+  const addCustomBtn = onAddCustom && (
+    <div
+      onClick={(e) => { e.stopPropagation(); onAddCustom(); setIsOpen(false); }}
+      style={{
+        padding: '10px',
+        fontSize: '12px',
+        color: '#86efac',
+        fontWeight: 800,
+        cursor: 'pointer',
+        borderTop: '1px solid var(--border)',
+        background: 'rgba(134, 239, 172, 0.02)',
+        marginTop: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        position: 'sticky',
+        bottom: 0,
+        zIndex: 10
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.08)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.02)'}
+    >
+      <Plus size={14} /> {search ? `Agregar "${search}"...` : 'Agregar otro...'}
+    </div>
+  );
 
   return (
     <div ref={ref} style={{ position: 'relative', width: '100%' }}>
@@ -530,31 +555,7 @@ const PremiumSelect = ({
                     ))}
                   </div>
                 ))}
-                {onAddCustom && (
-                  <div
-                    onClick={(e) => { e.stopPropagation(); onAddCustom(); setIsOpen(false); }}
-                    style={{
-                      padding: '10px',
-                      fontSize: '12px',
-                      color: '#86efac',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      borderTop: '1px solid var(--border)',
-                      background: 'rgba(134, 239, 172, 0.02)',
-                      marginTop: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      position: 'sticky',
-                      bottom: 0,
-                      zIndex: 10
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.08)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.02)'}
-                  >
-                    <Plus size={14} /> {search ? `Agregar "${search}"...` : 'Agregar otro...'}
-                  </div>
-                )}
+                {addCustomBtn}
               </>
             ) : (
               <>
@@ -583,31 +584,7 @@ const PremiumSelect = ({
                     Sin resultados
                   </div>
                 )}
-                {onAddCustom && (
-                  <div
-                    onClick={(e) => { e.stopPropagation(); onAddCustom(); setIsOpen(false); }}
-                    style={{
-                      padding: '10px',
-                      fontSize: '12px',
-                      color: '#86efac',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      borderTop: '1px solid var(--border)',
-                      background: 'rgba(134, 239, 172, 0.02)',
-                      marginTop: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      position: 'sticky',
-                      bottom: 0,
-                      zIndex: 10
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.08)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.02)'}
-                  >
-                    <Plus size={14} /> {search ? `Agregar "${search}"...` : 'Agregar otro...'}
-                  </div>
-                )}
+                {addCustomBtn}
               </>
             )}
           </div>
@@ -634,7 +611,6 @@ const RegistroModal = memo(function RegistroModal({
   const [dupRecord, setDupRecord] = useState<Registro | null>(null);
   const [dupBlocked, setDupBlocked] = useState(false);
   const [agendarRecordatorio, setAgendarRecordatorio] = useState(false);
-  const [showComentariosModal, setShowComentariosModal] = useState(false);
   const [empleadorCustom, setEmpleadorCustom] = useState(false);
   const [dependenciaCustom, setDependenciaCustom] = useState(false);
   const [cp, setCp] = useState('');
@@ -648,12 +624,6 @@ const RegistroModal = memo(function RegistroModal({
     Array.from(new Set(allRegistros.map(r => r.empleador).filter(Boolean) as string[])).sort(),
     [allRegistros]
   );
-  const localidadesDB = useMemo(() =>
-    Array.from(new Set(allRegistros.map(r => r.localidad).filter(Boolean) as string[])).sort(),
-    [allRegistros]
-  );
-  const empleadoresLoaded = true; // siempre cargados desde DataContext
-
   const empleadoresAgrupados = useMemo(() => {
     const esSA = (e: string) => /\bS\.?A\.?\b/i.test(e);
     const esSRL = (e: string) => /\bS\.?R\.?L\.?\b/i.test(e);
@@ -704,7 +674,7 @@ const RegistroModal = memo(function RegistroModal({
       setCpAddOpen(false);
       setCpAddLoc('');
     }
-  }, [isOpen, initialData, empleadoresDB, localidadesDB]);
+  }, [isOpen, initialData, empleadoresDB, allRegistros]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -739,6 +709,9 @@ const RegistroModal = memo(function RegistroModal({
       setErrors(prev => { const e = { ...prev }; delete e.acuerdo_precios; return e; });
     }
   };
+
+  // Venta / Aprobado CC exigen los campos demográficos completos
+  const esVentaOAprobado = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
 
   const guardar = async (bypassDupCheck = false) => {
     const errs = validarForm(form, isAdmin);
@@ -906,7 +879,7 @@ const RegistroModal = memo(function RegistroModal({
               <Field label="Score">
                 <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
               </Field>
-              <Field label={`Tipo de cliente${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.tipo_cliente}>
+              <Field label={`Tipo de cliente${esVentaOAprobado ? ' *' : ''}`} error={errors.tipo_cliente}>
                 <PremiumSelect
                   value={form.tipo_cliente || ''}
                   onChange={val => set('tipo_cliente', val)}
@@ -916,7 +889,7 @@ const RegistroModal = memo(function RegistroModal({
               </Field>
             </div>
             <div className="form-row-3">
-              <Field label={`Acuerdo de precios${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.acuerdo_precios}>
+              <Field label={`Acuerdo de precios${esVentaOAprobado ? ' *' : ''}`} error={errors.acuerdo_precios}>
                 <PremiumSelect
                   value={form.acuerdo_precios || ''}
                   onChange={val => set('acuerdo_precios', val)}
@@ -924,10 +897,10 @@ const RegistroModal = memo(function RegistroModal({
                   placeholder="— Sin especificar —"
                 />
               </Field>
-              <Field label={`Cuotas${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.cuotas}>
+              <Field label={`Cuotas${esVentaOAprobado ? ' *' : ''}`} error={errors.cuotas}>
                 <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
               </Field>
-              <Field label={`Rango etario${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.rango_etario}>
+              <Field label={`Rango etario${esVentaOAprobado ? ' *' : ''}`} error={errors.rango_etario}>
                 <PremiumSelect
                   value={form.rango_etario || ''}
                   onChange={val => set('rango_etario', val)}
@@ -937,7 +910,7 @@ const RegistroModal = memo(function RegistroModal({
               </Field>
             </div>
             <div className="form-row-3">
-              <Field label={`Sexo${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.sexo}>
+              <Field label={`Sexo${esVentaOAprobado ? ' *' : ''}`} error={errors.sexo}>
                 <PremiumSelect
                   value={form.sexo || ''}
                   onChange={val => set('sexo', val)}
@@ -945,10 +918,8 @@ const RegistroModal = memo(function RegistroModal({
                   placeholder="— Sin especificar —"
                 />
               </Field>
-              <Field label={`Empleador${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.empleador}>
-                {!empleadoresLoaded ? (
-                  <input className="form-input" value={form.empleador || ''} disabled placeholder="Cargando empleadores..." />
-                ) : isAdmin ? (
+              <Field label={`Empleador${esVentaOAprobado ? ' *' : ''}`} error={errors.empleador}>
+                {isAdmin ? (
                   <>
                     <input
                       className="form-input"
@@ -1044,7 +1015,7 @@ const RegistroModal = memo(function RegistroModal({
                   />
                 )}
               </Field>
-              <Field label={`C.P.${form.estado === 'venta' || form.estado === 'derivado / aprobado cc' ? ' *' : ''}`} error={errors.localidad}>
+              <Field label={`C.P.${esVentaOAprobado ? ' *' : ''}`} error={errors.localidad}>
                 {(() => {
                   void cpMapVersion;
                   const matches = getLocalidadesByCP(cp);
@@ -1133,7 +1104,7 @@ const RegistroModal = memo(function RegistroModal({
                 })()}
               </Field>
             </div>
-            {(esGobiernoProvincial(form.empleador) || esMunicipalidad(form.empleador) || esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador) || esMinisterioDesarrolloHumano(form.empleador)) && (
+            {requiereDependencia(form.empleador) && (
               <div className="form-row">
                 <Field label={`${(esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador)) ? 'Establecimiento' : 'Repartición'} *`} error={errors.dependencia}>
                   {dependenciaCustom ? (
@@ -1527,114 +1498,6 @@ const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
   );
 });
 
-// ── MultiSelect Dropdown ──────────────────────────────────────────────────────
-
-function MultiSelectDropdown({
-  items, labels, selected, onToggle, onClear,
-}: {
-  items: string[];
-  labels: Record<string, string>;
-  selected: string[];
-  onToggle: (item: string) => void;
-  onClear: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    if (open) document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        onClick={() => setOpen(!open)}
-        style={{
-          width: '100%', height: 38, fontSize: '13px', fontWeight: 600,
-          padding: '0 12px', background: '#0c0c0c',
-          border: '1px solid var(--border)',
-          borderRadius: '6px', color: selected.length > 0 ? '#fff' : 'var(--fg-muted)',
-          outline: 'none', cursor: 'pointer', textAlign: 'left' as const,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}
-      >
-        {selected.length > 0
-          ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}`
-          : 'Todos'}
-        <span style={{ fontSize: 10, opacity: 0.5 }}>{open ? '▲' : '▼'}</span>
-      </button>
-
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0,
-          background: '#0c0c0c', border: '1px solid var(--border)',
-          borderRadius: '8px', zIndex: 100, overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-        }}>
-          {/* Header con "Todos" y "Limpiar" */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)',
-          }}>
-            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 0.8 }}>
-              {selected.length}/{items.length}
-            </span>
-            {selected.length > 0 && (
-              <button
-                onClick={() => { onClear(); }}
-                style={{
-                  fontSize: 10, color: '#f87171', background: 'none', border: 'none',
-                  cursor: 'pointer', fontWeight: 700, textTransform: 'uppercase',
-                }}
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
-
-          {/* Lista con scroll */}
-          <div style={{ maxHeight: 180, overflowY: 'auto', padding: '4px 0' }}>
-            {items.map(item => {
-              const isSelected = selected.includes(item);
-              return (
-                <div
-                  key={item}
-                  onClick={() => onToggle(item)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '7px 12px', cursor: 'pointer',
-                    background: isSelected ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = isSelected ? 'rgba(255,255,255,0.04)' : 'transparent'; }}
-                >
-                  <div style={{
-                    width: 14, height: 14, borderRadius: 3,
-                    border: isSelected ? '1.5px solid var(--green)' : '1.5px solid rgba(255,255,255,0.15)',
-                    background: isSelected ? 'var(--green)' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.15s', flexShrink: 0,
-                  }}>
-                    {isSelected && <span style={{ fontSize: 9, color: '#fff', fontWeight: 900 }}>✓</span>}
-                  </div>
-                  <span style={{ fontSize: 12, color: isSelected ? '#fff' : 'var(--fg-muted)', fontWeight: isSelected ? 700 : 500 }}>
-                    {labels[item] ?? item}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RegistrosPage() {
@@ -1668,7 +1531,7 @@ export default function RegistrosPage() {
   }, [isAdmin, permisosConfig]);
 
   const {
-    filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
+    filters, setFilter, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
     pageSize,
     currentPage, setCurrentPage, setTotalResults,
@@ -1685,14 +1548,6 @@ export default function RegistrosPage() {
       window.history.replaceState({}, '', url.pathname + url.search);
     }
   }, [searchParams, setIsCreationModalOpen]);
-
-  const allAcuerdos = useMemo(() => {
-    const set = new Set<string>();
-    registros.forEach(r => {
-      if (r.acuerdo_precios) set.add(r.acuerdo_precios);
-    });
-    return Array.from(set).sort();
-  }, [registros]);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -1948,9 +1803,8 @@ export default function RegistrosPage() {
     } else {
       setComentariosTarget(null);
     }
-  }, [comentariosTarget, showToast, refresh]);
+  }, [comentariosTarget, showToast, refresh, applyRegistroChange, pushRegistroChange]);
 
-  const rangeStart = (currentPage - 1) * pageSize + 1;
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -2462,150 +2316,3 @@ export default function RegistrosPage() {
     </div>
   );
 }
-const AuditModal = ({ isOpen, onClose, registros: dbRecords }: { isOpen: boolean, onClose: () => void, registros: Registro[] }) => {
-  const [results, setResults] = useState<AuditResult[] | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-
-  const { bulkInsertRegistros } = useRegistros();
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setFile(f);
-    setIsProcessing(true);
-    
-    const text = await f.text();
-    const csvRecords = parseCSVAudit(text);
-    const auditResults = performAudit(csvRecords, dbRecords);
-    
-    setResults(auditResults);
-    setIsProcessing(false);
-  };
-
-  const handleImport = async () => {
-    if (!results) return;
-    const toImport = results.filter(r => r.status === 'new').map(r => r.csvRecord);
-    if (toImport.length === 0) {
-      alert('No hay registros nuevos para importar.');
-      return;
-    }
-    
-    if (!confirm(`¿Deseas importar ${toImport.length} registros nuevos?`)) return;
-    
-    try {
-      setIsProcessing(true);
-      await bulkInsertRegistros(toImport);
-      alert('Importación completada con éxito.');
-      onClose();
-    } catch (err) {
-      console.error(err);
-      alert('Error al importar registros.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: 900, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div className="modal-header">
-          <div className="modal-title-container">
-            <Upload className="modal-title-icon" style={{ color: 'var(--green)' }} />
-            <h2 className="modal-title">AUDITORÍA E IMPORTACIÓN</h2>
-          </div>
-          <button className="modal-close" onClick={onClose}><X /></button>
-        </div>
-
-        <div className="modal-body" style={{ flex: 1, overflowY: 'auto' }}>
-          {!results ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', border: '2px dashed rgba(255,255,255,0.06)', borderRadius: 12 }}>
-              <Upload size={48} style={{ color: '#46464e', marginBottom: 16 }} />
-              <p style={{ color: 'var(--fg-muted)', marginBottom: 20, fontSize: '13px' }}>Selecciona un archivo CSV para auditar contra la base de datos.</p>
-              <input type="file" accept=".csv" onChange={handleFileChange} style={{ display: 'none' }} id="audit-file" />
-              <label htmlFor="audit-file" className="btn-primary" style={{ cursor: 'pointer', padding: '10px 24px', background: 'var(--green)', color: '#000', borderRadius: '8px', fontSize: '12px', fontWeight: 800 }}>
-                SELECCIONAR ARCHIVO
-              </label>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, letterSpacing: '0.5px' }}>NUEVOS</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{results.filter(r => r.status === 'new').length}</div>
-                </div>
-                <div style={{ background: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.2)', padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, letterSpacing: '0.5px' }}>DIFERENCIAS</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{results.filter(r => r.status === 'mismatch').length}</div>
-                </div>
-                <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>YA EXISTENTES</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{results.filter(r => r.status === 'duplicate').length}</div>
-                </div>
-              </div>
-
-              <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead style={{ background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <tr>
-                      <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)' }}>Fecha</th>
-                      <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)' }}>CUIL / Nombre</th>
-                      <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)' }}>Importe</th>
-                      <th style={{ padding: 12, textAlign: 'left', color: 'var(--fg-muted)' }}>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.slice(0, 100).map((res, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <td style={{ padding: 12, color: '#fff' }}>{res.csvRecord.fecha}</td>
-                        <td style={{ padding: 12 }}>
-                          <div style={{ fontWeight: 600, color: '#fff' }}>{res.csvRecord.nombre}</div>
-                          <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'monospace' }}>{res.csvRecord.cuil}</div>
-                        </td>
-                        <td style={{ padding: 12, color: '#fff' }}>${res.csvRecord.monto?.toLocaleString()}</td>
-                        <td style={{ padding: 12 }}>
-                          {res.status === 'new' && <span style={{ color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={14}/> Nuevo</span>}
-                          {res.status === 'duplicate' && <span style={{ color: 'var(--fg-muted)', display: 'flex', alignItems: 'center', gap: 4 }}><Info size={14}/> Existente</span>}
-                          {res.status === 'mismatch' && (
-                            <span style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 4, cursor: 'help' }} title={res.diffMessage}>
-                              <AlertCircle size={14}/> Diferencia
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {results.length > 100 && (
-                <p style={{ textAlign: 'center', fontSize: 11, color: '#46464e' }}>Mostrando los primeros 100 de {results.length} registros...</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose} disabled={isProcessing} style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
-            fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-          }}>CANCELAR</button>
-          {results && (
-            <button 
-              className="btn-primary" 
-              onClick={handleImport} 
-              disabled={isProcessing || results.filter(r => r.status === 'new').length === 0}
-              style={{
-                background: 'var(--green)', color: '#000', border: 'none', fontWeight: 800,
-                padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-              }}
-            >
-              {isProcessing ? 'PROCESANDO...' : `IMPORTAR ${results.filter(r => r.status === 'new').length} NUEVOS`}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};

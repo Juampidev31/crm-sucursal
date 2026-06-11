@@ -12,11 +12,10 @@ import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/l
 import {
   Save, RotateCcw, AlertCircle, Bell, Clock, History,
   Settings, Activity, Copy, Shield, AlertTriangle,
-  CheckCircle, User, ShieldCheck, BarChart3, Calendar, TrendingUp, Trash2,
-  Search, Filter, Download, ArrowRight, Eye, Edit3, Plus, Users,
-  ChevronLeft, ChevronRight, RefreshCw, PieChart, Upload
+  CheckCircle, User, ShieldCheck, BarChart3, Trash2,
+  Search, Filter, Download, ArrowRight, Edit3, Plus, Users,
+  ChevronLeft, ChevronRight, Upload
 } from 'lucide-react';
-import CustomSelect from '@/components/CustomSelect';
 import dynamic from 'next/dynamic';
 
 const TabFallback = () => (
@@ -40,7 +39,7 @@ type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | s
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
 type ConfigSubTab = 'alertas' | 'dias' | 'permisos';
-type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score' | 'cartera-analista';
+type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score';
 type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
 type ActividadSubTab = 'auditoria' | 'avisos';
 
@@ -54,25 +53,35 @@ const parsePaste = (e: React.ClipboardEvent<HTMLInputElement>, onChange: (v: str
   if (!isNaN(num)) onChange(String(num));
 };
 
-const VariacionBadge = ({ valor }: { valor: number }) => {
-  const esPositivo = valor > 0;
-  const esCero = Math.abs(valor) < 0.5;
+// Barra de sub-tabs compartida por las 4 secciones
+function SubTabBar<T extends string>({ tabs, active, onSelect }: {
+  tabs: { id: T; label: string; icon: React.ElementType }[];
+  active: T;
+  onSelect: (id: T) => void;
+}) {
   return (
-    <span style={{
-      display: 'inline-block',
-      fontSize: 11,
-      fontWeight: 700,
-      padding: '1px 6px',
-      borderRadius: 4,
-      marginTop: 2,
-      color: esCero ? '#888' : esPositivo ? '#00ff88' : '#ff3366',
-      background: esCero ? 'rgba(255,255,255,0.05)' : esPositivo ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)',
-    }}>
-      {esCero ? '— 0%' : `${esPositivo ? '▲' : '▼'} ${valor >= 0 ? '+' : ''}${valor.toFixed(1)}%`}
-    </span>
+    <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          onClick={() => onSelect(t.id)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px', borderRadius: 6,
+            background: active === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
+            border: `1px solid ${active === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
+            color: active === t.id ? '#fff' : 'var(--gris)',
+            fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: active === t.id ? 700 : 500,
+            cursor: 'pointer',
+          }}
+        >
+          <t.icon size={13} style={{ opacity: active === t.id ? 1 : 0.7 }} />
+          {t.label}
+        </button>
+      ))}
+    </div>
   );
-};
-
+}
 
 export default function AjustesPage() {
   const { isAdmin } = useAuth();
@@ -101,7 +110,6 @@ export default function AjustesPage() {
     'bulk-corrector': activeTab === 'datos-masivos' && datosSubTab === 'modificacion-masiva' && isAdmin,
     'bulk-excel': activeTab === 'datos-masivos' && datosSubTab === 'asignar-excel' && isAdmin,
     'bulk-bulk': activeTab === 'reportes' && reportesSubTab === 'calif-score' && isAdmin,
-    'cartera-tab': activeTab === 'reportes' && reportesSubTab === 'cartera-analista' && isAdmin,
     'massive-delete': activeTab === 'datos-masivos' && datosSubTab === 'eliminacion-masiva' && isAdmin,
     'avisos-tab': activeTab === 'actividad' && actividadSubTab === 'avisos' && isAdmin,
     'verificador-tab': activeTab === 'datos-masivos' && datosSubTab === 'verificador' && isAdmin,
@@ -147,7 +155,6 @@ export default function AjustesPage() {
   const [auditFilterAnalista, setAuditFilterAnalista] = useState<string>('todos');
   const [auditFilterPeriodo, setAuditFilterPeriodo] = useState<string>('todo');
   const [auditPage, setAuditPage] = useState(1);
-  const [auditExpandedRow, setAuditExpandedRow] = useState<string | null>(null);
   const AUDIT_PAGE_SIZE = 25;
 
   const [consultaEstado, setConsultaEstado] = useState('proyeccion');
@@ -519,15 +526,6 @@ export default function AjustesPage() {
     return result.sort((a, b) => b.cantidad - a.cantidad);
   }, [duplicadosRegistros]);
 
-  const chipStyle = (isActive: boolean) => ({
-    padding: '6px 14px', borderRadius: '6px', fontSize: '10px', border: '1px solid',
-    whiteSpace: 'nowrap' as const, fontWeight: 800 as const, cursor: 'pointer', transition: 'all 0.2s',
-    background: isActive ? '#fff' : 'rgba(255,255,255,0.02)',
-    borderColor: isActive ? '#fff' : 'rgba(255,255,255,0.05)',
-    color: isActive ? '#000' : 'var(--gris)',
-    textTransform: 'uppercase' as const, letterSpacing: '1px'
-  });
-
   return (
     <div className="dashboard-container">
       {toast && (
@@ -581,30 +579,15 @@ export default function AjustesPage() {
 
           {/* TAB: ALERTAS */}
           {activeTab === 'configuracion' && (
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-              {([
+            <SubTabBar
+              tabs={[
                 ...(isAdmin ? [{ id: 'alertas' as const, label: 'Alertas', icon: Bell }] : []),
                 { id: 'dias' as const, label: 'Días Hábiles', icon: Clock },
                 ...(isAdmin ? [{ id: 'permisos' as const, label: 'Roles y Permisos', icon: Shield }] : []),
-              ]).map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setConfigSubTab(t.id)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '6px 14px', borderRadius: 6,
-                    background: configSubTab === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    border: `1px solid ${configSubTab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    color: configSubTab === t.id ? '#fff' : 'var(--gris)',
-                    fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: configSubTab === t.id ? 700 : 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <t.icon size={13} style={{ opacity: configSubTab === t.id ? 1 : 0.7 }} />
-                  {t.label}
-                </button>
-              ))}
-            </div>
+              ]}
+              active={configSubTab}
+              onSelect={setConfigSubTab}
+            />
           )}
           {activeTab === 'configuracion' && configSubTab === 'alertas' && isAdmin && (
             <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)' }}>
@@ -834,31 +817,15 @@ export default function AjustesPage() {
 
           {/* TAB: HISTORICO */}
           {activeTab === 'reportes' && (
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-              {([
+            <SubTabBar
+              tabs={[
                 { id: 'historico' as const, label: 'Histórico y Objetivos', icon: History },
                 { id: 'resumen-mensual' as const, label: 'Resumen Mensual', icon: BarChart3 },
                 ...(isAdmin ? [{ id: 'calif-score' as const, label: 'Calif. x SCORE', icon: Users }] : []),
-
-              ]).map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setReportesSubTab(t.id)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '6px 14px', borderRadius: 6,
-                    background: reportesSubTab === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    border: `1px solid ${reportesSubTab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    color: reportesSubTab === t.id ? '#fff' : 'var(--gris)',
-                    fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: reportesSubTab === t.id ? 700 : 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <t.icon size={13} style={{ opacity: reportesSubTab === t.id ? 1 : 0.7 }} />
-                  {t.label}
-                </button>
-              ))}
-            </div>
+              ]}
+              active={reportesSubTab}
+              onSelect={setReportesSubTab}
+            />
           )}
           {activeTab === 'reportes' && reportesSubTab === 'historico' && (
             <div className="data-card" style={{ background: '#111111' }}>
@@ -1003,33 +970,18 @@ export default function AjustesPage() {
 
           {/* TAB: DUPLICADOS */}
           {activeTab === 'datos-masivos' && (
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-              {([
+            <SubTabBar
+              tabs={[
                 ...(isAdmin ? [{ id: 'modificacion-masiva' as const, label: 'Corrector', icon: ShieldCheck }] : []),
                 ...(isAdmin ? [{ id: 'asignar-excel' as const, label: 'Asignar Excel', icon: Filter }] : []),
                 ...(isAdmin ? [{ id: 'verificador' as const, label: 'Verificador', icon: Search }] : []),
                 ...(isAdmin ? [{ id: 'carga-rapida' as const, label: 'Carga Rápida', icon: Upload }] : []),
                 { id: 'duplicados' as const, label: 'Duplicados', icon: Copy },
                 ...(isAdmin ? [{ id: 'eliminacion-masiva' as const, label: 'Borrado Masivo', icon: Trash2 }] : []),
-              ]).map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setDatosSubTab(t.id)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '6px 14px', borderRadius: 6,
-                    background: datosSubTab === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    border: `1px solid ${datosSubTab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    color: datosSubTab === t.id ? '#fff' : 'var(--gris)',
-                    fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: datosSubTab === t.id ? 700 : 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <t.icon size={13} style={{ opacity: datosSubTab === t.id ? 1 : 0.7 }} />
-                  {t.label}
-                </button>
-              ))}
-            </div>
+              ]}
+              active={datosSubTab}
+              onSelect={setDatosSubTab}
+            />
           )}
           {activeTab === 'datos-masivos' && datosSubTab === 'duplicados' && (
             <div style={{ width: '100%', margin: '0 auto', padding: '20px 0 60px' }}>
@@ -1178,29 +1130,14 @@ export default function AjustesPage() {
 
           {/* TAB: AUDITORIA */}
           {activeTab === 'actividad' && (
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-              {([
+            <SubTabBar
+              tabs={[
                 { id: 'auditoria' as const, label: 'Auditoría', icon: Shield },
                 ...(isAdmin ? [{ id: 'avisos' as const, label: 'Avisos', icon: Bell }] : []),
-              ]).map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setActividadSubTab(t.id)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '6px 14px', borderRadius: 6,
-                    background: actividadSubTab === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    border: `1px solid ${actividadSubTab === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-                    color: actividadSubTab === t.id ? '#fff' : 'var(--gris)',
-                    fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: actividadSubTab === t.id ? 700 : 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <t.icon size={13} style={{ opacity: actividadSubTab === t.id ? 1 : 0.7 }} />
-                  {t.label}
-                </button>
-              ))}
-            </div>
+              ]}
+              active={actividadSubTab}
+              onSelect={setActividadSubTab}
+            />
           )}
           {activeTab === 'actividad' && actividadSubTab === 'auditoria' && (() => {
             // — helpers —

@@ -43,6 +43,24 @@ const STATUS_CONFIG = {
   not_found: { label: 'No encontrado',     color: '#ff3366', Icon: XCircle      },
 };
 
+const STATUS_OPTS = (Object.keys(STATUS_CONFIG) as MatchStatus[])
+  .map(key => ({ key, label: STATUS_CONFIG[key].label }));
+
+const parseMontoExcel = (raw: string): number => {
+  if (!raw) return 0;
+  const isArgentine = raw.indexOf(',') > raw.indexOf('.');
+  const normalized = isArgentine
+    ? raw.replace(/\./g, '').replace(',', '.')
+    : raw.replace(/,/g, '');
+  return parseFloat(normalized.replace(/[$\s]/g, '')) || 0;
+};
+
+const TH_STYLE: React.CSSProperties = {
+  padding: '10px 14px', textAlign: 'left', color: '#555',
+  fontWeight: 700, fontSize: 11, letterSpacing: '0.05em',
+  whiteSpace: 'nowrap', verticalAlign: 'top', minWidth: 120,
+};
+
 export default function VerificadorTab() {
   const { registros, refresh } = useRegistros();
   const [rawText, setRawText] = useState('');
@@ -293,7 +311,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
     const dups = new Set<string>();
     seen.forEach((count, cuil) => { if (count > 1) dups.add(cuil); });
     return dups;
-  }, [results, mapping, cuilColIndex]);
+  }, [results, cuilColIndex]);
 
   const duplicateCount = duplicateCuils.size;
 
@@ -313,7 +331,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
       }
     });
     return extras;
-  }, [results, mapping, duplicateCuils, cuilColIndex]);
+  }, [results, duplicateCuils, cuilColIndex]);
 
   useEffect(() => {
     setSelectedForDeletion(new Set(extraIndices));
@@ -336,12 +354,10 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
     if (ids.length === 0) return;
     setDeleting(true);
     setDeleteError(null);
-    console.log('[Verificador] eliminando ids:', ids);
     const { error } = await supabase
       .from('registros')
       .delete()
       .in('id', ids);
-    console.log('[Verificador] resultado delete:', { error });
     setDeleting(false);
     setConfirming(false);
     if (!error) {
@@ -353,26 +369,11 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
     }
   };
 
-  const parseMontoExcel = (raw: string): number => {
-    if (!raw) return 0;
-    const isArgentine = raw.indexOf(',') > raw.indexOf('.');
-    const normalized = isArgentine
-      ? raw.replace(/\./g, '').replace(',', '.')
-      : raw.replace(/,/g, '');
-    return parseFloat(normalized.replace(/[$\s]/g, '')) || 0;
-  };
-
   const totalMonto = visible.reduce((sum, r) => {
     if (montoColIndex !== undefined) return sum + parseMontoExcel(r.row.cells[Number(montoColIndex)] ?? '');
     if (r.dbImporte != null) return sum + r.dbImporte;
     return sum;
   }, 0);
-
-  const STATUS_OPTS: { key: MatchStatus; label: string }[] = [
-    { key: 'found',     label: 'Encontrado'        },
-    { key: 'mismatch',  label: 'Importe diferente' },
-    { key: 'not_found', label: 'No encontrado'     },
-  ];
 
   // Columnas activas en orden fijo
   const orderedCols: { role: ColumnRole; colIndex: number }[] = ROLE_ORDER
@@ -381,12 +382,6 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
       return entry ? { role, colIndex: Number(entry[0]) } : null;
     })
     .filter((x): x is { role: ColumnRole; colIndex: number } => x !== null);
-
-  const thStyle: React.CSSProperties = {
-    padding: '10px 14px', textAlign: 'left', color: '#555',
-    fontWeight: 700, fontSize: 11, letterSpacing: '0.05em',
-    whiteSpace: 'nowrap', verticalAlign: 'top', minWidth: 120,
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -580,9 +575,9 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'auto' }}>
           <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             <tr>
-              <th style={{ ...thStyle, width: 36, minWidth: 36 }} />
+              <th style={{ ...TH_STYLE, width: 36, minWidth: 36 }} />
               {orderedCols.map(({ role, colIndex }) => (
-                <th key={role} style={thStyle}>
+                <th key={role} style={TH_STYLE}>
                   {ROLE_LABEL[role].toUpperCase()}
                   <FilterSelect
                     filterKey={String(colIndex)}
@@ -593,16 +588,16 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                   />
                 </th>
               ))}
-              <th style={thStyle}>ESTADO</th>
-              <th style={thStyle}>
+              <th style={TH_STYLE}>ESTADO</th>
+              <th style={TH_STYLE}>
                 MONTO DB
                 <FilterSelect filterKey="dbImporte" value={colFilters['dbImporte'] ?? ''} options={uniqueVals['dbImporte'] ?? []} onChange={setCol} />
               </th>
-              <th style={thStyle}>
+              <th style={TH_STYLE}>
                 FECHA DB
                 <FilterSelect filterKey="dbFecha" value={colFilters['dbFecha'] ?? ''} options={uniqueVals['dbFecha'] ?? []} onChange={setCol} formatOption={formatDateAR} />
               </th>
-              <th style={thStyle}>
+              <th style={TH_STYLE}>
                 ESTADO DB
                 <FilterSelect filterKey="dbEstado" value={colFilters['dbEstado'] ?? ''} options={uniqueVals['dbEstado'] ?? []} onChange={setCol} />
               </th>

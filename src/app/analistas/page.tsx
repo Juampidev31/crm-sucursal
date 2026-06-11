@@ -9,7 +9,7 @@ import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X, Plus, Trash2, Bell, Edit3, Clock } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -18,7 +18,6 @@ import {
 import MetricasTab from '@/app/ajustes/MetricasTab';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 import NuevaSeccionSheets from './NuevaSeccionSheets';
-import { supabase } from '@/lib/supabase';
 
 const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = false }: { data: import('chart.js').ChartData<'doughnut'>, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const totalNum = typeof total === 'string' ? parseFloat(total) : total;
@@ -324,8 +323,81 @@ import { useSearchParams } from 'next/navigation';
 
 const now = new Date();
 
+// ── Helpers puros compartidos ────────────────────────────────────────────
+const filterByMonth = (regs: Registro[], mes: number, anio: number) => {
+  const key = `${anio}-${String(mes).padStart(2, '0')}`;
+  return regs.filter(r => r.fecha?.slice(0, 7) === key);
+};
+
+const isVenta = (r: Registro) => {
+  const e = (r.estado ?? '').toLowerCase();
+  return e === 'venta' || e.includes('aprobado cc');
+};
+
+const cumplColor = (pct: number | null) =>
+  pct === null ? '#64748b' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+
+// Clasificador de acuerdo de precios (compartido por distribuciones)
+const TIPOS_ACUERDO = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/Excepcion', 'No califica'];
+
+const emptyTiposAcuerdo = (): Record<string, { monto: number; cantidad: number }> =>
+  Object.fromEntries(TIPOS_ACUERDO.map(t => [t, { monto: 0, cantidad: 0 }]));
+
+const matchTipoAcuerdo = (acuerdo: string, estado: string, isV: boolean): string | null => {
+  const ac = (acuerdo || '').toLowerCase().trim();
+  const es = (estado || '').toLowerCase().trim();
+  // Prioridad a estados de no calificación
+  const esRechazo = ac.includes('no califica') || ac === 'n/c' ||
+                    es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+  if (esRechazo) return isV ? 'No califica/Excepcion' : 'No califica';
+  if (ac.includes('bajo')) return 'Riesgo BAJO';
+  if (ac.includes('medio')) return 'Riesgo MEDIO';
+  if (ac.includes('premium')) return 'PREMIUM';
+  return null;
+};
+
+// ── Normalización de empleador para agrupar duplicados ───────────────────
+const normalizarEmpleador = (nombre: string): string => {
+  if (!nombre) return 'No especificado';
+  let n = nombre.toUpperCase().trim();
+  // Quitar acentos
+  n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // Quitar sufijos legales comunes
+  n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
+  // Quitar palabras vacías al final
+  n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
+  // Quitar múltiples espacios
+  n = n.replace(/\s+/g, ' ').trim();
+  return n || 'No especificado';
+};
+
+// Agrupa por empleador normalizado usando la variante más común como label
+const buildDistEmpleador = (fuente: Registro[]) => {
+  const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
+  for (const r of fuente) {
+    const raw = (r.empleador ?? '').trim();
+    const key = normalizarEmpleador(raw);
+    const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
+    prev.monto += Number(r.monto) || 0;
+    prev.cantidad += 1;
+    if (raw) {
+      prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
+      // Usar la variante más común como displayLabel
+      let maxCount = 0;
+      let maxVariant = raw;
+      for (const [v, c] of prev.variantes) {
+        if (c > maxCount) { maxCount = c; maxVariant = v; }
+      }
+      prev.displayLabel = maxVariant;
+    }
+    map.set(key, prev);
+  }
+  return Array.from(map.values())
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .map(data => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
+};
+
 export default function AnalistasPage() {
-  console.log("Triggering Vercel deployment for real...");
   const { registros: allRegistros, loading } = useRegistros();
   const { objetivos } = useObjetivos();
   const { diasConfig } = useSettings();
@@ -376,7 +448,6 @@ export default function AnalistasPage() {
     for (const o of objetivos) set.add(o.anio);
     set.add(now.getFullYear());
     return Array.from(set).sort((a, b) => b - a);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [registros, objetivos]);
 
   const mesesAnioKQ = useMemo(() => {
@@ -428,20 +499,6 @@ export default function AnalistasPage() {
     const num = parseFloat(val) || 0;
     setManualCobranzas(prev => ({ ...prev, [key]: num }));
   };
-
-  // ── Helpers de cálculo ────────────────────────────────────────────────────
-  const filterByMonth = (regs: Registro[], mes: number, anio: number) => {
-    const key = `${anio}-${String(mes).padStart(2, '0')}`;
-    return regs.filter(r => r.fecha?.slice(0, 7) === key);
-  };
-
-  const isVenta = (r: Registro) => {
-    const e = (r.estado ?? '').toLowerCase();
-    return e === 'venta' || e.includes('aprobado cc');
-  };
-
-  const cumplColor = (pct: number | null) =>
-    pct === null ? '#64748b' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
 
   const tendBadge = (pct: number | null, showLabel = true) => {
     if (pct === null) return <span style={{ color: '#64748b' }}>—</span>;
@@ -758,34 +815,9 @@ export default function AnalistasPage() {
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
   const distribucionAcuerdos = useMemo(() => {
-    const tipos: Record<string, { monto: number; cantidad: number }> = {
-      'PREMIUM': { monto: 0, cantidad: 0 },
-      'Riesgo MEDIO': { monto: 0, cantidad: 0 },
-      'Riesgo BAJO': { monto: 0, cantidad: 0 },
-      'No califica/Excepcion': { monto: 0, cantidad: 0 },
-      'No califica': { monto: 0, cantidad: 0 },
-    };
-    // Mapeo para match con DB
-    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
-      const ac = (acuerdo || '').toLowerCase().trim();
-      const es = (estado || '').toLowerCase().trim();
-      // Prioridad a estados de no calificación
-      const esRechazo = ac.includes('no califica') || ac === 'n/c' || 
-                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
-      
-      if (esRechazo) {
-        return isV ? 'No califica/Excepcion' : 'No califica';
-      }
-
-      if (ac.includes('bajo')) return 'Riesgo BAJO';
-      if (ac.includes('medio')) return 'Riesgo MEDIO';
-      if (ac.includes('premium')) return 'PREMIUM';
-      
-      return null;
-    };
+    const tipos = emptyTiposAcuerdo();
     for (const r of filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta)) {
-      const isV = true;
-      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+      const matched = matchTipoAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', true);
       if (matched) {
         tipos[matched].monto += Number(r.monto) || 0;
         tipos[matched].cantidad += 1;
@@ -812,83 +844,12 @@ export default function AnalistasPage() {
       .map(([label, data]) => ({ label, ...data }));
   };
 
-  // ── Normalización de empleador para agrupar duplicados ────────────────────
-  const normalizarEmpleador = (nombre: string): string => {
-    if (!nombre) return 'No especificado';
-    let n = nombre.toUpperCase().trim();
-    // Quitar acentos
-    n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    // Quitar sufijos legales comunes
-    n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
-    // Quitar palabras vacías al final
-    n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
-    // Quitar múltiples espacios
-    n = n.replace(/\s+/g, ' ').trim();
-    return n || 'No especificado';
-  };
-
-  const distEmpleador = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
-    for (const r of ventasMes.filter(isVenta)) {
-      const raw = (r.empleador ?? '').trim();
-      const key = normalizarEmpleador(raw);
-      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
-      prev.monto += Number(r.monto) || 0;
-      prev.cantidad += 1;
-      if (raw) {
-        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
-        // Usar la variante más común como displayLabel
-        let maxCount = 0;
-        let maxVariant = raw;
-        for (const [v, c] of prev.variantes) {
-          if (c > maxCount) { maxCount = c; maxVariant = v; }
-        }
-        prev.displayLabel = maxVariant;
-      }
-      map.set(key, prev);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
-  }, [ventasMes]);
+  const distEmpleador = useMemo(() => buildDistEmpleador(ventasMes.filter(isVenta)), [ventasMes]);
 
   const distCuotas = useMemo(() => distPor('cuotas', ventasMes.filter(isVenta)), [ventasMes]);
   const distRangoEtario = useMemo(() => distPor('rango_etario', ventasMes.filter(isVenta)), [ventasMes]);
   const distSexo = useMemo(() => distPor('sexo', ventasMes.filter(isVenta)), [ventasMes]);
   const distLocalidad = useMemo(() => distPor('localidad', ventasMes.filter(isVenta)), [ventasMes]);
-  const distEstados = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number }>();
-    for (const r of ventasMes) {
-      let raw = (r.estado || '').toLowerCase().trim();
-      let label = '';
-
-      if (raw.includes('derivado') || raw.includes('aprobado cc')) {
-        label = 'Aprob. CC';
-      } else if (raw.includes('rechazado')) {
-        label = 'Rechaz. CC';
-      } else if (raw === 'venta') {
-        label = 'Venta';
-      } else if (raw === 'proyeccion') {
-        label = 'Proyección';
-      } else if (raw === 'en seguimiento') {
-        label = 'En Seguimiento';
-      } else if (raw === 'no califica') {
-        label = 'No califica';
-      } else if (raw === 'score bajo') {
-        label = 'Score Bajo';
-      } else if (raw === 'afectaciones') {
-        label = 'Afectaciones';
-      } else {
-        label = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'No especificado';
-      }
-
-      const prev = map.get(label) ?? { monto: 0, cantidad: 0 };
-      map.set(label, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([label, data]) => ({ label, ...data }));
-  }, [ventasMes]);
   const distAcuerdos = useMemo(() => {
     return Object.entries(distribucionAcuerdos)
       .map(([label, data]) => ({ label, ...data }))
@@ -900,46 +861,11 @@ export default function AnalistasPage() {
   const distRangoEtarioTotal = useMemo(() => distPor('rango_etario', registros), [registros]);
   const distSexoTotal = useMemo(() => distPor('sexo', registros), [registros]);
   const distLocalidadTotal = useMemo(() => distPor('localidad', registros), [registros]);
-  const distEmpleadorTotal = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
-    for (const r of registros) {
-      const raw = (r.empleador ?? '').trim();
-      const key = normalizarEmpleador(raw);
-      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
-      prev.monto += Number(r.monto) || 0;
-      prev.cantidad += 1;
-      if (raw) {
-        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
-        let maxCount = 0; let maxVariant = raw;
-        for (const [v, c] of prev.variantes) { if (c > maxCount) { maxCount = c; maxVariant = v; } }
-        prev.displayLabel = maxVariant;
-      }
-      map.set(key, prev);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
-  }, [registros]);
+  const distEmpleadorTotal = useMemo(() => buildDistEmpleador(registros), [registros]);
   const distAcuerdosTotal = useMemo(() => {
-    const tipos: Record<string, { monto: number; cantidad: number }> = {
-      'PREMIUM': { monto: 0, cantidad: 0 }, 'Riesgo MEDIO': { monto: 0, cantidad: 0 },
-      'Riesgo BAJO': { monto: 0, cantidad: 0 }, 'No califica/Excepcion': { monto: 0, cantidad: 0 },
-      'No califica': { monto: 0, cantidad: 0 },
-    };
-    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
-      const ac = (acuerdo || '').toLowerCase().trim();
-      const es = (estado || '').toLowerCase().trim();
-      const esRechazo = ac.includes('no califica') || ac === 'n/c' ||
-                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
-      if (esRechazo) return isV ? 'No califica/Excepcion' : 'No califica';
-      if (ac.includes('bajo')) return 'Riesgo BAJO';
-      if (ac.includes('medio')) return 'Riesgo MEDIO';
-      if (ac.includes('premium')) return 'PREMIUM';
-      return null;
-    };
+    const tipos = emptyTiposAcuerdo();
     for (const r of registros) {
-      const isV = isVenta(r);
-      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+      const matched = matchTipoAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', isVenta(r));
       if (matched) { tipos[matched].monto += Number(r.monto) || 0; tipos[matched].cantidad += 1; }
     }
     return Object.entries(tipos).map(([label, data]) => ({ label, ...data })).sort((a, b) => b.cantidad - a.cantidad);
@@ -950,45 +876,6 @@ export default function AnalistasPage() {
     filterByMonth(registros, mesPrev, anioPrev),
     [registros, mesPrev, anioPrev]
   );
-
-  const distPorAnt = (campo: keyof Registro, fuente: typeof ventasMesAnt) => {
-    const map = new Map<string, { monto: number; cantidad: number }>();
-    for (const r of fuente) {
-      const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
-      const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
-      map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
-    }
-    return map;
-  };
-
-  const distCuotasAnt = useMemo(() => distPorAnt('cuotas', ventasMesAnt), [ventasMesAnt]);
-  const distRangoAnt = useMemo(() => distPorAnt('rango_etario', ventasMesAnt), [ventasMesAnt]);
-  const distSexoAnt = useMemo(() => distPorAnt('sexo', ventasMesAnt), [ventasMesAnt]);
-  const distEmpleadorAnt = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
-    for (const r of ventasMesAnt) {
-      const raw = (r.empleador ?? '').trim();
-      const key = normalizarEmpleador(raw);
-      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
-      prev.monto += Number(r.monto) || 0;
-      prev.cantidad += 1;
-      if (raw) {
-        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
-        let maxCount = 0;
-        let maxVariant = raw;
-        for (const [v, c] of prev.variantes) {
-          if (c > maxCount) { maxCount = c; maxVariant = v; }
-        }
-        prev.displayLabel = maxVariant;
-      }
-      map.set(key, prev);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
-  }, [ventasMesAnt]);
-  const distLocalidadAnt = useMemo(() => distPorAnt('localidad', ventasMesAnt), [ventasMesAnt]);
-  const distAcuerdosAnt = useMemo(() => distPorAnt('acuerdo_precios', ventasMesAnt), [ventasMesAnt]);
 
   // ── Config base de gráficos (dark theme) ─────────────────────────────────
   const mesActualLabel = CONFIG.MESES_NOMBRES[selectedMes - 1].slice(0, 3);
@@ -1175,82 +1062,6 @@ export default function AnalistasPage() {
     };
   }, [kpiCards, registros, objetivos, mesPrev, anioPrev, mesActualLabel, mesAntLabel]);
 
-  // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
-  const chartAcuerdos = useMemo(() => {
-    const tiposDisplay = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/Excepcion', 'No califica'];
-    const analistas = analistasParaMostrar;
-    const colores = ['#60a5fa', '#a78bfa'];
-
-    const matchAcuerdo = (acuerdo: string, estado: string, isV: boolean): string | null => {
-      const ac = (acuerdo || '').toLowerCase().trim();
-      const es = (estado || '').toLowerCase().trim();
-      // Prioridad a estados de no calificación
-      const esRechazo = ac.includes('no califica') || ac === 'n/c' || 
-                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
-      
-      if (esRechazo) {
-        return isV ? 'No califica/Excepcion' : 'No califica';
-      }
-
-      if (ac.includes('bajo')) return 'Riesgo BAJO';
-      if (ac.includes('medio')) return 'Riesgo MEDIO';
-      if (ac.includes('premium')) return 'PREMIUM';
-      return null;
-    };
-
-    return {
-      labels: tiposDisplay,
-      datasets: analistas.map((an, idx) => ({
-        label: analista === 'PDV' ? an.toUpperCase() : 'INDIVIDUAL',
-        data: tiposDisplay.map(t => {
-          return filterByMonth(registros, selectedMes, selectedAnio).filter(r => {
-            const isV = isVenta(r);
-            const matched = matchAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
-            return r.analista === an && matched === t;
-          }).length;
-        }),
-        backgroundColor: colores[idx] || '#555',
-        borderRadius: 4,
-        maxBarThickness: 70,
-      }))
-    };
-  }, [registros, selectedMes, selectedAnio, filterByMonth, isVenta]);
-
-  // ── Helper gráfico horizontal por categoría ───────────────────────────────
-  const buildCatChart = (
-    actual: { label: string; cantidad: number }[],
-    anterior: Map<string, { cantidad: number }>,
-    color: string,
-    limit = 8
-  ) => {
-    const top = actual.slice(0, limit);
-    return {
-      labels: top.map(d => d.label),
-      datasets: [
-        {
-          label: mesActualLabel,
-          data: top.map(d => d.cantidad),
-          backgroundColor: color,
-          borderRadius: 4, order: 1,
-        },
-        {
-          label: mesAntLabel,
-          data: top.map(d => anterior.get(d.label)?.cantidad ?? 0),
-          backgroundColor: `${color}44`,
-          borderRadius: 4, order: 1,
-        },
-      ],
-    };
-  };
-
-  const chartSexo = useMemo(() => buildCatChart(distSexo, distSexoAnt, '#f472b6'), [distSexo, distSexoAnt, mesActualLabel, mesAntLabel]);
-
-  // ── Ranking analistas ─────────────────────────────────────────────────────
-  const rankingAnalistas = useMemo(() =>
-    [...kpiPorAnalista].sort((a, b) => b.capital - a.capital),
-    [kpiPorAnalista]
-  );
-
   // ── Chart 1: Capital vs Objetivo ──────────────────────────────────────────
   const chartCapitalVsObjetivo = useMemo(() => {
     const labels = chartLabels;
@@ -1423,7 +1234,7 @@ export default function AnalistasPage() {
         }
       ]
     };
-  }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital, isVenta]);
+  }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital]);
 
   const chartProgresoOptions = {
     responsive: true,
@@ -1533,17 +1344,14 @@ export default function AnalistasPage() {
   const empleoPublPrivData = useMemo(() => {
     const PUBLICO = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
     const ventas = periodoEmpleo === 'mensual' ? ventasMes.filter(isVenta) : registros;
-    const ant = ventasMesAnt.filter(isVenta);
     const classify = (r: typeof ventas[0]) => {
       const e = (r.empleador ?? '').toLowerCase();
       return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'Sin dato' : 'Privado';
     };
     const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
-    const countsAnt: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
     ventas.forEach(r => counts[classify(r)]++);
-    ant.forEach(r => countsAnt[classify(r)]++);
-    return { counts, countsAnt };
-  }, [registros, ventasMes, periodoEmpleo, ventasMesAnt]);
+    return { counts };
+  }, [registros, ventasMes, periodoEmpleo]);
 
   const chartEmpleoPublPriv = useMemo(() => {
     const { counts } = empleoPublPrivData;
@@ -1562,71 +1370,6 @@ export default function AnalistasPage() {
       }],
     };
   }, [empleoPublPrivData]);
-
-  // ── Chart 10: % Total Conversión ─────────────────────────────────────────
-  const chartConversionTotal = useMemo(() => {
-    const labels = chartLabels;
-    const actual = [...kpiPorAnalista.map(k => k.conversionGlobal)];
-    if (analista === 'PDV') actual.push(kpiTotal.conversionGlobal);
-
-    const anterior = [
-      ...kpiPorAnalista.map(k => {
-        const regsAnt = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista);
-        return conversionTotalPct(regsAnt) ?? 0;
-      })
-    ];
-    if (analista === 'PDV') {
-      const regsAntTotal = filterByMonth(allRegistros, mesPrev, anioPrev);
-      anterior.push(conversionTotalPct(regsAntTotal) ?? 0);
-    }
-
-    return {
-      labels,
-      datasets: [
-        { label: `Conversión % ${mesActualLabel}`, data: actual, backgroundColor: 'rgba(251, 191, 36, 0.15)', borderColor: 'rgba(251, 191, 36, 0.5)', borderWidth: 1.5, borderRadius: 4, order: 1 },
-        { label: `Conversión % ${mesAntLabel}`, data: anterior, backgroundColor: 'rgba(124, 45, 18, 0.1)', borderColor: 'rgba(124, 45, 18, 0.4)', borderWidth: 1.5, borderRadius: 4, order: 1 },
-        refLine100(labels.length),
-      ],
-    };
-  }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
-
-  // ── Chart 5: Embudo Comercial ────────────────────────────────────────────
-  const chartEmbudo = useMemo(() => {
-    const labels = analistasParaMostrar;
-    const regsMes = filterByMonth(allRegistros, selectedMes, selectedAnio);
-    const cerradas = labels.map(a => regsMes.filter(r => r.analista === a && isVenta(r)).length);
-    
-    return {
-      labels: labels.map(a => analista === 'PDV' ? a.toUpperCase() : 'INDIVIDUAL'),
-      datasets: [
-        {
-          data: cerradas,
-          backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#ef4444'],
-          borderWidth: 0,
-          hoverOffset: 10,
-          borderRadius: 4,
-          spacing: 4
-        }
-      ],
-    };
-  }, [registros, selectedMes, selectedAnio, isVenta]);
-
-  // ── Chart 6: % Conversión de Presupuesto ──────────────────────────────────
-  const chartConversionPresupuesto = useMemo(() => {
-    const labels = analistasParaMostrar;
-    const data = labels.map((a, i) => {
-      const pres = ({})[a] ?? 0;
-      const ops = kpiPorAnalista[i]?.ops ?? 0;
-      return pres > 0 ? (ops / pres) * 100 : 0;
-    });
-    return {
-      labels,
-      datasets: [
-        { label: '% Conv. Presupuesto → Venta', data, backgroundColor: 'rgba(52, 211, 153, 0.15)', borderColor: 'rgba(52, 211, 153, 0.5)', borderWidth: 1.5, borderRadius: 4, order: 1 },
-        refLine100(labels.length),
-      ],
-    };
-  }, [({}), kpiPorAnalista, refLine100]);
 
   if (loading) return <div style={{display:'flex',justifyContent:'center',padding:'40px'}}><div className="spinner"></div></div>;
 

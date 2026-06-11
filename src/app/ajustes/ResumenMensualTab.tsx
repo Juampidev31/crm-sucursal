@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Registro, Objetivo, CONFIG } from '@/types';
-import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
-import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown, ChevronRight } from 'lucide-react';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
+import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
@@ -15,64 +14,9 @@ import {
 import MetricasTab from './MetricasTab';
 import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
 import SeccionGraficosResumen from './SeccionGraficosResumen';
-import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
-import { useAuth } from '@/context/AuthContext';
 
 
-const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
-  const totalNum = typeof total === 'string' ? parseFloat(total) : total;
-  const options = {
-    layout: { padding: 40 },
-    cutout: '88%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
-        titleAlign: 'center' as const,
-        titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
-        bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
-        padding: 24,
-        cornerRadius: 16,
-        boxPadding: 8,
-        usePointStyle: true,
-        callbacks: {
-          label: (context: any) => {
-            return ` ${context.raw}`;
-          }
-        }
-      }
-    },
-    maintainAspectRatio: false,
-    elements: { arc: { borderWidth: 0,  }
-    }
-  };
-
-  const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
-
-  return (
-    <div style={{ position: 'relative', height: '240px', width: '280px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)', textAlign: 'center',
-        width: '100%', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '8px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: '15px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
-          {displayValue}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const DistBlock = ({ 
+const DistBlock = ({
   titulo, icon, datos, color, totalMes, maxItems = 5
 }: { 
   titulo: string; icon: React.ReactNode; 
@@ -252,6 +196,93 @@ const labelsPlugin: any = {
   },
 };
 
+// ── Helpers puros compartidos ────────────────────────────────────────────
+const filterByMonth = (regs: Registro[], mes: number, anio: number) => {
+  const key = `${anio}-${String(mes).padStart(2, '0')}`;
+  return regs.filter(r => r.fecha?.slice(0, 7) === key);
+};
+
+const isVenta = (r: Registro) => {
+  const e = (r.estado ?? '').toLowerCase();
+  return e === 'venta' || e.includes('aprobado cc');
+};
+
+const cumplColor = (pct: number | null) =>
+  pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
+
+// Línea de referencia 100% para gráficos de cumplimiento
+const refLine100 = (n: number) => ({
+  type: 'line' as const,
+  label: 'Meta 100%',
+  data: Array(n).fill(100),
+  borderColor: '#ff3366',
+  borderWidth: 0,
+  borderDash: [5, 4],
+  pointRadius: 0,
+  fill: false,
+  order: 0,
+});
+
+// Clasificador de acuerdo de precios (compartido por distribuciones y gráficos)
+const TIPOS_ACUERDO = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/Excepcion', 'No califica'];
+
+const emptyTiposAcuerdo = (): Record<string, { monto: number; cantidad: number }> =>
+  Object.fromEntries(TIPOS_ACUERDO.map(t => [t, { monto: 0, cantidad: 0 }]));
+
+const matchTipoAcuerdo = (acuerdo: string, estado: string, isV: boolean): string | null => {
+  const ac = (acuerdo || '').toLowerCase().trim();
+  const es = (estado || '').toLowerCase().trim();
+  // Prioridad a estados de no calificación
+  const esRechazo = ac.includes('no califica') || ac === 'n/c' ||
+                    es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
+  if (esRechazo) return isV ? 'No califica/Excepcion' : 'No califica';
+  if (ac.includes('bajo')) return 'Riesgo BAJO';
+  if (ac.includes('medio')) return 'Riesgo MEDIO';
+  if (ac.includes('premium')) return 'PREMIUM';
+  return null;
+};
+
+// ── Normalización de empleador para agrupar duplicados ────────────────────
+const normalizarEmpleador = (nombre: string): string => {
+  if (!nombre) return 'No especificado';
+  let n = nombre.toUpperCase().trim();
+  // Quitar acentos
+  n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // Quitar sufijos legales comunes
+  n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
+  // Quitar palabras vacías al final
+  n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
+  // Quitar múltiples espacios
+  n = n.replace(/\s+/g, ' ').trim();
+  return n || 'No especificado';
+};
+
+// Agrupa por empleador normalizado usando la variante más común como label
+const buildDistEmpleador = (fuente: Registro[]) => {
+  const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
+  for (const r of fuente) {
+    const raw = (r.empleador ?? '').trim();
+    const key = normalizarEmpleador(raw);
+    const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
+    prev.monto += Number(r.monto) || 0;
+    prev.cantidad += 1;
+    if (raw) {
+      prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
+      // Usar la variante más común como displayLabel
+      let maxCount = 0;
+      let maxVariant = raw;
+      for (const [v, c] of prev.variantes) {
+        if (c > maxCount) { maxCount = c; maxVariant = v; }
+      }
+      prev.displayLabel = maxVariant;
+    }
+    map.set(key, prev);
+  }
+  return Array.from(map.values())
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .map(data => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
+};
+
 interface PlanAccion {
   problema: string;
   accion: string;
@@ -321,8 +352,6 @@ const ManualTextarea = ({ label, value, onChange, placeholder }: {
 );
 
 export default function ResumenMensualTab({ registros, objetivos, diasConfig, onSuccess, onError }: Props) {
-  const { isAdmin } = useAuth();
-
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
   const [resumen, setResumen] = useState<ResumenMensual>(EMPTY_RESUMEN());
@@ -332,7 +361,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const [saving, setSaving] = useState(false);
   const [publicLink, setPublicLink] = useState('');
   const [copied, setCopied] = useState(false);
-  const [selectedZoom, setSelectedZoom] = useState(1);
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
   const [filtroActividad, setFiltroActividad] = useState<'PDV' | 'Luciana' | 'Victoria' | 'Comparativa'>('PDV');
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
@@ -346,7 +374,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     8: true,
     9: true,
     10: true,
-    11: true,
   });
 
   const toggleSection = (id: number) => {
@@ -393,7 +420,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             const parsed = JSON.parse(textPart);
             textPart = parsed.text || '';
             htmlPart = parsed.html || '';
-          } catch (e) { }
+          } catch { }
         } else if (textPart.trim().startsWith('<div')) {
           htmlPart = textPart;
           textPart = '';
@@ -427,6 +454,78 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
     return () => { cancelled = true; };
   }, [selectedMes, selectedAnio]);
+
+  // ── Datos compartidos para el reporte público (link y guardado) ─────────
+  const buildDatosParaCompartir = (auditSoloMesActual: boolean) => {
+    const auditCounts: Record<string, number> = {};
+    const currentMonthPrefix = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}`;
+    CONFIG.ANALISTAS_DEFAULT.forEach(a => {
+      auditCounts[a] = auditoriaData.filter(ad =>
+        ad.analista === a && (!auditSoloMesActual || ad.fecha_hora.startsWith(currentMonthPrefix))
+      ).length;
+    });
+
+    // Registros "seguros" para el análisis temporal público (sin datos sensibles)
+    const safeRecords = registros.map(r => ({
+      fecha: r.fecha,
+      monto: r.monto,
+      analista: r.analista,
+      estado: r.estado,
+      acuerdo_precios: r.acuerdo_precios,
+      empleador: r.empleador,
+      dependencia: r.dependencia
+    }));
+
+    return {
+      kpiTotal,
+      kpiPorAnalista,
+      registros: safeRecords,
+      mesActual: CONFIG.MESES_NOMBRES[selectedMes - 1],
+      mesAnterior: CONFIG.MESES_NOMBRES[mesPrev - 1],
+      year: selectedAnio,
+      month: selectedMes,
+      experienciaCliente: resumen.experiencia_cliente,
+      analisisComercial: resumen.analisis_comercial,
+      operacionProcesos: resumen.operacion_procesos,
+      gestionesRealizadas: resumen.gestiones_realizadas,
+      coordinacionSalidas: resumen.coordinacion_salidas,
+      empresasEstrategicas: resumen.empresas_estrategicas,
+      logros: resumen.logros,
+      desvios: resumen.desvios,
+      accionesClave: resumen.acciones_clave,
+      dotacion: resumen.dotacion,
+      ausentismo: resumen.ausentismo,
+      capacitacion: resumen.capacitacion,
+      evaluacionDesempeno: resumen.evaluacion_desempeno,
+      planAcciones: resumen.plan_acciones,
+      auditCounts,
+      collapsedSections,
+      chartCapitalVsObjetivo,
+      chartTicketPromedio,
+      chartVariacion,
+      chartEmbudo,
+      chartAperturas,
+      chartRenovaciones,
+      chartEmpleoPublPriv,
+      chartConversionTotal,
+      chartConversionPresupuesto,
+      chartCumplimiento,
+      chartAcuerdos,
+      distSexo,
+      distCuotas,
+      distRangoEtario,
+      distLocalidad,
+      distEmpleador,
+      distAcuerdos,
+      distEstados,
+      distSexoTotal,
+      distCuotasTotal,
+      distRangoEtarioTotal,
+      distLocalidadTotal,
+      distEmpleadorTotal,
+      distAcuerdosTotal,
+    };
+  };
 
   // ── Generar Link público para compartir el reporte ──────────────────────
   const handleGenerarLink = async () => {
@@ -502,72 +601,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         .replace(/var\(--rojo\)/g, '#ff3366');
 
       // 8. Preparar datos para interactividad
-      const auditCounts: Record<string, number> = {};
-      const currentMonthPrefix = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}`;
-      CONFIG.ANALISTAS_DEFAULT.forEach(a => {
-        auditCounts[a] = auditoriaData.filter(ad => ad.analista === a && ad.fecha_hora.startsWith(currentMonthPrefix)).length;
-      });
-
-      // Preparar registros "seguros" para el análisis temporal público (sin datos sensibles)
-      const safeRecords = registros.map(r => ({
-        fecha: r.fecha,
-        monto: r.monto,
-        analista: r.analista,
-        estado: r.estado,
-        acuerdo_precios: r.acuerdo_precios,
-        empleador: r.empleador,
-        dependencia: r.dependencia
-      }));
-
-      const datosParaCompartir = {
-        kpiTotal,
-        kpiPorAnalista,
-        registros: safeRecords,
-        mesActual: CONFIG.MESES_NOMBRES[selectedMes - 1],
-        mesAnterior: CONFIG.MESES_NOMBRES[mesPrev - 1],
-        year: selectedAnio,
-        month: selectedMes,
-        experienciaCliente: resumen.experiencia_cliente,
-        analisisComercial: resumen.analisis_comercial,
-        operacionProcesos: resumen.operacion_procesos,
-        gestionesRealizadas: resumen.gestiones_realizadas,
-        coordinacionSalidas: resumen.coordinacion_salidas,
-        empresasEstrategicas: resumen.empresas_estrategicas,
-        logros: resumen.logros,
-        desvios: resumen.desvios,
-        accionesClave: resumen.acciones_clave,
-        dotacion: resumen.dotacion,
-        ausentismo: resumen.ausentismo,
-        capacitacion: resumen.capacitacion,
-        evaluacionDesempeno: resumen.evaluacion_desempeno,
-        planAcciones: resumen.plan_acciones,
-        auditCounts,
-        collapsedSections,
-        chartCapitalVsObjetivo,
-        chartTicketPromedio,
-        chartVariacion,
-        chartEmbudo,
-        chartAperturas,
-        chartRenovaciones,
-        chartEmpleoPublPriv,
-        chartConversionTotal,
-        chartConversionPresupuesto,
-        chartCumplimiento,
-        chartAcuerdos,
-        distSexo,
-        distCuotas,
-        distRangoEtario,
-        distLocalidad,
-        distEmpleador,
-        distAcuerdos,
-        distEstados,
-        distSexoTotal,
-        distCuotasTotal,
-        distRangoEtarioTotal,
-        distLocalidadTotal,
-        distEmpleadorTotal,
-        distAcuerdosTotal,
-      };
+      const datosParaCompartir = buildDatosParaCompartir(true);
 
       // 9. Guardar snapshot y datos
       const snapshotHtml = clone.innerHTML;
@@ -590,7 +624,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       }
 
       const baseUrl = window.location.origin;
-      const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}${selectedZoom !== 1 ? `&zoom=${selectedZoom}` : ''}`;
+      const publicUrl = `${baseUrl}/publico/resumen-mensual?anio=${selectedAnio}&mes=${selectedMes}`;
 
       // 10. Copiar link
       try {
@@ -620,71 +654,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       presupuestosMap[k.analista] = k.ops;
     });
 
-    const auditCounts: Record<string, number> = {};
-    CONFIG.ANALISTAS_DEFAULT.forEach(a => {
-      auditCounts[a] = auditoriaData.filter(ad => ad.analista === a).length;
-    });
-
-    // Preparar registros "seguros" para el análisis temporal público (sin datos sensibles)
-    const safeRecords = registros.map(r => ({
-      fecha: r.fecha,
-      monto: r.monto,
-      analista: r.analista,
-      estado: r.estado,
-      acuerdo_precios: r.acuerdo_precios,
-      empleador: r.empleador,
-      dependencia: r.dependencia
-    }));
-
-    const datosParaCompartir = {
-      kpiTotal,
-      kpiPorAnalista,
-      registros: safeRecords,
-      mesActual: CONFIG.MESES_NOMBRES[selectedMes - 1],
-      mesAnterior: CONFIG.MESES_NOMBRES[mesPrev - 1],
-      year: selectedAnio,
-      month: selectedMes,
-      experienciaCliente: resumen.experiencia_cliente,
-      analisisComercial: resumen.analisis_comercial,
-      operacionProcesos: resumen.operacion_procesos,
-      gestionesRealizadas: resumen.gestiones_realizadas,
-      coordinacionSalidas: resumen.coordinacion_salidas,
-      empresasEstrategicas: resumen.empresas_estrategicas,
-      logros: resumen.logros,
-      desvios: resumen.desvios,
-      accionesClave: resumen.acciones_clave,
-      dotacion: resumen.dotacion,
-      ausentismo: resumen.ausentismo,
-      capacitacion: resumen.capacitacion,
-      evaluacionDesempeno: resumen.evaluacion_desempeno,
-      planAcciones: resumen.plan_acciones,
-      auditCounts,
-      collapsedSections,
-      chartCapitalVsObjetivo,
-      chartTicketPromedio,
-      chartVariacion,
-      chartEmbudo,
-      chartAperturas,
-      chartRenovaciones,
-      chartEmpleoPublPriv,
-      chartConversionTotal,
-      chartConversionPresupuesto,
-      chartCumplimiento,
-      chartAcuerdos,
-      distSexo,
-      distCuotas,
-      distRangoEtario,
-      distLocalidad,
-      distEmpleador,
-      distAcuerdos,
-      distEstados,
-      distSexoTotal,
-      distCuotasTotal,
-      distRangoEtarioTotal,
-      distLocalidadTotal,
-      distEmpleadorTotal,
-      distAcuerdosTotal,
-    };
+    const datosParaCompartir = buildDatosParaCompartir(false);
 
     const payload = {
       anio: selectedAnio,
@@ -706,159 +676,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     if (error) onError(`Error al guardar: ${error.message}`);
     else onSuccess(`Resumen de ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio} guardado`);
   };
-
-  // ── PDF ───────────────────────────────────────────────────────────────────
-  const handleDescargarPDF = async () => {
-    const root = document.getElementById('resumen-reporte-body');
-    if (!root) { onError('No se encontró el contenido del reporte.'); return; }
-
-    // 1. Esperar render de gráficos
-    await new Promise(r => setTimeout(r, 300));
-
-    // 2. Capturar todos los canvas ANTES de clonar
-    const canvasImages = new Map<HTMLCanvasElement, string>();
-    root.querySelectorAll('canvas').forEach(canvas => {
-      try { canvasImages.set(canvas as HTMLCanvasElement, (canvas as HTMLCanvasElement).toDataURL('image/png')); } catch { /* ignorar */ }
-    });
-
-    // 3. Clonar el DOM real del reporte
-    const clone = root.cloneNode(true) as HTMLElement;
-
-    // 4. Reemplazar cada canvas clonado con su imagen capturada
-    const origCanvases = Array.from(root.querySelectorAll('canvas')) as HTMLCanvasElement[];
-    const cloneCanvases = Array.from(clone.querySelectorAll('canvas')) as HTMLCanvasElement[];
-    origCanvases.forEach((orig, i) => {
-      const src = canvasImages.get(orig);
-      const clonedCanvas = cloneCanvases[i];
-      if (src && clonedCanvas) {
-        const img = document.createElement('img');
-        img.src = src;
-        img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
-        clonedCanvas.parentNode?.replaceChild(img, clonedCanvas);
-      }
-    });
-
-    // 5. Reemplazar textareas por divs con el valor actual
-    const origTextareas = Array.from(root.querySelectorAll('textarea')) as HTMLTextAreaElement[];
-    const cloneTextareas = Array.from(clone.querySelectorAll('textarea')) as HTMLTextAreaElement[];
-    origTextareas.forEach((orig, i) => {
-      const cloned = cloneTextareas[i];
-      if (!cloned) return;
-      const computed = window.getComputedStyle(orig);
-      const div = document.createElement('div');
-      div.style.cssText = cloned.style.cssText;
-      div.style.whiteSpace = 'pre-wrap';
-      div.style.overflow = 'visible';
-      div.style.resize = 'none';
-      div.style.minHeight = computed.height !== 'auto' ? computed.height : '72px';
-      div.style.display = 'block';
-      div.textContent = orig.value;
-      cloned.parentNode?.replaceChild(div, cloned);
-    });
-
-    // 6. Reemplazar inputs con su valor como texto; ocultar botones
-    clone.querySelectorAll('button').forEach(el => (el as HTMLElement).style.display = 'none');
-
-    const origInputs = Array.from(root.querySelectorAll('input')) as HTMLInputElement[];
-    const cloneInputs = Array.from(clone.querySelectorAll('input')) as HTMLInputElement[];
-    origInputs.forEach((orig, i) => {
-      const cloned = cloneInputs[i];
-      if (!cloned) return;
-      const computed = window.getComputedStyle(orig);
-      const span = document.createElement('div');
-      span.style.cssText = cloned.style.cssText;
-      span.style.minHeight = computed.height !== 'auto' ? computed.height : '32px';
-      span.style.display = 'flex';
-      span.style.alignItems = 'center';
-      span.textContent = orig.value || orig.placeholder || '—';
-      if (!orig.value) span.style.color = '#333';
-      cloned.parentNode?.replaceChild(span, cloned);
-    });
-
-    // 7. Resolver CSS vars residuales + fix grids para print
-    clone.innerHTML = clone.innerHTML
-      .replace(/var\(--gris\)/g, '#666')
-      .replace(/var\(--rojo\)/g, '#ff3366')
-      .replace(/repeat\(auto-fit,\s*minmax\(\d+px,\s*1fr\)\)/g, 'repeat(2, 1fr)');
-
-    // 8. Agregar break-inside: avoid a cada data-card y tarjeta interna
-    clone.querySelectorAll('.data-card').forEach(el => {
-      (el as HTMLElement).style.breakInside = 'avoid';
-      (el as HTMLElement).style.pageBreakInside = 'avoid';
-    });
-
-    const mesNombre = CONFIG.MESES_NOMBRES[selectedMes - 1];
-    const titulo = `Resumen ${mesNombre} ${selectedAnio}`;
-
-    const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>${titulo}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    html, body { margin: 0; padding: 0; background: #0c0c0c; color: #ccc; font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; }
-    body { padding: 32px 40px; }
-    @page { margin: 10mm 12mm; size: A4 landscape; background: #0c0c0c; }
-    @media print { body { padding: 0; background: #0c0c0c; } }
-    /* Ocultar scrollbars, transiciones y cursores interactivos */
-    * { scrollbar-width: none; transition: none !important; animation: none !important; cursor: default !important; }
-    /* Clases del proyecto */
-    .data-card { background: #0c0c0c; border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 24px; margin-bottom: 0; break-inside: avoid; page-break-inside: avoid; }
-    .data-table { width: 100%; border-collapse: collapse; text-align: left; }
-    /* Ocultar el spinner y elementos no imprimibles */
-    .spinner, [class*="no-print"] { display: none !important; }
-    /* Inputs/botones residuales ocultos */
-    input, button { display: none !important; }
-    /* ── Print grid fix: auto-fit no funciona en print, forzar columnas fijas ── */
-    [style*="grid-template-columns"] { display: grid !important; }
-    [style*="repeat(auto-fit"] { grid-template-columns: repeat(2, 1fr) !important; }
-    /* Evitar corte dentro de tarjetas y gráficos */
-    [style*="border-radius: 10px"], [style*="border-radius: 12px"], [style*="borderRadius"] { break-inside: avoid; page-break-inside: avoid; }
-    img { max-width: 100%; height: auto !important; }
-    /* Forzar que cada sección principal empiece en nueva página excepto la primera */
-    .data-card + .data-card { page-break-before: auto; }
-    /* Flex containers: no shrink */
-    [style*="display: flex"] { flex-shrink: 0; }
-  </style>
-</head>
-<body>
-  <!-- PORTADA -->
-  <div style="margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15)">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#555;margin-bottom:6px">Informe de Gestión Comercial</div>
-    <h1 style="font-size:28px;font-weight:900;color:#fff;margin:0">${titulo}</h1>
-  </div>
-
-  ${clone.innerHTML}
-
-  <script>window.onload = () => { window.print(); }</script>
-</body>
-</html>`;
-
-    const win = window.open('', '_blank');
-    if (!win) { onError('El navegador bloqueó la ventana emergente. Permitila para descargar el PDF.'); return; }
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    win.location.href = url;
-    setTimeout(() => URL.revokeObjectURL(url), 30_000);
-  };
-
-  // ── Helpers de cálculo ────────────────────────────────────────────────────
-  const filterByMonth = (regs: Registro[], mes: number, anio: number) => {
-    const key = `${anio}-${String(mes).padStart(2, '0')}`;
-    return regs.filter(r => r.fecha?.slice(0, 7) === key);
-  };
-
-  const isVenta = (r: Registro) => {
-    const e = (r.estado ?? '').toLowerCase();
-    return e === 'venta' || e.includes('aprobado cc');
-  };
-
-  const cumplColor = (pct: number | null) =>
-    pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
-
 
   const tendBadge = (pct: number | null, showLabel = true) => {
     if (pct === null) return <span style={{ color: '#333' }}>—</span>;
@@ -1050,44 +867,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     return { capital, ops, ticket, conversion, conversionGlobal, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion, tendConversionGlobal, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
 
-  // ── Distribución acuerdo de precios ──────────────────────────────────────
-  const distribucionAcuerdos = useMemo(() => {
-    const tipos: Record<string, { monto: number; cantidad: number }> = {
-      'PREMIUM': { monto: 0, cantidad: 0 },
-      'Riesgo MEDIO': { monto: 0, cantidad: 0 },
-      'Riesgo BAJO': { monto: 0, cantidad: 0 },
-      'No califica/Excepcion': { monto: 0, cantidad: 0 },
-      'No califica': { monto: 0, cantidad: 0 },
-    };
-    // Mapeo para match con DB
-    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
-      const ac = (acuerdo || '').toLowerCase().trim();
-      const es = (estado || '').toLowerCase().trim();
-      // Prioridad a estados de no calificación
-      const esRechazo = ac.includes('no califica') || ac === 'n/c' || 
-                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
-      
-      if (esRechazo) {
-        return isV ? 'No califica/Excepcion' : 'No califica';
-      }
-
-      if (ac.includes('bajo')) return 'Riesgo BAJO';
-      if (ac.includes('medio')) return 'Riesgo MEDIO';
-      if (ac.includes('premium')) return 'PREMIUM';
-      
-      return null;
-    };
-    for (const r of filterByMonth(registros, selectedMes, selectedAnio)) {
-      const isV = isVenta(r);
-      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
-      if (matched) {
-        tipos[matched].monto += Number(r.monto) || 0;
-        tipos[matched].cantidad += 1;
-      }
-    }
-    return tipos;
-  }, [registros, selectedMes, selectedAnio]);
-
   // ── Distribuciones demográficas (ventas del mes) ─────────────────────────
   const ventasMes = useMemo(() =>
     filterByMonth(registros, selectedMes, selectedAnio),
@@ -1106,45 +885,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       .map(([label, data]) => ({ label, ...data }));
   };
 
-  // ── Normalización de empleador para agrupar duplicados ────────────────────
-  const normalizarEmpleador = (nombre: string): string => {
-    if (!nombre) return 'No especificado';
-    let n = nombre.toUpperCase().trim();
-    // Quitar acentos
-    n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    // Quitar sufijos legales comunes
-    n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?)\.?\b/gi, '').trim();
-    // Quitar palabras vacías al final
-    n = n.replace(/\b(EL|LA|LOS|LAS|DE|DEL|Y|E)\b\s*$/gi, '').trim();
-    // Quitar múltiples espacios
-    n = n.replace(/\s+/g, ' ').trim();
-    return n || 'No especificado';
-  };
-
-  const distEmpleador = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
-    for (const r of ventasMes.filter(isVenta)) {
-      const raw = (r.empleador ?? '').trim();
-      const key = normalizarEmpleador(raw);
-      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
-      prev.monto += Number(r.monto) || 0;
-      prev.cantidad += 1;
-      if (raw) {
-        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
-        // Usar la variante más común como displayLabel
-        let maxCount = 0;
-        let maxVariant = raw;
-        for (const [v, c] of prev.variantes) {
-          if (c > maxCount) { maxCount = c; maxVariant = v; }
-        }
-        prev.displayLabel = maxVariant;
-      }
-      map.set(key, prev);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
-  }, [ventasMes]);
+  const distEmpleador = useMemo(() => buildDistEmpleador(ventasMes.filter(isVenta)), [ventasMes]);
 
   const distCuotas = useMemo(() => distPor('cuotas', ventasMes.filter(isVenta)), [ventasMes]);
   const distRangoEtario = useMemo(() => distPor('rango_etario', ventasMes.filter(isVenta)), [ventasMes]);
@@ -1184,27 +925,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       .map(([label, data]) => ({ label, ...data }));
   }, [ventasMes]);
   const distAcuerdos = useMemo(() => {
-    const tipos: Record<string, { monto: number; cantidad: number }> = {
-      'PREMIUM': { monto: 0, cantidad: 0 },
-      'Riesgo MEDIO': { monto: 0, cantidad: 0 },
-      'Riesgo BAJO': { monto: 0, cantidad: 0 },
-      'No califica/Excepcion': { monto: 0, cantidad: 0 },
-      'No califica': { monto: 0, cantidad: 0 },
-    };
-    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
-      const ac = (acuerdo || '').toLowerCase().trim();
-      const es = (estado || '').toLowerCase().trim();
-      const esRechazo = ac.includes('no califica') || ac === 'n/c' ||
-                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
-      if (esRechazo) return isV ? 'No califica/Excepcion' : 'No califica';
-      if (ac.includes('bajo')) return 'Riesgo BAJO';
-      if (ac.includes('medio')) return 'Riesgo MEDIO';
-      if (ac.includes('premium')) return 'PREMIUM';
-      return null;
-    };
+    const tipos = emptyTiposAcuerdo();
     for (const r of ventasMes.filter(isVenta)) {
-      const isV = true;
-      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+      const matched = matchTipoAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', true);
       if (matched) {
         tipos[matched].monto += Number(r.monto) || 0;
         tipos[matched].cantidad += 1;
@@ -1220,51 +943,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const distRangoEtarioTotal = useMemo(() => distPor('rango_etario', registros), [registros]);
   const distSexoTotal = useMemo(() => distPor('sexo', registros), [registros]);
   const distLocalidadTotal = useMemo(() => distPor('localidad', registros), [registros]);
-  const distEmpleadorTotal = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
-    for (const r of registros) {
-      const raw = (r.empleador ?? '').trim();
-      const key = normalizarEmpleador(raw);
-      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
-      prev.monto += Number(r.monto) || 0;
-      prev.cantidad += 1;
-      if (raw) {
-        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
-        let maxCount = 0;
-        let maxVariant = raw;
-        for (const [v, c] of prev.variantes) {
-          if (c > maxCount) { maxCount = c; maxVariant = v; }
-        }
-        prev.displayLabel = maxVariant;
-      }
-      map.set(key, prev);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
-  }, [registros]);
+  const distEmpleadorTotal = useMemo(() => buildDistEmpleador(registros), [registros]);
   const distAcuerdosTotal = useMemo(() => {
-    const tipos: Record<string, { monto: number; cantidad: number }> = {
-      'PREMIUM': { monto: 0, cantidad: 0 },
-      'Riesgo MEDIO': { monto: 0, cantidad: 0 },
-      'Riesgo BAJO': { monto: 0, cantidad: 0 },
-      'No califica/Excepcion': { monto: 0, cantidad: 0 },
-      'No califica': { monto: 0, cantidad: 0 },
-    };
-    const matchTipo = (acuerdo: string, estado: string, isV: boolean): string | null => {
-      const ac = (acuerdo || '').toLowerCase().trim();
-      const es = (estado || '').toLowerCase().trim();
-      const esRechazo = ac.includes('no califica') || ac === 'n/c' ||
-                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
-      if (esRechazo) return isV ? 'No califica/Excepcion' : 'No califica';
-      if (ac.includes('bajo')) return 'Riesgo BAJO';
-      if (ac.includes('medio')) return 'Riesgo MEDIO';
-      if (ac.includes('premium')) return 'PREMIUM';
-      return null;
-    };
+    const tipos = emptyTiposAcuerdo();
     for (const r of registros) {
-      const isV = isVenta(r);
-      const matched = matchTipo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+      const matched = matchTipoAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', isVenta(r));
       if (matched) {
         tipos[matched].monto += Number(r.monto) || 0;
         tipos[matched].cantidad += 1;
@@ -1280,45 +963,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     filterByMonth(registros, mesPrev, anioPrev),
     [registros, mesPrev, anioPrev]
   );
-
-  const distPorAnt = (campo: keyof Registro, fuente: typeof ventasMesAnt) => {
-    const map = new Map<string, { monto: number; cantidad: number }>();
-    for (const r of fuente) {
-      const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
-      const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
-      map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
-    }
-    return map;
-  };
-
-  const distCuotasAnt = useMemo(() => distPorAnt('cuotas', ventasMesAnt), [ventasMesAnt]);
-  const distRangoAnt = useMemo(() => distPorAnt('rango_etario', ventasMesAnt), [ventasMesAnt]);
-  const distSexoAnt = useMemo(() => distPorAnt('sexo', ventasMesAnt), [ventasMesAnt]);
-  const distEmpleadorAnt = useMemo(() => {
-    const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
-    for (const r of ventasMesAnt) {
-      const raw = (r.empleador ?? '').trim();
-      const key = normalizarEmpleador(raw);
-      const prev = map.get(key) ?? { monto: 0, cantidad: 0, variantes: new Map<string, number>(), displayLabel: raw };
-      prev.monto += Number(r.monto) || 0;
-      prev.cantidad += 1;
-      if (raw) {
-        prev.variantes.set(raw, (prev.variantes.get(raw) || 0) + 1);
-        let maxCount = 0;
-        let maxVariant = raw;
-        for (const [v, c] of prev.variantes) {
-          if (c > maxCount) { maxCount = c; maxVariant = v; }
-        }
-        prev.displayLabel = maxVariant;
-      }
-      map.set(key, prev);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([_, data]) => ({ label: data.displayLabel, monto: data.monto, cantidad: data.cantidad }));
-  }, [ventasMesAnt]);
-  const distLocalidadAnt = useMemo(() => distPorAnt('localidad', ventasMesAnt), [ventasMesAnt]);
-  const distAcuerdosAnt = useMemo(() => distPorAnt('acuerdo_precios', ventasMesAnt), [ventasMesAnt]);
 
   // ── Config base de gráficos (dark theme) ─────────────────────────────────
   const mesActualLabel = CONFIG.MESES_NOMBRES[selectedMes - 1].slice(0, 3);
@@ -1426,19 +1070,6 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     return gradient;
   };
 
-  // Helper: línea de referencia 100%
-  const refLine100 = (n: number) => ({
-    type: 'line' as const,
-    label: 'Meta 100%',
-    data: Array(n).fill(100),
-    borderColor: '#ff3366',
-    borderWidth: 0,
-    borderDash: [5, 4],
-    pointRadius: 0,
-    fill: false,
-    order: 0,
-  });
-
   // ── Datos gráfico cumplimiento por analista ───────────────────────────────
   const chartCumplimiento = useMemo(() => {
     const labels = kpiPorAnalista.map(k => k.analista);
@@ -1494,36 +1125,17 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
   const chartAcuerdos = useMemo(() => {
-    const tiposDisplay = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica/Excepcion', 'No califica'];
     const analistas = CONFIG.ANALISTAS_DEFAULT;
     const colores = ['rgba(96, 165, 250, 0.15)', 'rgba(167, 139, 250, 0.15)'];
     const borderColores = ['rgba(96, 165, 250, 0.5)', 'rgba(167, 139, 250, 0.5)'];
 
-    const matchAcuerdo = (acuerdo: string, estado: string, isV: boolean): string | null => {
-      const ac = (acuerdo || '').toLowerCase().trim();
-      const es = (estado || '').toLowerCase().trim();
-      // Prioridad a estados de no calificación
-      const esRechazo = ac.includes('no califica') || ac === 'n/c' || 
-                        es.includes('no califica') || es.includes('bajo') || es.includes('afectaciones') || es.includes('rechazado');
-      
-      if (esRechazo) {
-        return isV ? 'No califica/Excepcion' : 'No califica';
-      }
-
-      if (ac.includes('bajo')) return 'Riesgo BAJO';
-      if (ac.includes('medio')) return 'Riesgo MEDIO';
-      if (ac.includes('premium')) return 'PREMIUM';
-      return null;
-    };
-
     return {
-      labels: tiposDisplay,
+      labels: TIPOS_ACUERDO,
       datasets: analistas.map((an, idx) => ({
         label: an,
-        data: tiposDisplay.map(t => {
+        data: TIPOS_ACUERDO.map(t => {
           return filterByMonth(registros, selectedMes, selectedAnio).filter(r => {
-            const isV = isVenta(r);
-            const matched = matchAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', isV);
+            const matched = matchTipoAcuerdo(r.acuerdo_precios ?? '', r.estado ?? '', isVenta(r));
             return r.analista === an && matched === t;
           }).length;
         }),
@@ -1532,51 +1144,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         borderWidth: 0,
       }))
     };
-  }, [registros, selectedMes, selectedAnio, filterByMonth, isVenta]);
-
-  // ── Helper gráfico horizontal por categoría ───────────────────────────────
-  const buildCatChart = (
-    actual: { label: string; cantidad: number }[],
-    anterior: Map<string, { cantidad: number }>,
-    color: string,
-    limit = 8
-  ) => {
-    const top = actual.slice(0, limit);
-    return {
-      labels: top.map(d => d.label),
-      datasets: [
-        {
-          label: mesActualLabel,
-          data: top.map(d => d.cantidad),
-          backgroundColor: (context: any) => {
-            const hex = color || '#ffffff';
-            let r=255,g=255,b=255;
-            if (hex.startsWith('#') && hex.length === 7) {
-              r = parseInt(hex.slice(1,3),16); g = parseInt(hex.slice(3,5),16); b = parseInt(hex.slice(5,7),16);
-            }
-            return getGradient(context, `rgba(${r},${g},${b},0.05)`, `rgba(${r},${g},${b},0.85)`);
-          },
-          borderColor: color,
-          borderWidth: 0, order: 1,
-        },
-        {
-          label: mesAntLabel,
-          data: top.map(d => anterior.get(d.label)?.cantidad ?? 0),
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
-          borderColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: 0, order: 1,
-        },
-      ],
-    };
-  };
-
-  const chartSexo = useMemo(() => buildCatChart(distSexo, distSexoAnt, '#b266ff'), [distSexo, distSexoAnt, mesActualLabel, mesAntLabel]);
-
-  // ── Ranking analistas ─────────────────────────────────────────────────────
-  const rankingAnalistas = useMemo(() =>
-    [...kpiPorAnalista].sort((a, b) => b.capital - a.capital),
-    [kpiPorAnalista]
-  );
+  }, [registros, selectedMes, selectedAnio]);
 
   // ── Chart 1: Capital vs Objetivo ──────────────────────────────────────────
   const chartCapitalVsObjetivo = useMemo(() => {
@@ -1716,7 +1284,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         },
       ],
     };
-  }, [apertVsRenData, mesActualLabel, mesAntLabel]);
+  }, [apertVsRenData]);
 
   const chartRenovaciones = useMemo(() => {
     const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
@@ -1739,7 +1307,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         },
       ],
     };
-  }, [apertVsRenData, mesActualLabel, mesAntLabel]);
+  }, [apertVsRenData]);
 
   // ── Chart 8: % Empleo Público / Privado ──────────────────────────────────
   const empleoPublPrivData = useMemo(() => {
@@ -1850,7 +1418,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         }
       ],
     };
-  }, [registros, selectedMes, selectedAnio, isVenta]);
+  }, [registros, selectedMes, selectedAnio]);
 
   // ── Chart 6: % Conversión de Presupuesto ──────────────────────────────────
   const chartConversionPresupuesto = useMemo(() => {
@@ -1874,7 +1442,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         refLine100(labels.length),
       ],
     };
-  }, [resumen.presupuestos_por_analista, kpiPorAnalista, refLine100]);
+  }, [resumen.presupuestos_por_analista, kpiPorAnalista]);
 
   // ── Chart Venta Diaria Pura ──────────────────────────────────────────────────
   const chartVentaDiaria = useMemo(() => {

@@ -4,14 +4,13 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffe
 import { supabase } from '@/lib/supabase';
 import { STATUS_LABEL } from '@/lib/utils';
 import { ESTADOS } from '@/context/FilterContext';
-import { CONFIG } from '@/types';
+import { CONFIG, Registro } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
   Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download, Pencil
 } from 'lucide-react';
 import { parsePastedText, normalizeCuil, ParsedRow } from '@/lib/verificador-utils';
-import { Registro } from '@/types';
 
 const ANALISTAS = CONFIG.ANALISTAS_DEFAULT;
 
@@ -290,21 +289,67 @@ const EMPTY_CAMPOS: CamposAModificar = {
   es_re: '', comentarios: '',
 };
 
+// ── Estilos compartidos ──────────────────────────────────────────────────────
+
+const LABEL_STYLE: React.CSSProperties = {
+  display: 'block', fontSize: '9px', color: '#444', fontWeight: 900,
+  textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px',
+};
+
+const DARK_INPUT_STYLE: React.CSSProperties = {
+  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
+};
+
+const DARK_INPUT_FLEX_STYLE: React.CSSProperties = { ...DARK_INPUT_STYLE, width: undefined, flex: 1 };
+
+const MODAL_OVERLAY_STYLE: React.CSSProperties = {
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: 20,
+};
+
+const corregirBtnStyle = (disabled: boolean): React.CSSProperties => ({
+  background: disabled ? '#333' : '#fbbf24',
+  color: disabled ? '#666' : '#000',
+  border: 'none', borderRadius: '6px', padding: '10px 24px',
+  fontSize: '11px', fontWeight: 900, cursor: disabled ? 'not-allowed' : 'pointer',
+  textTransform: 'uppercase', letterSpacing: '1px',
+  flexShrink: 0,
+});
+
+// Chip seleccionable de variante (compartido por los correctores)
+function VarianteChip({ label, selected, onToggle }: { label: string; selected: boolean; onToggle: () => void }) {
+  return (
+    <span
+      onClick={onToggle}
+      style={{
+        padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
+        background: selected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
+        border: selected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
+        color: selected ? '#fbbf24' : '#888',
+        fontWeight: 600, cursor: 'pointer',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
 interface AsignarEmpleadorSectionProps {
   registros: Registro[];
   allEmpleadores: string[];
   mutateRegistros: (fn: (prev: Registro[]) => Registro[]) => void;
-  pushBulkRefresh: () => void;
   pushBulkUpdateIds: (ids: string[], patch: Partial<Registro>) => void;
   standalone?: boolean;
 }
 
-function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, pushBulkRefresh, pushBulkUpdateIds, standalone = false }: AsignarEmpleadorSectionProps) {
+function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, pushBulkUpdateIds, standalone = false }: AsignarEmpleadorSectionProps) {
   const [expanded, setExpanded] = useState(standalone);
   const [pastedText, setPastedText] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [cuilCol, setCuilCol] = useState<number | null>(null);
-  const [nombreCol, setNombreCol] = useState<number | null>(null);
   const [searched, setSearched] = useState(false);
   const EMPTY_CAMPOS_EXCEL = {
     empleador: '', dependencia: '', analista: '', estado: '',
@@ -326,7 +371,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState<'paste' | 'match' | 'assign'>('paste');
 
-  const previewRows = rows;
   const colCount = rows[0]?.cells.length ?? 0;
 
   // Indexar registros por CUIL normalizado una sola vez (evita O(rows × registros))
@@ -354,13 +398,12 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
     return rows
       .map(r => {
         const cuil = normalizeCuil(r.cells[cuilCol] ?? '');
-        const nombre = nombreCol !== null ? (r.cells[nombreCol] ?? '') : '';
         const candidates = registrosByCuil.get(cuil) ?? [];
         const found = (fechaDesde || fechaHasta) ? candidates.filter(reg => inRange(reg.fecha)) : candidates;
-        return { cuil, nombre, registros: found };
+        return { cuil, registros: found };
       })
       .filter(r => r.cuil !== '');
-  }, [searched, rows, cuilCol, nombreCol, registrosByCuil, fechaDesde, fechaHasta]);
+  }, [searched, rows, cuilCol, registrosByCuil, fechaDesde, fechaHasta]);
 
   const allMatchedIds = useMemo(
     () => matchedRows.flatMap(r => r.registros.map(reg => reg.id)),
@@ -371,30 +414,39 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   type FiltroCompletitud = 'todos' | 'completos' | 'faltantes';
   const [filtroCompletitud, setFiltroCompletitud] = useState<FiltroCompletitud>('todos');
 
-  const isRegistroCompleto = useCallback((r: Registro): boolean => {
+  // Devuelve los campos obligatorios que faltan en un registro (según validarForm del modal).
+  // Un campo asignado en camposExcel (incluido SIN_ESPECIFICAR) se considera atendido.
+  const getMissingFields = useCallback((r: Registro): string[] => {
     const cleared = clearedByReg[r.id];
     const addressed = (key: keyof CamposExcel) => {
       if (cleared?.has(key)) return true;
       const v = camposExcel[key];
       return typeof v === 'string' && v.trim() !== '';
     };
-    if (!r.nombre?.trim()) return false;
-    if (!r.cuil?.trim() || r.cuil.length !== 11) return false;
-    if (!addressed('estado') && !r.estado) return false;
-    const req = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
-    if (req) {
-      if (!addressed('tipo_cliente') && !r.tipo_cliente) return false;
-      if (!addressed('acuerdo_precios') && !r.acuerdo_precios) return false;
-      if (!addressed('cuotas') && !r.cuotas?.trim()) return false;
-      if (!addressed('rango_etario') && !r.rango_etario) return false;
-      if (!addressed('sexo') && !r.sexo) return false;
-      if (!addressed('empleador') && !r.empleador?.trim()) return false;
-      if (!addressed('localidad') && !r.localidad?.trim()) return false;
+    const missing: string[] = [];
+    if (!r.nombre?.trim()) missing.push('nombre');
+    if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('cuil');
+    if (!addressed('estado') && !r.estado) missing.push('estado');
+    const requiereTyA = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
+    if (requiereTyA) {
+      if (!addressed('tipo_cliente') && !r.tipo_cliente) missing.push('tipo_cliente');
+      if (!addressed('acuerdo_precios') && !r.acuerdo_precios) missing.push('acuerdo_precios');
+      if (!addressed('cuotas') && !r.cuotas?.trim()) missing.push('cuotas');
+      if (!addressed('rango_etario') && !r.rango_etario) missing.push('rango_etario');
+      if (!addressed('sexo') && !r.sexo) missing.push('sexo');
+      if (!addressed('empleador') && !r.empleador?.trim()) missing.push('empleador');
+      if (!addressed('localidad') && !r.localidad?.trim()) missing.push('localidad');
     }
-    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !addressed('dependencia') && !r.dependencia?.trim()) return false;
-    if (r.estado === 'derivado / rechazado cc' && !addressed('comentarios') && !r.comentarios?.trim()) return false;
-    return true;
+    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !addressed('dependencia') && !r.dependencia?.trim()) {
+      missing.push('dependencia');
+    }
+    if (r.estado === 'derivado / rechazado cc' && !addressed('comentarios') && !r.comentarios?.trim()) {
+      missing.push('comentarios');
+    }
+    return missing;
   }, [camposExcel, clearedByReg]);
+
+  const isRegistroCompleto = useCallback((r: Registro): boolean => getMissingFields(r).length === 0, [getMissingFields]);
 
   const visibleMatchedRows = useMemo(() => {
     if (filtroCompletitud === 'todos') return matchedRows;
@@ -417,32 +469,10 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   const { totalCompletos, totalConFaltantes } = useMemo(() => {
     let completos = 0, faltantes = 0;
     matchedRows.forEach(mr => mr.registros.forEach(r => {
-      const cleared = clearedByReg[r.id];
-      const addressed = (key: keyof CamposExcel) => {
-        if (cleared?.has(key)) return true;
-        const v = camposExcel[key];
-        return typeof v === 'string' && v.trim() !== '';
-      };
-      const missing: string[] = [];
-      if (!r.nombre?.trim()) missing.push('x');
-      if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('x');
-      if (!addressed('estado') && !r.estado) missing.push('x');
-      const req = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
-      if (req) {
-        if (!addressed('tipo_cliente') && !r.tipo_cliente) missing.push('x');
-        if (!addressed('acuerdo_precios') && !r.acuerdo_precios) missing.push('x');
-        if (!addressed('cuotas') && !r.cuotas?.trim()) missing.push('x');
-        if (!addressed('rango_etario') && !r.rango_etario) missing.push('x');
-        if (!addressed('sexo') && !r.sexo) missing.push('x');
-        if (!addressed('empleador') && !r.empleador?.trim()) missing.push('x');
-        if (!addressed('localidad') && !r.localidad?.trim()) missing.push('x');
-      }
-      if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !addressed('dependencia') && !r.dependencia?.trim()) missing.push('x');
-      if (r.estado === 'derivado / rechazado cc' && !addressed('comentarios') && !r.comentarios?.trim()) missing.push('x');
-      if (missing.length === 0) completos++; else faltantes++;
+      if (getMissingFields(r).length === 0) completos++; else faltantes++;
     }));
     return { totalCompletos: completos, totalConFaltantes: faltantes };
-  }, [matchedRows, camposExcel, clearedByReg]);
+  }, [matchedRows, getMissingFields]);
   const { allSelected, someSelected } = useMemo(() => {
     if (visibleAllIds.length === 0) return { allSelected: false, someSelected: false };
     let hits = 0;
@@ -497,7 +527,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
     const parsed = parsePastedText(pastedText);
     setRows(parsed);
     setCuilCol(null);
-    setNombreCol(null);
     setSearched(false);
     setAssignResult(null);
     setAssignError(null);
@@ -520,38 +549,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   useEffect(() => {
     if (!searched) setSelectedIds(new Set());
   }, [searched]);
-
-  // Devuelve los campos obligatorios que faltan en un registro (según validarForm del modal).
-  // Un campo asignado en camposExcel (incluido SIN_ESPECIFICAR) se considera atendido.
-  const getMissingFields = (r: Registro): string[] => {
-    const cleared = clearedByReg[r.id];
-    const addressed = (key: keyof CamposExcel) => {
-      if (cleared?.has(key)) return true;
-      const v = camposExcel[key];
-      return typeof v === 'string' && v.trim() !== '';
-    };
-    const missing: string[] = [];
-    if (!r.nombre?.trim()) missing.push('nombre');
-    if (!r.cuil?.trim() || r.cuil.length !== 11) missing.push('cuil');
-    if (!addressed('estado') && !r.estado) missing.push('estado');
-    const requiereTyA = r.estado === 'venta' || r.estado === 'derivado / aprobado cc';
-    if (requiereTyA) {
-      if (!addressed('tipo_cliente') && !r.tipo_cliente) missing.push('tipo_cliente');
-      if (!addressed('acuerdo_precios') && !r.acuerdo_precios) missing.push('acuerdo_precios');
-      if (!addressed('cuotas') && !r.cuotas?.trim()) missing.push('cuotas');
-      if (!addressed('rango_etario') && !r.rango_etario) missing.push('rango_etario');
-      if (!addressed('sexo') && !r.sexo) missing.push('sexo');
-      if (!addressed('empleador') && !r.empleador?.trim()) missing.push('empleador');
-      if (!addressed('localidad') && !r.localidad?.trim()) missing.push('localidad');
-    }
-    if ((esGobiernoProvincialBulk(r.empleador) || esMunicipalidadParanaBulk(r.empleador) || esConsejoEducacionBulk(r.empleador) || esMinisterioSaludBulk(r.empleador)) && !addressed('dependencia') && !r.dependencia?.trim()) {
-      missing.push('dependencia');
-    }
-    if (r.estado === 'derivado / rechazado cc' && !addressed('comentarios') && !r.comentarios?.trim()) {
-      missing.push('comentarios');
-    }
-    return missing;
-  };
 
   // Dedupe case-insensitive, prefiriendo una forma canónica si existe en la lista de referencia
   const dedupCI = (values: (string | null | undefined)[], canonical: readonly string[] = []): string[] => {
@@ -910,7 +907,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   >
                     <option value="">— seleccionar —</option>
                     {Array.from({ length: colCount }, (_, i) => (
-                      <option key={i} value={i}>Col {i + 1}: {previewRows[0]?.cells[i] ?? ''}</option>
+                      <option key={i} value={i}>Col {i + 1}: {rows[0]?.cells[i] ?? ''}</option>
                     ))}
                   </select>
                 </div>
@@ -922,18 +919,18 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     <tr>
                       {Array.from({ length: colCount }, (_, i) => (
                         <th key={i} style={thStyle}>
-                          Col {i + 1}{i === cuilCol ? ' (CUIL)' : ''}{i === nombreCol ? ' (Nombre)' : ''}
+                          Col {i + 1}{i === cuilCol ? ' (CUIL)' : ''}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {previewRows.map((row, ri) => (
+                    {rows.map((row, ri) => (
                       <tr key={ri}>
                         {row.cells.map((cell, ci) => (
                           <td key={ci} style={{
                             ...tdStyle,
-                            background: ci === cuilCol ? 'rgba(99,102,241,0.06)' : ci === nombreCol ? 'rgba(74,222,128,0.04)' : undefined,
+                            background: ci === cuilCol ? 'rgba(99,102,241,0.06)' : undefined,
                           }}>
                             {cell}
                           </td>
@@ -961,7 +958,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   Buscar en registros
                 </button>
                 <button
-                  onClick={() => { setPastedText(''); setRows([]); setCuilCol(null); setNombreCol(null); setSearched(false); setStep('paste'); setSelectedIds(new Set()); setCamposExcel({ ...EMPTY_CAMPOS_EXCEL }); setClearedByReg({}); }}
+                  onClick={() => { setPastedText(''); setRows([]); setCuilCol(null); setSearched(false); setStep('paste'); setSelectedIds(new Set()); setCamposExcel({ ...EMPTY_CAMPOS_EXCEL }); setClearedByReg({}); }}
                   style={{
                     padding: '6px 14px', fontSize: 12, fontWeight: 700,
                     background: 'transparent', color: '#888',
@@ -1077,8 +1074,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
                       return visibleMatchedRows.flatMap((mr, i) => {
                         const nombresDB = [...new Set(mr.registros.map(r => r.nombre).filter(Boolean))].join(' | ');
-                        const nombreExcel = mr.nombre === mr.cuil ? '' : mr.nombre;
-                        const nombreMostrar = nombresDB || nombreExcel || '—';
+                        const nombreMostrar = nombresDB || '—';
 
                         // Sin registros
                         if (mr.registros.length === 0) {
@@ -1338,7 +1334,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     setPastedText('');
                     setRows([]);
                     setCuilCol(null);
-                    setNombreCol(null);
                     setSearched(false);
                     setSelectedIds(new Set());
                     setCamposExcel({ ...EMPTY_CAMPOS_EXCEL });
@@ -1376,7 +1371,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { registros, mutateRegistros, pushBulkRefresh, refresh, applyRegistroChange, pushRegistroChange, pushBulkUpdateIds, pushBulkPatchByField } = useRegistros();
+  const { registros, mutateRegistros, pushBulkRefresh, refresh, pushRegistroChange, pushBulkUpdateIds, pushBulkPatchByField } = useRegistros();
 
   // Derivar datos de filtros directamente de registros (reactivo)
   const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);
@@ -1389,7 +1384,6 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const allEmpleadores = useMemo(() => Array.from(new Set(registros.map(r => r.empleador).filter(Boolean))).sort() as string[], [registros]);
   const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
-  const [mostrarTodos, setMostrarTodos] = useState(true);
   const [busquedaEmpleador, setBusquedaEmpleador] = useState('');
 const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [gruposDescartados, setGruposDescartados] = useState<Map<string, number>>(() => {
@@ -1461,7 +1455,6 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [showEmpleadoresHoy, setShowEmpleadoresHoy] = useState(false);
   const [empleadoresHoy, setEmpleadoresHoy] = useState<{ cuil: string; nombre: string; empleador: string; dependencia: string; id: string }[]>([]);
   const [loadingEmpleadoresHoy, setLoadingEmpleadoresHoy] = useState(false);
-  const [contadorNuevosHoy, setContadorNuevosHoy] = useState(0);
   // Edición inline dentro de "Nuevos hoy"
   const [editandoHoyId, setEditandoHoyId] = useState<string | null>(null);
   const [editHoyEmpleador, setEditHoyEmpleador] = useState('');
@@ -1700,9 +1693,9 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     // Paso 2: fusionar grupos similares vía fuzzy matching
     const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
 
-    const result = fuzzyGrupos.filter(g => (mostrarTodos || g.cantidad > 1) && !estaDescartado(g.normalizado, g.cantidad));
+    const result = fuzzyGrupos.filter(g => !estaDescartado(g.normalizado, g.cantidad));
     return result.sort((a, b) => b.cantidad - a.cantidad);
-  }, [allEmpleadores, mostrarTodos, normalizar, agruparFuzzy, gruposDescartados, estaDescartado]);
+  }, [allEmpleadores, normalizar, agruparFuzzy, estaDescartado]);
 
   const variantesFiltradas = useMemo(() => {
     if (!busquedaEmpleador.trim()) return variantesEmpleador;
@@ -1717,7 +1710,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     // Si no hay empleadores que coincidan, devolver vacío
     if (matchingEmpleadores.length === 0) return [];
     
-    // Crear grupos para显示 (cada empleador como su propio grupo)
+    // Crear grupos para mostrar (cada empleador como su propio grupo)
     return matchingEmpleadores.map(e => ({
       normalizado: normalizar(e),
       variantes: [e],
@@ -1735,7 +1728,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     }
     const fuzzyGrupos = agruparFuzzy(Array.from(map.keys()), map);
     return fuzzyGrupos.filter(g => g.cantidad > 1 && !estaDescartado(g.normalizado, g.cantidad)).sort((a, b) => b.cantidad - a.cantidad);
-  }, [allEmpleadores, normalizar, agruparFuzzy, gruposDescartados, estaDescartado]);
+  }, [allEmpleadores, normalizar, agruparFuzzy, estaDescartado]);
 
   // Helpers para descartar/restaurar grupos
   const descartarGrupo = useCallback((normalizado: string, cantidad: number) => {
@@ -1755,7 +1748,6 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   // Localidad corrector helpers
 const variantesLocalidadConDuplicados = useMemo(() => {
     const lista = registros.map(r => r.localidad).filter(Boolean) as string[];
-    if (!lista) return [];
     const myMap = new Map<string, Set<string>>();
     for (const locVar of lista) {
       const key = String(locVar).toUpperCase().trim();
@@ -1763,14 +1755,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       myMap.get(key)!.add(String(locVar));
     }
     return Array.from(myMap.entries())
-      .filter(([_, vars]) => vars.size > 1)
+      .filter(([key, vars]) => vars.size > 1 && !gruposLocalidadDescartados.has(key))
       .map(([normalizado, variantes]) => ({
         normalizado,
         variantes: Array.from(variantes),
         cantidad: variantes.size,
       }))
       .sort((a, b) => b.cantidad - a.cantidad);
-  }, [registros]);
+  }, [registros, gruposLocalidadDescartados]);
 
   // Todas las localidades para buscar
   const todasLasLocalidadess = useMemo(() => {
@@ -1858,7 +1850,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       } else {
         setModalRegistros(data || []);
       }
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al cargar registros', type: 'error' });
       setModalRegistros([]);
     } finally {
@@ -1947,7 +1939,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
         setEmpleadoresConConteo(empleadosArray);
       }
-    } catch (err) {
+    } catch {
       setToast({ message: 'Error al cargar empleadores', type: 'error' });
       setEmpleadoresConConteo([]);
     } finally {
@@ -1993,10 +1985,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     });
   }, [registros, fechaDesdeDef, fechaHastaDef]);
 
-  // Mantener contador sincronizado con el useMemo
-  useEffect(() => {
-    setContadorNuevosHoy(registrosNuevosHoy.length);
-  }, [registrosNuevosHoy]);
+  const contadorNuevosHoy = registrosNuevosHoy.length;
 
   // ── Cargar empleadores nuevos de hoy ─────────────────────────────────────
   const cargarEmpleadoresHoy = useCallback(() => {
@@ -2113,7 +2102,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       // Broadcast incremental: receivers aplican el patch por valor sin refresh completo
       pushBulkPatchByField('empleador', oldVariants, { empleador: correctedName });
     }
-  }, [empleadoresSeleccionados, empleadorCorreccion, mutateRegistros, pushBulkPatchByField, modalOpen, modalRegistros, modalGrupo, variantesConDuplicados, cargarRegistrosGrupo]);
+  }, [empleadoresSeleccionados, empleadorCorreccion, mutateRegistros, pushBulkPatchByField, modalOpen, modalGrupo, variantesConDuplicados, cargarRegistrosGrupo]);
 
   const corregirLocalidad = useCallback(async () => {
     if (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) {
@@ -2209,26 +2198,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     }
   }, [dependenciasSeleccionadas, dependenciaCorreccion, mutateRegistros, pushBulkPatchByField]);
 
-  const empleadoresUnicos = useMemo(
-    () => Array.from(new Set(registros.map(r => r.empleador).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b)),
-    [registros]
-  );
-
   const empleadoresUnicosFiltrados = useMemo(() => {
     const q = reasignarBusquedaOrigen.trim().toLowerCase();
-    if (!q) return empleadoresUnicos;
-    return empleadoresUnicos.filter(e => e.toLowerCase().includes(q));
-  }, [empleadoresUnicos, reasignarBusquedaOrigen]);
+    if (!q) return allEmpleadores;
+    return allEmpleadores.filter(e => e.toLowerCase().includes(q));
+  }, [allEmpleadores, reasignarBusquedaOrigen]);
 
-  const dependenciasUnicas = useMemo(
-    () => Array.from(new Set(registros.map(r => r.dependencia).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b)),
-    [registros]
-  );
   const dependenciasUnicasFiltradas = useMemo(() => {
     const q = reasignarBusquedaOrigen.trim().toLowerCase();
-    if (!q) return dependenciasUnicas;
-    return dependenciasUnicas.filter(d => d.toLowerCase().includes(q));
-  }, [dependenciasUnicas, reasignarBusquedaOrigen]);
+    if (!q) return allDependencias;
+    return allDependencias.filter(d => d.toLowerCase().includes(q));
+  }, [allDependencias, reasignarBusquedaOrigen]);
 
   const reasignarIds = useMemo(() => {
     if (reasignarModo === 'empleador') {
@@ -2465,7 +2445,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
   const fieldSection = (title: string, children: React.ReactNode) => (
     <div style={{ marginBottom: '20px' }}>
-      <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>{title}</label>
+      <label style={LABEL_STYLE}>{title}</label>
       {children}
     </div>
   );
@@ -2628,7 +2608,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
             <div>
-              <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+              <label style={LABEL_STYLE}>
                 Nombre correcto
               </label>
               <input
@@ -2637,10 +2617,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 value={empleadorCorreccion}
                 onChange={e => setEmpleadorCorreccion(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && corregirEmpleador()}
-                style={{
-                  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                }}
+                style={DARK_INPUT_STYLE}
               />
             </div>
           </div>
@@ -2649,14 +2626,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <button
               onClick={corregirEmpleador}
               disabled={updating || empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()}
-              style={{
-                background: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#333' : '#fbbf24',
-                color: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? '#666' : '#000',
-                border: 'none', borderRadius: '6px', padding: '10px 24px',
-                fontSize: '11px', fontWeight: 900, cursor: (empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()) ? 'not-allowed' : 'pointer',
-                textTransform: 'uppercase', letterSpacing: '1px',
-                flexShrink: 0,
-              }}
+              style={corregirBtnStyle(empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim())}
             >
               {updating ? 'CORRIGIENDO...' : `CORREGIR ${empleadoresSeleccionados.length} EMPLEADOR(ES)`}
             </button>
@@ -2665,10 +2635,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               placeholder="Buscar empleador..."
               value={busquedaEmpleador}
               onChange={e => setBusquedaEmpleador(e.target.value)}
-              style={{
-                background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '6px', padding: '10px 12px', fontSize: '13px', flex: 1, outline: 'none',
-              }}
+              style={DARK_INPUT_FLEX_STYLE}
             />
           </div>
 
@@ -2728,28 +2695,16 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {v.variantes.map((varName, j) => {
-                      const isSelected = empleadoresSeleccionados.includes(varName);
-                      return (
-                        <span
-                          key={j}
-                          onClick={() => {
-                            setEmpleadoresSeleccionados(prev =>
-                              isSelected ? prev.filter(v => v !== varName) : [...prev, varName]
-                            );
-                          }}
-                          style={{
-                            padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
-                            background: isSelected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
-                            border: isSelected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
-                            color: isSelected ? '#fbbf24' : '#888',
-                            fontWeight: 600, cursor: 'pointer',
-                          }}
-                        >
-                          {varName}
-                        </span>
-                      );
-                    })}
+                    {v.variantes.map((varName, j) => (
+                      <VarianteChip
+                        key={j}
+                        label={varName}
+                        selected={empleadoresSeleccionados.includes(varName)}
+                        onToggle={() => setEmpleadoresSeleccionados(prev =>
+                          prev.includes(varName) ? prev.filter(x => x !== varName) : [...prev, varName]
+                        )}
+                      />
+                    ))}
                   </div>
                 </div>
               ))}
@@ -2786,13 +2741,28 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               Corrector de Localidad
               {correctorLocalidadExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
             </h4>
+            {gruposLocalidadDescartados.size > 0 && (
+              <div style={{ marginLeft: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={restaurarDescartadosLocalidad}
+                  style={{
+                    background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
+                    color: '#00d4ff', borderRadius: '4px', padding: '4px 10px',
+                    fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                  }}
+                >
+                  Restaurar {gruposLocalidadDescartados.size} descartado{gruposLocalidadDescartados.size > 1 ? 's' : ''}
+                </button>
+              </div>
+            )}
           </div>
 
           {correctorLocalidadExpandido && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  <label style={LABEL_STYLE}>
                     Nombre correcto
                   </label>
                   <input
@@ -2801,10 +2771,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     value={localidadCorreccion}
                     onChange={e => setLocalidadCorreccion(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && corregirLocalidad()}
-                    style={{
-                      background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                    }}
+                    style={DARK_INPUT_STYLE}
                   />
                 </div>
               </div>
@@ -2813,14 +2780,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 <button
                   onClick={corregirLocalidad}
                   disabled={updating || localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()}
-                  style={{
-                    background: (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) ? '#333' : '#fbbf24',
-                    color: (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) ? '#666' : '#000',
-                    border: 'none', borderRadius: '6px', padding: '10px 24px',
-                    fontSize: '11px', fontWeight: 900, cursor: (localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()) ? 'not-allowed' : 'pointer',
-                    textTransform: 'uppercase', letterSpacing: '1px',
-                    flexShrink: 0,
-                  }}
+                  style={corregirBtnStyle(localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim())}
                 >
                   {updating ? 'CORRIGIENDO...' : `CORREGIR ${localidadesSeleccionadas.length} LOCALIDAD(ES)`}
                 </button>
@@ -2850,10 +2810,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   placeholder="Buscar localidad..."
                   value={busquedaLocalidad}
                   onChange={e => setBusquedaLocalidad(e.target.value)}
-                  style={{
-                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', flex: 1, outline: 'none',
-                  }}
+                  style={DARK_INPUT_FLEX_STYLE}
                 />
               </div>
 
@@ -2895,28 +2852,16 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         </div>
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {v.variantes.map((varName, j) => {
-                          const isSelected = localidadesSeleccionadas.includes(varName);
-                          return (
-                            <span
-                              key={j}
-                              onClick={() => {
-                                setLocalidadesSeleccionadas(prev =>
-                                  isSelected ? prev.filter(v => v !== varName) : [...prev, varName]
-                                );
-                              }}
-                              style={{
-                                padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
-                                background: isSelected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
-                                border: isSelected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
-                                color: isSelected ? '#fbbf24' : '#888',
-                                fontWeight: 600, cursor: 'pointer',
-                              }}
-                            >
-                              {varName}
-                            </span>
-                          );
-                        })}
+                        {v.variantes.map((varName, j) => (
+                          <VarianteChip
+                            key={j}
+                            label={varName}
+                            selected={localidadesSeleccionadas.includes(varName)}
+                            onToggle={() => setLocalidadesSeleccionadas(prev =>
+                              prev.includes(varName) ? prev.filter(x => x !== varName) : [...prev, varName]
+                            )}
+                          />
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -2959,7 +2904,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  <label style={LABEL_STYLE}>
                     Nombre correcto
                   </label>
                   <input
@@ -2968,10 +2913,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     value={dependenciaCorreccion}
                     onChange={e => setDependenciaCorreccion(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && corregirDependencia()}
-                    style={{
-                      background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                    }}
+                    style={DARK_INPUT_STYLE}
                   />
                 </div>
               </div>
@@ -2980,13 +2922,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 <button
                   onClick={corregirDependencia}
                   disabled={updating || dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()}
-                  style={{
-                    background: (dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()) ? '#333' : '#fbbf24',
-                    color: (dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()) ? '#666' : '#000',
-                    border: 'none', borderRadius: '6px', padding: '10px 24px',
-                    fontSize: '11px', fontWeight: 900, cursor: (dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()) ? 'not-allowed' : 'pointer',
-                    textTransform: 'uppercase', letterSpacing: '1px', flexShrink: 0,
-                  }}
+                  style={corregirBtnStyle(dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim())}
                 >
                   {updating ? 'CORRIGIENDO...' : `CORREGIR ${dependenciasSeleccionadas.length} DEPENDENCIA(S)`}
                 </button>
@@ -2995,10 +2931,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   placeholder="Buscar dependencia..."
                   value={busquedaDependencia}
                   onChange={e => setBusquedaDependencia(e.target.value)}
-                  style={{
-                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', flex: 1, outline: 'none',
-                  }}
+                  style={DARK_INPUT_FLEX_STYLE}
                 />
               </div>
 
@@ -3020,26 +2953,16 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         {v.normalizado} {v.cantidad > 1 && <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {v.variantes.map((varName, j) => {
-                          const isSelected = dependenciasSeleccionadas.includes(varName);
-                          return (
-                            <span
-                              key={j}
-                              onClick={() => setDependenciasSeleccionadas(prev =>
-                                isSelected ? prev.filter(d => d !== varName) : [...prev, varName]
-                              )}
-                              style={{
-                                padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
-                                background: isSelected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
-                                border: isSelected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
-                                color: isSelected ? '#fbbf24' : '#888',
-                                fontWeight: 600, cursor: 'pointer',
-                              }}
-                            >
-                              {varName}
-                            </span>
-                          );
-                        })}
+                        {v.variantes.map((varName, j) => (
+                          <VarianteChip
+                            key={j}
+                            label={varName}
+                            selected={dependenciasSeleccionadas.includes(varName)}
+                            onToggle={() => setDependenciasSeleccionadas(prev =>
+                              prev.includes(varName) ? prev.filter(x => x !== varName) : [...prev, varName]
+                            )}
+                          />
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -3104,7 +3027,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
               {/* Paso 1: elegir origen */}
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                <label style={LABEL_STYLE}>
                   1) {reasignarModo === 'empleador' ? 'Empleador origen' : 'Dependencia origen'}
                 </label>
                 <input
@@ -3112,10 +3035,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   placeholder={reasignarModo === 'empleador' ? 'Buscar empleador...' : 'Buscar dependencia...'}
                   value={reasignarBusquedaOrigen}
                   onChange={e => setReasignarBusquedaOrigen(e.target.value)}
-                  style={{
-                    background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none', marginBottom: 8,
-                  }}
+                  style={{ ...DARK_INPUT_STYLE, marginBottom: 8 }}
                 />
                 <div style={{
                   maxHeight: 180, overflowY: 'auto',
@@ -3184,7 +3104,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {/* Paso 2: destino */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  <label style={LABEL_STYLE}>
                     2) Nuevo empleador
                   </label>
                   <input
@@ -3193,17 +3113,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     placeholder="Ej: Gobierno de la Provincia de Entre Ríos"
                     value={reasignarEmpDestino}
                     onChange={e => setReasignarEmpDestino(e.target.value)}
-                    style={{
-                      background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                    }}
+                    style={DARK_INPUT_STYLE}
                   />
                   <datalist id="reasignar-emp-list">
-                    {empleadoresUnicos.map(e => <option key={e} value={e} />)}
+                    {allEmpleadores.map(e => <option key={e} value={e} />)}
                   </datalist>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+                  <label style={LABEL_STYLE}>
                     Nueva dependencia (opcional)
                   </label>
                   <input
@@ -3211,10 +3128,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     placeholder="Ej: Jefatura de Policía de Entre Ríos"
                     value={reasignarDepDestino}
                     onChange={e => setReasignarDepDestino(e.target.value)}
-                    style={{
-                      background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                    }}
+                    style={DARK_INPUT_STYLE}
                   />
                 </div>
               </div>
@@ -3255,7 +3169,6 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           registros={registros}
           allEmpleadores={allEmpleadores}
           mutateRegistros={mutateRegistros}
-          pushBulkRefresh={pushBulkRefresh}
           pushBulkUpdateIds={pushBulkUpdateIds}
           standalone={mode === 'excel'}
         />
@@ -3335,22 +3248,22 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>FECHA DESDE</label>
+                <label style={LABEL_STYLE}>FECHA DESDE</label>
                 <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>FECHA HASTA</label>
+                <label style={LABEL_STYLE}>FECHA HASTA</label>
                 <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} />
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>SCORE MÍN</label>
+                <label style={LABEL_STYLE}>SCORE MÍN</label>
                 <input className="form-input" type="number" placeholder="Ej: 0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>SCORE MÁX</label>
+                <label style={LABEL_STYLE}>SCORE MÁX</label>
                 <input className="form-input" type="number" placeholder="Ej: 499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))} />
               </div>
             </div>
@@ -3358,7 +3271,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             {/* Acuerdo de precios en filtros principales */}
             {allAcuerdos.length > 0 && (
               <div style={{ marginBottom: '24px' }}>
-                <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ACUERDO DE PRECIOS</label>
+                <label style={LABEL_STYLE}>ACUERDO DE PRECIOS</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {allAcuerdos.map(a => (
                     <span key={a} onClick={() => toggleFilter('acuerdoPrecios', a)} style={chipStyle(filtros.acuerdoPrecios.includes(a))}>{a}</span>
@@ -3388,24 +3301,24 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>MONTO MÍN</label>
+                    <label style={LABEL_STYLE}>MONTO MÍN</label>
                     <input className="form-input" type="number" value={filtros.montoMin} onChange={e => setFiltros(p => ({ ...p, montoMin: e.target.value }))} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>MONTO MÁX</label>
+                    <label style={LABEL_STYLE}>MONTO MÁX</label>
                     <input className="form-input" type="number" value={filtros.montoMax} onChange={e => setFiltros(p => ({ ...p, montoMax: e.target.value }))} />
                   </div>
                 </div>
 
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>BÚSQUEDA (cualquier campo)</label>
+                  <label style={LABEL_STYLE}>BÚSQUEDA (cualquier campo)</label>
                   <input className="form-input" placeholder="Buscar..." value={filtros.search} onChange={e => setFiltros(p => ({ ...p, search: e.target.value }))} />
                 </div>
 
                 {/* Tipo cliente */}
                 {allTipos.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>TIPO CLIENTE</label>
+                    <label style={LABEL_STYLE}>TIPO CLIENTE</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {allTipos.map(t => (
                         <span key={t} onClick={() => toggleFilter('tipoCliente', t)} style={chipStyle(filtros.tipoCliente.includes(t))}>{t}</span>
@@ -3417,7 +3330,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                 {/* Rango etario */}
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>RANGO ETARIO</label>
+                  <label style={LABEL_STYLE}>RANGO ETARIO</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {RANGOS_ETARIOS.map(r => (
                       <span key={r} onClick={() => toggleFilter('rangoEtario', r)} style={chipStyle(filtros.rangoEtario.includes(r))}>{r}</span>
@@ -3428,7 +3341,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                 {/* Sexo */}
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>SEXO</label>
+                  <label style={LABEL_STYLE}>SEXO</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {SEXOS.map(s => (
                       <span key={s} onClick={() => toggleFilter('sexo', s)} style={chipStyle(filtros.sexo.includes(s))}>{s}</span>
@@ -3440,7 +3353,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 {/* Localidad */}
                 {allLocalidades.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>LOCALIDAD</label>
+                    <label style={LABEL_STYLE}>LOCALIDAD</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {allLocalidades.map(l => (
                         <span key={l} onClick={() => toggleFilter('localidad', l)} style={chipStyle(filtros.localidad.includes(l))}>{l}</span>
@@ -3541,7 +3454,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                 {/* Es RE */}
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>RESUMEN EJECUTIVO</label>
+                  <label style={LABEL_STYLE}>RESUMEN EJECUTIVO</label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <span onClick={() => setFiltros(p => ({ ...p, esRe: p.esRe === 'si' ? '' : 'si' }))} style={chipStyle(filtros.esRe === 'si')}>Sí</span>
                     <span onClick={() => setFiltros(p => ({ ...p, esRe: p.esRe === 'no' ? '' : 'no' }))} style={chipStyle(filtros.esRe === 'no')}>No</span>
@@ -3748,25 +3661,25 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   <div style={{ marginTop: 8, marginBottom: 32, paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', textAlign: 'left' }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Estado</label>
+                        <label style={LABEL_STYLE}>Estado</label>
                         <select className="form-select" value={filtros.estados[0] || ''} onChange={e => setFiltros(p => ({ ...p, estados: e.target.value ? [e.target.value] : [] }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
                           <option value="">Todos</option>
                           {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Analista</label>
+                        <label style={LABEL_STYLE}>Analista</label>
                         <select className="form-select" value={filtros.analistas[0] || ''} onChange={e => setFiltros(p => ({ ...p, analistas: e.target.value ? [e.target.value] : [] }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
                           <option value="">Todos</option>
                           {allAnalistas.map(a => <option key={a} value={a}>{a}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Fecha Desde</label>
+                        <label style={LABEL_STYLE}>Fecha Desde</label>
                         <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Fecha Hasta</label>
+                        <label style={LABEL_STYLE}>Fecha Hasta</label>
                         <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
                       </div>
                     </div>
@@ -3836,7 +3749,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                  {showAdvancedFilters && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: 32, textAlign: 'left' }}>
                         <div>
-                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Estado</label>
+                          <label style={LABEL_STYLE}>Estado</label>
                           <select className="form-select" value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
@@ -3845,7 +3758,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         </div>
 
                         <div>
-                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Analista</label>
+                          <label style={LABEL_STYLE}>Analista</label>
                           <select className="form-select" value={campos.analista} onChange={e => setCampos(p => ({ ...p, analista: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
@@ -3854,7 +3767,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         </div>
                         
                         <div>
-                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Tipo Cliente</label>
+                          <label style={LABEL_STYLE}>Tipo Cliente</label>
                           <select className="form-select" value={campos.tipo_cliente} onChange={e => setCampos(p => ({ ...p, tipo_cliente: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
@@ -3863,12 +3776,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         </div>
 
                         <div>
-                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Cuotas</label>
+                          <label style={LABEL_STYLE}>Cuotas</label>
                           <input className="form-input" placeholder="Ej: 12, 24, 36" value={campos.cuotas} onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
                         </div>
 
                         <div style={{ gridColumn: '1 / -1' }}>
-                          <label style={{ display: 'block', fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Empleador</label>
+                          <label style={LABEL_STYLE}>Empleador</label>
                           <input className="form-input" placeholder="Nombre del empleador" value={campos.empleador} onChange={e => setCampos(p => ({ ...p, empleador: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
                         </div>
                     </div>
@@ -3949,12 +3862,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {modalOpen && (
         <div
           className="modal-overlay"
-          style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 20,
-          }}
+          style={MODAL_OVERLAY_STYLE}
           onClick={() => setModalOpen(false)}
         >
           <div
@@ -4049,12 +3957,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {modalEmpleadoresOpen && (
         <div
           className="modal-overlay"
-          style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 20,
-          }}
+          style={MODAL_OVERLAY_STYLE}
           onClick={() => setModalEmpleadoresOpen(false)}
         >
           <div
@@ -4125,10 +4028,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 placeholder="Buscar empleador..."
                 value={busquedaEmpleadorModal}
                 onChange={e => setBusquedaEmpleadorModal(e.target.value)}
-                style={{
-                  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-                }}
+                style={DARK_INPUT_STYLE}
               />
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {([
@@ -4339,12 +4239,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {/* MODAL DE EMPLEADORES NUEVOS DE HOY */}
       {showEmpleadoresHoy && (
         <div
-          style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 20,
-          }}
+          style={MODAL_OVERLAY_STYLE}
           onClick={() => setShowEmpleadoresHoy(false)}
         >
           <div
@@ -4409,7 +4304,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       setEmpleadoresHoy([]);
                       setShowEmpleadoresHoy(false);
                       setToast({ message: `${ids.length} registros eliminados`, type: 'success' });
-                    } catch (err) {
+                    } catch {
                       setToast({ message: 'Error al eliminar registros', type: 'error' });
                     } finally {
                       setLoadingEmpleadoresHoy(false);
