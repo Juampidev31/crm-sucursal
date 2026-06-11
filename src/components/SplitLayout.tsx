@@ -18,6 +18,81 @@ const AVAILABLE_ROUTES = [
   { path: '/recordatorios', label: 'Recordatorios' },
 ];
 
+const iconBtnStyle: React.CSSProperties = {
+  background: 'none', border: 'none', color: '#8f929d', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', padding: '6px', borderRadius: '6px', transition: 'all 0.2s',
+};
+const iconBtnHover = {
+  onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; },
+  onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.color = '#8f929d'; e.currentTarget.style.background = 'transparent'; },
+};
+
+const NavControl = ({ side, currentPath, onSelect, onReload }: {
+  side: 'left' | 'right';
+  currentPath: string;
+  onSelect: (side: 'left' | 'right', path: string) => void;
+  onReload: (side: 'left' | 'right') => void;
+}) => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '8px 16px',
+    background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    justifyContent: 'space-between',
+    height: '46px'
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Layout size={14} color="#8f929d" />
+      </div>
+      <select
+        value={currentPath}
+        onChange={(e) => onSelect(side, e.target.value)}
+        style={{
+          background: 'none',
+          border: 'none',
+          color: '#fff',
+          fontSize: '12px',
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          cursor: 'pointer',
+          outline: 'none',
+          padding: '4px 8px 4px 0',
+          fontFamily: 'inherit'
+        }}
+      >
+        {AVAILABLE_ROUTES.map(r => (
+          <option key={r.path} value={r.path} style={{ background: '#0c0c0c', color: '#fff' }}>{r.label}</option>
+        ))}
+      </select>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <button
+        onClick={() => onReload(side)}
+        title="Recargar panel"
+        style={iconBtnStyle}
+        {...iconBtnHover}
+      >
+        <RefreshCw size={14} />
+      </button>
+      <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.1)' }} />
+      <a
+        href={currentPath}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Abrir en pestaña nueva"
+        style={iconBtnStyle}
+        {...iconBtnHover}
+      >
+        <ExternalLink size={14} />
+      </a>
+    </div>
+  </div>
+);
+
 export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChange }: SplitLayoutProps) {
   const [splitRatio, setSplitRatio] = useState(50); // percentage 0-100
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,69 +140,6 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
     if (side === 'left') setKeyLeft(prev => prev + 1);
     else setKeyRight(prev => prev + 1);
   };
-
-  const NavControl = ({ side, currentPath }: { side: 'left' | 'right', currentPath: string }) => (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      padding: '8px 16px',
-      background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-      borderBottom: '1px solid rgba(255,255,255,0.08)',
-      justifyContent: 'space-between',
-      height: '46px'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Layout size={14} color="#8f929d" />
-        </div>
-        <select 
-          value={currentPath}
-          onChange={(e) => handleSelect(side, e.target.value)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#fff',
-            fontSize: '12px',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            cursor: 'pointer',
-            outline: 'none',
-            padding: '4px 8px 4px 0',
-            fontFamily: 'inherit'
-          }}
-        >
-          {AVAILABLE_ROUTES.map(r => (
-            <option key={r.path} value={r.path} style={{ background: '#0c0c0c', color: '#fff' }}>{r.label}</option>
-          ))}
-        </select>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <button 
-          onClick={() => reloadIframe(side)}
-          title="Recargar panel"
-          style={{ background: 'none', border: 'none', color: '#8f929d', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#8f929d'; e.currentTarget.style.background = 'transparent'; }}
-        >
-          <RefreshCw size={14} />
-        </button>
-        <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.1)' }} />
-        <a 
-          href={currentPath} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          title="Abrir en pestaña nueva"
-          style={{ background: 'none', border: 'none', color: '#8f929d', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#8f929d'; e.currentTarget.style.background = 'transparent'; }}
-        >
-          <ExternalLink size={14} />
-        </a>
-      </div>
-    </div>
-  );
 
   return (
     <div style={{ 
@@ -223,7 +235,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
           minWidth: 0,
           background: '#0c0c0c'
         }}>
-          <NavControl side="left" currentPath={leftPath} />
+          <NavControl side="left" currentPath={leftPath} onSelect={handleSelect} onReload={reloadIframe} />
           <iframe 
             key={`left-${keyLeft}`}
             src={`${leftPath}${leftPath.includes('?') ? '&' : '?'}minimal=true`}
@@ -273,7 +285,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
           minWidth: 0,
           background: '#0c0c0c'
         }}>
-          <NavControl side="right" currentPath={rightPath} />
+          <NavControl side="right" currentPath={rightPath} onSelect={handleSelect} onReload={reloadIframe} />
           <iframe 
             key={`right-${keyRight}`}
             src={`${rightPath}${rightPath.includes('?') ? '&' : '?'}minimal=true`}

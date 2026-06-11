@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle2, AlertCircle, Minus, RotateCcw, Upload, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RotateCcw, Upload, Loader2 } from 'lucide-react';
 import { parsePastedText, ParsedRow } from '@/lib/verificador-utils';
 import {
   CargaColumnMapping, CargaRole, CargaRapidaResult,
@@ -11,9 +11,8 @@ import {
 } from '@/lib/carga-rapida-utils';
 
 const STATUS_CONFIG = {
-  new:    { label: 'Nuevo',     color: '#00ff88', Icon: CheckCircle2 },
-  update: { label: 'Ya existe', color: '#fbbf24', Icon: AlertCircle  },
-  skip:   { label: 'Ya existe', color: '#fbbf24', Icon: AlertCircle  },
+  new:  { label: 'Nuevo',     color: '#00ff88', Icon: CheckCircle2 },
+  skip: { label: 'Ya existe', color: '#fbbf24', Icon: AlertCircle  },
 };
 
 export default function CargaRapidaTab() {
@@ -41,7 +40,6 @@ export default function CargaRapidaTab() {
     if (!results) return null;
     return {
       new: results.filter(r => r.status === 'new').length,
-      update: results.filter(r => r.status === 'update').length,
       skip: results.filter(r => r.status === 'skip').length,
     };
   }, [results]);
@@ -95,7 +93,7 @@ export default function CargaRapidaTab() {
     } finally {
       setSaving(false);
     }
-  }, [results, refresh, pushBulkRefresh]);
+  }, [results, mapping, refresh, pushBulkRefresh]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -251,18 +249,7 @@ export default function CargaRapidaTab() {
                         {res.parsedData.cuil ?? res.existingRecord?.cuil ?? '—'}
                       </td>
                       <td style={{ padding: '8px 12px' }}>
-                        {res.diffs && res.diffs.length > 0 ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {res.diffs.map((d, j) => (
-                              <div key={j} style={{ fontSize: 11, color: '#888' }}>
-                                <span style={{ color: '#fbbf24', fontWeight: 700 }}>{d.label}:</span>{' '}
-                                <span style={{ color: '#ff3366', textDecoration: 'line-through' }}>{d.oldValue || '—'}</span>
-                                {' → '}
-                                <span style={{ color: '#00ff88' }}>{d.newValue || '—'}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : res.status === 'new' ? (
+                        {res.status === 'new' ? (
                           <span style={{ color: '#555', fontSize: 11 }}>Registro nuevo</span>
                         ) : (
                           <span style={{ color: '#444', fontSize: 11 }}>—</span>

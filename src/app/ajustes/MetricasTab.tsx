@@ -111,9 +111,6 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
     if (propAnio) setInternalAnio(propAnio);
   }, [propMes, propAnio]);
 
-  const mes = internalMes;
-  const anio = internalAnio;
-
   // Intentar usar el provider si no nos pasan los registros por prop
   let ctxRegs: any[] = [];
   let ctxLoading = false;
@@ -121,22 +118,18 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
     const ctx = useRegistros();
     ctxRegs = ctx.registros;
     ctxLoading = ctx.loading;
-  } catch (e) { }
+  } catch { }
   
   const regs = manualRegs || ctxRegs;
   const loading = manualRegs ? false : ctxLoading;
 
   const getStatsForAnalista = (analista: string) => {
     let filtered = regs || [];
-    // OJO: Si ya nos pasan registros manuales (ya filtrados en el padre), no volvemos a filtrar por analista
-    // a menos que analista sea un nombre específico y estemos en modo "General"
-    if (analista && !manualRegs) filtered = filtered.filter(r => r.analista === analista);
-    
-    // Si estamos en PDV y filtramos por Luciana en un sub-gráfico, filtramos sobre el total
-    if (analista && manualRegs) filtered = filtered.filter(r => r.analista === analista);
+    // Filtrar por analista (tanto con registros del provider como manuales)
+    if (analista) filtered = filtered.filter(r => r.analista === analista);
 
-    if (mes) filtered = filtered.filter(r => r.fecha && r.fecha.slice(5, 7) === mes);
-    if (anio) filtered = filtered.filter(r => r.fecha && r.fecha.slice(0, 4) === String(anio));
+    if (internalMes) filtered = filtered.filter(r => r.fecha && r.fecha.slice(5, 7) === internalMes);
+    if (internalAnio) filtered = filtered.filter(r => r.fecha && r.fecha.slice(0, 4) === String(internalAnio));
 
     const stats = ESTADOS.map(st => {
       const match = filtered.filter(r => r.estado?.toLowerCase() === st);
@@ -196,7 +189,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
       ...v, 
       data: getStatsForAnalista(v.analista) 
     }));
-  }, [regs, mes, anio, propAnalista]);
+  }, [regs, internalMes, internalAnio, propAnalista]);
 
   if (loading) return <div className="loading-container"><div className="spinner" /></div>;
 
@@ -239,8 +232,6 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
       }}>
         {views.map(view => {
           const isSingle = views.length === 1;
-          const topState = [...view.data.stats].sort((a, b) => b.monto - a.monto)[0];
-          const avgTicket = view.data.totalOps > 0 ? view.data.totalMonto / view.data.totalOps : 0;
 
           return (
             <div key={view.id} style={{ 

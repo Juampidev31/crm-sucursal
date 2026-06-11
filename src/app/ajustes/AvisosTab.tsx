@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { CONFIG } from '@/types';
-import { Bell, Send, User, Users, Trash2, Clock, AlertCircle, Play } from 'lucide-react';
+import { Send, User, Users, Trash2, Clock, Play } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/utils';
 import { useRecordatorios, type ReminderAlertData } from '@/features/recordatorios/RecordatoriosProvider';
@@ -17,11 +17,7 @@ interface RecordatorioRow {
   nota?: string;
   analista: string;
   fecha_hora: string;
-  mostrado: boolean;
-  creado_por?: string;
   creado_en?: string;
-  estado?: string;
-  registro_id?: string;
 }
 
 export default function AvisosTab() {
@@ -163,33 +159,23 @@ export default function AvisosTab() {
           <div className="form-group">
             <label className="form-label" style={{ color: 'var(--gris)', fontSize: '11px', textTransform: 'uppercase' }}>Destinatario</label>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button 
-                onClick={() => setTarget('todos')}
-                style={{
-                  padding: '8px 16px', borderRadius: '6px', border: '1px solid',
-                  fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                  background: target === 'todos' ? '#fff' : 'transparent',
-                  color: target === 'todos' ? '#000' : 'var(--gris)',
-                  borderColor: target === 'todos' ? '#fff' : 'rgba(255,255,255,0.1)',
-                  display: 'flex', alignItems: 'center', gap: '6px'
-                }}
-              >
-                <Users size={14} /> Todos
-              </button>
-              {CONFIG.ANALISTAS_DEFAULT.map(a => (
-                <button 
-                  key={a}
-                  onClick={() => setTarget(a)}
+              {[
+                { value: 'todos' as const, label: 'Todos', Icon: Users },
+                ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ value: a, label: a, Icon: User })),
+              ].map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => setTarget(value)}
                   style={{
                     padding: '8px 16px', borderRadius: '6px', border: '1px solid',
                     fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                    background: target === a ? '#fff' : 'transparent',
-                    color: target === a ? '#000' : 'var(--gris)',
-                    borderColor: target === a ? '#fff' : 'rgba(255,255,255,0.1)',
+                    background: target === value ? '#fff' : 'transparent',
+                    color: target === value ? '#000' : 'var(--gris)',
+                    borderColor: target === value ? '#fff' : 'rgba(255,255,255,0.1)',
                     display: 'flex', alignItems: 'center', gap: '6px'
                   }}
                 >
-                  <User size={14} /> {a}
+                  <Icon size={14} /> {label}
                 </button>
               ))}
             </div>

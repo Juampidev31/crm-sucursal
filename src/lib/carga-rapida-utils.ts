@@ -26,19 +26,11 @@ export interface CargaColumnMapping {
   [colIndex: number]: CargaRole;
 }
 
-export interface FieldDiff {
-  field: keyof Registro;
-  label: string;
-  oldValue: string;
-  newValue: string;
-}
-
 export interface CargaRapidaResult {
   row: ParsedRow;
-  status: 'new' | 'update' | 'skip';
+  status: 'new' | 'skip';
   parsedData: Partial<Registro>;
   existingRecord?: Registro;
-  diffs?: FieldDiff[];
 }
 
 export const CARGA_ROLE_OPTIONS: { value: CargaRole; label: string }[] = [
@@ -234,7 +226,6 @@ export function procesarFilas(
       status: 'skip',
       parsedData: parsed,
       existingRecord: existing,
-      diffs: [],
     };
   });
 }

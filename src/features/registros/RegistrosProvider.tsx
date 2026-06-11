@@ -16,10 +16,8 @@ type FieldKey = keyof Registro;
 interface RegistrosCtx {
   registros: Registro[];
   loading: boolean;
-  loadingMore: boolean;
   applyRegistroChange: (type: ChangeType, registro: Registro) => void;
   mutateRegistros: (mapper: (prev: Registro[]) => Registro[]) => void;
-  bulkInsertRegistros: (newRegistros: Partial<Registro>[]) => Promise<void>;
   refresh: (silent?: boolean) => void;
   pushBulkRefresh: () => void;
   pushRegistroChange: (type: ChangeType, registro: Registro) => void;
@@ -39,7 +37,6 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const refreshIdRef = useRef(0);
 
   const refresh = useCallback(async (silent = false) => {
@@ -84,7 +81,6 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     if (!first || first.length < PAGE || total <= PAGE) return;
 
     // Chunks #2..#N en paralelo.
-    setLoadingMore(true);
     const lastIdx = Math.min(total, REGISTROS_SAFETY_LIMIT) - 1;
     const ranges: Array<[number, number]> = [];
     for (let from = PAGE; from <= lastIdx; from += PAGE) {
@@ -116,7 +112,6 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
       return merged;
     });
     if (totalDropped > 0) reportError('refresh:registros', { message: `${totalDropped} registro(s) descartado(s) por validación — revisá consola` });
-    setLoadingMore(false);
   }, [reportError]);
 
   useEffect(() => {
@@ -126,13 +121,6 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const mutateRegistros = useCallback((mapper: (prev: Registro[]) => Registro[]) => {
     setRegistros(mapper);
   }, []);
-
-  const bulkInsertRegistros = async (newRegistros: Partial<Registro>[]) => {
-    const { error } = await supabase.from('registros').insert(newRegistros);
-    if (error) throw error;
-    pushBulkRefresh();
-    await refresh(true);
-  };
 
   const applyRegistroChange = useCallback((type: ChangeType, reg: Registro) => {
     setRegistros(prev => {
@@ -235,12 +223,12 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   }, [channelRef]);
 
   const value = useMemo(() => ({
-    registros, loading, loadingMore,
-    applyRegistroChange, mutateRegistros, bulkInsertRegistros, refresh, pushBulkRefresh, pushRegistroChange,
+    registros, loading,
+    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh, pushRegistroChange,
     pushBulkUpdateIds, pushBulkPatchByField,
   }), [
-    registros, loading, loadingMore,
-    applyRegistroChange, mutateRegistros, bulkInsertRegistros, refresh, pushBulkRefresh, pushRegistroChange,
+    registros, loading,
+    applyRegistroChange, mutateRegistros, refresh, pushBulkRefresh, pushRegistroChange,
     pushBulkUpdateIds, pushBulkPatchByField,
   ]);
 
@@ -254,7 +242,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 export function useRegistros(safe = false) {
   const ctx = useContext(RegistrosContext);
   if (!ctx) {
-    if (safe) return { registros: [], loading: false, loadingMore: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, bulkInsertRegistros: async () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {}, pushBulkUpdateIds: () => {}, pushBulkPatchByField: () => {} };
+    if (safe) return { registros: [], loading: false, applyRegistroChange: () => {}, mutateRegistros: () => {}, refresh: () => {}, pushBulkRefresh: () => {}, pushRegistroChange: () => {}, pushBulkUpdateIds: () => {}, pushBulkPatchByField: () => {} };
     throw new Error('useRegistros must be used within RegistrosProvider');
   }
   return ctx;
