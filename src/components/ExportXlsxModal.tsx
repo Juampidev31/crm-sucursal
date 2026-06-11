@@ -38,7 +38,6 @@ export function ExportXlsxModal({ open, onClose }: Props) {
   const [fechaScoreDesde, setFechaScoreDesde] = useState('');
   const [fechaScoreHasta, setFechaScoreHasta] = useState('');
   const [search, setSearch] = useState('');
-  const [empleador, setEmpleador] = useState('');
   const [estados, setEstados] = useState<string[]>([]);
   const [tipoAlerta, setTipoAlerta] = useState<string[]>([]);
   const [tipoCliente, setTipoCliente] = useState<string[]>([]);
@@ -56,8 +55,31 @@ export function ExportXlsxModal({ open, onClose }: Props) {
     setFn(prev => prev.includes(val) ? prev.filter(e => e !== val) : [...prev, val]);
   };
 
+  const renderChips = (
+    options: string[],
+    selected: string[],
+    setFn: React.Dispatch<React.SetStateAction<string[]>>,
+    accent: { bg: string; color: string; border: string } = { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.3)' },
+  ) => (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+      {options.map(opt => {
+        const isActive = selected.includes(opt);
+        return (
+          <span key={opt} onClick={() => toggleArray(opt, setFn)}
+            style={{
+              padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+              background: isActive ? accent.bg : 'rgba(255,255,255,0.02)',
+              color: isActive ? accent.color : '#8f929d',
+              border: `1px solid ${isActive ? accent.border : 'rgba(255,255,255,0.06)'}`,
+              transition: 'all 0.2s', whiteSpace: 'nowrap',
+            }}>{opt}</span>
+        );
+      })}
+    </div>
+  );
+
   const buildBody = (isPreview: boolean) => ({
-    fechaDesde, fechaHasta, empleador, estados, analista, search,
+    fechaDesde, fechaHasta, empleador: '', estados, analista, search,
     fechaScoreDesde, fechaScoreHasta, montoMin, montoMax, scoreMin, scoreMax,
     tipoCliente, acuerdoPrecios: acuerdoPrecios ? [acuerdoPrecios] : [], tipoAlerta,
     ...(isPreview ? { preview: true } : {}),
@@ -146,6 +168,8 @@ export function ExportXlsxModal({ open, onClose }: Props) {
     borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap',
   };
 
+  const errorEl = error ? <p style={{ color: '#e53e3e', fontSize: 13, margin: 0 }}>{error}</p> : null;
+
   return (
     <div
       className="modal-overlay"
@@ -232,7 +256,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               </div>
             )}
 
-            {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: 0 }}>{error}</p>}
+            {errorEl}
 
             <button
               onClick={handleDownload}
@@ -319,21 +343,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
 
               <div>
                 <label style={labelStyle}>Tipo de Cliente</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {CLIENTE_OPCIONES.map(tc => {
-                    const isActive = tipoCliente.includes(tc);
-                    return (
-                      <span key={tc} onClick={() => toggleArray(tc, setTipoCliente)}
-                        style={{
-                          padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-                          background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
-                          color: isActive ? '#10b981' : '#8f929d',
-                          border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
-                          transition: 'all 0.2s', whiteSpace: 'nowrap',
-                        }}>{tc}</span>
-                    );
-                  })}
-                </div>
+                {renderChips(CLIENTE_OPCIONES, tipoCliente, setTipoCliente)}
               </div>
 
               <div>
@@ -343,44 +353,16 @@ export function ExportXlsxModal({ open, onClose }: Props) {
 
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelStyle}>Estados</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {ESTADOS.map(est => {
-                    const isActive = estados.includes(est);
-                    return (
-                      <span key={est} onClick={() => toggleArray(est, setEstados)}
-                        style={{
-                          padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-                          background: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
-                          color: isActive ? '#10b981' : '#8f929d',
-                          border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
-                          transition: 'all 0.2s', whiteSpace: 'nowrap',
-                        }}>{est}</span>
-                    );
-                  })}
-                </div>
+                {renderChips(ESTADOS, estados, setEstados)}
               </div>
 
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelStyle}>Tipo de Alerta</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                  {ALERTAS_OPCIONES.map(al => {
-                    const isActive = tipoAlerta.includes(al);
-                    return (
-                      <span key={al} onClick={() => toggleArray(al, setTipoAlerta)}
-                        style={{
-                          padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-                          background: isActive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.02)',
-                          color: isActive ? '#f87171' : '#8f929d',
-                          border: `1px solid ${isActive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.06)'}`,
-                          transition: 'all 0.2s', whiteSpace: 'nowrap',
-                        }}>{al}</span>
-                    );
-                  })}
-                </div>
+                {renderChips(ALERTAS_OPCIONES, tipoAlerta, setTipoAlerta, { bg: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: 'rgba(239, 68, 68, 0.3)' })}
               </div>
             </div>
 
-            {error && <p style={{ color: '#e53e3e', fontSize: 13, margin: 0 }}>{error}</p>}
+            {errorEl}
 
             <button
               onClick={handlePreview}

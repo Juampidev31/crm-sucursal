@@ -12,7 +12,7 @@ import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { FilterProvider, useFilter } from '@/context/FilterContext';
 import Sidebar from './Sidebar';
 import ZoomWrapper from './ZoomWrapper';
-import { Bell, X, AlertCircle, Columns, Menu, ChevronRight } from 'lucide-react';
+import { Bell, X, AlertCircle, Columns, ChevronRight } from 'lucide-react';
 import SplitLayout from './SplitLayout';
 import { formatDate } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -186,6 +186,9 @@ const ReminderAlertPopup = () => {
   );
 };
 
+const shouldHideSidebar = (pathname: string, isMinimal: boolean) =>
+  isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/');
+
 function AppShellInner({ children, pathname }: { children: React.ReactNode, pathname: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -193,13 +196,13 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const isMinimal = searchParams.get('minimal') === 'true';
   const [mounted, setMounted] = useState(false);
   const [zooms, setZooms] = useState<Record<string, number>>({});
-  const [sidebarHidden, setSidebarHidden] = useState(isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/'));
+  const [sidebarHidden, setSidebarHidden] = useState(shouldHideSidebar(pathname, isMinimal));
   const { setShowFilters } = useFilter();
 
   // Auto-hide sidebar when entering reports or settings
   useEffect(() => {
     setShowFilters(false);
-    setSidebarHidden(isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/'));
+    setSidebarHidden(shouldHideSidebar(pathname, isMinimal));
   }, [pathname, setShowFilters, isMinimal]);
   
   useEffect(() => {
@@ -208,7 +211,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     if (saved) {
       try {
         setZooms(JSON.parse(saved));
-      } catch (e) {}
+      } catch {}
     } else {
       const oldZoom = localStorage.getItem('app_zoom_level');
       if (oldZoom) {
@@ -250,9 +253,6 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleZoom, resetZoom]);
   
-  const isLoginPage = pathname === '/login';
-  const isPublicRoute = pathname.startsWith('/publico');
-
   // Estados para Split View
   const [isSplitView, setIsSplitView] = useState(false);
   const [leftPath, setLeftPath] = useState('/registros');
@@ -276,11 +276,10 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
 
   // Manejador global de Escape — vuelve a Registros si no hay modales abiertos
   useEffect(() => {
-    if (isPublicRoute || isLoginPage) return;
     const handleGlobalEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         const modalOpen = !!document.querySelector('.modal-overlay');
-        if (!modalOpen && pathname !== '/registros' && pathname !== '/login') {
+        if (!modalOpen && pathname !== '/registros') {
           if (pathname?.startsWith('/ajustes')) {
             router.back();
           } else {
@@ -292,7 +291,9 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
 
     window.addEventListener('keydown', handleGlobalEscape, { capture: false });
     return () => window.removeEventListener('keydown', handleGlobalEscape);
-  }, [pathname, router, isPublicRoute, isLoginPage]);
+  }, [pathname, router]);
+
+  const showOwnSidebar = !isSplitView || isMinimal;
 
   if (loading || !mounted) {
     return (
@@ -373,8 +374,8 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       )}
 
       <div className="wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
-        {(!isSplitView || isMinimal) && (
-          <Sidebar 
+        {showOwnSidebar && (
+          <Sidebar
             hidden={sidebarHidden}
             onHide={() => setSidebarHidden(true)}
             zoom={currentZoom} 
@@ -391,7 +392,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
             position: 'relative'
           }}
         >
-          {(!isSplitView || isMinimal) && (
+          {showOwnSidebar && (
             <button
               onClick={() => setSidebarHidden(false)}
               style={{

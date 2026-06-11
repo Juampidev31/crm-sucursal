@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { formatDateTime, getStatusLabel } from '@/lib/utils';
 import { logAudit } from '@/lib/audit';
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/useToast';
 type TabType = 'pendientes' | 'completados';
 
 export default function RecordatoriosPage() {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const { adjustPendingReminders, pushRecordatorioChange } = useRecordatorios();
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +34,6 @@ export default function RecordatoriosPage() {
     setLoading(false);
   }, []);
 
-  const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-
   useEffect(() => {
     fetchRecordatorios();
 
@@ -47,7 +45,6 @@ export default function RecordatoriosPage() {
         await fetchRecordatorios();
       })
       .subscribe();
-    broadcastChannelRef.current = bc;
 
     return () => { supabase.removeChannel(bc); };
   }, [fetchRecordatorios]);
@@ -176,11 +173,6 @@ export default function RecordatoriosPage() {
       d.getFullYear() === ahora.getFullYear();
   };
 
-  const getUrgencyColor = (fechaHora: string, mostrado: boolean) => {
-    if (mostrado) return 'rgba(255,255,255,0.01)';
-    return 'rgba(255,255,255,0.02)';
-  };
-
   const getUrgencyBorder = (fechaHora: string, mostrado: boolean) => {
     if (mostrado) return 'rgba(255,255,255,0.06)';
     if (isVencido(fechaHora)) return 'rgba(220,53,69,0.25)';
@@ -305,7 +297,7 @@ export default function RecordatoriosPage() {
               <div
                 key={rec.id}
                 style={{
-                  background: getUrgencyColor(rec.fecha_hora, rec.mostrado),
+                  background: rec.mostrado ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.02)',
                   border: `1px solid ${getUrgencyBorder(rec.fecha_hora, rec.mostrado)}`,
                   borderRadius: '12px',
                   padding: '16px 20px',

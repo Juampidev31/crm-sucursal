@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { BarChart3, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { CONFIG } from '@/types';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 
@@ -60,7 +60,59 @@ const referenceLinesPlugin: any = {
   }
 };
 
-export const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
+const baseChartOpts = (yLabel = '', isPct = false): any => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  _isPct: isPct,
+  layout: { padding: { bottom: 0 } },
+  plugins: { legend: { display: false }, tooltip: {
+    backgroundColor: 'rgba(10, 10, 15, 0.95)',
+    titleColor: '#ffffff',
+    titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+    titleAlign: 'center' as const,
+    titleMarginBottom: 16,
+    bodyColor: '#f1f5f9',
+    bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+    bodySpacing: 10,
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 2,
+    padding: 24,
+    cornerRadius: 16,
+    boxPadding: 8,
+    usePointStyle: true,
+  } },
+  scales: {
+    x: { display: false },
+    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666', font: { size: 9 }, callback: (v: any) => v + yLabel }, border: { display: false }, beginAtZero: true }
+  }
+});
+
+const getGradient = (context: any, color1: string, color2: string) => {
+  const chart = context.chart;
+  const { ctx, chartArea } = chart;
+  if (!chartArea) return null;
+  const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+  gradient.addColorStop(0, color1);
+  gradient.addColorStop(1, color2);
+  return gradient;
+};
+
+const DoughnutLegend = ({ data, total }: { data: { labels: string[]; datasets: { data: unknown[]; backgroundColor: string[] }[] }; total: number }) => (
+  <div style={{ paddingTop: 12, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+    {data.labels.map((l, i) => {
+      const val = data.datasets[0].data[i] as number;
+      const pct = total > 0 ? (val / total * 100).toFixed(1) : '0';
+      return (
+        <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: data.datasets[0].backgroundColor[i] }} />
+          <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+        </div>
+      );
+    })}
+  </div>
+);
+
+const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
   const options = {
     layout: { padding: 30 },
     cutout: '88%',
@@ -124,47 +176,9 @@ export default function SeccionGraficosResumen({
   kpiTotal: any, selectedMes: number, selectedAnio: number, allRegistros: any[]
 }) {
   const mesPrev = selectedMes === 1 ? 12 : selectedMes - 1;
-  const anioPrev = selectedMes === 1 ? selectedAnio - 1 : selectedAnio;
-  
+
   const mesActualLabel = CONFIG.MESES_NOMBRES[selectedMes - 1];
   const mesAntLabel = CONFIG.MESES_NOMBRES[mesPrev - 1];
-
-  const baseChartOpts = (yLabel = '', isPct = false): any => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    _isPct: isPct,
-    layout: { padding: { bottom: 0 } },
-    plugins: { legend: { display: false }, tooltip: {
-      backgroundColor: 'rgba(10, 10, 15, 0.95)',
-      titleColor: '#ffffff',
-      titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
-      titleAlign: 'center' as const,
-      titleMarginBottom: 16,
-      bodyColor: '#f1f5f9',
-      bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
-      bodySpacing: 10,
-      borderColor: 'rgba(255,255,255,0.15)',
-      borderWidth: 2,
-      padding: 24,
-      cornerRadius: 16,
-      boxPadding: 8,
-      usePointStyle: true,
-    } },
-    scales: {
-      x: { display: false },
-      y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666', font: { size: 9 }, callback: (v: any) => v + yLabel }, border: { display: false }, beginAtZero: true }
-    }
-  });
-
-  const getGradient = (context: any, color1: string, color2: string) => {
-    const chart = context.chart;
-    const { ctx, chartArea } = chart;
-    if (!chartArea) return null;
-    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-    gradient.addColorStop(0, color1);
-    gradient.addColorStop(1, color2);
-    return gradient;
-  };
 
   const chartCumplimiento = useMemo(() => {
     return {
@@ -311,18 +325,7 @@ export default function SeccionGraficosResumen({
             <div style={{ height: 200, width: '100%', margin: 'auto 0' }}>
               <ModernDoughnut data={chartAcuerdosData} total={chartAcuerdosTotal} label="Acuerdos" unit=" Ops" />
             </div>
-            <div style={{ paddingTop: 12, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-              {chartAcuerdosData.labels.map((l, i) => {
-                const val = chartAcuerdosData.datasets[0].data[i] as number;
-                const pct = chartAcuerdosTotal > 0 ? (val / chartAcuerdosTotal * 100).toFixed(1) : '0';
-                return (
-                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: chartAcuerdosData.datasets[0].backgroundColor[i] }} />
-                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-                  </div>
-                );
-              })}
-            </div>
+            <DoughnutLegend data={chartAcuerdosData} total={chartAcuerdosTotal} />
           </div>
         </div>
 
@@ -338,18 +341,7 @@ export default function SeccionGraficosResumen({
             <div style={{ height: 200, width: '100%', margin: 'auto 0' }}>
               <ModernDoughnut data={chartEmpleoData} total={chartEmpleoTotal} label="Total" unit=" Ops" />
             </div>
-            <div style={{ paddingTop: 12, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-              {chartEmpleoData.labels.map((l, i) => {
-                const val = chartEmpleoData.datasets[0].data[i] as number;
-                const pct = chartEmpleoTotal > 0 ? (val / chartEmpleoTotal * 100).toFixed(1) : '0';
-                return (
-                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: chartEmpleoData.datasets[0].backgroundColor[i] }} />
-                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-                  </div>
-                );
-              })}
-            </div>
+            <DoughnutLegend data={chartEmpleoData} total={chartEmpleoTotal} />
           </div>
         </div>
       </div>

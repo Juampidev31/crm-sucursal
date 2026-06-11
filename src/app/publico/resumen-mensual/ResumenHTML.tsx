@@ -1,78 +1,19 @@
 'use client';
 
 import React from 'react';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
-  LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
+  LineElement, PointElement, Tooltip, Legend, BarController, LineController
 } from 'chart.js';
 import { formatCurrency } from '@/lib/utils';
 import { CONFIG } from '@/types';
 import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
-import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 import MetricasTab from '@/app/ajustes/MetricasTab';
 import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
 import SeccionGraficosResumen from '@/app/ajustes/SeccionGraficosResumen';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
-
-
-const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
-  const totalNum = typeof total === 'string' ? parseFloat(total) : total;
-  const options = {
-    layout: { padding: 40 },
-    cutout: '88%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
-        titleAlign: 'center' as const,
-        titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
-        bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
-        padding: 24,
-        cornerRadius: 16,
-        boxPadding: 8,
-        usePointStyle: true,
-        callbacks: {
-          label: (context: any) => {
-            return ` ${context.raw}`;
-          }
-        }
-      }
-    },
-    maintainAspectRatio: false,
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 30,
-      }
-    }
-  };
-
-  const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
-
-  return (
-    <div style={{ position: 'relative', height: '240px', width: '280px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)', textAlign: 'center',
-        width: '100%', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '8px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: '15px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
-          {displayValue}
-        </div>
-      </div>
-    </div>
-  );
-};
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
 const labelsPlugin: any = {
   id: 'labelsPlugin',
@@ -137,7 +78,7 @@ const tendBadge = (pct: number | null, showLabel = true) => {
   );
 };
 
-const sectionHeader = (title: string, icon: React.ReactNode) => (
+const sectionHeader = (title: string, icon: React.ReactNode, extra?: React.ReactNode) => (
   <div 
     style={{ 
       display: 'flex', 
@@ -154,8 +95,9 @@ const sectionHeader = (title: string, icon: React.ReactNode) => (
       {icon}
     </div>
     <span style={{ fontSize: 12, fontWeight: 800, color: '#eee', textTransform: 'uppercase', letterSpacing: '1px', flex: 1 }}>{title}</span>
-    <div style={{ 
-      width: 24, 
+    {extra}
+    <div style={{
+      width: 24,
       height: 24, 
       borderRadius: '50%', 
       background: 'rgba(255,255,255,0.03)', 
@@ -243,16 +185,14 @@ const DistBlock = ({ title, icon, data, color, total }: { title: string; icon: R
 export default function ResumenHTML({ datos }: { datos: any }) {
   if (!datos?.kpiTotal) return <div style={{color:'#666'}}>Cargando...</div>;
 
-  const { 
-    kpiTotal, kpiPorAnalista, mesActual, mesAnterior, month, year, registros, 
-    experienciaCliente, analisisComercial, operacionProcesos, gestionesRealizadas, 
-    coordinacionSalidas, empresasEstrategicas, logros, desvios, accionesClave, 
-    dotacion, ausentismo, capacitacion, evaluacionDesempeno, planAcciones, 
-    distSexo, distCuotas, distRangoEtario, distLocalidad, distEmpleador, distAcuerdos, 
-    chartConversionTotal, chartEmpleoPublPriv, chartAcuerdos, chartEmbudo 
+  const {
+    kpiTotal, kpiPorAnalista, mesActual, month, year, registros,
+    experienciaCliente, analisisComercial, operacionProcesos, gestionesRealizadas,
+    coordinacionSalidas, empresasEstrategicas,
+    dotacion, ausentismo, capacitacion, evaluacionDesempeno, planAcciones,
+    distSexo, distCuotas, distRangoEtario, distLocalidad, distEmpleador, distAcuerdos
   } = datos;
 
-  const allAnalistas = kpiPorAnalista;
   const total = kpiTotal.capital;
 
   const chartCapital = {
@@ -266,22 +206,6 @@ export default function ResumenHTML({ datos }: { datos: any }) {
   const chartTicket = {
     labels: [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'],
     datasets: [{ label: `Ticket ${mesActual}`, data: [...kpiPorAnalista.map((k: any)=>k.ticket), kpiTotal.ticket], backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4 }],
-  };
-
-  const chartVar = {
-    labels: [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'],
-    datasets: [
-      { label: 'Var. Capital %', data: [...kpiPorAnalista.map((k: any)=>k.tendCapital??0), kpiTotal.tendCapital??0], backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4 },
-      { label: 'Var. Ops %', data: [...kpiPorAnalista.map((k: any)=>k.tendOps??0), kpiTotal.tendOps??0], backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4 },
-    ],
-  };
-
-  const chartCumpl = {
-    labels: CONFIG.ANALISTAS_DEFAULT,
-    datasets: [
-      { label: 'Cumpl. Capital', data: kpiPorAnalista.map((k: any)=>k.cumplCapital??0), backgroundColor: 'rgba(96,165,250,0.7)', borderRadius: 4 },
-      { label: 'Cumpl. Ops', data: kpiPorAnalista.map((k: any)=>k.cumplOps??0), backgroundColor: 'rgba(167,139,250,0.7)', borderRadius: 4 },
-    ],
   };
 
   return (
@@ -355,16 +279,8 @@ export default function ResumenHTML({ datos }: { datos: any }) {
 
       {/* 3. VENTAS POR CATEGORÍA */}
       <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20 }}>
-            <Tag size={15} color="#fb923c" />
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 800, color: '#eee', textTransform: 'uppercase', letterSpacing: '1px', flex: 1 }}>2. Ventas por Categoría</span>
-          <span style={{ fontSize: 11, color: '#444' }}>{kpiTotal.ops} ops · {formatCurrency(total)}</span>
-          <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 12 }}>
-            <ChevronRight size={14} color="#555" />
-          </div>
-        </div>
+        {sectionHeader('2. Ventas por Categoría', <Tag size={15} color="#fb923c" />,
+          <span style={{ fontSize: 11, color: '#444' }}>{kpiTotal.ops} ops · {formatCurrency(total)}</span>)}
         <div style={{padding:24}}>
           <div style={{display:'flex',gap:16,flexWrap:'wrap'}}>
             {distAcuerdos?.length && <DistBlock title="Acuerdo" icon={<PieChart size={12} color="#ffaa00" />} data={distAcuerdos} color="#ffaa00" total={total} />}
@@ -393,7 +309,7 @@ export default function ResumenHTML({ datos }: { datos: any }) {
       <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>
         {sectionHeader('4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         <div style={{padding:24}}>
-          <TextView label="Outfitpretación del Período" value={analisisComercial||''} />
+          <TextView label="Interpretación del Período" value={analisisComercial||''} />
         </div>
       </div>
       <div style={{background:'#0c0c0c',padding:0,borderRadius:6,overflow:'hidden',border:'1px solid rgba(255,255,255,0.04)'}}>

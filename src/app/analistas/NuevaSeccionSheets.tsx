@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { FileText, ChevronDown, Tag } from 'lucide-react';
+import { FileText, Tag } from 'lucide-react';
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   Tooltip, Legend, ArcElement,
@@ -10,12 +10,22 @@ import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 
 ChartJS.register(CategoryScale, LinearScale, Tooltip, Legend, ArcElement);
 
-const hexToRgba = (hex: string, alpha: number) => {
-  if (hex.length !== 7) return hex;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+const MESES = [
+  { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' }, { value: 3, label: 'Marzo' },
+  { value: 4, label: 'Abril' }, { value: 5, label: 'Mayo' }, { value: 6, label: 'Junio' },
+  { value: 7, label: 'Julio' }, { value: 8, label: 'Agosto' }, { value: 9, label: 'Septiembre' },
+  { value: 10, label: 'Octubre' }, { value: 11, label: 'Noviembre' }, { value: 12, label: 'Diciembre' }
+];
+
+const countColumn = (rows: string[][], colIdx: number) => {
+  const counts: Record<string, number> = {};
+  for (let i = 1; i < rows.length; i++) {
+    const val = rows[i][colIdx]?.trim() || 'No especificado';
+    counts[val] = (counts[val] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([label, cantidad]) => ({ label, cantidad }))
+    .sort((a, b) => b.cantidad - a.cantidad);
 };
 
 const CHART_PALETTE = [
@@ -151,45 +161,15 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
     return [header, ...rows];
   }, [data, viewMode, selectedMes, selectedAnio]);
 
-  const stats = useMemo(() => {
-    if (!filteredData || filteredData.length <= 1) return [];
+  const stats = useMemo(
+    () => (!filteredData || filteredData.length <= 1) ? [] : countColumn(filteredData, 0),
+    [filteredData]
+  );
 
-    const counts: Record<string, number> = {};
-    for (let i = 1; i < filteredData.length; i++) {
-      const val = filteredData[i][0]?.trim() || 'No especificado';
-      counts[val] = (counts[val] || 0) + 1;
-    }
-
-    return Object.entries(counts)
-      .map(([label, cantidad]) => ({ label, cantidad }))
-      .sort((a, b) => b.cantidad - a.cantidad);
-  }, [filteredData]);
-
-  const statsColF = useMemo(() => {
-    if (!filteredData || filteredData.length <= 1) return [];
-
-    const counts: Record<string, number> = {};
-    for (let i = 1; i < filteredData.length; i++) {
-      const val = filteredData[i][5]?.trim() || 'No especificado';
-      counts[val] = (counts[val] || 0) + 1;
-    }
-
-    return Object.entries(counts)
-      .map(([label, cantidad]) => ({ label, cantidad }))
-      .sort((a, b) => b.cantidad - a.cantidad);
-  }, [filteredData]);
-
-  if (!loading && (!data || data.length === 0)) {
-    // Renderizamos igual para que no desaparezca la sección
-    // return null;
-  }
-
-  const MESES = [
-    { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' }, { value: 3, label: 'Marzo' },
-    { value: 4, label: 'Abril' }, { value: 5, label: 'Mayo' }, { value: 6, label: 'Junio' },
-    { value: 7, label: 'Julio' }, { value: 8, label: 'Agosto' }, { value: 9, label: 'Septiembre' },
-    { value: 10, label: 'Octubre' }, { value: 11, label: 'Noviembre' }, { value: 12, label: 'Diciembre' }
-  ];
+  const statsColF = useMemo(
+    () => (!filteredData || filteredData.length <= 1) ? [] : countColumn(filteredData, 5),
+    [filteredData]
+  );
 
   return (
     <div className="data-card relative z-10 w-full" style={{
@@ -273,8 +253,6 @@ function DistBlockSheets({
   datos: { label: string; cantidad: number }[]; 
   color: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   const validData = datos.filter(d => {
     const l = d.label?.trim()?.toLowerCase();
     return l !== 'no especificado' && l !== 'sin dato' && l !== '';
@@ -286,7 +264,6 @@ function DistBlockSheets({
   });
 
   const totalCant = validData.reduce((s, d) => s + d.cantidad, 0);
-  const displayData = validData;
 
   return (
     <div style={{ 
@@ -333,7 +310,7 @@ function DistBlockSheets({
           />
         </div>
         <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto' }}>
-          {displayData.map((d, i) => {
+          {validData.map((d, i) => {
             const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
             const itemColor = CHART_PALETTE[i % CHART_PALETTE.length];
             return (
