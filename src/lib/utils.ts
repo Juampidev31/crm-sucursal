@@ -66,22 +66,6 @@ export const STATUS_LABEL: Record<string, string> = {
 export const getStatusLabel = (status: string): string =>
   STATUS_LABEL[status?.toLowerCase()] || status;
 
-export const calcularDiasHabilesEntreFechas = (fechaInicio: Date, fechaFin: Date): number => {
-  if (!fechaInicio || !fechaFin) return 0;
-  let inicio = new Date(fechaInicio);
-  let fin = new Date(fechaFin);
-  if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) return 0;
-  if (inicio > fin) [inicio, fin] = [fin, inicio];
-  let diasHabiles = 0;
-  const diaActual = new Date(inicio);
-  while (diaActual <= fin) {
-    const ds = diaActual.getDay();
-    if (ds >= 1 && ds <= 5) diasHabiles++;
-    diaActual.setDate(diaActual.getDate() + 1);
-  }
-  return diasHabiles;
-};
-
 export const calcularDiasHabilesAutomaticos = (mes?: number, anio?: number) => {
   const hoy = new Date();
   const targetAnio = anio ?? hoy.getFullYear();
@@ -136,6 +120,8 @@ export const calcularComisiones = (
   };
 };
 
+const capWord = (w: string): string => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+
 /**
  * Capitaliza texto genérico: primera letra de cada palabra en mayúscula.
  * Ej: "jubilado" → "Jubilado" | "PAraná" → "Paraná"
@@ -146,7 +132,7 @@ export const capitalizarTexto = (value: string): string => {
   if (!cleaned) return trailingSpace;
   return cleaned
     .split(/\s+/)
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .map(capWord)
     .join(' ') + trailingSpace;
 };
 
@@ -166,17 +152,15 @@ export const capitalizarNombre = (value: string): string => {
   if (cleaned.includes(',')) {
     const [apellido, ...rest] = cleaned.split(',');
     const nombre = rest.join(' ').trim();
-    const capApellido = apellido.trim().split(' ').filter(Boolean)
-      .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+    const capApellido = apellido.trim().split(' ').filter(Boolean).map(capWord).join(' ');
     if (!nombre) return capApellido + ',' + trailingSpace;
-    const capNombre = nombre.split(' ').filter(Boolean)
-      .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(' ');
+    const capNombre = nombre.split(' ').filter(Boolean).map(capWord).join(' ');
     return capApellido + ', ' + capNombre + trailingSpace;
   }
   // 4. No comma — first word is apellido, rest is nombre
   const partes = cleaned.split(' ').filter(Boolean);
   if (partes.length === 0) return '';
-  const cap = partes.map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+  const cap = partes.map(capWord);
   if (cap.length === 1) return cap[0] + trailingSpace;
   return cap[0] + ', ' + cap.slice(1).join(' ') + trailingSpace;
 };

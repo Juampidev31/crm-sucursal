@@ -95,7 +95,7 @@ export type DiasConfig = z.infer<typeof diasConfigSchema>;
 // ── Recordatorio ──────────────────────────────────────────────────────────────
 // Campos de texto con .nullish + transform a '' para tolerar NULLs de Postgres
 // sin romper consumidores que esperan string.
-export const recordatorioSchema = z.object({
+const recordatorioSchema = z.object({
   id: z.string(),
   registro_id: z.string(),
   nombre: z.string(),
@@ -122,44 +122,6 @@ export const historicoVentaSchema = z.object({
 });
 export type HistoricoVenta = z.infer<typeof historicoVentaSchema>;
 
-export interface DiasHabilesConfig {
-  id: string;
-  analista: string;
-  dias_habiles: number;
-  dias_transcurridos: number;
-  manual: boolean;
-}
-
-export interface ResumenAnalista {
-  sucursal: string;
-  ventasCerradas: number;
-  totalProyecciones: number;
-  opCerradas: number;
-  totalProyeccionesOp: number;
-  enSeguimientoMonto: number;
-  enSeguimientoOp: number;
-  scoreBajoMonto: number;
-  scoreBajoOp: number;
-  afectacionesMonto: number;
-  afectacionesOp: number;
-  derivadoAprobadoMonto: number;
-  derivadoAprobadoOp: number;
-  derivadoRechazadoMonto: number;
-  derivadoRechazadoOp: number;
-  cvsp: number;
-  ticketPromedio: number;
-  totalOperaciones: number;
-  ventasMensualesTotal: number;
-  cantidadVentasMensuales: number;
-  tendenciaVentas: number;
-  tendenciaOps: number;
-  comisionCapital: number;
-  comisionOperaciones: number;
-  comisionTotal: number;
-  objetivoVentasMesActual: number;
-  objetivoOperacionesMesActual: number;
-}
-
 export const ESTADOS_MAP: Record<string, { monto: string; op: string }> = {
   'derivado / rechazado cc': { monto: 'derivadoRechazadoMonto', op: 'derivadoRechazadoOp' },
   'proyeccion': { monto: 'totalProyecciones', op: 'totalProyeccionesOp' },
@@ -169,23 +131,9 @@ export const ESTADOS_MAP: Record<string, { monto: string; op: string }> = {
 };
 
 export const CONFIG = {
-  APP_VERSION: "2.0.0",
   ANALISTAS_DEFAULT: ["Luciana", "Victoria"],
-  OBJETIVO_VENTAS_DEFAULT: 23500000,
-  OBJETIVO_OPERACIONES_DEFAULT: 33,
-  UMBRAL_VENTAS_MINIMO_COMISION: 0.75,
   MESES_NOMBRES: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
-  COEFICIENTES_COMISION: {
-    NIVEL_1: { umbral: 1.20, coeficiente: 0.0045 },
-    NIVEL_2: { umbral: 1.10, coeficiente: 0.0037 },
-    NIVEL_3: { umbral: 0.90, coeficiente: 0.0030 },
-    NIVEL_4: { umbral: 0.75, coeficiente: 0.0020 },
-  },
-  PORCENTAJES_ADICIONALES_OP: {
-    NIVEL_1: { umbral: 1.00, porcentaje: 0.30 },
-    NIVEL_2: { umbral: 0.80, porcentaje: 0.20 },
-  },
   ALERTAS_DEFAULT: [
     { nombre: "Proyecciones", dias: 10, estado: "proyeccion", mensaje: "Tiene proyecciones con más de {dias} días sin actualización.", color: "#17a2b8" },
     { nombre: "En seguimiento", dias: 3, estado: "en seguimiento", mensaje: "Tiene registros en seguimiento con más de {dias} días sin contacto.", color: "#ffc107" },

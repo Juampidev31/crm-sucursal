@@ -12,6 +12,18 @@ interface GrupoDuplicado {
   registros: Registro[];
 }
 
+const normalizarNombreKey = (nombre?: string | null) =>
+  nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
+
+const chipStyle = (isActive: boolean) => ({
+  padding: '6px 12px', borderRadius: '4px', fontSize: '10px', border: '1px solid',
+  whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.15s',
+  background: isActive ? 'rgba(0,120,212,0.1)' : 'rgba(255,255,255,0.01)',
+  borderColor: isActive ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
+  color: isActive ? 'var(--azul)' : '#8f929d',
+  textTransform: 'uppercase' as const, letterSpacing: '0.8px'
+});
+
 export default function DuplicadosPage() {
   const { registros, loading } = useRegistros();
 
@@ -57,29 +69,20 @@ export default function DuplicadosPage() {
 
     const byNombre = new Map<string, Registro[]>();
     for (const r of pool) {
-      const nombre = r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
+      const nombre = normalizarNombreKey(r.nombre);
       if (!nombre || nombre.length < 3) continue;
       if (!byNombre.has(nombre)) byNombre.set(nombre, []);
       byNombre.get(nombre)!.push(r);
     }
     for (const [nombre, regs] of byNombre) {
       if (regs.length > 1) {
-        const existsInCuil = grupos.some(g => g.tipo === 'cuil' && g.registros.some(r => r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ') === nombre));
+        const existsInCuil = grupos.some(g => g.tipo === 'cuil' && g.registros.some(r => normalizarNombreKey(r.nombre) === nombre));
         if (!existsInCuil) grupos.push({ key: nombre, tipo: 'nombre', registros: regs });
       }
     }
 
     return grupos.sort((a, b) => b.registros.length - a.registros.length);
   }, [registros, selectedEstados, selectedAnalistas]);
-
-  const chipStyle = (isActive: boolean) => ({
-    padding: '6px 12px', borderRadius: '4px', fontSize: '10px', border: '1px solid',
-    whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.15s',
-    background: isActive ? 'rgba(0,120,212,0.1)' : 'rgba(255,255,255,0.01)',
-    borderColor: isActive ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
-    color: isActive ? 'var(--azul)' : '#8f929d',
-    textTransform: 'uppercase' as const, letterSpacing: '0.8px'
-  });
 
   return (
     <div className="dashboard-container">
