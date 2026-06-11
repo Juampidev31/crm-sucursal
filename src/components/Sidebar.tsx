@@ -354,25 +354,35 @@ export default function Sidebar({
   return (
     <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showCalculator ? 'sidebar-expanded-filters' : ''}`}
       style={{
+        '--current-zoom': zoom || 1,
         background: 'transparent',
         borderRight: 'none',
         boxShadow: 'none',
         display: 'flex', flexDirection: 'row',
         alignItems: 'stretch',
-        width: showCalculator ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
+        width: showCalculator ? `calc(var(--sidebar-filters-width) * ${zoom || 1})` : `calc(var(--sidebar-width) * ${zoom || 1})`,
         zIndex: 150,
         position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
       }}
     >
-      {/* Text + Icon Column */}
       <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        width: `${100 / (zoom || 1)}%`,
+        height: `${100 / (zoom || 1)}%`,
+        transform: `scale(${zoom || 1})`,
+        transformOrigin: 'top left',
+      }}>
+      {/* Text + Icon Column */}
+      <div className="hide-scrollbar" style={{
         width: 'var(--sidebar-width)',
         display: showFilters ? 'none' : 'flex', flexDirection: 'column',
         padding: '2px 16px 20px',
         flexShrink: 0,
         borderRight: showCalculator ? '1px solid var(--border)' : 'none',
-        overflowY: 'hidden',
+        overflowY: 'auto',
         overflowX: 'hidden'
       }}>
 
@@ -697,6 +707,7 @@ export default function Sidebar({
           </div>
         </div>
       )}
+      </div>
 
       {showAdminModal && (
         <AdminLoginModal

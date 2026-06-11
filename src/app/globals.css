@@ -90,6 +90,15 @@ body {
   margin: 0;
 }
 
+/* Ocultar barra de desplazamiento visualmente pero permitir scroll */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
 h1, h2, h3, h4, h5, h6, th {
   color: var(--fg-muted);
 }
@@ -146,7 +155,7 @@ a {
 }
 
 .sidebar-hidden {
-  margin-left: calc(var(--sidebar-width) * -1) !important;
+  margin-left: calc(var(--sidebar-width) * -1 * var(--current-zoom, 1)) !important;
   transform: translateX(-20px);
   opacity: 0 !important;
   pointer-events: none;
@@ -154,7 +163,7 @@ a {
 }
 
 .main-sidebar.sidebar-expanded-filters.sidebar-hidden {
-  margin-left: calc(var(--sidebar-filters-width) * -1) !important;
+  margin-left: calc(var(--sidebar-filters-width) * -1 * var(--current-zoom, 1)) !important;
 }
 
 .content-wrapper {
