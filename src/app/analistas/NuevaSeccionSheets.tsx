@@ -1,14 +1,7 @@
 'use client';
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { FileText, Tag } from 'lucide-react';
-import {
-  Chart as ChartJS, CategoryScale, LinearScale,
-  Tooltip, Legend, ArcElement,
-} from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
-import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
-
-ChartJS.register(CategoryScale, LinearScale, Tooltip, Legend, ArcElement);
+import ModernDoughnut from '@/components/charts/ModernDoughnut';
 
 const MESES = [
   { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' }, { value: 3, label: 'Marzo' },
@@ -35,59 +28,6 @@ const CHART_PALETTE = [
   '#fde047', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6'
 ];
 
-const ModernDoughnut = ({ data, totalOps, label }: { data: any, totalOps: number, label: string }) => {
-  const options = {
-    layout: { padding: 60 },
-    cutout: '88%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
-        titleAlign: 'center' as const,
-        titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
-        bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
-        padding: 24,
-        cornerRadius: 16,
-        boxPadding: 8,
-        usePointStyle: true,
-        callbacks: {
-          label: (context: any) => {
-            return ` ${context.label}: ${context.raw} ops`;
-          }
-        }
-      }
-    },
-    maintainAspectRatio: false,
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 30,
-      }
-    }
-  };
-
-  return (
-    <div style={{ position: 'relative', height: '250px', width: '100%', margin: '0 auto 16px auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)', textAlign: 'center',
-        width: '100%', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '10px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
-          {totalOps}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function NuevaSeccionSheets({ analista }: { analista: string }) {
   const [dataSources, setDataSources] = useState<Record<string, string[][]>>({});
@@ -294,9 +234,13 @@ function DistBlockSheets({
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
         <div style={{ padding: '24px 0 8px 0', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-          <ModernDoughnut 
-            label="Total Ops" 
-            totalOps={totalCant} 
+          <ModernDoughnut
+            label="Total Ops"
+            value={totalCant}
+            tooltipLabel={(ctx) => ` ${ctx.label}: ${ctx.raw} ops`}
+            padding={60}
+            height="250px"
+            margin="0 auto 16px auto"
             data={{
               labels: validData.map(d => d.label?.trim()),
               datasets: [{

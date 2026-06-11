@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { Users } from 'lucide-react';
 import { CONFIG } from '@/types';
-import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 import { filterByMonth, isVenta } from '@/lib/registro-stats';
+import ModernDoughnut from '@/components/charts/ModernDoughnut';
 
 const labelsPlugin: any = {
   id: 'labelsPlugin',
@@ -102,64 +102,6 @@ const DoughnutLegend = ({ data, total }: { data: { labels: string[]; datasets: {
     })}
   </div>
 );
-
-const ModernDoughnut = ({ data, total, label, unit = '', showPercent = false }: { data: any, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
-  const options = {
-    layout: { padding: 30 },
-    cutout: '88%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
-        titleAlign: 'center' as const,
-        titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
-        bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
-        padding: 24,
-        cornerRadius: 16,
-        boxPadding: 8,
-        usePointStyle: true,
-        callbacks: {
-          label: (ctx: any) => {
-            const val = ctx.raw;
-            if (showPercent && typeof total === 'number' && total > 0) {
-              return ` ${ctx.label}: ${val}${unit} (${((val / total) * 100).toFixed(1)}%)`;
-            }
-            return ` ${ctx.label}: ${val}${unit}`;
-          }
-        }
-      }
-    },
-    maintainAspectRatio: false,
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 30,
-      }
-    }
-  };
-
-  return (
-    <div style={{ position: 'relative', height: '100%', width: '100%', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)', textAlign: 'center',
-        width: '100%', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '10px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
-          {total}<span style={{ fontSize: '12px', color: '#888', fontWeight: 700, marginLeft: '2px' }}>{unit}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function SeccionGraficosResumen({
   kpiTotal, selectedMes, selectedAnio, allRegistros
@@ -314,7 +256,9 @@ export default function SeccionGraficosResumen({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
             <div style={{ height: 200, width: '100%', margin: 'auto 0' }}>
-              <ModernDoughnut data={chartAcuerdosData} total={chartAcuerdosTotal} label="Acuerdos" unit=" Ops" />
+              <ModernDoughnut data={chartAcuerdosData} label="Acuerdos" padding={30}
+                value={<>{chartAcuerdosTotal}<span style={{ fontSize: '12px', color: '#888', fontWeight: 700, marginLeft: '2px' }}>{' Ops'}</span></>}
+                tooltipLabel={(ctx) => ` ${ctx.label}: ${ctx.raw} Ops`} />
             </div>
             <DoughnutLegend data={chartAcuerdosData} total={chartAcuerdosTotal} />
           </div>
@@ -330,7 +274,9 @@ export default function SeccionGraficosResumen({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
             <div style={{ height: 200, width: '100%', margin: 'auto 0' }}>
-              <ModernDoughnut data={chartEmpleoData} total={chartEmpleoTotal} label="Total" unit=" Ops" />
+              <ModernDoughnut data={chartEmpleoData} label="Total" padding={30}
+                value={<>{chartEmpleoTotal}<span style={{ fontSize: '12px', color: '#888', fontWeight: 700, marginLeft: '2px' }}>{' Ops'}</span></>}
+                tooltipLabel={(ctx) => ` ${ctx.label}: ${ctx.raw} Ops`} />
             </div>
             <DoughnutLegend data={chartEmpleoData} total={chartEmpleoTotal} />
           </div>

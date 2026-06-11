@@ -10,73 +10,15 @@ import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
 import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronDown, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
-import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
 import NuevaSeccionSheets from './NuevaSeccionSheets';
 import { filterByMonth, isVenta, TIPOS_ACUERDO, emptyTiposAcuerdo, matchTipoAcuerdo, normalizarEmpleador, buildDistEmpleador } from '@/lib/registro-stats';
-
-const ModernDoughnut = memo(({ data, total, label, unit = '', showPercent = false }: { data: import('chart.js').ChartData<'doughnut'>, total: number | string, label: string, unit?: string, showPercent?: boolean }) => {
-  const totalNum = typeof total === 'string' ? parseFloat(total) : total;
-  const options = {
-    layout: { padding: 36 },
-    cutout: '88%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
-        titleAlign: 'center' as const,
-        titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
-        bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
-        padding: 24,
-        cornerRadius: 16,
-        boxPadding: 8,
-        usePointStyle: true,
-        callbacks: {
-          label: (context: any) => {
-            return ` ${context.raw}`;
-          }
-        }
-      }
-    },
-    maintainAspectRatio: false,
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 30,
-      }
-    }
-  };
-
-  const displayValue = showPercent && totalNum > 0 ? `${totalNum.toFixed(1)}%` : `${total}${unit}`;
-
-  return (
-    <div style={{ position: 'relative', height: '220px', width: '220px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)', textAlign: 'center',
-        width: '100%', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '8px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: '15px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
-          {displayValue}
-        </div>
-      </div>
-    </div>
-  );
-});
-ModernDoughnut.displayName = 'ModernDoughnut';
+import ModernDoughnut from '@/components/charts/ModernDoughnut';
 
 const DistBlock = ({ 
   titulo, icon, datos, color, totalMes, maxItems = 5
@@ -1772,7 +1714,7 @@ export default function AnalistasPage() {
 
                         return chartsLoaded ? (
                           <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <ModernDoughnut data={chartData} total={total} label="Acuerdos" unit=" Ops" />
+                            <ModernDoughnut data={chartData} label="Acuerdos" value={`${total} Ops`} padding={36} height="220px" width="220px" labelSize={8} valueSize={15} />
                             <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
                               {displayLabels.map((l, i) => {
                                 const pct = total > 0 ? (displayData[i] / total * 100).toFixed(1) : '0';
@@ -1833,7 +1775,7 @@ export default function AnalistasPage() {
                         
                         return chartsLoaded ? (
                           <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <ModernDoughnut data={chartEmpleoPublPriv} total={total} label="Total" unit=" Ops" />
+                            <ModernDoughnut data={chartEmpleoPublPriv} label="Total" value={`${total} Ops`} padding={36} height="220px" width="220px" labelSize={8} valueSize={15} />
                             <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
                               {chartEmpleoPublPriv.labels.map((l, i) => {
                                 const val = counts[i];

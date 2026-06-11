@@ -5,14 +5,7 @@ import { formatCurrency, getStatusLabel } from '@/lib/utils';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { CONFIG } from '@/types';
 import { ESTADOS } from '@/context/FilterContext';
-import {
-  Chart as ChartJS, CategoryScale, LinearScale,
-  Tooltip, Legend, ArcElement,
-} from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
-import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
-
-ChartJS.register(CategoryScale, LinearScale, Tooltip, Legend, ArcElement);
+import ModernDoughnut from '@/components/charts/ModernDoughnut';
 
 const CHART_COLORS = {
   venta: 'rgba(74, 222, 128, 0.8)',
@@ -40,59 +33,6 @@ const MESES = [
 ];
 
 const mesActual = String(new Date().getMonth() + 1).padStart(2, '0');
-
-const ModernDoughnut = ({ data, totalMonto, label }: { data: any, totalMonto: number, label: string }) => {
-  const options: any = {
-    clip: false,
-    layout: { padding: 70 },
-    cutout: '88%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
-        titleAlign: 'center' as const,
-        titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
-        bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
-        padding: 24,
-        cornerRadius: 16,
-        boxPadding: 8,
-        usePointStyle: true,
-        callbacks: {
-          label: (ctx: any) => ` ${ctx.label}: ${formatCurrency(Number(ctx.raw))}`
-        }
-      }
-    },
-    maintainAspectRatio: false,
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 30,
-      }
-    }
-  };
-
-  return (
-    <div style={{ position: 'relative', height: '280px', width: '280px', margin: '0 auto' }}>
-      <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)', textAlign: 'center',
-        width: '100%', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: '10px', color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: '18px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
-          {formatCurrency(totalMonto)}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 interface Props {
   selectedMes?: number;
@@ -248,10 +188,15 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
             }}
             >
               <div style={{ textAlign: 'center', width: '100%' }}>
-                <ModernDoughnut 
-                  data={view.data.doughnutData} 
-                  totalMonto={view.data.totalMonto} 
+                <ModernDoughnut
+                  data={view.data.doughnutData}
                   label="VENTAS"
+                  value={formatCurrency(view.data.totalMonto)}
+                  tooltipLabel={(ctx) => ` ${ctx.label}: ${formatCurrency(Number(ctx.raw))}`}
+                  padding={70}
+                  clip={false}
+                  height="280px"
+                  width="280px"
                 />
                 <div style={{ marginTop: '20px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                   {view.data.totalOps} OPERACIONES TOTALES
