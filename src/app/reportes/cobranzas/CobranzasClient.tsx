@@ -13,6 +13,7 @@ import SelectReporte from '@/components/SelectReporte';
 import type { CobranzasData, TramoRow, MorosidadRow } from './data';
 import { Edit2, Save, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { parseNumberRobust, parsePct } from '@/lib/csv-utils';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
 
@@ -22,52 +23,6 @@ function cumplColor(pct: number | null): string {
   if (pct === null) return '#64748b';
   if (pct >= 100) return '#34d399';
   return '#f87171';
-}
-
-function parseNumberRobust(v: string | number | null | undefined): number {
-  if (v === null || v === undefined) return NaN;
-  if (typeof v === 'number') return v;
-  let str = String(v);
-  const isAcc = /^\\s*\\(.*\\)\\s*$/.test(str);
-  str = str.replace(/[^0-9.,-]/g, '');
-  if (!str) return NaN;
-  const isNeg = isAcc || str.includes('-');
-  str = str.replace(/-/g, '');
-  const ld = str.lastIndexOf('.');
-  const lc = str.lastIndexOf(',');
-  if (lc > ld) {
-    const cc = (str.match(/,/g) || []).length;
-    if (cc > 1 && !/,\\d{1,2}$/.test(str)) {
-      str = str.replace(/,/g, '');
-    } else if (cc > 1 && /,\\d{1,2}$/.test(str)) {
-      const c = str.lastIndexOf(',');
-      str = str.substring(0, c).replace(/,/g, '') + '.' + str.substring(c + 1);
-    } else {
-      str = str.replace(/\\./g, '');
-      const c = str.lastIndexOf(',');
-      str = str.substring(0, c) + '.' + str.substring(c + 1);
-    }
-  } else if (ld > lc) {
-    const dc = (str.match(/\\./g) || []).length;
-    if (dc > 1 && !/\\.\\d{1,2}$/.test(str)) {
-      str = str.replace(/\\./g, '');
-    } else if (dc > 1 && /\\.\\d{1,2}$/.test(str)) {
-      const d = str.lastIndexOf('.');
-      str = str.substring(0, d).replace(/\\./g, '') + '.' + str.substring(d + 1);
-    } else if (/\\.\\d{3}$/.test(str)) {
-      str = str.replace(/\\./g, '');
-    } else {
-      str = str.replace(/,/g, '');
-    }
-  }
-  let num = parseFloat(str);
-  if (isNeg && !isNaN(num)) num = -num;
-  return num;
-}
-
-function parsePctLocal(v: string): number | null {
-  const n = parseNumberRobust(v);
-  return isNaN(n) ? null : n;
 }
 
 // ── Editable Cell ────────────────────────────────────────────────────────────
@@ -274,7 +229,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
       }
 
       if (field === 'cumplimiento') {
-        rows[idx].pct = parsePctLocal(value);
+        rows[idx].pct = parsePct(value);
       }
       return { ...prev, [tramo]: rows };
     });
@@ -284,9 +239,9 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
     setData(prev => {
       const rows = [...prev.morosidad];
       const row = { ...rows[idx] };
-      if (field === 'current') { row.current = value; row.currentPct = parsePctLocal(value); }
-      else if (field === 'anterior') { row.anterior = value; row.anteriorPct = parsePctLocal(value); }
-      else if (field === 'mediaEmp') { row.mediaEmp = value; row.mediaPct = parsePctLocal(value); }
+      if (field === 'current') { row.current = value; row.currentPct = parsePct(value); }
+      else if (field === 'anterior') { row.anterior = value; row.anteriorPct = parsePct(value); }
+      else if (field === 'mediaEmp') { row.mediaEmp = value; row.mediaPct = parsePct(value); }
       rows[idx] = row;
       return { ...prev, morosidad: rows };
     });
