@@ -8,6 +8,7 @@ import {
 } from 'chart.js';
 import { CONFIG } from '@/types';
 import { formatCurrency } from '@/lib/utils';
+import { cumplColor } from '@/lib/registro-stats';
 import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
 import MetricasTab from './MetricasTab';
 import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
@@ -155,9 +156,6 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
     },
   },
 });
-
-const cumplColor = (pct: number | null) =>
-  pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
 
 const tendBadge = (pct: number | null, showLabel = true) => {
   if (pct === null) return <span style={{ color: '#333' }}>—</span>;

@@ -3,16 +3,7 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 import { Users } from 'lucide-react';
 import { CONFIG } from '@/types';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
-
-const filterByMonth = (regs: any[], mes: number, anio: number) => {
-  const key = `${anio}-${String(mes).padStart(2, '0')}`;
-  return regs.filter(r => r.fecha?.slice(0, 7) === key);
-};
-
-const isVenta = (r: any) => {
-  const e = (r.estado ?? '').toLowerCase();
-  return e === 'venta' || e.includes('aprobado cc');
-};
+import { filterByMonth, isVenta } from '@/lib/registro-stats';
 
 const labelsPlugin: any = {
   id: 'labelsPlugin',
