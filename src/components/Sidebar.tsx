@@ -288,7 +288,7 @@ export default function Sidebar({
       const key = r.estado.toLowerCase();
       const config = alertasConfig?.find(a => a.estado.toLowerCase() === key);
       if (config) {
-        const dateStr = r.fecha || r.created_at;
+        const dateStr = r.updated_at || r.created_at;
         if (!dateStr) continue;
         const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff < config.dias) continue;

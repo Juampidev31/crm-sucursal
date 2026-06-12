@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   const buildQuery = () => {
     let q = supabase
       .from('registros')
-      .select('nombre,cuil,analista,estado,monto,fecha,puntaje,tipo_cliente,acuerdo_precios,empleador,dependencia,localidad,comentarios,created_at')
+      .select('nombre,cuil,analista,estado,monto,fecha,puntaje,tipo_cliente,acuerdo_precios,empleador,dependencia,localidad,comentarios,created_at,updated_at')
       .order('fecha', { ascending: true });
     if (fechaDesde) q = q.gte('fecha', fechaDesde);
     if (fechaHasta) q = q.lte('fecha', fechaHasta);
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       if (tipoAlerta && tipoAlerta.length > 0 && alertasConfig.length > 0) {
         const config = alertasConfig.find(a => a.estado.toLowerCase() === String(r.estado || '').toLowerCase());
         if (!config || !tipoAlerta.includes(config.nombre)) return false;
-        const dateStr = (r.fecha || r.created_at) as string;
+        const dateStr = (r.updated_at || r.created_at) as string;
         if (!dateStr) return false;
         const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff < config.dias) return false;
