@@ -276,19 +276,27 @@ export default function Sidebar({
   const currentAnalistaPage = searchParams?.get('analista') || 'PDV';
   const { pendingReminders } = useRecordatorios();
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, filters, limpiarFiltros, toggleEstado, setFilter } = useFilter();
-  const { permisosConfig } = useSettings();
+  const { permisosConfig, alertasConfig } = useSettings();
   const { registros } = useRegistros(true);
 
+  // Los badges cuentan solo los registros que superan el límite de días configurado en alertas
   const countsByState = useMemo(() => {
     const counts: Record<string, number> = {};
+    const nowTime = new Date().getTime();
     for (const r of registros) {
-      if (r.estado) {
-        const key = r.estado.toLowerCase();
-        counts[key] = (counts[key] || 0) + 1;
+      if (!r.estado) continue;
+      const key = r.estado.toLowerCase();
+      const config = alertasConfig?.find(a => a.estado.toLowerCase() === key);
+      if (config) {
+        const dateStr = r.fecha || r.created_at;
+        if (!dateStr) continue;
+        const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff < config.dias) continue;
       }
+      counts[key] = (counts[key] || 0) + 1;
     }
     return counts;
-  }, [registros]);
+  }, [registros, alertasConfig]);
 
   const canCreate = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'crear_registros')?.activo !== false;
 

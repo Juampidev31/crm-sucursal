@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from '
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, Activity, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, CheckCircle2, Plus, Timer } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, CheckCircle2, Plus, Timer } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -1675,7 +1675,7 @@ export default function RegistrosPage() {
     return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
   }, [filters.search]);
 
-  const filteredRegistros = useMemo(() => {
+  const baseFilteredRegistros = useMemo(() => {
     const nowTime = new Date().getTime();
     const s = debouncedSearch.toLowerCase();
     const hasSearch = s.length > 0;
@@ -1722,6 +1722,21 @@ export default function RegistrosPage() {
       return priA === priB ? 0 : priA ? -1 : 1;
     });
   }, [registros, searchIndex, debouncedSearch, filters.estados, filters.analista, filters.fechaDesde, filters.fechaHasta, filters.montoMin, filters.montoMax, filters.scoreMin, filters.scoreMax, filters.esRe, filters.soloAlertasVencidas, filters.acuerdoPrecios, alertasConfig]);
+
+  const isRevisionState = filters.estados.length === 1 && (alertasConfig?.some(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) ?? false);
+  const activeConfig = isRevisionState ? (alertasConfig?.find(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) ?? null) : null;
+
+  // En vista de revisión solo se muestran los registros que superan el límite de días configurado
+  const filteredRegistros = useMemo(() => {
+    if (!activeConfig) return baseFilteredRegistros;
+    const nowTime = new Date().getTime();
+    return baseFilteredRegistros.filter(r => {
+      const dateStr = r.fecha || r.created_at;
+      if (!dateStr) return false;
+      const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+      return daysDiff >= activeConfig.dias;
+    });
+  }, [baseFilteredRegistros, activeConfig]);
 
   useEffect(() => { setTotalResults(filteredRegistros.length); }, [filteredRegistros.length, setTotalResults]);
 
@@ -1809,24 +1824,20 @@ export default function RegistrosPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const isRevisionState = filters.estados.length === 1 && alertasConfig?.some(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase());
-  const activeConfig = isRevisionState ? alertasConfig?.find(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) : null;
-
   let panelData = null;
   if (isRevisionState && activeConfig) {
-    const total = filteredRegistros.length;
+    // Estadísticas sobre todos los registros del estado; la tabla solo muestra los vencidos
+    const total = baseFilteredRegistros.length;
+    let montoTotal = 0;
     let vencidos = 0;
     let montoVencidos = 0;
-    let maxDays = 0;
-    let sumDays = 0;
     const nowTime = new Date().getTime();
-    
-    filteredRegistros.forEach(r => {
+
+    baseFilteredRegistros.forEach(r => {
+      montoTotal += Number(r.monto) || 0;
       const dateStr = r.fecha || r.created_at;
       if (dateStr) {
         const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff > maxDays) maxDays = daysDiff;
-        if (daysDiff >= 0) sumDays += daysDiff;
         if (daysDiff >= activeConfig.dias) {
           vencidos++;
           montoVencidos += Number(r.monto) || 0;
@@ -1834,18 +1845,15 @@ export default function RegistrosPage() {
       }
     });
 
-    const avgDays = total > 0 ? Math.round(sumDays / total) : 0;
     const salud = total > 0 ? Math.round(((total - vencidos) / total) * 100) : 100;
 
     panelData = {
       estado: filters.estados[0],
       diasLimite: activeConfig.dias,
       total,
-      montoTotal: totales.monto,
+      montoTotal,
       vencidos,
       montoVencidos,
-      maxDays,
-      avgDays,
       salud
     };
   }
@@ -1955,13 +1963,6 @@ export default function RegistrosPage() {
                 <DollarSign size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.15)' }} />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Promedio Días</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.avgDays}</span>
-                </div>
-                <Activity size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
-              </div>
             </div>
           </div>
         );
