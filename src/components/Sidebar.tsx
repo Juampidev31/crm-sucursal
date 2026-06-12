@@ -10,7 +10,7 @@ import {
   AlignJustify, BarChart2,
   DollarSign, Settings, Bell, Lock, Plus,
   SlidersHorizontal, ChevronDown, ChevronUp, ChevronLeft, X, Calculator,
-  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, FolderSearch
+  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, FolderSearch, CornerDownRight
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -177,6 +177,75 @@ function NavItem({
   );
 }
 
+// ── Sub-item por analista bajo cada estado de revisión ───────────────────────
+
+function AnalistaSubItem({ name, count, active, onClick, isLastTreeItem }: {
+  name: string; count?: number; active?: boolean; onClick?: (e: React.MouseEvent) => void; isLastTreeItem?: boolean;
+}) {
+  return (
+    <Link
+      href="/registros"
+      onClick={(e) => {
+        if (onClick) onClick(e);
+      }}
+      style={{
+        position: 'relative',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        width: '100%', padding: '7px 16px 7px 86px',
+        borderRadius: 16,
+        color: active ? '#ffffff' : '#9a9a9a',
+        background: 'transparent',
+        textDecoration: 'none',
+        outline: 'none',
+        transition: 'all 0.2s ease',
+        marginBottom: 2
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.color = '#ffffff';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.color = '#9a9a9a';
+        }
+      }}
+    >
+      <div style={{
+        position: 'absolute',
+        left: 24,
+        top: 0,
+        bottom: -2,
+        borderLeft: '1px solid rgba(255,255,255,0.15)',
+        zIndex: 0
+      }} />
+      <div style={{
+        position: 'absolute',
+        left: 44,
+        top: 0,
+        bottom: isLastTreeItem ? '50%' : -2,
+        borderLeft: '1px solid rgba(255,255,255,0.15)',
+        borderBottomLeftRadius: isLastTreeItem ? 12 : 0,
+        zIndex: 0
+      }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, zIndex: 1, position: 'relative' }}>
+        <CornerDownRight size={13} strokeWidth={2.5} style={{ color: active ? '#ffffff' : '#666666' }} />
+        <span style={{ fontSize: 13.5, fontWeight: 600, letterSpacing: '0.1px' }}>{name}</span>
+      </div>
+      {count ? (
+        <span style={{
+          background: 'rgba(255,255,255,0.1)', color: '#fff',
+          fontSize: 10, fontWeight: 800,
+          padding: '2px 8px', borderRadius: 12,
+          minWidth: 22, textAlign: 'center', zIndex: 1, position: 'relative'
+        }}>
+          {count}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
 function SidebarDivider() {
   return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '16px 20px' }} />;
 }
@@ -280,8 +349,9 @@ export default function Sidebar({
   const { registros } = useRegistros(true);
 
   // Los badges cuentan solo los registros que superan el límite de días configurado en alertas
-  const countsByState = useMemo(() => {
+  const { countsByState, countsByAnalista } = useMemo(() => {
     const counts: Record<string, number> = {};
+    const porAnalista: Record<string, Record<string, number>> = {};
     const nowTime = new Date().getTime();
     for (const r of registros) {
       if (!r.estado) continue;
@@ -294,8 +364,12 @@ export default function Sidebar({
         if (daysDiff < config.dias) continue;
       }
       counts[key] = (counts[key] || 0) + 1;
+      if (r.analista) {
+        if (!porAnalista[key]) porAnalista[key] = {};
+        porAnalista[key][r.analista] = (porAnalista[key][r.analista] || 0) + 1;
+      }
     }
-    return counts;
+    return { countsByState: counts, countsByAnalista: porAnalista };
   }, [registros, alertasConfig]);
 
   const canCreate = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'crear_registros')?.activo !== false;
@@ -494,20 +568,30 @@ export default function Sidebar({
                 rightIcon={revisionOpen ? ChevronUp : ChevronDown}
               />
               {revisionOpen && REGISTRO_STATES.map((s, idx) => (
-                <NavItem 
-                  key={s.value}
-                  href="/registros" 
-                  label={s.label} 
-                  isMessage
-                  avatarColor={s.color}
-                  badge={countsByState[s.value] > 0 ? countsByState[s.value] : undefined} 
-                  badgeColor="rgba(255,255,255,0.1)" 
-                  active={pathname === '/registros' && filters.estados.includes(s.value)} 
-                  onClick={() => { limpiarFiltros(); toggleEstado(s.value); }} 
-                  indent 
-                  isDoubleTreeItem 
-                  isLastTreeItem={idx === REGISTRO_STATES.length - 1 && !(pathname === '/registros' && filters.estados.length === 0)} 
-                />
+                <React.Fragment key={s.value}>
+                  <NavItem
+                    href="/registros"
+                    label={s.label}
+                    isMessage
+                    avatarColor={s.color}
+                    badge={countsByState[s.value] > 0 ? countsByState[s.value] : undefined}
+                    badgeColor="rgba(255,255,255,0.1)"
+                    active={pathname === '/registros' && filters.estados.includes(s.value)}
+                    onClick={() => { limpiarFiltros(); toggleEstado(s.value); }}
+                    indent
+                    isDoubleTreeItem
+                  />
+                  {ANALISTAS.map((a, aIdx) => (
+                    <AnalistaSubItem
+                      key={a}
+                      name={a}
+                      count={countsByAnalista[s.value]?.[a]}
+                      active={pathname === '/registros' && filters.estados.includes(s.value) && filters.analista === a}
+                      onClick={() => { limpiarFiltros(); toggleEstado(s.value); setFilter('analista', a); }}
+                      isLastTreeItem={idx === REGISTRO_STATES.length - 1 && aIdx === ANALISTAS.length - 1 && !(pathname === '/registros' && filters.estados.length === 0)}
+                    />
+                  ))}
+                </React.Fragment>
               ))}
             </div>
           )}
