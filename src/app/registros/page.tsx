@@ -1702,7 +1702,7 @@ export default function RegistrosPage() {
       if (filters.soloAlertasVencidas) {
         const config = alertasConfig?.find(a => a.estado.toLowerCase() === r.estado?.toLowerCase());
         const diasLimite = config?.dias ?? 0;
-        const dateStr = r.updated_at || r.created_at;
+        const dateStr = r.fecha || r.created_at;
         if (dateStr) {
           const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
           if (daysDiff < diasLimite) return false;
@@ -1726,13 +1726,12 @@ export default function RegistrosPage() {
   const isRevisionState = filters.estados.length === 1 && (alertasConfig?.some(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) ?? false);
   const activeConfig = isRevisionState ? (alertasConfig?.find(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) ?? null) : null;
 
-  // En vista de revisión solo se muestran los registros sin gestión (sin modificaciones)
-  // por más días que el límite configurado en alertas
+  // En vista de revisión solo se muestran los registros que superan el límite de días configurado
   const filteredRegistros = useMemo(() => {
     if (!activeConfig) return baseFilteredRegistros;
     const nowTime = new Date().getTime();
     return baseFilteredRegistros.filter(r => {
-      const dateStr = r.updated_at || r.created_at;
+      const dateStr = r.fecha || r.created_at;
       if (!dateStr) return false;
       const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
       return daysDiff >= activeConfig.dias;
@@ -1836,7 +1835,7 @@ export default function RegistrosPage() {
 
     baseFilteredRegistros.forEach(r => {
       montoTotal += Number(r.monto) || 0;
-      const dateStr = r.updated_at || r.created_at;
+      const dateStr = r.fecha || r.created_at;
       if (dateStr) {
         const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff >= activeConfig.dias) {
