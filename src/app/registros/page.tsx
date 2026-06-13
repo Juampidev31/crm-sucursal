@@ -1825,9 +1825,19 @@ export default function RegistrosPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  let panelData = null;
-  if (isRevisionState && activeConfig) {
-    // Estadísticas sobre todos los registros del estado; la tabla solo muestra los vencidos
+  // Panel superior: modo "full" cuando hay un solo estado con config de alertas (muestra
+  // vencidos/salud), modo "lite" para cualquier otro filtro (mismo diseño, solo Total y Monto).
+  type PanelFull = { mode: 'full'; estado: string; diasLimite: number; total: number; montoTotal: number; vencidos: number; montoVencidos: number; salud: number };
+  type PanelLite = { mode: 'lite'; total: number; montoTotal: number };
+  let panelData: PanelFull | PanelLite | null = null;
+
+  const singleConfig = filters.estados.length === 1
+    ? (alertasConfig?.find(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) ?? null)
+    : null;
+
+  if (singleConfig) {
+    // Estadísticas sobre todos los registros que cumplen los filtros; en modo revisión la
+    // tabla muestra solo los vencidos, pero el panel siempre cuenta el total del estado.
     const total = baseFilteredRegistros.length;
     let montoTotal = 0;
     let vencidos = 0;
@@ -1839,7 +1849,7 @@ export default function RegistrosPage() {
       const dateStr = r.fecha || r.created_at;
       if (dateStr) {
         const daysDiff = Math.floor((nowTime - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff >= activeConfig.dias) {
+        if (daysDiff >= singleConfig.dias) {
           vencidos++;
           montoVencidos += Number(r.monto) || 0;
         }
@@ -1849,14 +1859,17 @@ export default function RegistrosPage() {
     const salud = total > 0 ? Math.round(((total - vencidos) / total) * 100) : 100;
 
     panelData = {
+      mode: 'full',
       estado: filters.estados[0],
-      diasLimite: activeConfig.dias,
+      diasLimite: singleConfig.dias,
       total,
       montoTotal,
       vencidos,
       montoVencidos,
       salud
     };
+  } else if (hayFiltros) {
+    panelData = { mode: 'lite', total: filteredRegistros.length, montoTotal: totales.monto };
   }
 
   return (
@@ -1879,7 +1892,7 @@ export default function RegistrosPage() {
       )}
 
       {/* Revision Panel */}
-      {panelData && (() => {
+      {panelData && panelData.mode === 'full' && (() => {
         const hColor = panelData.salud === 100 ? '#10b981' : panelData.salud >= 80 ? '#fbbf24' : '#ef4444';
         const hBg = panelData.salud === 100 ? 'rgba(16,185,129,0.15)' : panelData.salud >= 80 ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
         const r = 26;
@@ -1969,6 +1982,60 @@ export default function RegistrosPage() {
         );
       })()}
 
+      {/* Filtered Panel (lite) — mismo diseño, sin vencidos/salud */}
+      {panelData && panelData.mode === 'lite' && (
+        <div style={{
+          background: 'var(--bg-elev-1)',
+          backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.12), transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)',
+          border: '1px solid var(--border)',
+          borderTop: '1px solid #10b98150',
+          borderRadius: '16px',
+          padding: '20px 32px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '32px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px rgba(16,185,129,0.08)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          {/* Info */}
+          <div style={{ flex: 1, zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(90deg, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Registros Filtrados
+              </h2>
+              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 800, color: '#34d399', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <SlidersHorizontal size={12} strokeWidth={3} />
+                Filtro Activo
+              </div>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--fg-muted)', margin: 0, fontWeight: 500, letterSpacing: '0.2px', opacity: 0.8 }}>
+              Resultados según los filtros aplicados.
+            </p>
+          </div>
+
+          {/* Metrics */}
+          <div style={{ display: 'flex', gap: '16px', zIndex: 1, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
+                <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.total}</span>
+              </div>
+              <Hash size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Total</span>
+                <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoTotal)}</span>
+              </div>
+              <DollarSign size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div style={{
         width: '100%',
@@ -1989,7 +2056,7 @@ export default function RegistrosPage() {
           </div>
         ) : (
           <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
-            {hayFiltros && (
+            {hayFiltros && isRevisionState && (
               <div style={{
                 background: isRevisionState ? 'transparent' : hayFiltros ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0) 100%)' : 'rgba(255, 255, 255, 0.01)',
                 borderBottom: isRevisionState ? '1px solid rgba(255, 255, 255, 0.03)' : `1px solid ${hayFiltros ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.03)'}`,
