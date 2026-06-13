@@ -502,9 +502,9 @@ export default function Sidebar({
                   avatarColor={s.color}
                   badge={countsByState[s.value] > 0 ? countsByState[s.value] : undefined} 
                   badgeColor="rgba(255,255,255,0.1)" 
-                  active={pathname === '/registros' && filters.estados.includes(s.value)} 
-                  onClick={() => { limpiarFiltros(); toggleEstado(s.value); }} 
-                  indent 
+                  active={pathname === '/registros' && filters.revisionMode && filters.estados.includes(s.value)}
+                  onClick={() => { limpiarFiltros(); toggleEstado(s.value); setFilter('revisionMode', true); }}
+                  indent
                   isDoubleTreeItem 
                   isLastTreeItem={idx === REGISTRO_STATES.length - 1 && !(pathname === '/registros' && filters.estados.length === 0)} 
                 />

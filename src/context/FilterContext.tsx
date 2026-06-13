@@ -23,6 +23,7 @@ interface FilterState {
   esRe: string;
   soloAlertasVencidas: boolean;
   acuerdoPrecios: string[];
+  revisionMode: boolean;
 }
 
 const initialState: FilterState = {
@@ -39,6 +40,7 @@ const initialState: FilterState = {
   esRe: '',
   soloAlertasVencidas: false,
   acuerdoPrecios: [],
+  revisionMode: false,
 };
 
 interface FilterCtx {
@@ -77,7 +79,8 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const toggleEstado = useCallback((estado: string) => {
     setFilters(prev => {
       const cur = prev.estados;
-      return { ...prev, estados: cur.includes(estado) ? cur.filter(e => e !== estado) : [...cur, estado] };
+      // Filtrar por estado desde la tabla normal nunca activa el modo revisión (muestra todos)
+      return { ...prev, revisionMode: false, estados: cur.includes(estado) ? cur.filter(e => e !== estado) : [...cur, estado] };
     });
   }, []);
 
@@ -94,6 +97,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
 
   const hayFiltros = useMemo(() => {
     return Object.entries(filters).some(([k, v]) => {
+      if (k === 'revisionMode') return false;
       if (k === 'estados') return (v as string[]).length > 0;
       if (k === 'acuerdoPrecios') return (v as string[]).length > 0;
       if (typeof v === 'boolean') return v === true;
