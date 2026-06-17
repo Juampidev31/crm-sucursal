@@ -966,6 +966,8 @@ export default function AnalistasPage() {
           dailyData,
           borderColor: '#10b981',
           borderWidth: 2,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#10b981',
           pointRadius: 2,
           fill: false,
           tension: 0.2

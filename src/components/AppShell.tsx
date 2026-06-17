@@ -207,39 +207,36 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem('app_zoom_levels');
+    const saved = localStorage.getItem('app_zoom_levels_v2');
     if (saved) {
       try {
         setZooms(JSON.parse(saved));
       } catch {}
-    } else {
-      const oldZoom = localStorage.getItem('app_zoom_level');
-      if (oldZoom) {
-        const parsed = parseFloat(oldZoom);
-        if (!isNaN(parsed)) setZooms({ [pathname]: parsed });
-      }
     }
   }, []);
 
-  const currentZoom = zooms[pathname] || 0.9;
+  // Default zoom per route: la tabla de registros arranca en 100%, el resto en 120%.
+  const defaultZoom = pathname === '/registros' ? 1 : 1.2;
+
+  const currentZoom = zooms[pathname] || defaultZoom;
 
   const handleZoom = useCallback((delta: number) => {
     setZooms(prev => {
-      const current = prev[pathname] || 0.9;
+      const current = prev[pathname] || defaultZoom;
       const next = Math.max(0.3, Math.min(3, current + delta));
       const newZooms = { ...prev, [pathname]: next };
-      localStorage.setItem('app_zoom_levels', JSON.stringify(newZooms));
+      localStorage.setItem('app_zoom_levels_v2', JSON.stringify(newZooms));
       return newZooms;
     });
-  }, [pathname]);
+  }, [pathname, defaultZoom]);
 
   const resetZoom = useCallback(() => {
     setZooms(prev => {
-      const newZooms = { ...prev, [pathname]: 0.9 };
-      localStorage.setItem('app_zoom_levels', JSON.stringify(newZooms));
+      const newZooms = { ...prev, [pathname]: defaultZoom };
+      localStorage.setItem('app_zoom_levels_v2', JSON.stringify(newZooms));
       return newZooms;
     });
-  }, [pathname]);
+  }, [pathname, defaultZoom]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -362,13 +362,14 @@ export default function Sidebar({
   return (
     <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showCalculator ? 'sidebar-expanded-filters' : ''}`}
       style={{
-        '--current-zoom': zoom || 1,
+        // Sidebar keeps a fixed size; only the page content scales with zoom.
+        '--current-zoom': 1,
         background: 'transparent',
         borderRight: 'none',
         boxShadow: 'none',
         display: 'flex', flexDirection: 'row',
         alignItems: 'stretch',
-        width: showCalculator ? `calc(var(--sidebar-filters-width) * ${zoom || 1})` : `calc(var(--sidebar-width) * ${zoom || 1})`,
+        width: showCalculator ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
         zIndex: 150,
         position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
@@ -378,9 +379,8 @@ export default function Sidebar({
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'stretch',
-        width: `${100 / (zoom || 1)}%`,
-        height: `${100 / (zoom || 1)}%`,
-        transform: `scale(${zoom || 1})`,
+        width: '100%',
+        height: '100%',
         transformOrigin: 'top left',
       }}>
       {/* Text + Icon Column */}
@@ -675,13 +675,13 @@ export default function Sidebar({
             borderBottom: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
-            <span style={{ fontSize: '16px', fontWeight: 600, color: '#ffffff' }}>Filtros Avanzados</span>
+            <span style={{ display: 'inline-block', fontSize: '16px', fontWeight: 600, color: '#ffffff', paddingBottom: '7px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 8px rgba(255,255,255,0.18)' }}>Filtros Avanzados</span>
             <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
               <X size={20} />
             </button>
           </div>
 
-          <div style={{ flex: 1, overflow: 'hidden', padding: '16px 20px' }}>
+          <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px' }}>
             <FiltersContent />
           </div>
         </div>
@@ -735,22 +735,73 @@ export default function Sidebar({
 
 // ── Components for expanded filters ──────────────────────────────────────────
 
-const FilterAccordion = ({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+// Dropdown custom (mismo look que los demás campos del panel, sin el estilo nativo del SO).
+const CustomSelect = ({ value, onChange, options, placeholder }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder: string;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false); };
+    if (isOpen) document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [isOpen]);
+
+  const select = (v: string) => { onChange(v); setIsOpen(false); };
+
+  const optStyle = (active: boolean): React.CSSProperties => ({
+    padding: '9px 10px', fontSize: '12px', borderRadius: '6px', cursor: 'pointer', margin: '2px 0',
+    color: active ? '#10b981' : '#eaeaea',
+    background: active ? 'rgba(16,185,129,0.1)' : 'transparent',
+    transition: 'background 0.15s'
+  });
+
   return (
-    <div style={{ marginBottom: 12, background: 'rgba(255,255,255,0.01)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
+      <div
+        tabIndex={0}
+        onClick={() => setIsOpen(o => !o)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(o => !o); }
+          if (e.key === 'Escape') setIsOpen(false);
+        }}
         style={{
-          width: '100%', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: isOpen ? 'rgba(255,255,255,0.02)' : 'transparent', border: 'none', color: isOpen ? '#fff' : '#666',
-          fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', cursor: 'pointer', transition: 'all 0.2s'
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', height: 40, padding: '0 12px',
+          background: 'rgba(255,255,255,0.03)',
+          border: `1px solid ${isOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+          borderRadius: '8px', fontSize: '12px',
+          color: value ? '#eaeaea' : '#8f929d',
+          cursor: 'pointer', outline: 'none', transition: 'all 0.2s'
         }}
       >
-        {title}
-        {isOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-      </button>
-      {isOpen && <div style={{ padding: '16px' }}>{children}</div>}
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value || placeholder}</span>
+        <ChevronDown size={14} style={{ flexShrink: 0, marginLeft: 8, opacity: 0.5, transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+      </div>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+          background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.6)', zIndex: 1000, padding: '4px',
+          maxHeight: 240, overflowY: 'auto'
+        }}>
+          <div onClick={() => select('')} style={optStyle(value === '')}
+            onMouseEnter={e => { if (value !== '') e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = value === '' ? 'rgba(16,185,129,0.1)' : 'transparent'; }}
+          >{placeholder}</div>
+          {options.map(opt => (
+            <div key={opt} onClick={() => select(opt)} style={optStyle(opt === value)}
+              onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = opt === value ? 'rgba(16,185,129,0.1)' : 'transparent'; }}
+            >{opt}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -765,106 +816,95 @@ const FiltersContent = () => {
   }, [registros]);
 
   const chipStyle = (active: boolean) => ({
-    padding: '8px 14px', borderRadius: '10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+    padding: '8px 10px', borderRadius: '8px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer',
     background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
     color: active ? '#10b981' : '#8f929d',
     border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
-    transition: 'all 0.2s', whiteSpace: 'nowrap'
+    transition: 'all 0.2s', whiteSpace: 'nowrap', textAlign: 'center'
   } as React.CSSProperties);
 
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '9px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '12px' };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '16px' }}>
-      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)' }}>
-        <label style={{ display: 'block', fontSize: '9px', color: 'var(--fg-muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>BÚSQUEDA GENERAL</label>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '12px', paddingBottom: '4px' }}>
+      <div>
+        <label style={secLabel}>BÚSQUEDA GENERAL</label>
         <input
-          className="form-input"
           placeholder="Nombre, CUIL..."
           value={filters.search}
           onChange={e => setFilter('search', e.target.value)}
-          style={{ width: '100%', height: 42, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px' }}
+          style={{ ...fieldBase, width: '100%', height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }}
         />
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <FilterAccordion title="Gestión" defaultOpen>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ANALISTA</label>
-            <select
-              value={filters.analista}
-              onChange={e => setFilter('analista', e.target.value)}
-              style={{ width: '100%', height: 40, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', color: '#eaeaea', outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="" style={{ background: '#1a1a1a', color: '#fff' }}>Todos los analistas</option>
-              {ANALISTAS.map(an => <option key={an} value={an} style={{ background: '#1a1a1a', color: '#fff' }}>{an}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ESTADOS</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {ESTADOS.map(st => (
-                <span key={st} onClick={() => toggleEstado(st)} style={chipStyle(filters.estados.includes(st))}>{STATUS_LABEL[st] || st}</span>
-              ))}
-            </div>
-          </div>
-        </FilterAccordion>
+      <div>
+        <label style={secLabel}>ANALISTA</label>
+        <CustomSelect
+          value={filters.analista}
+          onChange={v => setFilter('analista', v)}
+          options={ANALISTAS}
+          placeholder="Todos los analistas"
+        />
+      </div>
 
-        <FilterAccordion title="Sistema" defaultOpen>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>ACUERDO DE PRECIOS</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {allAcuerdos.length > 0 ? allAcuerdos.map(a => (
-                <span key={a} onClick={() => toggleAcuerdoPrecios(a)} style={chipStyle(filters.acuerdoPrecios.includes(a))}>{a}</span>
-              )) : <span style={{ fontSize: '11px', color: '#64748b' }}>Sin acuerdos registrados</span>}
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: 14 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>SCORE MIN/MAX</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="number" placeholder="Mín" className="form-input" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
-                <input type="number" placeholder="Máx" className="form-input" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
-              </div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>MONTO MIN/MAX</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="number" placeholder="Mín" className="form-input" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
-                <input type="number" placeholder="Máx" className="form-input" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }} />
-              </div>
-            </div>
-          </div>
-        </FilterAccordion>
-
-        <div style={{ marginBottom: 12, background: 'rgba(255,255,255,0.01)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', padding: '16px' }}>
-          <label style={{ display: 'block', fontSize: '10px', color: '#fff', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>PERÍODO</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA DESDE</label>
-              <input type="date" className="form-input" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', colorScheme: 'dark' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '8px', color: 'var(--fg-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>FECHA HASTA</label>
-              <input type="date" className="form-input" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ height: 38, fontSize: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', colorScheme: 'dark' }} />
-            </div>
-          </div>
+      <div>
+        <label style={secLabel}>ESTADOS</label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '7px' }}>
+          {ESTADOS.map(st => (
+            <span key={st} onClick={() => toggleEstado(st)} style={chipStyle(filters.estados.includes(st))}>{STATUS_LABEL[st] || st}</span>
+          ))}
         </div>
       </div>
 
-      {hayFiltros && (
-        <button
-          onClick={limpiarFiltros}
-          style={{
-            width: '100%', padding: '14px', background: 'rgba(248,113,113,0.06)',
-            border: '1px solid rgba(248,113,113,0.12)', color: '#ff3366', borderRadius: '12px',
-            fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px',
-            cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(248,113,113,0.12)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(248,113,113,0.06)'}
-        >
-          <X size={14} strokeWidth={3} /> Limpiar Filtros
-        </button>
-      )}
+      <div>
+        <label style={secLabel}>ACUERDO DE PRECIOS</label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '7px' }}>
+          {allAcuerdos.length > 0 ? allAcuerdos.map(a => (
+            <span key={a} onClick={() => toggleAcuerdoPrecios(a)} style={chipStyle(filters.acuerdoPrecios.includes(a))}>{a}</span>
+          )) : <span style={{ fontSize: '11px', color: '#64748b' }}>Sin acuerdos registrados</span>}
+        </div>
+      </div>
+
+      <div>
+        <label style={secLabel}>SCORE MIN/MAX</label>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+        </div>
+      </div>
+
+      <div>
+        <label style={secLabel}>MONTO MIN/MAX</label>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+        </div>
+      </div>
+
+      <div>
+        <label style={secLabel}>PERÍODO</label>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
+          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
+        </div>
+      </div>
+
+      <button
+        onClick={limpiarFiltros}
+        disabled={!hayFiltros}
+        style={{
+          width: '100%', padding: '13px', background: 'rgba(248,113,113,0.06)',
+          border: '1px solid rgba(248,113,113,0.12)', color: '#ff3366', borderRadius: '10px',
+          fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px',
+          cursor: hayFiltros ? 'pointer' : 'not-allowed', opacity: hayFiltros ? 1 : 0.45,
+          transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+        }}
+        onMouseEnter={e => { if (hayFiltros) e.currentTarget.style.background = 'rgba(248,113,113,0.12)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.06)'; }}
+      >
+        <X size={14} strokeWidth={3} /> Limpiar Filtros
+      </button>
     </div>
   );
 };
