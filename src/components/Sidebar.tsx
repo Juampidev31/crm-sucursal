@@ -387,14 +387,17 @@ export default function Sidebar({
       {/* Text + Icon Column (scroll container, sin zoom para que el scroll funcione) */}
       <div className="hide-scrollbar" style={{
         width: '100%',
+        height: '100%',
         display: showFilters ? 'none' : 'flex', flexDirection: 'column',
         flexShrink: 0,
         borderRight: showCalculator ? '1px solid var(--border)' : 'none',
         overflowY: 'auto',
         overflowX: 'hidden'
       }}>
-        {/* Wrapper con zoom: agranda el contenido; la columna de arriba scrollea */}
-        <div style={{ zoom: 1.15, width: 'var(--sidebar-width)', display: 'flex', flexDirection: 'column', flex: '0 0 auto', padding: '2px 16px 20px' } as React.CSSProperties}>
+        {/* Wrapper con zoom: agranda el contenido; la columna de arriba scrollea.
+            minHeight (compensado por el zoom) hace que llene el alto sin forzar scroll,
+            así el marginTop:auto deja Acceso Admin y los controles pegados al fondo. */}
+        <div style={{ zoom: 1.15, width: 'var(--sidebar-width)', display: 'flex', flexDirection: 'column', flex: '0 0 auto', minHeight: 'calc(100% / 1.15)', padding: '2px 16px 20px' } as React.CSSProperties}>
 
 
         {/* Header MENU */}
