@@ -246,8 +246,20 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
         else if (e.key === '0') { e.preventDefault(); resetZoom(); }
       }
     };
+    // Ctrl + rueda del mouse: usar el zoom interno de la app en vez del zoom nativo del navegador
+    // (que en pantallas chicas como 1366x768 saltaba a 50% y rompía el layout).
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        handleZoom(e.deltaY < 0 ? 0.1 : -0.1);
+      }
+    };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+    };
   }, [handleZoom, resetZoom]);
   
   // Estados para Split View
