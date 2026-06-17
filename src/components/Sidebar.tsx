@@ -362,7 +362,7 @@ export default function Sidebar({
   return (
     <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showCalculator ? 'sidebar-expanded-filters' : ''}`}
       style={{
-        // Sidebar keeps a fixed size; only the page content scales with zoom.
+        // Sidebar siempre fija: no escala con el zoom ni con la resolución.
         '--current-zoom': 1,
         background: 'transparent',
         borderRight: 'none',
