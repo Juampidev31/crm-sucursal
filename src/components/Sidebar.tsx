@@ -362,14 +362,15 @@ export default function Sidebar({
   return (
     <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showCalculator ? 'sidebar-expanded-filters' : ''}`}
       style={{
-        // Sidebar siempre fija: no escala con el zoom ni con la resolución.
-        '--current-zoom': 1,
+        // Sidebar fija (no escala con el zoom del contenido), pero agrandada 1.15
+        // con CSS `zoom` (reflow real → el scroll funciona, no se corta).
+        '--current-zoom': 1.15,
         background: 'transparent',
         borderRight: 'none',
         boxShadow: 'none',
         display: 'flex', flexDirection: 'row',
         alignItems: 'stretch',
-        width: showCalculator ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
+        width: showCalculator ? 'calc(var(--sidebar-filters-width) * 1.15)' : 'calc(var(--sidebar-width) * 1.15)',
         zIndex: 150,
         position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
@@ -383,16 +384,17 @@ export default function Sidebar({
         height: '100%',
         transformOrigin: 'top left',
       }}>
-      {/* Text + Icon Column */}
+      {/* Text + Icon Column (scroll container, sin zoom para que el scroll funcione) */}
       <div className="hide-scrollbar" style={{
-        width: 'var(--sidebar-width)',
+        width: '100%',
         display: showFilters ? 'none' : 'flex', flexDirection: 'column',
-        padding: '2px 16px 20px',
         flexShrink: 0,
         borderRight: showCalculator ? '1px solid var(--border)' : 'none',
         overflowY: 'auto',
         overflowX: 'hidden'
       }}>
+        {/* Wrapper con zoom: agranda el contenido; la columna de arriba scrollea */}
+        <div style={{ zoom: 1.15, width: 'var(--sidebar-width)', display: 'flex', flexDirection: 'column', flex: '0 0 auto', padding: '2px 16px 20px' } as React.CSSProperties}>
 
 
         {/* Header MENU */}
@@ -655,6 +657,7 @@ export default function Sidebar({
           <button onClick={onZoomIn} style={{ background: 'transparent', border: 'none', color: '#777', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} title="Aumentar resolución">
             <ZoomIn size={16} />
           </button>
+        </div>
         </div>
       </div>
 

@@ -609,12 +609,15 @@ a {
 }
 
 .modal-content {
+  /* Agrandado 1.12 con `zoom` (reflow real → scroll interno funciona).
+     El max-height se divide por el mismo factor para que entre en pantalla. */
+  zoom: 1.12;
   background: #0c0c0c;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   width: 100%;
   max-width: 960px;
-  max-height: calc(100vh - 32px);
+  max-height: calc((100vh - 32px) / 1.12);
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
