@@ -279,6 +279,30 @@ export default function Sidebar({
   const { permisosConfig, alertasConfig } = useSettings();
   const { registros } = useRegistros(true);
 
+  // Auto-ajuste al alto: la sidebar se achica lo justo para que entre TODO el menú
+  // sin scroll, en cualquier resolución. Queda fija (no depende del zoom del contenido).
+  const navScrollRef = useRef<HTMLDivElement>(null);
+  const navContentRef = useRef<HTMLDivElement>(null);
+  const [navScale, setNavScale] = useState(1);
+  React.useLayoutEffect(() => {
+    const compute = () => {
+      const container = navScrollRef.current;
+      const content = navContentRef.current;
+      if (!container || !content) return;
+      const avail = container.clientHeight;
+      const natural = content.offsetHeight; // offsetHeight no se ve afectado por transform
+      if (!avail || !natural) return;
+      const s = Math.min(1, avail / natural);
+      setNavScale(prev => (Math.abs(prev - s) > 0.004 ? s : prev));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    if (navScrollRef.current) ro.observe(navScrollRef.current);
+    if (navContentRef.current) ro.observe(navContentRef.current);
+    window.addEventListener('resize', compute);
+    return () => { ro.disconnect(); window.removeEventListener('resize', compute); };
+  }, [showFilters]);
+
   // Los badges cuentan solo los registros que superan el límite de días configurado en alertas
   const countsByState = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -383,16 +407,22 @@ export default function Sidebar({
         height: '100%',
         transformOrigin: 'top left',
       }}>
-      {/* Text + Icon Column */}
-      <div className="hide-scrollbar" style={{
+      {/* Text + Icon Column — contenedor fijo, sin scroll; el contenido se auto-escala para entrar */}
+      <div ref={navScrollRef} className="hide-scrollbar" style={{
         width: 'var(--sidebar-width)',
-        display: showFilters ? 'none' : 'flex', flexDirection: 'column',
-        padding: '2px 16px 20px',
+        display: showFilters ? 'none' : 'block',
         flexShrink: 0,
         borderRight: showCalculator ? '1px solid var(--border)' : 'none',
-        overflowY: 'auto',
-        overflowX: 'hidden'
+        overflow: 'hidden'
       }}>
+        <div ref={navContentRef} style={{
+          width: `${100 / navScale}%`,
+          minHeight: `${100 / navScale}%`,
+          transform: `scale(${navScale})`,
+          transformOrigin: 'top left',
+          display: 'flex', flexDirection: 'column',
+          padding: '2px 16px 20px',
+        }}>
 
 
         {/* Header MENU */}
@@ -655,6 +685,7 @@ export default function Sidebar({
           <button onClick={onZoomIn} style={{ background: 'transparent', border: 'none', color: '#777', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} title="Aumentar resolución">
             <ZoomIn size={16} />
           </button>
+        </div>
         </div>
       </div>
 
