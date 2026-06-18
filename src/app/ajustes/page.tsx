@@ -92,12 +92,24 @@ const renderDetalleAudit = (reg: any) => {
   if (reg.accion === 'Creación') return <span style={{ color: '#888' }}>Nuevo registro</span>;
   if (reg.accion === 'Eliminación') return <span style={{ color: '#888' }}>Registro eliminado</span>;
   if (reg.valor_anterior || reg.valor_nuevo) {
+    const campos = String(reg.campo_modificado || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+    const anteriores = String(reg.valor_anterior || '').split('|').map((s: string) => s.trim());
+    const nuevos = String(reg.valor_nuevo || '').split('|').map((s: string) => s.trim());
+
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', flexWrap: 'wrap' }}>
-        {reg.campo_modificado && <span style={{ color: '#666', fontWeight: 600 }}>{reg.campo_modificado}:</span>}
-        {reg.valor_anterior && <span style={{ color: '#ff3366' }}>{fmtFechasISO(reg.valor_anterior)}</span>}
-        {reg.valor_anterior && reg.valor_nuevo && <ArrowRight size={10} color="#666" />}
-        {reg.valor_nuevo && <span style={{ color: '#22c55e' }}>{fmtFechasISO(reg.valor_nuevo)}</span>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '11px' }}>
+        {campos.map((campo, idx) => {
+          const ant = fmtFechasISO(anteriores[idx] ?? '');
+          const nue = fmtFechasISO(nuevos[idx] ?? '');
+          return (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ color: '#666', fontWeight: 600 }}>{campo}:</span>
+              {ant && <span style={{ color: '#ff3366' }}>{ant}</span>}
+              {ant && nue && <ArrowRight size={10} color="#666" />}
+              {nue && <span style={{ color: '#22c55e' }}>{nue}</span>}
+            </div>
+          );
+        })}
       </div>
     );
   }
