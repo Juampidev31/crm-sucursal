@@ -100,6 +100,39 @@ const renderDetalleAudit = (reg: any) => {
   return <span style={{ color: '#888' }}>{reg.campo_modificado || '—'}</span>;
 };
 
+// Detalle desglosado campo por campo (usado en el modal de historial).
+// campo_modificado viene como "Campo1, Campo2" y los valores como "v1 | v2".
+const renderCamposAudit = (reg: any) => {
+  if (reg.accion === 'Creación') return <span style={{ color: '#888', fontSize: 13 }}>Nuevo registro</span>;
+  if (reg.accion === 'Eliminación') return <span style={{ color: '#888', fontSize: 13 }}>Registro eliminado</span>;
+
+  const campos = String(reg.campo_modificado || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+  const anteriores = String(reg.valor_anterior || '').split('|').map((s: string) => s.trim());
+  const nuevos = String(reg.valor_nuevo || '').split('|').map((s: string) => s.trim());
+
+  if (campos.length === 0) return <span style={{ color: '#888', fontSize: 13 }}>—</span>;
+
+  // Si el valor es una fecha ISO (YYYY-MM-DD) la muestra como DD/MM/AAAA.
+  const fmtVal = (v: string) => (/^\d{4}-\d{2}-\d{2}/.test(v) ? formatDate(v) : v);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {campos.map((campo, idx) => {
+        const ant = fmtVal(anteriores[idx] ?? '');
+        const nue = fmtVal(nuevos[idx] ?? '');
+        return (
+          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, flexWrap: 'wrap' }}>
+            <span style={{ color: '#888', fontWeight: 700, minWidth: 90 }}>{campo}:</span>
+            {ant && <span style={{ color: '#ff3366', textDecoration: 'line-through', opacity: 0.8 }}>{ant}</span>}
+            {ant && nue && <ArrowRight size={13} color="#666" />}
+            {nue && <span style={{ color: '#22c55e', fontWeight: 600 }}>{nue}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export default function AjustesPage() {
   const { isAdmin } = useAuth();
   const { registros: ctxRegistros } = useRegistros();
@@ -364,7 +397,12 @@ export default function AjustesPage() {
       .channel('auditoria-live', { config: { broadcast: { self: true } } })
       .on('broadcast', { event: 'auditoria_insert' }, ({ payload }) => {
         if (payload?.entry) {
-          setAuditoriaRegistros(prev => [payload.entry, ...prev].slice(0, 200));
+          setAuditoriaRegistros(prev => {
+            // Evita duplicados: si la fila ya existe (mismo id), no la re-agrega.
+            const e = payload.entry;
+            if (e.id != null && prev.some(p => p.id === e.id)) return prev;
+            return [e, ...prev].slice(0, 200);
+          });
         }
       })
       .subscribe();
@@ -1249,7 +1287,14 @@ export default function AjustesPage() {
             const groupedFiltered = (() => {
               const res: any[] = [];
               const modMap = new Map<string, any>();
+              const vistos = new Set<string>();
               for (const reg of filtered) {
+                // Deduplica filas idénticas (mismo id, o misma firma si falta id).
+                const firma = reg.id != null
+                  ? `id:${reg.id}`
+                  : `${reg.fecha_hora}|${reg.accion}|${reg.id_registro}|${reg.campo_modificado}|${reg.valor_anterior}|${reg.valor_nuevo}`;
+                if (vistos.has(firma)) continue;
+                vistos.add(firma);
                 if (reg.accion === 'Modificación' && reg.id_registro) {
                   if (!modMap.has(reg.id_registro)) {
                     const group = { ...reg, isGroup: true, subRecords: [reg] };
@@ -1569,14 +1614,14 @@ export default function AjustesPage() {
         }}>
           <div style={{
             background: '#111', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 12, width: '100%', maxWidth: 600, maxHeight: '85vh',
+            borderRadius: 12, width: '100%', maxWidth: 760, maxHeight: '88vh',
             display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
             animation: 'slideInUp 0.2s ease-out'
           }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{auditGroupModal.title}</h3>
-                <p style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{auditGroupModal.records.length} modificaciones registradas</p>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{auditGroupModal.title}</h3>
+                <p style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{auditGroupModal.records.length} modificaciones registradas</p>
               </div>
               <button onClick={() => setAuditGroupModal(null)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#888', cursor: 'pointer', padding: 6, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#888'; }}>
                 <X size={16} />
@@ -1584,15 +1629,15 @@ export default function AjustesPage() {
             </div>
             <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {auditGroupModal.records.map((r, i) => (
-                <div key={i} style={{ background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 10, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                    <span style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{formatDateTime(r.fecha_hora)}</span>
-                    <span style={{ fontSize: 11, color: '#eaeaea', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 4 }}>
+                <div key={i} style={{ background: 'rgba(255,255,255,0.02)', padding: '18px 22px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 12, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontSize: 12, color: '#aaa', fontWeight: 600 }}>{formatDateTime(r.fecha_hora)}</span>
+                    <span style={{ fontSize: 12, color: '#eaeaea', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: 4 }}>
                       {r.analista || r.id_analista}
                     </span>
                   </div>
                   <div style={{ paddingLeft: 4 }}>
-                    {renderDetalleAudit(r)}
+                    {renderCamposAudit(r)}
                   </div>
                 </div>
               ))}
