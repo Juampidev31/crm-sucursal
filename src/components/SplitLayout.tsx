@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, ExternalLink, Layout, Maximize2, RefreshCw } from 'lucide-react';
-import CustomSelect from '@/components/CustomSelect';
+import SelectReporte from '@/components/SelectReporte';
 
 interface SplitLayoutProps {
   leftPath: string;
@@ -48,11 +48,11 @@ const NavControl = ({ side, currentPath, onSelect, onReload }: {
       <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Layout size={14} color="#8f929d" />
       </div>
-      <CustomSelect
+      <SelectReporte
         value={currentPath}
         onChange={val => onSelect(side, String(val))}
         options={AVAILABLE_ROUTES.map(r => ({ label: r.label, value: r.path }))}
-        width="160px"
+        width="180px"
       />
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

@@ -16,7 +16,7 @@ import {
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
-import CustomSelect from '@/components/CustomSelect';
+import SelectReporte from '@/components/SelectReporte';
 import NuevaSeccionSheets from './NuevaSeccionSheets';
 import { filterByMonth, isVenta, TIPOS_ACUERDO, emptyTiposAcuerdo, matchTipoAcuerdo, normalizarEmpleador, buildDistEmpleador } from '@/lib/registro-stats';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
@@ -1157,23 +1157,26 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <CustomSelect
+            <SelectReporte
+              icon="user"
               value={analista}
               onChange={val => setAnalista(String(val))}
               options={[{ label: 'PDV', value: 'PDV' }, ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a }))]}
-              width="150px"
+              width="170px"
             />
-            <CustomSelect
+            <SelectReporte
+              icon="calendar"
               value={selectedMes}
               onChange={val => setSelectedMes(Number(val))}
               options={CONFIG.MESES_NOMBRES.map((m, i) => ({ label: m, value: i + 1 }))}
-              width="150px"
+              width="160px"
             />
-            <CustomSelect
+            <SelectReporte
+              icon="calendar"
               value={selectedAnio}
               onChange={val => setSelectedAnio(Number(val))}
               options={Array.from({ length: new Date().getFullYear() + 1 - 2016 + 1 }, (_, i) => 2016 + i).map(a => ({ label: String(a), value: a }))}
-              width="110px"
+              width="130px"
             />
           </div>
         </div>
@@ -1996,7 +1999,8 @@ export default function AnalistasPage() {
                   </div>
                 )}
                 {isAdmin && (
-                  <CustomSelect
+                  <SelectReporte
+                    icon="calendar"
                     value={mesRendimiento}
                     onChange={raw => {
                       const val = raw === 'TODOS' ? 'TODOS' : Number(raw);
@@ -2004,7 +2008,7 @@ export default function AnalistasPage() {
                       if (val !== 'TODOS') setAnioRendimiento('TODOS');
                     }}
                     options={[{ label: 'Todos los Meses', value: 'TODOS' }, ...CONFIG.MESES_NOMBRES.map((m: string, i: number) => ({ label: m, value: i }))]}
-                    width="150px"
+                    width="190px"
                   />
                 )}
 
@@ -2026,14 +2030,15 @@ export default function AnalistasPage() {
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <CustomSelect
+                <SelectReporte
+                  icon="calendar"
                   value={anioRendimiento}
                   onChange={raw => setAnioRendimiento(raw === 'TODOS' ? 'TODOS' : Number(raw))}
                   options={[
                     ...(isAdmin ? [{ label: 'Todos los Años', value: 'TODOS' }] : []),
                     ...aniosDisponiblesRendimiento.map(a => ({ label: String(a), value: a })),
                   ]}
-                  width="120px"
+                  width="150px"
                 />
                 <button
                   type="button"

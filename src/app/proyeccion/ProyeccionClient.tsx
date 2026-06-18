@@ -10,7 +10,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { TrendingUp, Target, Users, DollarSign } from 'lucide-react';
-import CustomSelect from '@/components/CustomSelect';
+import SelectReporte from '@/components/SelectReporte';
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend, Filler);
 
@@ -131,11 +131,12 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
             {CONFIG.MESES_NOMBRES[mesActual]} {anioActual} — Día {diaActual} de {d.diasDelMes}
           </p>
         </div>
-        <CustomSelect
+        <SelectReporte
+          icon="user"
           value={analistaSeleccionado}
           onChange={val => setAnalistaSeleccionado(String(val))}
           options={analistas.map(a => ({ label: a === 'PDV' ? 'Punto de Venta (Todos)' : a, value: a }))}
-          width="200px"
+          width="220px"
         />
       </header>
 

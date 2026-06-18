@@ -6,7 +6,7 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { CONFIG } from '@/types';
 import { ESTADOS } from '@/context/FilterContext';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
-import CustomSelect from '@/components/CustomSelect';
+import SelectReporte from '@/components/SelectReporte';
 
 const CHART_COLORS = {
   venta: 'rgba(74, 222, 128, 0.8)',
@@ -137,17 +137,19 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
   return (
     <div style={{ width: '100%' }}>
       <div className="data-card-header" style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', marginTop: '-52px', marginBottom: '16px' }}>
-        <CustomSelect
+        <SelectReporte
+          icon="calendar"
           value={internalMes}
           onChange={val => setInternalMes(String(val))}
-          options={[{ label: 'Todos', value: '' }, ...MESES.map(m => ({ label: m.label, value: m.value }))]}
-          width="140px"
+          options={[{ label: 'Todos los meses', value: '' }, ...MESES.map(m => ({ label: m.label, value: m.value }))]}
+          width="180px"
         />
-        <CustomSelect
+        <SelectReporte
+          icon="calendar"
           value={internalAnio}
           onChange={val => setInternalAnio(Number(val))}
-          options={[2024, 2025, 2026].map(y => ({ label: String(y), value: y }))}
-          width="100px"
+          options={[2024, 2025, 2026].map(y => ({ label: `AÑO ${y}`, value: y }))}
+          width="140px"
         />
       </div>
 
