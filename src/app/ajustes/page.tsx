@@ -154,6 +154,8 @@ export default function AjustesPage() {
   const [auditFilterAccion, setAuditFilterAccion] = useState<string>('todas');
   const [auditFilterAnalista, setAuditFilterAnalista] = useState<string>('todos');
   const [auditFilterPeriodo, setAuditFilterPeriodo] = useState<string>('todo');
+  const [auditFechaDesde, setAuditFechaDesde] = useState<string>('');
+  const [auditFechaHasta, setAuditFechaHasta] = useState<string>('');
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PAGE_SIZE = 25;
 
@@ -1203,6 +1205,8 @@ export default function AjustesPage() {
               if (auditFilterAccion !== 'todas' && reg.accion !== auditFilterAccion) return false;
               if (auditFilterAnalista !== 'todos' && reg.analista !== auditFilterAnalista) return false;
               if (reg.fecha_hora && new Date(reg.fecha_hora).getTime() < cutoff) return false;
+              if (auditFechaDesde && reg.fecha_hora && new Date(reg.fecha_hora).getTime() < new Date(auditFechaDesde + 'T00:00:00').getTime()) return false;
+              if (auditFechaHasta && reg.fecha_hora && new Date(reg.fecha_hora).getTime() > new Date(auditFechaHasta + 'T23:59:59').getTime()) return false;
               if (auditSearch) {
                 const q = auditSearch.toLowerCase();
                 const hay = [reg.analista, reg.accion, reg.campo_modificado, reg.valor_nuevo, reg.valor_anterior, reg.id_registro, reg.nombre, reg.cuil]
@@ -1320,6 +1324,40 @@ export default function AjustesPage() {
                       <option style={{ background: '#111', color: '#fff' }} key={p.k} value={p.k}>{p.l}</option>
                     ))}
                   </select>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      type="date"
+                      value={auditFechaDesde}
+                      onChange={e => { setAuditFechaDesde(e.target.value); setAuditPage(1); }}
+                      title="Fecha desde"
+                      style={{
+                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                        color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer', colorScheme: 'dark',
+                      }}
+                    />
+                    <span style={{ color: '#555', fontSize: 12 }}>→</span>
+                    <input
+                      type="date"
+                      value={auditFechaHasta}
+                      onChange={e => { setAuditFechaHasta(e.target.value); setAuditPage(1); }}
+                      title="Fecha hasta"
+                      style={{
+                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                        color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer', colorScheme: 'dark',
+                      }}
+                    />
+                    {(auditFechaDesde || auditFechaHasta) && (
+                      <button
+                        onClick={() => { setAuditFechaDesde(''); setAuditFechaHasta(''); setAuditPage(1); }}
+                        title="Limpiar fechas"
+                        style={{
+                          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                          color: '#888', fontSize: '12px', padding: '8px 10px', outline: 'none', cursor: 'pointer', lineHeight: 1,
+                        }}
+                      >✕</button>
+                    )}
+                  </div>
                 </div>
 
                 {/* DATA TABLE */}
