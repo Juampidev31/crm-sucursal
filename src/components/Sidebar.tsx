@@ -785,7 +785,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
   const select = (v: string) => { onChange(v); setIsOpen(false); };
 
   const optStyle = (active: boolean): React.CSSProperties => ({
-    padding: '9px 10px', fontSize: '12px', borderRadius: '6px', cursor: 'pointer', margin: '2px 0',
+    padding: '9px 10px', fontSize: '13.5px', borderRadius: '6px', cursor: 'pointer', margin: '2px 0',
     color: active ? '#10b981' : '#eaeaea',
     background: active ? 'rgba(16,185,129,0.1)' : 'transparent',
     transition: 'background 0.15s'
@@ -805,7 +805,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
           width: '100%', height: 40, padding: '0 12px',
           background: 'rgba(255,255,255,0.03)',
           border: `1px solid ${isOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
-          borderRadius: '8px', fontSize: '12px',
+          borderRadius: '8px', fontSize: '13.5px',
           color: value ? '#eaeaea' : '#8f929d',
           cursor: 'pointer', outline: 'none', transition: 'all 0.2s'
         }}
@@ -847,15 +847,15 @@ const FiltersContent = () => {
   }, [registros]);
 
   const chipStyle = (active: boolean) => ({
-    padding: '8px 10px', borderRadius: '8px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer',
+    padding: '8px 10px', borderRadius: '8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
     background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
     color: active ? '#10b981' : '#8f929d',
     border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
     transition: 'all 0.2s', whiteSpace: 'nowrap', textAlign: 'center'
   } as React.CSSProperties);
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '9px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
-  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '12px' };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '10.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '13.5px' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '12px', paddingBottom: '4px' }}>
