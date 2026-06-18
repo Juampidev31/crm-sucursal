@@ -826,12 +826,12 @@ const RegistroModal = memo(function RegistroModal({
                     }}
                     style={{
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      gap: 4, padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 500,
-                      border: '1px solid var(--border)',
-                      background: (form.cuil?.length ?? 0) === 11 ? 'var(--accent)' : 'var(--surface2)',
-                      color: (form.cuil?.length ?? 0) === 11 ? 'var(--bg)' : 'var(--text-muted)',
+                      gap: 4, padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700,
+                      border: (form.cuil?.length ?? 0) === 11 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-color)',
+                      background: (form.cuil?.length ?? 0) === 11 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                      color: (form.cuil?.length ?? 0) === 11 ? '#10b981' : 'var(--gris)',
                       cursor: (form.cuil?.length ?? 0) === 11 ? 'pointer' : 'not-allowed',
-                      whiteSpace: 'nowrap', transition: 'background 0.15s',
+                      whiteSpace: 'nowrap', transition: 'all 0.2s',
                     }}
                   >
                     <ExternalLink size={13} /> BCRA

@@ -13,7 +13,7 @@ import {
   Save, RotateCcw, AlertCircle, Bell, Clock, History,
   Settings, Activity, Copy, Shield, AlertTriangle,
   CheckCircle, User, ShieldCheck, BarChart3, Trash2,
-  Search, Filter, Download, ArrowRight, Edit3, Plus, Users,
+  Search, Filter, ArrowRight, Edit3, Plus, Users,
   ChevronLeft, ChevronRight, Upload
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -1248,21 +1248,6 @@ export default function AjustesPage() {
             const safePage = Math.min(auditPage, totalPages);
             const paged = filtered.slice((safePage - 1) * AUDIT_PAGE_SIZE, safePage * AUDIT_PAGE_SIZE);
 
-            // — CSV export —
-            const exportCSV = () => {
-                const headers = ['Fecha/Hora', 'Nombre', 'CUIL', 'ID Registro', 'Analista', 'Acción', 'Campo Modificado', 'Valor Anterior', 'Valor Nuevo'];
-                const rows = filtered.map((r: any) => [
-                  r.fecha_hora || '', r.nombre || '', r.cuil || '', r.id_registro || '', r.analista || '', r.accion || '',
-                  r.campo_modificado || '', r.valor_anterior || '', r.valor_nuevo || ''
-                ]);
-              const csv = [headers, ...rows].map(r => r.map((c: string) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-              const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url; a.download = `auditoria_${new Date().toISOString().slice(0, 10)}.csv`;
-              a.click(); URL.revokeObjectURL(url);
-            };
-
             return (
               <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                 {/* HEADER */}
@@ -1275,12 +1260,6 @@ export default function AjustesPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
-                    <button onClick={exportCSV} disabled={!filtered.length} style={{
-                      display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6,
-                      fontSize: '11px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.08)',
-                      background: 'rgba(255,255,255,0.03)', color: '#888', cursor: filtered.length ? 'pointer' : 'not-allowed',
-                      opacity: filtered.length ? 1 : 0.4, transition: 'all 0.2s',
-                    }}><Download size={13} /> Exportar CSV</button>
                     <button onClick={limpiarLogAuditoria}
                       disabled={limpiandoLog || !auditoriaRegistros?.length}
                       style={{
