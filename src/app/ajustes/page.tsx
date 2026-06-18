@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
@@ -14,7 +15,7 @@ import {
   Settings, Activity, Copy, Shield, AlertTriangle,
   CheckCircle, User, ShieldCheck, BarChart3, Trash2,
   Search, Filter, ArrowRight, Edit3, Plus, Users,
-  ChevronLeft, ChevronRight, Upload
+  ChevronLeft, ChevronRight, Upload, X
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -82,6 +83,22 @@ function SubTabBar<T extends string>({ tabs, active, onSelect }: {
     </div>
   );
 }
+
+const renderDetalleAudit = (reg: any) => {
+  if (reg.accion === 'Creación') return <span style={{ color: '#888' }}>Nuevo registro</span>;
+  if (reg.accion === 'Eliminación') return <span style={{ color: '#888' }}>Registro eliminado</span>;
+  if (reg.valor_anterior || reg.valor_nuevo) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', flexWrap: 'wrap' }}>
+        {reg.campo_modificado && <span style={{ color: '#666', fontWeight: 600 }}>{reg.campo_modificado}:</span>}
+        {reg.valor_anterior && <span style={{ color: '#ff3366', textDecoration: 'line-through', opacity: 0.8 }}>{reg.valor_anterior}</span>}
+        {reg.valor_anterior && reg.valor_nuevo && <ArrowRight size={10} color="#666" />}
+        {reg.valor_nuevo && <span style={{ color: '#22c55e' }}>{reg.valor_nuevo}</span>}
+      </div>
+    );
+  }
+  return <span style={{ color: '#888' }}>{reg.campo_modificado || '—'}</span>;
+};
 
 export default function AjustesPage() {
   const { isAdmin } = useAuth();
@@ -157,6 +174,7 @@ export default function AjustesPage() {
   const [auditFechaDesde, setAuditFechaDesde] = useState<string>('');
   const [auditFechaHasta, setAuditFechaHasta] = useState<string>('');
   const [auditPage, setAuditPage] = useState(1);
+  const [auditGroupModal, setAuditGroupModal] = useState<{ title: string; records: any[] } | null>(null);
   const AUDIT_PAGE_SIZE = 25;
 
   const [consultaEstado, setConsultaEstado] = useState('proyeccion');
@@ -1201,22 +1219,6 @@ export default function AjustesPage() {
               return { bg: 'rgba(251,191,36,0.08)', color: '#fbbf24', border: 'rgba(251,191,36,0.15)' };
             };
 
-            const renderDetalle = (reg: any) => {
-              if (reg.accion === 'Creación') return <span style={{ color: '#888' }}>Nuevo registro</span>;
-              if (reg.accion === 'Eliminación') return <span style={{ color: '#888' }}>Registro eliminado</span>;
-              if (reg.valor_anterior || reg.valor_nuevo) {
-                return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', flexWrap: 'wrap' }}>
-                    {reg.campo_modificado && <span style={{ color: '#666', fontWeight: 600 }}>{reg.campo_modificado}:</span>}
-                    {reg.valor_anterior && <span style={{ color: '#ff3366', textDecoration: 'line-through', opacity: 0.8 }}>{reg.valor_anterior}</span>}
-                    {reg.valor_anterior && reg.valor_nuevo && <ArrowRight size={10} color="#666" />}
-                    {reg.valor_nuevo && <span style={{ color: '#22c55e' }}>{reg.valor_nuevo}</span>}
-                  </div>
-                );
-              }
-              return <span style={{ color: '#888' }}>{reg.campo_modificado || '—'}</span>;
-            };
-
             // — filtering —
             const now = Date.now();
             const periodoMs: Record<string, number> = { 'hoy': 86400000, '7d': 604800000, '30d': 2592000000, 'todo': Infinity };
@@ -1244,9 +1246,28 @@ export default function AjustesPage() {
               return true;
             });
 
-            const totalPages = Math.max(1, Math.ceil(filtered.length / AUDIT_PAGE_SIZE));
+            const groupedFiltered = (() => {
+              const res: any[] = [];
+              const modMap = new Map<string, any>();
+              for (const reg of filtered) {
+                if (reg.accion === 'Modificación' && reg.id_registro) {
+                  if (!modMap.has(reg.id_registro)) {
+                    const group = { ...reg, isGroup: true, subRecords: [reg] };
+                    modMap.set(reg.id_registro, group);
+                    res.push(group);
+                  } else {
+                    modMap.get(reg.id_registro).subRecords.push(reg);
+                  }
+                } else {
+                  res.push(reg);
+                }
+              }
+              return res;
+            })();
+
+            const totalPages = Math.max(1, Math.ceil(groupedFiltered.length / AUDIT_PAGE_SIZE));
             const safePage = Math.min(auditPage, totalPages);
-            const paged = filtered.slice((safePage - 1) * AUDIT_PAGE_SIZE, safePage * AUDIT_PAGE_SIZE);
+            const paged = groupedFiltered.slice((safePage - 1) * AUDIT_PAGE_SIZE, safePage * AUDIT_PAGE_SIZE);
 
             return (
               <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
@@ -1421,7 +1442,17 @@ export default function AjustesPage() {
                                     <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{reg.cuil || '—'}</div>
                                   </td>
                                   <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                    {renderDetalle(reg)}
+                                    {renderDetalleAudit(reg)}
+                                    {reg.isGroup && reg.subRecords?.length > 1 && (
+                                      <button
+                                        onClick={() => setAuditGroupModal({ title: `Historial de ${reg.nombre || 'Registro'}`, records: reg.subRecords })}
+                                        style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#aaa', padding: '4px 8px', borderRadius: 4, fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                                        onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                                      >
+                                        <History size={10} /> Ver historial completo ({reg.subRecords.length})
+                                      </button>
+                                    )}
                                   </td>
                                 </tr>
                               );
@@ -1436,7 +1467,7 @@ export default function AjustesPage() {
                         padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(0,0,0,0.2)'
                       }}>
                         <span style={{ fontSize: '11px', color: '#555', fontWeight: 600 }}>
-                          Mostrando {(safePage - 1) * AUDIT_PAGE_SIZE + 1}–{Math.min(safePage * AUDIT_PAGE_SIZE, filtered.length)} de {filtered.length}
+                          Mostrando {(safePage - 1) * AUDIT_PAGE_SIZE + (groupedFiltered.length > 0 ? 1 : 0)}–{Math.min(safePage * AUDIT_PAGE_SIZE, groupedFiltered.length)} de {groupedFiltered.length}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <button onClick={() => setAuditPage(p => Math.max(1, p - 1))} disabled={safePage <= 1} style={{
@@ -1471,6 +1502,7 @@ export default function AjustesPage() {
                     </>
                   )}
                 </div>
+
               </div>
             );
           })()}
@@ -1525,6 +1557,49 @@ export default function AjustesPage() {
           )}
 
         </div>
+      )}
+
+      {/* MODAL HISTORIAL DE CAMBIOS — Portal al body para evitar stacking context */}
+      {auditGroupModal && typeof document !== 'undefined' && ReactDOM.createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', zIndex: 99999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div style={{
+            background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12, width: '100%', maxWidth: 600, maxHeight: '85vh',
+            display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+            animation: 'slideInUp 0.2s ease-out'
+          }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff' }}>{auditGroupModal.title}</h3>
+                <p style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{auditGroupModal.records.length} modificaciones registradas</p>
+              </div>
+              <button onClick={() => setAuditGroupModal(null)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#888', cursor: 'pointer', padding: 6, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#888'; }}>
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {auditGroupModal.records.map((r, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.02)', padding: '16px 20px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 10, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                    <span style={{ fontSize: 11, color: '#aaa', fontWeight: 600 }}>{formatDateTime(r.fecha_hora)}</span>
+                    <span style={{ fontSize: 11, color: '#eaeaea', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 4 }}>
+                      {r.analista || r.id_analista}
+                    </span>
+                  </div>
+                  <div style={{ paddingLeft: 4 }}>
+                    {renderDetalleAudit(r)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
