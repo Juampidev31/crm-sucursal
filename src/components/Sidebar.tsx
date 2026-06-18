@@ -399,6 +399,29 @@ export default function Sidebar({
         transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
       } as React.CSSProperties}
     >
+      {/* Pestaña flotante para cerrar la sidebar (espejo de la pestaña de abrir) */}
+      {onHide && !showFilters && (
+        <button
+          onClick={onHide}
+          title="Ocultar menú"
+          style={{
+            position: 'absolute', top: '50%', right: 0, zIndex: 300,
+            transform: 'translateY(-50%)',
+            background: 'var(--bg-elev-1)',
+            border: '1px solid rgba(255,255,255,0.1)', borderRight: 'none',
+            borderRadius: '12px 0 0 12px',
+            width: 28, height: 56,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', cursor: 'pointer',
+            boxShadow: '-4px 0 24px rgba(0,0,0,0.5)',
+            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.width = '36px'; e.currentTarget.style.background = 'var(--bg-elev-2)'; }}
+          onMouseLeave={e => { e.currentTarget.style.width = '28px'; e.currentTarget.style.background = 'var(--bg-elev-1)'; }}
+        >
+          <ChevronLeft size={18} strokeWidth={3} />
+        </button>
+      )}
       <div style={{
         display: 'flex',
         flexDirection: 'row',
@@ -428,17 +451,6 @@ export default function Sidebar({
         {/* Header MENU */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingLeft: 16, paddingRight: 8 }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: '1px' }}>MENU</div>
-          {onHide && (
-            <button 
-              onClick={onHide} 
-              style={{ background: 'transparent', border: 'none', color: '#777', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '4px', transition: 'background 0.2s' }} 
-              title="Ocultar menú"
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <ChevronLeft size={16} />
-            </button>
-          )}
         </div>
 
         {/* Highlight Action (Like Personal/Business switch) */}
