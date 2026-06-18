@@ -16,6 +16,7 @@ import {
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
+import CustomSelect from '@/components/CustomSelect';
 import NuevaSeccionSheets from './NuevaSeccionSheets';
 import { filterByMonth, isVenta, TIPOS_ACUERDO, emptyTiposAcuerdo, matchTipoAcuerdo, normalizarEmpleador, buildDistEmpleador } from '@/lib/registro-stats';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
@@ -1156,21 +1157,24 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '4px' }}>
-              <select value={analista} onChange={e => setAnalista(e.target.value)} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
-                <option value="PDV" style={{ background: '#111111' }}>PDV</option>
-                {CONFIG.ANALISTAS_DEFAULT.map(a => <option key={a} value={a} style={{ background: '#111111' }}>{a}</option>)}
-              </select>
-            </div>
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '4px' }}>
-              <select value={selectedMes} onChange={e => setSelectedMes(Number(e.target.value))} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
-                {CONFIG.MESES_NOMBRES.map((m, i) => <option key={m} value={i + 1} style={{ background: '#111111' }}>{m}</option>)}
-              </select>
-              <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-              <select value={selectedAnio} onChange={e => setSelectedAnio(Number(e.target.value))} style={{ background: 'transparent', color: '#fff', border: 'none', padding: '8px 12px', outline: 'none', cursor: 'pointer', fontFamily: "'Outfit', sans-serif", fontSize: 13, fontWeight: 600 }}>
-                {Array.from({ length: new Date().getFullYear() + 1 - 2016 + 1 }, (_, i) => 2016 + i).map(a => <option key={a} value={a} style={{ background: '#111111' }}>{a}</option>)}
-              </select>
-            </div>
+            <CustomSelect
+              value={analista}
+              onChange={val => setAnalista(String(val))}
+              options={[{ label: 'PDV', value: 'PDV' }, ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a }))]}
+              width="150px"
+            />
+            <CustomSelect
+              value={selectedMes}
+              onChange={val => setSelectedMes(Number(val))}
+              options={CONFIG.MESES_NOMBRES.map((m, i) => ({ label: m, value: i + 1 }))}
+              width="150px"
+            />
+            <CustomSelect
+              value={selectedAnio}
+              onChange={val => setSelectedAnio(Number(val))}
+              options={Array.from({ length: new Date().getFullYear() + 1 - 2016 + 1 }, (_, i) => 2016 + i).map(a => ({ label: String(a), value: a }))}
+              width="110px"
+            />
           </div>
         </div>
       </div>
@@ -1992,25 +1996,16 @@ export default function AnalistasPage() {
                   </div>
                 )}
                 {isAdmin && (
-                  <select
+                  <CustomSelect
                     value={mesRendimiento}
-                    onChange={e => {
-                      const val = e.target.value === 'TODOS' ? 'TODOS' : Number(e.target.value);
+                    onChange={raw => {
+                      const val = raw === 'TODOS' ? 'TODOS' : Number(raw);
                       setMesRendimiento(val);
                       if (val !== 'TODOS') setAnioRendimiento('TODOS');
                     }}
-                    style={{
-                      background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: 8, padding: '6px 12px',
-                      color: '#fff', fontSize: 13, fontWeight: 700,
-                      cursor: 'pointer', minWidth: 120, textAlign: 'center',
-                    }}
-                  >
-                    <option value="TODOS">Todos los Meses</option>
-                    {CONFIG.MESES_NOMBRES.map((m: string, i: number) => (
-                      <option key={i} value={i}>{m}</option>
-                    ))}
-                  </select>
+                    options={[{ label: 'Todos los Meses', value: 'TODOS' }, ...CONFIG.MESES_NOMBRES.map((m: string, i: number) => ({ label: m, value: i }))]}
+                    width="150px"
+                  />
                 )}
 
                 <button
@@ -2031,21 +2026,15 @@ export default function AnalistasPage() {
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <select
+                <CustomSelect
                   value={anioRendimiento}
-                  onChange={e => setAnioRendimiento(e.target.value === 'TODOS' ? 'TODOS' : Number(e.target.value))}
-                  style={{
-                    background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 8, padding: '6px 12px',
-                    color: '#fff', fontSize: 13, fontWeight: 700,
-                    cursor: 'pointer', minWidth: 90, textAlign: 'center',
-                  }}
-                >
-                  {isAdmin && <option value="TODOS">Todos los Años</option>}
-                  {aniosDisponiblesRendimiento.map(a => (
-                    <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
+                  onChange={raw => setAnioRendimiento(raw === 'TODOS' ? 'TODOS' : Number(raw))}
+                  options={[
+                    ...(isAdmin ? [{ label: 'Todos los Años', value: 'TODOS' }] : []),
+                    ...aniosDisponiblesRendimiento.map(a => ({ label: String(a), value: a })),
+                  ]}
+                  width="120px"
+                />
                 <button
                   type="button"
                   onClick={() => {

@@ -10,6 +10,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { TrendingUp, Target, Users, DollarSign } from 'lucide-react';
+import CustomSelect from '@/components/CustomSelect';
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend, Filler);
 
@@ -130,10 +131,12 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
             {CONFIG.MESES_NOMBRES[mesActual]} {anioActual} — Día {diaActual} de {d.diasDelMes}
           </p>
         </div>
-        <select className="form-select" style={{ minWidth: '180px' }}
-          value={analistaSeleccionado} onChange={e => setAnalistaSeleccionado(e.target.value)}>
-          {analistas.map(a => <option key={a} value={a}>{a === 'PDV' ? 'Punto de Venta (Todos)' : a}</option>)}
-        </select>
+        <CustomSelect
+          value={analistaSeleccionado}
+          onChange={val => setAnalistaSeleccionado(String(val))}
+          options={analistas.map(a => ({ label: a === 'PDV' ? 'Punto de Venta (Todos)' : a, value: a }))}
+          width="200px"
+        />
       </header>
 
       <div className="cards-container">

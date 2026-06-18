@@ -10,6 +10,7 @@ import { useSettings } from '@/features/settings/SettingsProvider';
 import { useToast } from '@/hooks/useToast';
 import { CONFIG, HistoricoVenta } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
+import CustomSelect from '@/components/CustomSelect';
 import {
   Save, RotateCcw, AlertCircle, Bell, Clock, History,
   Settings, Activity, Copy, Shield, AlertTriangle,
@@ -84,6 +85,9 @@ function SubTabBar<T extends string>({ tabs, active, onSelect }: {
   );
 }
 
+// Formatea cualquier fecha ISO (YYYY-MM-DD) dentro de un texto a DD/MM/AAAA.
+const fmtFechasISO = (v: any) => String(v ?? '').replace(/\d{4}-\d{2}-\d{2}/g, (m) => formatDate(m));
+
 const renderDetalleAudit = (reg: any) => {
   if (reg.accion === 'Creación') return <span style={{ color: '#888' }}>Nuevo registro</span>;
   if (reg.accion === 'Eliminación') return <span style={{ color: '#888' }}>Registro eliminado</span>;
@@ -91,9 +95,9 @@ const renderDetalleAudit = (reg: any) => {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', flexWrap: 'wrap' }}>
         {reg.campo_modificado && <span style={{ color: '#666', fontWeight: 600 }}>{reg.campo_modificado}:</span>}
-        {reg.valor_anterior && <span style={{ color: '#ff6b8a' }}>{reg.valor_anterior}</span>}
+        {reg.valor_anterior && <span style={{ color: '#ff3366' }}>{fmtFechasISO(reg.valor_anterior)}</span>}
         {reg.valor_anterior && reg.valor_nuevo && <ArrowRight size={10} color="#666" />}
-        {reg.valor_nuevo && <span style={{ color: '#22c55e' }}>{reg.valor_nuevo}</span>}
+        {reg.valor_nuevo && <span style={{ color: '#22c55e' }}>{fmtFechasISO(reg.valor_nuevo)}</span>}
       </div>
     );
   }
@@ -123,7 +127,7 @@ const renderCamposAudit = (reg: any) => {
         return (
           <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, flexWrap: 'wrap' }}>
             <span style={{ color: '#888', fontWeight: 700, minWidth: 100 }}>{campo}:</span>
-            {ant && <span style={{ color: '#ff6b8a' }}>{ant}</span>}
+            {ant && <span style={{ color: '#ff3366' }}>{ant}</span>}
             {ant && nue && <ArrowRight size={15} color="#666" />}
             {nue && <span style={{ color: '#22c55e', fontWeight: 600 }}>{nue}</span>}
           </div>
@@ -756,17 +760,21 @@ export default function AjustesPage() {
                 <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: '200px' }}>
                     <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista</label>
-                    <select className="form-select" value={consultaAnalista} onChange={e => setConsultaAnalista(e.target.value)}>
-                        <option value="todos">Todos</option>
-                        {CONFIG.ANALISTAS_DEFAULT.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
+                    <CustomSelect
+                      value={consultaAnalista}
+                      onChange={val => setConsultaAnalista(String(val))}
+                      options={[{ label: 'Todos', value: 'todos' }, ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a }))]}
+                      width="100%"
+                    />
                   </div>
                   <div style={{ flex: 1, minWidth: '200px' }}>
                     <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estado</label>
-                    <select className="form-select" value={consultaEstado} onChange={e => setConsultaEstado(e.target.value)}>
-                        <option value="todos">Todos</option>
-                        {ESTADOS.map(e => <option key={e} value={e}>{e.toUpperCase()}</option>)}
-                    </select>
+                    <CustomSelect
+                      value={consultaEstado}
+                      onChange={val => setConsultaEstado(String(val))}
+                      options={[{ label: 'Todos', value: 'todos' }, ...ESTADOS.map(e => ({ label: e.toUpperCase(), value: e }))]}
+                      width="100%"
+                    />
                   </div>
                   <button className="btn-primary" onClick={() => {
                         limpiarFiltros();
@@ -1361,42 +1369,26 @@ export default function AjustesPage() {
                     />
                   </div>
                   
-                  <select
-                    value={auditFilterAccion} onChange={e => { setAuditFilterAccion(e.target.value); setAuditPage(1); }}
-                    style={{
-                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                      color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer',
-                      minWidth: 140
-                    }}
-                  >
-                    <option style={{ background: '#111', color: '#fff' }} value="todas">Todas las acciones</option>
-                    {allAcciones.map(a => <option style={{ background: '#111', color: '#fff' }} key={a} value={a}>{a}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={auditFilterAccion}
+                    onChange={val => { setAuditFilterAccion(String(val)); setAuditPage(1); }}
+                    options={[{ label: 'Todas las acciones', value: 'todas' }, ...allAcciones.map(a => ({ label: a, value: a }))]}
+                    width="150px"
+                  />
 
-                  <select
-                    value={auditFilterAnalista} onChange={e => { setAuditFilterAnalista(e.target.value); setAuditPage(1); }}
-                    style={{
-                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                      color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer',
-                      minWidth: 140
-                    }}
-                  >
-                    <option style={{ background: '#111', color: '#fff' }} value="todos">Todos los analistas</option>
-                    {allAuditAnalistas.map(a => <option style={{ background: '#111', color: '#fff' }} key={a} value={a}>{a}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={auditFilterAnalista}
+                    onChange={val => { setAuditFilterAnalista(String(val)); setAuditPage(1); }}
+                    options={[{ label: 'Todos los analistas', value: 'todos' }, ...allAuditAnalistas.map(a => ({ label: a, value: a }))]}
+                    width="150px"
+                  />
 
-                  <select
-                    value={auditFilterPeriodo} onChange={e => { setAuditFilterPeriodo(e.target.value); setAuditPage(1); }}
-                    style={{
-                      background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                      color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer',
-                      minWidth: 120
-                    }}
-                  >
-                    {[{ k: 'hoy', l: 'Hoy' }, { k: '7d', l: 'Últimos 7 días' }, { k: '30d', l: 'Últimos 30 días' }, { k: 'todo', l: 'Todo' }].map(p => (
-                      <option style={{ background: '#111', color: '#fff' }} key={p.k} value={p.k}>{p.l}</option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    value={auditFilterPeriodo}
+                    onChange={val => { setAuditFilterPeriodo(String(val)); setAuditPage(1); }}
+                    options={[{ label: 'Hoy', value: 'hoy' }, { label: 'Últimos 7 días', value: '7d' }, { label: 'Últimos 30 días', value: '30d' }, { label: 'Todo', value: 'todo' }]}
+                    width="140px"
+                  />
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <input

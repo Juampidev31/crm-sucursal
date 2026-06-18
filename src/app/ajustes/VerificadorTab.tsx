@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { CheckCircle2, AlertCircle, XCircle, RotateCcw, Trash2 } from 'lucide-react';
+import CustomSelect from '@/components/CustomSelect';
 import { supabase } from '@/lib/supabase';
 import {
   parsePastedText, verificarFilas, formatDateAR, ParsedRow, ColumnMapping, ColumnRole, MatchStatus, VerificadorResult,
@@ -211,13 +212,6 @@ export default function VerificadorTab() {
   );
 }
 
-
-const FILTER_SELECT_STYLE: React.CSSProperties = {
-  display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 4,
-  background: '#111', border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: 4, color: '#aaa', fontSize: 11, padding: '5px 7px', outline: 'none',
-  cursor: 'pointer', minWidth: 100,
-};
 
 function ResultsTable({ results, mapping, colCount, onDeleted }: {
   results: VerificadorResult[];
@@ -680,15 +674,11 @@ function FilterSelect({ filterKey, value, options, onChange, formatOption }: {
 }) {
   if (options.length === 0) return null;
   return (
-    <select
+    <CustomSelect
       value={value}
-      onChange={e => onChange(filterKey, e.target.value)}
-      style={FILTER_SELECT_STYLE}
-    >
-      <option value="">Todos</option>
-      {options.sort().map(o => (
-        <option key={o} value={o}>{formatOption ? formatOption(o) : o}</option>
-      ))}
-    </select>
+      onChange={val => onChange(filterKey, String(val))}
+      options={[{ label: 'Todos', value: '' }, ...[...options].sort().map(o => ({ label: formatOption ? formatOption(o) : o, value: o }))]}
+      width="150px"
+    />
   );
 }

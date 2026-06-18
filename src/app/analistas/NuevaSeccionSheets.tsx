@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { FileText, Tag } from 'lucide-react';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
+import CustomSelect from '@/components/CustomSelect';
 
 const MESES = [
   { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' }, { value: 3, label: 'Marzo' },
@@ -133,20 +134,18 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {viewMode === 'mensual' && (
             <>
-              <select 
-                value={selectedMes} 
-                onChange={e => setSelectedMes(Number(e.target.value))}
-                style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, outline: 'none', cursor: 'pointer' }}
-              >
-                {MESES.map(m => <option key={m.value} value={m.value} style={{ background: '#111' }}>{m.label}</option>)}
-              </select>
-              <select 
-                value={selectedAnio} 
-                onChange={e => setSelectedAnio(Number(e.target.value))}
-                style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6, outline: 'none', cursor: 'pointer' }}
-              >
-                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y} style={{ background: '#111' }}>{y}</option>)}
-              </select>
+              <CustomSelect
+                value={selectedMes}
+                onChange={val => setSelectedMes(Number(val))}
+                options={MESES.map(m => ({ label: m.label, value: m.value }))}
+                width="130px"
+              />
+              <CustomSelect
+                value={selectedAnio}
+                onChange={val => setSelectedAnio(Number(val))}
+                options={[2024, 2025, 2026, 2027].map(y => ({ label: String(y), value: y }))}
+                width="100px"
+              />
             </>
           )}
 

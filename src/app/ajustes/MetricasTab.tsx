@@ -6,6 +6,7 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { CONFIG } from '@/types';
 import { ESTADOS } from '@/context/FilterContext';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
+import CustomSelect from '@/components/CustomSelect';
 
 const CHART_COLORS = {
   venta: 'rgba(74, 222, 128, 0.8)',
@@ -139,27 +140,24 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>MES</label>
-            <select 
-              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
-              value={internalMes} 
-              onChange={e => setInternalMes(e.target.value)}
-            >
-              <option value="" style={{ background: '#111' }}>Todos</option>
-              {MESES.map(m => <option key={m.value} value={m.value} style={{ background: '#111' }}>{m.label}</option>)}
-            </select>
+            <CustomSelect
+              value={internalMes}
+              onChange={val => setInternalMes(String(val))}
+              options={[{ label: 'Todos', value: '' }, ...MESES.map(m => ({ label: m.label, value: m.value }))]}
+              width="130px"
+            />
           </div>
           
           <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.05)' }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>AÑO</label>
-            <select 
-              style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, outline: 'none', cursor: 'pointer' }} 
-              value={internalAnio} 
-              onChange={e => setInternalAnio(Number(e.target.value))}
-            >
-              {[2024, 2025, 2026].map(y => <option key={y} value={y} style={{ background: '#111' }}>{y}</option>)}
-            </select>
+            <CustomSelect
+              value={internalAnio}
+              onChange={val => setInternalAnio(Number(val))}
+              options={[2024, 2025, 2026].map(y => ({ label: String(y), value: y }))}
+              width="100px"
+            />
           </div>
         </div>
       </div>

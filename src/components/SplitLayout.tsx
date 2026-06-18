@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, ExternalLink, Layout, Maximize2, RefreshCw } from 'lucide-react';
+import CustomSelect from '@/components/CustomSelect';
 
 interface SplitLayoutProps {
   leftPath: string;
@@ -47,27 +48,12 @@ const NavControl = ({ side, currentPath, onSelect, onReload }: {
       <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Layout size={14} color="#8f929d" />
       </div>
-      <select
+      <CustomSelect
         value={currentPath}
-        onChange={(e) => onSelect(side, e.target.value)}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#fff',
-          fontSize: '12px',
-          fontWeight: 800,
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px',
-          cursor: 'pointer',
-          outline: 'none',
-          padding: '4px 8px 4px 0',
-          fontFamily: 'inherit'
-        }}
-      >
-        {AVAILABLE_ROUTES.map(r => (
-          <option key={r.path} value={r.path} style={{ background: '#0c0c0c', color: '#fff' }}>{r.label}</option>
-        ))}
-      </select>
+        onChange={val => onSelect(side, String(val))}
+        options={AVAILABLE_ROUTES.map(r => ({ label: r.label, value: r.path }))}
+        width="160px"
+      />
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       <button
