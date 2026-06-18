@@ -136,30 +136,19 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
 
   return (
     <div style={{ width: '100%' }}>
-      <div className="data-card-header" style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '-52px', marginBottom: '16px' }}>
-        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>MES</label>
-            <CustomSelect
-              value={internalMes}
-              onChange={val => setInternalMes(String(val))}
-              options={[{ label: 'Todos', value: '' }, ...MESES.map(m => ({ label: m.label, value: m.value }))]}
-              width="130px"
-            />
-          </div>
-          
-          <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.05)' }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontSize: '9px', color: '#666', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>AÑO</label>
-            <CustomSelect
-              value={internalAnio}
-              onChange={val => setInternalAnio(Number(val))}
-              options={[2024, 2025, 2026].map(y => ({ label: String(y), value: y }))}
-              width="100px"
-            />
-          </div>
-        </div>
+      <div className="data-card-header" style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', marginTop: '-52px', marginBottom: '16px' }}>
+        <CustomSelect
+          value={internalMes}
+          onChange={val => setInternalMes(String(val))}
+          options={[{ label: 'Todos', value: '' }, ...MESES.map(m => ({ label: m.label, value: m.value }))]}
+          width="140px"
+        />
+        <CustomSelect
+          value={internalAnio}
+          onChange={val => setInternalAnio(Number(val))}
+          options={[2024, 2025, 2026].map(y => ({ label: String(y), value: y }))}
+          width="100px"
+        />
       </div>
 
       <div style={{ 
