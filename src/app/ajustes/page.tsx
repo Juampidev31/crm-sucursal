@@ -303,13 +303,41 @@ export default function AjustesPage() {
   useEffect(() => {
     if (activeTab !== 'actividad' || actividadSubTab !== 'auditoria') return;
 
+    const hayRangoFechas = !!(auditFechaDesde || auditFechaHasta);
+    let cancelado = false;
     setAuditoriaLoading(true);
+
+    if (hayRangoFechas) {
+      // Con rango de fechas: trae TODO el historial de ese rango, paginando (sin tope de 200).
+      (async () => {
+        const PAGE = 1000;
+        let offset = 0;
+        const acc: any[] = [];
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          if (cancelado) return;
+          let q = supabase.from('auditoria').select('*').order('fecha_hora', { ascending: false });
+          if (auditFechaDesde) q = q.gte('fecha_hora', new Date(auditFechaDesde + 'T00:00:00').toISOString());
+          if (auditFechaHasta) q = q.lte('fecha_hora', new Date(auditFechaHasta + 'T23:59:59').toISOString());
+          const { data, error } = await q.range(offset, offset + PAGE - 1);
+          if (error || !data) break;
+          acc.push(...data);
+          if (data.length < PAGE) break;
+          offset += PAGE;
+        }
+        if (!cancelado) { setAuditoriaRegistros(acc); setAuditoriaLoading(false); }
+      })();
+      return () => { cancelado = true; };
+    }
+
+    // Sin rango de fechas: 200 más recientes + realtime
     supabase
       .from('auditoria')
       .select('*')
       .order('fecha_hora', { ascending: false })
       .limit(200)
       .then(({ data }) => {
+        if (cancelado) return;
         setAuditoriaRegistros(data || []);
         setAuditoriaLoading(false);
       });
@@ -323,8 +351,8 @@ export default function AjustesPage() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [activeTab, actividadSubTab]);
+    return () => { cancelado = true; supabase.removeChannel(channel); };
+  }, [activeTab, actividadSubTab, auditFechaDesde, auditFechaHasta]);
 
   const limpiarLogAuditoria = async () => {
     if (!confirm('¿Estás seguro de que deseas eliminar todos los registros de auditoría? Esta acción no se puede deshacer.')) {
