@@ -827,9 +827,9 @@ const RegistroModal = memo(function RegistroModal({
                     style={{
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       gap: 4, padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700,
-                      border: (form.cuil?.length ?? 0) === 11 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-color)',
-                      background: (form.cuil?.length ?? 0) === 11 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                      color: (form.cuil?.length ?? 0) === 11 ? '#10b981' : 'var(--gris)',
+                      border: '1px solid var(--border-color)',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      color: (form.cuil?.length ?? 0) === 11 ? '#e5e5e5' : 'var(--gris)',
                       cursor: (form.cuil?.length ?? 0) === 11 ? 'pointer' : 'not-allowed',
                       whiteSpace: 'nowrap', transition: 'all 0.2s',
                     }}
@@ -1166,11 +1166,11 @@ const RegistroModal = memo(function RegistroModal({
             <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginTop: '8px', marginBottom: '8px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#fff', fontSize: '13px', fontWeight: 700 }}>
                 <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#10b981' }} />
-                <FileText size={16} style={{ color: '#10b981' }} /> Resumen Ejecutivo (RE)
+                Resumen Ejecutivo (RE)
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#fff', fontSize: '13px', fontWeight: 700 }}>
                 <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#f59e0b' }} />
-                <AlertTriangle size={16} style={{ color: '#f59e0b' }} /> Agendar Recordatorio
+                Agendar Recordatorio
               </label>
             </div>
             <p className="modal-required-legend" style={{ color: 'var(--rojo)' }}>
