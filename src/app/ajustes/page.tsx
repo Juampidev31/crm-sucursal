@@ -91,7 +91,7 @@ const renderDetalleAudit = (reg: any) => {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', flexWrap: 'wrap' }}>
         {reg.campo_modificado && <span style={{ color: '#666', fontWeight: 600 }}>{reg.campo_modificado}:</span>}
-        {reg.valor_anterior && <span style={{ color: '#ff3366', textDecoration: 'line-through', opacity: 0.8 }}>{reg.valor_anterior}</span>}
+        {reg.valor_anterior && <span style={{ color: '#ff6b8a' }}>{reg.valor_anterior}</span>}
         {reg.valor_anterior && reg.valor_nuevo && <ArrowRight size={10} color="#666" />}
         {reg.valor_nuevo && <span style={{ color: '#22c55e' }}>{reg.valor_nuevo}</span>}
       </div>
