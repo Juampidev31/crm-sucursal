@@ -15,9 +15,11 @@ interface CustomSelectProps {
   value: string | number;
   onChange: (val: string | number) => void;
   width?: string;
+  /** Color de fondo del control cerrado (default: '#0c0c0c'). */
+  bg?: string;
 }
 
-export default function CustomSelect({ options, value, onChange, width = '180px' }: CustomSelectProps) {
+export default function CustomSelect({ options, value, onChange, width = '180px', bg = '#0c0c0c' }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -31,9 +33,9 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          background: '#0c0c0c',
+          background: bg,
           border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '4px',
+          borderRadius: '10px',
           padding: '8px 12px',
           display: 'flex',
           justifyContent: 'space-between',
@@ -66,7 +68,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
           width: '100%',
           background: '#0c0c0c',
           border: '1px solid rgba(255,255,255,0.03)',
-          borderRadius: '4px',
+          borderRadius: '10px',
           zIndex: 100,
           boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
           padding: '4px',
@@ -84,7 +86,7 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
               }}
               style={{
                 padding: '8px 10px',
-                borderRadius: '3px',
+                borderRadius: '7px',
                 fontSize: '12.5px',
                 fontWeight: 500,
                 cursor: opt.disabled ? 'default' : 'pointer',

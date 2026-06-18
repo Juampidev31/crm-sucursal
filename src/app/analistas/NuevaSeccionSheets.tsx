@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { FileText, Tag } from 'lucide-react';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
-import SelectReporte from '@/components/SelectReporte';
+import CustomSelect from '@/components/CustomSelect';
 
 const MESES = [
   { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' }, { value: 3, label: 'Marzo' },
@@ -134,19 +134,17 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {viewMode === 'mensual' && (
             <>
-              <SelectReporte
-                icon="calendar"
+              <CustomSelect
                 value={selectedMes}
                 onChange={val => setSelectedMes(Number(val))}
                 options={MESES.map(m => ({ label: m.label, value: m.value }))}
-                width="160px"
+                width="130px"
               />
-              <SelectReporte
-                icon="calendar"
+              <CustomSelect
                 value={selectedAnio}
                 onChange={val => setSelectedAnio(Number(val))}
                 options={[2024, 2025, 2026, 2027].map(y => ({ label: String(y), value: y }))}
-                width="130px"
+                width="100px"
               />
             </>
           )}

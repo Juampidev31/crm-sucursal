@@ -16,7 +16,7 @@ import {
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
-import SelectReporte from '@/components/SelectReporte';
+import CustomSelect from '@/components/CustomSelect';
 import NuevaSeccionSheets from './NuevaSeccionSheets';
 import { filterByMonth, isVenta, TIPOS_ACUERDO, emptyTiposAcuerdo, matchTipoAcuerdo, normalizarEmpleador, buildDistEmpleador } from '@/lib/registro-stats';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
@@ -182,6 +182,9 @@ export default function AnalistasPage() {
 
   const [selectedMes, setSelectedMes] = useState(now.getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(now.getFullYear());
+  // Selector independiente de la sección 4 (Distribución por Estado)
+  const [sec4Mes, setSec4Mes] = useState<string>(String(now.getMonth() + 1).padStart(2, '0'));
+  const [sec4Anio, setSec4Anio] = useState<number>(now.getFullYear());
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
   const [periodoAcuerdos, setPeriodoAcuerdos] = useState<'mensual' | 'total'>('mensual');
   const [periodoEmpleo, setPeriodoEmpleo] = useState<'mensual' | 'total'>('mensual');
@@ -1157,26 +1160,23 @@ export default function AnalistasPage() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <SelectReporte
-              icon="user"
+            <CustomSelect
               value={analista}
               onChange={val => setAnalista(String(val))}
               options={[{ label: 'PDV', value: 'PDV' }, ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a }))]}
-              width="170px"
+              width="150px"
             />
-            <SelectReporte
-              icon="calendar"
+            <CustomSelect
               value={selectedMes}
               onChange={val => setSelectedMes(Number(val))}
               options={CONFIG.MESES_NOMBRES.map((m, i) => ({ label: m, value: i + 1 }))}
-              width="160px"
+              width="150px"
             />
-            <SelectReporte
-              icon="calendar"
+            <CustomSelect
               value={selectedAnio}
               onChange={val => setSelectedAnio(Number(val))}
               options={Array.from({ length: new Date().getFullYear() + 1 - 2016 + 1 }, (_, i) => 2016 + i).map(a => ({ label: String(a), value: a }))}
-              width="130px"
+              width="110px"
             />
           </div>
         </div>
@@ -1747,8 +1747,29 @@ export default function AnalistasPage() {
           {/* ── SECCIÓN 4 Y SHEETS: GRID ── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 32 }}>
             <div className="data-card" style={{ margin: 0, height: '100%', background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-              {sectionHeader(4, '4. Distribucion por Estado', <PieChart size={15} color="#4ade80" />)}
-              <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista={analista} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.05)', gap: 12, userSelect: 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <PieChart size={15} color="#4ade80" />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1px' }}>4. Distribucion por Estado</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <CustomSelect
+                    value={sec4Mes}
+                    onChange={val => setSec4Mes(String(val))}
+                    options={[{ label: 'Todos', value: '' }, ...CONFIG.MESES_NOMBRES.map((m, i) => ({ label: m, value: String(i + 1).padStart(2, '0') }))]}
+                    width="140px"
+                    bg="#1a1a1a"
+                  />
+                  <CustomSelect
+                    value={sec4Anio}
+                    onChange={val => setSec4Anio(Number(val))}
+                    options={[2024, 2025, 2026].map(y => ({ label: String(y), value: y }))}
+                    width="100px"
+                    bg="#1a1a1a"
+                  />
+                </div>
+              </div>
+              <MetricasTab hideSelector mesStr={sec4Mes} anioNum={sec4Anio} registros={registros} analista={analista} />
             </div>
             <NuevaSeccionSheets analista={analista} />
           </div>
@@ -1999,8 +2020,7 @@ export default function AnalistasPage() {
                   </div>
                 )}
                 {isAdmin && (
-                  <SelectReporte
-                    icon="calendar"
+                  <CustomSelect
                     value={mesRendimiento}
                     onChange={raw => {
                       const val = raw === 'TODOS' ? 'TODOS' : Number(raw);
@@ -2008,7 +2028,7 @@ export default function AnalistasPage() {
                       if (val !== 'TODOS') setAnioRendimiento('TODOS');
                     }}
                     options={[{ label: 'Todos los Meses', value: 'TODOS' }, ...CONFIG.MESES_NOMBRES.map((m: string, i: number) => ({ label: m, value: i }))]}
-                    width="190px"
+                    width="150px"
                   />
                 )}
 
@@ -2030,15 +2050,14 @@ export default function AnalistasPage() {
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <SelectReporte
-                  icon="calendar"
+                <CustomSelect
                   value={anioRendimiento}
                   onChange={raw => setAnioRendimiento(raw === 'TODOS' ? 'TODOS' : Number(raw))}
                   options={[
                     ...(isAdmin ? [{ label: 'Todos los Años', value: 'TODOS' }] : []),
                     ...aniosDisponiblesRendimiento.map(a => ({ label: String(a), value: a })),
                   ]}
-                  width="150px"
+                  width="120px"
                 />
                 <button
                   type="button"

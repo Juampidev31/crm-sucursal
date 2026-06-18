@@ -10,7 +10,7 @@ import { useSettings } from '@/features/settings/SettingsProvider';
 import { useToast } from '@/hooks/useToast';
 import { CONFIG, HistoricoVenta } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
-import SelectReporte from '@/components/SelectReporte';
+import CustomSelect from '@/components/CustomSelect';
 import {
   Save, RotateCcw, AlertCircle, Bell, Clock, History,
   Settings, Activity, Copy, Shield, AlertTriangle,
@@ -772,8 +772,7 @@ export default function AjustesPage() {
                 <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: '200px' }}>
                     <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista</label>
-                    <SelectReporte
-                      icon="user"
+                    <CustomSelect
                       value={consultaAnalista}
                       onChange={val => setConsultaAnalista(String(val))}
                       options={[{ label: 'Todos', value: 'todos' }, ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a }))]}
@@ -782,7 +781,7 @@ export default function AjustesPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: '200px' }}>
                     <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estado</label>
-                    <SelectReporte
+                    <CustomSelect
                       value={consultaEstado}
                       onChange={val => setConsultaEstado(String(val))}
                       options={[{ label: 'Todos', value: 'todos' }, ...ESTADOS.map(e => ({ label: e.toUpperCase(), value: e }))]}
@@ -1382,27 +1381,25 @@ export default function AjustesPage() {
                     />
                   </div>
                   
-                  <SelectReporte
+                  <CustomSelect
                     value={auditFilterAccion}
                     onChange={val => { setAuditFilterAccion(String(val)); setAuditPage(1); }}
                     options={[{ label: 'Todas las acciones', value: 'todas' }, ...allAcciones.map(a => ({ label: a, value: a }))]}
-                    width="180px"
+                    width="150px"
                   />
 
-                  <SelectReporte
-                    icon="user"
+                  <CustomSelect
                     value={auditFilterAnalista}
                     onChange={val => { setAuditFilterAnalista(String(val)); setAuditPage(1); }}
                     options={[{ label: 'Todos los analistas', value: 'todos' }, ...allAuditAnalistas.map(a => ({ label: a, value: a }))]}
-                    width="190px"
+                    width="150px"
                   />
 
-                  <SelectReporte
-                    icon="calendar"
+                  <CustomSelect
                     value={auditFilterPeriodo}
                     onChange={val => { setAuditFilterPeriodo(String(val)); setAuditPage(1); }}
                     options={[{ label: 'Hoy', value: 'hoy' }, { label: 'Últimos 7 días', value: '7d' }, { label: 'Últimos 30 días', value: '30d' }, { label: 'Todo', value: 'todo' }]}
-                    width="170px"
+                    width="140px"
                   />
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { CheckCircle2, AlertCircle, XCircle, RotateCcw, Trash2 } from 'lucide-react';
-import SelectReporte from '@/components/SelectReporte';
+import CustomSelect from '@/components/CustomSelect';
 import { supabase } from '@/lib/supabase';
 import {
   parsePastedText, verificarFilas, formatDateAR, ParsedRow, ColumnMapping, ColumnRole, MatchStatus, VerificadorResult,
@@ -674,11 +674,11 @@ function FilterSelect({ filterKey, value, options, onChange, formatOption }: {
 }) {
   if (options.length === 0) return null;
   return (
-    <SelectReporte
+    <CustomSelect
       value={value}
       onChange={val => onChange(filterKey, String(val))}
       options={[{ label: 'Todos', value: '' }, ...[...options].sort().map(o => ({ label: formatOption ? formatOption(o) : o, value: o }))]}
-      width="160px"
+      width="150px"
     />
   );
 }
