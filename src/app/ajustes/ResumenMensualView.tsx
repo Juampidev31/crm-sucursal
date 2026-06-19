@@ -143,8 +143,6 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
       font: { size: 10, weight: 800 }
     },
   },
-  categoryPercentage: 0.85,
-  barPercentage: 0.9,
   scales: {
     x: {
       stacked,
@@ -178,7 +176,7 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
           return n + yLabel;
         }
       },
-      grid: { display: false }, border: { display: false }, beginAtZero: true,
+      grid: { color: 'rgba(255,255,255,0.06)' }, border: { display: false }, beginAtZero: true,
     },
   },
 });

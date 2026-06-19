@@ -879,7 +879,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             return n + yLabel;
           }
         },
-        grid: { display: false }, border: { display: false }, beginAtZero: true,
+        grid: { color: 'rgba(255,255,255,0.06)' }, border: { display: false }, beginAtZero: true,
       },
     },
   });
@@ -1025,14 +1025,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: [kpiTotal.ticket],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'),
           borderColor: '#f59e0b',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
         { 
           label: `Ticket ${mesAntLabel}`, 
           data: ticketAnt, 
                     backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
       ],
     };
@@ -1051,14 +1051,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: capitalVar, 
           backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)'), 
           borderColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)'), 
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
         { 
           label: 'Variación Ops %', 
           data: opsVar, 
           backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.15)' : 'rgba(248,113,113,0.15)'), 
           borderColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.5)' : 'rgba(248,113,113,0.5)'), 
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
       ],
     };
@@ -1092,14 +1092,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: [apertVsRenData.total.aperturas],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
           borderColor: '#10b981',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 50
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70
         },
         {
           label: `Anterior`,
           data: [apertVsRenData.ant.aperturas],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
       ],
     };
@@ -1115,14 +1115,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: [apertVsRenData.total.renovaciones],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
           borderColor: '#06b6d4',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 50
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70
         },
         {
           label: `Anterior`,
           data: [apertVsRenData.ant.renovaciones],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
         },
       ],
     };
