@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { fechaDesde, fechaHasta, empleador, estados, analista, preview, search, montoMin, montoMax, fechaScoreDesde, fechaScoreHasta, scoreMin, scoreMax, tipoCliente, acuerdoPrecios, tipoAlerta } = await req.json() as {
+  const { fechaDesde, fechaHasta, empleador, estados, analista, preview, search, montoMin, montoMax, fechaScoreDesde, fechaScoreHasta, scoreMin, scoreMax, tipoCliente, acuerdoPrecios, tipoAlerta, esRe } = await req.json() as {
     fechaDesde?: string;
     fechaHasta?: string;
     empleador?: string;
@@ -40,12 +40,13 @@ export async function POST(req: NextRequest) {
     tipoCliente?: string[];
     acuerdoPrecios?: string[];
     tipoAlerta?: string[];
+    esRe?: string; // '' = todos, 'si' = solo RE, 'no' = solo no RE
   };
 
   const buildQuery = () => {
     let q = supabase
       .from('registros')
-      .select('nombre,cuil,analista,estado,monto,fecha,puntaje,tipo_cliente,acuerdo_precios,empleador,dependencia,localidad,comentarios,created_at')
+      .select('nombre,cuil,analista,estado,monto,fecha,puntaje,tipo_cliente,acuerdo_precios,empleador,dependencia,localidad,comentarios,created_at,es_re')
       .order('fecha', { ascending: true });
     if (fechaDesde) q = q.gte('fecha', fechaDesde);
     if (fechaHasta) q = q.lte('fecha', fechaHasta);
@@ -60,6 +61,8 @@ export async function POST(req: NextRequest) {
     if (scoreMax) q = q.lte('puntaje', scoreMax);
     if (tipoCliente && tipoCliente.length > 0) q = q.in('tipo_cliente', tipoCliente);
     if (acuerdoPrecios && acuerdoPrecios.length > 0) q = q.in('acuerdo_precios', acuerdoPrecios);
+    if (esRe === 'si') q = q.eq('es_re', true);
+    else if (esRe === 'no') q = q.eq('es_re', false);
     return q;
   };
 
@@ -136,6 +139,7 @@ export async function POST(req: NextRequest) {
     { header: 'Empleador', key: 'empleador', width: 25 },
     { header: 'Tipo Cliente', key: 'tipo_cliente', width: 25 },
     { header: 'Acuerdo Precios', key: 'acuerdo_precios', width: 25 },
+    { header: 'RE', key: 'es_re', width: 10 },
     { header: 'Comentarios', key: 'comentarios', width: 25 },
   ];
 
@@ -160,6 +164,7 @@ export async function POST(req: NextRequest) {
       cuil: r.cuil ? Number(r.cuil) : null,
       monto: r.monto ? Number(r.monto) : null,
       puntaje: r.puntaje ? Number(r.puntaje) : null,
+      es_re: r.es_re ? 'Sí' : 'No',
     };
   });
 

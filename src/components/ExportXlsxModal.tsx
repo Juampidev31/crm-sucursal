@@ -47,6 +47,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
   const [scoreMin, setScoreMin] = useState('');
   const [scoreMax, setScoreMax] = useState('');
   const [analista, setAnalista] = useState('');
+  const [esRe, setEsRe] = useState(''); // '' = todos, 'si' = solo RE, 'no' = solo no RE
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -81,7 +82,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
   const buildBody = (isPreview: boolean) => ({
     fechaDesde, fechaHasta, empleador: '', estados, analista, search,
     fechaScoreDesde, fechaScoreHasta, montoMin, montoMax, scoreMin, scoreMax,
-    tipoCliente, acuerdoPrecios: acuerdoPrecios ? [acuerdoPrecios] : [], tipoAlerta,
+    tipoCliente, acuerdoPrecios: acuerdoPrecios ? [acuerdoPrecios] : [], tipoAlerta, esRe,
     ...(isPreview ? { preview: true } : {}),
   });
 
@@ -349,6 +350,22 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               <div>
                 <label style={labelStyle}>Acuerdo de Precios</label>
                 <input type="text" value={acuerdoPrecios} onChange={e => setAcuerdoPrecios(e.target.value)} placeholder="Ej. Comercial, Convenio..." style={inputStyle} />
+              </div>
+
+              <div>
+                <label style={labelStyle}>RE (Resumen Ejecutivo)</label>
+                <div style={{ transform: 'scale(1.15)', transformOrigin: 'top left', width: '87%' }}>
+                  <CustomSelect
+                    value={esRe}
+                    onChange={(val) => setEsRe(String(val))}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      { value: 'si', label: 'Solo RE' },
+                      { value: 'no', label: 'Solo no RE' },
+                    ]}
+                    width="100%"
+                  />
+                </div>
               </div>
 
               <div style={{ gridColumn: '1 / -1' }}>
