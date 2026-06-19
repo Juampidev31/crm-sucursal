@@ -7,7 +7,6 @@ import {
   LineElement, PointElement, Tooltip, Legend, BarController, LineController
 } from 'chart.js';
 import { formatCurrency } from '@/lib/utils';
-import { CONFIG } from '@/types';
 import { Users, TrendingUp, Shield, Briefcase, FileText, Activity, Target, BarChart3, Tag, PieChart, ChevronDown, ChevronRight } from 'lucide-react';
 import MetricasTab from '@/app/ajustes/MetricasTab';
 import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
@@ -196,16 +195,16 @@ export default function ResumenHTML({ datos }: { datos: any }) {
   const total = kpiTotal.capital;
 
   const chartCapital = {
-    labels: [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'],
+    labels: ['Total PDV'],
     datasets: [
-      { label: `Capital ${mesActual}`, data: [...kpiPorAnalista.map((k: any)=>k.capital), kpiTotal.capital], backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4 },
-      { type: 'line' as const, label: 'Objetivo', data: [...kpiPorAnalista.map((k: any)=>k.metaCapital||0), kpiTotal.metaCapital||0], borderColor: '#ff3366', borderWidth: 2, borderDash: [5,4], pointRadius: 4, fill: false },
+      { label: `Capital ${mesActual}`, data: [kpiTotal.capital], backgroundColor: 'rgba(96,165,250,0.8)', borderRadius: 4 },
+      { type: 'line' as const, label: 'Objetivo', data: [kpiTotal.metaCapital||0], borderColor: '#ff3366', borderWidth: 2, borderDash: [5,4], pointRadius: 4, fill: false },
     ],
   };
 
   const chartTicket = {
-    labels: [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'],
-    datasets: [{ label: `Ticket ${mesActual}`, data: [...kpiPorAnalista.map((k: any)=>k.ticket), kpiTotal.ticket], backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4 }],
+    labels: ['Total PDV'],
+    datasets: [{ label: `Ticket ${mesActual}`, data: [kpiTotal.ticket], backgroundColor: 'rgba(52,211,153,0.8)', borderRadius: 4 }],
   };
 
   return (

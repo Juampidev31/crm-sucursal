@@ -951,16 +951,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── Chart 1: Capital vs Objetivo ──────────────────────────────────────────
   const chartCapitalVsObjetivo = useMemo(() => {
-    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
-    const capitalAct = [...kpiPorAnalista.map(k => k.capital), kpiTotal.capital];
+    const labels = ['Total PDV'];
+    const capitalAct = [kpiTotal.capital];
     const capitalAnt = [
-      ...kpiPorAnalista.map(k => {
-        const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
-        return ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-      }),
       ventasMesAnt.filter(isVenta).reduce((s, r) => s + (Number(r.monto) || 0), 0),
     ];
-    const objetivo = [...kpiPorAnalista.map(k => k.metaCapital || 0), kpiTotal.metaCapital || 0];
+    const objetivo = [kpiTotal.metaCapital || 0];
     return {
       labels,
       datasets: [
@@ -989,13 +985,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── Chart 2: Ticket Promedio ──────────────────────────────────────────────
   const chartTicketPromedio = useMemo(() => {
-    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const labels = ['Total PDV'];
     const ticketAnt = [
-      ...kpiPorAnalista.map(k => {
-        const ant = filterByMonth(registros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
-        const cap = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-        return ant.length > 0 ? cap / ant.length : 0;
-      }),
       (() => {
         const vAnt = ventasMesAnt.filter(isVenta);
         return vAnt.length > 0 ? vAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0) / vAnt.length : 0;
@@ -1004,9 +995,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     return {
       labels,
       datasets: [
-        { 
-          label: `Ticket ${mesActualLabel}`, 
-          data: [...kpiPorAnalista.map(k => k.ticket), kpiTotal.ticket], 
+        {
+          label: `Ticket ${mesActualLabel}`,
+          data: [kpiTotal.ticket],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'),
           borderColor: '#f59e0b',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
@@ -1067,20 +1058,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
 
   const chartAperturas = useMemo(() => {
-    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const labels = ['Total PDV'];
     return {
       labels,
       datasets: [
-        { 
-          label: `Actual`, 
-          data: [...apertVsRenData.porAnalista.map(d => d.aperturas), apertVsRenData.total.aperturas], 
+        {
+          label: `Actual`,
+          data: [apertVsRenData.total.aperturas],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
           borderColor: '#10b981',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70
         },
-        { 
-          label: `Anterior`, 
-          data: [...apertVsRenData.porAnalistaAnt.map(d => d.aperturas), apertVsRenData.ant.aperturas], 
+        {
+          label: `Anterior`,
+          data: [apertVsRenData.ant.aperturas],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
@@ -1090,20 +1081,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   }, [apertVsRenData]);
 
   const chartRenovaciones = useMemo(() => {
-    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const labels = ['Total PDV'];
     return {
       labels,
       datasets: [
-        { 
-          label: `Actual`, 
-          data: [...apertVsRenData.porAnalista.map(d => d.renovaciones), apertVsRenData.total.renovaciones], 
+        {
+          label: `Actual`,
+          data: [apertVsRenData.total.renovaciones],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
           borderColor: '#06b6d4',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 70
         },
-        { 
-          label: `Anterior`, 
-          data: [...apertVsRenData.porAnalistaAnt.map(d => d.renovaciones), apertVsRenData.ant.renovaciones], 
+        {
+          label: `Anterior`,
+          data: [apertVsRenData.ant.renovaciones],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
