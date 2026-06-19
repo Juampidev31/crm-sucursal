@@ -78,6 +78,21 @@ export function normalizarNombre(nombre: string): string {
   return nombre.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
 }
 
+/**
+ * Parsea una celda de fecha tolerando texto pegado después de la fecha
+ * (ej. "22/01/2026 se presentan en sucursal..."). Extrae la fecha del inicio
+ * de la celda. Devuelve null si no hay una fecha válida (nunca el texto crudo,
+ * para no romper la columna date en la base).
+ */
+function parseDateCell(raw: string): string | null {
+  const direct = parseFullDate(raw);
+  if (direct) return direct;
+  // Fecha al comienzo de la celda, seguida de texto u otros caracteres.
+  const m = raw.trim().match(/^(\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})\b/);
+  if (m) return parseFullDate(m[1]);
+  return null;
+}
+
 function getCell(row: ParsedRow, mapping: CargaColumnMapping, role: CargaRole): string | undefined {
   const entry = Object.entries(mapping).find(([, r]) => r === role);
   if (!entry) return undefined;
@@ -110,10 +125,16 @@ export function parseCargaRow(row: ParsedRow, mapping: CargaColumnMapping): Part
   }
 
   const rawFecha = getCell(row, mapping, 'fecha');
-  if (rawFecha) result.fecha = parseFullDate(rawFecha) ?? rawFecha;
+  if (rawFecha) {
+    const f = parseDateCell(rawFecha);
+    if (f) result.fecha = f;
+  }
 
   const rawFechaScore = getCell(row, mapping, 'fecha_score');
-  if (rawFechaScore) result.fecha_score = parseFullDate(rawFechaScore) ?? rawFechaScore;
+  if (rawFechaScore) {
+    const f = parseDateCell(rawFechaScore);
+    if (f) result.fecha_score = f;
+  }
 
   const rawPuntaje = getCell(row, mapping, 'puntaje');
   if (rawPuntaje) {

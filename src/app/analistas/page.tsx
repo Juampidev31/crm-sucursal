@@ -175,7 +175,7 @@ export default function AnalistasPage() {
   const analistasParaMostrar = analista === 'PDV' ? CONFIG.ANALISTAS_DEFAULT : [analista];
   const chartLabels = useMemo(() => {
     if (analista === 'PDV') {
-      return [...CONFIG.ANALISTAS_DEFAULT.map(a => a.toUpperCase()), 'TOTAL GENERAL'];
+      return ['TOTAL GENERAL'];
     }
     return ['INDIVIDUAL'];
   }, [analista]);
@@ -819,24 +819,20 @@ export default function AnalistasPage() {
     const labels = chartLabels;
     const isSingle = labels.length === 1;
 
-    const capitalAct = [...kpiPorAnalista.map(k => k.capital)];
-    if (analista === 'PDV') capitalAct.push(kpiTotal.capital);
+    const isPDV = analista === 'PDV';
 
-    const capitalAnt = [
-      ...kpiPorAnalista.map(k => {
-        const ant = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
-        return ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-      })
-    ];
-    if (analista === 'PDV') {
-      capitalAnt.push(filterByMonth(allRegistros, mesPrev, anioPrev).filter(isVenta).reduce((s, r) => s + (Number(r.monto) || 0), 0));
-    }
+    const capitalAct = isPDV ? [kpiTotal.capital] : kpiPorAnalista.map(k => k.capital);
 
-    const objetivo = [...kpiPorAnalista.map(k => k.metaCapital || 0)];
-    if (analista === 'PDV') objetivo.push(kpiTotal.metaCapital || 0);
+    const capitalAnt = isPDV
+      ? [filterByMonth(allRegistros, mesPrev, anioPrev).filter(isVenta).reduce((s, r) => s + (Number(r.monto) || 0), 0)]
+      : kpiPorAnalista.map(k => {
+          const ant = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+          return ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+        });
 
-    const cumplimiento = [...kpiPorAnalista.map(k => k.cumplCapital || 0)];
-    if (analista === 'PDV') cumplimiento.push(kpiTotal.cumplCapital || 0);
+    const objetivo = isPDV ? [kpiTotal.metaCapital || 0] : kpiPorAnalista.map(k => k.metaCapital || 0);
+
+    const cumplimiento = isPDV ? [kpiTotal.cumplCapital || 0] : kpiPorAnalista.map(k => k.cumplCapital || 0);
 
     return {
       labels,
@@ -854,20 +850,20 @@ export default function AnalistasPage() {
   // ── Chart 2: Ticket Promedio ──────────────────────────────────────────────
   const chartTicketPromedio = useMemo(() => {
     const labels = chartLabels;
-    const ticketAct = [...kpiPorAnalista.map(k => k.ticket)];
-    if (analista === 'PDV') ticketAct.push(kpiTotal.ticket);
+    const isPDV = analista === 'PDV';
 
-    const ticketAnt = [
-      ...kpiPorAnalista.map(k => {
-        const ant = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
-        const cap = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-        return ant.length > 0 ? cap / ant.length : 0;
-      })
-    ];
-    if (analista === 'PDV') {
-      const vAnt = filterByMonth(allRegistros, mesPrev, anioPrev).filter(isVenta);
-      ticketAnt.push(vAnt.length > 0 ? vAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0) / vAnt.length : 0);
-    }
+    const ticketAct = isPDV ? [kpiTotal.ticket] : kpiPorAnalista.map(k => k.ticket);
+
+    const ticketAnt = isPDV
+      ? (() => {
+          const vAnt = filterByMonth(allRegistros, mesPrev, anioPrev).filter(isVenta);
+          return [vAnt.length > 0 ? vAnt.reduce((s, r) => s + (Number(r.monto) || 0), 0) / vAnt.length : 0];
+        })()
+      : kpiPorAnalista.map(k => {
+          const ant = filterByMonth(allRegistros, mesPrev, anioPrev).filter(r => r.analista === k.analista).filter(isVenta);
+          const cap = ant.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+          return ant.length > 0 ? cap / ant.length : 0;
+        });
 
     return {
       labels,
@@ -1062,11 +1058,9 @@ export default function AnalistasPage() {
 
   const chartAperturas = useMemo(() => {
     const labels = chartLabels;
-    const actual = [...apertVsRenData.porAnalista.map(d => d.aperturas)];
-    if (analista === 'PDV') actual.push(apertVsRenData.total.aperturas);
-
-    const anterior = [...apertVsRenData.porAnalistaAnt.map(d => d.aperturas)];
-    if (analista === 'PDV') anterior.push(apertVsRenData.ant.aperturas);
+    const isPDV = analista === 'PDV';
+    const actual = isPDV ? [apertVsRenData.total.aperturas] : apertVsRenData.porAnalista.map(d => d.aperturas);
+    const anterior = isPDV ? [apertVsRenData.ant.aperturas] : apertVsRenData.porAnalistaAnt.map(d => d.aperturas);
 
     return {
       labels,
@@ -1079,11 +1073,9 @@ export default function AnalistasPage() {
 
   const chartRenovaciones = useMemo(() => {
     const labels = chartLabels;
-    const actual = [...apertVsRenData.porAnalista.map(d => d.renovaciones)];
-    if (analista === 'PDV') actual.push(apertVsRenData.total.renovaciones);
-
-    const anterior = [...apertVsRenData.porAnalistaAnt.map(d => d.renovaciones)];
-    if (analista === 'PDV') anterior.push(apertVsRenData.ant.renovaciones);
+    const isPDV = analista === 'PDV';
+    const actual = isPDV ? [apertVsRenData.total.renovaciones] : apertVsRenData.porAnalista.map(d => d.renovaciones);
+    const anterior = isPDV ? [apertVsRenData.ant.renovaciones] : apertVsRenData.porAnalistaAnt.map(d => d.renovaciones);
 
     return {
       labels,
