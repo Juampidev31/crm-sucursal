@@ -75,6 +75,31 @@ const labelsPlugin: any = {
   },
 };
 
+// Dibuja líneas horizontales de referencia (objetivo) de extremo a extremo.
+// Necesario porque con una sola categoría una línea de datos quedaría como un punto.
+const referenceLinesPlugin: any = {
+  id: 'referenceLinesPlugin',
+  afterDraw(chart: any) {
+    const { ctx, chartArea: { left, right }, scales } = chart;
+    chart.data.datasets.forEach((dataset: any) => {
+      if (dataset.horizontalReferenceValue !== undefined) {
+        const yScale = scales[dataset.yAxisID || 'y'];
+        if (!yScale) return;
+        const yValue = yScale.getPixelForValue(dataset.horizontalReferenceValue);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash(dataset.borderDash || []);
+        ctx.lineWidth = dataset.borderWidth || 2;
+        ctx.strokeStyle = dataset.borderColor || '#fff';
+        ctx.moveTo(left, yValue);
+        ctx.lineTo(right, yValue);
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+  },
+};
+
 // Línea de referencia 100% para gráficos de cumplimiento
 const refLine100 = (n: number) => ({
   type: 'line' as const,
@@ -978,7 +1003,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           order: 1, 
           maxBarThickness: 45 
         },
-        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#ff3366', borderWidth: 2, borderDash: [5, 4], pointRadius: 4, pointBackgroundColor: '#ff3366', fill: false, order: 0 },
+        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#ff3366', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointBackgroundColor: '#ff3366', fill: false, order: 0, horizontalReferenceValue: objetivo[0] },
       ],
     };
   }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, ventasMesAnt, mesActualLabel, mesAntLabel]);
@@ -1000,14 +1025,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: [kpiTotal.ticket],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'),
           borderColor: '#f59e0b',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
         },
         { 
           label: `Ticket ${mesAntLabel}`, 
           data: ticketAnt, 
                     backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
         },
       ],
     };
@@ -1026,14 +1051,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: capitalVar, 
           backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)'), 
           borderColor: capitalVar.map(v => v >= 0 ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)'), 
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
         },
         { 
           label: 'Variación Ops %', 
           data: opsVar, 
           backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.15)' : 'rgba(248,113,113,0.15)'), 
           borderColor: opsVar.map(v => v >= 0 ? 'rgba(167,139,250,0.5)' : 'rgba(248,113,113,0.5)'), 
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
         },
       ],
     };
@@ -1067,14 +1092,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: [apertVsRenData.total.aperturas],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
           borderColor: '#10b981',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 50
         },
         {
           label: `Anterior`,
           data: [apertVsRenData.ant.aperturas],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
         },
       ],
     };
@@ -1090,14 +1115,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           data: [apertVsRenData.total.renovaciones],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
           borderColor: '#06b6d4',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 50
         },
         {
           label: `Anterior`,
           data: [apertVsRenData.ant.renovaciones],
                     backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
-          borderWidth: 0, borderRadius: 4, maxBarThickness: 70 
+          borderWidth: 0, borderRadius: 4, maxBarThickness: 50 
         },
       ],
     };
@@ -1709,7 +1734,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                       </div>
                     </div>
                     <div id="chart-capital-objetivo" style={{ height: 200, position: 'relative', width: '100%' }}>
-                      <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                      <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
                     </div>
                   </div>
                 </div>

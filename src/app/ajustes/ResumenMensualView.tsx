@@ -70,6 +70,31 @@ const labelsPlugin: any = {
   },
 };
 
+// Dibuja líneas horizontales de referencia (objetivo) de extremo a extremo,
+// necesario cuando hay una sola categoría (una línea de datos quedaría como un punto).
+const referenceLinesPlugin: any = {
+  id: 'referenceLinesPlugin',
+  afterDraw(chart: any) {
+    const { ctx, chartArea: { left, right }, scales } = chart;
+    chart.data.datasets.forEach((dataset: any) => {
+      if (dataset.horizontalReferenceValue !== undefined) {
+        const yScale = scales[dataset.yAxisID || 'y'];
+        if (!yScale) return;
+        const yValue = yScale.getPixelForValue(dataset.horizontalReferenceValue);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash(dataset.borderDash || []);
+        ctx.lineWidth = dataset.borderWidth || 2;
+        ctx.strokeStyle = dataset.borderColor || '#fff';
+        ctx.moveTo(left, yValue);
+        ctx.lineTo(right, yValue);
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+  },
+};
+
 const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, showLegend = false, stacked = false): any => ({
   responsive: true,
   maintainAspectRatio: false,
@@ -366,7 +391,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
                   </div>
                 </div>
                 <div id="chart-capital-objetivo" style={{ height: 200, position: 'relative', width: '100%' }}>
-                  <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                  <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
                 </div>
               </div>
             </div>
