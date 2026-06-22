@@ -897,6 +897,16 @@ const FiltersContent = () => {
           {ESTADOS.map(st => (
             <span key={st} onClick={() => toggleEstado(st)} style={chipStyle(filters.estados.includes(st))}>{STATUS_LABEL[st] || st}</span>
           ))}
+          <span
+            onClick={() => setFilter('esRe', filters.esRe === 'si' ? '' : 'si')}
+            style={{
+              padding: '8px 10px', borderRadius: '8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+              background: filters.esRe === 'si' ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.02)',
+              color: filters.esRe === 'si' ? '#a78bfa' : '#8f929d',
+              border: `1px solid ${filters.esRe === 'si' ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
+              transition: 'all 0.2s', whiteSpace: 'nowrap', textAlign: 'center',
+            }}
+          >RE (Resumen ejecutivo)</span>
         </div>
       </div>
 
@@ -907,10 +917,6 @@ const FiltersContent = () => {
             <span key={a} onClick={() => toggleAcuerdoPrecios(a)} style={chipStyle(filters.acuerdoPrecios.includes(a))}>{a}</span>
           )) : <span style={{ fontSize: '11px', color: '#64748b' }}>Sin acuerdos registrados</span>}
         </div>
-      </div>
-
-      <div>
-        <span onClick={() => setFilter('esRe', filters.esRe === 'si' ? '' : 'si')} style={chipStyle(filters.esRe === 'si')}>RE (Resumen ejecutivo)</span>
       </div>
 
       <div>
