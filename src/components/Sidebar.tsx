@@ -910,6 +910,10 @@ const FiltersContent = () => {
       </div>
 
       <div>
+        <span onClick={() => setFilter('esRe', filters.esRe === 'si' ? '' : 'si')} style={chipStyle(filters.esRe === 'si')}>RE (Resumen ejecutivo)</span>
+      </div>
+
+      <div>
         <label style={secLabel}>SCORE MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
           <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
