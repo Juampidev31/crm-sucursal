@@ -384,7 +384,7 @@ export default function Sidebar({
   };
 
   return (
-    <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''} ${showCalculator ? 'sidebar-expanded-filters' : ''}`}
+    <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''}`}
       style={{
         // Sidebar fija (no escala con el zoom del contenido).
         '--current-zoom': 1,
@@ -393,14 +393,14 @@ export default function Sidebar({
         boxShadow: 'none',
         display: 'flex', flexDirection: 'row',
         alignItems: 'stretch',
-        width: showCalculator ? 'var(--sidebar-filters-width)' : 'var(--sidebar-width)',
+        width: 'var(--sidebar-width)',
         zIndex: 150,
         position: 'relative',
         transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
       } as React.CSSProperties}
     >
       {/* Pestaña flotante para cerrar la sidebar (espejo de la pestaña de abrir) */}
-      {onHide && !showFilters && (
+      {onHide && (!showFilters && !showCalculator) && (
         <button
           onClick={onHide}
           title="Ocultar menú"
@@ -433,9 +433,9 @@ export default function Sidebar({
       {/* Text + Icon Column — contenedor fijo, sin scroll; el contenido se auto-escala para entrar */}
       <div ref={navScrollRef} className="hide-scrollbar" style={{
         width: 'var(--sidebar-width)',
-        display: showFilters ? 'none' : 'block',
+        display: (showFilters || showCalculator) ? 'none' : 'block',
         flexShrink: 0,
-        borderRight: showCalculator ? '1px solid var(--border)' : 'none',
+        borderRight: 'none',
         overflow: 'hidden'
       }}>
         <div ref={navContentRef} style={{
@@ -604,7 +604,7 @@ export default function Sidebar({
               iconColor="#a855f7"
               label="Filtros Avanzados" 
               active={showFilters} 
-              onClick={(e) => { e.preventDefault(); setShowFilters(!showFilters); }} 
+              onClick={(e) => { e.preventDefault(); setShowFilters(!showFilters); setShowCalculator(false); }} 
             />
           )}
           <NavItem href="/recordatorios" icon={Bell} iconColor="#ef4444" label="Notificaciones" active={pathname === '/recordatorios'} badge={pendingReminders > 0 ? pendingReminders : undefined} badgeColor="#10b981" />
@@ -667,7 +667,7 @@ export default function Sidebar({
         <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 8 }}>
           {isAdmin ? (
             <>
-              <NavItem href="#" icon={Calculator} label="Calculadora" active={showCalculator} onClick={(e) => { e.preventDefault(); setShowCalculator(!showCalculator); }} />
+              <NavItem href="#" icon={Calculator} label="Calculadora" active={showCalculator} onClick={(e) => { e.preventDefault(); setShowCalculator(!showCalculator); setShowFilters(false); }} />
               <NavItem href="#" icon={FileSpreadsheet} iconColor="#10b981" label="Descargar XLSX" onClick={(e) => { e.preventDefault(); setShowXlsxModal(true); }} />
               <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname.startsWith('/ajustes')} />
             </>
@@ -994,18 +994,30 @@ const CalculadoraContent = () => {
   const comisiones = Object.values(results).reduce((s, v) => s + v, 0);
   const totalGeneral = comisiones + SUELDO_FIJO;
 
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '10.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '13.5px' };
+
   const inputRow = (label: string, key: keyof typeof pacts) => (
-    <div style={{ marginBottom: 16 }}>
-      <label style={{ display: 'block', fontSize: '9px', color: 'var(--fg-muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>{label} (%)</label>
+    <div style={{
+      background: 'rgba(255,255,255,0.015)',
+      padding: '12px 14px',
+      borderRadius: '12px',
+      border: '1px solid rgba(255,255,255,0.03)',
+      transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.015)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'none'; }}
+    >
+      <label style={{ display: 'block', fontSize: '9.5px', color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>{label} (%)</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <input
           type="number"
-          placeholder="%"
+          placeholder="0"
           value={pacts[key]}
           onChange={e => setPacts(p => ({ ...p, [key]: e.target.value }))}
-          style={{ width: '64px', height: 40, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', color: '#fff', textAlign: 'center', fontSize: 13, outline: 'none' }}
+          style={{ ...fieldBase, width: '70px', height: 38, textAlign: 'center', color: '#fff', outline: 'none', fontWeight: 600, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)' }}
         />
-        <div style={{ flex: 1, textAlign: 'right', fontSize: 13, fontWeight: 800, color: results[key] > 0 ? '#10b981' : '#64748b' }}>
+        <div style={{ flex: 1, textAlign: 'right', fontSize: 13.5, fontWeight: 700, color: results[key] > 0 ? '#34d399' : '#4b5563', transition: 'color 0.2s' }}>
           {results[key] > 0 ? `$ ${results[key].toLocaleString('es-AR')}` : '—'}
         </div>
       </div>
@@ -1013,38 +1025,42 @@ const CalculadoraContent = () => {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 900, color: '#fb923c', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 0.5 }}>Venta</div>
-        {inputRow('Capital', 'capital')}
-        {inputRow('Operación', 'operacion')}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '12px', paddingBottom: '4px' }}>
+      <div>
+        <label style={{ ...secLabel, color: '#fb923c', backgroundImage: 'linear-gradient(90deg, rgba(251,146,60,0.5), rgba(251,146,60,0))' }}>VENTA</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {inputRow('Capital', 'capital')}
+          {inputRow('Operación', 'operacion')}
+        </div>
       </div>
 
-      <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 900, color: '#00d4ff', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 0.5 }}>Cobranzas</div>
-        {inputRow('Recupero 90-119', 'recupero90')}
-        {inputRow('Recupero 120-209', 'recupero120')}
-        {inputRow('REFI', 'refi')}
+      <div>
+        <label style={{ ...secLabel, color: '#00d4ff', backgroundImage: 'linear-gradient(90deg, rgba(0,212,255,0.5), rgba(0,212,255,0))' }}>COBRANZAS</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {inputRow('Recupero 90-119', 'recupero90')}
+          {inputRow('Recupero 120-209', 'recupero120')}
+          {inputRow('REFI', 'refi')}
+        </div>
       </div>
 
-      <div style={{ marginTop: 'auto', padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Sueldo Fijo</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#eaeaea' }}>$ {SUELDO_FIJO.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+      <div style={{ marginTop: 'auto', padding: '18px 16px', background: 'rgba(0,0,0,0.15)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sueldo Fijo</span>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: '#e5e7eb' }}>$ {SUELDO_FIJO.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
         </div>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Comisiones</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#10b981' }}>$ {comisiones.toLocaleString('es-AR')}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comisiones</span>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: '#34d399' }}>$ {comisiones.toLocaleString('es-AR')}</span>
         </div>
 
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '16px 0' }} />
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ fontSize: 10, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Cobrar</span>
-          <span style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>$ {totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Cobrar</span>
+          <span style={{ fontSize: 19, fontWeight: 900, background: 'linear-gradient(135deg, #ffffff, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>$ {totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
         </div>
-        <div style={{ fontSize: 9, color: '#64748b', textAlign: 'right' }}>Sucursal B</div>
+        <div style={{ fontSize: 9.5, color: '#6b7280', textAlign: 'right', fontWeight: 600, marginTop: '2px', letterSpacing: '0.5px' }}>SUCURSAL B</div>
       </div>
     </div>
   );
