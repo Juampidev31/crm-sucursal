@@ -21,6 +21,7 @@ import NuevaSeccionSheets from './NuevaSeccionSheets';
 import { filterByMonth, isVenta, TIPOS_ACUERDO, emptyTiposAcuerdo, matchTipoAcuerdo, normalizarEmpleador, buildDistEmpleador } from '@/lib/registro-stats';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
 import DistBlock from '@/components/charts/DistBlock';
+import ProyeccionCard from './ProyeccionCard';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler);
 
@@ -1156,7 +1157,11 @@ export default function AnalistasPage() {
             <CustomSelect
               value={analista}
               onChange={val => setAnalista(String(val))}
-              options={[{ label: 'PDV', value: 'PDV' }, ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a }))]}
+              options={[
+                { label: 'PDV', value: 'PDV' },
+                ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a })),
+                ...(isAdmin ? [{ label: '📊 Proyectados', value: 'PROYECTADOS' }] : []),
+              ]}
               width="150px"
             />
             <CustomSelect
@@ -1175,6 +1180,14 @@ export default function AnalistasPage() {
         </div>
       </div>
 
+            {analista === 'PROYECTADOS' && isAdmin ? (
+              <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16, alignItems: 'stretch' }}>
+                {[{ kpi: kpiTotal, titulo: 'PDV (Total General)' }, ...kpiPorAnalista.map(k => ({ kpi: k, titulo: k.analista }))].map(({ kpi, titulo }) => (
+                  <ProyeccionCard key={titulo} kpi={kpi} titulo={titulo} />
+                ))}
+              </div>
+            ) : (
+              <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)', position: 'relative' }}>
@@ -2145,6 +2158,8 @@ export default function AnalistasPage() {
           </div>
         </div>
       )}
+              </>
+            )}
     </div>
   );
 }
