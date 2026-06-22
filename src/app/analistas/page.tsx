@@ -167,12 +167,13 @@ export default function AnalistasPage() {
   }, [searchParams]);
 
   const chartsLoaded = useDeferredMount();
+  const esVistaGlobal = analista === 'PDV' || analista === 'PROYECTADOS';
 
   const registros = useMemo(() => {
-    return analista === 'PDV' ? allRegistros : allRegistros.filter(r => r.analista === analista);
-  }, [allRegistros, analista]);
+    return esVistaGlobal ? allRegistros : allRegistros.filter(r => r.analista === analista);
+  }, [allRegistros, analista, esVistaGlobal]);
 
-  const analistasParaMostrar = analista === 'PDV' ? CONFIG.ANALISTAS_DEFAULT : [analista];
+  const analistasParaMostrar = esVistaGlobal ? CONFIG.ANALISTAS_DEFAULT : [analista];
   const chartLabels = useMemo(() => {
     if (analista === 'PDV') {
       return ['TOTAL GENERAL'];
@@ -499,7 +500,7 @@ export default function AnalistasPage() {
 
     const hoy = new Date();
     const esMesActual = selectedMes === (hoy.getMonth() + 1) && selectedAnio === hoy.getFullYear();
-    const cfgDias = analista === 'PDV'
+    const cfgDias = esVistaGlobal
       ? diasConfig.find(d => d.analista === 'Todos')
       : diasConfig.find(d => d.analista === analista);
     const diasHabilesAdmin = cfgDias?.dias_habiles ?? 0;
@@ -756,8 +757,8 @@ export default function AnalistasPage() {
   // ── Datos gráfico cumplimiento por analista ───────────────────────────────
   // Card unificada: en Vista Global usa el consolidado (kpiTotal); en vista de analista usa el individual
   const kpiCards = useMemo(
-    () => (analista === 'PDV' ? [kpiTotal] : kpiPorAnalista),
-    [analista, kpiTotal, kpiPorAnalista]
+    () => (esVistaGlobal ? [kpiTotal] : kpiPorAnalista),
+    [esVistaGlobal, kpiTotal, kpiPorAnalista]
   );
 
   const chartCumplimiento = useMemo(() => {
