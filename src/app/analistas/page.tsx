@@ -991,6 +991,73 @@ export default function AnalistasPage() {
     };
   }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital]);
 
+  // Progreso vs Ideal unificado: PDV (Total) + cada analista, contra el Ideal del total.
+  const chartProgresoUnif = useMemo(() => {
+    const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = selectedMes === (today.getMonth() + 1) && selectedAnio === today.getFullYear();
+    const maxDay = isCurrentMonth ? today.getDate() : daysInMonth;
+    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+
+    const regsMes = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
+
+    const cumFor = (pred: (r: typeof regsMes[number]) => boolean): (number | null)[] => {
+      let cum = 0;
+      return labels.map((_, i) => {
+        const day = i + 1;
+        if (day > maxDay) return null;
+        const dayTotal = regsMes.reduce((s, r) => {
+          if (!r.fecha || !pred(r)) return s;
+          return new Date(r.fecha + 'T12:00:00').getDate() === day ? s + (Number(r.monto) || 0) : s;
+        }, 0);
+        cum += dayTotal;
+        return cum;
+      });
+    };
+
+    const COLORS: Record<string, string> = { Luciana: '#60a5fa', Victoria: '#a78bfa' };
+    const lineFor = (label: string, data: (number | null)[], color: string) => ({
+      label, data, borderColor: color, borderWidth: 2,
+      pointBackgroundColor: color, pointBorderColor: color, pointRadius: 2, fill: false, tension: 0.2,
+    });
+
+    const meta = kpiTotal.metaCapital;
+    const idealData = labels.map((_, i) => (meta / daysInMonth) * (i + 1));
+
+    return {
+      labels,
+      datasets: [
+        lineFor('PDV (Total)', cumFor(() => true), '#10b981'),
+        ...CONFIG.ANALISTAS_DEFAULT.map(a => lineFor(a, cumFor(r => r.analista === a), COLORS[a] ?? '#94a3b8')),
+        {
+          label: 'Ideal', data: idealData, borderColor: '#fb923c', borderWidth: 1,
+          borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0,
+        },
+      ],
+    };
+  }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital]);
+
+  const chartProgresoUnifOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index' as const, intersect: false },
+    plugins: {
+      legend: { display: true, position: 'top' as const, labels: { color: '#ccc', font: { size: 10 }, usePointStyle: true } },
+      tooltip: {
+        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        titleColor: '#fff', bodyColor: '#f1f5f9', padding: 16, cornerRadius: 12, usePointStyle: true,
+        callbacks: {
+          title: (items: any[]) => `Día ${items[0].label}`,
+          label: (ctx: any) => ` ${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } },
+    },
+  };
+
   const chartProgresoOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -1228,6 +1295,18 @@ export default function AnalistasPage() {
                     <ProyeccionCard key={titulo} kpi={kpi} titulo={titulo} showActual={proyShowActual} showProy={proyShowProy} />
                   ));
                 })()}
+              </div>
+
+              {/* ── Progreso vs Ideal unificado (PDV + analistas) ── */}
+              <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Progreso vs Ideal</div>
+                <div style={{ minHeight: 320, position: 'relative', width: '100%' }}>
+                  {chartsLoaded ? (
+                    <Line data={chartProgresoUnif} options={chartProgresoUnifOptions as any} plugins={[lineShadowPlugin]} />
+                  ) : (
+                    <ChartShimmer />
+                  )}
+                </div>
               </div>
               </>
             ) : (
