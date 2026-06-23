@@ -195,7 +195,8 @@ function AutoFit({ children, style }: { children: React.ReactNode; style?: React
       const avail = c.clientHeight;
       const natural = ct.offsetHeight; // offsetHeight no se ve afectado por transform
       if (!avail || !natural) return;
-      const s = Math.min(1, avail / natural);
+      // Escala en ambos sentidos: encoge si no entra y agranda para ocupar todo el alto.
+      const s = avail / natural;
       setScale(prev => (Math.abs(prev - s) > 0.004 ? s : prev));
     };
     compute();
