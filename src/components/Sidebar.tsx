@@ -181,45 +181,6 @@ function SidebarDivider() {
   return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '16px 20px' }} />;
 }
 
-// ── AutoFit — escala su contenido para que entre en el alto disponible sin scroll
-// (mismo criterio que el auto-ajuste del menú lateral).
-function AutoFit({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  React.useLayoutEffect(() => {
-    const compute = () => {
-      const c = containerRef.current;
-      const ct = contentRef.current;
-      if (!c || !ct) return;
-      const avail = c.clientHeight;
-      const natural = ct.offsetHeight; // offsetHeight no se ve afectado por transform
-      if (!avail || !natural) return;
-      // Escala en ambos sentidos: encoge si no entra y agranda para ocupar todo el alto.
-      const s = avail / natural;
-      setScale(prev => (Math.abs(prev - s) > 0.004 ? s : prev));
-    };
-    compute();
-    const ro = new ResizeObserver(compute);
-    if (containerRef.current) ro.observe(containerRef.current);
-    if (contentRef.current) ro.observe(contentRef.current);
-    window.addEventListener('resize', compute);
-    return () => { ro.disconnect(); window.removeEventListener('resize', compute); };
-  }, []);
-  return (
-    <div ref={containerRef} className="hide-scrollbar" style={{ flex: 1, overflow: 'hidden' }}>
-      <div ref={contentRef} style={{
-        width: `${100 / scale}%`,
-        transform: `scale(${scale})`,
-        transformOrigin: 'top left',
-        ...style,
-      }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 // ── Modal overlay shared shell ────────────────────────────────────────────────
 
 const MODAL_OVERLAY_STYLE: React.CSSProperties = {
@@ -317,30 +278,6 @@ export default function Sidebar({
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, filters, limpiarFiltros, toggleEstado, setFilter } = useFilter();
   const { permisosConfig, alertasConfig } = useSettings();
   const { registros } = useRegistros(true);
-
-  // Auto-ajuste al alto: la sidebar se achica lo justo para que entre TODO el menú
-  // sin scroll, en cualquier resolución. Queda fija (no depende del zoom del contenido).
-  const navScrollRef = useRef<HTMLDivElement>(null);
-  const navContentRef = useRef<HTMLDivElement>(null);
-  const [navScale, setNavScale] = useState(1);
-  React.useLayoutEffect(() => {
-    const compute = () => {
-      const container = navScrollRef.current;
-      const content = navContentRef.current;
-      if (!container || !content) return;
-      const avail = container.clientHeight;
-      const natural = content.offsetHeight; // offsetHeight no se ve afectado por transform
-      if (!avail || !natural) return;
-      const s = Math.min(1, avail / natural);
-      setNavScale(prev => (Math.abs(prev - s) > 0.004 ? s : prev));
-    };
-    compute();
-    const ro = new ResizeObserver(compute);
-    if (navScrollRef.current) ro.observe(navScrollRef.current);
-    if (navContentRef.current) ro.observe(navContentRef.current);
-    window.addEventListener('resize', compute);
-    return () => { ro.disconnect(); window.removeEventListener('resize', compute); };
-  }, [showFilters]);
 
   // Los badges cuentan solo los registros que superan el límite de días configurado en alertas
   const countsByState = useMemo(() => {
@@ -469,19 +406,18 @@ export default function Sidebar({
         height: '100%',
         transformOrigin: 'top left',
       }}>
-      {/* Text + Icon Column — contenedor fijo, sin scroll; el contenido se auto-escala para entrar */}
-      <div ref={navScrollRef} className="hide-scrollbar" style={{
+      {/* Text + Icon Column — tamaño de letra fijo; scrollea si no entra en el alto */}
+      <div className="hide-scrollbar" style={{
         width: 'var(--sidebar-width)',
         display: (showFilters || showCalculator) ? 'none' : 'block',
         flexShrink: 0,
         borderRight: 'none',
-        overflow: 'hidden'
+        height: '100%',
+        overflowY: 'auto',
+        overflowX: 'hidden'
       }}>
-        <div ref={navContentRef} style={{
-          width: `${100 / navScale}%`,
-          minHeight: `${100 / navScale}%`,
-          transform: `scale(${navScale})`,
-          transformOrigin: 'top left',
+        <div style={{
+          minHeight: '100%',
           display: 'flex', flexDirection: 'column',
           padding: '2px 16px 20px',
         }}>
@@ -753,7 +689,7 @@ export default function Sidebar({
           animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
         }}>
           <div style={{
-            padding: '32px 24px 20px',
+            padding: '18px 20px 14px',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
@@ -763,9 +699,9 @@ export default function Sidebar({
             </button>
           </div>
 
-          <AutoFit style={{ padding: '16px 20px' }}>
+          <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px' }}>
             <FiltersContent />
-          </AutoFit>
+          </div>
         </div>
       )}
 
@@ -782,7 +718,7 @@ export default function Sidebar({
           animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
         }}>
           <div style={{
-            padding: '32px 24px 20px',
+            padding: '18px 20px 14px',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
@@ -792,9 +728,9 @@ export default function Sidebar({
             </button>
           </div>
 
-          <AutoFit style={{ padding: '16px 20px' }}>
+          <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px' }}>
             <CalculadoraContent />
-          </AutoFit>
+          </div>
         </div>
       )}
       </div>
@@ -853,7 +789,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
         }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          width: '100%', height: 40, padding: '0 12px',
+          width: '100%', height: 36, padding: '0 12px',
           background: 'rgba(255,255,255,0.03)',
           border: `1px solid ${isOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
           borderRadius: '8px', fontSize: '14.5px',
@@ -898,25 +834,25 @@ const FiltersContent = () => {
   }, [registros]);
 
   const chipStyle = (active: boolean) => ({
-    padding: '8px 10px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+    padding: '6px 10px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
     background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
     color: active ? '#10b981' : '#8f929d',
     border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
     transition: 'all 0.2s', whiteSpace: 'nowrap', textAlign: 'center'
   } as React.CSSProperties);
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '11.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '11.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
   const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '14.5px' };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '4px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '10px', paddingBottom: '4px' }}>
       <div>
         <label style={secLabel}>BÚSQUEDA GENERAL</label>
         <input
           placeholder="Nombre, CUIL..."
           value={filters.search}
           onChange={e => setFilter('search', e.target.value)}
-          style={{ ...fieldBase, width: '100%', height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }}
+          style={{ ...fieldBase, width: '100%', height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }}
         />
       </div>
 
@@ -932,14 +868,14 @@ const FiltersContent = () => {
 
       <div>
         <label style={secLabel}>ESTADOS</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '7px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
           {ESTADOS.map(st => (
             <span key={st} onClick={() => toggleEstado(st)} style={chipStyle(filters.estados.includes(st))}>{STATUS_LABEL[st] || st}</span>
           ))}
           <span
             onClick={() => setFilter('esRe', filters.esRe === 'si' ? '' : 'si')}
             style={{
-              padding: '8px 10px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              padding: '6px 10px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
               background: filters.esRe === 'si' ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.02)',
               color: filters.esRe === 'si' ? '#a78bfa' : '#8f929d',
               border: `1px solid ${filters.esRe === 'si' ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
@@ -951,7 +887,7 @@ const FiltersContent = () => {
 
       <div>
         <label style={secLabel}>ACUERDO DE PRECIOS</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '7px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
           {allAcuerdos.length > 0 ? allAcuerdos.map(a => (
             <span key={a} onClick={() => toggleAcuerdoPrecios(a)} style={chipStyle(filters.acuerdoPrecios.includes(a))}>{a}</span>
           )) : <span style={{ fontSize: '11px', color: '#64748b' }}>Sin acuerdos registrados</span>}
@@ -961,24 +897,24 @@ const FiltersContent = () => {
       <div>
         <label style={secLabel}>SCORE MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
-          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
         </div>
       </div>
 
       <div>
         <label style={secLabel}>MONTO MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
-          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
         </div>
       </div>
 
       <div>
         <label style={secLabel}>PERÍODO</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
-          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 40, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
+          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
+          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
         </div>
       </div>
 
@@ -986,7 +922,7 @@ const FiltersContent = () => {
         onClick={limpiarFiltros}
         disabled={!hayFiltros}
         style={{
-          width: '100%', padding: '13px', background: 'rgba(248,113,113,0.06)',
+          width: '100%', padding: '10px', background: 'rgba(248,113,113,0.06)',
           border: '1px solid rgba(248,113,113,0.12)', color: '#ff3366', borderRadius: '10px',
           fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px',
           cursor: hayFiltros ? 'pointer' : 'not-allowed', opacity: hayFiltros ? 1 : 0.45,
@@ -1043,7 +979,7 @@ const CalculadoraContent = () => {
   const comisiones = Object.values(results).reduce((s, v) => s + v, 0);
   const totalGeneral = comisiones + SUELDO_FIJO;
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '11.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '11.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
   const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '14.5px' };
 
   const inputRow = (label: string, key: keyof typeof pacts) => (
