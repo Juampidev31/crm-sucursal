@@ -37,8 +37,8 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
           Cargá días hábiles en Ajustes para ver proyección
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', gap: 32 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
+          <div style={{ display: 'flex', gap: 32, minHeight: 116 }}>
             <div style={{ flex: 1 }}>
               <div style={labelStyle}>Venta actual (K)</div>
               <div style={{ ...valueStyle, marginBottom: 14 }}>{formatCurrency(kpi.capital)}</div>
@@ -66,7 +66,7 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
           {kpi.ventaIdealFecha !== null && (
             <>
               <div style={divider} />
-              <div>
+              <div style={{ minHeight: 44 }}>
                 <div style={labelStyle}>Venta ideal a la fecha (K)</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <div style={valueStyle}>{formatCurrency(kpi.ventaIdealFecha)}</div>
@@ -85,11 +85,14 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
 
           <div style={divider} />
 
-          <div style={{ fontSize: 11, fontWeight: 900, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1.2 }}>
-            {kpi.esMesActual ? 'Proyección fin de mes' : 'Cierre del mes'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 3, height: 13, borderRadius: 2, background: '#6366f1' }} />
+            <span style={{ fontSize: 11, fontWeight: 900, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: 1.2 }}>
+              {kpi.esMesActual ? 'Proyección fin de mes' : 'Cierre del mes'}
+            </span>
           </div>
 
-          <div style={{ display: 'flex', gap: 32 }}>
+          <div style={{ display: 'flex', gap: 32, minHeight: 44 }}>
             <div style={{ flex: 1 }}>
               {kpi.proyCapital !== null && (
                 <>
@@ -120,7 +123,7 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
 
           <div style={divider} />
 
-          <div style={{ display: 'flex', gap: 32 }}>
+          <div style={{ display: 'flex', gap: 32, minHeight: 44 }}>
             <div style={{ flex: 1 }}>
               {kpi.faltaCapital !== null && (
                 <>
