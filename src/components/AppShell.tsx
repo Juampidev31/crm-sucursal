@@ -187,7 +187,7 @@ const ReminderAlertPopup = () => {
 };
 
 const shouldHideSidebar = (pathname: string, isMinimal: boolean) =>
-  isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/');
+  isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/') || pathname === '/recordatorios';
 
 function AppShellInner({ children, pathname }: { children: React.ReactNode, pathname: string }) {
   const router = useRouter();

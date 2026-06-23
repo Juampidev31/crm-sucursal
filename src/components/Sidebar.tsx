@@ -163,10 +163,14 @@ function NavItem({
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, zIndex: 1, position: 'relative' }}>
         {badge ? (
           <span style={{
-            background: badgeColor, color: '#fff',
-            fontSize: 10, fontWeight: 800,
-            padding: '2px 8px', borderRadius: 12,
-            minWidth: 22, textAlign: 'center'
+            background: badgeColor, color: '#ffffff',
+            fontSize: 11, fontWeight: 700,
+            padding: '0 7px', borderRadius: 4,
+            height: 20, minWidth: 22,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 8px rgba(255, 255, 255, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.5)',
+            textShadow: '0 1px 2px rgba(0,0,0,0.8)'
           }}>
             {badge}
           </span>
