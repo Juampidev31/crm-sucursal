@@ -14,6 +14,7 @@ export interface ProyeccionKpi {
   cumplProyOps: number | null;
   faltaCapital: number | null;
   faltaOps: number | null;
+  ventaIdealFecha: number | null;
   metaCapital: number;
   metaOps: number;
   esMesActual: boolean;
@@ -41,7 +42,7 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
                 <>
                   <div style={labelStyle}>Venta / día ({kpi.esMesActual ? 'Necesario' : 'Meta'})</div>
                   <div style={valueStyle}>{formatCurrency(kpi.metaDiariaCapital)}</div>
-                  {kpi.ventaPorDia !== null && <div style={ritmoStyle}>RITMO: {formatCurrency(kpi.ventaPorDia)}</div>}
+                  {kpi.ventaPorDia !== null && <div style={ritmoStyle}>PROMEDIO: {formatCurrency(kpi.ventaPorDia)}</div>}
                 </>
               )}
             </div>
@@ -50,11 +51,21 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
                 <>
                   <div style={labelStyle}>Ops. / día ({kpi.esMesActual ? 'Necesario' : 'Meta'})</div>
                   <div style={valueStyle}>{Math.round(kpi.metaDiariaOps)}</div>
-                  {kpi.opsPorDia !== null && <div style={ritmoStyle}>RITMO: {Math.round(kpi.opsPorDia)}</div>}
+                  {kpi.opsPorDia !== null && <div style={ritmoStyle}>PROMEDIO: {Math.round(kpi.opsPorDia)}</div>}
                 </>
               )}
             </div>
           </div>
+
+          {kpi.ventaIdealFecha !== null && (
+            <>
+              <div style={divider} />
+              <div>
+                <div style={labelStyle}>Venta ideal a la fecha (K)</div>
+                <div style={valueStyle}>{formatCurrency(kpi.ventaIdealFecha)}</div>
+              </div>
+            </>
+          )}
 
           <div style={divider} />
 

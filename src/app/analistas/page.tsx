@@ -1183,9 +1183,29 @@ export default function AnalistasPage() {
 
             {analista === 'PROYECTADOS' && isAdmin ? (
               <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16, alignItems: 'stretch' }}>
-                {[{ kpi: kpiTotal, titulo: 'PDV (Total General)' }, ...kpiPorAnalista.map(k => ({ kpi: k, titulo: k.analista }))].map(({ kpi, titulo }) => (
-                  <ProyeccionCard key={titulo} kpi={kpi} titulo={titulo} />
-                ))}
+                {(() => {
+                  // Venta ideal a la fecha = meta * (días transcurridos / días hábiles)
+                  const idealFecha = (k: any) => (k.diasHabilesAdmin > 0 ? k.metaCapital * (k.diasTransAdmin / k.diasHabilesAdmin) : null);
+                  // El General se compone como suma de los individuales para que sea coherente
+                  // (Necesario/día, Promedio/día e Ideal del total = suma de Luciana + Victoria)
+                  const sum = (f: string) => kpiPorAnalista.reduce((s, k: any) => s + (k[f] ?? 0), 0);
+                  const anyIdeal = kpiPorAnalista.some(k => idealFecha(k) !== null);
+                  const pdvCard = {
+                    ...kpiTotal,
+                    metaDiariaCapital: sum('metaDiariaCapital'),
+                    metaDiariaOps: sum('metaDiariaOps'),
+                    ventaPorDia: sum('ventaPorDia'),
+                    opsPorDia: sum('opsPorDia'),
+                    ventaIdealFecha: anyIdeal ? kpiPorAnalista.reduce((s, k) => s + (idealFecha(k) ?? 0), 0) : null,
+                  };
+                  const cards = [
+                    { kpi: pdvCard, titulo: 'PDV (Total General)' },
+                    ...kpiPorAnalista.map((k: any) => ({ kpi: { ...k, ventaIdealFecha: idealFecha(k) }, titulo: k.analista })),
+                  ];
+                  return cards.map(({ kpi, titulo }) => (
+                    <ProyeccionCard key={titulo} kpi={kpi} titulo={titulo} />
+                  ));
+                })()}
               </div>
             ) : (
               <>
