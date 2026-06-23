@@ -15,6 +15,8 @@ export interface ProyeccionKpi {
   faltaCapital: number | null;
   faltaOps: number | null;
   ventaIdealFecha: number | null;
+  capital: number;
+  ops: number;
   metaCapital: number;
   metaOps: number;
   esMesActual: boolean;
@@ -38,6 +40,8 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 32 }}>
             <div style={{ flex: 1 }}>
+              <div style={labelStyle}>Venta actual (K)</div>
+              <div style={{ ...valueStyle, marginBottom: 14 }}>{formatCurrency(kpi.capital)}</div>
               {kpi.metaDiariaCapital !== null && (
                 <>
                   <div style={labelStyle}>Venta / día ({kpi.esMesActual ? 'Necesario' : 'Meta'})</div>
@@ -47,6 +51,8 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
               )}
             </div>
             <div style={{ flex: 1 }}>
+              <div style={labelStyle}>Ops. actuales (Q)</div>
+              <div style={{ ...valueStyle, marginBottom: 14 }}>{Math.round(kpi.ops)}</div>
               {kpi.metaDiariaOps !== null && (
                 <>
                   <div style={labelStyle}>Ops. / día ({kpi.esMesActual ? 'Necesario' : 'Meta'})</div>
@@ -62,12 +68,26 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
               <div style={divider} />
               <div>
                 <div style={labelStyle}>Venta ideal a la fecha (K)</div>
-                <div style={valueStyle}>{formatCurrency(kpi.ventaIdealFecha)}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <div style={valueStyle}>{formatCurrency(kpi.ventaIdealFecha)}</div>
+                  {(() => {
+                    const diff = kpi.capital - kpi.ventaIdealFecha!;
+                    return (
+                      <span style={{ fontSize: 12, fontWeight: 800, color: diff >= 0 ? '#10b981' : '#f87171' }}>
+                        {diff >= 0 ? '+' : '−'}{formatCurrency(Math.abs(diff))}
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
             </>
           )}
 
           <div style={divider} />
+
+          <div style={{ fontSize: 11, fontWeight: 900, color: '#10b981', textTransform: 'uppercase', letterSpacing: 1.2 }}>
+            {kpi.esMesActual ? 'Proyección fin de mes' : 'Cierre del mes'}
+          </div>
 
           <div style={{ display: 'flex', gap: 32 }}>
             <div style={{ flex: 1 }}>
