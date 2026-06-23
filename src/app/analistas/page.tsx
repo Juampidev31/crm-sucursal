@@ -1184,8 +1184,12 @@ export default function AnalistasPage() {
             {analista === 'PROYECTADOS' && isAdmin ? (
               <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16, alignItems: 'stretch' }}>
                 {(() => {
-                  // Venta ideal a la fecha = meta * (días transcurridos / días hábiles)
-                  const idealFecha = (k: any) => (k.diasHabilesAdmin > 0 ? k.metaCapital * (k.diasTransAdmin / k.diasHabilesAdmin) : null);
+                  // Venta ideal a la fecha = meta / días del mes * día actual (misma fórmula que el gráfico "Progreso vs Ideal")
+                  const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
+                  const hoyIdeal = new Date();
+                  const esMesActualIdeal = selectedMes === (hoyIdeal.getMonth() + 1) && selectedAnio === hoyIdeal.getFullYear();
+                  const diaActualIdeal = esMesActualIdeal ? hoyIdeal.getDate() : daysInMonth;
+                  const idealFecha = (k: any) => (k.metaCapital > 0 ? (k.metaCapital / daysInMonth) * diaActualIdeal : null);
                   // El General se compone como suma de los individuales para que sea coherente
                   // (Necesario/día, Promedio/día e Ideal del total = suma de Luciana + Victoria)
                   const sum = (f: string) => kpiPorAnalista.reduce((s, k: any) => s + (k[f] ?? 0), 0);
