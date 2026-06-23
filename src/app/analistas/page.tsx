@@ -194,6 +194,8 @@ export default function AnalistasPage() {
   const [anioRendimiento, setAnioRendimiento] = useState<number | 'TODOS'>(now.getFullYear());
   const [mesRendimiento, setMesRendimiento] = useState<number | 'TODOS'>('TODOS');
   const [hiddenCols, setHiddenCols] = useState<string[]>([]);
+  const [proyShowActual, setProyShowActual] = useState(true);
+  const [proyShowProy, setProyShowProy] = useState(true);
 
   const aniosDisponiblesRendimiento = useMemo(() => {
     const set = new Set<number>();
@@ -1182,7 +1184,23 @@ export default function AnalistasPage() {
       </div>
 
             {analista === 'PROYECTADOS' && isAdmin ? (
-              <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16, alignItems: 'stretch' }}>
+              <>
+              <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+                {[
+                  { label: 'Situación actual', open: proyShowActual, toggle: () => setProyShowActual(v => !v) },
+                  { label: 'Proyección fin de mes', open: proyShowProy, toggle: () => setProyShowProy(v => !v) },
+                ].map(({ label, open, toggle }) => (
+                  <button
+                    key={label}
+                    onClick={toggle}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: open ? 'rgba(255,255,255,0.04)' : 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', color: open ? '#e2e8f0' : '#64748b', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.8 }}
+                  >
+                    <ChevronRight size={14} style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16, alignItems: 'stretch' }}>
                 {(() => {
                   // Venta ideal a la fecha = meta / días del mes * día actual (misma fórmula que el gráfico "Progreso vs Ideal")
                   const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
@@ -1207,10 +1225,11 @@ export default function AnalistasPage() {
                     ...kpiPorAnalista.map((k: any) => ({ kpi: { ...k, ventaIdealFecha: idealFecha(k) }, titulo: k.analista })),
                   ];
                   return cards.map(({ kpi, titulo }) => (
-                    <ProyeccionCard key={titulo} kpi={kpi} titulo={titulo} />
+                    <ProyeccionCard key={titulo} kpi={kpi} titulo={titulo} showActual={proyShowActual} showProy={proyShowProy} />
                   ));
                 })()}
               </div>
+              </>
             ) : (
               <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

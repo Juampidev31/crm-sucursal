@@ -29,7 +29,7 @@ const ritmoStyle: React.CSSProperties = { fontSize: 10, color: '#555', fontWeigh
 const divider: React.CSSProperties = { height: 1, background: 'rgba(255,255,255,0.04)' };
 const panelStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 };
 
-export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; titulo: string }) {
+export default function ProyeccionCard({ kpi, titulo, showActual = true, showProy = true }: { kpi: ProyeccionKpi; titulo: string; showActual?: boolean; showProy?: boolean }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 1 }}>{titulo}</div>
@@ -41,6 +41,7 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
       ) : (
         <>
           {/* ── Panel 1: situación actual + ideal a la fecha ── */}
+          {showActual && (
           <div style={panelStyle}>
             <div style={{ display: 'flex', gap: 32, minHeight: 52 }}>
               <div style={{ flex: 1 }}>
@@ -96,7 +97,10 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
             )}
           </div>
 
+          )}
+
           {/* ── Panel 2: proyección fin de mes ── */}
+          {showProy && (
           <div style={panelStyle}>
             <div style={{ fontSize: 11, fontWeight: 900, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: 1.2 }}>
               {kpi.esMesActual ? 'Proyección fin de mes' : 'Cierre del mes'}
@@ -152,6 +156,7 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
               </div>
             </div>
           </div>
+          )}
         </>
       )}
     </div>
