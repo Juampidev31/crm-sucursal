@@ -42,35 +42,43 @@ export default function ProyeccionCard({ kpi, titulo }: { kpi: ProyeccionKpi; ti
         <>
           {/* ── Panel 1: situación actual + ideal a la fecha ── */}
           <div style={panelStyle}>
-            <div style={{ display: 'flex', gap: 32, minHeight: 116 }}>
+            <div style={{ display: 'flex', gap: 32, minHeight: 52 }}>
               <div style={{ flex: 1 }}>
                 <div style={labelStyle}>Venta actual (K)</div>
-                <div style={{ ...valueStyle, marginBottom: 14 }}>{formatCurrency(kpi.capital)}</div>
-                {kpi.metaDiariaCapital !== null && (
-                  <>
-                    <div style={labelStyle}>Venta / día ({kpi.esMesActual ? 'Necesario' : 'Meta'})</div>
-                    <div style={valueStyle}>{formatCurrency(kpi.metaDiariaCapital)}</div>
-                    {kpi.ventaPorDia !== null && <div style={ritmoStyle}>PROMEDIO: {formatCurrency(kpi.ventaPorDia)}</div>}
-                  </>
-                )}
+                <div style={valueStyle}>{formatCurrency(kpi.capital)}</div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={labelStyle}>Ops. actuales (Q)</div>
-                <div style={{ ...valueStyle, marginBottom: 14 }}>{Math.round(kpi.ops)}</div>
-                {kpi.metaDiariaOps !== null && (
-                  <>
-                    <div style={labelStyle}>Ops. / día ({kpi.esMesActual ? 'Necesario' : 'Meta'})</div>
-                    <div style={valueStyle}>{Math.round(kpi.metaDiariaOps)}</div>
-                    {kpi.opsPorDia !== null && <div style={ritmoStyle}>PROMEDIO: {Math.round(kpi.opsPorDia)}</div>}
-                  </>
-                )}
+                <div style={valueStyle}>{Math.round(kpi.ops)}</div>
               </div>
             </div>
+
+            {kpi.metaDiariaCapital !== null && (
+              <>
+                <div style={divider} />
+                <div style={{ display: 'flex', gap: 32, minHeight: 52 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={labelStyle}>Venta / día ({kpi.esMesActual ? 'Necesario' : 'Meta'})</div>
+                    <div style={valueStyle}>{formatCurrency(kpi.metaDiariaCapital)}</div>
+                    {kpi.ventaPorDia !== null && <div style={ritmoStyle}>PROMEDIO: {formatCurrency(kpi.ventaPorDia)}</div>}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    {kpi.metaDiariaOps !== null && (
+                      <>
+                        <div style={labelStyle}>Ops. / día ({kpi.esMesActual ? 'Necesario' : 'Meta'})</div>
+                        <div style={valueStyle}>{Math.round(kpi.metaDiariaOps)}</div>
+                        {kpi.opsPorDia !== null && <div style={ritmoStyle}>PROMEDIO: {Math.round(kpi.opsPorDia)}</div>}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
 
             {kpi.ventaIdealFecha !== null && (
               <>
                 <div style={divider} />
-                <div style={{ minHeight: 44 }}>
+                <div style={{ minHeight: 52 }}>
                   <div style={labelStyle}>Venta ideal a la fecha (K)</div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                     <div style={valueStyle}>{formatCurrency(kpi.ventaIdealFecha)}</div>
