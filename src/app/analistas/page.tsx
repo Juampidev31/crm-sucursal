@@ -991,8 +991,8 @@ export default function AnalistasPage() {
     };
   }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital]);
 
-  // Progreso vs Ideal unificado: PDV (Total) + cada analista, contra el Ideal del total.
-  const chartProgresoUnif = useMemo(() => {
+  // Progreso vs Ideal por separado: PDV + cada analista, cada uno con SU propio Ideal.
+  const chartsProgresoSep = useMemo(() => {
     const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
     const today = new Date();
     const isCurrentMonth = selectedMes === (today.getMonth() + 1) && selectedAnio === today.getFullYear();
@@ -1015,29 +1015,29 @@ export default function AnalistasPage() {
       });
     };
 
-    const COLORS: Record<string, string> = { Luciana: '#60a5fa', Victoria: '#a78bfa' };
-    const lineFor = (label: string, data: (number | null)[], color: string) => ({
-      label, data, borderColor: color, borderWidth: 2,
-      pointBackgroundColor: color, pointBorderColor: color, pointRadius: 2, fill: false, tension: 0.2,
-    });
-
-    const meta = kpiTotal.metaCapital;
-    const idealData = labels.map((_, i) => (meta / daysInMonth) * (i + 1));
-
-    return {
+    const buildChart = (pred: (r: typeof regsMes[number]) => boolean, meta: number) => ({
       labels,
       datasets: [
-        lineFor('PDV (Total)', cumFor(() => true), '#10b981'),
-        ...CONFIG.ANALISTAS_DEFAULT.map(a => lineFor(a, cumFor(r => r.analista === a), COLORS[a] ?? '#94a3b8')),
         {
-          label: 'Ideal', data: idealData, borderColor: '#fb923c', borderWidth: 1,
-          borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0,
+          label: 'Vendido', data: cumFor(pred), borderColor: '#10b981', borderWidth: 2,
+          pointBackgroundColor: '#10b981', pointBorderColor: '#10b981', pointRadius: 2, fill: false, tension: 0.2,
+        },
+        {
+          label: 'Ideal', data: labels.map((_, i) => (meta / daysInMonth) * (i + 1)),
+          borderColor: '#fb923c', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0,
         },
       ],
-    };
-  }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital]);
+    });
 
-  const chartProgresoUnifOptions = {
+    const metaDe = (a: string) => kpiPorAnalista.find(k => k.analista === a)?.metaCapital ?? 0;
+
+    return [
+      { titulo: 'PDV (Total)', data: buildChart(() => true, kpiTotal.metaCapital) },
+      ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ titulo: a, data: buildChart(r => r.analista === a, metaDe(a)) })),
+    ];
+  }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital, kpiPorAnalista]);
+
+  const chartProgresoSepOptions = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
@@ -1297,16 +1297,20 @@ export default function AnalistasPage() {
                 })()}
               </div>
 
-              {/* ── Progreso vs Ideal unificado (PDV + analistas) ── */}
-              <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Progreso vs Ideal</div>
-                <div style={{ minHeight: 320, position: 'relative', width: '100%' }}>
-                  {chartsLoaded ? (
-                    <Line data={chartProgresoUnif} options={chartProgresoUnifOptions as any} plugins={[lineShadowPlugin]} />
-                  ) : (
-                    <ChartShimmer />
-                  )}
-                </div>
+              {/* ── Progreso vs Ideal por separado (PDV + cada analista, con su propio Ideal) ── */}
+              <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
+                {chartsProgresoSep.map(({ titulo, data }) => (
+                  <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Progreso vs Ideal — {titulo}</div>
+                    <div style={{ minHeight: 240, position: 'relative', width: '100%' }}>
+                      {chartsLoaded ? (
+                        <Line data={data} options={chartProgresoSepOptions as any} plugins={[lineShadowPlugin]} />
+                      ) : (
+                        <ChartShimmer />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
               </>
             ) : (
