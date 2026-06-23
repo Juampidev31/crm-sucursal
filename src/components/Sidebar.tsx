@@ -158,7 +158,7 @@ function NavItem({
             )
           )
         )}
-        <span style={{ fontSize: 17.5, fontWeight: 600, letterSpacing: '0.1px' }}>{label}</span>
+        <span style={{ fontSize: 21, fontWeight: 600, letterSpacing: '0.1px' }}>{label}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, zIndex: 1, position: 'relative' }}>
         {badge ? (
@@ -450,7 +450,7 @@ export default function Sidebar({
                   flex: 1, padding: '10px 16px', borderRadius: 12,
                   background: '#10b981', color: '#000',
                   border: 'none', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
-                  fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
                 }}
                 onMouseEnter={e => {
@@ -697,7 +697,7 @@ export default function Sidebar({
             borderBottom: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
-            <span style={{ display: 'inline-block', fontSize: '17px', fontWeight: 600, color: '#ffffff', paddingBottom: '7px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 8px rgba(255,255,255,0.18)' }}>Filtros Avanzados</span>
+            <span style={{ display: 'inline-block', fontSize: '20px', fontWeight: 600, color: '#ffffff', paddingBottom: '7px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 8px rgba(255,255,255,0.18)' }}>Filtros Avanzados</span>
             <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
               <X size={20} />
             </button>
@@ -776,7 +776,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
   const select = (v: string) => { onChange(v); setIsOpen(false); };
 
   const optStyle = (active: boolean): React.CSSProperties => ({
-    padding: '9px 10px', fontSize: '14.5px', borderRadius: '6px', cursor: 'pointer', margin: '2px 0',
+    padding: '10px 10px', fontSize: '16px', borderRadius: '6px', cursor: 'pointer', margin: '2px 0',
     color: active ? '#10b981' : '#eaeaea',
     background: active ? 'rgba(16,185,129,0.1)' : 'transparent',
     transition: 'background 0.15s'
@@ -793,10 +793,10 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
         }}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          width: '100%', height: 36, padding: '0 12px',
+          width: '100%', height: 42, padding: '0 12px',
           background: 'rgba(255,255,255,0.03)',
           border: `1px solid ${isOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
-          borderRadius: '8px', fontSize: '14.5px',
+          borderRadius: '8px', fontSize: '16.5px',
           color: value ? '#eaeaea' : '#8f929d',
           cursor: 'pointer', outline: 'none', transition: 'all 0.2s'
         }}
@@ -838,15 +838,15 @@ const FiltersContent = () => {
   }, [registros]);
 
   const chipStyle = (active: boolean) => ({
-    padding: '6px 10px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+    padding: '6px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
     background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
     color: active ? '#10b981' : '#8f929d',
     border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
     transition: 'all 0.2s', whiteSpace: 'nowrap', textAlign: 'center'
   } as React.CSSProperties);
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '11.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
-  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '14.5px' };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '16.5px' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '10px', paddingBottom: '4px' }}>
@@ -856,7 +856,7 @@ const FiltersContent = () => {
           placeholder="Nombre, CUIL..."
           value={filters.search}
           onChange={e => setFilter('search', e.target.value)}
-          style={{ ...fieldBase, width: '100%', height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }}
+          style={{ ...fieldBase, width: '100%', height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }}
         />
       </div>
 
@@ -879,7 +879,7 @@ const FiltersContent = () => {
           <span
             onClick={() => setFilter('esRe', filters.esRe === 'si' ? '' : 'si')}
             style={{
-              padding: '6px 10px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+              padding: '6px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
               background: filters.esRe === 'si' ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.02)',
               color: filters.esRe === 'si' ? '#a78bfa' : '#8f929d',
               border: `1px solid ${filters.esRe === 'si' ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
@@ -901,24 +901,24 @@ const FiltersContent = () => {
       <div>
         <label style={secLabel}>SCORE MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
-          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
         </div>
       </div>
 
       <div>
         <label style={secLabel}>MONTO MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
-          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
         </div>
       </div>
 
       <div>
         <label style={secLabel}>PERÍODO</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
-          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 36, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
+          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
+          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
         </div>
       </div>
 
@@ -928,7 +928,7 @@ const FiltersContent = () => {
         style={{
           width: '100%', padding: '10px', background: 'rgba(248,113,113,0.06)',
           border: '1px solid rgba(248,113,113,0.12)', color: '#ff3366', borderRadius: '10px',
-          fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px',
+          fontSize: '13px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px',
           cursor: hayFiltros ? 'pointer' : 'not-allowed', opacity: hayFiltros ? 1 : 0.45,
           transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
         }}
@@ -983,8 +983,8 @@ const CalculadoraContent = () => {
   const comisiones = Object.values(results).reduce((s, v) => s + v, 0);
   const totalGeneral = comisiones + SUELDO_FIJO;
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '11.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
-  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '14.5px' };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '16.5px' };
 
   const inputRow = (label: string, key: keyof typeof pacts) => (
     <div style={{
