@@ -491,7 +491,8 @@ export default function AnalistasPage() {
     const tendConversion = conversionAnt > 0 ? ((conversion - conversionAnt) / conversionAnt) * 100 : null;
     const tendConversionGlobal = conversionGlobalAnt > 0 ? ((conversionGlobal - conversionGlobalAnt) / conversionGlobalAnt) * 100 : null;
 
-    const obj = objetivos.find(o => o.analista === analista && o.mes === selectedMes - 1 && o.anio === selectedAnio);
+    const analistaObjetivo = analista === 'PROYECTADOS' ? 'PDV' : analista;
+    const obj = objetivos.find(o => o.analista === analistaObjetivo && o.mes === selectedMes - 1 && o.anio === selectedAnio);
     const metaCapital = obj?.meta_ventas ?? 0;
     const metaOps = obj?.meta_operaciones ?? 0;
     const cumplCapital = metaCapital > 0 ? (capital / metaCapital) * 100 : null;
