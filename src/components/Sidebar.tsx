@@ -46,7 +46,7 @@ function NavItem({
       style={{
         position: 'relative',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        width: '100%', padding: '10px 16px', paddingLeft: indent ? (isDoubleTreeItem ? '66px' : (isTreeItem ? '46px' : '40px')) : '16px',
+        width: '100%', padding: '8px 16px', paddingLeft: indent ? (isDoubleTreeItem ? '66px' : (isTreeItem ? '46px' : '40px')) : '16px',
         borderRadius: 16,
         color: active ? '#ffffff' : '#9a9a9a',
         background: 'transparent',
@@ -179,6 +179,44 @@ function NavItem({
 
 function SidebarDivider() {
   return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '16px 20px' }} />;
+}
+
+// ── AutoFit — escala su contenido para que entre en el alto disponible sin scroll
+// (mismo criterio que el auto-ajuste del menú lateral).
+function AutoFit({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  React.useLayoutEffect(() => {
+    const compute = () => {
+      const c = containerRef.current;
+      const ct = contentRef.current;
+      if (!c || !ct) return;
+      const avail = c.clientHeight;
+      const natural = ct.offsetHeight; // offsetHeight no se ve afectado por transform
+      if (!avail || !natural) return;
+      const s = Math.min(1, avail / natural);
+      setScale(prev => (Math.abs(prev - s) > 0.004 ? s : prev));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    if (containerRef.current) ro.observe(containerRef.current);
+    if (contentRef.current) ro.observe(contentRef.current);
+    window.addEventListener('resize', compute);
+    return () => { ro.disconnect(); window.removeEventListener('resize', compute); };
+  }, []);
+  return (
+    <div ref={containerRef} className="hide-scrollbar" style={{ flex: 1, overflow: 'hidden' }}>
+      <div ref={contentRef} style={{
+        width: `${100 / scale}%`,
+        transform: `scale(${scale})`,
+        transformOrigin: 'top left',
+        ...style,
+      }}>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 // ── Modal overlay shared shell ────────────────────────────────────────────────
@@ -333,10 +371,10 @@ export default function Sidebar({
   const isRegistros = pathname === '/registros';
   const [showPageSizeSelector, setShowPageSizeSelector] = useState(false);
   const [showCalculator, setShowCalculator] = useState(false);
-  const [reportesOpen, setReportesOpen] = useState(true);
-  const [ventasOpen, setVentasOpen] = useState(true);
+  const [reportesOpen, setReportesOpen] = useState(false);
+  const [ventasOpen, setVentasOpen] = useState(false);
   const [revisionOpen, setRevisionOpen] = useState(false);
-  const [registrosOpen, setRegistrosOpen] = useState(true);
+  const [registrosOpen, setRegistrosOpen] = useState(false);
 
   useEffect(() => {
     if (showAdminModal) {
@@ -468,7 +506,7 @@ export default function Sidebar({
                   }
                 }}
                 style={{
-                  flex: 1, padding: '12px 16px', borderRadius: 12,
+                  flex: 1, padding: '10px 16px', borderRadius: 12,
                   background: '#10b981', color: '#000',
                   border: 'none', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
                   fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -718,15 +756,15 @@ export default function Sidebar({
             borderBottom: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
-            <span style={{ display: 'inline-block', fontSize: '16px', fontWeight: 600, color: '#ffffff', paddingBottom: '7px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 8px rgba(255,255,255,0.18)' }}>Filtros Avanzados</span>
+            <span style={{ display: 'inline-block', fontSize: '17px', fontWeight: 600, color: '#ffffff', paddingBottom: '7px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 8px rgba(255,255,255,0.18)' }}>Filtros Avanzados</span>
             <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
               <X size={20} />
             </button>
           </div>
 
-          <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px' }}>
+          <AutoFit style={{ padding: '16px 20px' }}>
             <FiltersContent />
-          </div>
+          </AutoFit>
         </div>
       )}
 
@@ -747,15 +785,15 @@ export default function Sidebar({
             borderBottom: '1px solid rgba(255,255,255,0.06)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
-            <span style={{ fontSize: '16px', fontWeight: 600, color: '#ffffff' }}>Calculadora Sucursal B</span>
+            <span style={{ fontSize: '17px', fontWeight: 600, color: '#ffffff' }}>Calculadora Sucursal B</span>
             <button onClick={() => setShowCalculator(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
               <X size={20} />
             </button>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+          <AutoFit style={{ padding: '16px 20px' }}>
             <CalculadoraContent />
-          </div>
+          </AutoFit>
         </div>
       )}
       </div>
@@ -797,7 +835,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
   const select = (v: string) => { onChange(v); setIsOpen(false); };
 
   const optStyle = (active: boolean): React.CSSProperties => ({
-    padding: '9px 10px', fontSize: '13.5px', borderRadius: '6px', cursor: 'pointer', margin: '2px 0',
+    padding: '9px 10px', fontSize: '14.5px', borderRadius: '6px', cursor: 'pointer', margin: '2px 0',
     color: active ? '#10b981' : '#eaeaea',
     background: active ? 'rgba(16,185,129,0.1)' : 'transparent',
     transition: 'background 0.15s'
@@ -817,7 +855,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
           width: '100%', height: 40, padding: '0 12px',
           background: 'rgba(255,255,255,0.03)',
           border: `1px solid ${isOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
-          borderRadius: '8px', fontSize: '13.5px',
+          borderRadius: '8px', fontSize: '14.5px',
           color: value ? '#eaeaea' : '#8f929d',
           cursor: 'pointer', outline: 'none', transition: 'all 0.2s'
         }}
@@ -859,18 +897,18 @@ const FiltersContent = () => {
   }, [registros]);
 
   const chipStyle = (active: boolean) => ({
-    padding: '8px 10px', borderRadius: '8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+    padding: '8px 10px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
     background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
     color: active ? '#10b981' : '#8f929d',
     border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
     transition: 'all 0.2s', whiteSpace: 'nowrap', textAlign: 'center'
   } as React.CSSProperties);
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '10.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
-  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '13.5px' };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '11.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '14.5px' };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '12px', paddingBottom: '4px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '4px' }}>
       <div>
         <label style={secLabel}>BÚSQUEDA GENERAL</label>
         <input
@@ -900,7 +938,7 @@ const FiltersContent = () => {
           <span
             onClick={() => setFilter('esRe', filters.esRe === 'si' ? '' : 'si')}
             style={{
-              padding: '8px 10px', borderRadius: '8px', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer',
+              padding: '8px 10px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
               background: filters.esRe === 'si' ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.02)',
               color: filters.esRe === 'si' ? '#a78bfa' : '#8f929d',
               border: `1px solid ${filters.esRe === 'si' ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
@@ -1004,8 +1042,8 @@ const CalculadoraContent = () => {
   const comisiones = Object.values(results).reduce((s, v) => s + v, 0);
   const totalGeneral = comisiones + SUELDO_FIJO;
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '10.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
-  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '13.5px' };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '11.5px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '9px', paddingBottom: '5px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '14.5px' };
 
   const inputRow = (label: string, key: keyof typeof pacts) => (
     <div style={{
@@ -1035,7 +1073,7 @@ const CalculadoraContent = () => {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '12px', paddingBottom: '4px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '4px' }}>
       <div>
         <label style={{ ...secLabel, color: '#fb923c', backgroundImage: 'linear-gradient(90deg, rgba(251,146,60,0.5), rgba(251,146,60,0))' }}>VENTA</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
