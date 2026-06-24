@@ -406,7 +406,7 @@ export default function AnalistasPage() {
       let incentivoCobTr90 = 0, incentivoCobTr120 = 0, incentivoCobRefin = 0;
       let pctTr90 = 0, pctTr120 = 0, pctRefin = 0;
 
-      if (['luciana', 'victoria'].includes(analista.toLowerCase())) {
+      if (cobraIncentivo(analista)) {
         pctTr90 = manualCobranzas.pctTr90;
         pctTr120 = manualCobranzas.pctTr120;
         pctRefin = manualCobranzas.pctRefin;
@@ -1908,7 +1908,7 @@ export default function AnalistasPage() {
           </div>
 
           {/* ── SECCIÓN 5: CÁLCULO DE INCENTIVOS ── */}
-          {['luciana', 'victoria'].includes(analista.toLowerCase()) && (
+          {cobraIncentivo(analista) && (
             <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
             {sectionHeader(5, '5. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
               <div style={{ marginTop: 24 }}>
@@ -2059,7 +2059,7 @@ export default function AnalistasPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {kpiCards.filter(k => k.analista === 'PDV' || ['luciana', 'victoria'].includes(k.analista.toLowerCase())).map((k, idx) => (
+                      {kpiCards.filter(k => k.analista === 'PDV' || cobraIncentivo(k.analista)).map((k, idx) => (
                         <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
                           <td style={{ padding: '18px 15px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {k.analista === 'PDV' ? 'TOTAL GENERAL' : (analista === 'PDV' ? k.analista.toUpperCase() : 'INDIVIDUAL')}
