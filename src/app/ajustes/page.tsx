@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useHistorico } from '@/features/historico/HistoricoProvider';
-import { useSettings } from '@/features/settings/SettingsProvider';
+import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useToast } from '@/hooks/useToast';
 import { CONFIG, HistoricoVenta } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
@@ -157,6 +157,7 @@ export default function AjustesPage() {
     diasConfig: ctxDias, applyDiasConfigChange,
     permisosConfig: ctxPermisos, applyPermisoConfigChange
   } = useSettings();
+  const { nombres: analistasDefault } = useAnalistas();
   const { objetivos: ctxObjetivos, mutateObjetivos: setCtxObjetivos, pushObjetivosChange } = useObjetivos();
   const { historicoVentas: ctxHistorico, mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange } = useHistorico();
 
@@ -199,7 +200,7 @@ export default function AjustesPage() {
   const [savingDias, setSavingDias] = useState<string | null>(null);
   const [savingPermiso, setSavingPermiso] = useState<string | null>(null);
 
-  const [histAnalista, setHistAnalista] = useState(CONFIG.ANALISTAS_DEFAULT[0]);
+  const [histAnalista, setHistAnalista] = useState('');
   const [histAnio, setHistAnio] = useState(new Date().getFullYear() - 1);
   const [histRows, setHistRows] = useState<HistRow[]>(EMPTY_HIST_ROWS());
   const [savingHist, setSavingHist] = useState(false);
@@ -227,7 +228,7 @@ export default function AjustesPage() {
   const AUDIT_PAGE_SIZE = 25;
 
   const [consultaEstado, setConsultaEstado] = useState('proyeccion');
-  const [consultaAnalista, setConsultaAnalista] = useState('Luciana');
+  const [consultaAnalista, setConsultaAnalista] = useState('');
 
   useEffect(() => {
     if (!isAdmin && activeTab === 'configuracion' && configSubTab === 'alertas') {
@@ -250,7 +251,7 @@ export default function AjustesPage() {
 
     const { data: dias } = await supabase.from('dias_habiles_config').select('*');
     const initialDias: Record<string, DiasEntry> = {};
-    ['Todos', ...CONFIG.ANALISTAS_DEFAULT].forEach(analista => {
+    ['Todos', ...analistasDefault].forEach(analista => {
       const cfg = dias?.find(d => d.analista === analista);
       initialDias[analista] = {
         dias_habiles: Number(cfg?.dias_habiles) || 22,
@@ -259,7 +260,7 @@ export default function AjustesPage() {
     });
     setDiasValues(initialDias);
     setLoading(false);
-  }, []);
+  }, [analistasDefault]);
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);
 
@@ -775,7 +776,7 @@ export default function AjustesPage() {
                     <CustomSelect
                       value={consultaAnalista}
                       onChange={val => setConsultaAnalista(String(val))}
-                      options={[{ label: 'Todos', value: 'todos' }, ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a }))]}
+                      options={[{ label: 'Todos', value: 'todos' }, ...analistasDefault.map(a => ({ label: a, value: a }))]}
                       width="100%"
                     />
                   </div>
@@ -810,7 +811,7 @@ export default function AjustesPage() {
           {/* TAB: DIAS HABILES */}
           {activeTab === 'configuracion' && configSubTab === 'dias' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-              {['Todos', ...CONFIG.ANALISTAS_DEFAULT].map(analista => {
+              {['Todos', ...analistasDefault].map(analista => {
                 const entry = diasValues[analista] || { dias_habiles: 22, dias_transcurridos: 0 };
                 return (
                   <div key={analista} className="data-card" style={{ padding: '24px', background: '#111111' }}>
@@ -950,7 +951,7 @@ export default function AjustesPage() {
                 <div style={{ flex: 1 }}>
                   <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seleccionar Analista</label>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {['PDV', ...CONFIG.ANALISTAS_DEFAULT].map(a => (
+                    {['PDV', ...analistasDefault].map(a => (
                       <button key={a} onClick={() => setHistAnalista(a)} style={{
                         padding: '10px 20px', borderRadius: '6px', border: '1px solid',
                         fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600,

@@ -4,15 +4,14 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffe
 import { supabase } from '@/lib/supabase';
 import { STATUS_LABEL } from '@/lib/utils';
 import { ESTADOS } from '@/context/FilterContext';
-import { CONFIG, Registro } from '@/types';
+import { Registro } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
+import { useAnalistas } from '@/features/settings/SettingsProvider';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
   Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download, Pencil
 } from 'lucide-react';
 import { parsePastedText, normalizeCuil, ParsedRow } from '@/lib/verificador-utils';
-
-const ANALISTAS = CONFIG.ANALISTAS_DEFAULT;
 
 // Combo editable buscable: al hacer foco muestra TODAS las opciones; filtra al tipear
 // y permite ingresar un valor nuevo (texto libre).
@@ -346,6 +345,7 @@ interface AsignarEmpleadorSectionProps {
 }
 
 function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, pushBulkUpdateIds, standalone = false }: AsignarEmpleadorSectionProps) {
+  const { nombres: ANALISTAS } = useAnalistas();
   const [expanded, setExpanded] = useState(standalone);
   const [pastedText, setPastedText] = useState('');
   const [rows, setRows] = useState<ParsedRow[]>([]);
@@ -565,7 +565,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   };
 
   // Listas derivadas (case-insensitive dedupe)
-  const allAnalistasExcel = useMemo(() => dedupCI(registros.map(r => r.analista), ANALISTAS), [registros]);
+  const allAnalistasExcel = useMemo(() => dedupCI(registros.map(r => r.analista), ANALISTAS), [registros, ANALISTAS]);
   const allEstadosExcel = useMemo(() => dedupCI(registros.map(r => r.estado)), [registros]);
   const allTiposExcel = useMemo(() => dedupCI(registros.map(r => r.tipo_cliente), TIPO_CLIENTE_OPCIONES), [registros]);
   const allAcuerdosExcel = useMemo(() => dedupCI(registros.map(r => r.acuerdo_precios), ACUERDOS_OPCIONES), [registros]);
@@ -1372,6 +1372,7 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const { registros, mutateRegistros, pushBulkRefresh, refresh, pushRegistroChange, pushBulkUpdateIds, pushBulkPatchByField } = useRegistros();
+  const { nombres: ANALISTAS } = useAnalistas();
 
   // Derivar datos de filtros directamente de registros (reactivo)
   const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);
