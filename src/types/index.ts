@@ -84,6 +84,17 @@ export const alertaConfigSchema = z.object({
 });
 export type AlertaConfig = z.infer<typeof alertaConfigSchema>;
 
+// ── Analista ──────────────────────────────────────────────────────────────────
+export const analistaSchema = z.object({
+  id: z.string().optional(),
+  nombre: z.string().min(1),
+  color: z.string().min(1),
+  oculto: z.boolean(),
+  tiene_incentivo: z.boolean(),
+  orden: z.number(),
+});
+export type Analista = z.infer<typeof analistaSchema>;
+
 // ── DiasConfig ────────────────────────────────────────────────────────────────
 export const diasConfigSchema = z.object({
   analista: z.string(),
@@ -131,7 +142,7 @@ export const ESTADOS_MAP: Record<string, { monto: string; op: string }> = {
 };
 
 export const CONFIG = {
-  ANALISTAS_DEFAULT: ["Luciana", "Victoria"],
+  ANALISTAS_DEFAULT: ["Luciana", "Victoria", "Juan Pablo", "Yamil"],
   MESES_NOMBRES: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
   ALERTAS_DEFAULT: [

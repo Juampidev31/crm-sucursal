@@ -184,3 +184,17 @@ const ANALISTA_ALIAS: Record<string, string> = {
 };
 
 export const displayAnalista = (raw: string): string => ANALISTA_ALIAS[raw] ?? raw;
+
+/**
+ * Convierte un color hex (#rrggbb) a string rgba con el alpha dado.
+ * Ej: hexToRgba('#06b6d4', 0.1) → 'rgba(6, 182, 212, 0.1)'
+ */
+export const hexToRgba = (hex: string, alpha: number): string => {
+  const h = hex.replace('#', '');
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  if ([r, g, b].some(Number.isNaN)) return hex;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
