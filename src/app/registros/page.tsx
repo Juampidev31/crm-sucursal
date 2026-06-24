@@ -9,7 +9,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
-import { useFilter, ESTADOS, ANALISTAS } from '@/context/FilterContext';
+import { useFilter, ESTADOS } from '@/context/FilterContext';
+import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { logAudit } from '@/lib/audit';
 import { corregirTildes } from '@/lib/correccion-tildes';
 import ModalPortal from '@/components/ModalPortal';
@@ -22,7 +23,7 @@ const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
 const initialForm: Partial<Registro> = {
   cuil: '', nombre: '', puntaje: 0, es_re: false,
-  analista: ANALISTAS[0], fecha: '', fecha_score: '', monto: 0,
+  analista: '', fecha: '', fecha_score: '', monto: 0,
   estado: 'proyeccion', comentarios: '', dependencia: '',
 };
 
@@ -604,6 +605,7 @@ const RegistroModal = memo(function RegistroModal({
   onClose: () => void; onSaved: (reg: Registro) => void;
   onSavedWithRecordatorio?: (registro: Registro) => void; isAdmin: boolean;
 }) {
+  const { nombres: ANALISTAS } = useAnalistas();
   const [form, setForm] = useState<Partial<Registro>>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -1504,6 +1506,7 @@ export default function RegistrosPage() {
   const { isAdmin } = useAuth();
   const { registros, applyRegistroChange, pushRegistroChange, loading, refresh } = useRegistros();
   const { alertasConfig, permisosConfig } = useSettings();
+  const { nombres: ANALISTAS } = useAnalistas();
   const searchParams = useSearchParams();
 
   const canDeleteRegistros = useMemo(() => {
@@ -1653,7 +1656,7 @@ export default function RegistrosPage() {
   useEffect(() => {
     if (isCreationModalOpen) {
       setEditingId(null);
-      setModalInitialData({ ...initialForm });
+      setModalInitialData({ ...initialForm, analista: ANALISTAS[0] ?? '' });
       setModalOpen(true);
       setIsCreationModalOpen(false);
     }
