@@ -7,8 +7,6 @@ export const ESTADOS = [
   'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc'
 ];
 
-export const ANALISTAS = ['Luciana', 'Victoria', 'Juan Pablo', 'Yamil'];
-
 interface FilterState {
   search: string;
   estado: string;
