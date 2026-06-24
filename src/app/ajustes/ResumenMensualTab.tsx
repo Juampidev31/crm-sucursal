@@ -213,7 +213,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   };
 
   // ── Analistas dinámicos ───────────────────────────────────────────────────
-  const { analistas } = useAnalistas();
+  const { analistas, nombres } = useAnalistas();
   const ANALISTA_COLORES = useMemo(
     () => analistas.map(a => ({ nombre: a.nombre, color: a.color, bg: hexToRgba(a.color, 0.1) })),
     [analistas],
@@ -300,7 +300,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const buildDatosParaCompartir = (auditSoloMesActual: boolean) => {
     const auditCounts: Record<string, number> = {};
     const currentMonthPrefix = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}`;
-    CONFIG.ANALISTAS_DEFAULT.forEach(a => {
+    nombres.forEach(a => {
       auditCounts[a] = auditoriaData.filter(ad =>
         ad.analista === a && (!auditSoloMesActual || ad.fecha_hora.startsWith(currentMonthPrefix))
       ).length;
@@ -585,7 +585,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── KPI por analista ──────────────────────────────────────────────────────
   const kpiPorAnalista = useMemo(() => {
-    return CONFIG.ANALISTAS_DEFAULT.map(analista => {
+    return nombres.map(analista => {
       const regsAnalista = filterByMonth(registros, selectedMes, selectedAnio).filter(r => r.analista === analista);
       const ventas = regsAnalista.filter(isVenta);
       const capital = ventas.reduce((s, r) => s + (Number(r.monto) || 0), 0);
@@ -654,7 +654,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         tieneDiasAdmin: diasHabiles > 0
       };
     });
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, nombres]);
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
@@ -966,7 +966,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── Datos gráfico acuerdo de precios ──────────────────────────────────────
   const chartAcuerdos = useMemo(() => {
-    const analistas = CONFIG.ANALISTAS_DEFAULT;
+    const analistas = nombres;
     const colores = ['rgba(96, 165, 250, 0.15)', 'rgba(167, 139, 250, 0.15)'];
     const borderColores = ['rgba(96, 165, 250, 0.5)', 'rgba(167, 139, 250, 0.5)'];
 
@@ -985,7 +985,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         borderWidth: 0,
       }))
     };
-  }, [registros, selectedMes, selectedAnio]);
+  }, [registros, selectedMes, selectedAnio, nombres]);
 
   // ── Chart 1: Capital vs Objetivo ──────────────────────────────────────────
   const chartCapitalVsObjetivo = useMemo(() => {
@@ -1053,7 +1053,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
   // ── Chart 4: Variación % vs mes anterior ─────────────────────────────────
   const chartVariacion = useMemo(() => {
-    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const labels = [...nombres, 'Total PDV'];
     const capitalVar = [...kpiPorAnalista.map(k => k.tendCapital ?? 0), kpiTotal.tendCapital ?? 0];
     const opsVar = [...kpiPorAnalista.map(k => k.tendOps ?? 0), kpiTotal.tendOps ?? 0];
     return {
@@ -1075,25 +1075,25 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         },
       ],
     };
-  }, [kpiPorAnalista, kpiTotal]);
+  }, [kpiPorAnalista, kpiTotal, nombres]);
 
   // ── Chart 7: Aperturas vs Renovaciones ───────────────────────────────────
   const apertVsRenData = useMemo(() => {
     const allVentas = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
     const allAnt = ventasMesAnt.filter(isVenta);
     return {
-      porAnalista: CONFIG.ANALISTAS_DEFAULT.map(analista => {
+      porAnalista: nombres.map(analista => {
         const v = allVentas.filter(r => r.analista === analista);
         return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
       }),
-      porAnalistaAnt: CONFIG.ANALISTAS_DEFAULT.map(analista => {
+      porAnalistaAnt: nombres.map(analista => {
         const v = allAnt.filter(r => r.analista === analista);
         return { analista, aperturas: v.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: v.filter(r => r.tipo_cliente === 'Renovacion').length };
       }),
       total: { aperturas: allVentas.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allVentas.filter(r => r.tipo_cliente === 'Renovacion').length },
       ant: { aperturas: allAnt.filter(r => r.tipo_cliente === 'Apertura').length, renovaciones: allAnt.filter(r => r.tipo_cliente === 'Renovacion').length },
     };
-  }, [registros, selectedMes, selectedAnio, ventasMesAnt]);
+  }, [registros, selectedMes, selectedAnio, ventasMesAnt, nombres]);
 
   const chartAperturas = useMemo(() => {
     const labels = ['Total PDV'];
@@ -1154,18 +1154,18 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     };
 
     const labels = ['Público', 'Privado', 'Sin dato'];
-    const dataPorAnalista = CONFIG.ANALISTAS_DEFAULT.map(analista => {
+    const dataPorAnalista = nombres.map(analista => {
       const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
       ventas.filter(r => r.analista === analista).forEach(r => counts[classify(r)]++);
       return { analista, counts };
     });
 
     return { dataPorAnalista, labels };
-  }, [registros, selectedMes, selectedAnio]);
+  }, [registros, selectedMes, selectedAnio, nombres]);
 
   const chartEmpleoPublPriv = useMemo(() => {
     const { labels, dataPorAnalista } = empleoPublPrivData;
-    const analistas = CONFIG.ANALISTAS_DEFAULT;
+    const analistas = nombres;
     const colores = ['rgba(96, 165, 250, 0.15)', 'rgba(167, 139, 250, 0.15)'];
     const borderColores = ['rgba(96, 165, 250, 0.5)', 'rgba(167, 139, 250, 0.5)'];
 
@@ -1179,11 +1179,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         borderWidth: 0,
       }))
     };
-  }, [empleoPublPrivData]);
+  }, [empleoPublPrivData, nombres]);
 
   // ── Chart 10: % Total Conversión ─────────────────────────────────────────
   const chartConversionTotal = useMemo(() => {
-    const labels = [...CONFIG.ANALISTAS_DEFAULT, 'Total PDV'];
+    const labels = [...nombres, 'Total PDV'];
     const actual = [...kpiPorAnalista.map(k => k.conversionGlobal), kpiTotal.conversionGlobal];
     const anterior = [
       ...kpiPorAnalista.map(k => {
@@ -1214,11 +1214,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         refLine100(labels.length),
       ],
     };
-  }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, mesActualLabel, mesAntLabel]);
+  }, [kpiPorAnalista, kpiTotal, registros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, nombres]);
 
   // ── Chart 5: Embudo Comercial ────────────────────────────────────────────
   const chartEmbudo = useMemo(() => {
-    const labels = CONFIG.ANALISTAS_DEFAULT;
+    const labels = nombres;
     const regsMes = filterByMonth(registros, selectedMes, selectedAnio);
     const cerradas = labels.map(a => regsMes.filter(r => r.analista === a && isVenta(r)).length);
     
@@ -1250,11 +1250,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         }
       ],
     };
-  }, [registros, selectedMes, selectedAnio]);
+  }, [registros, selectedMes, selectedAnio, nombres]);
 
   // ── Chart 6: % Conversión de Presupuesto ──────────────────────────────────
   const chartConversionPresupuesto = useMemo(() => {
-    const labels = CONFIG.ANALISTAS_DEFAULT;
+    const labels = nombres;
     const data = labels.map((a, i) => {
       const pres = resumen.presupuestos_por_analista[a] ?? 0;
       const ops = kpiPorAnalista[i]?.ops ?? 0;
@@ -1274,7 +1274,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         refLine100(labels.length),
       ],
     };
-  }, [resumen.presupuestos_por_analista, kpiPorAnalista]);
+  }, [resumen.presupuestos_por_analista, kpiPorAnalista, nombres]);
 
   // ── Chart Venta Diaria Pura ──────────────────────────────────────────────────
   const chartVentaDiaria = useMemo(() => {
@@ -1969,7 +1969,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   <div style={{ marginBottom: 20 }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      {CONFIG.ANALISTAS_DEFAULT.map(analista => {
+                      {nombres.map(analista => {
                         const count = auditoriaData.filter(a => a.analista === analista).length;
                         return (
                           <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
