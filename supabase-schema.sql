@@ -107,6 +107,26 @@ CREATE TABLE IF NOT EXISTS configuracion (
 );
 
 -- ============================================
+-- TABLA: analistas (gestión dinámica)
+-- ============================================
+CREATE TABLE IF NOT EXISTS analistas (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  nombre          TEXT NOT NULL UNIQUE,
+  color           TEXT NOT NULL,
+  oculto          BOOLEAN NOT NULL DEFAULT false,
+  tiene_incentivo BOOLEAN NOT NULL DEFAULT true,
+  orden           INT NOT NULL DEFAULT 0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+INSERT INTO analistas (nombre, color, orden) VALUES
+  ('Luciana',    '#06b6d4', 1),
+  ('Victoria',   '#f59e0b', 2),
+  ('Juan Pablo', '#6366f1', 3),
+  ('Yamil',      '#14b8a6', 4)
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================
 -- TRIGGERS: auto-update updated_at
 -- ============================================
 CREATE OR REPLACE FUNCTION update_updated_at()
