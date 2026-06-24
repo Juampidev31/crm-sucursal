@@ -7,6 +7,7 @@ import {
   LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement
 } from 'chart.js';
 import { CONFIG } from '@/types';
+import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { formatCurrency } from '@/lib/utils';
 import { cumplColor } from '@/lib/registro-stats';
 import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
@@ -299,6 +300,8 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
     distEmpleador, distEmpleadorTotal, distLocalidad, distLocalidadTotal,
     resumen, setResumen,
   } = props;
+
+  const { nombres: analistasDefault } = useAnalistas();
 
   const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
     const isCollapsed = !!collapsedSections[id];
@@ -641,7 +644,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  {CONFIG.ANALISTAS_DEFAULT.map(analista => {
+                  {analistasDefault.map(analista => {
                     const count = auditoriaData.filter(a => a.analista === analista).length;
                     return (
                       <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { formatCurrency, calcularDiasHabilesAutomaticos } from '@/lib/utils';
 import { CONFIG } from '@/types';
+import { useAnalistas } from '@/features/settings/SettingsProvider';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, LineElement, PointElement,
   Tooltip, Legend, Filler,
@@ -48,10 +49,11 @@ interface Props {
 }
 
 export default function ProyeccionClient({ data, mesActual, anioActual, diaActual }: Props) {
+  const { nombres: analistasDefault } = useAnalistas();
   const [analistaSeleccionado, setAnalistaSeleccionado] = useState('PDV');
   const chartsLoaded = useDeferredMount();
 
-  const analistas = ['PDV', ...CONFIG.ANALISTAS_DEFAULT];
+  const analistas = ['PDV', ...analistasDefault];
   const d = data[analistaSeleccionado];
 
   if (!d) return <div className="dashboard-container"><p>Sin datos</p></div>;

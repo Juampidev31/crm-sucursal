@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { CONFIG } from '@/types';
+import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { Send, User, Users, Trash2, Clock, Play } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { formatDateTime } from '@/lib/utils';
@@ -22,6 +22,7 @@ interface RecordatorioRow {
 
 export default function AvisosTab() {
   const { user } = useAuth();
+  const { nombres: analistasDefault } = useAnalistas();
   const { pushRecordatorioChange, forceShowPopup } = useRecordatorios();
   const { showSuccess, showError } = useToast();
   const [mensaje, setMensaje] = useState('');
@@ -71,7 +72,7 @@ export default function AvisosTab() {
 
     setLoading(true);
     try {
-      const analistas = target === 'todos' ? CONFIG.ANALISTAS_DEFAULT : [target];
+      const analistas = target === 'todos' ? analistasDefault : [target];
       
       const pastTime = new Date(Date.now() - 120000).toISOString(); // 2 min en el pasado
       const records = analistas.map(a => ({
@@ -161,7 +162,7 @@ export default function AvisosTab() {
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {[
                 { value: 'todos' as const, label: 'Todos', Icon: Users },
-                ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ value: a, label: a, Icon: User })),
+                ...analistasDefault.map(a => ({ value: a, label: a, Icon: User })),
               ].map(({ value, label, Icon }) => (
                 <button
                   key={value}

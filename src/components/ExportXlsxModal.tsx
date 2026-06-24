@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import { X, Download, Loader2, ArrowLeft, FileSpreadsheet } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
+import { useAnalistas } from '@/features/settings/SettingsProvider';
 
 const ESTADOS = [
   'proyeccion', 'venta', 'en seguimiento', 'score bajo',
   'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc',
 ];
-const ANALISTAS = ['Luciana', 'Victoria', 'Juan Pablo', 'Yamil'];
 const ALERTAS_OPCIONES = ['Proyecciones', 'En seguimiento', 'Score bajo', 'Afectaciones', 'Derivado Aprobado CC', 'Derivado Rechazado CC'];
 const CLIENTE_OPCIONES = ['Nuevo', 'Renovación'];
 
@@ -33,6 +33,7 @@ interface PreviewData {
 }
 
 export function ExportXlsxModal({ open, onClose }: Props) {
+  const { nombres: ANALISTAS } = useAnalistas();
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [fechaScoreDesde, setFechaScoreDesde] = useState('');
