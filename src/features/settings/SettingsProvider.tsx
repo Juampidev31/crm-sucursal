@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import {
-  AlertaConfig, DiasConfig, PermisoRol,
-  alertaConfigSchema, diasConfigSchema, permisoRolSchema, parseRows,
+  AlertaConfig, DiasConfig, PermisoRol, Analista,
+  alertaConfigSchema, diasConfigSchema, permisoRolSchema, analistaSchema, parseRows,
 } from '@/types';
 import { validateBroadcast } from '@/lib/broadcast-utils';
 
@@ -17,10 +17,12 @@ interface SettingsCtx {
   alertasConfig: AlertaConfig[];
   diasConfig: DiasConfig[];
   permisosConfig: PermisoRol[];
+  analistas: Analista[];
   mutateAlertasConfig: (mapper: (prev: AlertaConfig[]) => AlertaConfig[]) => void;
   pushAlertasConfigChange: (type: ChangeType, config: AlertaConfig) => void;
   applyDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
   applyPermisoConfigChange: (type: ChangeType, config: PermisoRol) => void;
+  applyAnalistaChange: (type: ChangeType, config: Analista) => void;
 }
 
 const SettingsContext = createContext<SettingsCtx | null>(null);
@@ -29,6 +31,7 @@ const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
 const alertaConfigChangeSchema = z.object({ type: changeType, config: alertaConfigSchema });
 const diasConfigChangeSchema = z.object({ type: changeType, config: diasConfigSchema });
 const permisoConfigChangeSchema = z.object({ type: changeType, config: permisoRolSchema });
+const analistaChangeSchema = z.object({ type: changeType, config: analistaSchema });
 
 
 
@@ -37,12 +40,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [alertasConfig, setAlertasConfig] = useState<AlertaConfig[]>([]);
   const [diasConfig, setDiasConfig] = useState<DiasConfig[]>([]);
   const [permisosConfig, setPermisosConfig] = useState<PermisoRol[]>([]);
+  const [analistas, setAnalistas] = useState<Analista[]>([]);
 
   const fetchSettings = useCallback(async () => {
-    const [alertasR, diasR, permisosR] = await Promise.all([
+    const [alertasR, diasR, permisosR, analistasR] = await Promise.all([
       supabase.from('alertas_config').select('id,nombre,estado,dias,mensaje,color'),
       supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
       supabase.from('permisos_roles').select('id,rol,permiso,activo'),
+      supabase.from('analistas').select('id,nombre,color,oculto,tiene_incentivo,orden').order('orden'),
     ]);
 
     const validateAndSet = <T,>(
@@ -67,6 +72,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     else validateAndSet<DiasConfig>('dias_habiles_config', diasConfigSchema, diasR.data, setDiasConfig);
     if (permisosR.error && permisosR.error.code !== '42P01') reportError('refresh:permisos_roles', permisosR.error);
     else if (!permisosR.error) validateAndSet<PermisoRol>('permisos_roles', permisoRolSchema, permisosR.data, setPermisosConfig);
+    if (analistasR.error && analistasR.error.code !== '42P01') reportError('refresh:analistas', analistasR.error);
+    else if (!analistasR.error) validateAndSet<Analista>('analistas', analistaSchema, analistasR.data, setAnalistas);
   }, [reportError]);
 
   const fetchRef = useRef(fetchSettings);
@@ -106,6 +113,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           : [...prev, config];
       });
     },
+    analistas_change: (payload) => {
+      const data = validateBroadcast('analistas_change', analistaChangeSchema, payload);
+      if (!data) return;
+      const { type, config } = data;
+      setAnalistas(prev => {
+        if (type === 'DELETE') return prev.filter(a => a.nombre !== config.nombre);
+        return prev.some(a => a.nombre === config.nombre)
+          ? prev.map(a => a.nombre === config.nombre ? config : a)
+          : [...prev, config];
+      });
+    },
     bulk_refresh: () => { fetchRef.current(); },
   });
 
@@ -135,6 +153,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => { });
   }, [broadcastRef]);
 
+  const applyAnalistaChange = useCallback((type: ChangeType, config: Analista) => {
+    setAnalistas(prev => {
+      if (type === 'DELETE') return prev.filter(a => a.nombre !== config.nombre);
+      return prev.some(a => a.nombre === config.nombre)
+        ? prev.map(a => a.nombre === config.nombre ? config : a)
+        : [...prev, config];
+    });
+    broadcastRef.current?.send({ type: 'broadcast', event: 'analistas_change', payload: { type, config } }).catch(() => {});
+  }, [broadcastRef]);
+
   const applyPermisoConfigChange = useCallback((type: ChangeType, config: PermisoRol) => {
     setPermisosConfig(prev => {
       if (type === 'DELETE') return prev.filter(p => !(p.rol === config.rol && p.permiso === config.permiso));
@@ -152,9 +180,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
   const value = useMemo<SettingsCtx>(() => ({
-    alertasConfig, diasConfig, permisosConfig,
-    mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange,
-  }), [alertasConfig, diasConfig, permisosConfig, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange]);
+    alertasConfig, diasConfig, permisosConfig, analistas,
+    mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange,
+  }), [alertasConfig, diasConfig, permisosConfig, analistas, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
@@ -163,4 +191,19 @@ export function useSettings() {
   const ctx = useContext(SettingsContext);
   if (!ctx) throw new Error('useSettings must be used within SettingsProvider');
   return ctx;
+}
+
+export function useAnalistas() {
+  const { analistas: all, applyAnalistaChange } = useSettings();
+  const visibles = useMemo(() => all.filter(a => !a.oculto), [all]);
+  const nombres = useMemo(() => visibles.map(a => a.nombre), [visibles]);
+  const colorDe = useCallback(
+    (nombre: string) => all.find(a => a.nombre === nombre)?.color ?? '#10b981',
+    [all],
+  );
+  const cobraIncentivo = useCallback(
+    (nombre: string) => all.find(a => a.nombre === nombre)?.tiene_incentivo ?? false,
+    [all],
+  );
+  return { analistas: visibles, analistasAll: all, nombres, colorDe, cobraIncentivo, applyAnalistaChange };
 }
