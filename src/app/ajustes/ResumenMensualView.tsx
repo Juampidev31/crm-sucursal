@@ -568,7 +568,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
         {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#00ff88" />)}
         {!collapsedSections[3] && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', padding: '0 24px 24px 24px' }}>
-            <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" />
+            <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" analistas={analistasDefault} />
             <NuevaSeccionSheets analista="PDV" />
           </div>
         )}

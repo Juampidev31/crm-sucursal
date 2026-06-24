@@ -1902,7 +1902,7 @@ export default function AnalistasPage() {
                   />
                 </div>
               </div>
-              <MetricasTab hideSelector mesStr={sec4Mes} anioNum={sec4Anio} registros={registros} analista={analista} />
+              <MetricasTab hideSelector mesStr={sec4Mes} anioNum={sec4Anio} registros={registros} analista={analista} analistas={analistasDefault} />
             </div>
             <NuevaSeccionSheets analista={analista} />
           </div>

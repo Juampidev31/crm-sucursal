@@ -44,9 +44,10 @@ interface Props {
   hideSelector?: boolean;
   mesStr?: string;
   anioNum?: number;
+  analistas?: string[];
 }
 
-export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAnio, registros: manualRegs, analista: propAnalista, hideSelector, mesStr, anioNum }: Props) {
+export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAnio, registros: manualRegs, analista: propAnalista, hideSelector, mesStr, anioNum, analistas: propAnalistas }: Props) {
   const [internalMes, setInternalMes] = useState(propMes ? String(propMes).padStart(2, '0') : mesActual);
   const [internalAnio, setInternalAnio] = useState(propAnio || new Date().getFullYear());
 
@@ -131,7 +132,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
     }
 
     const base = [{ id: 'todos', label: 'General (Todos)', analista: '' }];
-    const analistas = (CONFIG.ANALISTAS_DEFAULT || []).map(a => ({
+    const analistas = (propAnalistas ?? CONFIG.ANALISTAS_DEFAULT).map(a => ({
       id: a.toLowerCase(),
       label: a,
       analista: a
