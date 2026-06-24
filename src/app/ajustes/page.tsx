@@ -32,6 +32,7 @@ const MassiveDeleteTab  = dynamic(() => import('./MassiveDeleteTab'),  { ssr: fa
 const AvisosTab         = dynamic(() => import('./AvisosTab'),         { ssr: false, loading: TabFallback });
 const VerificadorTab    = dynamic(() => import('./VerificadorTab'),    { ssr: false, loading: TabFallback });
 const CargaRapidaTab    = dynamic(() => import('./CargaRapidaTab'),    { ssr: false, loading: TabFallback });
+const AnalistasTab      = dynamic(() => import('./AnalistasTab'),      { ssr: false, loading: TabFallback });
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -40,7 +41,7 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
-type ConfigSubTab = 'alertas' | 'dias' | 'permisos';
+type ConfigSubTab = 'alertas' | 'dias' | 'permisos' | 'analistas';
 type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score';
 type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
 type ActividadSubTab = 'auditoria' | 'avisos';
@@ -687,6 +688,7 @@ export default function AjustesPage() {
                 ...(isAdmin ? [{ id: 'alertas' as const, label: 'Alertas', icon: Bell }] : []),
                 { id: 'dias' as const, label: 'Días Hábiles', icon: Clock },
                 ...(isAdmin ? [{ id: 'permisos' as const, label: 'Roles y Permisos', icon: Shield }] : []),
+                ...(isAdmin ? [{ id: 'analistas' as const, label: 'Analistas', icon: Users }] : []),
               ]}
               active={configSubTab}
               onSelect={setConfigSubTab}
@@ -855,6 +857,11 @@ export default function AjustesPage() {
                 );
               })}
             </div>
+          )}
+
+          {/* TAB: ANALISTAS */}
+          {activeTab === 'configuracion' && configSubTab === 'analistas' && isAdmin && (
+            <AnalistasTab />
           )}
 
           {/* TAB: PERMISOS */}
