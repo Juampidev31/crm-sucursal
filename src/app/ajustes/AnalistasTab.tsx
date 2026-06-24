@@ -47,8 +47,12 @@ export default function AnalistasTab() {
       );
       return;
     }
-    await supabase.from('objetivos').delete().eq('analista', a.nombre);
-    await supabase.from('dias_habiles_config').delete().eq('analista', a.nombre);
+    // Limpieza de config asociada antes de borrar el analista. Si alguna falla,
+    // abortamos para no dejar el analista borrado con config huérfana (o viceversa).
+    const objErr = (await supabase.from('objetivos').delete().eq('analista', a.nombre)).error;
+    if (objErr) { setError(`No se pudieron borrar los objetivos: ${objErr.message}`); return; }
+    const diasErr = (await supabase.from('dias_habiles_config').delete().eq('analista', a.nombre)).error;
+    if (diasErr) { setError(`No se pudieron borrar los días hábiles: ${diasErr.message}`); return; }
     const { error: e } = await supabase.from('analistas').delete().eq('nombre', a.nombre);
     if (e) { setError(e.message); return; }
     applyAnalistaChange('DELETE', a);

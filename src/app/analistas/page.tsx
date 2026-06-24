@@ -450,7 +450,7 @@ export default function AnalistasPage() {
         incentivoTotal
       };
     });
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, manualCobranzas, analista, cobraIncentivo]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, manualCobranzas, analista, analistasParaMostrar, cobraIncentivo]);
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
