@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Registro, Objetivo, CONFIG } from '@/types';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, hexToRgba } from '@/lib/utils';
+import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
@@ -19,14 +20,6 @@ import DistBlock from '@/components/charts/DistBlock';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
-// ── Colores por analista (compartido por Comparativa y vista individual) ──
-const ANALISTA_COLORES = [
-  { nombre: 'Luciana', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)' },
-  { nombre: 'Victoria', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-  { nombre: 'Juan Pablo', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' },
-  { nombre: 'Yamil', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.1)' },
-];
-const FILTROS_ACTIVIDAD = ['PDV', ...ANALISTA_COLORES.map(a => a.nombre), 'Comparativa'];
 
 // ── Plugin inline: data labels on bars ───────────────────────────────────
 const labelsPlugin: any = {
@@ -218,6 +211,17 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const toggleSection = (id: number) => {
     setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // ── Analistas dinámicos ───────────────────────────────────────────────────
+  const { analistas } = useAnalistas();
+  const ANALISTA_COLORES = useMemo(
+    () => analistas.map(a => ({ nombre: a.nombre, color: a.color, bg: hexToRgba(a.color, 0.1) })),
+    [analistas],
+  );
+  const FILTROS_ACTIVIDAD = useMemo(
+    () => ['PDV', ...analistas.map(a => a.nombre), 'Comparativa'],
+    [analistas],
+  );
 
   // ── Fetch al cambiar mes/año ──────────────────────────────────────────────
   useEffect(() => {
@@ -1339,7 +1343,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         }
       ]
     };
-  }, [registros, selectedMes, selectedAnio, filtroActividad]);
+  }, [registros, selectedMes, selectedAnio, filtroActividad, ANALISTA_COLORES]);
 
   const chartVentaDiariaOptions = {
     responsive: true,
