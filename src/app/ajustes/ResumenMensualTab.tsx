@@ -19,6 +19,15 @@ import DistBlock from '@/components/charts/DistBlock';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
+// ── Colores por analista (compartido por Comparativa y vista individual) ──
+const ANALISTA_COLORES = [
+  { nombre: 'Luciana', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.1)' },
+  { nombre: 'Victoria', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+  { nombre: 'Juan Pablo', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.1)' },
+  { nombre: 'Yamil', color: '#14b8a6', bg: 'rgba(20, 184, 166, 0.1)' },
+];
+const FILTROS_ACTIVIDAD = ['PDV', ...ANALISTA_COLORES.map(a => a.nombre), 'Comparativa'];
+
 // ── Plugin inline: data labels on bars ───────────────────────────────────
 const labelsPlugin: any = {
   id: 'labelsPlugin',
@@ -192,7 +201,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const [publicLink, setPublicLink] = useState('');
   const [copied, setCopied] = useState(false);
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
-  const [filtroActividad, setFiltroActividad] = useState<'PDV' | 'Luciana' | 'Victoria' | 'Comparativa'>('PDV');
+  const [filtroActividad, setFiltroActividad] = useState<string>('PDV');
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>({
     1: true,
     2: true,
@@ -1274,48 +1283,25 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
     
     if (filtroActividad === 'Comparativa') {
-      const dataLuciana = labels.map((_, i) => {
-        const day = i + 1;
-        if (day > maxDay) return null;
-        const dayStr = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayRegs = regsMes.filter(r => r.fecha?.slice(0, 10) === dayStr && r.analista === 'Luciana');
-        return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-      });
-
-      const dataVictoria = labels.map((_, i) => {
-        const day = i + 1;
-        if (day > maxDay) return null;
-        const dayStr = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayRegs = regsMes.filter(r => r.fecha?.slice(0, 10) === dayStr && r.analista === 'Victoria');
-        return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
-      });
-
       return {
         labels,
-        datasets: [
-          {
-            label: 'Luciana',
-            data: dataLuciana,
-            backgroundColor: 'rgba(6, 182, 212, 0.1)',
-            borderColor: '#06b6d4',
-            borderWidth: 2,
-            pointRadius: 4,
-            pointBackgroundColor: '#06b6d4',
-            fill: true,
-            tension: 0.3
-          },
-          {
-            label: 'Victoria',
-            data: dataVictoria,
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderColor: '#f59e0b',
-            borderWidth: 2,
-            pointRadius: 4,
-            pointBackgroundColor: '#f59e0b',
-            fill: true,
-            tension: 0.3
-          }
-        ]
+        datasets: ANALISTA_COLORES.map(({ nombre, color, bg }) => ({
+          label: nombre,
+          data: labels.map((_, i) => {
+            const day = i + 1;
+            if (day > maxDay) return null;
+            const dayStr = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayRegs = regsMes.filter(r => r.fecha?.slice(0, 10) === dayStr && r.analista === nombre);
+            return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+          }),
+          backgroundColor: bg,
+          borderColor: color,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: color,
+          fill: true,
+          tension: 0.3
+        }))
       };
     }
 
@@ -1334,8 +1320,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     let color = '#10b981';
     let bgColor = 'rgba(16, 185, 129, 0.1)';
     if (filtroActividad === 'PDV') { color = '#10b981'; bgColor = 'rgba(16, 185, 129, 0.1)'; }
-    if (filtroActividad === 'Luciana') { color = '#06b6d4'; bgColor = 'rgba(6, 182, 212, 0.1)'; }
-    if (filtroActividad === 'Victoria') { color = '#f59e0b'; bgColor = 'rgba(245, 158, 11, 0.1)'; }
+    const matchAnalista = ANALISTA_COLORES.find(a => a.nombre === filtroActividad);
+    if (matchAnalista) { color = matchAnalista.color; bgColor = matchAnalista.bg; }
 
     return {
       labels,
@@ -2110,7 +2096,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '0 24px 24px 24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: 3, borderRadius: 8 }}>
-                    {['PDV', 'Luciana', 'Victoria', 'Comparativa'].map(f => (
+                    {FILTROS_ACTIVIDAD.map(f => (
                     <button
                       key={f}
                       onClick={() => setFiltroActividad(f as any)}

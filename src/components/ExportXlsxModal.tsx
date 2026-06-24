@@ -8,7 +8,7 @@ const ESTADOS = [
   'proyeccion', 'venta', 'en seguimiento', 'score bajo',
   'afectaciones', 'derivado / aprobado cc', 'derivado / rechazado cc',
 ];
-const ANALISTAS = ['Luciana', 'Victoria'];
+const ANALISTAS = ['Luciana', 'Victoria', 'Juan Pablo', 'Yamil'];
 const ALERTAS_OPCIONES = ['Proyecciones', 'En seguimiento', 'Score bajo', 'Afectaciones', 'Derivado Aprobado CC', 'Derivado Rechazado CC'];
 const CLIENTE_OPCIONES = ['Nuevo', 'Renovación'];
 

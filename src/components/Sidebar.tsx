@@ -494,18 +494,36 @@ export default function Sidebar({
                 indent 
                 isTreeItem 
               />
-              <NavItem 
-                href="/registros" 
-                icon={Users} 
-                label="Victoria" 
-                active={pathname === '/registros' && filters.analista.toLowerCase() === 'victoria' && filters.estados.length === 0} 
-                onClick={() => { limpiarFiltros(); setFilter('analista', 'Victoria'); }} 
-                indent 
-                isTreeItem 
+              <NavItem
+                href="/registros"
+                icon={Users}
+                label="Victoria"
+                active={pathname === '/registros' && filters.analista.toLowerCase() === 'victoria' && filters.estados.length === 0}
+                onClick={() => { limpiarFiltros(); setFilter('analista', 'Victoria'); }}
+                indent
+                isTreeItem
               />
-              <NavItem 
-                href="#" 
-                icon={FolderSearch} 
+              <NavItem
+                href="/registros"
+                icon={Users}
+                label="Juan Pablo"
+                active={pathname === '/registros' && filters.analista.toLowerCase() === 'juan pablo' && filters.estados.length === 0}
+                onClick={() => { limpiarFiltros(); setFilter('analista', 'Juan Pablo'); }}
+                indent
+                isTreeItem
+              />
+              <NavItem
+                href="/registros"
+                icon={Users}
+                label="Yamil"
+                active={pathname === '/registros' && filters.analista.toLowerCase() === 'yamil' && filters.estados.length === 0}
+                onClick={() => { limpiarFiltros(); setFilter('analista', 'Yamil'); }}
+                indent
+                isTreeItem
+              />
+              <NavItem
+                href="#"
+                icon={FolderSearch}
                 iconColor="#f472b6"
                 label="Clientes en revisión" 
                 onClick={(e) => { e.preventDefault(); setRevisionOpen(!revisionOpen); }} 
@@ -567,7 +585,9 @@ export default function Sidebar({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   <NavItem href="/analistas?analista=PDV" icon={TrendingUp} label="PDV" active={pathname === '/analistas' && currentAnalistaPage === 'PDV'} indent isDoubleTreeItem />
                   <NavItem href="/analistas?analista=Luciana" icon={TrendingUp} label="Luciana" active={pathname === '/analistas' && currentAnalistaPage === 'Luciana'} indent isDoubleTreeItem />
-                  <NavItem href="/analistas?analista=Victoria" icon={TrendingUp} label="Victoria" active={pathname === '/analistas' && currentAnalistaPage === 'Victoria'} indent isDoubleTreeItem isLastTreeItem />
+                  <NavItem href="/analistas?analista=Victoria" icon={TrendingUp} label="Victoria" active={pathname === '/analistas' && currentAnalistaPage === 'Victoria'} indent isDoubleTreeItem />
+                  <NavItem href="/analistas?analista=Juan Pablo" icon={TrendingUp} label="Juan Pablo" active={pathname === '/analistas' && currentAnalistaPage === 'Juan Pablo'} indent isDoubleTreeItem />
+                  <NavItem href="/analistas?analista=Yamil" icon={TrendingUp} label="Yamil" active={pathname === '/analistas' && currentAnalistaPage === 'Yamil'} indent isDoubleTreeItem isLastTreeItem />
                 </div>
               )}
               <NavItem href="/reportes/cobranzas" icon={DollarSign} iconColor="#f59e0b" label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent isTreeItem isLastTreeItem />

@@ -361,8 +361,8 @@ export default function AnalistasPage() {
       const cumplProyCapital = metaCapital > 0 ? (proyCapital !== null ? (proyCapital / metaCapital) * 100 : null) : null;
       const cumplProyOps = metaOps > 0 ? (proyOps !== null ? (proyOps / metaOps) * 100 : null) : null;
 
-      // Cálculo de incentivos (SOLO LUCIANA Y VICTORIA)
-      const analistasConIncentivo = ['luciana', 'victoria'];
+      // Cálculo de incentivos (analistas con incentivo)
+      const analistasConIncentivo = ['luciana', 'victoria', 'juan pablo', 'yamil'];
       const tieneIncentivo = analistasConIncentivo.includes(analista.toLowerCase());
       
       let coefCap = 0;
