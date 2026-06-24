@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { calcularComisiones } from '@/lib/utils';
-import { CONFIG, ESTADOS_MAP } from '@/types';
+import { ESTADOS_MAP } from '@/types';
 import ProyeccionClient, { type ProyeccionData } from './ProyeccionClient';
 
 export const dynamic = 'force-dynamic';
@@ -23,12 +23,15 @@ async function buildProyeccion() {
   const fromDate = new Date(anioActual, mesActual, 1).toISOString().split('T')[0];
   const toDate = new Date(anioActual, mesActual + 1, 0).toISOString().split('T')[0];
 
-  const [regResult, objResult] = await Promise.all([
+  const [regResult, objResult, analistasResult] = await Promise.all([
     supabase.from('registros').select('*')
       .or(`fecha.gte.${fromDate},fecha.is.null`)
       .lte('fecha', toDate),
     supabase.from('objetivos').select('*').eq('anio', anioActual).eq('mes', mesActual),
+    supabase.from('analistas').select('nombre').eq('oculto', false).order('orden'),
   ]);
+
+  const analistasNombres = (analistasResult.data ?? []).map(r => r.nombre);
 
   if (regResult.error) {
     console.error('[Proyección] Error fetching registros:', regResult.error.message);
@@ -58,7 +61,7 @@ async function buildProyeccion() {
   const result: Record<string, ProyeccionData> = { 'PDV': mkEntry(metaVPDV, metaOPDV) };
   const datosDiariosMonto: Record<string, number[]> = { 'PDV': Array(ultimoDiaMes).fill(0) };
 
-  CONFIG.ANALISTAS_DEFAULT.forEach(a => {
+  analistasNombres.forEach(a => {
     const obj = objetivos.find(o => o.analista === a);
     const metaV = Number(obj?.meta_ventas) || 0;
     const metaO = Number(obj?.meta_operaciones) || 0;
@@ -77,7 +80,7 @@ async function buildProyeccion() {
     const diaReg = fechaReg.getDate();
     const esMesObjetivo = mesReg === mesActual && anioReg === anioActual;
     const esVenta = estadoNorm === 'venta' || estadoNorm.includes('aprobado cc');
-    const analistaValido = CONFIG.ANALISTAS_DEFAULT.includes(analista) ? analista : null;
+    const analistaValido = analistasNombres.includes(analista) ? analista : null;
 
     if (!analistaValido || !esMesObjetivo) return;
 
