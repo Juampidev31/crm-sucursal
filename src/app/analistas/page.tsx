@@ -7,7 +7,7 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
-import { useSettings } from '@/features/settings/SettingsProvider';
+import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
 import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
@@ -153,6 +153,7 @@ export default function AnalistasPage() {
   const { registros: allRegistros, loading } = useRegistros();
   const { objetivos } = useObjetivos();
   const { diasConfig } = useSettings();
+  const { nombres: analistasDefault, cobraIncentivo } = useAnalistas();
   const { isAdmin } = useAuth();
   
   const searchParams = useSearchParams();
@@ -174,7 +175,7 @@ export default function AnalistasPage() {
     return esVistaGlobal ? allRegistros : allRegistros.filter(r => r.analista === analista);
   }, [allRegistros, analista, esVistaGlobal]);
 
-  const analistasParaMostrar = esVistaGlobal ? CONFIG.ANALISTAS_DEFAULT : [analista];
+  const analistasParaMostrar = esVistaGlobal ? analistasDefault : [analista];
   const chartLabels = useMemo(() => {
     if (analista === 'PDV') {
       return ['TOTAL GENERAL'];
@@ -362,8 +363,7 @@ export default function AnalistasPage() {
       const cumplProyOps = metaOps > 0 ? (proyOps !== null ? (proyOps / metaOps) * 100 : null) : null;
 
       // Cálculo de incentivos (analistas con incentivo)
-      const analistasConIncentivo = ['luciana', 'victoria', 'juan pablo', 'yamil'];
-      const tieneIncentivo = analistasConIncentivo.includes(analista.toLowerCase());
+      const tieneIncentivo = cobraIncentivo(analista);
       
       let coefCap = 0;
       let coefOps = 0;
@@ -450,7 +450,7 @@ export default function AnalistasPage() {
         incentivoTotal
       };
     });
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, manualCobranzas, analista]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, manualCobranzas, analista, cobraIncentivo]);
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
@@ -1033,9 +1033,9 @@ export default function AnalistasPage() {
 
     return [
       { titulo: 'PDV (Total)', data: buildChart(() => true, kpiTotal.metaCapital) },
-      ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ titulo: a, data: buildChart(r => r.analista === a, metaDe(a)) })),
+      ...analistasDefault.map(a => ({ titulo: a, data: buildChart(r => r.analista === a, metaDe(a)) })),
     ];
-  }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital, kpiPorAnalista]);
+  }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital, kpiPorAnalista, analistasDefault]);
 
   const chartProgresoSepOptions = {
     responsive: true,
@@ -1229,7 +1229,7 @@ export default function AnalistasPage() {
               onChange={val => setAnalista(String(val))}
               options={[
                 { label: 'PDV', value: 'PDV' },
-                ...CONFIG.ANALISTAS_DEFAULT.map(a => ({ label: a, value: a })),
+                ...analistasDefault.map(a => ({ label: a, value: a })),
                 ...(isAdmin ? [{ label: '📊 Proyectados', value: 'PROYECTADOS' }] : []),
               ]}
               width="150px"
