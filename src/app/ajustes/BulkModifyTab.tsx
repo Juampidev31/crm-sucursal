@@ -7,6 +7,7 @@ import { ESTADOS } from '@/context/FilterContext';
 import { Registro } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
+import CustomSelect from '@/components/CustomSelect';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
   Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download, Pencil
@@ -294,6 +295,15 @@ const LABEL_STYLE: React.CSSProperties = {
   display: 'block', fontSize: '9px', color: '#444', fontWeight: 900,
   textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px',
 };
+
+const STEP_TITLE_STYLE: React.CSSProperties = {
+  fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase',
+  letterSpacing: '1px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, opacity: 0.9,
+};
+
+const stepBadge = (n: number) => (
+  <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#34d399', color: '#000', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, flexShrink: 0 }}>{n}</span>
+);
 
 const DARK_INPUT_STYLE: React.CSSProperties = {
   background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
@@ -3308,171 +3318,188 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
       {/* ── REASIGNAR REGISTROS ENTRE ANALISTAS ──────────────────────────── */}
       {mode === 'bulk' && (
-        <div style={{
-          marginBottom: '28px', padding: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-        }}>
-          <div
-            onClick={() => setRaExpandido(!raExpandido)}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: raExpandido ? 16 : 0, cursor: 'pointer' }}
-          >
-            <Users size={18} color="#555" />
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
-              Reasignar Registros entre Analistas
-              {raExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
-            </h4>
-          </div>
+        <div style={{ maxWidth: 720, margin: '0 auto 32px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+            {/* Header colapsable */}
+            <div
+              onClick={() => setRaExpandido(!raExpandido)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: raExpandido ? '28px 32px 0' : '24px 32px', cursor: 'pointer' }}
+            >
+              <Users size={18} color="#34d399" />
+              <h4 style={{ flex: 1, fontSize: 13, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
+                Reasignar Registros entre Analistas
+              </h4>
+              {raExpandido ? <ChevronUp size={16} color="#888" /> : <ChevronDown size={16} color="#888" />}
+            </div>
 
-          {raExpandido && (
-            <>
-              <div style={{ fontSize: '11px', color: '#555', marginBottom: 16, lineHeight: 1.5 }}>
-                Elegí un analista origen, acotá por estado/score/fecha (opcional), definí cuántos registros van a cada analista destino y tildalos.
-              </div>
+            {raExpandido && (
+              <div style={{ padding: '20px 32px 32px' }}>
+                <p style={{ fontSize: 12, color: '#888', marginBottom: 28, lineHeight: 1.5 }}>
+                  Elegí un analista origen, acotá por estado/score/fecha (opcional), definí cuántos registros van a cada analista destino y tildalos.
+                </p>
 
-              {/* PASO 1: Origen */}
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, color: '#777', fontWeight: 700, marginBottom: 6 }}>1) Analista origen</div>
-                <select
-                  value={raOrigen}
-                  onChange={e => setRaOrigen(e.target.value)}
-                  className="form-input"
-                  style={{ width: '100%', maxWidth: 320 }}
-                >
-                  <option value="">— Elegir analista —</option>
-                  {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
-
-              {/* PASO 2: Filtros opcionales */}
-              {raOrigen && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, color: '#777', fontWeight: 700, marginBottom: 6 }}>2) Acotar (opcional)</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                    {ESTADOS.map(e => {
-                      const sel = raEstados.includes(e);
-                      return (
-                        <button
-                          key={e}
-                          onClick={() => setRaEstados(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e])}
-                          style={{
-                            background: sel ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
-                            border: `1px solid ${sel ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                            color: sel ? '#00d4ff' : '#666',
-                            borderRadius: 4, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer',
-                          }}
-                        >
-                          {STATUS_LABEL[e] ?? e}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    <input className="form-input" type="number" placeholder="Score min" value={raScoreMin} onChange={e => setRaScoreMin(e.target.value)} style={{ width: 110 }} />
-                    <input className="form-input" type="number" placeholder="Score max" value={raScoreMax} onChange={e => setRaScoreMax(e.target.value)} style={{ width: 110 }} />
-                    <input className="form-input" type="date" value={raFechaDesde} onChange={e => setRaFechaDesde(e.target.value)} style={{ width: 150 }} />
-                    <input className="form-input" type="date" value={raFechaHasta} onChange={e => setRaFechaHasta(e.target.value)} style={{ width: 150 }} />
-                  </div>
-                  <div style={{ fontSize: 12, color: '#888', marginTop: 8 }}>
-                    <strong style={{ color: '#fff' }}>{raTotalDisponible}</strong> registro(s) disponibles
-                  </div>
+                {/* PASO 1: Origen */}
+                <div style={{ marginBottom: 28 }}>
+                  <h5 style={STEP_TITLE_STYLE}>{stepBadge(1)} Analista origen</h5>
+                  <CustomSelect
+                    width="100%"
+                    bg="#0a0a0a"
+                    value={raOrigen}
+                    onChange={v => setRaOrigen(String(v))}
+                    options={[{ label: '— Elegir analista —', value: '' }, ...ANALISTAS.map(a => ({ label: a, value: a }))]}
+                  />
                 </div>
-              )}
 
-              {/* PASO 3: Cuotas por destino */}
-              {raOrigen && raTotalDisponible > 0 && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, color: '#777', fontWeight: 700, marginBottom: 6 }}>
-                    3) Cuotas por destino ({raTotalCuotas}/{raTotalDisponible})
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <select value={raNuevoDestino} onChange={e => setRaNuevoDestino(e.target.value)} className="form-input" style={{ flex: 1, maxWidth: 220 }}>
-                      <option value="">— Analista destino —</option>
-                      {ANALISTAS.filter(a => a !== raOrigen && !raDestinos.some(d => d.analista === a)).map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                    <input className="form-input" type="number" placeholder="Cantidad" value={raNuevaCuota} onChange={e => setRaNuevaCuota(e.target.value)} style={{ width: 110 }} />
-                    <button onClick={raAgregarDestino} className="form-input" style={{ cursor: 'pointer', fontWeight: 700, color: '#00d4ff' }}>+ Agregar</button>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {raDestinos.map(d => {
-                      const hechos = raAsignadosPorDestino[d.analista] ?? 0;
-                      const completo = hechos >= d.cuota;
-                      const activo = raDestinoActivo === d.analista;
-                      return (
-                        <div
-                          key={d.analista}
-                          onClick={() => setRaDestinoActivo(d.analista)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                            background: activo ? 'rgba(96,165,250,0.18)' : 'rgba(255,255,255,0.04)',
-                            border: `1px solid ${completo ? 'rgba(74,222,128,0.5)' : activo ? 'rgba(96,165,250,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                            borderRadius: 6, padding: '6px 10px',
-                          }}
-                        >
-                          <span style={{ fontSize: 12, fontWeight: 700, color: completo ? '#4ade80' : '#ddd' }}>{d.analista}</span>
-                          <span style={{ fontSize: 11, color: completo ? '#4ade80' : '#888' }}>{hechos}/{d.cuota}</span>
-                          <button onClick={(ev) => { ev.stopPropagation(); raQuitarDestino(d.analista); }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>×</button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* PASO 4: Tildar registros */}
-              {raDestinos.length > 0 && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <div style={{ fontSize: 11, color: '#777', fontWeight: 700 }}>
-                      4) Tildar para {raDestinoActivo || '— elegí un destino —'}
+                {/* PASO 2: Filtros opcionales */}
+                {raOrigen && (
+                  <div style={{ marginBottom: 28 }}>
+                    <h5 style={STEP_TITLE_STYLE}>{stepBadge(2)} Acotar <span style={{ color: '#555', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span></h5>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                      {ESTADOS.map(e => {
+                        const sel = raEstados.includes(e);
+                        return (
+                          <button
+                            key={e}
+                            onClick={() => setRaEstados(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e])}
+                            style={{
+                              background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
+                              border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`,
+                              color: sel ? '#34d399' : '#888',
+                              borderRadius: 10, padding: '8px 14px', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s',
+                            }}
+                          >
+                            {STATUS_LABEL[e] ?? e}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <button onClick={raTildarPrimerosN} disabled={!raDestinoActivo} className="form-input" style={{ cursor: raDestinoActivo ? 'pointer' : 'not-allowed', fontSize: 11, fontWeight: 700, color: raDestinoActivo ? '#00d4ff' : '#555' }}>
-                      Tildar primeros N
-                    </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                      <div>
+                        <label style={LABEL_STYLE}>Score mínimo</label>
+                        <input className="form-input" type="number" placeholder="0" value={raScoreMin} onChange={e => setRaScoreMin(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                      </div>
+                      <div>
+                        <label style={LABEL_STYLE}>Score máximo</label>
+                        <input className="form-input" type="number" placeholder="∞" value={raScoreMax} onChange={e => setRaScoreMax(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                      </div>
+                      <div>
+                        <label style={LABEL_STYLE}>Fecha desde</label>
+                        <input className="form-input" type="date" value={raFechaDesde} onChange={e => setRaFechaDesde(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                      </div>
+                      <div>
+                        <label style={LABEL_STYLE}>Fecha hasta</label>
+                        <input className="form-input" type="date" value={raFechaHasta} onChange={e => setRaFechaHasta(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: '#888', marginTop: 16 }}>
+                      <strong style={{ color: '#fff', fontSize: 16 }}>{raTotalDisponible}</strong> registro(s) disponibles
+                    </div>
                   </div>
-                  <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8 }}>
-                    {raUniverso.map(r => {
-                      const dest = raAsignaciones.get(r.id);
-                      return (
-                        <div
-                          key={r.id}
-                          onClick={() => raToggleFila(r.id)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
-                            borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer',
-                            background: dest ? 'rgba(96,165,250,0.08)' : 'transparent',
-                          }}
-                        >
-                          <input type="checkbox" readOnly checked={!!dest} />
-                          <span style={{ flex: 1, fontSize: 12, color: '#ddd' }}>{r.nombre ?? r.cuil ?? r.id}</span>
-                          <span style={{ fontSize: 11, color: '#777' }}>{STATUS_LABEL[r.estado ?? ''] ?? r.estado}</span>
-                          {dest && <span style={{ fontSize: 11, fontWeight: 700, color: '#00d4ff' }}>→ {dest}</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Acción */}
-              {raDestinos.length > 0 && (
-                <button
-                  onClick={raGuardar}
-                  disabled={updating || raAsignaciones.size === 0}
-                  style={{
-                    width: '100%', padding: '12px', borderRadius: 8, border: 'none',
-                    background: (updating || raAsignaciones.size === 0) ? '#222' : '#fff',
-                    color: (updating || raAsignaciones.size === 0) ? '#555' : '#000',
-                    fontWeight: 800, fontSize: 12, letterSpacing: '0.5px',
-                    cursor: (updating || raAsignaciones.size === 0) ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {updating ? 'REASIGNANDO...' : `REASIGNAR ${raAsignaciones.size} REGISTRO(S)`}
-                </button>
-              )}
-            </>
-          )}
+                {/* PASO 3: Cuotas por destino */}
+                {raOrigen && raTotalDisponible > 0 && (
+                  <div style={{ marginBottom: 28 }}>
+                    <h5 style={STEP_TITLE_STYLE}>{stepBadge(3)} Cuotas por destino <span style={{ color: '#34d399', fontWeight: 800 }}>({raTotalCuotas}/{raTotalDisponible})</span></h5>
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 14, alignItems: 'flex-end' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={LABEL_STYLE}>Analista destino</label>
+                        <CustomSelect
+                          width="100%"
+                          bg="#0a0a0a"
+                          value={raNuevoDestino}
+                          onChange={v => setRaNuevoDestino(String(v))}
+                          options={[{ label: '— Elegir —', value: '' }, ...ANALISTAS.filter(a => a !== raOrigen && !raDestinos.some(d => d.analista === a)).map(a => ({ label: a, value: a }))]}
+                        />
+                      </div>
+                      <div style={{ width: 120 }}>
+                        <label style={LABEL_STYLE}>Cantidad</label>
+                        <input className="form-input" type="number" placeholder="Ej: 100" value={raNuevaCuota} onChange={e => setRaNuevaCuota(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                      </div>
+                      <button onClick={raAgregarDestino} style={{ height: 38, padding: '0 18px', borderRadius: 10, border: '1px solid rgba(52,211,153,0.4)', background: 'rgba(52,211,153,0.12)', color: '#34d399', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Agregar</button>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                      {raDestinos.map(d => {
+                        const hechos = raAsignadosPorDestino[d.analista] ?? 0;
+                        const completo = hechos >= d.cuota;
+                        const activo = raDestinoActivo === d.analista;
+                        return (
+                          <div
+                            key={d.analista}
+                            onClick={() => setRaDestinoActivo(d.analista)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.15s',
+                              background: activo ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
+                              border: `1px solid ${completo ? 'rgba(52,211,153,0.6)' : activo ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                              borderRadius: 12, padding: '8px 14px',
+                            }}
+                          >
+                            <span style={{ fontSize: 13, fontWeight: 800, color: completo ? '#34d399' : '#ddd' }}>{d.analista}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: completo ? '#34d399' : '#888' }}>{hechos}/{d.cuota}</span>
+                            <button onClick={(ev) => { ev.stopPropagation(); raQuitarDestino(d.analista); }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* PASO 4: Tildar registros */}
+                {raDestinos.length > 0 && (
+                  <div style={{ marginBottom: 28 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <h5 style={{ ...STEP_TITLE_STYLE, marginBottom: 0 }}>{stepBadge(4)} Tildar para <span style={{ color: '#34d399', fontWeight: 800 }}>{raDestinoActivo || '—'}</span></h5>
+                      <button onClick={raTildarPrimerosN} disabled={!raDestinoActivo} style={{ padding: '8px 14px', borderRadius: 10, border: `1px solid ${raDestinoActivo ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.06)'}`, background: raDestinoActivo ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.02)', color: raDestinoActivo ? '#34d399' : '#555', fontSize: 11, fontWeight: 800, cursor: raDestinoActivo ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
+                        Tildar primeros N
+                      </button>
+                    </div>
+                    <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, background: '#0a0a0a' }}>
+                      {raUniverso.map(r => {
+                        const dest = raAsignaciones.get(r.id);
+                        return (
+                          <div
+                            key={r.id}
+                            onClick={() => raToggleFila(r.id)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                              borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer',
+                              background: dest ? 'rgba(52,211,153,0.08)' : 'transparent',
+                            }}
+                          >
+                            <input type="checkbox" readOnly checked={!!dest} style={{ accentColor: '#34d399' }} />
+                            <span style={{ flex: 1, fontSize: 12.5, color: '#ddd' }}>{r.nombre ?? r.cuil ?? r.id}</span>
+                            <span style={{ fontSize: 11, color: '#777' }}>{STATUS_LABEL[r.estado ?? ''] ?? r.estado}</span>
+                            {dest && <span style={{ fontSize: 11, fontWeight: 800, color: '#34d399' }}>→ {dest}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Acción */}
+                {raDestinos.length > 0 && (
+                  <button
+                    onClick={raGuardar}
+                    disabled={updating || raAsignaciones.size === 0}
+                    style={{
+                      width: '100%', padding: '16px', borderRadius: 30, border: 'none',
+                      background: (updating || raAsignaciones.size === 0) ? '#222' : '#34d399',
+                      color: (updating || raAsignaciones.size === 0) ? '#555' : '#000',
+                      fontWeight: 900, fontSize: 12, letterSpacing: '0.5px',
+                      cursor: (updating || raAsignaciones.size === 0) ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: (updating || raAsignaciones.size === 0) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)',
+                    }}
+                  >
+                    {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    {updating ? 'REASIGNANDO...' : `REASIGNAR ${raAsignaciones.size} REGISTRO(S)`}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
