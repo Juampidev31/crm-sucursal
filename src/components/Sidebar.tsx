@@ -487,7 +487,7 @@ export default function Sidebar({
           {registrosOpen && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
               <NavItem href="/registros" icon={AlignJustify} label="Total" active={pathname === '/registros' && filters.analista === ''} onClick={() => { limpiarFiltros(); }} indent isTreeItem />
-              {analistaNombres.map(nombre => (
+              {isAdmin && analistaNombres.map(nombre => (
                 <NavItem
                   key={nombre}
                   href="/registros"
@@ -562,7 +562,7 @@ export default function Sidebar({
               {ventasOpen && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   <NavItem href="/analistas?analista=PDV" icon={TrendingUp} label="PDV" active={pathname === '/analistas' && currentAnalistaPage === 'PDV'} indent isDoubleTreeItem />
-                  {analistaNombres.map((nombre, idx) => (
+                  {isAdmin && analistaNombres.map((nombre, idx) => (
                     <NavItem
                       key={nombre}
                       href={`/analistas?analista=${encodeURIComponent(nombre)}`}
