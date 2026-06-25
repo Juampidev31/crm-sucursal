@@ -1438,8 +1438,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const [raDestinoActivo, setRaDestinoActivo] = useState<string>('');
   const [raNuevoDestino, setRaNuevoDestino] = useState<string>('');
   const [raNuevaCuota, setRaNuevaCuota] = useState<string>('');
-  const [raMultiSel, setRaMultiSel] = useState<string[]>([]); // analistas elegidos para reparto múltiple
-  const [raTotalDistribuir, setRaTotalDistribuir] = useState<string>(''); // total a repartir (vacío = todo lo disponible restante)
+  const [raMultiCant, setRaMultiCant] = useState<Record<string, string>>({}); // analista -> cantidad (reparto múltiple con cantidades distintas)
   const [gruposLocalidadDescartados, setGruposLocalidadDescartados] = useState<Map<string, number>>(() => {
     if (typeof window === 'undefined') return new Map();
     try {
@@ -2346,25 +2345,19 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     setRaNuevaCuota('');
   }, [raNuevoDestino, raNuevaCuota, raOrigen, raDestinos, raTotalCuotas, raTotalDisponible]);
 
-  const raDistribuirMulti = useCallback(() => {
-    const elegidos = raMultiSel.filter(a => a !== raOrigen && !raDestinos.some(d => d.analista === a));
-    if (elegidos.length === 0) { setToast({ message: 'Elegí al menos un analista', type: 'error' }); return; }
-    const capacidad = raTotalDisponible - raTotalCuotas;
-    if (capacidad <= 0) { setToast({ message: 'No queda capacidad disponible para repartir', type: 'error' }); return; }
-    let total = raTotalDistribuir ? Number(raTotalDistribuir) : capacidad;
-    if (!Number.isFinite(total) || total <= 0) { setToast({ message: 'Total a distribuir inválido', type: 'error' }); return; }
-    if (total > capacidad) total = capacidad;
-    const base = Math.floor(total / elegidos.length);
-    const resto = total % elegidos.length;
-    const nuevos = elegidos
-      .map((a, i) => ({ analista: a, cuota: base + (i < resto ? 1 : 0) }))
-      .filter(d => d.cuota > 0);
-    if (nuevos.length === 0) { setToast({ message: 'El total es muy chico para repartir entre tantos', type: 'error' }); return; }
-    setRaDestinos(prev => [...prev, ...nuevos]);
-    setRaDestinoActivo(prev => prev || nuevos[0].analista);
-    setRaMultiSel([]);
-    setRaTotalDistribuir('');
-  }, [raMultiSel, raOrigen, raDestinos, raTotalDisponible, raTotalCuotas, raTotalDistribuir]);
+  const raAgregarMulti = useCallback(() => {
+    const entries = Object.entries(raMultiCant)
+      .filter(([a]) => a !== raOrigen && !raDestinos.some(d => d.analista === a))
+      .map(([a, c]) => ({ analista: a, cuota: Number(c) }));
+    if (entries.length === 0) { setToast({ message: 'Elegí al menos un analista', type: 'error' }); return; }
+    const invalidas = entries.filter(d => !Number.isFinite(d.cuota) || d.cuota <= 0);
+    if (invalidas.length > 0) { setToast({ message: `Poné una cantidad válida para: ${invalidas.map(d => d.analista).join(', ')}`, type: 'error' }); return; }
+    const suma = entries.reduce((s, d) => s + d.cuota, 0);
+    if (raTotalCuotas + suma > raTotalDisponible) { setToast({ message: `La suma (${raTotalCuotas + suma}) supera los ${raTotalDisponible} disponibles`, type: 'error' }); return; }
+    setRaDestinos(prev => [...prev, ...entries]);
+    setRaDestinoActivo(prev => prev || entries[0].analista);
+    setRaMultiCant({});
+  }, [raMultiCant, raOrigen, raDestinos, raTotalCuotas, raTotalDisponible]);
 
   const raQuitarDestino = useCallback((analista: string) => {
     setRaDestinos(prev => prev.filter(d => d.analista !== analista));
@@ -3979,23 +3972,27 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         <button onClick={raAgregarDestino} style={{ height: 38, padding: '0 18px', borderRadius: 10, border: '1px solid rgba(52,211,153,0.4)', background: 'rgba(52,211,153,0.12)', color: '#34d399', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Agregar</button>
                       </div>
 
-                      {/* Reparto entre varios analistas */}
+                      {/* Reparto entre varios analistas con cantidad por cada uno */}
                       {(() => {
                         const disponiblesMulti = ANALISTAS.filter(a => a !== raOrigen && !raDestinos.some(d => d.analista === a));
                         if (disponiblesMulti.length === 0) return null;
-                        const capacidad = raTotalDisponible - raTotalCuotas;
-                        const totalPrev = raTotalDistribuir ? Math.min(Number(raTotalDistribuir) || 0, capacidad) : capacidad;
-                        const cu = raMultiSel.length > 0 ? Math.floor(totalPrev / raMultiSel.length) : 0;
+                        const seleccionados = Object.keys(raMultiCant);
+                        const sumaSel = seleccionados.reduce((s, a) => s + (Number(raMultiCant[a]) || 0), 0);
+                        const excede = raTotalCuotas + sumaSel > raTotalDisponible;
                         return (
                           <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed rgba(255,255,255,0.08)' }}>
-                            <label style={LABEL_STYLE}>O repartir entre varios (equitativo)</label>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                            <label style={LABEL_STYLE}>O elegir varios y poner cantidad a cada uno</label>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: seleccionados.length > 0 ? 14 : 0 }}>
                               {disponiblesMulti.map(a => {
-                                const sel = raMultiSel.includes(a);
+                                const sel = a in raMultiCant;
                                 return (
                                   <button
                                     key={a}
-                                    onClick={() => setRaMultiSel(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a])}
+                                    onClick={() => setRaMultiCant(prev => {
+                                      const next = { ...prev };
+                                      if (a in next) delete next[a]; else next[a] = '';
+                                      return next;
+                                    })}
                                     style={{
                                       background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
                                       border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`,
@@ -4008,19 +4005,35 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                 );
                               })}
                             </div>
-                            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-                              <div style={{ width: 160 }}>
-                                <label style={LABEL_STYLE}>Total a repartir</label>
-                                <input className="form-input" type="number" placeholder={`Todo (${capacidad})`} value={raTotalDistribuir} onChange={e => setRaTotalDistribuir(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                            {seleccionados.length > 0 && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {seleccionados.map(a => (
+                                  <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <span style={{ flex: 1, fontSize: 12.5, color: '#ddd', fontWeight: 700 }}>{a}</span>
+                                    <input
+                                      className="form-input"
+                                      type="number"
+                                      placeholder="Cantidad"
+                                      value={raMultiCant[a]}
+                                      onChange={e => setRaMultiCant(prev => ({ ...prev, [a]: e.target.value }))}
+                                      style={{ width: 130, background: '#0a0a0a', fontSize: 12, padding: 10 }}
+                                    />
+                                  </div>
+                                ))}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: excede ? '#f87171' : '#888' }}>
+                                    Suma: {sumaSel}{excede ? ` · supera ${raTotalDisponible}` : ` / ${raTotalDisponible}`}
+                                  </span>
+                                  <button
+                                    onClick={raAgregarMulti}
+                                    disabled={excede}
+                                    style={{ height: 38, padding: '0 18px', borderRadius: 10, border: `1px solid ${excede ? 'rgba(255,255,255,0.06)' : 'rgba(52,211,153,0.4)'}`, background: excede ? 'rgba(255,255,255,0.02)' : 'rgba(52,211,153,0.12)', color: excede ? '#555' : '#34d399', fontWeight: 800, fontSize: 12, cursor: excede ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                                  >
+                                    + Agregar {seleccionados.length}
+                                  </button>
+                                </div>
                               </div>
-                              <button
-                                onClick={raDistribuirMulti}
-                                disabled={raMultiSel.length === 0 || capacidad <= 0}
-                                style={{ height: 38, padding: '0 18px', borderRadius: 10, border: `1px solid ${raMultiSel.length === 0 || capacidad <= 0 ? 'rgba(255,255,255,0.06)' : 'rgba(52,211,153,0.4)'}`, background: raMultiSel.length === 0 || capacidad <= 0 ? 'rgba(255,255,255,0.02)' : 'rgba(52,211,153,0.12)', color: raMultiSel.length === 0 || capacidad <= 0 ? '#555' : '#34d399', fontWeight: 800, fontSize: 12, cursor: raMultiSel.length === 0 || capacidad <= 0 ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
-                              >
-                                Distribuir{raMultiSel.length > 0 && cu > 0 ? ` (≈${cu} c/u)` : ''}
-                              </button>
-                            </div>
+                            )}
                           </div>
                         );
                       })()}
