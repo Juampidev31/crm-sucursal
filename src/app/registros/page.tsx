@@ -1442,8 +1442,8 @@ const WhatsappModal = memo(function WhatsappModal({
               type="tel"
               className="form-input"
               value={telefono}
-              onChange={e => setTelefono(e.target.value.replace(/[^\d+]/g, ''))}
-              placeholder="Ej: 5491123456789"
+              onChange={e => setTelefono(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder=""
               style={{ width: '100%' }}
             />
           </div>
@@ -2481,7 +2481,7 @@ export default function RegistrosPage() {
           const reg = whatsappTarget;
           setWhatsappTarget(null);
           
-          const cleanNum = telefono ? telefono.replace(/[^\d+]/g, '') : '';
+          const cleanNum = telefono ? telefono.replace(/\D/g, '') : '';
           const { error } = await supabase.from('registros').update({ telefono: cleanNum || null }).eq('id', reg.id);
           if (!error) {
             applyRegistroChange('UPDATE', { ...reg, telefono: cleanNum });
@@ -2489,7 +2489,9 @@ export default function RegistrosPage() {
             showToast('Teléfono guardado', 'success');
             
             if (action === 'send' && cleanNum) {
-              window.open(`https://web.whatsapp.com/send?phone=${cleanNum.replace(/\D/g, '')}`, '_blank');
+              // Si tiene 10 dígitos (ej: 3434538564), le agregamos el código de país y de celular de Argentina (549)
+              const waNum = cleanNum.length === 10 ? `549${cleanNum}` : cleanNum;
+              window.open(`whatsapp://send?phone=${waNum}`, '_blank');
             } else {
               refresh(true);
             }
