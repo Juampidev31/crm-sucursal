@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
@@ -240,12 +240,8 @@ export default function AjustesPage() {
     }
   }, [isAdmin, activeTab, configSubTab, datosSubTab]);
 
-  // El spinner de página solo en la primera carga; los refetches disparados por
-  // cambios en la lista de analistas (ocultar/mostrar) refrescan en segundo plano
-  // sin blanquear el contenido (evita el parpadeo de toda la página de Ajustes).
-  const initialLoadDone = useRef(false);
   const fetchConfig = useCallback(async () => {
-    if (!initialLoadDone.current) setLoading(true);
+    setLoading(true);
     const { data: alertas } = await supabase.from('alertas_config').select('*');
     if (alertas && alertas.length > 0) {
       setAlertasConfig(alertas.map(a => ({
@@ -265,7 +261,6 @@ export default function AjustesPage() {
     });
     setDiasValues(initialDias);
     setLoading(false);
-    initialLoadDone.current = true;
   }, [analistasDefault]);
 
   useEffect(() => { fetchConfig(); }, [fetchConfig]);

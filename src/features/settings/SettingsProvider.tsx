@@ -196,12 +196,7 @@ export function useSettings() {
 export function useAnalistas() {
   const { analistas: all, applyAnalistaChange } = useSettings();
   const visibles = useMemo(() => all.filter(a => !a.oculto), [all]);
-  // Referencia estable por CONTENIDO: `nombres` solo cambia de identidad cuando la
-  // lista de nombres visibles cambia de verdad. Editar color/incentivo de un analista
-  // no altera los nombres visibles, asi que no propaga refetches/recomputos aguas abajo
-  // (eso causaba parpadeos). Separador newline: los nombres pueden tener espacios.
-  const nombresKey = visibles.map(a => a.nombre).join('\n');
-  const nombres = useMemo(() => (nombresKey ? nombresKey.split('\n') : []), [nombresKey]);
+  const nombres = useMemo(() => visibles.map(a => a.nombre), [visibles]);
   const colorDe = useCallback(
     (nombre: string) => all.find(a => a.nombre === nombre)?.color ?? '#10b981',
     [all],
