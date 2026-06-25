@@ -2484,12 +2484,12 @@ export default function RegistrosPage() {
           const cleanNum = telefono ? telefono.replace(/[^\d+]/g, '') : '';
           const { error } = await supabase.from('registros').update({ telefono: cleanNum || null }).eq('id', reg.id);
           if (!error) {
-            applyRegistroChange('UPDATE', { ...reg, telefono: cleanNum || null });
-            pushRegistroChange('UPDATE', { ...reg, telefono: cleanNum || null });
+            applyRegistroChange('UPDATE', { ...reg, telefono: cleanNum });
+            pushRegistroChange('UPDATE', { ...reg, telefono: cleanNum });
             showToast('Teléfono guardado', 'success');
             
             if (action === 'send' && cleanNum) {
-              window.open(`https://web.whatsapp.com/send?phone=${cleanNum.replace(/\D/g, '')}`, '_blank');
+              window.open(`https://web.whatsapp.com/send?phone=${cleanNum.replace(/\D/g, '')}`, 'whatsapp_tab');
             } else {
               refresh(true);
             }
