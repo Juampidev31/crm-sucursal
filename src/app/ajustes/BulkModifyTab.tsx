@@ -8,6 +8,7 @@ import { Registro } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 import CustomSelect from '@/components/CustomSelect';
+import { getSession } from '@/lib/auth';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
   Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download, Pencil
@@ -2408,6 +2409,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     for (const [id, dest] of raAsignaciones) (grupos[dest] ??= []).push(id);
 
     setUpdating(true);
+    const infoById = new Map(raUniverso.map(r => [r.id, r]));
+    const idAnalista = getSession()?.username ?? '';
+    const ahora = new Date().toISOString();
     const CHUNK = 500;
     let actualizados = 0;
     let errores = 0;
@@ -2420,6 +2424,26 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         const sliceSet = new Set(slice);
         mutateRegistros(prev => prev.map(r => (sliceSet.has(r.id) ? { ...r, analista } : r)));
         pushBulkUpdateIds(slice, { analista });
+
+        // Auditoría: una fila por registro reasignado (insert en bloque, sin broadcast por fila)
+        const auditRows = slice.map(id => {
+          const reg = infoById.get(id);
+          return {
+            accion: 'Reasignación',
+            campo_modificado: 'Analista',
+            valor_anterior: raOrigen,
+            valor_nuevo: analista,
+            analista,
+            id_analista: idAnalista,
+            id_registro: id,
+            nombre: reg?.nombre ?? '',
+            cuil: reg?.cuil ?? '',
+            fecha_hora: ahora,
+          };
+        });
+        supabase.from('auditoria').insert(auditRows).then(({ error: auditErr }) => {
+          if (auditErr) console.error('[Auditoría] Error al registrar reasignación:', auditErr.message);
+        });
       }
     }
     setUpdating(false);
@@ -2437,7 +2461,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     setRaDestinos([]);
     setRaAsignaciones(new Map());
     setRaDestinoActivo('');
-  }, [raAsignaciones, mutateRegistros, pushBulkUpdateIds]);
+  }, [raAsignaciones, raUniverso, raOrigen, mutateRegistros, pushBulkUpdateIds]);
 
   useEffect(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
