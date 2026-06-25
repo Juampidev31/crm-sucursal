@@ -2491,7 +2491,7 @@ export default function RegistrosPage() {
             if (action === 'send' && cleanNum) {
               // Si tiene 10 dígitos (ej: 3434538564), le agregamos el código de país y de celular de Argentina (549)
               const waNum = cleanNum.length === 10 ? `549${cleanNum}` : cleanNum;
-              window.open(`whatsapp://send?phone=${waNum}`, '_blank');
+              window.location.href = `whatsapp://send?phone=${waNum}`;
             } else {
               refresh(true);
             }
