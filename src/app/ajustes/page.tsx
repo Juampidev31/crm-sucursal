@@ -33,6 +33,7 @@ const AvisosTab         = dynamic(() => import('./AvisosTab'),         { ssr: fa
 const VerificadorTab    = dynamic(() => import('./VerificadorTab'),    { ssr: false, loading: TabFallback });
 const CargaRapidaTab    = dynamic(() => import('./CargaRapidaTab'),    { ssr: false, loading: TabFallback });
 const AnalistasTab      = dynamic(() => import('./AnalistasTab'),      { ssr: false, loading: TabFallback });
+const ReasignadosTab    = dynamic(() => import('./ReasignadosTab'),    { ssr: false, loading: TabFallback });
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -44,7 +45,7 @@ type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
 type ConfigSubTab = 'alertas' | 'dias' | 'permisos' | 'analistas';
 type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score';
 type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
-type ActividadSubTab = 'auditoria' | 'avisos';
+type ActividadSubTab = 'auditoria' | 'reasignados' | 'avisos';
 
 const EMPTY_HIST_ROWS = (): HistRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
@@ -1247,11 +1248,15 @@ export default function AjustesPage() {
             <SubTabBar
               tabs={[
                 { id: 'auditoria' as const, label: 'Auditoría', icon: Shield },
+                ...(isAdmin ? [{ id: 'reasignados' as const, label: 'Reasignados', icon: ArrowRight }] : []),
                 ...(isAdmin ? [{ id: 'avisos' as const, label: 'Avisos', icon: Bell }] : []),
               ]}
               active={actividadSubTab}
               onSelect={setActividadSubTab}
             />
+          )}
+          {activeTab === 'actividad' && actividadSubTab === 'reasignados' && isAdmin && (
+            <ReasignadosTab />
           )}
           {activeTab === 'actividad' && actividadSubTab === 'auditoria' && (() => {
             // — helpers —
@@ -1292,12 +1297,12 @@ export default function AjustesPage() {
 
             const allAcciones = [...new Set((auditoriaRegistros || [])
               .map((r: any) => r.accion)
-              .filter((a: any) => a && !['Favorito añadido', 'Favorito quitado'].includes(a))
+              .filter((a: any) => a && !['Favorito añadido', 'Favorito quitado', 'Reasignación'].includes(a))
             )];
             const allAuditAnalistas = [...new Set((auditoriaRegistros || []).map((r: any) => r.analista).filter(Boolean))];
 
             const filtered = (auditoriaRegistros || []).filter((reg: any) => {
-              if (['Favorito añadido', 'Favorito quitado'].includes(reg.accion)) return false;
+              if (['Favorito añadido', 'Favorito quitado', 'Reasignación'].includes(reg.accion)) return false;
               if (auditFilterAccion !== 'todas' && reg.accion !== auditFilterAccion) return false;
               if (auditFilterAnalista !== 'todos' && reg.analista !== auditFilterAnalista) return false;
               if (reg.fecha_hora && new Date(reg.fecha_hora).getTime() < cutoff) return false;
