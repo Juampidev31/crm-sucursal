@@ -19,12 +19,18 @@ import { useSearchParams } from 'next/navigation';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.031 0C5.385 0 0 5.383 0 12.029c0 2.124.553 4.195 1.603 6.012L.117 23.518l5.626-1.476a11.97 11.97 0 0 0 6.288 1.765h.005c6.645 0 12.033-5.383 12.033-12.029C24.068 5.383 18.681 0 12.031 0zm0 21.802h-.004a9.982 9.982 0 0 1-5.088-1.385l-.365-.216-3.784.992.996-3.69-.237-.377a9.969 9.969 0 0 1-1.523-5.31c0-5.508 4.484-9.99 9.992-9.99 5.511 0 9.995 4.482 9.995 9.99s-4.484 9.99-9.992 9.99zm5.48-7.502c-.3-.15-1.776-.877-2.052-.978-.276-.1-.477-.15-.678.15-.201.3-.777.978-.952 1.178-.175.2-.35.226-.65.076-1.401-.703-2.529-1.36-3.486-2.923-.175-.302.176-.277.752-1.428.1-.2.05-.376-.025-.526-.075-.15-.678-1.633-.928-2.235-.244-.591-.492-.511-.678-.521-.175-.01-.376-.01-.577-.01-.2 0-.526.075-.802.376-.276.3-1.053 1.028-1.053 2.508 0 1.48 1.078 2.912 1.228 3.113.15.201 2.124 3.245 5.143 4.549 2.058.887 2.802.952 3.805.803 1.002-.15 3.211-1.312 3.662-2.583.451-1.272.451-2.361.316-2.583-.135-.226-.511-.35-.812-.501z"/>
+  </svg>
+);
+
 const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
 const initialForm: Partial<Registro> = {
   cuil: '', nombre: '', puntaje: 0, es_re: false,
   analista: '', fecha: '', fecha_score: '', monto: 0,
-  estado: 'proyeccion', comentarios: '', dependencia: '',
+  estado: 'proyeccion', comentarios: '', dependencia: '', telefono: '',
 };
 
 const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
@@ -32,7 +38,7 @@ const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
 const FIELD_LABELS: Record<string, string> = {
   nombre: 'Nombre', cuil: 'CUIL', analista: 'Analista',
   estado: 'Estado', monto: 'Monto', fecha: 'Fecha',
-  puntaje: 'Score', es_re: 'Es RE', comentarios: 'Comentarios',
+  puntaje: 'Score', es_re: 'Es RE', comentarios: 'Comentarios', telefono: 'Teléfono',
   tipo_cliente: 'Tipo cliente', acuerdo_precios: 'Acuerdo precios',
   fecha_score: 'Fecha score', cuotas: 'Cuotas', rango_etario: 'Rango etario',
   sexo: 'Sexo', empleador: 'Empleador', dependencia: 'Dependencia', localidad: 'Localidad',
@@ -751,7 +757,7 @@ const RegistroModal = memo(function RegistroModal({
       const { error } = await supabase.from('registros').update(payload).eq('id', editingId);
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
       // Auditar todos los cambios en una sola entrada
-      const AUDIT_FIELDS = ['nombre', 'cuil', 'analista', 'estado', 'monto', 'fecha', 'fecha_score', 'puntaje', 'es_re', 'comentarios', 'tipo_cliente', 'acuerdo_precios', 'cuotas', 'rango_etario', 'sexo', 'empleador', 'dependencia', 'localidad'] as const;
+      const AUDIT_FIELDS = ['nombre', 'cuil', 'analista', 'estado', 'monto', 'fecha', 'fecha_score', 'puntaje', 'es_re', 'comentarios', 'telefono', 'tipo_cliente', 'acuerdo_precios', 'cuotas', 'rango_etario', 'sexo', 'empleador', 'dependencia', 'localidad'] as const;
       const cambios = AUDIT_FIELDS.filter(field => String((initialData as Record<string, unknown>)[field] ?? '') !== String((payload as Record<string, unknown>)[field] ?? ''));
       if (cambios.length > 0) {
         logAudit({
@@ -1105,6 +1111,7 @@ const RegistroModal = memo(function RegistroModal({
                   );
                 })()}
               </Field>
+
             </div>
             {requiereDependencia(form.empleador) && (
               <div className="form-row">
@@ -1395,6 +1402,77 @@ const ComentariosModal = memo(function ComentariosModal({
   );
 });
 
+// ── Modal: WhatsApp ─────────────────────────────────────────────────────────────
+
+const WhatsappModal = memo(function WhatsappModal({
+  registro, onConfirm, onCancel,
+}: { registro: Registro | null; onConfirm: (telefono: string, action: 'save' | 'send') => void; onCancel: () => void }) {
+  const [telefono, setTelefono] = useState('');
+  
+  useEffect(() => {
+    if (registro) {
+      setTelefono(registro.telefono || '');
+    }
+  }, [registro]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { 
+      if (e.key === 'Escape') onCancel(); 
+      if (e.key === 'Enter' && telefono) onConfirm(telefono, 'send');
+    };
+    if (registro) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [registro, onCancel, onConfirm, telefono]);
+
+  if (!registro) return null;
+  return (
+    <ModalPortal>
+      <div className="modal-overlay" onClick={onCancel} style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="modal-content" style={{ maxWidth: '400px', background: 'var(--bg-elev-1)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+          <div className="modal-header" style={{ padding: '24px 28px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
+            <h3 className="modal-title" style={{ color: '#25D366', display: 'flex', alignItems: 'center', gap: '8px', margin: 0, fontSize: '18px', fontWeight: 800 }}>
+              <WhatsAppIcon size={20} />
+              WHATSAPP
+            </h3>
+            <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px' }}><X size={16} /></button>
+          </div>
+          <div className="modal-body" style={{ padding: '32px 28px' }}>
+            <input
+              autoFocus
+              type="tel"
+              className="form-input"
+              value={telefono}
+              onChange={e => setTelefono(e.target.value.replace(/[^\d+]/g, ''))}
+              placeholder="Ej: 5491123456789"
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div className="modal-footer" style={{ padding: '20px 28px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <button className="btn-secondary" onClick={onCancel} style={{
+              background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+              fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
+            }}>CANCELAR</button>
+            <button className="btn-secondary" onClick={() => onConfirm(telefono, 'save')} style={{
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 800,
+              padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px',
+              cursor: 'pointer'
+            }}>
+              GUARDAR
+            </button>
+            <button className="btn-primary" onClick={() => onConfirm(telefono, 'send')} disabled={!telefono} style={{
+              background: '#25D366', color: '#fff', border: 'none', fontWeight: 800,
+              padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px',
+              opacity: telefono ? 1 : 0.5, cursor: telefono ? 'pointer' : 'not-allowed'
+            }}>
+              ENVIAR
+            </button>
+          </div>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+});
+
 // ── Modal: Confirmar borrado ──────────────────────────────────────────────────
 
 const DeleteModal = memo(function DeleteModal({
@@ -1572,6 +1650,7 @@ export default function RegistrosPage() {
 
   const [recordatorioTarget, setRecordatorioTarget] = useState<Registro | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
+  const [whatsappTarget, setWhatsappTarget] = useState<Registro | null>(null);
   const [comentariosTarget, setComentariosTarget] = useState<Registro | null>(null);
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
 
@@ -1764,6 +1843,11 @@ export default function RegistrosPage() {
     setModalInitialData({ ...reg, fecha: reg.fecha || '', fecha_score: reg.fecha_score || '' });
     setModalOpen(true);
   }, []);
+
+  const handleWhatsApp = useCallback((reg: Registro) => {
+    setWhatsappTarget(reg);
+  }, []);
+
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
@@ -2266,6 +2350,12 @@ export default function RegistrosPage() {
                       {/* Acciones */}
                       <td style={{ padding: '18px 24px' }}>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                          <button
+                            onClick={() => handleWhatsApp(reg)}
+                            className="table-action-btn"
+                            title={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
+                            style={{ color: reg.telefono ? '#25D366' : 'var(--fg-muted)' }}
+                          ><WhatsAppIcon size={16} /></button>
                           {canSeeComentarios && reg.comentarios && reg.comentarios.trim() !== '' && (
                             <button
                               onClick={() => setComentariosTarget(reg)}
@@ -2384,6 +2474,31 @@ export default function RegistrosPage() {
       <RecordatorioModal registro={recordatorioTarget} onClose={handleRecordatorioClose} />
       <ComentariosModal registro={comentariosTarget} onClose={handleComentariosClose} />
       <DeleteModal registro={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} />
+      <WhatsappModal 
+        registro={whatsappTarget} 
+        onConfirm={async (telefono, action) => {
+          if (!whatsappTarget) return;
+          const reg = whatsappTarget;
+          setWhatsappTarget(null);
+          
+          const cleanNum = telefono ? telefono.replace(/[^\d+]/g, '') : '';
+          const { error } = await supabase.from('registros').update({ telefono: cleanNum || null }).eq('id', reg.id);
+          if (!error) {
+            applyRegistroChange('UPDATE', { ...reg, telefono: cleanNum || null });
+            pushRegistroChange('UPDATE', { ...reg, telefono: cleanNum || null });
+            showToast('Teléfono guardado', 'success');
+            
+            if (action === 'send' && cleanNum) {
+              window.open(`https://web.whatsapp.com/send?phone=${cleanNum.replace(/\D/g, '')}`, '_blank');
+            } else {
+              refresh(true);
+            }
+          } else {
+            showToast('Error al guardar teléfono', 'error');
+          }
+        }} 
+        onCancel={() => setWhatsappTarget(null)} 
+      />
 
     </div>
   );

@@ -40,7 +40,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const refreshIdRef = useRef(0);
 
   const refresh = useCallback(async (silent = false) => {
-    const cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,created_at,updated_at';
+    const cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,created_at,updated_at';
     const PAGE = 1000;
     const myId = ++refreshIdRef.current;
 
