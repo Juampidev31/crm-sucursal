@@ -3319,7 +3319,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {/* ── REASIGNAR REGISTROS ENTRE ANALISTAS ──────────────────────────── */}
       {mode === 'bulk' && (
         <div style={{ maxWidth: 720, margin: '0 auto 32px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
             {/* Header colapsable */}
             <div
               onClick={() => setRaExpandido(!raExpandido)}
