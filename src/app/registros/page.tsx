@@ -2489,7 +2489,7 @@ export default function RegistrosPage() {
             showToast('Teléfono guardado', 'success');
             
             if (action === 'send' && cleanNum) {
-              window.open(`whatsapp://send?phone=${cleanNum.replace(/\D/g, '')}`, '_self');
+              window.open(`https://web.whatsapp.com/send?phone=${cleanNum.replace(/\D/g, '')}`, '_blank');
             } else {
               refresh(true);
             }
