@@ -194,19 +194,19 @@ a {
    escala el margin-left negativo del estado oculto, así que sigue calzando. */
 @media (max-width: 1600px) {
   .main-sidebar {
-    zoom: 0.88;
+    zoom: 0.78;
   }
 }
 
 @media (max-width: 1366px), (max-height: 800px) {
   .main-sidebar {
-    zoom: 0.78;
+    zoom: 0.66;
   }
 }
 
 @media (max-width: 1200px) {
   .main-sidebar {
-    zoom: 0.7;
+    zoom: 0.58;
   }
 }
 
