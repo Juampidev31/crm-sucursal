@@ -1459,6 +1459,7 @@ const DeleteModal = memo(function DeleteModal({
 
   if (!registro) return null;
   return (
+    <ModalPortal>
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content modal-content--danger" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
@@ -1488,6 +1489,7 @@ const DeleteModal = memo(function DeleteModal({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 });
 

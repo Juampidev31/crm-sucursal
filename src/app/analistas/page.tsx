@@ -17,6 +17,7 @@ import {
 } from 'chart.js';
 import MetricasTab from '@/app/ajustes/MetricasTab';
 import CustomSelect from '@/components/CustomSelect';
+import ModalPortal from '@/components/ModalPortal';
 import NuevaSeccionSheets from './NuevaSeccionSheets';
 import { filterByMonth, isVenta, TIPOS_ACUERDO, emptyTiposAcuerdo, matchTipoAcuerdo, normalizarEmpleador, buildDistEmpleador } from '@/lib/registro-stats';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
@@ -2132,6 +2133,7 @@ export default function AnalistasPage() {
       </div>
 
       {rendimiento12MOpen && (
+        <ModalPortal>
         <div
           onClick={() => setRendimiento12MOpen(false)}
           style={{
@@ -2314,6 +2316,7 @@ export default function AnalistasPage() {
             )}
           </div>
         </div>
+        </ModalPortal>
       )}
               </>
             )}
