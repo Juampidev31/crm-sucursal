@@ -1718,9 +1718,14 @@ export default function RegistrosPage() {
 
   // Pre-computed search index: one lowercase string per record (built once when registros change)
   const searchIndex = useMemo(() => {
-    return registros.map(r => (
-      `${r.nombre}|${r.cuil}|${r.analista}|${r.empleador || ''}|${r.estado}|${r.localidad || ''}|${r.dependencia || ''}|${r.comentarios}`
-    ).toLowerCase());
+    return registros.map(r => {
+      // Se agrega una copia del CUIL sin guiones/puntos/espacios para poder buscarlo
+      // tanto con formato (20-29855593-0) como sin formato (20298555930).
+      const cuilPlano = (r.cuil || '').replace(/[-.\s]/g, '');
+      return (
+        `${r.nombre}|${r.cuil}|${cuilPlano}|${r.analista}|${r.empleador || ''}|${r.estado}|${r.localidad || ''}|${r.dependencia || ''}|${r.comentarios}`
+      ).toLowerCase();
+    });
   }, [registros]);
 
   // Debounced search term to avoid re-filtering on every keystroke
@@ -1735,6 +1740,9 @@ export default function RegistrosPage() {
   const baseFilteredRegistros = useMemo(() => {
     const nowTime = new Date().getTime();
     const s = debouncedSearch.toLowerCase();
+    // Versión sin guiones/puntos/espacios para que la búsqueda de CUIL funcione
+    // sin importar si el usuario escribe con o sin formato.
+    const sPlano = s.replace(/[-.\s]/g, '');
     const hasSearch = s.length > 0;
     const hasEstados = filters.estados.length > 0;
     const hasAcuerdo = filters.acuerdoPrecios.length > 0;
@@ -1744,7 +1752,7 @@ export default function RegistrosPage() {
     const scoreMax = filters.scoreMax ? Number(filters.scoreMax) : 0;
 
     const list = registros.filter((r, idx) => {
-      if (hasSearch && !searchIndex[idx].includes(s)) return false;
+      if (hasSearch && !searchIndex[idx].includes(s) && !(sPlano && searchIndex[idx].includes(sPlano))) return false;
       if (hasEstados && !filters.estados.includes(r.estado)) return false;
       if (filters.analista && r.analista !== filters.analista) return false;
       if (filters.fechaDesde && (!r.fecha || r.fecha < filters.fechaDesde)) return false;
