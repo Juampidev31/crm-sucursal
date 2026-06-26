@@ -1499,7 +1499,7 @@ export default function AnalistasPage() {
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Productividad</div>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: kpiTotal.productividad === null ? '#fff' : (kpiTotal.productividad >= 200 ? '#34d399' : '#f87171') }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
                     {(kpiTotal.productividadApertura !== null || kpiTotal.productividadRenov !== null) && (
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#8f929d', marginTop: 6 }}>
                         Apertura: {kpiTotal.productividadApertura !== null ? `${kpiTotal.productividadApertura.toFixed(2)}%` : '—'} · Renovación: {kpiTotal.productividadRenov !== null ? `${kpiTotal.productividadRenov.toFixed(2)}%` : '—'}
