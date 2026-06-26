@@ -187,6 +187,29 @@ a {
   }
 }
 
+/* ---- Sidebar responsiva ----
+   En notebooks chicos (1366x768 y similares) la sidebar de 372px con tipografía
+   grande ocupa demasiado. Escalamos toda la sidebar con `zoom` para reducir su
+   "resolución" (ancho + tamaño de letra) de forma proporcional. `zoom` también
+   escala el margin-left negativo del estado oculto, así que sigue calzando. */
+@media (max-width: 1600px) {
+  .main-sidebar {
+    zoom: 0.88;
+  }
+}
+
+@media (max-width: 1366px), (max-height: 800px) {
+  .main-sidebar {
+    zoom: 0.78;
+  }
+}
+
+@media (max-width: 1200px) {
+  .main-sidebar {
+    zoom: 0.7;
+  }
+}
+
 .content-fullwidth {
   width: 100%;
 }
