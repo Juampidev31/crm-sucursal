@@ -175,6 +175,18 @@ export const sanitizarCuil = (value: string): string => {
 };
 
 /**
+ * Formatea un CUIL para mostrar con guiones: "20298555930" → "20-29855593-0".
+ * Tolera entrada con guiones/espacios o pegada entera; solo agrupa los dígitos.
+ * Ej: "20-29855593-0" → "20-29855593-0", "2029" → "20-29"
+ */
+export const formatearCuil = (value: string): string => {
+  const d = value.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 10) return `${d.slice(0, 2)}-${d.slice(2)}`;
+  return `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}`;
+};
+
+/**
  * Mapeo de valores internos de analista → nombre de display
  * "Column5" es el nombre interno en la BD para PDV (Punto de Venta)
  */

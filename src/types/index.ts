@@ -13,6 +13,7 @@ export const registroSchema = z.object({
   fecha: z.string().nullable(),
   fecha_score: z.string().nullable(),
   monto: z.coerce.number().nullable(),
+  interes: z.coerce.number().nullish().transform(v => v ?? null),
   estado: z.string().nullable().transform(v => v ?? ''),
   comentarios: z.string().nullable().transform(v => v ?? ''),
   telefono: z.string().nullish().transform(v => v ?? ''),

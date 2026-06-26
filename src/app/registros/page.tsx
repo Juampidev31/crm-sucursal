@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
+import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, ExternalLink, Search, ChevronDown, CheckCircle2, Plus, Timer } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Timer } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -29,7 +29,7 @@ const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
 const initialForm: Partial<Registro> = {
   cuil: '', nombre: '', puntaje: 0, es_re: false,
-  analista: '', fecha: '', fecha_score: '', monto: 0,
+  analista: '', fecha: '', fecha_score: '', monto: 0, interes: 0,
   estado: 'proyeccion', comentarios: '', dependencia: '', telefono: '',
 };
 
@@ -37,7 +37,7 @@ const REGEX_NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]+$/;
 
 const FIELD_LABELS: Record<string, string> = {
   nombre: 'Nombre', cuil: 'CUIL', analista: 'Analista',
-  estado: 'Estado', monto: 'Monto', fecha: 'Fecha',
+  estado: 'Estado', monto: 'Monto', interes: 'Interés', fecha: 'Fecha',
   puntaje: 'Score', es_re: 'Es RE', comentarios: 'Comentarios', telefono: 'Teléfono',
   tipo_cliente: 'Tipo cliente', acuerdo_precios: 'Acuerdo precios',
   fecha_score: 'Fecha score', cuotas: 'Cuotas', rango_etario: 'Rango etario',
@@ -749,6 +749,7 @@ const RegistroModal = memo(function RegistroModal({
     const payload = {
       ...cleanForm,
       monto: Number(form.monto),
+      interes: form.interes === undefined || form.interes === null || (form.interes as unknown as string) === '' ? null : Number(form.interes),
       puntaje: Number(form.puntaje),
       fecha: cleanForm.fecha || null,
       fecha_score: cleanForm.fecha_score || null,
@@ -757,7 +758,7 @@ const RegistroModal = memo(function RegistroModal({
       const { error } = await supabase.from('registros').update(payload).eq('id', editingId);
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
       // Auditar todos los cambios en una sola entrada
-      const AUDIT_FIELDS = ['nombre', 'cuil', 'analista', 'estado', 'monto', 'fecha', 'fecha_score', 'puntaje', 'es_re', 'comentarios', 'telefono', 'tipo_cliente', 'acuerdo_precios', 'cuotas', 'rango_etario', 'sexo', 'empleador', 'dependencia', 'localidad'] as const;
+      const AUDIT_FIELDS = ['nombre', 'cuil', 'analista', 'estado', 'monto', 'interes', 'fecha', 'fecha_score', 'puntaje', 'es_re', 'comentarios', 'telefono', 'tipo_cliente', 'acuerdo_precios', 'cuotas', 'rango_etario', 'sexo', 'empleador', 'dependencia', 'localidad'] as const;
       const cambios = AUDIT_FIELDS.filter(field => String((initialData as Record<string, unknown>)[field] ?? '') !== String((payload as Record<string, unknown>)[field] ?? ''));
       if (cambios.length > 0) {
         logAudit({
@@ -819,32 +820,9 @@ const RegistroModal = memo(function RegistroModal({
             <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px' }}><X size={18} /></button>
           </div>
           <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
-            <div className="form-row-3">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '12px', alignItems: 'start' }}>
               <Field label="CUIL *" error={errors.cuil}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input className="form-input" style={{ flex: 1 }} value={form.cuil || ''} onChange={e => set('cuil', isAdmin ? e.target.value : sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    disabled={(form.cuil?.length ?? 0) !== 11}
-                    title="Copiar CUIL y abrir BCRA"
-                    onClick={() => {
-                      navigator.clipboard.writeText(form.cuil || '').catch(() => { });
-                      window.open('https://www.bcra.gob.ar/situacion-crediticia/', '_blank', 'noopener,noreferrer');
-                    }}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      gap: 4, padding: '6px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700,
-                      border: '1px solid var(--border-color)',
-                      background: 'rgba(255, 255, 255, 0.02)',
-                      color: (form.cuil?.length ?? 0) === 11 ? '#e5e5e5' : 'var(--gris)',
-                      cursor: (form.cuil?.length ?? 0) === 11 ? 'pointer' : 'not-allowed',
-                      whiteSpace: 'nowrap', transition: 'all 0.2s',
-                    }}
-                  >
-                    <ExternalLink size={13} /> BCRA
-                  </button>
-                </div>
+                <input className="form-input" value={formatearCuil(form.cuil || '')} onChange={e => set('cuil', sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
               </Field>
               <Field label="Nombre *" error={errors.nombre}>
                 <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? corregirTildes(e.target.value) : corregirTildes(capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, ''))))} onPaste={e => {
@@ -863,8 +841,6 @@ const RegistroModal = memo(function RegistroModal({
                   error={errors.analista}
                 />
               </Field>
-            </div>
-            <div className="form-row-3">
               <Field label="Estado *">
                 <PremiumSelect
                   value={form.estado || 'proyeccion'}
@@ -876,11 +852,12 @@ const RegistroModal = memo(function RegistroModal({
               <Field label="Monto" error={errors.monto}>
                 <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
               </Field>
+              <Field label="Interés" error={errors.interes}>
+                <input className="form-input" type="number" value={form.interes ?? ''} onChange={e => set('interes', e.target.value)} placeholder="$" />
+              </Field>
               <Field label="Fecha" error={errors.fecha}>
                 <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} max={new Date().toISOString().split('T')[0]} />
               </Field>
-            </div>
-            <div className="form-row-3">
               <Field label="Fecha Score">
                 <input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} />
               </Field>
@@ -895,8 +872,6 @@ const RegistroModal = memo(function RegistroModal({
                   placeholder="— Sin especificar —"
                 />
               </Field>
-            </div>
-            <div className="form-row-3">
               <Field label={`Acuerdo de precios${esVentaOAprobado ? ' *' : ''}`} error={errors.acuerdo_precios}>
                 <PremiumSelect
                   value={form.acuerdo_precios || ''}
@@ -916,8 +891,6 @@ const RegistroModal = memo(function RegistroModal({
                   placeholder="— Sin especificar —"
                 />
               </Field>
-            </div>
-            <div className="form-row-3">
               <Field label={`Sexo${esVentaOAprobado ? ' *' : ''}`} error={errors.sexo}>
                 <PremiumSelect
                   value={form.sexo || ''}
@@ -2264,7 +2237,7 @@ export default function RegistrosPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '13.5px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{reg.cuil}</span>}
+                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '13.5px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{formatearCuil(reg.cuil)}</span>}
                             {reg.es_re && (
                               <span style={{
                                 fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',

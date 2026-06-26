@@ -513,7 +513,19 @@ export default function AnalistasPage() {
     const diasRestantes = Math.max(0, diasHabilesAdmin - diasTransAdmin);
     const ventaPorDia = tieneDiasAdmin ? capital / diasTransAdmin : null;
     const opsPorDia = tieneDiasAdmin ? ops / diasTransAdmin : null;
-    
+    // (I) x Venta = total del campo Interés de las ventas; Productividad (%) = Interés / Monto otorgado × 100
+    const interesXVenta = ventas.reduce((s, r) => s + (Number(r.interes) || 0), 0);
+    const productividad = capital > 0 ? (interesXVenta / capital) * 100 : null;
+    // Desglose por tipo de cliente (cada uno con su propio Interés / Monto)
+    const ventasApertura = ventas.filter(r => (r.tipo_cliente ?? '').toLowerCase() === 'apertura');
+    const ventasRenov = ventas.filter(r => (r.tipo_cliente ?? '').toLowerCase().startsWith('renov'));
+    const montoApertura = ventasApertura.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    const montoRenov = ventasRenov.reduce((s, r) => s + (Number(r.monto) || 0), 0);
+    const interesApertura = ventasApertura.reduce((s, r) => s + (Number(r.interes) || 0), 0);
+    const interesRenov = ventasRenov.reduce((s, r) => s + (Number(r.interes) || 0), 0);
+    const productividadApertura = montoApertura > 0 ? (interesApertura / montoApertura) * 100 : null;
+    const productividadRenov = montoRenov > 0 ? (interesRenov / montoRenov) * 100 : null;
+
     const metaDiariaCapital = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
       ? Math.max(0, metaCapital - capital) / diasRestantes
       : (tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null);
@@ -559,6 +571,7 @@ export default function AnalistasPage() {
       metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC,
       clientesIngresados: clientes,
       ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
+      interesXVenta, productividad, productividadApertura, productividadRenov,
       diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
       cumplProyCapital, cumplProyOps,
       diaCorte, capitalAntFecha, opsAntFecha, varCapitalFecha, varOpsFecha,
@@ -1477,6 +1490,23 @@ export default function AnalistasPage() {
                   </div>
                 </div>
               </div>
+
+                {/* ── FILA: (I) x Venta / Productividad ── */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>(I) x Venta</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.interesXVenta)}</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Productividad</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
+                    {(kpiTotal.productividadApertura !== null || kpiTotal.productividadRenov !== null) && (
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#8f929d', marginTop: 6 }}>
+                        Apertura: {kpiTotal.productividadApertura !== null ? `${kpiTotal.productividadApertura.toFixed(2)}%` : '—'} · Renovación: {kpiTotal.productividadRenov !== null ? `${kpiTotal.productividadRenov.toFixed(2)}%` : '—'}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* ── BLOQUE DE PROYECCIÓN ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginTop: 12, alignItems: 'stretch' }}>
