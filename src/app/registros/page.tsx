@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from '
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Timer } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Timer, Pin } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -1752,6 +1752,8 @@ export default function RegistrosPage() {
     const scoreMax = filters.scoreMax ? Number(filters.scoreMax) : 0;
 
     const list = registros.filter((r, idx) => {
+      // Los registros fijados se muestran aparte (panel superior), no en la lista principal
+      if (r.fijado) return false;
       if (hasSearch && !searchIndex[idx].includes(s) && !(sPlano && searchIndex[idx].includes(sPlano))) return false;
       if (hasEstados && !filters.estados.includes(r.estado)) return false;
       if (filters.analista && r.analista !== filters.analista) return false;
@@ -1819,6 +1821,22 @@ export default function RegistrosPage() {
     const start = (currentPage - 1) * pageSize;
     return filteredRegistros.slice(start, start + pageSize);
   }, [filteredRegistros, currentPage, pageSize]);
+
+  // Registros fijados: se muestran en su propia pestaña, sin importar filtros/paginación
+  const registrosFijados = useMemo(() => {
+    return registros
+      .filter(r => r.fijado)
+      .sort((a, b) => {
+        const dA = a.fecha || '', dB = b.fecha || '';
+        return dA === dB ? 0 : dA > dB ? -1 : 1;
+      });
+  }, [registros]);
+
+  // Pestaña activa de la tabla (registros normales vs fijados)
+  const [activeTab, setActiveTab] = useState<'registros' | 'fijados'>('registros');
+  useEffect(() => {
+    if (activeTab === 'fijados' && registrosFijados.length === 0) setActiveTab('registros');
+  }, [activeTab, registrosFijados.length]);
 
 
   const openEdit = useCallback((reg: Registro) => {
@@ -1890,6 +1908,163 @@ export default function RegistrosPage() {
       setComentariosTarget(null);
     }
   }, [comentariosTarget, showToast, refresh, applyRegistroChange, pushRegistroChange]);
+
+  const handleToggleFijado = useCallback(async (reg: Registro) => {
+    const nuevo = !reg.fijado;
+    const { error } = await supabase.from('registros').update({ fijado: nuevo }).eq('id', reg.id);
+    if (error) { showToast('Error al fijar el registro', 'error'); return; }
+    applyRegistroChange('UPDATE', { ...reg, fijado: nuevo });
+    pushRegistroChange('UPDATE', { ...reg, fijado: nuevo });
+    refresh(true);
+    showToast(nuevo ? 'Registro fijado' : 'Registro desfijado', 'success');
+  }, [applyRegistroChange, pushRegistroChange, refresh, showToast]);
+
+  // Render de una fila de la tabla. Se reutiliza en la tabla principal y en el panel de fijados.
+  const renderFila = useCallback((reg: Registro) => (
+                    <tr
+                      key={reg.id}
+                      className="hover-row"
+                      style={{
+                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        transition: 'all 0.1s ease',
+                        cursor: 'default',
+                      }}
+                    >
+                      {/* Cliente */}
+                      <td style={{ padding: '18px 24px', minWidth: 240, textAlign: 'left' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '13.5px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{formatearCuil(reg.cuil)}</span>}
+                            {reg.es_re && (
+                              <span style={{
+                                fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                color: 'var(--green)', border: '1px solid rgba(16, 185, 129, 0.25)',
+                                letterSpacing: '0.5px'
+                              }}>RE</span>
+                            )}
+                          </div>
+                          {vencidoIds.has(reg.id) && (
+                            <span style={{
+                              fontSize: '10px', fontWeight: 700, color: 'var(--rojo)',
+                              background: 'rgba(220,53,69,0.08)', padding: '2px 6px',
+                              borderRadius: '4px', border: '1px solid rgba(220,53,69,0.2)',
+                              display: 'inline-block', width: 'fit-content',
+                              marginTop: '2px'
+                            }}>
+                              Recordatorio vencido
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Analista */}
+                      <td style={{ padding: '18px 24px', fontSize: '15.5px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
+                        {displayAnalista(reg.analista)}
+                      </td>
+
+                      {/* Fecha */}
+                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '15.5px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
+                      </td>
+
+                      {/* Score */}
+                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+                        {reg.puntaje ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <span style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              background: Number(reg.puntaje) >= 700 ? 'var(--green)' :
+                                          Number(reg.puntaje) >= 600 ? '#60a5fa' :
+                                          Number(reg.puntaje) >= 500 ? '#fbbf24' : '#ef4444'
+                            }} />
+                            <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#46464e', fontSize: 15.5 }}>—</span>
+                        )}
+                      </td>
+
+                      {/* Monto */}
+                      <td style={{ padding: '18px 24px', fontSize: '15.5px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
+                      </td>
+
+                      {/* Estado */}
+                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+                        <StatusBadge estado={reg.estado} />
+                      </td>
+
+                      {/* Tipo / Acuerdo */}
+                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                          <span style={{ fontSize: '15.5px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color:
+                              reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? 'var(--green)' :
+                                reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
+                                  reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
+                                    'var(--fg-muted)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.4px'
+                          }}>
+                            {reg.acuerdo_precios || '—'}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Acciones */}
+                      <td style={{ padding: '18px 24px' }}>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                          <button
+                            onClick={() => handleToggleFijado(reg)}
+                            className="table-action-btn"
+                            title={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
+                            style={{ color: reg.fijado ? '#34d399' : 'var(--fg-muted)' }}
+                          ><Pin size={16} fill={reg.fijado ? 'currentColor' : 'none'} /></button>
+                          <button
+                            onClick={() => handleWhatsApp(reg)}
+                            className="table-action-btn"
+                            title={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
+                            style={{ color: reg.telefono ? '#25D366' : 'var(--fg-muted)' }}
+                          ><WhatsAppIcon size={16} /></button>
+                          {canSeeComentarios && reg.comentarios && reg.comentarios.trim() !== '' && (
+                            <button
+                              onClick={() => setComentariosTarget(reg)}
+                              className="table-action-btn"
+                              title="Ver comentarios"
+                            ><MessageSquare size={16} /></button>
+                          )}
+                          {canSeeRecordatorios && (
+                            <button
+                              onClick={() => setRecordatorioTarget(reg)}
+                              className={`table-action-btn ${vencidoIds.has(reg.id) ? 'btn-alert-active' : ''}`}
+                              title="Recordatorio"
+                            ><Bell size={16} /></button>
+                          )}
+                          {canEditRegistros && (
+                            <button
+                              onClick={() => openEdit(reg)}
+                              className="table-action-btn"
+                              title="Editar"
+                            ><Edit2 size={16} /></button>
+                          )}
+                          {canDeleteRegistros && (
+                            <button
+                              onClick={() => setDeleteTarget(reg)}
+                              className="table-action-btn btn-delete"
+                              title="Eliminar"
+                            ><Trash2 size={16} /></button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+  ), [vencidoIds, canSeeComentarios, canSeeRecordatorios, canEditRegistros, canDeleteRegistros, handleToggleFijado, handleWhatsApp, openEdit]);
 
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
 
@@ -2114,7 +2289,33 @@ export default function RegistrosPage() {
         borderRadius: '16px', overflow: 'hidden',
         boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)'
       }}>
-        {filteredRegistros.length === 0 && !loading ? (
+        {/* Pestañas: Registros / Fijados (solo si hay alguno fijado) */}
+        {registrosFijados.length > 0 && (
+          <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            {([['registros', 'Registros'], ['fijados', `Fijados (${registrosFijados.length})`]] as const).map(([key, label]) => {
+              const active = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '10px 18px', fontSize: 12, fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.5px',
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: active ? '#34d399' : 'var(--fg-muted)',
+                    borderBottom: `2px solid ${active ? '#34d399' : 'transparent'}`,
+                    marginBottom: -1,
+                  }}
+                >
+                  {key === 'fijados' && <Pin size={13} fill={active ? 'currentColor' : 'none'} />}
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {(activeTab === 'fijados' ? registrosFijados.length === 0 : filteredRegistros.length === 0) && !loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12 }}>
             <span style={{ fontSize: 40, color: '#64748b' }}>—</span>
             <p style={{ fontSize: 16, color: 'var(--fg-muted)', fontWeight: 600 }}>No se encontraron registros coincidentes</p>
@@ -2231,152 +2432,12 @@ export default function RegistrosPage() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedRegistros.map((reg) => {
-                  return (
-                    <tr
-                      key={reg.id}
-                      className="hover-row"
-                      style={{
-                        borderBottom: '1px solid rgba(255,255,255,0.04)',
-                        transition: 'all 0.1s ease',
-                        cursor: 'default',
-                      }}
-                    >
-                      {/* Cliente */}
-                      <td style={{ padding: '18px 24px', minWidth: 240, textAlign: 'left' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '13.5px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{formatearCuil(reg.cuil)}</span>}
-                            {reg.es_re && (
-                              <span style={{
-                                fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
-                                background: 'rgba(16, 185, 129, 0.15)', 
-                                color: 'var(--green)', border: '1px solid rgba(16, 185, 129, 0.25)', 
-                                letterSpacing: '0.5px'
-                              }}>RE</span>
-                            )}
-                          </div>
-                          {vencidoIds.has(reg.id) && (
-                            <span style={{
-                              fontSize: '10px', fontWeight: 700, color: 'var(--rojo)',
-                              background: 'rgba(220,53,69,0.08)', padding: '2px 6px',
-                              borderRadius: '4px', border: '1px solid rgba(220,53,69,0.2)',
-                              display: 'inline-block', width: 'fit-content',
-                              marginTop: '2px'
-                            }}>
-                              Recordatorio vencido
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Analista */}
-                      <td style={{ padding: '18px 24px', fontSize: '15.5px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
-                        {displayAnalista(reg.analista)}
-                      </td>
-
-                      {/* Fecha */}
-                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '15.5px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
-                      </td>
-
-                      {/* Score */}
-                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        {reg.puntaje ? (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <span style={{
-                              width: '6px',
-                              height: '6px',
-                              borderRadius: '50%',
-                              background: Number(reg.puntaje) >= 700 ? 'var(--green)' :
-                                          Number(reg.puntaje) >= 600 ? '#60a5fa' :
-                                          Number(reg.puntaje) >= 500 ? '#fbbf24' : '#ef4444'
-                            }} />
-                            <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#46464e', fontSize: 15.5 }}>—</span>
-                        )}
-                      </td>
-
-                      {/* Monto */}
-                      <td style={{ padding: '18px 24px', fontSize: '15.5px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
-                      </td>
-
-                      {/* Estado */}
-                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        <StatusBadge estado={reg.estado} />
-                      </td>
-
-                      {/* Tipo / Acuerdo */}
-                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ fontSize: '15.5px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
-                          <span style={{
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color:
-                              reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? 'var(--green)' :
-                                reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
-                                  reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
-                                    'var(--fg-muted)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.4px'
-                          }}>
-                            {reg.acuerdo_precios || '—'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Acciones */}
-                      <td style={{ padding: '18px 24px' }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                          <button
-                            onClick={() => handleWhatsApp(reg)}
-                            className="table-action-btn"
-                            title={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
-                            style={{ color: reg.telefono ? '#25D366' : 'var(--fg-muted)' }}
-                          ><WhatsAppIcon size={16} /></button>
-                          {canSeeComentarios && reg.comentarios && reg.comentarios.trim() !== '' && (
-                            <button
-                              onClick={() => setComentariosTarget(reg)}
-                              className="table-action-btn"
-                              title="Ver comentarios"
-                            ><MessageSquare size={16} /></button>
-                          )}
-                          {canSeeRecordatorios && (
-                            <button
-                              onClick={() => setRecordatorioTarget(reg)}
-                              className={`table-action-btn ${vencidoIds.has(reg.id) ? 'btn-alert-active' : ''}`}
-                              title="Recordatorio"
-                            ><Bell size={16} /></button>
-                          )}
-                          {canEditRegistros && (
-                            <button
-                              onClick={() => openEdit(reg)}
-                              className="table-action-btn"
-                              title="Editar"
-                            ><Edit2 size={16} /></button>
-                          )}
-                          {canDeleteRegistros && (
-                            <button
-                              onClick={() => setDeleteTarget(reg)}
-                              className="table-action-btn btn-delete"
-                              title="Eliminar"
-                            ><Trash2 size={16} /></button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {(activeTab === 'fijados' ? registrosFijados : paginatedRegistros).map(renderFila)}
               </tbody>
             </table>
 
             {/* Paginación: Primera, Anterior, Página, Siguiente, Última */}
-            {filteredRegistros.length > pageSize && (
+            {activeTab === 'registros' && filteredRegistros.length > pageSize && (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',

@@ -17,6 +17,7 @@ export const registroSchema = z.object({
   estado: z.string().nullable().transform(v => v ?? ''),
   comentarios: z.string().nullable().transform(v => v ?? ''),
   telefono: z.string().nullish().transform(v => v ?? ''),
+  fijado: z.boolean().nullish().transform(v => v ?? false),
   tipo_cliente: z.string().nullish().transform(v => v ?? undefined),
   acuerdo_precios: z.string().nullish().transform(v => v ?? undefined),
   cuotas: z.string().nullish().transform(v => v ?? undefined),
