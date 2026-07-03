@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Download, Loader2, ArrowLeft, FileSpreadsheet } from 'lucide-react';
+import { motion } from 'framer-motion';
 import CustomSelect from '@/components/CustomSelect';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 
@@ -177,13 +178,13 @@ export function ExportXlsxModal({ open, onClose }: Props) {
       className="modal-overlay"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)',
+        background: 'rgba(0,0,0,0.7)',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
         overflowY: 'auto', padding: '20px 16px',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div style={{
+      <motion.div drag dragMomentum={false} style={{
         background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)',
         borderRadius: 16, padding: '36px 32px',
         width: preview ? 1200 : 960, maxWidth: '97vw',
@@ -399,7 +400,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
             </button>
           </>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

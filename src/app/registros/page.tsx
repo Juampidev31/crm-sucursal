@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { motion } from 'framer-motion';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
 import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Timer, Pin } from 'lucide-react';
@@ -792,8 +793,8 @@ const RegistroModal = memo(function RegistroModal({
   return (
     <>
       <ModalPortal>
-      <div className="modal-overlay" onClick={onClose} style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-        <div className="modal-content" onClick={e => e.stopPropagation()} style={{
+      <div className="modal-overlay" onClick={onClose} style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <motion.div drag dragMomentum={false} className="modal-content" onClick={e => e.stopPropagation()} style={{
           background: 'var(--bg-elev-1)',
           backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.08), transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)',
           border: '1px solid var(--border)',
@@ -1181,14 +1182,14 @@ const RegistroModal = memo(function RegistroModal({
               <Save size={16} strokeWidth={2.5} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
       </ModalPortal>
 
       {showDupModal && dupRecord && (
         <ModalPortal>
         <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
-          <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+          <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title" style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '0.5px', color: dupBlocked ? 'var(--rojo)' : '#f59e0b' }}>
                 {dupBlocked ? 'REGISTRO DUPLICADO' : 'REGISTRO EXISTENTE'}
@@ -1219,7 +1220,7 @@ const RegistroModal = memo(function RegistroModal({
                 </>
               }
             </div>
-          </div>
+          </motion.div>
         </div>
         </ModalPortal>
       )}
@@ -1273,7 +1274,7 @@ const RecordatorioModal = memo(function RecordatorioModal({
 
   return (
     <div className="modal-overlay" onClick={() => onClose(false)}>
-      <div className="modal-content" style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
+      <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">
             <Bell size={18} style={{ color: 'var(--fg-muted)' }} />
@@ -1303,7 +1304,7 @@ const RecordatorioModal = memo(function RecordatorioModal({
             padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>AGENDAR</button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 });
@@ -1338,7 +1339,7 @@ const ComentariosModal = memo(function ComentariosModal({
 
   return (
     <div className="modal-overlay" onClick={() => onClose(false)}>
-      <div className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+      <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">
             <MessageSquare size={18} style={{ color: 'var(--fg-muted)' }} />
@@ -1370,7 +1371,7 @@ const ComentariosModal = memo(function ComentariosModal({
             padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>{saving ? 'GUARDANDO…' : 'GUARDAR'}</button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 });
@@ -1400,8 +1401,8 @@ const WhatsappModal = memo(function WhatsappModal({
   if (!registro) return null;
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onCancel} style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-        <div className="modal-content" style={{ maxWidth: '400px', background: 'var(--bg-elev-1)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+      <div className="modal-overlay" onClick={onCancel} style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '400px', background: 'var(--bg-elev-1)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
           <div className="modal-header" style={{ padding: '24px 28px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
             <h3 className="modal-title" style={{ color: '#25D366', display: 'flex', alignItems: 'center', gap: '8px', margin: 0, fontSize: '18px', fontWeight: 800 }}>
               <WhatsAppIcon size={20} />
@@ -1440,7 +1441,7 @@ const WhatsappModal = memo(function WhatsappModal({
               ENVIAR
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     </ModalPortal>
   );
@@ -1461,7 +1462,7 @@ const DeleteModal = memo(function DeleteModal({
   return (
     <ModalPortal>
     <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-content modal-content--danger" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+      <motion.div drag dragMomentum={false} className="modal-content modal-content--danger" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title" style={{ color: 'var(--rojo)' }}>
             <AlertTriangle size={18} />
@@ -1487,7 +1488,7 @@ const DeleteModal = memo(function DeleteModal({
             ELIMINAR AHORA
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
     </ModalPortal>
   );
