@@ -998,93 +998,101 @@ const RegistroModal = memo(function RegistroModal({
                 )}
               </Field>
               <Field label={`C.P.${esVentaOAprobado ? ' *' : ''}`} error={errors.localidad}>
-                {(() => {
-                  void cpMapVersion;
-                  const matches = getLocalidadesByCP(cp);
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <input
-                        className="form-input"
-                        value={cp}
-                        onChange={e => {
-                          const next = e.target.value.replace(/\D/g, '').slice(0, 5);
-                          setCp(next);
-                          const m = getLocalidadesByCP(next);
-                          if (m.length === 1) set('localidad', m[0]);
-                          else if (m.length === 0) set('localidad', '');
-                          else if (!m.includes(form.localidad || '')) set('localidad', '');
-                        }}
-                        placeholder="Código postal"
-                        inputMode="numeric"
-                      />
-                      {cp && matches.length === 1 && (
-                        <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-                          Localidad: <strong style={{ color: 'var(--text)' }}>{matches[0]}</strong>
+                <input
+                  className="form-input"
+                  value={cp}
+                  onChange={e => {
+                    const next = e.target.value.replace(/\D/g, '').slice(0, 5);
+                    setCp(next);
+                    const m = getLocalidadesByCP(next);
+                    if (m.length === 1) set('localidad', m[0]);
+                    else if (m.length === 0) set('localidad', '');
+                    else if (!m.includes(form.localidad || '')) set('localidad', '');
+                  }}
+                  placeholder="Código postal"
+                  inputMode="numeric"
+                />
+              </Field>
+
+              {cp && (
+                <Field label={`Localidad${esVentaOAprobado ? ' *' : ''}`}>
+                  {(() => {
+                    void cpMapVersion;
+                    const matches = getLocalidadesByCP(cp);
+
+                    if (matches.length === 1) {
+                      return (
+                        <div className="form-input" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.03)', color: 'var(--text)', border: '1px solid transparent', cursor: 'default' }}>
+                          {matches[0]}
                         </div>
-                      )}
-                      {cp && matches.length > 1 && (
+                      );
+                    }
+
+                    if (matches.length > 1) {
+                      return (
                         <PremiumSelect
                           value={form.localidad || ''}
                           onChange={val => set('localidad', val)}
                           options={matches}
                           placeholder="— Elegir localidad —"
                         />
-                      )}
-                      {cp && matches.length === 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <div style={{ fontSize: 13, color: 'var(--warning, #b45309)' }}>Sin coincidencia para este C.P.</div>
-                          {isAdmin && !cpAddOpen && (
+                      );
+                    }
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ fontSize: 13, color: 'var(--warning, #b45309)' }}>Sin coincidencia</div>
+                        {isAdmin && !cpAddOpen && (
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            style={{ alignSelf: 'flex-start', fontSize: 13, padding: '6px 10px' }}
+                            onClick={() => { setCpAddOpen(true); setCpAddLoc(''); }}
+                          >
+                            + Agregar localidad
+                          </button>
+                        )}
+                        {isAdmin && cpAddOpen && (
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <input
+                              className="form-input"
+                              value={cpAddLoc}
+                              onChange={e => setCpAddLoc(corregirTildes(capitalizarTexto(e.target.value)))}
+                              placeholder="Nombre"
+                              style={{ flex: 1 }}
+                              autoFocus
+                            />
                             <button
                               type="button"
-                              className="btn-secondary"
-                              style={{ alignSelf: 'flex-start', fontSize: 13, padding: '6px 10px' }}
-                              onClick={() => { setCpAddOpen(true); setCpAddLoc(''); }}
+                              className="btn-primary"
+                              style={{ padding: '0 12px' }}
+                              onClick={() => {
+                                const name = cpAddLoc.trim();
+                                if (!name) return;
+                                addCustomMapping(cp, name);
+                                set('localidad', name);
+                                setCpAddOpen(false);
+                                setCpAddLoc('');
+                                setCpMapVersion(v => v + 1);
+                              }}
                             >
-                              + Agregar localidad para {cp}
+                              Guardar
                             </button>
-                          )}
-                          {isAdmin && cpAddOpen && (
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <input
-                                className="form-input"
-                                value={cpAddLoc}
-                                onChange={e => setCpAddLoc(corregirTildes(capitalizarTexto(e.target.value)))}
-                                placeholder="Nombre de la localidad"
-                                style={{ flex: 1 }}
-                                autoFocus
-                              />
-                              <button
-                                type="button"
-                                className="btn-primary"
-                                style={{ padding: '0 12px' }}
-                                onClick={() => {
-                                  const name = cpAddLoc.trim();
-                                  if (!name) return;
-                                  addCustomMapping(cp, name);
-                                  set('localidad', name);
-                                  setCpAddOpen(false);
-                                  setCpAddLoc('');
-                                  setCpMapVersion(v => v + 1);
-                                }}
-                              >
-                                Guardar
-                              </button>
-                              <button
-                                type="button"
-                                className="btn-icon"
-                                onClick={() => { setCpAddOpen(false); setCpAddLoc(''); }}
-                                style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </Field>
+                            <button
+                              type="button"
+                              className="btn-icon"
+                              onClick={() => { setCpAddOpen(false); setCpAddLoc(''); }}
+                              style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </Field>
+              )}
 
             </div>
             {requiereDependencia(form.empleador) && (
