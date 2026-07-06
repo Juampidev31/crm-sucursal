@@ -821,7 +821,7 @@ const RegistroModal = memo(function RegistroModal({
             <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px' }}><X size={18} /></button>
           </div>
           <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '12px', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '20px', marginBottom: '12px', alignItems: 'start' }}>
               <Field label="CUIL *" error={errors.cuil}>
                 <input className="form-input" value={formatearCuil(form.cuil || '')} onChange={e => set('cuil', sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
               </Field>
