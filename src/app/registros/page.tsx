@@ -1093,7 +1093,6 @@ const RegistroModal = memo(function RegistroModal({
                   })()}
                 </Field>
               )}
-
             </div>
             {requiereDependencia(form.empleador) && (
               <div className="form-row">
@@ -1142,7 +1141,7 @@ const RegistroModal = memo(function RegistroModal({
                 </Field>
               </div>
             )}
-            <div className="form-row">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '20px', marginBottom: '12px', alignItems: 'start' }}>
               <Field label={`Comentarios${form.estado === 'derivado / rechazado cc' ? ' *' : ''}`} error={errors.comentarios}>
                 <textarea
                   className="form-input"
@@ -1153,14 +1152,32 @@ const RegistroModal = memo(function RegistroModal({
                   placeholder={form.estado === 'derivado / rechazado cc' ? 'Motivo de rechazo (obligatorio)...' : ''}
                 />
               </Field>
-            </div>
-            <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginTop: '8px', marginBottom: '8px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#fff', fontSize: '13px', fontWeight: 700 }}>
-                <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#10b981' }} />
+              <label 
+                style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
+                  fontSize: '13px', fontWeight: 700, padding: '0 12px', borderRadius: '8px', height: '44px', width: '100%',
+                  marginTop: '23px',
+                  background: !!form.es_re ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.4)',
+                  color: !!form.es_re ? '#10b981' : '#999',
+                  border: !!form.es_re ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} style={{ display: 'none' }} />
                 Resumen Ejecutivo (RE)
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: '#fff', fontSize: '13px', fontWeight: 700 }}>
-                <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#f59e0b' }} />
+              <label 
+                style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
+                  fontSize: '13px', fontWeight: 700, padding: '0 12px', borderRadius: '8px', height: '44px', width: '100%',
+                  marginTop: '23px',
+                  background: agendarRecordatorio ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0,0,0,0.4)',
+                  color: agendarRecordatorio ? '#f59e0b' : '#999',
+                  border: agendarRecordatorio ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} style={{ display: 'none' }} />
                 Agendar Recordatorio
               </label>
             </div>
