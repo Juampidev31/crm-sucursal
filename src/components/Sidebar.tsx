@@ -9,12 +9,11 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { STATUS_LABEL } from '@/lib/utils';
 import {
   AlignJustify, BarChart2,
-  DollarSign, Settings, Bell, Lock, Plus,
+  DollarSign, Settings, Lock, Plus,
   SlidersHorizontal, ChevronDown, ChevronUp, ChevronLeft, X, Calculator,
   ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, FolderSearch
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { setSession } from '@/lib/auth';
 import { ExportXlsxModal } from '@/components/ExportXlsxModal';
 import { useSettings } from '@/features/settings/SettingsProvider';
@@ -279,7 +278,6 @@ export default function Sidebar({
   const router = useRouter();
   const { isAdmin, refreshUser } = useAuth();
   const currentAnalistaPage = searchParams?.get('analista') || 'PDV';
-  const { pendingReminders } = useRecordatorios();
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, filters, limpiarFiltros, toggleEstado, setFilter } = useFilter();
   const { permisosConfig, alertasConfig } = useSettings();
   const { nombres: analistaNombres } = useAnalistas();
@@ -592,7 +590,6 @@ export default function Sidebar({
               onClick={(e) => { e.preventDefault(); setShowFilters(!showFilters); setShowCalculator(false); }} 
             />
           )}
-          <NavItem href="/recordatorios" icon={Bell} iconColor="#ef4444" label="Notificaciones" active={pathname === '/recordatorios'} badge={pendingReminders > 0 ? pendingReminders : undefined} badgeColor="#10b981" />
 
           {isRegistros && (
             <div style={{ position: 'relative' }} ref={pageSizeSelectorRef}>

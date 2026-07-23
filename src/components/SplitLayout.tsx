@@ -16,7 +16,6 @@ const AVAILABLE_ROUTES = [
   { path: '/ajustes', label: 'Ajustes' },
   { path: '/proyeccion', label: 'Proyección' },
   { path: '/analistas', label: 'Analistas' },
-  { path: '/recordatorios', label: 'Recordatorios' },
 ];
 
 const iconBtnStyle: React.CSSProperties = {

@@ -26,11 +26,24 @@ export const registroSchema = z.object({
   empleador: z.string().nullish().transform(v => v ?? undefined),
   dependencia: z.string().nullish().transform(v => v ?? undefined),
   localidad: z.string().nullish().transform(v => v ?? undefined),
+  etiquetas: z.array(z.string()).nullish().transform(v => v ?? []),
   created_at: z.string().nullish().transform(v => v ?? undefined),
   updated_at: z.string().nullish().transform(v => v ?? undefined),
 });
 
 export type Registro = z.infer<typeof registroSchema>;
+
+// Schema y Tipo para Bitácora de Notas por Cliente
+export const bitacoraNotaSchema = z.object({
+  id: z.string(),
+  registro_id: z.string(),
+  cuil: z.string().nullish().transform(v => v ?? ''),
+  analista: z.string().nullish().transform(v => v ?? ''),
+  nota: z.string(),
+  created_at: z.string().nullish().transform(v => v ?? ''),
+});
+
+export type BitacoraNota = z.infer<typeof bitacoraNotaSchema>;
 
 // Helper genérico: valida un array de filas contra un schema, descarta inválidas.
 export function parseRows<T>(

@@ -40,7 +40,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const refreshIdRef = useRef(0);
 
   const refresh = useCallback(async (silent = false) => {
-    const cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,fijado,created_at,updated_at';
+    let cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,etiquetas,fijado,created_at,updated_at';
     const PAGE = 1000;
     const myId = ++refreshIdRef.current;
 
@@ -57,11 +57,23 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Chunk #1: bloqueamos el render hasta tenerlo (≈1 round-trip).
-    const { data: first, error: firstErr, count } = await supabase
+    let { data: first, error: firstErr, count } = await supabase
       .from('registros')
       .select(cols, { count: 'exact' })
       .order('fecha', { ascending: false })
       .range(0, PAGE - 1);
+
+    // Fallback de seguridad si la columna 'etiquetas' aún no fue creada en la BD de Supabase
+    if (firstErr && (firstErr as { code?: string }).code === '42703') {
+      cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,fijado,created_at,updated_at';
+      const fallbackRes = await supabase
+        .from('registros')
+        .select(cols, { count: 'exact' })
+        .order('fecha', { ascending: false })
+        .range(0, PAGE - 1);
+      first = fallbackRes.data;
+      firstErr = fallbackRes.error;
+    }
 
     if (refreshIdRef.current !== myId) return; // refresh nuevo invalidó este
 

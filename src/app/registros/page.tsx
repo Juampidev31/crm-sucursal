@@ -15,6 +15,9 @@ import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { logAudit } from '@/lib/audit';
 import { corregirTildes } from '@/lib/correccion-tildes';
 import ModalPortal from '@/components/ModalPortal';
+import BitacoraModal from '@/components/BitacoraModal';
+import { TagBadge, EtiquetasModal } from '@/components/EtiquetasSelector';
+import { Tag } from 'lucide-react';
 import { getLocalidadesByCP, getCPByLocalidad, addCustomMapping } from '@/lib/codigos-postales';
 import { useSearchParams } from 'next/navigation';
 
@@ -1588,8 +1591,14 @@ export default function RegistrosPage() {
     return perm ? perm.activo : true; // default true
   }, [isAdmin, permisosConfig]);
 
+  const canSeeBitacora = useMemo(() => {
+    if (isAdmin) return true;
+    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'ver_bitacora');
+    return perm ? perm.activo : true; // default true
+  }, [isAdmin, permisosConfig]);
+
   const {
-    filters, setFilter, limpiarFiltros, hayFiltros,
+    filters, setFilter, toggleEtiqueta, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
     pageSize,
     currentPage, setCurrentPage, setTotalResults,
@@ -1629,6 +1638,8 @@ export default function RegistrosPage() {
   const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
   const [whatsappTarget, setWhatsappTarget] = useState<Registro | null>(null);
   const [comentariosTarget, setComentariosTarget] = useState<Registro | null>(null);
+  const [bitacoraTarget, setBitacoraTarget] = useState<Registro | null>(null);
+  const [etiquetasTarget, setEtiquetasTarget] = useState<Registro | null>(null);
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
 
   // Fetch recordatorios
@@ -1665,14 +1676,25 @@ export default function RegistrosPage() {
     };
   }, []);
 
-  // Pre-computar IDs con recordatorio vencido (O(m) una vez, O(1) lookup)
-  const vencidoIds = useMemo(() => {
-    const ahora = Date.now();
-    const ids = new Set<string>();
+  // Pre-computar IDs con recordatorio vencido / hoy (🔴) y próximos 48h (🟡)
+  const { vencidoOIngresoHoyIds, proximoIds } = useMemo(() => {
+    const hoyFin = new Date();
+    hoyFin.setHours(23, 59, 59, 999);
+    const hoyFinTime = hoyFin.getTime();
+
+    const venceHoySet = new Set<string>();
+    const proximoSet = new Set<string>();
+
     for (const r of recordatorios) {
-      if (new Date(r.fecha_hora).getTime() < ahora) ids.add(r.registro_id);
+      if (!r.registro_id) continue;
+      const t = new Date(r.fecha_hora).getTime();
+      if (t <= hoyFinTime) {
+        venceHoySet.add(r.registro_id);
+      } else if (t <= hoyFinTime + 48 * 60 * 60 * 1000) {
+        proximoSet.add(r.registro_id);
+      }
     }
-    return ids;
+    return { vencidoOIngresoHoyIds: venceHoySet, proximoIds: proximoSet };
   }, [recordatorios]);
 
   // Handle Escape key
@@ -1721,11 +1743,10 @@ export default function RegistrosPage() {
   // Pre-computed search index: one lowercase string per record (built once when registros change)
   const searchIndex = useMemo(() => {
     return registros.map(r => {
-      // Se agrega una copia del CUIL sin guiones/puntos/espacios para poder buscarlo
-      // tanto con formato (20-29855593-0) como sin formato (20298555930).
       const cuilPlano = (r.cuil || '').replace(/[-.\s]/g, '');
+      const tagsStr = (r.etiquetas || []).join('|');
       return (
-        `${r.nombre}|${r.cuil}|${cuilPlano}|${r.analista}|${r.empleador || ''}|${r.estado}|${r.localidad || ''}|${r.dependencia || ''}|${r.comentarios}`
+        `${r.nombre}|${r.cuil}|${cuilPlano}|${r.analista}|${r.empleador || ''}|${r.estado}|${r.localidad || ''}|${r.dependencia || ''}|${r.comentarios}|${tagsStr}`
       ).toLowerCase();
     });
   }, [registros]);
@@ -1742,8 +1763,6 @@ export default function RegistrosPage() {
   const baseFilteredRegistros = useMemo(() => {
     const nowTime = new Date().getTime();
     const s = debouncedSearch.toLowerCase();
-    // Versión sin guiones/puntos/espacios para que la búsqueda de CUIL funcione
-    // sin importar si el usuario escribe con o sin formato.
     const sPlano = s.replace(/[-.\s]/g, '');
     const hasSearch = s.length > 0;
     const hasEstados = filters.estados.length > 0;
@@ -1754,7 +1773,6 @@ export default function RegistrosPage() {
     const scoreMax = filters.scoreMax ? Number(filters.scoreMax) : 0;
 
     const list = registros.filter((r, idx) => {
-      // Los registros fijados se muestran aparte (panel superior), no en la lista principal
       if (r.fijado) return false;
       if (hasSearch && !searchIndex[idx].includes(s) && !(sPlano && searchIndex[idx].includes(sPlano))) return false;
       if (hasEstados && !filters.estados.includes(r.estado)) return false;
@@ -1767,6 +1785,15 @@ export default function RegistrosPage() {
       if (filters.scoreMax && (r.puntaje == null || Number(r.puntaje) > scoreMax)) return false;
       if (filters.esRe && (filters.esRe === 'si' ? !r.es_re : r.es_re)) return false;
       if (hasAcuerdo && (!r.acuerdo_precios || !filters.acuerdoPrecios.includes(r.acuerdo_precios))) return false;
+
+      if (filters.etiquetas && filters.etiquetas.length > 0) {
+        const rTags = r.etiquetas || [];
+        if (!filters.etiquetas.some(t => rTags.includes(t))) return false;
+      }
+
+      if (filters.soloRecontactosHoy) {
+        if (!vencidoOIngresoHoyIds.has(r.id)) return false;
+      }
 
       if (filters.soloAlertasVencidas) {
         const config = alertasConfig?.find(a => a.estado.toLowerCase() === r.estado?.toLowerCase());
@@ -1879,7 +1906,7 @@ export default function RegistrosPage() {
     pushRegistroChange(type, reg);
     showToast('Guardado', 'success');
     refresh(true);
-    setRecordatorioTarget(reg);
+    setBitacoraTarget(reg);
   }, [applyRegistroChange, pushRegistroChange, refresh, registros, showToast]);
 
   const handleRecordatorioClose = useCallback((saved: boolean, newRec?: Recordatorio) => {
@@ -1921,134 +1948,181 @@ export default function RegistrosPage() {
     showToast(nuevo ? 'Registro fijado' : 'Registro desfijado', 'success');
   }, [applyRegistroChange, pushRegistroChange, refresh, showToast]);
 
+  const handleSaveEtiquetas = useCallback(async (registroId: string, nuevasEtiquetas: string[]) => {
+    const reg = registros.find(r => r.id === registroId);
+    if (!reg) return;
+    setEtiquetasTarget(null);
+    const { error } = await supabase.from('registros').update({ etiquetas: nuevasEtiquetas }).eq('id', registroId);
+    if (!error) {
+      applyRegistroChange('UPDATE', { ...reg, etiquetas: nuevasEtiquetas });
+      pushRegistroChange('UPDATE', { ...reg, etiquetas: nuevasEtiquetas });
+      showToast('Etiquetas actualizadas', 'success');
+      refresh(true);
+    } else {
+      showToast('Error al guardar etiquetas', 'error');
+    }
+  }, [registros, applyRegistroChange, pushRegistroChange, showToast, refresh]);
+
   // Render de una fila de la tabla. Se reutiliza en la tabla principal y en el panel de fijados.
-  const renderFila = useCallback((reg: Registro) => (
-                    <tr
-                      key={reg.id}
-                      className="hover-row"
-                      style={{
-                        borderBottom: '1px solid rgba(255,255,255,0.04)',
-                        transition: 'all 0.1s ease',
-                        cursor: 'default',
-                      }}
-                    >
-                      {/* Cliente */}
-                      <td style={{ padding: '18px 24px', minWidth: 240, textAlign: 'left' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {reg.cuil && <span className="cuil-text" style={{ fontSize: '13.5px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{formatearCuil(reg.cuil)}</span>}
-                            {reg.es_re && (
-                              <span style={{
-                                fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
-                                background: 'rgba(16, 185, 129, 0.15)',
-                                color: 'var(--green)', border: '1px solid rgba(16, 185, 129, 0.25)',
-                                letterSpacing: '0.5px'
-                              }}>RE</span>
-                            )}
-                          </div>
-                          {vencidoIds.has(reg.id) && (
-                            <span style={{
-                              fontSize: '10px', fontWeight: 700, color: 'var(--rojo)',
-                              background: 'rgba(220,53,69,0.08)', padding: '2px 6px',
-                              borderRadius: '4px', border: '1px solid rgba(220,53,69,0.2)',
-                              display: 'inline-block', width: 'fit-content',
-                              marginTop: '2px'
-                            }}>
-                              Recordatorio vencido
-                            </span>
-                          )}
-                        </div>
-                      </td>
+  const renderFila = useCallback((reg: Registro) => {
+    const isVencidoOIngresoHoy = vencidoOIngresoHoyIds.has(reg.id);
+    const isProximo = proximoIds.has(reg.id);
 
-                      {/* Analista */}
-                      <td style={{ padding: '18px 24px', fontSize: '15.5px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
-                        {displayAnalista(reg.analista)}
-                      </td>
+    return (
+      <tr
+        key={reg.id}
+        className="hover-row"
+        style={{
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderLeft: isVencidoOIngresoHoy
+            ? '4px solid #ef4444'
+            : isProximo
+            ? '4px solid #f59e0b'
+            : '4px solid transparent',
+          background: isVencidoOIngresoHoy
+            ? 'rgba(239, 68, 68, 0.03)'
+            : isProximo
+            ? 'rgba(245, 158, 11, 0.02)'
+            : 'transparent',
+          transition: 'all 0.1s ease',
+          cursor: 'default',
+        }}
+      >
+        {/* Cliente */}
+        <td style={{ padding: '18px 24px', minWidth: 240, textAlign: 'left' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
+              {(reg.etiquetas || []).map(t => (
+                <TagBadge key={t} tag={t} />
+              ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {reg.cuil && <span className="cuil-text" style={{ fontSize: '13.5px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{formatearCuil(reg.cuil)}</span>}
+              {reg.es_re && (
+                <span style={{
+                  fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  color: 'var(--green)', border: '1px solid rgba(16, 185, 129, 0.25)',
+                  letterSpacing: '0.5px'
+                }}>RE</span>
+              )}
+            </div>
 
-                      {/* Fecha */}
-                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        <div style={{ fontSize: '15.5px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
-                      </td>
+            {isVencidoOIngresoHoy && (
+              <span style={{
+                fontSize: '10px', fontWeight: 700, color: 'var(--rojo)',
+                background: 'rgba(220,53,69,0.08)', padding: '2px 6px',
+                borderRadius: '4px', border: '1px solid rgba(220,53,69,0.2)',
+                display: 'inline-block', width: 'fit-content',
+                marginTop: '3px'
+              }}>
+                🔴 Re-contacto Hoy / Vencido
+              </span>
+            )}
+            {isProximo && !isVencidoOIngresoHoy && (
+              <span style={{
+                fontSize: '10px', fontWeight: 700, color: '#fbbf24',
+                background: 'rgba(251,191,36,0.08)', padding: '2px 6px',
+                borderRadius: '4px', border: '1px solid rgba(251,191,36,0.2)',
+                display: 'inline-block', width: 'fit-content',
+                marginTop: '3px'
+              }}>
+                🟡 Re-contacto Próximo
+              </span>
+            )}
+          </div>
+        </td>
 
-                      {/* Score */}
-                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        {reg.puntaje ? (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <span style={{
-                              width: '6px',
-                              height: '6px',
-                              borderRadius: '50%',
-                              background: Number(reg.puntaje) >= 700 ? 'var(--green)' :
-                                          Number(reg.puntaje) >= 600 ? '#60a5fa' :
-                                          Number(reg.puntaje) >= 500 ? '#fbbf24' : '#ef4444'
-                            }} />
-                            <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
-                          </div>
-                        ) : (
-                          <span style={{ color: '#46464e', fontSize: 15.5 }}>—</span>
-                        )}
-                      </td>
+        {/* Analista */}
+        <td style={{ padding: '18px 24px', fontSize: '15.5px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
+          {displayAnalista(reg.analista)}
+        </td>
 
-                      {/* Monto */}
-                      <td style={{ padding: '18px 24px', fontSize: '15.5px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
-                      </td>
+        {/* Fecha */}
+        <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+          <div style={{ fontSize: '15.5px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
+        </td>
 
-                      {/* Estado */}
-                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        <StatusBadge estado={reg.estado} />
-                      </td>
+        {/* Score */}
+        <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+          {reg.puntaje ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: Number(reg.puntaje) >= 700 ? 'var(--green)' :
+                            Number(reg.puntaje) >= 600 ? '#60a5fa' :
+                            Number(reg.puntaje) >= 500 ? '#fbbf24' : '#ef4444'
+              }} />
+              <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
+            </div>
+          ) : (
+            <span style={{ color: '#46464e', fontSize: 15.5 }}>—</span>
+          )}
+        </td>
 
-                      {/* Tipo / Acuerdo */}
-                      <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                          <span style={{ fontSize: '15.5px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
-                          <span style={{
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color:
-                              reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? 'var(--green)' :
-                                reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
-                                  reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
-                                    'var(--fg-muted)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.4px'
-                          }}>
-                            {reg.acuerdo_precios || '—'}
-                          </span>
-                        </div>
-                      </td>
+        {/* Monto */}
+        <td style={{ padding: '18px 24px', fontSize: '15.5px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+          {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
+        </td>
 
-                      {/* Acciones */}
-                      <td style={{ padding: '18px 24px' }}>
-                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                          <button
-                            onClick={() => handleToggleFijado(reg)}
-                            className="table-action-btn"
-                            title={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
-                            style={{ color: reg.fijado ? '#34d399' : 'var(--fg-muted)' }}
-                          ><Pin size={16} fill={reg.fijado ? 'currentColor' : 'none'} /></button>
-                          <button
-                            onClick={() => handleWhatsApp(reg)}
-                            className="table-action-btn"
-                            title={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
-                            style={{ color: reg.telefono ? '#25D366' : 'var(--fg-muted)' }}
-                          ><WhatsAppIcon size={16} /></button>
-                          {canSeeComentarios && reg.comentarios && reg.comentarios.trim() !== '' && (
-                            <button
-                              onClick={() => setComentariosTarget(reg)}
-                              className="table-action-btn"
-                              title="Ver comentarios"
-                            ><MessageSquare size={16} /></button>
-                          )}
-                          {canSeeRecordatorios && (
-                            <button
-                              onClick={() => setRecordatorioTarget(reg)}
-                              className={`table-action-btn ${vencidoIds.has(reg.id) ? 'btn-alert-active' : ''}`}
-                              title="Recordatorio"
-                            ><Bell size={16} /></button>
-                          )}
+        {/* Estado */}
+        <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+          <StatusBadge estado={reg.estado} />
+        </td>
+
+        {/* Tipo / Acuerdo */}
+        <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+            <span style={{ fontSize: '15.5px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: 700,
+              color:
+                reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? 'var(--green)' :
+                  reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
+                    reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
+                      'var(--fg-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.4px'
+            }}>
+              {reg.acuerdo_precios || '—'}
+            </span>
+          </div>
+        </td>
+
+        {/* Acciones */}
+        <td style={{ padding: '18px 24px' }}>
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+            <button
+              onClick={() => handleToggleFijado(reg)}
+              className="table-action-btn"
+              title={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
+              style={{ color: reg.fijado ? '#34d399' : 'var(--fg-muted)' }}
+            ><Pin size={16} fill={reg.fijado ? 'currentColor' : 'none'} /></button>
+            <button
+              onClick={() => handleWhatsApp(reg)}
+              className="table-action-btn"
+              title={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
+              style={{ color: reg.telefono ? '#25D366' : 'var(--fg-muted)' }}
+            ><WhatsAppIcon size={16} /></button>
+            {canSeeBitacora && (
+              <button
+                onClick={() => setBitacoraTarget(reg)}
+                className={`table-action-btn ${isVencidoOIngresoHoy ? 'btn-alert-active' : ''}`}
+                title="Recordatorio & Seguimiento"
+                style={{ color: isVencidoOIngresoHoy ? '#ef4444' : '#60a5fa' }}
+              ><Bell size={16} /></button>
+            )}
+            {canSeeComentarios && reg.comentarios && reg.comentarios.trim() !== '' && (
+              <button
+                onClick={() => setComentariosTarget(reg)}
+                className="table-action-btn"
+                title="Ver comentarios"
+              ><MessageSquare size={16} /></button>
+            )}
                           {canEditRegistros && (
                             <button
                               onClick={() => openEdit(reg)}
@@ -2066,7 +2140,8 @@ export default function RegistrosPage() {
                         </div>
                       </td>
                     </tr>
-  ), [vencidoIds, canSeeComentarios, canSeeRecordatorios, canEditRegistros, canDeleteRegistros, handleToggleFijado, handleWhatsApp, openEdit]);
+    );
+  }, [vencidoOIngresoHoyIds, proximoIds, canSeeComentarios, canSeeRecordatorios, canSeeBitacora, canEditRegistros, canDeleteRegistros, handleToggleFijado, handleWhatsApp, openEdit]);
 
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
 
@@ -2390,6 +2465,45 @@ export default function RegistrosPage() {
                         style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', minHeight: '36px' }}
                       />
                     </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 220px' }}>
+                      <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Etiquetas Lead</label>
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {['Presupuestado'].map(t => {
+                          const isSel = filters.etiquetas.includes(t);
+                          return (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => toggleEtiqueta(t)}
+                              style={{
+                                padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700,
+                                background: isSel ? 'rgba(99,102,241,0.25)' : 'rgba(0,0,0,0.2)',
+                                color: isSel ? '#818cf8' : '#94a3b8',
+                                border: `1px solid ${isSel ? '#6366f1' : 'rgba(255,255,255,0.1)'}`,
+                                cursor: 'pointer', transition: '0.2s'
+                              }}
+                            >
+                              {t}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => setFilter('soloRecontactosHoy', !filters.soloRecontactosHoy)}
+                        style={{
+                          padding: '8px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700,
+                          background: filters.soloRecontactosHoy ? 'rgba(239,68,68,0.25)' : 'rgba(0,0,0,0.2)',
+                          color: filters.soloRecontactosHoy ? '#f87171' : '#94a3b8',
+                          border: `1px solid ${filters.soloRecontactosHoy ? '#ef4444' : 'rgba(255,255,255,0.1)'}`,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s'
+                        }}
+                      >
+                        🔴 Re-contactos Hoy / Vencidos
+                      </button>
+                    </div>
                     <div style={{ display: 'flex', gap: '12px', flex: '1 1 200px' }}>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
                          <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha Desde</label>
@@ -2517,7 +2631,6 @@ export default function RegistrosPage() {
         isAdmin={isAdmin} onClose={() => setModalOpen(false)}
         onSaved={handleSaved} onSavedWithRecordatorio={handleSavedWithRecordatorio}
       />
-      <RecordatorioModal registro={recordatorioTarget} onClose={handleRecordatorioClose} />
       <ComentariosModal registro={comentariosTarget} onClose={handleComentariosClose} />
       <DeleteModal registro={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} />
       <WhatsappModal 
@@ -2541,13 +2654,12 @@ export default function RegistrosPage() {
             } else {
               refresh(true);
             }
-          } else {
-            showToast('Error al guardar teléfono', 'error');
           }
         }} 
         onCancel={() => setWhatsappTarget(null)} 
       />
-
+      <BitacoraModal registro={bitacoraTarget} isOpen={!!bitacoraTarget} onClose={() => setBitacoraTarget(null)} onSavedEtiquetas={handleSaveEtiquetas} />
+      <EtiquetasModal registro={etiquetasTarget} isOpen={!!etiquetasTarget} onClose={() => setEtiquetasTarget(null)} onSave={handleSaveEtiquetas} />
     </div>
   );
 }

@@ -22,6 +22,8 @@ interface FilterState {
   soloAlertasVencidas: boolean;
   acuerdoPrecios: string[];
   revisionMode: boolean;
+  etiquetas: string[];
+  soloRecontactosHoy: boolean;
 }
 
 const initialState: FilterState = {
@@ -39,6 +41,8 @@ const initialState: FilterState = {
   soloAlertasVencidas: false,
   acuerdoPrecios: [],
   revisionMode: false,
+  etiquetas: [],
+  soloRecontactosHoy: false,
 };
 
 interface FilterCtx {
@@ -46,6 +50,7 @@ interface FilterCtx {
   setFilter: (key: keyof FilterState, value: FilterState[keyof FilterState]) => void;
   toggleEstado: (estado: string) => void;
   toggleAcuerdoPrecios: (acuerdo: string) => void;
+  toggleEtiqueta: (etiqueta: string) => void;
   limpiarFiltros: () => void;
   hayFiltros: boolean;
   isCreationModalOpen: boolean;
@@ -89,6 +94,13 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const toggleEtiqueta = useCallback((etiqueta: string) => {
+    setFilters(prev => {
+      const cur = prev.etiquetas;
+      return { ...prev, etiquetas: cur.includes(etiqueta) ? cur.filter(t => t !== etiqueta) : [...cur, etiqueta] };
+    });
+  }, []);
+
   const limpiarFiltros = useCallback(() => {
     setFilters(initialState);
   }, []);
@@ -98,6 +110,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       if (k === 'revisionMode') return false;
       if (k === 'estados') return (v as string[]).length > 0;
       if (k === 'acuerdoPrecios') return (v as string[]).length > 0;
+      if (k === 'etiquetas') return (v as string[]).length > 0;
       if (typeof v === 'boolean') return v === true;
       return v !== '';
     });
@@ -110,7 +123,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <FilterContext.Provider value={{
-      filters, setFilter, toggleEstado, toggleAcuerdoPrecios, limpiarFiltros, hayFiltros,
+      filters, setFilter, toggleEstado, toggleAcuerdoPrecios, toggleEtiqueta, limpiarFiltros, hayFiltros,
       isCreationModalOpen, setIsCreationModalOpen,
       pageSize, setPageSize,
       currentPage, setCurrentPage, totalResults, setTotalResults,

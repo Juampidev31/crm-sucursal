@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS registros (
   sexo TEXT,
   empleador TEXT,
   localidad TEXT,
+  etiquetas TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -89,6 +90,19 @@ CREATE TABLE IF NOT EXISTS recordatorios (
 
 CREATE INDEX IF NOT EXISTS idx_recordatorios_cuil ON recordatorios (cuil);
 CREATE INDEX IF NOT EXISTS idx_recordatorios_mostrado ON recordatorios (mostrado);
+
+-- 5b. BITÁCORA DE NOTAS
+CREATE TABLE IF NOT EXISTS bitacora_notas (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  registro_id UUID REFERENCES registros(id) ON DELETE CASCADE,
+  cuil TEXT DEFAULT '',
+  analista TEXT DEFAULT '',
+  nota TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_bitacora_registro_id ON bitacora_notas (registro_id);
+CREATE INDEX IF NOT EXISTS idx_bitacora_cuil ON bitacora_notas (cuil);
 
 -- 6. CONFIGURACIÓN DE DÍAS HÁBILES
 CREATE TABLE IF NOT EXISTS dias_habiles_config (
