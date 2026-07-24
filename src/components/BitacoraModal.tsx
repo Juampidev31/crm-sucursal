@@ -217,17 +217,32 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
           onClick={e => e.stopPropagation()}
         >
           {/* ── Header ── */}
-          <div className="modal-header" style={{ padding: '22px 28px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{
+            background: 'rgba(14, 14, 18, 0.96)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '16px 16px 0 0',
+            padding: '20px 24px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '16px',
+          }}>
             <div>
-              <h3 className="modal-title" style={{ fontSize: 17, fontWeight: 800, color: '#fff', gap: 8 }}>
-                📋 RECORDATORIO &amp; SEGUIMIENTO
+              <h3 style={{
+                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+              }}>
+                Recordatorio & seguimiento
               </h3>
-              <p style={{ fontSize: 13, color: 'var(--fg-muted)', margin: '4px 0 0 0' }}>
-                Cliente: <strong style={{ color: '#fff' }}>{registro.nombre}</strong>
-                {registro.cuil && <> — CUIL: <span style={{ fontFamily: 'monospace', color: '#fff' }}>{registro.cuil}</span></>}
+              <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+                {registro.nombre}{registro.cuil && <> — CUIL: {registro.cuil}</>}
               </p>
             </div>
-            <button className="btn-icon" onClick={onClose}><X size={18} /></button>
+            <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
           </div>
 
           {/* ── Body ── */}

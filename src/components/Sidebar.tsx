@@ -11,10 +11,12 @@ import {
   AlignJustify, BarChart2,
   DollarSign, Settings, Lock, Plus,
   SlidersHorizontal, ChevronDown, ChevronUp, ChevronLeft, X, Calculator,
-  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, FolderSearch
+  ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, FolderSearch,
+  UserCheck, Bell, Tag
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { setSession } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 import { ExportXlsxModal } from '@/components/ExportXlsxModal';
 import { useSettings } from '@/features/settings/SettingsProvider';
 
@@ -276,14 +278,13 @@ export default function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAdmin, refreshUser } = useAuth();
+  const { isAdmin, user, refreshUser } = useAuth();
   const currentAnalistaPage = searchParams?.get('analista') || 'PDV';
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, filters, limpiarFiltros, toggleEstado, setFilter } = useFilter();
   const { permisosConfig, alertasConfig } = useSettings();
   const { nombres: analistaNombres } = useAnalistas();
   const { registros } = useRegistros(true);
 
-  // Los badges cuentan solo los registros que superan el límite de días configurado en alertas
   const countsByState = useMemo(() => {
     const counts: Record<string, number> = {};
     const nowTime = new Date().getTime();
@@ -317,6 +318,46 @@ export default function Sidebar({
   const [ventasOpen, setVentasOpen] = useState(false);
   const [revisionOpen, setRevisionOpen] = useState(false);
   const [registrosOpen, setRegistrosOpen] = useState(false);
+  const [recordatorios, setRecordatorios] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchRecs = () => {
+      supabase
+        .from('recordatorios')
+        .select('id, nombre, nota, fecha_hora')
+        .eq('mostrado', false)
+        .order('fecha_hora', { ascending: true })
+        .then(({ data }) => {
+          if (data) setRecordatorios(data);
+        });
+    };
+
+    fetchRecs();
+
+    const channel = supabase
+      .channel('recordatorios-sidebar')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'recordatorios' }, fetchRecs)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const etiquetasList = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of registros) {
+      for (const et of (r as any).etiquetas || []) {
+        map.set(et, (map.get(et) || 0) + 1);
+      }
+    }
+    const colors: Record<string, string> = {
+      'Nuevo': '#34d399', 'Contactado': '#60a5fa', 'Interesado': '#f59e0b',
+      'No responde': '#f87171', 'No interesa': '#a78bfa', 'Llamar': '#f472b6',
+    };
+    return Array.from(map.entries()).map(([name, count]) => ({
+      name, count,
+      color: colors[name] || '#94a3b8',
+    })).sort((a, b) => b.count - a.count);
+  }, [registros]);
 
   useEffect(() => {
     if (showAdminModal) {
@@ -363,398 +404,853 @@ export default function Sidebar({
     }
   };
 
+  const [activeHover, setActiveHover] = useState<string | null>(null);
+  const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = (key: string) => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    setActiveHover(key);
+  };
+
+  const handleMouseLeave = () => {
+    hoverTimeout.current = setTimeout(() => {
+      setActiveHover(null);
+    }, 180);
+  };
+
+  const flyoutStyle: React.CSSProperties = {
+    position: 'absolute',
+    left: 74,
+    zIndex: 500,
+    background: 'rgba(14, 14, 18, 0.96)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: 16,
+    padding: '16px',
+    minWidth: 230,
+    boxShadow: '0 20px 50px rgba(0,0,0,0.9), 0 0 30px rgba(16, 185, 129, 0.08)',
+    animation: 'flyoutPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+  };
+
   return (
-    <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''}`}
-      style={{
-        // Sidebar fija (no escala con el zoom del contenido).
-        '--current-zoom': 1,
-        background: 'transparent',
-        borderRight: 'none',
-        boxShadow: 'none',
-        display: 'flex', flexDirection: 'row',
-        alignItems: 'stretch',
-        width: 'var(--sidebar-width)',
-        zIndex: 150,
-        position: 'relative',
-        transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
-      } as React.CSSProperties}
-    >
-      {/* Pestaña flotante para cerrar la sidebar (espejo de la pestaña de abrir) */}
-      {onHide && (!showFilters && !showCalculator) && (
-        <button
-          onClick={onHide}
-          title="Ocultar menú"
-          style={{
-            position: 'absolute', top: '50%', right: 0, zIndex: 300,
-            transform: 'translateY(-50%)',
-            background: 'var(--bg-elev-1)',
-            border: '1px solid rgba(255,255,255,0.1)', borderRight: 'none',
-            borderRadius: '12px 0 0 12px',
-            width: 28, height: 56,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', cursor: 'pointer',
-            boxShadow: '-4px 0 24px rgba(0,0,0,0.5)',
-            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.width = '36px'; e.currentTarget.style.background = 'var(--bg-elev-2)'; }}
-          onMouseLeave={e => { e.currentTarget.style.width = '28px'; e.currentTarget.style.background = 'var(--bg-elev-1)'; }}
-        >
-          <ChevronLeft size={18} strokeWidth={3} />
-        </button>
-      )}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'stretch',
-        width: '100%',
-        height: '100%',
-        transformOrigin: 'top left',
-      }}>
-      {/* Text + Icon Column — tamaño de letra fijo; scrollea si no entra en el alto */}
-      <div className="hide-scrollbar" style={{
-        width: 'var(--sidebar-width)',
-        display: (showFilters || showCalculator) ? 'none' : 'block',
-        flexShrink: 0,
-        borderRight: 'none',
-        height: '100%',
-        overflowY: 'auto',
-        overflowX: 'hidden'
-      }}>
+    <>
+      <style>{`
+        @keyframes flyoutPopIn {
+          0% { opacity: 0; transform: translateX(-12px) scale(0.95); }
+          100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes slidePanelIn {
+          0% { opacity: 0; transform: translateX(-20px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
+      <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''}`}
+        style={{
+          '--current-zoom': 1,
+          '--sidebar-width': showFilters ? '340px' : showCalculator ? '370px' : '68px',
+          background: 'transparent',
+          boxShadow: 'none',
+          display: 'flex', flexDirection: 'row',
+          alignItems: 'stretch',
+          zIndex: 150,
+          position: 'relative',
+          flexShrink: 0,
+          transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
+          height: '100%',
+        } as React.CSSProperties}
+      >
+        {onHide && (!showFilters && !showCalculator) && (
+          <button
+            onClick={onHide}
+            title="Ocultar menú"
+            style={{
+              position: 'absolute', top: '50%', right: 0, zIndex: 300,
+              transform: 'translateY(-50%)',
+              background: 'var(--bg-elev-1)',
+              border: '1px solid rgba(255,255,255,0.1)', borderRight: 'none',
+              borderRadius: '12px 0 0 12px',
+              width: 28, height: 56,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', cursor: 'pointer',
+              boxShadow: '-4px 0 24px rgba(0,0,0,0.5)',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.width = '36px'; e.currentTarget.style.background = 'var(--bg-elev-2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.width = '28px'; e.currentTarget.style.background = 'var(--bg-elev-1)'; }}
+          >
+            <ChevronLeft size={18} strokeWidth={3} />
+          </button>
+        )}
         <div style={{
-          minHeight: '100%',
-          display: 'flex', flexDirection: 'column',
-          padding: '2px 16px 20px',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'stretch',
+          height: '100%',
+          minWidth: 0,
         }}>
+          {/* ── Fixed 68px Vertical Icon Strip ── */}
+          {!showFilters && !showCalculator && (
+            <div
+              style={{
+                width: 68,
+                minWidth: 68,
+                background: 'var(--bg-elev-1)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '8px 0 12px',
+                height: '100%',
+                boxSizing: 'border-box',
+                position: 'relative',
+                zIndex: 10,
+                overflow: 'visible',
+              }}
+            >
+            {/* 0. Nuevo Registro */}
+            {canCreate && (
+              <div
+                onMouseEnter={() => handleMouseEnter('nuevo')}
+                onMouseLeave={handleMouseLeave}
+                style={{ position: 'relative', marginBottom: 12 }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pathname !== '/registros') {
+                      router.push('/registros?create=true');
+                    } else {
+                      setIsCreationModalOpen(true);
+                    }
+                  }}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: '#10b981',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#09090b',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#059669';
+                    e.currentTarget.style.color = '#fff';
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.5)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = '#10b981';
+                    e.currentTarget.style.color = '#09090b';
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.35)';
+                  }}
+                >
+                  <Plus size={26} strokeWidth={2.8} />
+                </button>
+                {activeHover === 'nuevo' && (
+                  <div style={{ ...flyoutStyle, top: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#34d399', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Nuevo Registro
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                      Agregar un nuevo cliente o lead al sistema.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
-
-        {/* Header MENU */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingLeft: 16, paddingRight: 8 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: '#555', letterSpacing: '1px' }}>MENU</div>
-        </div>
-
-        {/* Highlight Action (Like Personal/Business switch) */}
-        {canCreate && (
-          <div style={{ marginBottom: 8 }}>
-            <div style={{
-              background: 'transparent', borderRadius: 16, display: 'flex', alignItems: 'center'
-            }}>
+            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', marginBottom: 12 }} />
+            {/* 1. Registros */}
+            <div
+              onMouseEnter={() => handleMouseEnter('registros')}
+              onMouseLeave={handleMouseLeave}
+              style={{ position: 'relative' }}
+            >
               <button
+                type="button"
                 onClick={() => {
-                  if (pathname !== '/registros') {
-                    router.push('/registros?create=true');
-                  } else {
-                    setIsCreationModalOpen(true);
-                  }
+                  limpiarFiltros();
+                  if (pathname !== '/registros') router.push('/registros');
                 }}
                 style={{
-                  flex: 1, padding: '10px 16px', borderRadius: 12,
-                  background: '#10b981', color: '#000',
-                  border: 'none', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
-                  fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: pathname === '/registros' ? 'rgba(16, 185, 129, 0.18)' : 'transparent',
+                  border: pathname === '/registros' ? '1px solid #10b981' : '1px solid transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: pathname === '/registros' ? '#34d399' : 'rgba(255, 255, 255, 0.65)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.3)';
-                  e.currentTarget.style.background = '#34d399';
+                  if (pathname !== '/registros') {
+                    e.currentTarget.style.color = '#fff';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                  }
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.15)';
-                  e.currentTarget.style.background = '#10b981';
+                  if (pathname !== '/registros') {
+                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+                title=""
+              >
+                <Database size={24} />
+              </button>
+
+              {activeHover === 'registros' && (
+                <div
+                  onMouseEnter={() => { if (hoverTimeout.current) clearTimeout(hoverTimeout.current); }}
+                  onMouseLeave={handleMouseLeave}
+                  style={{ ...flyoutStyle, top: 0, minWidth: 250 }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 900, color: '#34d399', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Registros
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <button
+                      onClick={() => {
+                        limpiarFiltros();
+                        if (pathname !== '/registros') router.push('/registros');
+                      }}
+                      style={{
+                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+                        color: '#fff', fontSize: 13, textAlign: 'left', padding: '8px 12px', borderRadius: 8,
+                        cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8,
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.12)'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                    >
+                      <span>📊</span> Todos los Registros
+                    </button>
+
+                    <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 0' }} />
+                    <div style={{ fontSize: 10, fontWeight: 900, color: '#f472b6', padding: '2px 4px 4px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                      Clientes en Revisión
+                    </div>
+
+                    {REGISTRO_STATES.map(s => {
+                      const count = countsByState[s.value] || 0;
+                      return (
+                        <button
+                          key={s.value}
+                          onClick={() => {
+                            limpiarFiltros();
+                            toggleEstado(s.value);
+                            setFilter('revisionMode', true);
+                            if (pathname !== '/registros') router.push('/registros');
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            background: 'transparent', border: '1px solid transparent', color: 'rgba(255,255,255,0.7)',
+                            fontSize: 12, textAlign: 'left', padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                            e.currentTarget.style.color = '#fff';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.color, boxShadow: `0 0 6px ${s.color}` }} />
+                            <span>{s.label}</span>
+                          </div>
+                          {count > 0 && (
+                            <span style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
+                              {count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+
+                    {isAdmin && (
+                      <>
+                        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 0' }} />
+                        <button
+                          onClick={() => router.push('/duplicados')}
+                          style={{
+                            background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.15)',
+                            color: '#fbbf24', fontSize: 12, textAlign: 'left', padding: '7px 10px', borderRadius: 8,
+                            cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8,
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.15)'; e.currentTarget.style.borderColor = 'rgba(251,191,36,0.3)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(251,191,36,0.06)'; e.currentTarget.style.borderColor = 'rgba(251,191,36,0.15)'; }}
+                        >
+                          <span>📁</span> Duplicados y Cartera
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+
+            {/* 2. Reportes */}
+            <div
+              onMouseEnter={() => handleMouseEnter('reportes')}
+              onMouseLeave={handleMouseLeave}
+              style={{ position: 'relative' }}
+            >
+              <button
+                type="button"
+                onClick={() => router.push('/analistas?analista=PDV')}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: pathname.includes('/reportes') || pathname.includes('/analistas') ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
+                  border: pathname.includes('/reportes') || pathname.includes('/analistas') ? '1px solid #3b82f6' : '1px solid transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: pathname.includes('/reportes') || pathname.includes('/analistas') ? '#3b82f6' : 'rgba(255, 255, 255, 0.65)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  if (!pathname.includes('/reportes')) {
+                    e.currentTarget.style.color = '#fff';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!pathname.includes('/reportes')) {
+                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                    e.currentTarget.style.background = 'transparent';
+                  }
                 }}
               >
-                <Plus size={18} strokeWidth={3} />
-                Nuevo Registro
+                <BarChart2 size={24} />
+              </button>
+
+              {activeHover === 'reportes' && (
+                <div
+                  onMouseEnter={() => { if (hoverTimeout.current) clearTimeout(hoverTimeout.current); }}
+                  onMouseLeave={handleMouseLeave}
+                  style={{ ...flyoutStyle, top: 0 }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#60a5fa', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Reportes
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <button
+                      onClick={() => router.push('/analistas?analista=PDV')}
+                      style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 13, textAlign: 'left', padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <TrendingUp size={14} style={{ color: '#60a5fa' }} /> Reporte PDV
+                    </button>
+                    {analistaNombres.map(nombre => (
+                      <button
+                        key={nombre}
+                        onClick={() => router.push(`/analistas?analista=${encodeURIComponent(nombre)}`)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', fontSize: 12.5, textAlign: 'left', padding: '5px 8px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
+                      >
+                        <UserCheck size={14} style={{ color: 'rgba(255,255,255,0.4)' }} /> {nombre}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => router.push('/reportes/cobranzas')}
+                      style={{ background: 'transparent', border: 'none', color: '#f59e0b', fontSize: 12.5, textAlign: 'left', padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.1)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <DollarSign size={14} style={{ color: '#f59e0b' }} /> Cobranzas
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+
+            {/* 3. Filtros avanzados */}
+            <div
+              onMouseEnter={() => handleMouseEnter('filtros')}
+              onMouseLeave={handleMouseLeave}
+              style={{ position: 'relative' }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveHover(null);
+                  setShowFilters(!showFilters);
+                  setShowCalculator(false);
+                }}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: showFilters ? 'rgba(168, 85, 247, 0.22)' : 'transparent',
+                  border: showFilters ? '1.5px solid #a855f7' : '1px solid transparent',
+                  boxShadow: showFilters ? '0 0 16px rgba(168, 85, 247, 0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: showFilters ? '#c084fc' : 'rgba(255, 255, 255, 0.65)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  if (!showFilters) {
+                    e.currentTarget.style.color = '#c084fc';
+                    e.currentTarget.style.background = 'rgba(168, 85, 247, 0.12)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!showFilters) {
+                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+                title=""
+              >
+                <SlidersHorizontal size={24} />
+              </button>
+
+              {activeHover === 'filtros' && !showFilters && (
+                <div style={{ ...flyoutStyle, top: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#c084fc', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Filtros avanzados
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
+                    Abrir el panel completo para filtrar por Analista, Estado o Montos.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+
+            {/* 4. Recordatorios & Etiquetas */}
+            <div
+              onMouseEnter={() => handleMouseEnter('recordatorios')}
+              onMouseLeave={handleMouseLeave}
+              style={{ position: 'relative' }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (pathname !== '/registros') router.push('/registros');
+                }}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'transparent',
+                  border: '1px solid transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'rgba(255, 255, 255, 0.65)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = '#f59e0b';
+                  e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <Bell size={20} />
+              </button>
+
+              {activeHover === 'recordatorios' && (
+                <div style={{ ...flyoutStyle, bottom: 0, minWidth: 280 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Bell size={14} /> Recordatorios
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {recordatorios.length === 0 ? (
+                      <span style={{ fontStyle: 'italic', color: '#666' }}>Sin recordatorios pendientes</span>
+                    ) : (
+                      recordatorios.slice(0, 5).map(rec => (
+                        <div key={rec.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <Bell size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ color: '#fff', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nombre}</div>
+                            {rec.nota && <div style={{ color: '#888', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nota}</div>}
+                          </div>
+                          <div style={{ fontSize: 10, color: '#888', whiteSpace: 'nowrap' }}>{rec.fecha_hora ? new Date(rec.fecha_hora).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) : ''}</div>
+                        </div>
+                      ))
+                    )}
+                    {recordatorios.length > 5 && (
+                      <div style={{ fontSize: 11, color: '#888', textAlign: 'center', marginTop: 2 }}>+{recordatorios.length - 5} más</div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#818cf8', margin: '14px 0 8px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Tag size={14} /> Etiquetas
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {etiquetasList.length === 0 ? (
+                      <span style={{ fontStyle: 'italic', color: '#666', fontSize: 12 }}>Sin etiquetas</span>
+                    ) : (
+                      etiquetasList.map(et => (
+                        <span key={et.name} style={{
+                          fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                          background: et.color + '20', border: '1px solid ' + et.color + '40',
+                          color: et.color, letterSpacing: '0.3px'
+                        }}>
+                          {et.name} ({et.count})
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+
+            {/* 5. Mostrar */}
+            <div
+              onMouseEnter={() => handleMouseEnter('mostrar')}
+              onMouseLeave={handleMouseLeave}
+              style={{ position: 'relative' }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  const sizes = [25, 50, 100, 200];
+                  const next = sizes[(sizes.indexOf(pageSize || 25) + 1) % sizes.length];
+                  setPageSize(next);
+                }}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#34d399',
+                  fontWeight: 800,
+                  fontSize: 15,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)';
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                {pageSize || 25}
+              </button>
+
+              {activeHover === 'mostrar' && (
+                <div style={{ ...flyoutStyle, top: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#34d399', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Mostrar Registros
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
+                    Actualmente mostrando <strong>{pageSize || 25}</strong> filas por página. Hacé clic para cambiar a 25, 50, 100 o 200.
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ flex: 1 }} />
+
+            {/* 6. Calculadora (Solo Admin) */}
+            {isAdmin && (
+              <div
+                onMouseEnter={() => handleMouseEnter('calculadora')}
+                onMouseLeave={handleMouseLeave}
+                style={{ position: 'relative', marginBottom: 8 }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCalculator(!showCalculator);
+                    setShowFilters(false);
+                  }}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: showCalculator ? 'rgba(0, 212, 255, 0.2)' : 'transparent',
+                    border: showCalculator ? '1px solid #00d4ff' : '1px solid transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: showCalculator ? '#00d4ff' : 'rgba(255, 255, 255, 0.65)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={e => {
+                    if (!showCalculator) {
+                      e.currentTarget.style.color = '#fff';
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!showCalculator) {
+                      e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  <Calculator size={24} />
+                </button>
+
+                {activeHover === 'calculadora' && !showCalculator && (
+                  <div style={{ ...flyoutStyle, bottom: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#00d4ff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Calculadora
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
+                      Simulador de sueldo e incentivos de ventas y cobranzas.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 7. Descargar xlsx (Solo Admin) */}
+            {isAdmin && (
+              <div
+                onMouseEnter={() => handleMouseEnter('xlsx')}
+                onMouseLeave={handleMouseLeave}
+                style={{ position: 'relative', marginBottom: 8 }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowXlsxModal(true)}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: 'transparent',
+                    border: '1px solid transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'rgba(255, 255, 255, 0.65)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.color = '#10b981';
+                    e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <FileSpreadsheet size={24} />
+                </button>
+
+                {activeHover === 'xlsx' && (
+                  <div style={{ ...flyoutStyle, bottom: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#10b981', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Descargar XLSX
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
+                      Exportar reporte en planilla Excel.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 8. Ajustes */}
+            <div
+              onMouseEnter={() => handleMouseEnter('ajustes')}
+              onMouseLeave={handleMouseLeave}
+              style={{ position: 'relative', marginBottom: 8 }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  if (isAdmin) router.push('/ajustes');
+                  else setShowAdminModal(true);
+                }}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: pathname.startsWith('/ajustes') ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  border: '1px solid transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'rgba(255, 255, 255, 0.65)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)')}
+              >
+                {isAdmin ? <Settings size={24} /> : <Lock size={24} />}
+              </button>
+
+              {activeHover === 'ajustes' && (
+                <div style={{ ...flyoutStyle, bottom: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {isAdmin ? 'Ajustes' : 'ACCESO'}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
+                    {isAdmin ? 'Configuración general del sistema.' : 'Ingresar clave.'}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 9. Zoom controls */}
+            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+              <button
+                onClick={onZoomIn}
+                title="Acercar (Ctrl++)"
+                style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+              >
+                <ZoomIn size={14} />
+              </button>
+              <div
+                onClick={onReset}
+                title="Restablecer zoom (Ctrl+0)"
+                style={{
+                  width: 30, height: 20,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+                  fontSize: 9, fontWeight: 700, transition: 'all 0.2s',
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
+              >
+                {zoom ? Math.round(zoom * 100) : 100}%
+              </div>
+              <button
+                onClick={onZoomOut}
+                title="Alejar (Ctrl+-)"
+                style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+              >
+                <ZoomOut size={14} />
               </button>
             </div>
-          </div>
+            </div>
+          )}
+
+          {/* Expanded Filters Panel */}
+          {showFilters && (
+            <div style={{
+              flex: 1,
+              display: 'flex', flexDirection: 'column',
+              background: 'var(--bg-elev-1)',
+              borderLeft: '1px solid rgba(255,255,255,0.05)',
+              overflow: 'hidden',
+              animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
+            }}>
+              <div style={{
+                padding: '18px 20px 14px',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              }}>
+                <span style={{ fontSize: '20px', fontWeight: 600, color: '#ffffff' }}>Filtros Avanzados</span>
+                <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px' }}>
+                <FiltersContent />
+              </div>
+            </div>
+          )}
+
+          {/* Incentive Calculator Panel */}
+          {showCalculator && isAdmin && (
+            <div style={{
+              flex: 1,
+              display: 'flex', flexDirection: 'column',
+              background: 'var(--bg-elev-1)',
+              borderLeft: '1px solid rgba(255,255,255,0.05)',
+              overflow: 'hidden',
+              animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
+            }}>
+              <div style={{
+                padding: '18px 20px 14px',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              }}>
+                <span style={{ fontSize: '17px', fontWeight: 600, color: '#ffffff' }}>Calculadora Sucursal B</span>
+                <button onClick={() => setShowCalculator(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px' }}>
+                <CalculadoraContent />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {showAdminModal && (
+          <AdminLoginModal
+            passwordRef={passwordInputRef}
+            password={adminPassword}
+            error={adminError}
+            onChange={v => { setAdminPassword(v); setAdminError(false); }}
+            onSubmit={handleAdminLogin}
+            onClose={() => setShowAdminModal(false)}
+          />
         )}
 
-        {/* Main Navigation */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <NavItem
-            href="#"
-            icon={Database}
-            iconColor="#10b981"
-            label="Registros"
-            active={pathname === '/registros'}
-            onClick={(e) => { e.preventDefault(); setRegistrosOpen(!registrosOpen); }}
-            rightIcon={registrosOpen ? ChevronUp : ChevronDown}
-          />
-          {registrosOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <NavItem href="/registros" icon={AlignJustify} label="Total" active={pathname === '/registros' && filters.analista === ''} onClick={() => { limpiarFiltros(); }} indent isTreeItem />
-              {analistaNombres.map(nombre => (
-                <NavItem
-                  key={nombre}
-                  href="/registros"
-                  icon={Users}
-                  label={nombre}
-                  active={pathname === '/registros' && filters.analista.toLowerCase() === nombre.toLowerCase() && filters.estados.length === 0}
-                  onClick={() => { limpiarFiltros(); setFilter('analista', nombre); }}
-                  indent
-                  isTreeItem
-                />
-              ))}
-              <NavItem
-                href="#"
-                icon={FolderSearch}
-                iconColor="#f472b6"
-                label="Clientes en revisión" 
-                onClick={(e) => { e.preventDefault(); setRevisionOpen(!revisionOpen); }} 
-                indent 
-                isTreeItem 
-                isLastTreeItem={!revisionOpen}
-                rightIcon={revisionOpen ? ChevronUp : ChevronDown}
-              />
-              {revisionOpen && REGISTRO_STATES.map((s, idx) => (
-                <NavItem 
-                  key={s.value}
-                  href="/registros" 
-                  label={s.label} 
-                  isMessage
-                  avatarColor={s.color}
-                  badge={countsByState[s.value] > 0 ? countsByState[s.value] : undefined} 
-                  badgeColor="rgba(255,255,255,0.1)" 
-                  active={pathname === '/registros' && filters.revisionMode && filters.estados.includes(s.value)}
-                  onClick={() => { limpiarFiltros(); toggleEstado(s.value); setFilter('revisionMode', true); }}
-                  indent
-                  isDoubleTreeItem 
-                  isLastTreeItem={idx === REGISTRO_STATES.length - 1 && !(pathname === '/registros' && filters.estados.length === 0)} 
-                />
-              ))}
-            </div>
-          )}
-
-
-
-        </div>
-
-        {/* Reports Submenu */}
-        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <NavItem
-            href="#"
-            icon={BarChart2}
-            iconColor="#3b82f6"
-            label="Reportes"
-            active={pathname.includes('/reportes') || pathname.includes('/analistas')}
-            onClick={(e) => { e.preventDefault(); setReportesOpen(!reportesOpen); }}
-            rightIcon={reportesOpen ? ChevronUp : ChevronDown}
-            badge={reportesOpen ? '' : '3'}
-            badgeColor="#484B52"
-          />
-          {reportesOpen && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <NavItem 
-                href="/analistas?analista=PDV" 
-                icon={TrendingUp} 
-                iconColor="#8b5cf6"
-                label="Ventas" 
-                active={pathname === '/analistas'} 
-                indent 
-                isTreeItem 
-                onClick={(e) => { e.preventDefault(); setVentasOpen(!ventasOpen); }}
-                rightIcon={ventasOpen ? ChevronUp : ChevronDown}
-              />
-              {ventasOpen && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                  <NavItem href="/analistas?analista=PDV" icon={TrendingUp} label="PDV" active={pathname === '/analistas' && currentAnalistaPage === 'PDV'} indent isDoubleTreeItem />
-                  {analistaNombres.map((nombre, idx) => (
-                    <NavItem
-                      key={nombre}
-                      href={`/analistas?analista=${encodeURIComponent(nombre)}`}
-                      icon={TrendingUp}
-                      label={nombre}
-                      active={pathname === '/analistas' && currentAnalistaPage === nombre}
-                      indent
-                      isDoubleTreeItem
-                      isLastTreeItem={idx === analistaNombres.length - 1}
-                    />
-                  ))}
-                </div>
-              )}
-              <NavItem href="/reportes/cobranzas" icon={DollarSign} iconColor="#f59e0b" label="Cobranzas" active={pathname === '/reportes/cobranzas'} indent isTreeItem isLastTreeItem />
-            </div>
-          )}
-        </div>
-
-        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {pathname === '/registros' && filters.estados.length === 0 && (
-            <NavItem 
-              href="#" 
-              icon={SlidersHorizontal} 
-              iconColor="#a855f7"
-              label="Filtros Avanzados" 
-              active={showFilters} 
-              onClick={(e) => { e.preventDefault(); setShowFilters(!showFilters); setShowCalculator(false); }} 
-            />
-          )}
-
-          {isRegistros && (
-            <div style={{ position: 'relative' }} ref={pageSizeSelectorRef}>
-              <NavItem 
-                href="#" 
-                icon={AlignJustify} 
-                iconColor="#06b6d4"
-                label={`Mostrar: ${pageSize} reg.`} 
-                onClick={(e) => { e.preventDefault(); setShowPageSizeSelector(!showPageSizeSelector); }} 
-                rightIcon={showPageSizeSelector ? ChevronUp : ChevronDown}
-              />
-              {showPageSizeSelector && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: '16px',
-                  right: '16px',
-                  background: 'var(--bg-elev-2)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '12px',
-                  padding: '8px',
-                  zIndex: 200,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.8)',
-                  animation: 'fadeIn 0.2s ease-out'
-                }}>
-                  {[25, 50, 100, 200].map(size => (
-                    <div
-                      key={size}
-                      onClick={() => { setPageSize(size); setShowPageSizeSelector(false); }}
-                      style={{
-                        padding: '10px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: pageSize === size ? 800 : 500,
-                        color: pageSize === size ? '#86efac' : '#fff',
-                        background: pageSize === size ? 'rgba(134,239,172,0.1)' : 'transparent',
-                        transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={e => { if (pageSize !== size) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                      onMouseLeave={e => { if (pageSize !== size) e.currentTarget.style.background = 'transparent' }}
-                    >
-                      {size} registros
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div style={{ flex: 1, minHeight: 12 }} />
-
-        <div style={{ marginTop: 2, display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 8 }}>
-          {isAdmin ? (
-            <>
-              <NavItem href="#" icon={Calculator} label="Calculadora" active={showCalculator} onClick={(e) => { e.preventDefault(); setShowCalculator(!showCalculator); setShowFilters(false); }} />
-              <NavItem href="#" icon={FileSpreadsheet} iconColor="#10b981" label="Descargar XLSX" onClick={(e) => { e.preventDefault(); setShowXlsxModal(true); }} />
-              <NavItem href="/ajustes" icon={Settings} label="Ajustes" active={pathname.startsWith('/ajustes')} />
-            </>
-          ) : (
-            <div style={{ opacity: 0.5 }}>
-              <NavItem 
-                href="#" 
-                icon={Lock} 
-                label="Acceso Admin" 
-                onClick={(e) => { e.preventDefault(); setShowAdminModal(true); }} 
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Zoom Controls */}
-        <div style={{
-          padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginTop: 'auto', background: 'rgba(255,255,255,0.02)', borderRadius: 16,
-        }}>
-          <button onClick={onZoomOut} style={{ background: 'transparent', border: 'none', color: '#777', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} title="Reducir resolución">
-            <ZoomOut size={16} />
-          </button>
-          <span style={{ color: '#aaa', fontSize: 11, fontWeight: 700, letterSpacing: '1px', userSelect: 'none', cursor: 'pointer' }} onClick={onReset} title="Restablecer">
-            {Math.round((zoom || 1) * 100)}%
-          </span>
-          <button onClick={onZoomIn} style={{ background: 'transparent', border: 'none', color: '#777', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'} title="Aumentar resolución">
-            <ZoomIn size={16} />
-          </button>
-        </div>
-        </div>
-      </div>
-
-      {/* Expanded Filters Panel */}
-      {showFilters && (
-        <div style={{
-          flex: 1,
-          display: 'flex', flexDirection: 'column',
-          background: 'var(--bg-elev-1)',
-          borderLeft: '1px solid rgba(255,255,255,0.05)',
-          borderTopRightRadius: '24px',
-          borderBottomRightRadius: '24px',
-          overflow: 'hidden',
-          animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
-        }}>
-          <div style={{
-            padding: '18px 20px 14px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-          }}>
-            <span style={{ display: 'inline-block', fontSize: '20px', fontWeight: 600, color: '#ffffff', paddingBottom: '7px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 8px rgba(255,255,255,0.18)' }}>Filtros Avanzados</span>
-            <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px' }}>
-            <FiltersContent />
-          </div>
-        </div>
-      )}
-
-      {/* Incentive Calculator Panel */}
-      {showCalculator && isAdmin && (
-        <div style={{
-          flex: 1,
-          display: 'flex', flexDirection: 'column',
-          background: 'var(--bg-elev-1)',
-          borderLeft: '1px solid rgba(255,255,255,0.05)',
-          borderTopRightRadius: '24px',
-          borderBottomRightRadius: '24px',
-          overflow: 'hidden',
-          animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
-        }}>
-          <div style={{
-            padding: '18px 20px 14px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-          }}>
-            <span style={{ fontSize: '17px', fontWeight: 600, color: '#ffffff' }}>Calculadora Sucursal B</span>
-            <button onClick={() => setShowCalculator(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px 20px' }}>
-            <CalculadoraContent />
-          </div>
-        </div>
-      )}
-      </div>
-
-      {showAdminModal && (
-        <AdminLoginModal
-          passwordRef={passwordInputRef}
-          password={adminPassword}
-          error={adminError}
-          onChange={v => { setAdminPassword(v); setAdminError(false); }}
-          onSubmit={handleAdminLogin}
-          onClose={() => setShowAdminModal(false)}
-        />
-      )}
-
-      <ExportXlsxModal open={showXlsxModal} onClose={() => setShowXlsxModal(false)} />
-    </aside>
+        <ExportXlsxModal open={showXlsxModal} onClose={() => setShowXlsxModal(false)} />
+      </aside>
+    </>
   );
 }
 
@@ -846,7 +1342,8 @@ const FiltersContent = () => {
     background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
     color: active ? '#10b981' : '#8f929d',
     border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
-    transition: 'all 0.2s', whiteSpace: 'nowrap', textAlign: 'center'
+    transition: 'all 0.2s', textAlign: 'center', display: 'block', width: '100%', boxSizing: 'border-box',
+    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   } as React.CSSProperties);
 
   const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
@@ -887,9 +1384,10 @@ const FiltersContent = () => {
               background: filters.esRe === 'si' ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.02)',
               color: filters.esRe === 'si' ? '#a78bfa' : '#8f929d',
               border: `1px solid ${filters.esRe === 'si' ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
-              transition: 'all 0.2s', whiteSpace: 'nowrap', textAlign: 'center',
+              transition: 'all 0.2s', textAlign: 'center', display: 'block', width: '100%', boxSizing: 'border-box',
+              overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
             }}
-          >RE (Resumen ejecutivo)</span>
+          >RE</span>
         </div>
       </div>
 
@@ -905,24 +1403,24 @@ const FiltersContent = () => {
       <div>
         <label style={secLabel}>SCORE MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
-          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', textAlign: 'center' }} />
+          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', textAlign: 'center' }} />
         </div>
       </div>
 
       <div>
         <label style={secLabel}>MONTO MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
-          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }} />
+          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', textAlign: 'center' }} />
+          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', textAlign: 'center' }} />
         </div>
       </div>
 
       <div>
         <label style={secLabel}>PERÍODO</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
-          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, height: 42, padding: '0 10px', color: '#eaeaea', outline: 'none', colorScheme: 'dark' }} />
+          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', colorScheme: 'dark', textAlign: 'center' }} />
+          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', colorScheme: 'dark', textAlign: 'center' }} />
         </div>
       </div>
 
@@ -961,7 +1459,6 @@ const CalculadoraContent = () => {
     const pct = parseFloat(val);
     if (isNaN(pct) || pct < 80) return 0;
     
-    // Valores para SUCURSAL B
     const values: Record<string, { c1: number; c2: number; c3: number }> = {
       capital: { c1: 62055, c2: 93703, c3: 141492 },
       operacion: { c1: 42836, c2: 64682, c3: 97671 },
@@ -1058,5 +1555,3 @@ const CalculadoraContent = () => {
     </div>
   );
 };
-
-

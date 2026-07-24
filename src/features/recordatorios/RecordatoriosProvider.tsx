@@ -53,21 +53,11 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
   const shownIds = useRef(new Set<string>());
 
   const fetchCount = useCallback(async () => {
-    if (!user) return;
     try {
-      let query = supabase
+      const { count, error } = await supabase
         .from('recordatorios')
         .select('id', { count: 'exact', head: true })
         .eq('mostrado', false);
-      
-      const selectedAnalista = filterCtx?.filters.analista;
-      if (selectedAnalista) {
-        query = query.eq('analista', selectedAnalista);
-      } else if (user.username !== 'admin') {
-        query = query.eq('analista', user.username);
-      }
-
-      const { count, error } = await query;
       if (error) {
         if (error.message?.includes('fetch')) {
           console.warn('[RecordatoriosProvider] Error de red en fetchCount:', error.message);
@@ -84,24 +74,14 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
   }, [reportError, user, filterCtx?.filters.analista]);
 
   const checkDueReminders = useCallback(async () => {
-    if (!user) return;
     try {
       const now = new Date().toISOString();
-      let query = supabase
+      const { data, error } = await supabase
         .from('recordatorios')
         .select('id, registro_id, nombre, cuil, nota, fecha_hora, analista, estado')
         .eq('mostrado', false)
         .lte('fecha_hora', now)
         .order('fecha_hora', { ascending: true });
-
-      const selectedAnalista = filterCtx?.filters.analista;
-      if (selectedAnalista) {
-        query = query.eq('analista', selectedAnalista);
-      } else if (user.username !== 'admin') {
-        query = query.eq('analista', user.username);
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         if (error.message?.includes('fetch')) {
@@ -171,15 +151,6 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
     force_show_popup: (payload) => {
       const rec = payload.recordatorio as ReminderAlertData;
       if (!rec) return;
-
-      // Solo mostramos si es para nosotros
-      const selectedAnalista = filterCtx?.filters?.analista;
-      if (selectedAnalista) {
-        if (rec.analista !== selectedAnalista) return;
-      } else if (user?.username && user.username !== 'admin') {
-        if (rec.analista !== user.username) return;
-      }
-
       setReminderAlert(rec);
     },
     bulk_refresh: () => { fetchCount(); },

@@ -808,20 +808,33 @@ const RegistroModal = memo(function RegistroModal({
           display: 'flex',
           flexDirection: 'column'
         }}>
-          <div className="modal-header" style={{
-            background: 'rgba(0,0,0,0.2)',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
-            padding: '24px 32px'
+          <div style={{
+            background: 'rgba(14, 14, 18, 0.96)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '16px 16px 0 0',
+            padding: '20px 24px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '16px',
           }}>
-            <h3 className="modal-title" style={{
-              fontSize: '20px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', margin: 0,
-              background: 'linear-gradient(90deg, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              display: 'flex', alignItems: 'center', gap: '10px'
-            }}>
-              {editingId ? <Edit2 size={20} strokeWidth={2.5} style={{ color: '#34d399' }} /> : <Plus size={20} strokeWidth={2.5} style={{ color: '#34d399' }} />}
-              {editingId ? 'EDITAR' : 'NUEVO'} REGISTRO
-            </h3>
-            <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px' }}><X size={18} /></button>
+            <div>
+              <h3 style={{
+                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+              }}>
+                {editingId ? <Edit2 size={16} strokeWidth={2.5} style={{ color: '#34d399' }} /> : <Plus size={16} strokeWidth={2.5} style={{ color: '#34d399' }} />}
+                {editingId ? 'Editar' : 'Nuevo'} registro
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+                {editingId ? 'Modificá los datos del registro seleccionado' : 'Completá los campos para crear un nuevo registro'}
+              </p>
+            </div>
+            <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
           </div>
           <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '20px', marginBottom: '12px', alignItems: 'start' }}>
@@ -1194,12 +1207,35 @@ const RegistroModal = memo(function RegistroModal({
         <ModalPortal>
         <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
           <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title" style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '0.5px', color: dupBlocked ? 'var(--rojo)' : '#f59e0b' }}>
-                {dupBlocked ? 'REGISTRO DUPLICADO' : 'REGISTRO EXISTENTE'}
+        <div style={{
+            background: 'rgba(14, 14, 18, 0.96)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '16px 16px 0 0',
+            padding: '20px 24px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '16px',
+          }}>
+            <div>
+              <h3 style={{
+                fontSize: '13px', fontWeight: 800, margin: '0 0 6px 0',
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+                color: dupBlocked ? 'var(--rojo)' : '#f59e0b',
+              }}>
+                <AlertCircle size={16} strokeWidth={2.5} />
+                {dupBlocked ? 'Registro duplicado' : 'Registro existente'}
               </h3>
-              {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: 'var(--fg-muted)' }}><X size={18} /></button>}
+              <p style={{ fontSize: '12px', color: dupBlocked ? '#fca5a5' : 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+                {dupBlocked ? 'Ya existe un registro activo para este cliente' : 'Ya existe un registro con este CUIL o nombre'}
+              </p>
             </div>
+            {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>}
+          </div>
             <div className="modal-body" style={{ padding: '20px 28px' }}>
               <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <AlertCircle size={20} style={{ color: dupBlocked ? 'var(--rojo)' : '#f59e0b', flexShrink: 0, marginTop: 2 }} />
@@ -1279,13 +1315,34 @@ const RecordatorioModal = memo(function RecordatorioModal({
   return (
     <div className="modal-overlay" onClick={() => onClose(false)}>
       <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">
-            <Bell size={18} style={{ color: 'var(--fg-muted)' }} />
-            Nuevo Recordatorio
-          </h3>
-          <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
-        </div>
+        <div style={{
+            background: 'rgba(14, 14, 18, 0.96)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '16px 16px 0 0',
+            padding: '20px 24px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '16px',
+          }}>
+            <div>
+              <h3 style={{
+                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+              }}>
+                <Bell size={16} strokeWidth={2.5} style={{ color: '#f59e0b' }} />
+                Recordatorio & seguimiento
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+                Agendá un recordatorio para hacer seguimiento de este cliente
+              </p>
+            </div>
+            <button className="btn-icon" onClick={() => onClose(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+          </div>
         <div className="modal-body">
           <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: '20px' }}>{registro.nombre}</p>
           <div className="form-row">
@@ -1344,13 +1401,34 @@ const ComentariosModal = memo(function ComentariosModal({
   return (
     <div className="modal-overlay" onClick={() => onClose(false)}>
       <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">
-            <MessageSquare size={18} style={{ color: 'var(--fg-muted)' }} />
-            Comentarios
-          </h3>
-          <button className="btn-icon" onClick={() => onClose(false)}><X size={18} /></button>
-        </div>
+        <div style={{
+            background: 'rgba(14, 14, 18, 0.96)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '16px 16px 0 0',
+            padding: '20px 24px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '16px',
+          }}>
+            <div>
+              <h3 style={{
+                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+              }}>
+                <MessageSquare size={16} strokeWidth={2.5} style={{ color: '#818cf8' }} />
+                Comentarios
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+                {registro?.nombre}
+              </p>
+            </div>
+            <button className="btn-icon" onClick={() => onClose(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+          </div>
         <div className="modal-body">
           <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: '16px', fontWeight: 600 }}>{registro.nombre}</p>
           <Field label="Comentarios">
@@ -1407,13 +1485,34 @@ const WhatsappModal = memo(function WhatsappModal({
     <ModalPortal>
       <div className="modal-overlay" onClick={onCancel} style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
         <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '400px', background: 'var(--bg-elev-1)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-          <div className="modal-header" style={{ padding: '24px 28px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
-            <h3 className="modal-title" style={{ color: '#25D366', display: 'flex', alignItems: 'center', gap: '8px', margin: 0, fontSize: '18px', fontWeight: 800 }}>
-              <WhatsAppIcon size={20} />
-              WHATSAPP
-            </h3>
-            <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px' }}><X size={16} /></button>
-          </div>
+          <div style={{
+              background: 'rgba(14, 14, 18, 0.96)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '16px 16px 0 0',
+              padding: '20px 24px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: '16px',
+            }}>
+              <div>
+                <h3 style={{
+                  fontSize: '13px', fontWeight: 800, color: '#25D366', margin: '0 0 6px 0',
+                  textTransform: 'uppercase', letterSpacing: '0.5px',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                }}>
+                  <WhatsAppIcon size={16} />
+                  WhatsApp
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+                  Enviar mensaje o guardar número de contacto
+                </p>
+              </div>
+              <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={16} /></button>
+            </div>
           <div className="modal-body" style={{ padding: '32px 28px' }}>
             <input
               autoFocus
@@ -1467,13 +1566,34 @@ const DeleteModal = memo(function DeleteModal({
     <ModalPortal>
     <div className="modal-overlay" onClick={onCancel}>
       <motion.div drag dragMomentum={false} className="modal-content modal-content--danger" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title" style={{ color: 'var(--rojo)' }}>
-            <AlertTriangle size={18} />
-            ELIMINAR REGISTRO
-          </h3>
-          <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)' }}><X size={18} /></button>
-        </div>
+        <div style={{
+            background: 'rgba(14, 14, 18, 0.96)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '16px 16px 0 0',
+            padding: '20px 24px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '16px',
+          }}>
+            <div>
+              <h3 style={{
+                fontSize: '13px', fontWeight: 800, color: '#ef4444', margin: '0 0 6px 0',
+                textTransform: 'uppercase', letterSpacing: '0.5px',
+                display: 'flex', alignItems: 'center', gap: '8px',
+              }}>
+                <AlertTriangle size={16} strokeWidth={2.5} />
+                Eliminar registro
+              </h3>
+              <p style={{ fontSize: '12px', color: '#fca5a5', margin: 0, lineHeight: 1.4 }}>
+                Esta acción es permanente y no se puede deshacer
+              </p>
+            </div>
+            <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+          </div>
         <div className="modal-body" style={{ padding: '32px 28px' }}>
           <p style={{ fontSize: '14px', color: 'var(--fg-muted)', lineHeight: 1.8 }}>
             ¿Confirmar eliminación de <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?<br />
@@ -2099,20 +2219,20 @@ export default function RegistrosPage() {
             <button
               onClick={() => handleToggleFijado(reg)}
               className="table-action-btn"
-              title={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
+              data-label={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
               style={{ color: reg.fijado ? '#34d399' : 'var(--fg-muted)' }}
             ><Pin size={16} fill={reg.fijado ? 'currentColor' : 'none'} /></button>
             <button
               onClick={() => handleWhatsApp(reg)}
               className="table-action-btn"
-              title={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
+              data-label={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
               style={{ color: reg.telefono ? '#25D366' : 'var(--fg-muted)' }}
             ><WhatsAppIcon size={16} /></button>
             {canSeeBitacora && (
               <button
                 onClick={() => setBitacoraTarget(reg)}
                 className={`table-action-btn ${isVencidoOIngresoHoy ? 'btn-alert-active' : ''}`}
-                title="Recordatorio & Seguimiento"
+                data-label="Recordatorio & Seguimiento"
                 style={{ color: isVencidoOIngresoHoy ? '#ef4444' : '#60a5fa' }}
               ><Bell size={16} /></button>
             )}
@@ -2120,21 +2240,21 @@ export default function RegistrosPage() {
               <button
                 onClick={() => setComentariosTarget(reg)}
                 className="table-action-btn"
-                title="Ver comentarios"
+                data-label="Ver comentarios"
               ><MessageSquare size={16} /></button>
             )}
                           {canEditRegistros && (
                             <button
                               onClick={() => openEdit(reg)}
                               className="table-action-btn"
-                              title="Editar"
+                              data-label="Editar"
                             ><Edit2 size={16} /></button>
                           )}
                           {canDeleteRegistros && (
                             <button
                               onClick={() => setDeleteTarget(reg)}
                               className="table-action-btn btn-delete"
-                              title="Eliminar"
+                              data-label="Eliminar"
                             ><Trash2 size={16} /></button>
                           )}
                         </div>

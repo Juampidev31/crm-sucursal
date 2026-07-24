@@ -322,17 +322,31 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
         <header style={{
           height: '60px',
           width: '100%',
-          background: 'transparent',
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          background: 'rgba(12,12,12,0.95)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: 'none',
           display: 'flex',
           alignItems: 'center',
           padding: '0 32px',
-          zIndex: 10,
+          zIndex: 50,
           flexShrink: 0,
-          position: 'relative',
-          marginBottom: '24px',
+          position: 'sticky',
+          top: 0,
+          marginBottom: '0px',
           justifyContent: 'space-between'
         }}>
+          {/* Difuminado sutil y ligero hacia abajo */}
+          <div style={{
+            position: 'absolute',
+            top: '60px',
+            left: 0,
+            right: 0,
+            height: '45px',
+            background: 'linear-gradient(180deg, rgba(12,12,12,0.7) 0%, rgba(12,12,12,0.3) 50%, rgba(12,12,12,0) 100%)',
+            pointerEvents: 'none',
+            zIndex: 49
+          }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1 }}>
             {/* Brand or other left content could go here */}
           </div>
@@ -453,6 +467,8 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                 flexDirection: 'column',
                 overflowY: 'auto',
                 paddingTop: isMinimal ? 0 : (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
+                paddingLeft: '8px',
+                paddingRight: '8px',
                 willChange: 'opacity'
               }}
             >

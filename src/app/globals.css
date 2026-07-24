@@ -137,7 +137,8 @@ a {
   width: var(--sidebar-width);
   height: 100%;
   background: #111111;
-  border-right: 1px solid rgba(255,255,255,0.07);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px 0 0 16px;
   display: flex;
   flex-direction: column;
   z-index: 15;
@@ -356,6 +357,25 @@ a {
   opacity: 1;
   visibility: visible;
   transform: translateY(-50%) translateX(0);
+}
+
+/* Tooltip para botones de acción en tabla (abajo, no al costado) */
+.table-action-btn[data-label]::after {
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(0);
+  background: rgba(14, 14, 18, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 10px;
+  padding: 5px 10px;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.table-action-btn[data-label]:hover::after {
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Subtle pulse for active item */
