@@ -2134,10 +2134,28 @@ export default function RegistrosPage() {
                 fontSize: '10px', fontWeight: 700, color: 'var(--rojo)',
                 background: 'rgba(220,53,69,0.08)', padding: '2px 6px',
                 borderRadius: '4px', border: '1px solid rgba(220,53,69,0.2)',
-                display: 'inline-block', width: 'fit-content',
+                display: 'inline-flex', alignItems: 'center', gap: '5px', width: 'fit-content',
                 marginTop: '3px'
               }}>
                 🔴 Re-contacto Hoy / Vencido
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    await supabase.from('recordatorios').update({ mostrado: true }).eq('registro_id', reg.id);
+                    setRecordatorios(prev => prev.filter(r => r.registro_id !== reg.id));
+                  }}
+                  title="Marcar recordatorio como atendido / quitar vencido"
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.2)', border: 'none', color: '#fca5a5',
+                    cursor: 'pointer', padding: '1px 3px', fontSize: '9px', borderRadius: '3px',
+                    display: 'inline-flex', alignItems: 'center', lineHeight: 1
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.5)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
+                >
+                  <X size={10} />
+                </button>
               </span>
             )}
             {isProximo && !isVencidoOIngresoHoy && (
@@ -2145,10 +2163,28 @@ export default function RegistrosPage() {
                 fontSize: '10px', fontWeight: 700, color: '#fbbf24',
                 background: 'rgba(251,191,36,0.08)', padding: '2px 6px',
                 borderRadius: '4px', border: '1px solid rgba(251,191,36,0.2)',
-                display: 'inline-block', width: 'fit-content',
+                display: 'inline-flex', alignItems: 'center', gap: '5px', width: 'fit-content',
                 marginTop: '3px'
               }}>
                 🟡 Re-contacto Próximo
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    await supabase.from('recordatorios').update({ mostrado: true }).eq('registro_id', reg.id);
+                    setRecordatorios(prev => prev.filter(r => r.registro_id !== reg.id));
+                  }}
+                  title="Marcar recordatorio como atendido / quitar"
+                  style={{
+                    background: 'rgba(251, 191, 36, 0.2)', border: 'none', color: '#fcd34d',
+                    cursor: 'pointer', padding: '1px 3px', fontSize: '9px', borderRadius: '3px',
+                    display: 'inline-flex', alignItems: 'center', lineHeight: 1
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251, 191, 36, 0.5)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(251, 191, 36, 0.2)')}
+                >
+                  <X size={10} />
+                </button>
               </span>
             )}
           </div>

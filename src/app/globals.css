@@ -136,8 +136,8 @@ a {
 .main-sidebar {
   width: var(--sidebar-width);
   height: 100%;
-  background: #111111;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  background: transparent;
+  border-right: none;
   border-radius: 16px 0 0 16px;
   display: flex;
   flex-direction: column;

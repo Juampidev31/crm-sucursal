@@ -450,6 +450,8 @@ export default function Sidebar({
           '--current-zoom': 1,
           '--sidebar-width': showFilters ? '340px' : showCalculator ? '370px' : '68px',
           background: 'transparent',
+          border: 'none',
+          borderRight: 'none',
           boxShadow: 'none',
           display: 'flex', flexDirection: 'row',
           alignItems: 'stretch',
@@ -494,13 +496,17 @@ export default function Sidebar({
           {!showFilters && !showCalculator && (
             <div
               style={{
-                width: 68,
-                minWidth: 68,
+                width: '100%',
+                minWidth: '100%',
                 background: 'var(--bg-elev-1)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '16px',
+                margin: 0,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                padding: '8px 0 12px',
+                padding: '12px 0',
                 height: '100%',
                 boxSizing: 'border-box',
                 position: 'relative',
@@ -566,7 +572,7 @@ export default function Sidebar({
               </div>
             )}
 
-            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', marginBottom: 12 }} />
+            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', marginBottom: 12 }} />
             {/* 1. Registros */}
             <div
               onMouseEnter={() => handleMouseEnter('registros')}
@@ -703,7 +709,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
             {/* 2. Reportes */}
             <div
@@ -785,7 +791,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
             {/* 3. Filtros avanzados */}
             <div
@@ -843,7 +849,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
             {/* 4. Recordatorios & Etiquetas */}
             <div
@@ -927,7 +933,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
             {/* 5. Mostrar */}
             <div
@@ -1130,13 +1136,13 @@ export default function Sidebar({
             </div>
 
             {/* 9. Zoom controls */}
-            <div style={{ width: 36, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
               <button
                 onClick={onZoomIn}
                 title="Acercar (Ctrl++)"
                 style={{
-                  width: 30, height: 30, borderRadius: 8,
+                  width: 44, height: 30, borderRadius: 8,
                   background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
@@ -1151,7 +1157,7 @@ export default function Sidebar({
                 onClick={onReset}
                 title="Restablecer zoom (Ctrl+0)"
                 style={{
-                  width: 30, height: 20,
+                  width: 44, height: 20,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
                   fontSize: 9, fontWeight: 700, transition: 'all 0.2s',
@@ -1167,7 +1173,7 @@ export default function Sidebar({
                 onClick={onZoomOut}
                 title="Alejar (Ctrl+-)"
                 style={{
-                  width: 30, height: 30, borderRadius: 8,
+                  width: 44, height: 30, borderRadius: 8,
                   background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
@@ -1186,15 +1192,18 @@ export default function Sidebar({
           {showFilters && (
             <div style={{
               flex: 1,
+              width: '100%',
               display: 'flex', flexDirection: 'column',
               background: 'var(--bg-elev-1)',
-              borderLeft: '1px solid rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '16px',
+              margin: 0,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
               overflow: 'hidden',
               animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
             }}>
               <div style={{
                 padding: '18px 20px 14px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
                 <span style={{ fontSize: '20px', fontWeight: 600, color: '#ffffff' }}>Filtros Avanzados</span>
@@ -1213,15 +1222,18 @@ export default function Sidebar({
           {showCalculator && isAdmin && (
             <div style={{
               flex: 1,
+              width: '100%',
               display: 'flex', flexDirection: 'column',
               background: 'var(--bg-elev-1)',
-              borderLeft: '1px solid rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '16px',
+              margin: 0,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
               overflow: 'hidden',
               animation: 'slideInLeft 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
             }}>
               <div style={{
                 padding: '18px 20px 14px',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
                 <span style={{ fontSize: '17px', fontWeight: 600, color: '#ffffff' }}>Calculadora Sucursal B</span>
@@ -1338,7 +1350,7 @@ const FiltersContent = () => {
   }, [registros]);
 
   const chipStyle = (active: boolean) => ({
-    padding: '6px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+    padding: '6px 10px', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
     background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
     color: active ? '#10b981' : '#8f929d',
     border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
@@ -1346,8 +1358,8 @@ const FiltersContent = () => {
     overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   } as React.CSSProperties);
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
-  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '16.5px' };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '6px', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', fontSize: '16.5px' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '10px', paddingBottom: '4px' }}>
@@ -1484,7 +1496,7 @@ const CalculadoraContent = () => {
   const comisiones = Object.values(results).reduce((s, v) => s + v, 0);
   const totalGeneral = comisiones + SUELDO_FIJO;
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '5px', paddingBottom: '3px', backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.5), rgba(255,255,255,0))', backgroundSize: '50% 1px', backgroundPosition: 'left bottom', backgroundRepeat: 'no-repeat', textShadow: '0 0 6px rgba(255,255,255,0.18)', lineHeight: 1.05 };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '6px', lineHeight: 1.05 };
   const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '16.5px' };
 
   const inputRow = (label: string, key: keyof typeof pacts) => (

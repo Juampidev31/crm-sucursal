@@ -177,12 +177,29 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
     }
   }, [broadcastRef]);
 
-  // Fetch inicial + polling de vencidos cada 60s
+  // Fetch inicial + Supabase Realtime Postgres Changes + polling cada 30s
   useEffect(() => {
     fetchCount();
     checkDueReminders();
-    const interval = setInterval(() => checkDueReminders(), 60_000);
-    return () => clearInterval(interval);
+
+    const channel = supabase
+      .channel('recordatorios_realtime_provider')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'recordatorios' },
+        () => {
+          fetchCount();
+          checkDueReminders();
+        }
+      )
+      .subscribe();
+
+    const interval = setInterval(() => checkDueReminders(), 30_000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [fetchCount, checkDueReminders]);
 
   const value = useMemo<RecordatoriosCtx>(() => ({

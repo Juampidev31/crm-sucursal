@@ -467,8 +467,8 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                 flexDirection: 'column',
                 overflowY: 'auto',
                 paddingTop: isMinimal ? 0 : (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
-                paddingLeft: '8px',
-                paddingRight: '8px',
+                paddingLeft: '12px',
+                paddingRight: '12px',
                 willChange: 'opacity'
               }}
             >
