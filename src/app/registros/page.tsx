@@ -2109,16 +2109,16 @@ export default function RegistrosPage() {
         }}
       >
         {/* Cliente */}
-        <td style={{ padding: '18px 24px', minWidth: 240, textAlign: 'left' }}>
+        <td style={{ padding: '18px 24px', minWidth: 260, textAlign: 'left' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
-              {(reg.etiquetas || []).map(t => (
-                <TagBadge key={t} tag={t} />
-              ))}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              {reg.cuil && <span className="cuil-text" style={{ fontSize: '13.5px', color: '#f8fafc', fontFamily: 'var(--font-mono)', opacity: 1 }}>{formatearCuil(reg.cuil)}</span>}
+              {reg.cuil && (
+                <>
+                  <span style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 400 }}>|</span>
+                  <span className="cuil-text" style={{ fontSize: '13.5px', color: '#94a3b8', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{formatearCuil(reg.cuil)}</span>
+                </>
+              )}
               {reg.es_re && (
                 <span style={{
                   fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
@@ -2127,6 +2127,9 @@ export default function RegistrosPage() {
                   letterSpacing: '0.5px'
                 }}>RE</span>
               )}
+              {(reg.etiquetas || []).map(t => (
+                <TagBadge key={t} tag={t} />
+              ))}
             </div>
 
             {isVencidoOIngresoHoy && (
@@ -2687,7 +2690,7 @@ export default function RegistrosPage() {
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.01)' }}>
-                  {['Cliente / CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
+                  {['Cliente | CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
                     <th key={i} style={{
                       padding: '20px 24px',
                       fontSize: 12, fontWeight: 800,

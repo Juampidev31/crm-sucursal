@@ -319,8 +319,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
           style={{
             maxWidth: 660,
             width: '100%',
-            height: 'calc(100vh - 36px)',
-            maxHeight: 'calc(100vh - 36px)',
+            height: 'auto',
+            maxHeight: '85vh',
             borderRadius: 16,
             background: '#0d0d10',
             border: '1px solid rgba(255, 255, 255, 0.08)',

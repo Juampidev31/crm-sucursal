@@ -25,7 +25,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </head>
-      <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} ${outfit.variable}`} style={{ fontFamily: "'Courier New', Courier, monospace", fontWeight: 700 }}>
+      <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), 'Outfit', system-ui, sans-serif" }}>
         <AuthProvider>
           <AppShell>
             {children}
