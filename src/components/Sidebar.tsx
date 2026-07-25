@@ -467,19 +467,19 @@ export default function Sidebar({
             onClick={onHide}
             title="Ocultar menú"
             style={{
-              position: 'absolute', top: '50%', right: 0, zIndex: 300,
+              position: 'absolute', top: '50%', right: -24, zIndex: 300,
               transform: 'translateY(-50%)',
               background: 'var(--bg-elev-1)',
-              border: '1px solid rgba(255,255,255,0.1)', borderRight: 'none',
-              borderRadius: '12px 0 0 12px',
-              width: 28, height: 56,
+              border: '1px solid rgba(255,255,255,0.1)', borderLeft: 'none',
+              borderRadius: '0 12px 12px 0',
+              width: 24, height: 56,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', cursor: 'pointer',
-              boxShadow: '-4px 0 24px rgba(0,0,0,0.5)',
+              boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.width = '36px'; e.currentTarget.style.background = 'var(--bg-elev-2)'; }}
-            onMouseLeave={e => { e.currentTarget.style.width = '28px'; e.currentTarget.style.background = 'var(--bg-elev-1)'; }}
+            onMouseEnter={e => { e.currentTarget.style.width = '32px'; e.currentTarget.style.right = '-32px'; e.currentTarget.style.background = 'var(--bg-elev-2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.width = '24px'; e.currentTarget.style.right = '-24px'; e.currentTarget.style.background = 'var(--bg-elev-1)'; }}
           >
             <ChevronLeft size={18} strokeWidth={3} />
           </button>
