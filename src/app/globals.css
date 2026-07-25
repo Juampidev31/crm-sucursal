@@ -650,15 +650,12 @@ a {
 }
 
 .modal-content {
-  /* Agrandado 1.12 con `zoom` (reflow real → scroll interno funciona).
-     El max-height se divide por el mismo factor para que entre en pantalla. */
-  zoom: 1.12;
   background: #0c0c0c;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   width: 100%;
-  max-width: 960px;
-  max-height: calc((100vh - 32px) / 1.12);
+  max-width: 860px;
+  max-height: calc(100vh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
@@ -670,6 +667,19 @@ a {
   position: relative;
   margin: auto;
   backdrop-filter: blur(20px);
+}
+
+@media (max-width: 1400px), (max-height: 800px) {
+  .modal-content {
+    max-width: 780px;
+    max-height: calc(100vh - 24px);
+  }
+}
+
+@media (max-width: 850px) {
+  .modal-content {
+    max-width: 95%;
+  }
 }
 
 .modal-content::after {
@@ -689,7 +699,7 @@ a {
 }
 
 .modal-header {
-  padding: 24px 32px;
+  padding: 16px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   justify-content: space-between;
@@ -697,7 +707,7 @@ a {
 }
 
 .modal-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   color: #fff;
   letter-spacing: 0.5px;
@@ -708,13 +718,13 @@ a {
 }
 
 .modal-body {
-  padding: 24px 32px;
+  padding: 16px 24px;
   overflow: visible;
   flex: 1;
 }
 
 .modal-footer {
-  padding: 20px 32px;
+  padding: 14px 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   justify-content: flex-end;
@@ -742,16 +752,48 @@ a {
 .form-textarea {
   width: 100%;
   background: #000000;
-  border: 1px solid transparent;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px 4px 0 0;
-  height: 44px;
-  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  height: 38px;
+  padding: 0 12px;
   color: #e7e5e4;
-  font-size: 15.5px;
+  font-size: 13px;
   outline: none;
   transition: all 0.2s ease;
   font-family: var(--font-family);
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.15);
+}
+
+@media (max-height: 820px) {
+  .modal-header {
+    padding: 8px 16px;
+  }
+  .modal-body {
+    padding: 10px 16px;
+  }
+  .modal-footer {
+    padding: 8px 16px;
+  }
+  .form-group {
+    margin-bottom: 6px !important;
+  }
+  .form-input,
+  .form-select {
+    height: 32px !important;
+    font-size: 12px !important;
+    padding: 0 8px !important;
+  }
+  .form-label {
+    font-size: 11px !important;
+    margin-bottom: 2px !important;
+  }
 }
 
 .form-textarea {

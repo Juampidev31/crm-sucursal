@@ -119,7 +119,7 @@ const ReminderAlertPopup = () => {
           animate={{ scale: 1, opacity: 1 }}
           style={{
             background: 'var(--bg)', border: `1px solid ${isAvisoAdmin ? 'var(--azul)' : 'rgba(255,255,255,0.03)'}`,
-            borderRadius: '20px', padding: '32px', maxWidth: '500px', width: '100%',
+            borderRadius: '20px', padding: '36px', maxWidth: '620px', width: '100%',
             boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
             display: 'flex', flexDirection: 'column', gap: '20px',
             position: 'relative'

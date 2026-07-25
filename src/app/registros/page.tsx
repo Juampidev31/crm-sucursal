@@ -314,14 +314,14 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
 
 // ── Field wrapper ─────────────────────────────────────────────────────────────
 
-const Field = memo(function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+const Field = memo(function Field({ label, error, children, transparentLabel }: { label: string; error?: string; children: React.ReactNode; transparentLabel?: boolean }) {
   const isRequired = label.includes('*');
   const cleanLabel = label.replace('*', '').trim();
 
   return (
     <div className="form-group">
-      <label className="form-label">
-        {cleanLabel}
+      <label className="form-label" style={transparentLabel ? { color: 'transparent', userSelect: 'none' } : undefined}>
+        {cleanLabel || '—'}
         {isRequired && <span style={{ color: 'var(--rojo)', marginLeft: 4 }}>*</span>}
         {error && <span style={{ color: 'var(--rojo)', fontWeight: 400, marginLeft: 6 }}>— {error}</span>}
       </label>
@@ -356,8 +356,19 @@ const PremiumSelect = ({
   style?: React.CSSProperties;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const [search, setSearch] = useState("");
   const ref = React.useRef<HTMLDivElement>(null);
+
+  const toggleOpen = () => {
+    if (disabled) return;
+    if (!isOpen && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUpward(spaceBelow < 250);
+    }
+    setIsOpen(prev => !prev);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -393,23 +404,23 @@ const PremiumSelect = ({
     <div
       onClick={(e) => { e.stopPropagation(); onAddCustom(); setIsOpen(false); }}
       style={{
-        padding: '10px',
+        padding: '10px 12px',
         fontSize: '12px',
-        color: '#86efac',
+        color: '#34d399',
         fontWeight: 800,
         cursor: 'pointer',
-        borderTop: '1px solid var(--border)',
-        background: 'rgba(134, 239, 172, 0.02)',
-        marginTop: '4px',
+        borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+        background: '#141418',
         display: 'flex',
         alignItems: 'center',
         gap: 6,
         position: 'sticky',
         bottom: 0,
-        zIndex: 10
+        zIndex: 20,
+        boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.6)'
       }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.08)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'rgba(134, 239, 172, 0.02)'}
+      onMouseEnter={e => e.currentTarget.style.background = '#1e1e24'}
+      onMouseLeave={e => e.currentTarget.style.background = '#141418'}
     >
       <Plus size={14} /> {search ? `Agregar "${search}"...` : 'Agregar otro...'}
     </div>
@@ -418,12 +429,13 @@ const PremiumSelect = ({
   return (
     <div ref={ref} style={{ position: 'relative', width: '100%' }}>
       <div
+        className="form-select"
         tabIndex={disabled ? -1 : 0}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         onKeyDown={e => { 
           if (!disabled && (e.key === 'Enter' || e.key === ' ')) { 
             e.preventDefault(); 
-            setIsOpen(o => !o); 
+            toggleOpen();
           } 
           if (e.key === 'Escape') {
             e.stopPropagation();
@@ -432,20 +444,21 @@ const PremiumSelect = ({
         }}
         style={{
           width: '100%',
-          minHeight: '40px',
+          height: '38px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 12px',
-          background: disabled ? 'rgba(255,255,255,0.02)' : 'var(--surface2, #000)',
-          border: `1px solid ${isOpen ? '#86efac' : (error ? 'var(--rojo)' : 'var(--border-color)')}`,
+          padding: '0 12px',
+          background: disabled ? 'rgba(255,255,255,0.02)' : '#000000',
+          border: `1px solid ${isOpen ? '#34d399' : (error ? 'var(--rojo)' : 'rgba(255, 255, 255, 0.12)')}`,
           borderRadius: '8px',
           cursor: disabled ? 'not-allowed' : 'pointer',
-          color: disabled ? 'var(--text-muted)' : (value ? 'var(--text, #fff)' : 'var(--gris)'),
+          color: disabled ? 'var(--text-muted)' : (value ? '#e7e5e4' : '#9ca3af'),
           fontSize: '13px',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.2s ease',
           opacity: disabled ? 0.6 : 1,
           outline: 'none',
+          boxSizing: 'border-box',
           ...style
         }}
       >
@@ -464,14 +477,14 @@ const PremiumSelect = ({
       {isOpen && (
         <div style={{
           position: 'absolute',
-          top: 'calc(100% + 6px)',
+          top: 'calc(100% + 4px)',
           left: 0,
           right: 0,
           background: '#0c0c0c',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid rgba(255,255,255,0.14)',
           borderRadius: '10px',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
-          zIndex: 1000,
+          boxShadow: '0 12px 36px rgba(0,0,0,0.95)',
+          zIndex: 9999,
           overflow: 'hidden',
           animation: 'selectFade 0.2s ease-out'
         }}>
@@ -510,7 +523,7 @@ const PremiumSelect = ({
             </div>
           )}
 
-          <div style={{ maxHeight: '220px', overflowY: 'auto', padding: '4px' }}>
+          <div style={{ maxHeight: '170px', overflowY: 'auto', padding: '4px' }}>
             {!search && (
               <div
                 onClick={(e) => { e.stopPropagation(); handleSelect(""); }}
@@ -804,17 +817,16 @@ const RegistroModal = memo(function RegistroModal({
           borderTop: '1px solid rgba(16,185,129,0.3)',
           boxShadow: '0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px rgba(16,185,129,0.05)',
           borderRadius: '16px',
-          overflow: 'hidden',
+          overflow: 'visible',
           display: 'flex',
           flexDirection: 'column'
         }}>
-          <div style={{
+          <div className="modal-header" style={{
             background: 'rgba(14, 14, 18, 0.96)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             border: '1px solid rgba(255, 255, 255, 0.12)',
             borderRadius: '16px 16px 0 0',
-            padding: '20px 24px',
             borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
             display: 'flex',
             justifyContent: 'space-between',
@@ -836,8 +848,8 @@ const RegistroModal = memo(function RegistroModal({
             </div>
             <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
           </div>
-          <div className="modal-body" style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '20px', marginBottom: '12px', alignItems: 'start' }}>
+          <div className="modal-body" style={{ overflow: 'visible', padding: '16px 20px', flex: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px 14px', marginBottom: '12px', alignItems: 'start' }}>
               <Field label="CUIL *" error={errors.cuil}>
                 <input className="form-input" value={formatearCuil(form.cuil || '')} onChange={e => set('cuil', sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
               </Field>
@@ -1133,70 +1145,72 @@ const RegistroModal = memo(function RegistroModal({
                 </Field>
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '20px', marginBottom: '12px', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: '6px', alignItems: 'start' }}>
               <Field label={`Comentarios${form.estado === 'derivado / rechazado cc' ? ' *' : ''}`} error={errors.comentarios}>
                 <textarea
                   className="form-input"
                   value={form.comentarios || ''}
                   onChange={e => set('comentarios', corregirTildes(e.target.value))}
-                  rows={3}
-                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                  rows={1}
+                  style={{ resize: 'vertical', fontFamily: 'inherit', height: 30, minHeight: 30, padding: '5px 10px', fontSize: '11.5px' }}
                   placeholder={form.estado === 'derivado / rechazado cc' ? 'Motivo de rechazo (obligatorio)...' : ''}
                 />
               </Field>
-              <label 
-                style={{ 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
-                  fontSize: '13px', fontWeight: 700, padding: '0 12px', borderRadius: '8px', height: '44px', width: '100%',
-                  marginTop: '23px',
-                  background: !!form.es_re ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.4)',
-                  color: !!form.es_re ? '#10b981' : '#999',
-                  border: !!form.es_re ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} style={{ display: 'none' }} />
-                Resumen Ejecutivo (RE)
-              </label>
-              <label 
-                style={{ 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
-                  fontSize: '13px', fontWeight: 700, padding: '0 12px', borderRadius: '8px', height: '44px', width: '100%',
-                  marginTop: '23px',
-                  background: agendarRecordatorio ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0,0,0,0.4)',
-                  color: agendarRecordatorio ? '#f59e0b' : '#999',
-                  border: agendarRecordatorio ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} style={{ display: 'none' }} />
-                Agendar Recordatorio
-              </label>
+              <Field label="Accion 1" transparentLabel={true}>
+                <label 
+                  style={{ 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
+                    fontSize: '11px', fontWeight: 700, padding: '0 10px', borderRadius: '6px', height: '30px', width: '100%',
+                    background: !!form.es_re ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.4)',
+                    color: !!form.es_re ? '#10b981' : '#999',
+                    border: !!form.es_re ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.12)',
+                    transition: 'all 0.2s', boxSizing: 'border-box'
+                  }}
+                >
+                  <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} style={{ display: 'none' }} />
+                  Resumen Ejecutivo (RE)
+                </label>
+              </Field>
+              <Field label="Accion 2" transparentLabel={true}>
+                <label 
+                  style={{ 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
+                    fontSize: '11px', fontWeight: 700, padding: '0 10px', borderRadius: '6px', height: '30px', width: '100%',
+                    background: agendarRecordatorio ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0,0,0,0.4)',
+                    color: agendarRecordatorio ? '#f59e0b' : '#999',
+                    border: agendarRecordatorio ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.12)',
+                    transition: 'all 0.2s', boxSizing: 'border-box'
+                  }}
+                >
+                  <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} style={{ display: 'none' }} />
+                  Agendar Recordatorio
+                </label>
+              </Field>
             </div>
-            <p className="modal-required-legend" style={{ color: 'var(--rojo)' }}>
+            <p className="modal-required-legend" style={{ color: 'var(--rojo)', fontSize: '10px', margin: '2px 0 0 0' }}>
               <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
             </p>
           </div>
           <div className="modal-footer" style={{
-            background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '20px 32px'
+            background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '6px 16px'
           }}>
-            {errors._ && <span style={{ color: '#f87171', fontSize: '13px', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={14} />{errors._}</span>}
+            {errors._ && <span style={{ color: '#f87171', fontSize: '12px', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={13} />{errors._}</span>}
             {!errors._ && (
-              <div style={{ flex: 1, fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center' }}>
+              <div style={{ flex: 1, fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center' }}>
                 Registro creado con fecha {initialData.created_at ? new Date(initialData.created_at).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR')} y hora {initialData.created_at ? new Date(initialData.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
             <button className="btn-secondary" onClick={onClose} style={{
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', color: 'var(--fg-muted)',
-              fontWeight: 700, padding: '12px 24px', borderRadius: '10px', fontSize: '13px', letterSpacing: '0.5px', transition: 'all 0.2s'
+              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)',
+              fontWeight: 700, height: '26px', padding: '0 12px', borderRadius: '5px', fontSize: '10.5px', letterSpacing: '0.3px', transition: 'all 0.2s'
             }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>CANCELAR</button>
             <button className="btn-primary" onClick={() => guardar()} disabled={saving} style={{
               background: 'linear-gradient(90deg, #34d399, #10b981)', color: '#000', border: 'none',
-              fontWeight: 800, padding: '12px 32px', borderRadius: '10px',
-              fontSize: '13px', letterSpacing: '0.5px', boxShadow: '0 4px 14px rgba(16,185,129,0.3)', transition: 'all 0.2s',
-              display: 'flex', alignItems: 'center', gap: '8px'
+              fontWeight: 800, height: '26px', padding: '0 14px', borderRadius: '5px',
+              fontSize: '10.5px', letterSpacing: '0.3px', boxShadow: '0 4px 12px rgba(16,185,129,0.3)', transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', gap: '4px'
             }}>
-              <Save size={16} strokeWidth={2.5} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
+              <Save size={12} strokeWidth={2.5} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
             </button>
           </div>
         </motion.div>
