@@ -66,7 +66,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
   const handleModalZoom = (delta: number) => {
     setModalZoom(prev => {
-      const next = Math.max(0.7, Math.min(1.4, Math.round((prev + delta) * 100) / 100));
+      const next = Math.max(0.7, Math.round((prev + delta) * 100) / 100);
       if (typeof window !== 'undefined') {
         localStorage.setItem('crm_modal_zoom_level_v1', String(next));
         setTimeout(() => {
