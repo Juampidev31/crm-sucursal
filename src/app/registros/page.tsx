@@ -808,7 +808,7 @@ const RegistroModal = memo(function RegistroModal({
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('crm_modal_zoom_level_v1');
+      const saved = localStorage.getItem('crm_modal_edit_zoom_level_v1');
       if (saved) {
         const val = parseFloat(saved);
         if (!isNaN(val)) setModalZoom(val);
@@ -820,17 +820,17 @@ const RegistroModal = memo(function RegistroModal({
       if (customEvt.detail) setModalZoom(customEvt.detail);
     };
 
-    window.addEventListener('crm_modal_zoom_changed', handleZoomEvent);
-    return () => window.removeEventListener('crm_modal_zoom_changed', handleZoomEvent);
+    window.addEventListener('crm_modal_edit_zoom_changed', handleZoomEvent);
+    return () => window.removeEventListener('crm_modal_edit_zoom_changed', handleZoomEvent);
   }, []);
 
   const handleModalZoom = (delta: number) => {
     setModalZoom(prev => {
       const next = Math.max(0.7, Math.round((prev + delta) * 100) / 100);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('crm_modal_zoom_level_v1', String(next));
+        localStorage.setItem('crm_modal_edit_zoom_level_v1', String(next));
         setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('crm_modal_zoom_changed', { detail: next }));
+          window.dispatchEvent(new CustomEvent('crm_modal_edit_zoom_changed', { detail: next }));
         }, 0);
       }
       return next;
@@ -840,9 +840,9 @@ const RegistroModal = memo(function RegistroModal({
   const resetModalZoom = () => {
     setModalZoom(1);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('crm_modal_zoom_level_v1', '1');
+      localStorage.setItem('crm_modal_edit_zoom_level_v1', '1');
       setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('crm_modal_zoom_changed', { detail: 1 }));
+        window.dispatchEvent(new CustomEvent('crm_modal_edit_zoom_changed', { detail: 1 }));
       }, 0);
     }
   };
