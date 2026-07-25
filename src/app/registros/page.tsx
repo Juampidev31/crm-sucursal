@@ -1152,15 +1152,16 @@ const RegistroModal = memo(function RegistroModal({
                   value={form.comentarios || ''}
                   onChange={e => set('comentarios', corregirTildes(e.target.value))}
                   rows={1}
-                  style={{ resize: 'vertical', fontFamily: 'inherit', height: 30, minHeight: 30, padding: '5px 10px', fontSize: '11.5px' }}
+                  style={{ resize: 'vertical', fontFamily: 'inherit', height: '100%', minHeight: '100%', padding: '6px 10px' }}
                   placeholder={form.estado === 'derivado / rechazado cc' ? 'Motivo de rechazo (obligatorio)...' : ''}
                 />
               </Field>
               <Field label="Accion 1" transparentLabel={true}>
                 <label 
+                  className="modal-check-action"
                   style={{ 
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
-                    fontSize: '11px', fontWeight: 700, padding: '0 10px', borderRadius: '6px', height: '30px', width: '100%',
+                    fontWeight: 700, borderRadius: '6px', width: '100%',
                     background: !!form.es_re ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.4)',
                     color: !!form.es_re ? '#10b981' : '#999',
                     border: !!form.es_re ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.12)',
@@ -1173,9 +1174,10 @@ const RegistroModal = memo(function RegistroModal({
               </Field>
               <Field label="Accion 2" transparentLabel={true}>
                 <label 
+                  className="modal-check-action"
                   style={{ 
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
-                    fontSize: '11px', fontWeight: 700, padding: '0 10px', borderRadius: '6px', height: '30px', width: '100%',
+                    fontWeight: 700, borderRadius: '6px', width: '100%',
                     background: agendarRecordatorio ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0,0,0,0.4)',
                     color: agendarRecordatorio ? '#f59e0b' : '#999',
                     border: agendarRecordatorio ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.12)',
@@ -1187,12 +1189,12 @@ const RegistroModal = memo(function RegistroModal({
                 </label>
               </Field>
             </div>
-            <p className="modal-required-legend" style={{ color: 'var(--rojo)', fontSize: '10px', margin: '2px 0 0 0' }}>
+            <p className="modal-required-legend" style={{ color: 'var(--rojo)', margin: '2px 0 0 0' }}>
               <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
             </p>
           </div>
           <div className="modal-footer" style={{
-            background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '6px 16px'
+            background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)'
           }}>
             {errors._ && <span style={{ color: '#f87171', fontSize: '12px', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={13} />{errors._}</span>}
             {!errors._ && (
@@ -1200,17 +1202,16 @@ const RegistroModal = memo(function RegistroModal({
                 Registro creado con fecha {initialData.created_at ? new Date(initialData.created_at).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR')} y hora {initialData.created_at ? new Date(initialData.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
-            <button className="btn-secondary" onClick={onClose} style={{
+            <button className="btn-secondary modal-btn-cancel" onClick={onClose} style={{
               background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)',
-              fontWeight: 700, height: '26px', padding: '0 12px', borderRadius: '5px', fontSize: '10.5px', letterSpacing: '0.3px', transition: 'all 0.2s'
+              fontWeight: 700, letterSpacing: '0.3px', transition: 'all 0.2s'
             }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>CANCELAR</button>
-            <button className="btn-primary" onClick={() => guardar()} disabled={saving} style={{
+            <button className="btn-primary modal-btn-save" onClick={() => guardar()} disabled={saving} style={{
               background: 'linear-gradient(90deg, #34d399, #10b981)', color: '#000', border: 'none',
-              fontWeight: 800, height: '26px', padding: '0 14px', borderRadius: '5px',
-              fontSize: '10.5px', letterSpacing: '0.3px', boxShadow: '0 4px 12px rgba(16,185,129,0.3)', transition: 'all 0.2s',
-              display: 'flex', alignItems: 'center', gap: '4px'
+              fontWeight: 800, letterSpacing: '0.3px', boxShadow: '0 4px 12px rgba(16,185,129,0.3)', transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', gap: '5px'
             }}>
-              <Save size={12} strokeWidth={2.5} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
+              <Save size={13} strokeWidth={2.5} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
             </button>
           </div>
         </motion.div>
