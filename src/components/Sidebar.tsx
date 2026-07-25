@@ -420,7 +420,7 @@ export default function Sidebar({
 
   const flyoutStyle: React.CSSProperties = {
     position: 'absolute',
-    left: 74,
+    left: 104,
     zIndex: 500,
     background: 'rgba(14, 14, 18, 0.96)',
     backdropFilter: 'blur(20px)',
@@ -448,7 +448,7 @@ export default function Sidebar({
       <aside className={`main-sidebar ${hidden ? 'sidebar-hidden' : ''}`}
         style={{
           '--current-zoom': 1,
-          '--sidebar-width': showFilters ? '340px' : showCalculator ? '370px' : '68px',
+          '--sidebar-width': showFilters ? '340px' : showCalculator ? '370px' : '96px',
           background: 'transparent',
           border: 'none',
           borderRight: 'none',
@@ -531,9 +531,9 @@ export default function Sidebar({
                     }
                   }}
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
+                    width: 60,
+                    height: 60,
+                    borderRadius: 16,
                     background: '#10b981',
                     border: 'none',
                     display: 'flex',
@@ -557,7 +557,7 @@ export default function Sidebar({
                     e.currentTarget.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.35)';
                   }}
                 >
-                  <Plus size={26} strokeWidth={2.8} />
+                  <Plus size={34} strokeWidth={2.8} />
                 </button>
                 {activeHover === 'nuevo' && (
                   <div style={{ ...flyoutStyle, top: 0 }}>
@@ -572,7 +572,7 @@ export default function Sidebar({
               </div>
             )}
 
-            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', marginBottom: 12 }} />
+            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', marginBottom: 12 }} />
             {/* 1. Registros */}
             <div
               onMouseEnter={() => handleMouseEnter('registros')}
@@ -586,9 +586,9 @@ export default function Sidebar({
                   if (pathname !== '/registros') router.push('/registros');
                 }}
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 16,
                   background: pathname === '/registros' ? 'rgba(16, 185, 129, 0.18)' : 'transparent',
                   border: pathname === '/registros' ? '1px solid #10b981' : '1px solid transparent',
                   display: 'flex',
@@ -612,7 +612,7 @@ export default function Sidebar({
                 }}
                 title=""
               >
-                <Database size={24} />
+                <Database size={32} />
               </button>
 
               {activeHover === 'registros' && (
@@ -709,7 +709,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
             {/* 2. Reportes */}
             <div
@@ -721,9 +721,9 @@ export default function Sidebar({
                 type="button"
                 onClick={() => router.push('/analistas?analista=PDV')}
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 16,
                   background: pathname.includes('/reportes') || pathname.includes('/analistas') ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
                   border: pathname.includes('/reportes') || pathname.includes('/analistas') ? '1px solid #3b82f6' : '1px solid transparent',
                   display: 'flex',
@@ -746,7 +746,7 @@ export default function Sidebar({
                   }
                 }}
               >
-                <BarChart2 size={24} />
+                <BarChart2 size={32} />
               </button>
 
               {activeHover === 'reportes' && (
@@ -791,7 +791,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
             {/* 3. Filtros avanzados */}
             <div
@@ -807,9 +807,9 @@ export default function Sidebar({
                   setShowCalculator(false);
                 }}
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 16,
                   background: showFilters ? 'rgba(168, 85, 247, 0.22)' : 'transparent',
                   border: showFilters ? '1.5px solid #a855f7' : '1px solid transparent',
                   boxShadow: showFilters ? '0 0 16px rgba(168, 85, 247, 0.3)' : 'none',
@@ -834,7 +834,7 @@ export default function Sidebar({
                 }}
                 title=""
               >
-                <SlidersHorizontal size={24} />
+                <SlidersHorizontal size={32} />
               </button>
 
               {activeHover === 'filtros' && !showFilters && (
@@ -849,7 +849,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
             {/* 4. Recordatorios & Etiquetas */}
             <div
@@ -863,9 +863,9 @@ export default function Sidebar({
                   if (pathname !== '/registros') router.push('/registros');
                 }}
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 16,
                   background: 'transparent',
                   border: '1px solid transparent',
                   display: 'flex',
@@ -884,7 +884,7 @@ export default function Sidebar({
                   e.currentTarget.style.background = 'transparent';
                 }}
               >
-                <Bell size={20} />
+                <Bell size={30} />
               </button>
 
               {activeHover === 'recordatorios' && (
@@ -933,7 +933,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
             {/* 5. Mostrar */}
             <div
@@ -949,9 +949,9 @@ export default function Sidebar({
                   setPageSize(next);
                 }}
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 16,
                   background: 'rgba(255, 255, 255, 0.03)',
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   display: 'flex',
@@ -959,7 +959,7 @@ export default function Sidebar({
                   justifyContent: 'center',
                   color: '#34d399',
                   fontWeight: 800,
-                  fontSize: 15,
+                  fontSize: 18,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
@@ -1003,9 +1003,9 @@ export default function Sidebar({
                     setShowFilters(false);
                   }}
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
+                    width: 60,
+                    height: 60,
+                    borderRadius: 16,
                     background: showCalculator ? 'rgba(0, 212, 255, 0.2)' : 'transparent',
                     border: showCalculator ? '1px solid #00d4ff' : '1px solid transparent',
                     display: 'flex',
@@ -1028,7 +1028,7 @@ export default function Sidebar({
                     }
                   }}
                 >
-                  <Calculator size={24} />
+                  <Calculator size={32} />
                 </button>
 
                 {activeHover === 'calculadora' && !showCalculator && (
@@ -1055,9 +1055,9 @@ export default function Sidebar({
                   type="button"
                   onClick={() => setShowXlsxModal(true)}
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
+                    width: 60,
+                    height: 60,
+                    borderRadius: 16,
                     background: 'transparent',
                     border: '1px solid transparent',
                     display: 'flex',
@@ -1076,7 +1076,7 @@ export default function Sidebar({
                     e.currentTarget.style.background = 'transparent';
                   }}
                 >
-                  <FileSpreadsheet size={24} />
+                  <FileSpreadsheet size={32} />
                 </button>
 
                 {activeHover === 'xlsx' && (
@@ -1105,9 +1105,9 @@ export default function Sidebar({
                   else setShowAdminModal(true);
                 }}
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 16,
                   background: pathname.startsWith('/ajustes') ? 'rgba(255,255,255,0.1)' : 'transparent',
                   border: '1px solid transparent',
                   display: 'flex',
@@ -1120,7 +1120,7 @@ export default function Sidebar({
                 onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)')}
               >
-                {isAdmin ? <Settings size={24} /> : <Lock size={24} />}
+                {isAdmin ? <Settings size={32} /> : <Lock size={32} />}
               </button>
 
               {activeHover === 'ajustes' && (
@@ -1136,13 +1136,13 @@ export default function Sidebar({
             </div>
 
             {/* 9. Zoom controls */}
-            <div style={{ width: 44, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
               <button
                 onClick={onZoomIn}
                 title="Acercar (Ctrl++)"
                 style={{
-                  width: 44, height: 30, borderRadius: 8,
+                  width: 60, height: 36, borderRadius: 12,
                   background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
@@ -1151,16 +1151,16 @@ export default function Sidebar({
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
               >
-                <ZoomIn size={14} />
+                <ZoomIn size={18} />
               </button>
               <div
                 onClick={onReset}
                 title="Restablecer zoom (Ctrl+0)"
                 style={{
-                  width: 44, height: 20,
+                  width: 60, height: 24,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
-                  fontSize: 9, fontWeight: 700, transition: 'all 0.2s',
+                  fontSize: 11, fontWeight: 700, transition: 'all 0.2s',
                   borderTop: '1px solid rgba(255,255,255,0.06)',
                   borderBottom: '1px solid rgba(255,255,255,0.06)',
                 }}
@@ -1173,7 +1173,7 @@ export default function Sidebar({
                 onClick={onZoomOut}
                 title="Alejar (Ctrl+-)"
                 style={{
-                  width: 44, height: 30, borderRadius: 8,
+                  width: 60, height: 36, borderRadius: 12,
                   background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
@@ -1182,7 +1182,7 @@ export default function Sidebar({
                 onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
                 onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
               >
-                <ZoomOut size={14} />
+                <ZoomOut size={18} />
               </button>
             </div>
             </div>
