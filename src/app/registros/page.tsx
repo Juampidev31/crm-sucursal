@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Timer, Pin } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, Maximize2, Minimize2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -804,6 +804,49 @@ const RegistroModal = memo(function RegistroModal({
     setSaving(false);
   };
 
+  const [modalZoom, setModalZoom] = useState<number>(1);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('crm_modal_zoom_level_v1');
+      if (saved) {
+        const val = parseFloat(saved);
+        if (!isNaN(val)) setModalZoom(val);
+      }
+    }
+
+    const handleZoomEvent = (e: Event) => {
+      const customEvt = e as CustomEvent<number>;
+      if (customEvt.detail) setModalZoom(customEvt.detail);
+    };
+
+    window.addEventListener('crm_modal_zoom_changed', handleZoomEvent);
+    return () => window.removeEventListener('crm_modal_zoom_changed', handleZoomEvent);
+  }, []);
+
+  const handleModalZoom = (delta: number) => {
+    setModalZoom(prev => {
+      const next = Math.max(0.7, Math.min(1.4, Math.round((prev + delta) * 100) / 100));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('crm_modal_zoom_level_v1', String(next));
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('crm_modal_zoom_changed', { detail: next }));
+        }, 0);
+      }
+      return next;
+    });
+  };
+
+  const resetModalZoom = () => {
+    setModalZoom(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('crm_modal_zoom_level_v1', '1');
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('crm_modal_zoom_changed', { detail: 1 }));
+      }, 0);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -819,7 +862,9 @@ const RegistroModal = memo(function RegistroModal({
           borderRadius: '16px',
           overflow: 'visible',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          zoom: modalZoom,
+          transition: 'all 0.2s ease'
         }}>
           <div className="modal-header" style={{
             background: 'rgba(14, 14, 18, 0.96)',
@@ -846,7 +891,59 @@ const RegistroModal = memo(function RegistroModal({
                 {editingId ? 'Modificá los datos del registro seleccionado' : 'Completá los campos para crear un nuevo registro'}
               </p>
             </div>
-            <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {/* Zoom Controls (- % +) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '20px',
+                padding: '2px 4px',
+                gap: '2px'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleModalZoom(-0.05)}
+                  title="Reducir tamaño del modal (-)"
+                  style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: 'none', border: 'none', color: '#9ca3af',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                >
+                  <Minus size={12} strokeWidth={2.5} />
+                </button>
+                <span
+                  onClick={resetModalZoom}
+                  title="Restablecer a 100%"
+                  style={{
+                    fontSize: '11px', fontWeight: 800, color: modalZoom === 1 ? '#9ca3af' : '#34d399',
+                    padding: '0 4px', cursor: 'pointer', userSelect: 'none'
+                  }}
+                >
+                  {Math.round(modalZoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleModalZoom(0.05)}
+                  title="Agrandar tamaño del modal (+)"
+                  style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: 'none', border: 'none', color: '#9ca3af',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                >
+                  <Plus size={12} strokeWidth={2.5} />
+                </button>
+              </div>
+
+              <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+            </div>
           </div>
           <div className="modal-body" style={{ overflow: 'visible', padding: '16px 20px', flex: 1 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px 14px', marginBottom: '12px', alignItems: 'start' }}>

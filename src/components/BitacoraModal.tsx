@@ -9,7 +9,7 @@ import { Registro, BitacoraNota, Recordatorio } from '@/types';
 import ModalPortal from '@/components/ModalPortal';
 import { getTagStyle } from '@/components/EtiquetasSelector';
 import { logAudit } from '@/lib/audit';
-import { X, Trash2, Loader2, AlertCircle, Bell, Clock, User, CheckCircle2, Tag, Edit3 } from 'lucide-react';
+import { X, Trash2, Loader2, AlertCircle, Bell, Clock, User, CheckCircle2, Tag, Edit3, Minus, Plus } from 'lucide-react';
 
 interface BitacoraModalProps {
   isOpen: boolean;
@@ -44,6 +44,48 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
   const [etiquetas, setEtiquetas] = useState<string[]>([]);
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState('');
   const [selectedColor, setSelectedColor] = useState('#c084fc');
+  const [modalZoom, setModalZoom] = useState<number>(1);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('crm_modal_zoom_level_v1');
+      if (saved) {
+        const val = parseFloat(saved);
+        if (!isNaN(val)) setModalZoom(val);
+      }
+    }
+
+    const handleZoomEvent = (e: Event) => {
+      const customEvt = e as CustomEvent<number>;
+      if (customEvt.detail) setModalZoom(customEvt.detail);
+    };
+
+    window.addEventListener('crm_modal_zoom_changed', handleZoomEvent);
+    return () => window.removeEventListener('crm_modal_zoom_changed', handleZoomEvent);
+  }, []);
+
+  const handleModalZoom = (delta: number) => {
+    setModalZoom(prev => {
+      const next = Math.max(0.7, Math.min(1.4, Math.round((prev + delta) * 100) / 100));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('crm_modal_zoom_level_v1', String(next));
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('crm_modal_zoom_changed', { detail: next }));
+        }, 0);
+      }
+      return next;
+    });
+  };
+
+  const resetModalZoom = () => {
+    setModalZoom(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('crm_modal_zoom_level_v1', '1');
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('crm_modal_zoom_changed', { detail: 1 }));
+      }, 0);
+    }
+  };
   
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -299,9 +341,12 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
         onClick={onClose}
         style={{
           position: 'fixed',
-          inset: 0,
-          zIndex: 99999,
-          background: 'rgba(0,0,0,0.85)',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.75)',
           backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
@@ -312,6 +357,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
         <motion.div
           drag
           dragMomentum={false}
+          className="modal-content"
           style={{
             maxWidth: 640,
             width: '95%',
@@ -324,6 +370,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            zoom: modalZoom,
+            transition: 'all 0.2s ease'
           }}
           onClick={e => e.stopPropagation()}
         >
@@ -343,14 +391,66 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                 RECORDATORIOS Y SEGUIMIENTOS
               </h3>
             </div>
-            <button
-              onClick={onClose}
-              style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
-            >
-              <X size={16} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {/* Zoom Controls (- % +) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(0, 0, 0, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '20px',
+                padding: '2px 4px',
+                gap: '2px'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleModalZoom(-0.05)}
+                  title="Reducir tamaño (-)"
+                  style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: 'none', border: 'none', color: '#9ca3af',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                >
+                  <Minus size={12} strokeWidth={2.5} />
+                </button>
+                <span
+                  onClick={resetModalZoom}
+                  title="Restablecer a 100%"
+                  style={{
+                    fontSize: '11px', fontWeight: 800, color: modalZoom === 1 ? '#9ca3af' : '#34d399',
+                    padding: '0 4px', cursor: 'pointer', userSelect: 'none'
+                  }}
+                >
+                  {Math.round(modalZoom * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleModalZoom(0.05)}
+                  title="Agrandar tamaño (+)"
+                  style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: 'none', border: 'none', color: '#9ca3af',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                >
+                  <Plus size={12} strokeWidth={2.5} />
+                </button>
+              </div>
+
+              <button
+                onClick={onClose}
+                style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
           {/* ── Body (Scrollable) ── */}
