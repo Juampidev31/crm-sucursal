@@ -1576,21 +1576,32 @@ const WhatsappModal = memo(function WhatsappModal({
   registro, onConfirm, onCancel,
 }: { registro: Registro | null; onConfirm: (telefono: string, action: 'save' | 'send') => void; onCancel: () => void }) {
   const [telefono, setTelefono] = useState('');
-  
+  const [errorVisible, setErrorVisible] = useState(false);
+
   useEffect(() => {
     if (registro) {
       setTelefono(registro.telefono || '');
+      setErrorVisible(false);
     }
   }, [registro]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => { 
-      if (e.key === 'Escape') onCancel(); 
-      if (e.key === 'Enter' && telefono) onConfirm(telefono, 'send');
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter') {
+        if (!telefono) { setErrorVisible(true); return; }
+        onConfirm(telefono, 'send');
+      }
     };
     if (registro) window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [registro, onCancel, onConfirm, telefono]);
+
+  const handleConfirm = (action: 'save' | 'send') => {
+    if (!telefono) { setErrorVisible(true); return; }
+    setErrorVisible(false);
+    onConfirm(telefono, action);
+  };
 
   if (!registro) return null;
   return (
@@ -1625,33 +1636,54 @@ const WhatsappModal = memo(function WhatsappModal({
               </div>
               <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={16} /></button>
             </div>
-          <div className="modal-body" style={{ padding: '32px 28px' }}>
+          <div className="modal-body" style={{ padding: '24px 28px 28px' }}>
             <input
               autoFocus
               type="tel"
               className="form-input"
               value={telefono}
-              onChange={e => setTelefono(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              onChange={e => { setTelefono(e.target.value.replace(/\D/g, '').slice(0, 10)); setErrorVisible(false); }}
               placeholder=""
-              style={{ width: '100%' }}
+              style={{ width: '100%', borderColor: errorVisible ? '#ef4444' : undefined }}
             />
+            {/* Pop-up de error inline */}
+            <motion.div
+              initial={false}
+              animate={errorVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -6, scale: 0.97 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              style={{
+                marginTop: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '9px 13px',
+                borderRadius: 8,
+                background: 'rgba(239,68,68,0.13)',
+                border: '1px solid rgba(239,68,68,0.35)',
+                color: '#fca5a5',
+                fontSize: 12,
+                fontWeight: 700,
+                pointerEvents: 'none',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              El teléfono es obligatorio
+            </motion.div>
           </div>
           <div className="modal-footer" style={{ padding: '20px 28px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <button className="btn-secondary" onClick={onCancel} style={{
               background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
               fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
             }}>CANCELAR</button>
-            <button className="btn-secondary" onClick={() => onConfirm(telefono, 'save')} style={{
+            <button className="btn-secondary" onClick={() => handleConfirm('save')} style={{
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 800,
-              padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px',
-              cursor: 'pointer'
+              padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
             }}>
               GUARDAR
             </button>
-            <button className="btn-primary" onClick={() => onConfirm(telefono, 'send')} disabled={!telefono} style={{
+            <button className="btn-primary" onClick={() => handleConfirm('send')} style={{
               background: '#25D366', color: '#fff', border: 'none', fontWeight: 800,
-              padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px',
-              opacity: telefono ? 1 : 0.5, cursor: telefono ? 'pointer' : 'not-allowed'
+              padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
             }}>
               ENVIAR
             </button>
