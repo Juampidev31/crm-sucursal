@@ -303,6 +303,12 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (form.estado === 'derivado / rechazado cc' && !form.comentarios?.trim())
     errs.comentarios = 'Requerido — ingresá el motivo de rechazo';
 
+  if (form.interes === undefined || form.interes === null || String(form.interes).trim() === '') {
+    errs.interes = 'Requerido';
+  } else if (isNaN(Number(form.interes))) {
+    errs.interes = 'Inválido';
+  }
+
   if (form.fecha) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const selected = new Date(form.fecha + 'T00:00:00');
@@ -619,6 +625,131 @@ const PremiumSelect = ({
   );
 };
 
+// ── Modal: WhatsApp ─────────────────────────────────────────────────────────────
+
+const WhatsappModal = memo(function WhatsappModal({
+  registro, onConfirm, onCancel,
+}: { registro: Registro | null; onConfirm: (telefono: string, action: 'save' | 'send') => void; onCancel: () => void }) {
+  const [telefono, setTelefono] = useState('');
+  const [errorVisible, setErrorVisible] = useState(false);
+
+  useEffect(() => {
+    if (registro) {
+      setTelefono(registro.telefono || '');
+      setErrorVisible(false);
+    }
+  }, [registro]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter') {
+        if (!telefono) { setErrorVisible(true); return; }
+        onConfirm(telefono, 'send');
+      }
+    };
+    if (registro) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [registro, onCancel, onConfirm, telefono]);
+
+  const handleConfirm = (action: 'save' | 'send') => {
+    if (!telefono) { setErrorVisible(true); return; }
+    setErrorVisible(false);
+    onConfirm(telefono, action);
+  };
+
+  if (!registro) return null;
+  return (
+    <ModalPortal>
+      <div className="modal-overlay" onClick={onCancel} style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1200 }}>
+        <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '400px', background: 'var(--bg-elev-1)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+          <div style={{
+              background: 'rgba(14, 14, 18, 0.96)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '16px 16px 0 0',
+              padding: '20px 24px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: '16px',
+            }}>
+              <div>
+                <h3 style={{
+                  fontSize: '13px', fontWeight: 800, color: '#25D366', margin: '0 0 6px 0',
+                  textTransform: 'uppercase', letterSpacing: '0.5px',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                }}>
+                  <WhatsAppIcon size={16} />
+                  WhatsApp / Teléfono
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+                  {registro.nombre ? <span style={{ color: '#fff', fontWeight: 700 }}>{registro.nombre} — </span> : null}
+                  Ingresá el número de teléfono para continuar
+                </p>
+              </div>
+              <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={16} /></button>
+            </div>
+          <div className="modal-body" style={{ padding: '24px 28px 28px' }}>
+            <input
+              autoFocus
+              type="tel"
+              className="form-input"
+              value={telefono}
+              onChange={e => { setTelefono(e.target.value.replace(/\D/g, '').slice(0, 10)); setErrorVisible(false); }}
+              placeholder="Ej: 3434538564 (10 dígitos)"
+              style={{ width: '100%', borderColor: errorVisible ? '#ef4444' : undefined }}
+            />
+            {/* Pop-up de error inline */}
+            <motion.div
+              initial={false}
+              animate={errorVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -6, scale: 0.97 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              style={{
+                marginTop: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '9px 13px',
+                borderRadius: 8,
+                background: 'rgba(239,68,68,0.13)',
+                border: '1px solid rgba(239,68,68,0.35)',
+                color: '#fca5a5',
+                fontSize: 12,
+                fontWeight: 700,
+                pointerEvents: 'none',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              El teléfono es obligatorio
+            </motion.div>
+          </div>
+          <div className="modal-footer" style={{ padding: '20px 28px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <button className="btn-secondary" onClick={onCancel} style={{
+              background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+              fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
+            }}>CANCELAR</button>
+            <button className="btn-secondary" onClick={() => handleConfirm('save')} style={{
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 800,
+              padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
+            }}>
+              GUARDAR
+            </button>
+            <button className="btn-primary" onClick={() => handleConfirm('send')} style={{
+              background: '#25D366', color: '#fff', border: 'none', fontWeight: 800,
+              padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
+            }}>
+              ENVIAR
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </ModalPortal>
+  );
+});
+
 // ── Modal: Registro ───────────────────────────────────────────────────────────
 
 const RegistroModal = memo(function RegistroModal({
@@ -632,6 +763,7 @@ const RegistroModal = memo(function RegistroModal({
   const [form, setForm] = useState<Partial<Registro>>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showDupModal, setShowDupModal] = useState(false);
   const [dupRecord, setDupRecord] = useState<Registro | null>(null);
   const [dupBlocked, setDupBlocked] = useState(false);
@@ -676,6 +808,7 @@ const RegistroModal = memo(function RegistroModal({
     if (isOpen) {
       setForm(initialData);
       setErrors({});
+      setShowPhoneModal(false);
       setShowDupModal(false);
       setDupRecord(null);
       setDupBlocked(false);
@@ -704,13 +837,14 @@ const RegistroModal = memo(function RegistroModal({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showDupModal) { setShowDupModal(false); e.stopImmediatePropagation(); }
+        if (showPhoneModal) { setShowPhoneModal(false); e.stopImmediatePropagation(); }
+        else if (showDupModal) { setShowDupModal(false); e.stopImmediatePropagation(); }
         else if (isOpen) { onClose(); e.stopImmediatePropagation(); }
       }
     };
-    if (isOpen || showDupModal) window.addEventListener('keydown', handleKeyDown);
+    if (isOpen || showDupModal || showPhoneModal) window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, showDupModal, onClose]);
+  }, [isOpen, showDupModal, showPhoneModal, onClose]);
 
   const set = (field: keyof Registro, value: unknown) => {
     setForm(prev => {
@@ -760,11 +894,23 @@ const RegistroModal = memo(function RegistroModal({
       }
     }
 
+    // Al validar correctamente el formulario, se solicita el teléfono
+    setShowPhoneModal(true);
+  };
+
+  const handlePhoneConfirm = async (telefono: string, action: 'save' | 'send') => {
+    setShowPhoneModal(false);
+    await persistirRegistro(telefono, action);
+  };
+
+  const persistirRegistro = async (telefono: string, action: 'save' | 'send') => {
     setSaving(true);
+    const cleanTel = telefono ? telefono.replace(/\D/g, '') : '';
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, created_at, updated_at, ...cleanForm } = form as Registro & { created_at?: string; updated_at?: string };
     const payload = {
       ...cleanForm,
+      telefono: cleanTel || null,
       monto: Number(form.monto),
       interes: form.interes === undefined || form.interes === null || (form.interes as unknown as string) === '' ? null : Number(form.interes),
       puntaje: Number(form.puntaje),
@@ -789,10 +935,15 @@ const RegistroModal = memo(function RegistroModal({
           valor_nuevo: cambios.map(f => String((payload as Record<string, unknown>)[f] ?? '—')).join(' | '),
         });
       }
-      const savedReg: Registro = { ...form as Registro, ...payload, id: editingId };
+      const savedReg: Registro = { ...form as Registro, ...payload, telefono: cleanTel, id: editingId };
       onClose();
       if (agendarRecordatorio && onSavedWithRecordatorio) onSavedWithRecordatorio(savedReg);
       else onSaved(savedReg);
+
+      if (action === 'send' && cleanTel) {
+        const waNum = cleanTel.length === 10 ? `549${cleanTel}` : cleanTel;
+        window.open(`https://web.whatsapp.com/send?phone=${waNum}`, '_blank');
+      }
     } else {
       const { data: newReg, error } = await supabase.from('registros').insert(payload).select().single();
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
@@ -800,6 +951,11 @@ const RegistroModal = memo(function RegistroModal({
       onClose();
       if (agendarRecordatorio && onSavedWithRecordatorio && newReg) onSavedWithRecordatorio(newReg as Registro);
       else onSaved(newReg as Registro);
+
+      if (action === 'send' && cleanTel) {
+        const waNum = cleanTel.length === 10 ? `549${cleanTel}` : cleanTel;
+        window.open(`https://web.whatsapp.com/send?phone=${waNum}`, '_blank');
+      }
     }
     setSaving(false);
   };
@@ -978,7 +1134,7 @@ const RegistroModal = memo(function RegistroModal({
               <Field label="Monto" error={errors.monto}>
                 <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
               </Field>
-              <Field label="Interés" error={errors.interes}>
+              <Field label={`Interés${isAdmin ? '' : ' *'}`} error={errors.interes}>
                 <input className="form-input" type="number" value={form.interes ?? ''} onChange={e => set('interes', e.target.value)} placeholder="$" />
               </Field>
               <Field label="Fecha" error={errors.fecha}>
@@ -1315,6 +1471,14 @@ const RegistroModal = memo(function RegistroModal({
       </div>
       </ModalPortal>
 
+      {showPhoneModal && (
+        <WhatsappModal
+          registro={{ ...(form as Registro), telefono: form.telefono || '' }}
+          onConfirm={handlePhoneConfirm}
+          onCancel={() => setShowPhoneModal(false)}
+        />
+      )}
+
       {showDupModal && dupRecord && (
         <ModalPortal>
         <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
@@ -1570,129 +1734,7 @@ const ComentariosModal = memo(function ComentariosModal({
   );
 });
 
-// ── Modal: WhatsApp ─────────────────────────────────────────────────────────────
 
-const WhatsappModal = memo(function WhatsappModal({
-  registro, onConfirm, onCancel,
-}: { registro: Registro | null; onConfirm: (telefono: string, action: 'save' | 'send') => void; onCancel: () => void }) {
-  const [telefono, setTelefono] = useState('');
-  const [errorVisible, setErrorVisible] = useState(false);
-
-  useEffect(() => {
-    if (registro) {
-      setTelefono(registro.telefono || '');
-      setErrorVisible(false);
-    }
-  }, [registro]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
-      if (e.key === 'Enter') {
-        if (!telefono) { setErrorVisible(true); return; }
-        onConfirm(telefono, 'send');
-      }
-    };
-    if (registro) window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [registro, onCancel, onConfirm, telefono]);
-
-  const handleConfirm = (action: 'save' | 'send') => {
-    if (!telefono) { setErrorVisible(true); return; }
-    setErrorVisible(false);
-    onConfirm(telefono, action);
-  };
-
-  if (!registro) return null;
-  return (
-    <ModalPortal>
-      <div className="modal-overlay" onClick={onCancel} style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
-        <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '400px', background: 'var(--bg-elev-1)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-          <div style={{
-              background: 'rgba(14, 14, 18, 0.96)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '16px 16px 0 0',
-              padding: '20px 24px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: '16px',
-            }}>
-              <div>
-                <h3 style={{
-                  fontSize: '13px', fontWeight: 800, color: '#25D366', margin: '0 0 6px 0',
-                  textTransform: 'uppercase', letterSpacing: '0.5px',
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                }}>
-                  <WhatsAppIcon size={16} />
-                  WhatsApp
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
-                  Enviar mensaje o guardar número de contacto
-                </p>
-              </div>
-              <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={16} /></button>
-            </div>
-          <div className="modal-body" style={{ padding: '24px 28px 28px' }}>
-            <input
-              autoFocus
-              type="tel"
-              className="form-input"
-              value={telefono}
-              onChange={e => { setTelefono(e.target.value.replace(/\D/g, '').slice(0, 10)); setErrorVisible(false); }}
-              placeholder=""
-              style={{ width: '100%', borderColor: errorVisible ? '#ef4444' : undefined }}
-            />
-            {/* Pop-up de error inline */}
-            <motion.div
-              initial={false}
-              animate={errorVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -6, scale: 0.97 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              style={{
-                marginTop: 10,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 13px',
-                borderRadius: 8,
-                background: 'rgba(239,68,68,0.13)',
-                border: '1px solid rgba(239,68,68,0.35)',
-                color: '#fca5a5',
-                fontSize: 12,
-                fontWeight: 700,
-                pointerEvents: 'none',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              El teléfono es obligatorio
-            </motion.div>
-          </div>
-          <div className="modal-footer" style={{ padding: '20px 28px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <button className="btn-secondary" onClick={onCancel} style={{
-              background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
-              fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-            }}>CANCELAR</button>
-            <button className="btn-secondary" onClick={() => handleConfirm('save')} style={{
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 800,
-              padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
-            }}>
-              GUARDAR
-            </button>
-            <button className="btn-primary" onClick={() => handleConfirm('send')} style={{
-              background: '#25D366', color: '#fff', border: 'none', fontWeight: 800,
-              padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
-            }}>
-              ENVIAR
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    </ModalPortal>
-  );
-});
 
 // ── Modal: Confirmar borrado ──────────────────────────────────────────────────
 
