@@ -303,10 +303,13 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (form.estado === 'derivado / rechazado cc' && !form.comentarios?.trim())
     errs.comentarios = 'Requerido — ingresá el motivo de rechazo';
 
-  if (form.interes === undefined || form.interes === null || String(form.interes).trim() === '') {
-    errs.interes = 'Requerido';
-  } else if (isNaN(Number(form.interes))) {
-    errs.interes = 'Inválido';
+  const requiereInteres = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
+  if (requiereInteres) {
+    if (form.interes === undefined || form.interes === null || String(form.interes).trim() === '') {
+      errs.interes = 'Requerido';
+    } else if (isNaN(Number(form.interes))) {
+      errs.interes = 'Inválido';
+    }
   }
 
   if (form.fecha) {
@@ -869,8 +872,11 @@ const RegistroModal = memo(function RegistroModal({
     }
   };
 
-  // Venta / Aprobado CC exigen los campos demográficos completos
+  // Venta / Aprobado CC exigen los campos demográficos completos e Interés
   const esVentaOAprobado = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
+  const requiereInteres = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
+  // Venta / Aprobado CC / Proyección exigen Teléfono
+  const requiereTelefono = form.estado === 'venta' || form.estado === 'derivado / aprobado cc' || form.estado === 'proyeccion';
 
   const guardar = async (bypassDupCheck = false) => {
     const errs = validarForm(form, isAdmin);
@@ -894,8 +900,12 @@ const RegistroModal = memo(function RegistroModal({
       }
     }
 
-    // Al validar correctamente el formulario, se solicita el teléfono
-    setShowPhoneModal(true);
+    // Al validar correctamente el formulario, solo se solicita el teléfono de forma obligatoria en Venta, Aprobado CC y Proyección
+    if (requiereTelefono && !isAdmin) {
+      setShowPhoneModal(true);
+    } else {
+      await persistirRegistro(form.telefono || '', 'save');
+    }
   };
 
   const handlePhoneConfirm = async (telefono: string, action: 'save' | 'send') => {
@@ -1134,7 +1144,7 @@ const RegistroModal = memo(function RegistroModal({
               <Field label="Monto" error={errors.monto}>
                 <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
               </Field>
-              <Field label={`Interés${isAdmin ? '' : ' *'}`} error={errors.interes}>
+              <Field label={`Interés${(requiereInteres && !isAdmin) ? ' *' : ''}`} error={errors.interes}>
                 <input className="form-input" type="number" value={form.interes ?? ''} onChange={e => set('interes', e.target.value)} placeholder="$" />
               </Field>
               <Field label="Fecha" error={errors.fecha}>
