@@ -210,3 +210,53 @@ export const hexToRgba = (hex: string, alpha: number): string => {
   if ([r, g, b].some(Number.isNaN)) return hex;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+
+/**
+ * Parsea un número copiado desde cualquier sistema (soporta formatos US "570,291.48" y AR "570.291,48",
+ * signos de moneda "$", espacios, miles y decimales) devolviendo el número exacto sin corrupciones.
+ */
+export function parsePastedNumber(raw: string | number | null | undefined): number | null {
+  if (raw == null) return null;
+  let str = String(raw).trim().replace(/[$\s]/g, '');
+  if (!str) return null;
+
+  // Si tiene coma y punto, el último define el separador decimal
+  if (str.includes(',') && str.includes('.')) {
+    const lastComma = str.lastIndexOf(',');
+    const lastDot = str.lastIndexOf('.');
+    if (lastDot > lastComma) {
+      // Formato US: 570,291.48 -> comas son miles, punto es decimal
+      str = str.replace(/,/g, '');
+    } else {
+      // Formato AR: 570.291,48 -> puntos son miles, coma es decimal
+      str = str.replace(/\./g, '').replace(',', '.');
+    }
+  } else if (str.includes(',')) {
+    // Solo tiene coma
+    const parts = str.split(',');
+    if (parts.length > 2) {
+      // Múltiples comas: 1,500,000 -> miles
+      str = str.replace(/,/g, '');
+    } else if (parts[1].length === 3 && parts[0].length >= 1 && !parts[1].includes('.')) {
+      // Una sola coma con exactamente 3 dígitos: 570,291 -> miles
+      str = str.replace(/,/g, '');
+    } else {
+      // Decimal: 570,48 o 570,5
+      str = str.replace(',', '.');
+    }
+  } else if (str.includes('.')) {
+    // Solo tiene punto
+    const parts = str.split('.');
+    if (parts.length > 2) {
+      // Múltiples puntos: 1.500.000 -> miles
+      str = str.replace(/\./g, '');
+    } else if (parts[1].length === 3 && parts[0].length >= 1) {
+      // Formato AR habitual: 570.291 -> miles
+      str = str.replace(/\./g, '');
+    }
+    // Si tiene 1 o 2 decimales (ej 570.48), se mantiene el punto decimal
+  }
+
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}

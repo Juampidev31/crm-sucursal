@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
-import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL } from '@/lib/utils';
+import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL, parsePastedNumber } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
 import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, Maximize2, Minimize2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -33,7 +33,7 @@ const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
 const initialForm: Partial<Registro> = {
   cuil: '', nombre: '', puntaje: 0, es_re: false,
-  analista: '', fecha: '', fecha_score: '', monto: 0, interes: 0,
+  analista: '', fecha: '', fecha_score: '', monto: undefined, interes: undefined,
   estado: 'proyeccion', comentarios: '', dependencia: '', telefono: '',
 };
 
@@ -273,13 +273,20 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   if (!form.analista?.trim()) errs.analista = 'Requerido';
   if (!form.estado) errs.estado = 'Requerido';
   const requiereTipoYAcuerdo = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
-  if (requiereTipoYAcuerdo && !form.tipo_cliente) errs.tipo_cliente = 'Requerido';
-  if (requiereTipoYAcuerdo && !form.acuerdo_precios) errs.acuerdo_precios = 'Requerido';
-  if (requiereTipoYAcuerdo && !form.cuotas?.trim()) errs.cuotas = 'Requerido';
-  if (requiereTipoYAcuerdo && !form.rango_etario) errs.rango_etario = 'Requerido';
-  if (requiereTipoYAcuerdo && !form.sexo) errs.sexo = 'Requerido';
-  if (requiereTipoYAcuerdo && !form.empleador?.trim()) errs.empleador = 'Requerido';
-  if (requiereTipoYAcuerdo && !form.localidad?.trim()) errs.localidad = 'Requerido';
+  if (requiereTipoYAcuerdo) {
+    if (!form.tipo_cliente) errs.tipo_cliente = 'Requerido';
+    if (!form.acuerdo_precios) errs.acuerdo_precios = 'Requerido';
+    if (!form.cuotas?.trim()) errs.cuotas = 'Requerido';
+    if (!form.rango_etario) errs.rango_etario = 'Requerido';
+    if (!form.sexo) errs.sexo = 'Requerido';
+    if (!form.empleador?.trim()) errs.empleador = 'Requerido';
+    if (!form.localidad?.trim()) errs.localidad = 'Requerido';
+    if (form.monto === undefined || form.monto === null || String(form.monto).trim() === '') {
+      errs.monto = 'Requerido';
+    } else if (isNaN(Number(form.monto)) || Number(form.monto) <= 0) {
+      errs.monto = 'Debe ser mayor a 0';
+    }
+  }
   
   if (requiereDependencia(form.empleador) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
@@ -309,6 +316,8 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
       errs.interes = 'Requerido';
     } else if (isNaN(Number(form.interes))) {
       errs.interes = 'Inválido';
+    } else if (Number(form.interes) <= 0) {
+      errs.interes = 'Debe ser mayor a 0';
     }
   }
 
@@ -872,6 +881,15 @@ const RegistroModal = memo(function RegistroModal({
     }
   };
 
+  const handleNumberPaste = (field: keyof Registro) => (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData('text');
+    const parsed = parsePastedNumber(text);
+    if (parsed !== null) {
+      e.preventDefault();
+      set(field, parsed);
+    }
+  };
+
   // Venta / Aprobado CC exigen los campos demográficos completos e Interés
   const esVentaOAprobado = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
   const requiereInteres = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
@@ -921,9 +939,9 @@ const RegistroModal = memo(function RegistroModal({
     const payload = {
       ...cleanForm,
       telefono: cleanTel || null,
-      monto: Number(form.monto),
+      monto: form.monto === undefined || form.monto === null || (form.monto as unknown as string) === '' ? null : Number(form.monto),
       interes: form.interes === undefined || form.interes === null || (form.interes as unknown as string) === '' ? null : Number(form.interes),
-      puntaje: Number(form.puntaje),
+      puntaje: form.puntaje === undefined || form.puntaje === null || (form.puntaje as unknown as string) === '' ? 0 : Number(form.puntaje),
       fecha: cleanForm.fecha || null,
       fecha_score: cleanForm.fecha_score || null,
     };
@@ -1141,11 +1159,27 @@ const RegistroModal = memo(function RegistroModal({
                   placeholder="Seleccionar estado..."
                 />
               </Field>
-              <Field label="Monto" error={errors.monto}>
-                <input className="form-input" type="number" value={form.monto || ''} onChange={e => set('monto', e.target.value)} />
+              <Field label={`Monto${(esVentaOAprobado && !isAdmin) ? ' *' : ''}`} error={errors.monto}>
+                <input
+                  className="form-input"
+                  type="number"
+                  step="any"
+                  value={form.monto ?? ''}
+                  onChange={e => set('monto', e.target.value === '' ? '' : Number(e.target.value))}
+                  onPaste={handleNumberPaste('monto')}
+                  placeholder="$"
+                />
               </Field>
               <Field label={`Interés${(requiereInteres && !isAdmin) ? ' *' : ''}`} error={errors.interes}>
-                <input className="form-input" type="number" value={form.interes ?? ''} onChange={e => set('interes', e.target.value)} placeholder="$" />
+                <input
+                  className="form-input"
+                  type="number"
+                  step="any"
+                  value={form.interes ?? ''}
+                  onChange={e => set('interes', e.target.value === '' ? '' : Number(e.target.value))}
+                  onPaste={handleNumberPaste('interes')}
+                  placeholder="$"
+                />
               </Field>
               <Field label="Fecha" error={errors.fecha}>
                 <input className="form-input" type="date" value={form.fecha || ''} onChange={e => set('fecha', e.target.value)} max={new Date().toISOString().split('T')[0]} />
@@ -1154,7 +1188,15 @@ const RegistroModal = memo(function RegistroModal({
                 <input className="form-input" type="date" value={form.fecha_score || ''} onChange={e => set('fecha_score', e.target.value)} />
               </Field>
               <Field label="Score">
-                <input className="form-input" type="number" value={form.puntaje || ''} onChange={e => set('puntaje', Number(e.target.value))} placeholder="0" />
+                <input
+                  className="form-input"
+                  type="number"
+                  step="any"
+                  value={form.puntaje ?? ''}
+                  onChange={e => set('puntaje', e.target.value === '' ? '' : Number(e.target.value))}
+                  onPaste={handleNumberPaste('puntaje')}
+                  placeholder="0"
+                />
               </Field>
               <Field label={`Tipo de cliente${esVentaOAprobado ? ' *' : ''}`} error={errors.tipo_cliente}>
                 <PremiumSelect
