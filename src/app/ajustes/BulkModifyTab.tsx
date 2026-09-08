@@ -329,19 +329,85 @@ const corregirBtnStyle = (disabled: boolean): React.CSSProperties => ({
   flexShrink: 0,
 });
 
+// Helper para simplificar nombres y detectar variantes duplicadas (sin tildes, mayúsculas, puntuación ni sufijos societarios)
+function simplificarParaDuplicados(nombre: string): string {
+  if (!nombre) return '';
+  return nombre
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\b(s\.?r\.?l\.?|s\.?a\.?|s\.?a\.?s\.?|ltda\.?|cia\.?|inc\.?)\b/gi, '')
+    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Chip seleccionable de variante (compartido por los correctores)
-function VarianteChip({ label, selected, onToggle }: { label: string; selected: boolean; onToggle: () => void }) {
+function VarianteChip({
+  label,
+  selected,
+  onToggle,
+  isDuplicate = false,
+  title,
+}: {
+  label: string;
+  selected: boolean;
+  onToggle: () => void;
+  isDuplicate?: boolean;
+  title?: string;
+}) {
+  let background = 'rgba(255,255,255,0.04)';
+  let border = '1px solid rgba(255,255,255,0.06)';
+  let color = '#888';
+  let boxShadow = 'none';
+
+  if (isDuplicate) {
+    if (selected) {
+      background = 'rgba(16,185,129,0.32)';
+      border = '1px solid #34d399';
+      color = '#ffffff';
+      boxShadow = '0 0 10px rgba(52,211,153,0.35)';
+    } else {
+      background = 'rgba(16,185,129,0.14)';
+      border = '1px solid rgba(52,211,153,0.45)';
+      color = '#34d399';
+    }
+  } else if (selected) {
+    background = 'rgba(251,191,36,0.2)';
+    border = '1px solid #fbbf24';
+    color = '#fbbf24';
+  }
+
   return (
     <span
       onClick={onToggle}
+      title={title || (isDuplicate ? 'Variante duplicada detectada' : undefined)}
       style={{
-        padding: '4px 10px', borderRadius: '4px', fontSize: '11px',
-        background: selected ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
-        border: selected ? '1px solid #fbbf24' : '1px solid rgba(255,255,255,0.06)',
-        color: selected ? '#fbbf24' : '#888',
-        fontWeight: 600, cursor: 'pointer',
+        padding: '4px 10px',
+        borderRadius: '4px',
+        fontSize: '11px',
+        background,
+        border,
+        color,
+        boxShadow,
+        fontWeight: isDuplicate ? 700 : 600,
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        transition: 'all 0.15s ease',
       }}
     >
+      {isDuplicate && (
+        <span style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          backgroundColor: selected ? '#ffffff' : '#34d399',
+          display: 'inline-block',
+          boxShadow: '0 0 5px #34d399',
+          flexShrink: 0,
+        }} />
+      )}
       {label}
     </span>
   );
@@ -2839,66 +2905,136 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           {/* Lista de variantes detectadas */}
           {variantesFiltradas.length > 0 ? (
             <div style={{ marginTop: '20px', maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
-              {variantesFiltradas.map((v, i) => (
-                <div key={i} style={{
-                  marginBottom: 12, padding: '12px 14px',
-                  background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
-                  border: '1px solid rgba(255,255,255,0.04)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>
-                      {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                      {v.cantidad > 1 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            cargarRegistrosGrupo(v.variantes, v.normalizado);
-                          }}
-                          title="Ver todos los registros de este grupo"
-                          style={{
-                            background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                            color: '#00d4ff', borderRadius: '4px', padding: '2px 8px',
-                            fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                            textTransform: 'uppercase', letterSpacing: '0.5px',
-                            display: 'flex', alignItems: 'center', gap: 4,
-                          }}
-                        >
-                          <Users size={10} /> Ver {v.cantidad}
-                        </button>
-                      )}
-                      {v.cantidad > 1 && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); descartarGrupo(v.normalizado, v.cantidad); }}
-                          title="Marcar como correcto — no es un duplicado real"
-                          style={{
-                            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-                            color: '#34d399', borderRadius: '4px', padding: '2px 8px',
-                            fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                            textTransform: 'uppercase', letterSpacing: '0.5px',
-                            display: 'flex', alignItems: 'center', gap: 4,
-                          }}
-                        >
-                          <CheckCircle size={10} /> OK
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {v.variantes.map((varName, j) => (
-                      <VarianteChip
-                        key={j}
-                        label={varName}
-                        selected={empleadoresSeleccionados.includes(varName)}
-                        onToggle={() => setEmpleadoresSeleccionados(prev =>
-                          prev.includes(varName) ? prev.filter(x => x !== varName) : [...prev, varName]
+              {variantesFiltradas.map((v, i) => {
+                // 1) Detección de duplicados dentro de este grupo
+                const keyCounts = new Map<string, number>();
+                for (const item of v.variantes) {
+                  const k = simplificarParaDuplicados(item);
+                  if (k) keyCounts.set(k, (keyCounts.get(k) || 0) + 1);
+                }
+                const normCounts = new Map<string, number>();
+                for (const item of v.variantes) {
+                  const norm = normalizar(item);
+                  if (norm && norm !== 'Sin dato') normCounts.set(norm, (normCounts.get(norm) || 0) + 1);
+                }
+
+                const dupsSet = new Set<string>();
+                for (const item of v.variantes) {
+                  const k = simplificarParaDuplicados(item);
+                  const norm = normalizar(item);
+                  if ((k && (keyCounts.get(k) || 0) > 1) || (norm && norm !== 'Sin dato' && (normCounts.get(norm) || 0) > 1)) {
+                    dupsSet.add(item);
+                  }
+                }
+
+                // 2) Ordenar: variantes duplicadas (verdes) primero, luego el resto
+                const variantesOrdenadas = [...v.variantes].sort((a, b) => {
+                  const aDup = dupsSet.has(a) ? 0 : 1;
+                  const bDup = dupsSet.has(b) ? 0 : 1;
+                  if (aDup !== bDup) return aDup - bDup;
+                  return a.localeCompare(b);
+                });
+
+                const tieneDuplicados = dupsSet.size > 0;
+
+                return (
+                  <div key={i} style={{
+                    marginBottom: 12, padding: '12px 14px',
+                    background: tieneDuplicados ? 'rgba(16,185,129,0.03)' : 'rgba(0,0,0,0.3)',
+                    borderRadius: '8px',
+                    border: `1px solid ${tieneDuplicados ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <div style={{ fontSize: '11px', color: tieneDuplicados ? '#34d399' : '#fbbf24', fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                        {tieneDuplicados && (
+                          <span style={{
+                            padding: '2px 7px',
+                            borderRadius: '4px',
+                            background: 'rgba(16,185,129,0.15)',
+                            border: '1px solid rgba(16,185,129,0.35)',
+                            color: '#34d399',
+                            fontSize: '9px',
+                            fontWeight: 800,
+                            letterSpacing: '0.5px',
+                          }}>
+                            {dupsSet.size} DUPLICADOS DETECTADOS
+                          </span>
                         )}
-                      />
-                    ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        {tieneDuplicados && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const dups = Array.from(dupsSet);
+                              setEmpleadoresSeleccionados(dups);
+                              const sugerido = [...dups].sort((a, b) => b.length - a.length)[0];
+                              if (sugerido) setEmpleadorCorreccion(sugerido);
+                            }}
+                            title="Seleccionar todas las variantes duplicadas de este grupo"
+                            style={{
+                              background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)',
+                              color: '#34d399', borderRadius: '4px', padding: '2px 8px',
+                              fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                              textTransform: 'uppercase', letterSpacing: '0.5px',
+                              display: 'flex', alignItems: 'center', gap: 4,
+                            }}
+                          >
+                            <CheckCircle size={10} /> Elegir duplicados ({dupsSet.size})
+                          </button>
+                        )}
+                        {v.cantidad > 1 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              cargarRegistrosGrupo(v.variantes, v.normalizado);
+                            }}
+                            title="Ver todos los registros de este grupo"
+                            style={{
+                              background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
+                              color: '#00d4ff', borderRadius: '4px', padding: '2px 8px',
+                              fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                              textTransform: 'uppercase', letterSpacing: '0.5px',
+                              display: 'flex', alignItems: 'center', gap: 4,
+                            }}
+                          >
+                            <Users size={10} /> Ver {v.cantidad}
+                          </button>
+                        )}
+                        {v.cantidad > 1 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); descartarGrupo(v.normalizado, v.cantidad); }}
+                            title="Marcar como correcto — no es un duplicado real"
+                            style={{
+                              background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
+                              color: '#34d399', borderRadius: '4px', padding: '2px 8px',
+                              fontSize: '9px', fontWeight: 800, cursor: 'pointer',
+                              textTransform: 'uppercase', letterSpacing: '0.5px',
+                              display: 'flex', alignItems: 'center', gap: 4,
+                            }}
+                          >
+                            <CheckCircle size={10} /> OK
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {variantesOrdenadas.map((varName, j) => (
+                        <VarianteChip
+                          key={j}
+                          label={varName}
+                          isDuplicate={dupsSet.has(varName)}
+                          selected={empleadoresSeleccionados.includes(varName)}
+                          onToggle={() => setEmpleadoresSeleccionados(prev =>
+                            prev.includes(varName) ? prev.filter(x => x !== varName) : [...prev, varName]
+                          )}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
