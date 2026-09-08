@@ -11,7 +11,8 @@ import CustomSelect from '@/components/CustomSelect';
 import { getSession } from '@/lib/auth';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
-  Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download, Pencil
+  Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download, Pencil,
+  Copy, Check
 } from 'lucide-react';
 import { parsePastedText, normalizeCuil, ParsedRow } from '@/lib/verificador-utils';
 
@@ -348,13 +349,17 @@ function VarianteChip({
   onToggle,
   isDuplicate = false,
   title,
+  onCopy,
 }: {
   label: string;
   selected: boolean;
   onToggle: () => void;
   isDuplicate?: boolean;
   title?: string;
+  onCopy?: (text: string) => void;
 }) {
+  const [copiado, setCopiado] = useState(false);
+
   let background = 'rgba(255,255,255,0.04)';
   let border = '1px solid rgba(255,255,255,0.06)';
   let color = '#888';
@@ -377,12 +382,24 @@ function VarianteChip({
     color = '#fbbf24';
   }
 
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      navigator.clipboard.writeText(label);
+      setCopiado(true);
+      if (onCopy) onCopy(label);
+      setTimeout(() => setCopiado(false), 1800);
+    } catch (err) {
+      console.error('Error al copiar:', err);
+    }
+  };
+
   return (
     <span
       onClick={onToggle}
       title={title || (isDuplicate ? 'Variante duplicada detectada' : undefined)}
       style={{
-        padding: '4px 10px',
+        padding: selected ? '3px 8px 3px 10px' : '4px 10px',
         borderRadius: '4px',
         fontSize: '11px',
         background,
@@ -395,6 +412,7 @@ function VarianteChip({
         alignItems: 'center',
         gap: '5px',
         transition: 'all 0.15s ease',
+        userSelect: 'none',
       }}
     >
       {isDuplicate && (
@@ -408,7 +426,28 @@ function VarianteChip({
           flexShrink: 0,
         }} />
       )}
-      {label}
+      <span>{label}</span>
+      {selected && (
+        <span
+          onClick={handleCopy}
+          title={copiado ? '¡Copiado!' : 'Copiar nombre'}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2px 4px',
+            marginLeft: '4px',
+            borderRadius: '3px',
+            background: copiado ? 'rgba(52,211,153,0.35)' : 'rgba(255,255,255,0.18)',
+            border: `1px solid ${copiado ? '#34d399' : 'rgba(255,255,255,0.3)'}`,
+            color: copiado ? '#34d399' : '#ffffff',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          {copiado ? <Check size={11} /> : <Copy size={11} />}
+        </span>
+      )}
     </span>
   );
 }
