@@ -89,6 +89,53 @@ export const permisoRolSchema = z.object({
 export type Objetivo = z.infer<typeof objetivoSchema>;
 export type PermisoRol = z.infer<typeof permisoRolSchema>;
 
+export const LISTA_PERMISOS_ROLES = [
+  { id: 'crear_registros', label: 'Crear Registros', desc: 'Permite agregar nuevos registros.' },
+  { id: 'editar_registros', label: 'Editar Registros', desc: 'Permite modificar registros existentes.' },
+  { id: 'eliminar_registros', label: 'Eliminar Registros', desc: 'Permite borrar registros desde la tabla.' },
+  { id: 'exportar_excel', label: 'Exportar a Excel', desc: 'Permite descargar el listado de registros.' },
+  { id: 'ver_bitacora', label: 'Ícono Recordatorio y Seguimiento', desc: 'Permite visualizar el ícono de recordatorio y seguimiento.' },
+  { id: 'ver_recordatorios', label: 'Ícono Recordatorios', desc: 'Permite visualizar el ícono de recordatorios.' },
+  { id: 'ver_comentarios', label: 'Ícono Comentarios', desc: 'Permite visualizar el ícono de comentarios.' },
+] as const;
+
+export type PermisoId = typeof LISTA_PERMISOS_ROLES[number]['id'];
+
+export function getPermisoActivo(
+  permisosConfig: PermisoRol[],
+  permiso: string,
+  analista?: string | null,
+  defaultValue: boolean = true
+): boolean {
+  if (analista) {
+    const formatted = analista.trim().toLowerCase();
+    const specific = permisosConfig.find(
+      p => (p.rol.toLowerCase() === `analista:${formatted}` || p.rol.toLowerCase() === formatted) && p.permiso === permiso
+    );
+    if (specific !== undefined) {
+      return specific.activo;
+    }
+  }
+
+  const general = permisosConfig.find(p => p.rol === 'analista' && p.permiso === permiso);
+  if (general !== undefined) {
+    return general.activo;
+  }
+
+  return defaultValue;
+}
+
+export function getPermisoOverride(
+  permisosConfig: PermisoRol[],
+  permiso: string,
+  analista: string
+): PermisoRol | undefined {
+  const formatted = analista.trim().toLowerCase();
+  return permisosConfig.find(
+    p => (p.rol.toLowerCase() === `analista:${formatted}` || p.rol.toLowerCase() === formatted) && p.permiso === permiso
+  );
+}
+
 // ── AlertaConfig ──────────────────────────────────────────────────────────────
 export const alertaConfigSchema = z.object({
   id: z.string().optional(),

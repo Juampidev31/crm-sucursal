@@ -8,7 +8,7 @@ import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useHistorico } from '@/features/historico/HistoricoProvider';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useToast } from '@/hooks/useToast';
-import { CONFIG, HistoricoVenta } from '@/types';
+import { CONFIG, HistoricoVenta, LISTA_PERMISOS_ROLES, getPermisoOverride } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
 import CustomSelect from '@/components/CustomSelect';
 import {
@@ -201,6 +201,7 @@ export default function AjustesPage() {
   const [saving, setSaving] = useState(false);
   const [savingDias, setSavingDias] = useState<string | null>(null);
   const [savingPermiso, setSavingPermiso] = useState<string | null>(null);
+  const [permisoScope, setPermisoScope] = useState<string>('general');
 
   const [histAnalista, setHistAnalista] = useState('');
   const [histAnio, setHistAnio] = useState(new Date().getFullYear() - 1);
@@ -323,6 +324,38 @@ export default function AjustesPage() {
       showSuccess(`Permiso ${config.activo ? 'activado' : 'desactivado'}`);
     } catch (err: any) {
       showError(`Error al actualizar permiso: ${err.message}`);
+    }
+    setSavingPermiso(null);
+  };
+
+  const resetPermisoAnalista = async (analista: string, permiso: string) => {
+    const rol = `analista:${analista}`;
+    const key = `${rol}-${permiso}`;
+    setSavingPermiso(key);
+    try {
+      const { error } = await supabase.from('permisos_roles').delete().eq('rol', rol).eq('permiso', permiso);
+      if (error) throw error;
+      applyPermisoConfigChange('DELETE', { rol, permiso, activo: false });
+      showSuccess(`Permiso de ${analista} restablecido al rol general`);
+    } catch (err: any) {
+      showError(`Error al restablecer permiso: ${err.message}`);
+    }
+    setSavingPermiso(null);
+  };
+
+  const resetAllPermisosAnalista = async (analista: string) => {
+    const rol = `analista:${analista}`;
+    const key = `reset-all-${rol}`;
+    setSavingPermiso(key);
+    try {
+      const { error } = await supabase.from('permisos_roles').delete().eq('rol', rol);
+      if (error) throw error;
+      LISTA_PERMISOS_ROLES.forEach(p => {
+        applyPermisoConfigChange('DELETE', { rol, permiso: p.id, activo: false });
+      });
+      showSuccess(`Todos los permisos de ${analista} fueron restablecidos al general`);
+    } catch (err: any) {
+      showError(`Error: ${err.message}`);
     }
     setSavingPermiso(null);
   };
@@ -868,66 +901,291 @@ export default function AjustesPage() {
           {/* TAB: PERMISOS */}
           {activeTab === 'configuracion' && configSubTab === 'permisos' && isAdmin && (
             <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)' }}>
-              <div className="data-card-header" style={{ marginBottom: '32px' }}>
+              <div className="data-card-header" style={{ marginBottom: '24px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Roles y Permisos</h3>
-                <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Habilitá o deshabilitá funciones específicas para los analistas en tiempo real.</p>
+                <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>
+                  Habilitá o deshabilitá funciones específicas de forma general o para cada analista en tiempo real.
+                </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-                {['analista'].map(rol => {
-                  const LISTA_PERMISOS = [
-                    { id: 'crear_registros', label: 'Crear Registros', desc: 'Permite agregar nuevos registros.' },
-                    { id: 'editar_registros', label: 'Editar Registros', desc: 'Permite modificar registros existentes.' },
-                    { id: 'eliminar_registros', label: 'Eliminar Registros', desc: 'Permite borrar registros desde la tabla.' },
-                    { id: 'exportar_excel', label: 'Exportar a Excel', desc: 'Permite descargar el listado de registros.' },
-                    { id: 'ver_bitacora', label: 'Ícono Recordatorio y Seguimiento', desc: 'Permite visualizar el ícono de recordatorio y seguimiento.' },
-                    { id: 'ver_recordatorios', label: 'Ícono Recordatorios', desc: 'Permite visualizar el ícono de recordatorios.' },
-                    { id: 'ver_comentarios', label: 'Ícono Comentarios', desc: 'Permite visualizar el ícono de comentarios.' },
-                  ];
+              {/* Selector de Ámbito: General vs. Analistas Individuales */}
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+                  Seleccionar Ámbito de Configuración
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setPermisoScope('general')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      background: permisoScope === 'general' ? 'rgba(0, 212, 255, 0.15)' : 'rgba(255,255,255,0.03)',
+                      color: permisoScope === 'general' ? '#00d4ff' : '#9ca3af',
+                      border: `1px solid ${permisoScope === 'general' ? 'rgba(0, 212, 255, 0.4)' : 'rgba(255,255,255,0.06)'}`,
+                      boxShadow: permisoScope === 'general' ? '0 0 12px rgba(0, 212, 255, 0.2)' : 'none',
+                    }}
+                  >
+                    <Users size={15} />
+                    <span>Rol General: Analista (Por Defecto)</span>
+                  </button>
 
-                  return (
-                    <div key={rol} style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', gridColumn: '1 / -1' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                        <User size={16} color="#00d4ff" />
-                        <h4 style={{ fontWeight: 800, fontSize: '15px', color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rol: {rol}</h4>
+                  <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.08)', margin: '0 4px' }} />
+
+                  {analistasDefault.map(analista => {
+                    const isSelected = permisoScope === analista;
+                    const customCount = LISTA_PERMISOS_ROLES.filter(p => !!getPermisoOverride(ctxPermisos, p.id, analista)).length;
+
+                    return (
+                      <button
+                        key={analista}
+                        type="button"
+                        onClick={() => setPermisoScope(analista)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          background: isSelected ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.02)',
+                          color: isSelected ? '#c084fc' : '#9ca3af',
+                          border: `1px solid ${isSelected ? 'rgba(168, 85, 247, 0.4)' : 'rgba(255,255,255,0.06)'}`,
+                          boxShadow: isSelected ? '0 0 12px rgba(168, 85, 247, 0.2)' : 'none',
+                        }}
+                      >
+                        <User size={14} />
+                        <span>{analista}</span>
+                        {customCount > 0 && (
+                          <span style={{
+                            fontSize: '10px',
+                            fontWeight: 800,
+                            padding: '1px 6px',
+                            borderRadius: '8px',
+                            background: isSelected ? 'rgba(192, 132, 252, 0.3)' : 'rgba(0, 212, 255, 0.15)',
+                            color: isSelected ? '#fff' : '#00d4ff',
+                            border: `1px solid ${isSelected ? 'rgba(192, 132, 252, 0.5)' : 'rgba(0, 212, 255, 0.3)'}`,
+                          }}>
+                            {customCount} pers.
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Encabezado del contenedor de permisos actual */}
+              {(() => {
+                const isGeneral = permisoScope === 'general';
+                const customCount = isGeneral
+                  ? 0
+                  : LISTA_PERMISOS_ROLES.filter(p => !!getPermisoOverride(ctxPermisos, p.id, permisoScope)).length;
+
+                return (
+                  <div style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    padding: '24px',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {isGeneral ? (
+                          <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(0, 212, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Shield size={18} color="#00d4ff" />
+                          </div>
+                        ) : (
+                          <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <User size={18} color="#c084fc" />
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <h4 style={{ fontWeight: 800, fontSize: '16px', color: '#fff', letterSpacing: '-0.3px' }}>
+                              {isGeneral ? 'Rol General: Analista (Por Defecto)' : `Permisos Individuales: ${permisoScope}`}
+                            </h4>
+                            {isGeneral ? (
+                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(0, 212, 255, 0.1)', color: '#00d4ff', border: '1px solid rgba(0, 212, 255, 0.2)' }}>
+                                Base Global
+                              </span>
+                            ) : customCount > 0 ? (
+                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                                {customCount} personalizada(s)
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', color: '#888' }}>
+                                Hereda todo de General
+                              </span>
+                            )}
+                          </div>
+                          <p style={{ fontSize: '12px', color: '#888', marginTop: '3px' }}>
+                            {isGeneral
+                              ? 'Estos permisos se aplican a todos los analistas que no tengan una regla personalizada.'
+                              : `Configuración específica para ${permisoScope}. Los permisos sin personalizar heredan el valor general.`}
+                          </p>
+                        </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                        {LISTA_PERMISOS.map(p => {
-                          const isActive = ctxPermisos.find(cp => cp.rol === rol && cp.permiso === p.id)?.activo ?? true;
-                          const isSaving = savingPermiso === `${rol}-${p.id}`;
+                      {!isGeneral && customCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => resetAllPermisosAnalista(permisoScope)}
+                          disabled={savingPermiso === `reset-all-analista:${permisoScope}`}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'rgba(248, 113, 113, 0.08)',
+                            border: '1px solid rgba(248, 113, 113, 0.25)',
+                            color: '#f87171',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248, 113, 113, 0.15)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(248, 113, 113, 0.08)')}
+                        >
+                          <RotateCcw size={13} />
+                          <span>Restablecer todos a General</span>
+                        </button>
+                      )}
+                    </div>
 
-                          return (
-                            <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                              <div>
-                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#ddd' }}>{p.label}</div>
-                                <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>{p.desc}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                      {LISTA_PERMISOS_ROLES.map(p => {
+                        const targetRol = isGeneral ? 'analista' : `analista:${permisoScope}`;
+                        const override = isGeneral ? undefined : getPermisoOverride(ctxPermisos, p.id, permisoScope);
+                        const isCustom = override !== undefined;
+                        const generalActive = ctxPermisos.find(cp => cp.rol === 'analista' && cp.permiso === p.id)?.activo ?? true;
+                        const isActive = isCustom ? override.activo : (isGeneral ? generalActive : generalActive);
+                        const isSaving = savingPermiso === `${targetRol}-${p.id}` || savingPermiso === `${permisoScope}-${p.id}`;
+
+                        return (
+                          <div
+                            key={p.id}
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              padding: '16px',
+                              background: isCustom ? 'rgba(168, 85, 247, 0.03)' : 'rgba(0,0,0,0.25)',
+                              borderRadius: '10px',
+                              border: `1px solid ${isCustom ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.04)'}`,
+                              gap: '12px',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#eee' }}>{p.label}</div>
+                                  {!isGeneral && (
+                                    isCustom ? (
+                                      <span style={{
+                                        fontSize: '10px',
+                                        fontWeight: 800,
+                                        padding: '2px 7px',
+                                        borderRadius: '6px',
+                                        background: 'rgba(168, 85, 247, 0.18)',
+                                        color: '#c084fc',
+                                        border: '1px solid rgba(168, 85, 247, 0.35)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                      }}>
+                                        Personalizado
+                                      </span>
+                                    ) : (
+                                      <span style={{
+                                        fontSize: '10px',
+                                        fontWeight: 600,
+                                        padding: '2px 7px',
+                                        borderRadius: '6px',
+                                        background: 'rgba(255,255,255,0.04)',
+                                        color: '#777',
+                                        border: '1px solid rgba(255,255,255,0.06)',
+                                      }}>
+                                        Heredado ({generalActive ? 'Activado' : 'Desactivado'})
+                                      </span>
+                                    )
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '11.5px', color: '#777', marginTop: '4px', lineHeight: 1.4 }}>
+                                  {p.desc}
+                                </div>
                               </div>
+
                               <button
-                                onClick={() => togglePermiso(rol, p.id, isActive)}
+                                type="button"
+                                onClick={() => togglePermiso(targetRol, p.id, isActive)}
                                 disabled={isSaving}
                                 style={{
-                                  background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(248, 113, 113, 0.1)',
-                                  border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(248, 113, 113, 0.3)'}`,
+                                  background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(248, 113, 113, 0.12)',
+                                  border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(248, 113, 113, 0.35)'}`,
                                   color: isActive ? '#00ff88' : '#ff3366',
-                                  padding: '6px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
+                                  padding: '7px 14px',
+                                  borderRadius: '20px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 800,
                                   cursor: isSaving ? 'not-allowed' : 'pointer',
                                   opacity: isSaving ? 0.6 : 1,
                                   transition: 'all 0.2s',
-                                  minWidth: '85px'
+                                  minWidth: '95px',
+                                  textAlign: 'center',
+                                  boxShadow: isActive ? '0 0 10px rgba(16, 185, 129, 0.15)' : 'none',
                                 }}
                               >
                                 {isSaving ? '...' : isActive ? 'Activado' : 'Desactivado'}
                               </button>
                             </div>
-                          );
-                        })}
-                      </div>
 
+                            {!isGeneral && isCustom && (
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => resetPermisoAnalista(permisoScope, p.id)}
+                                  disabled={isSaving}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#888',
+                                    fontSize: '11px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    cursor: 'pointer',
+                                    padding: '2px 6px',
+                                    transition: 'color 0.2s',
+                                  }}
+                                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+                                  onMouseLeave={e => (e.currentTarget.style.color = '#888')}
+                                >
+                                  <RotateCcw size={11} />
+                                  <span>Heredar de General</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

@@ -57,28 +57,44 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Chunk #1: bloqueamos el render hasta tenerlo (≈1 round-trip).
-    let { data: first, error: firstErr, count } = await supabase
-      .from('registros')
-      .select(cols, { count: 'exact' })
-      .order('fecha', { ascending: false })
-      .range(0, PAGE - 1);
+    let first: any = null;
+    let firstErr: any = null;
+    let count: number | null = null;
 
-    // Fallback de seguridad si la columna 'etiquetas' aún no fue creada en la BD de Supabase
-    if (firstErr && (firstErr as { code?: string }).code === '42703') {
-      cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,fijado,created_at,updated_at';
-      const fallbackRes = await supabase
+    try {
+      const res = await supabase
         .from('registros')
         .select(cols, { count: 'exact' })
         .order('fecha', { ascending: false })
         .range(0, PAGE - 1);
-      first = fallbackRes.data;
-      firstErr = fallbackRes.error;
+      first = res.data;
+      firstErr = res.error;
+      count = res.count;
+
+      // Fallback de seguridad si la columna 'etiquetas' aún no fue creada en la BD de Supabase
+      if (firstErr && (firstErr as { code?: string }).code === '42703') {
+        cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,fijado,created_at,updated_at';
+        const fallbackRes = await supabase
+          .from('registros')
+          .select(cols, { count: 'exact' })
+          .order('fecha', { ascending: false })
+          .range(0, PAGE - 1);
+        first = fallbackRes.data;
+        firstErr = fallbackRes.error;
+      }
+    } catch (networkErr: any) {
+      firstErr = networkErr;
     }
 
     if (refreshIdRef.current !== myId) return; // refresh nuevo invalidó este
 
     if (firstErr) {
-      reportError('refresh:registros', firstErr as { message: string });
+      const errMsg = (firstErr as { message?: string })?.message || String(firstErr);
+      if (errMsg.includes('fetch') || errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('abort')) {
+        console.warn('[RegistrosProvider] Error de red transitorio en refresh:', errMsg);
+      } else {
+        reportError('refresh:registros', firstErr as { message: string });
+      }
       if (!silent) setLoading(false);
       return;
     }
@@ -99,18 +115,34 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
       ranges.push([from, Math.min(from + PAGE - 1, lastIdx)]);
     }
 
-    const results = await Promise.all(
-      ranges.map(([f, t]) =>
-        supabase.from('registros').select(cols).order('fecha', { ascending: false }).range(f, t)
-      )
-    );
+    let results: any[] = [];
+    try {
+      results = await Promise.all(
+        ranges.map(([f, t]) =>
+          supabase.from('registros').select(cols).order('fecha', { ascending: false }).range(f, t)
+        )
+      );
+    } catch (parallelErr: any) {
+      console.warn('[RegistrosProvider] Error de red en chunks paralelos:', parallelErr?.message || parallelErr);
+      return;
+    }
 
     if (refreshIdRef.current !== myId) return;
 
     let totalDropped = 0;
     const restRaw: unknown[] = [];
-    for (const { data: chunk, error: err } of results) {
-      if (err) { reportError('refresh:registros', err as { message: string }); continue; }
+    for (const res of results) {
+      const chunk = res?.data;
+      const err = res?.error;
+      if (err) {
+        const msg = (err as { message?: string })?.message || String(err);
+        if (msg.includes('fetch') || msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('abort')) {
+          console.warn('[RegistrosProvider] Error de red en chunk:', msg);
+        } else {
+          reportError('refresh:registros', err as { message: string });
+        }
+        continue;
+      }
       if (chunk) restRaw.push(...chunk);
     }
     const { parsed: restParsed, dropped: restDropped } = parseChunk(restRaw);

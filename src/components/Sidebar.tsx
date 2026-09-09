@@ -12,7 +12,7 @@ import {
   DollarSign, Settings, Lock, Plus,
   SlidersHorizontal, ChevronDown, ChevronUp, ChevronLeft, X, Calculator,
   ZoomIn, ZoomOut, FileSpreadsheet, Users, Database, TrendingUp, FolderSearch,
-  UserCheck, Bell, Tag
+  UserCheck, Bell, Tag, LogOut, User
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { setSession } from '@/lib/auth';
@@ -278,10 +278,10 @@ export default function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAdmin, user, refreshUser } = useAuth();
+  const { isAdmin, realIsAdmin, simulatedAnalista, setSimulatedAnalista, user, refreshUser, logout } = useAuth();
   const currentAnalistaPage = searchParams?.get('analista') || 'PDV';
   const { setIsCreationModalOpen, showFilters, setShowFilters, pageSize, setPageSize, filters, limpiarFiltros, toggleEstado, setFilter } = useFilter();
-  const { permisosConfig, alertasConfig } = useSettings();
+  const { permisosConfig, alertasConfig, hasPermiso } = useSettings();
   const { nombres: analistaNombres } = useAnalistas();
   const { registros } = useRegistros(true);
 
@@ -303,7 +303,10 @@ export default function Sidebar({
     return counts;
   }, [registros, alertasConfig]);
 
-  const canCreate = isAdmin || permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'crear_registros')?.activo !== false;
+  const currentAnalista = simulatedAnalista || user?.username || (filters?.analista && filters.analista !== 'todos' ? filters.analista : null);
+  const canCreate = isAdmin || hasPermiso('crear_registros', currentAnalista);
+  const canExport = isAdmin || hasPermiso('exportar_excel', currentAnalista);
+  const canSeeRecordatorios = isAdmin || hasPermiso('ver_recordatorios', currentAnalista);
 
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showXlsxModal, setShowXlsxModal] = useState(false);
@@ -851,14 +854,15 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
-
             {/* 4. Recordatorios & Etiquetas */}
-            <div
-              onMouseEnter={() => handleMouseEnter('recordatorios')}
-              onMouseLeave={handleMouseLeave}
-              style={{ position: 'relative' }}
-            >
+            {canSeeRecordatorios && (
+              <>
+                <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+                <div
+                  onMouseEnter={() => handleMouseEnter('recordatorios')}
+                  onMouseLeave={handleMouseLeave}
+                  style={{ position: 'relative' }}
+                >
               <button
                 type="button"
                 onClick={() => {
@@ -934,6 +938,8 @@ export default function Sidebar({
                 </div>
               )}
             </div>
+          </>
+        )}
 
             <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
 
@@ -1046,8 +1052,8 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* 7. Descargar xlsx (Solo Admin) */}
-            {isAdmin && (
+            {/* 7. Descargar xlsx */}
+            {canExport && (
               <div
                 onMouseEnter={() => handleMouseEnter('xlsx')}
                 onMouseLeave={handleMouseLeave}
@@ -1103,36 +1109,107 @@ export default function Sidebar({
               <button
                 type="button"
                 onClick={() => {
-                  if (isAdmin) router.push('/ajustes');
+                  if (realIsAdmin) router.push('/ajustes');
                   else setShowAdminModal(true);
                 }}
                 style={{
                   width: 60,
                   height: 60,
                   borderRadius: 16,
-                  background: pathname.startsWith('/ajustes') ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  border: '1px solid transparent',
+                  background: pathname.startsWith('/ajustes') ? 'rgba(255,255,255,0.1)' : simulatedAnalista ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+                  border: simulatedAnalista ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'rgba(255, 255, 255, 0.65)',
+                  color: simulatedAnalista ? '#c084fc' : 'rgba(255, 255, 255, 0.65)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)')}
+                onMouseEnter={e => (e.currentTarget.style.color = simulatedAnalista ? '#e9d5ff' : '#fff')}
+                onMouseLeave={e => (e.currentTarget.style.color = simulatedAnalista ? '#c084fc' : 'rgba(255, 255, 255, 0.65)')}
               >
-                {isAdmin ? <Settings size={32} /> : <Lock size={32} />}
+                {realIsAdmin ? (simulatedAnalista ? <User size={28} /> : <Settings size={32} />) : <Lock size={32} />}
               </button>
 
               {activeHover === 'ajustes' && (
-                <div style={{ ...flyoutStyle, bottom: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {isAdmin ? 'Ajustes' : 'ACCESO'}
+                <div style={{ ...flyoutStyle, bottom: 0, minWidth: realIsAdmin ? 250 : 200 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: simulatedAnalista ? '#c084fc' : '#fff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {simulatedAnalista ? `Simulando: ${simulatedAnalista}` : realIsAdmin ? 'Ajustes' : 'ACCESO'}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
-                    {isAdmin ? 'Configuración general del sistema.' : 'Ingresar clave.'}
+                  <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4, marginBottom: realIsAdmin ? 12 : 0 }}>
+                    {simulatedAnalista
+                      ? `Navegando con los permisos de ${simulatedAnalista}.`
+                      : realIsAdmin ? 'Configuración general del sistema.' : 'Ingresar clave de administrador.'}
                   </div>
+
+                  {realIsAdmin && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '10px' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Probar vista como analista
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setSimulatedAnalista(null); }}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: !simulatedAnalista ? 'rgba(0, 212, 255, 0.2)' : 'rgba(255,255,255,0.04)',
+                            color: !simulatedAnalista ? '#00d4ff' : '#aaa',
+                            border: `1px solid ${!simulatedAnalista ? 'rgba(0, 212, 255, 0.4)' : 'transparent'}`,
+                          }}
+                        >
+                          Admin (Todo)
+                        </button>
+                        {analistaNombres.map(a => {
+                          const isSim = simulatedAnalista === a;
+                          return (
+                            <button
+                              key={a}
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setSimulatedAnalista(a); }}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                background: isSim ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255,255,255,0.04)',
+                                color: isSim ? '#c084fc' : '#aaa',
+                                border: `1px solid ${isSim ? 'rgba(168, 85, 247, 0.5)' : 'transparent'}`,
+                              }}
+                            >
+                              {a}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); logout(); }}
+                        style={{
+                          marginTop: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#f87171',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          padding: '4px 0',
+                        }}
+                      >
+                        <LogOut size={12} />
+                        <span>Cerrar Sesión</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

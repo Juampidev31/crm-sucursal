@@ -8,6 +8,7 @@ import { useDataError } from '@/context/ErrorContext';
 import {
   AlertaConfig, DiasConfig, PermisoRol, Analista,
   alertaConfigSchema, diasConfigSchema, permisoRolSchema, analistaSchema, parseRows,
+  getPermisoActivo,
 } from '@/types';
 import { validateBroadcast } from '@/lib/broadcast-utils';
 
@@ -23,6 +24,7 @@ interface SettingsCtx {
   applyDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
   applyPermisoConfigChange: (type: ChangeType, config: PermisoRol) => void;
   applyAnalistaChange: (type: ChangeType, config: Analista) => void;
+  hasPermiso: (permiso: string, analista?: string | null, defaultValue?: boolean) => boolean;
 }
 
 const SettingsContext = createContext<SettingsCtx | null>(null);
@@ -177,12 +179,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => { });
   }, [broadcastRef]);
 
+  const hasPermiso = useCallback((permiso: string, analista?: string | null, defaultValue: boolean = true) => {
+    return getPermisoActivo(permisosConfig, permiso, analista, defaultValue);
+  }, [permisosConfig]);
+
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
   const value = useMemo<SettingsCtx>(() => ({
     alertasConfig, diasConfig, permisosConfig, analistas,
     mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange,
-  }), [alertasConfig, diasConfig, permisosConfig, analistas, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange]);
+    hasPermiso,
+  }), [alertasConfig, diasConfig, permisosConfig, analistas, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange, hasPermiso]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }

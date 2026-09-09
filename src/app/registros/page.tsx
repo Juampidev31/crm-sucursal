@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL, parsePastedNumber } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, Maximize2, Minimize2 } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, Maximize2, Minimize2, User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
@@ -261,8 +261,35 @@ function requiereDependencia(empleador?: string): boolean {
 // ── Validation ────────────────────────────────────────────────────────────────
 
 function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, string> {
-  if (isAdmin) return {};
   const errs: Record<string, string> = {};
+
+  // Regla de Score bajo: sólo permitido para scores de 0 a 549.
+  // No debe permitir guardar si el score está en 550 a 600 (Riesgo MEDIO), 601 a 700 (Riesgo BAJO), o +700 (PREMIUM)
+  if ((form.estado || '').trim().toLowerCase() === 'score bajo') {
+    if (form.puntaje !== undefined && form.puntaje !== null && String(form.puntaje).trim() !== '') {
+      const score = Number(form.puntaje);
+      if (score >= 550) {
+        errs.estado = 'No coincide estado con Score';
+      }
+    }
+  }
+
+  // Validación de Score vs Acuerdo de precios
+  if (form.puntaje !== undefined && form.puntaje !== null && String(form.puntaje).trim() !== '' && form.acuerdo_precios) {
+    const score = Number(form.puntaje);
+    const acuerdo = form.acuerdo_precios;
+    if (score <= 549 && acuerdo !== 'No califica') {
+      errs.acuerdo_precios = 'Debe ser No califica (0-549)';
+    } else if (score >= 550 && score <= 600 && acuerdo !== 'Riesgo Medio') {
+      errs.acuerdo_precios = 'Debe ser Riesgo MEDIO (550-600)';
+    } else if (score >= 601 && score <= 700 && acuerdo !== 'Riesgo Bajo') {
+      errs.acuerdo_precios = 'Debe ser Riesgo BAJO (601-700)';
+    } else if (score > 700 && acuerdo !== 'Premium') {
+      errs.acuerdo_precios = 'Debe ser PREMIUM (+700)';
+    }
+  }
+
+  if (isAdmin) return errs;
   if (!form.nombre?.trim()) errs.nombre = 'Requerido';
   else if (form.nombre.trim().length < 2) errs.nombre = 'Mín. 2 caracteres';
   else if (!REGEX_NOMBRE.test(form.nombre.trim())) errs.nombre = 'Solo letras';
@@ -290,21 +317,6 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
   
   if (requiereDependencia(form.empleador) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
-  }
-
-  // Validación de Score vs Acuerdo de precios
-  if (form.puntaje !== undefined && form.acuerdo_precios) {
-    const score = Number(form.puntaje);
-    const acuerdo = form.acuerdo_precios;
-    if (score < 500 && acuerdo !== 'No califica') {
-      errs.acuerdo_precios = 'Debe ser No califica (0-499)';
-    } else if (score >= 500 && score < 600 && acuerdo !== 'Riesgo Medio') {
-      errs.acuerdo_precios = 'Debe ser Riesgo MEDIO (500-599)';
-    } else if (score >= 600 && score < 700 && acuerdo !== 'Riesgo Bajo') {
-      errs.acuerdo_precios = 'Debe ser Riesgo BAJO (600-699)';
-    } else if (score >= 700 && acuerdo !== 'Premium') {
-      errs.acuerdo_precios = 'Debe ser PREMIUM (700-999)';
-    }
   }
 
   if (form.estado === 'derivado / rechazado cc' && !form.comentarios?.trim())
@@ -360,7 +372,8 @@ const PremiumSelect = ({
   onAddCustom,
   error,
   disabled = false,
-  style
+  style,
+  maxHeight,
 }: {
   value: string;
   onChange: (val: string) => void;
@@ -372,6 +385,7 @@ const PremiumSelect = ({
   error?: string;
   disabled?: boolean;
   style?: React.CSSProperties;
+  maxHeight?: string;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
@@ -495,7 +509,8 @@ const PremiumSelect = ({
       {isOpen && (
         <div style={{
           position: 'absolute',
-          top: 'calc(100% + 4px)',
+          top: openUpward ? 'auto' : 'calc(100% + 4px)',
+          bottom: openUpward ? 'calc(100% + 4px)' : 'auto',
           left: 0,
           right: 0,
           background: '#0c0c0c',
@@ -541,7 +556,11 @@ const PremiumSelect = ({
             </div>
           )}
 
-          <div style={{ maxHeight: '170px', overflowY: 'auto', padding: '4px' }}>
+          <div style={{
+            maxHeight: maxHeight !== undefined ? maxHeight : (isSearchable ? '300px' : 'none'),
+            overflowY: (maxHeight !== undefined ? maxHeight !== 'none' : isSearchable) ? 'auto' : 'visible',
+            padding: '4px'
+          }}>
             {!search && (
               <div
                 onClick={(e) => { e.stopPropagation(); handleSelect(""); }}
@@ -819,7 +838,10 @@ const RegistroModal = memo(function RegistroModal({
   useEffect(() => {
     if (isOpen) {
       setForm(initialData);
-      setErrors({});
+      const isMismatch = (initialData.estado || '').trim().toLowerCase() === 'score bajo' &&
+        initialData.puntaje !== undefined && initialData.puntaje !== null &&
+        Number(initialData.puntaje) >= 550;
+      setErrors(isMismatch ? { estado: 'No coincide estado con Score' } : {});
       setShowPhoneModal(false);
       setShowDupModal(false);
       setDupRecord(null);
@@ -859,16 +881,34 @@ const RegistroModal = memo(function RegistroModal({
   }, [isOpen, showDupModal, showPhoneModal, onClose]);
 
   const set = (field: keyof Registro, value: unknown) => {
+    let estadoMismatch = false;
+
     setForm(prev => {
       const next = { ...prev, [field]: value };
 
       // Auto-actualizar acuerdo_precios según el score
       if (field === 'puntaje' && value !== undefined && value !== '') {
         const score = Number(value);
-        if (score < 500) next.acuerdo_precios = 'No califica';
-        else if (score < 600) next.acuerdo_precios = 'Riesgo Medio';
-        else if (score < 700) next.acuerdo_precios = 'Riesgo Bajo';
+        if (score <= 549) next.acuerdo_precios = 'No califica';
+        else if (score <= 600) next.acuerdo_precios = 'Riesgo Medio';
+        else if (score <= 700) next.acuerdo_precios = 'Riesgo Bajo';
         else next.acuerdo_precios = 'Premium';
+
+        // Si el estado actual es 'score bajo' y el nuevo puntaje es >= 550,
+        // no corresponde dejarlo como 'score bajo' porque el estado cambia.
+        // Se resetea el estado para solicitar que el usuario elija el estado correspondiente.
+        if (score >= 550 && (next.estado || '').trim().toLowerCase() === 'score bajo') {
+          next.estado = '';
+          estadoMismatch = true;
+        }
+      }
+
+      if (field === 'estado') {
+        const est = String(value || '').trim().toLowerCase();
+        const score = Number(next.puntaje);
+        if (est === 'score bajo' && !isNaN(score) && score >= 550) {
+          estadoMismatch = true;
+        }
       }
 
       // Ya no limpiamos el empleador automáticamente al cambiar de estado
@@ -878,6 +918,12 @@ const RegistroModal = memo(function RegistroModal({
     if (errors[field]) setErrors(prev => { const e = { ...prev }; delete e[field]; return e; });
     if (field === 'puntaje' && errors.acuerdo_precios) {
       setErrors(prev => { const e = { ...prev }; delete e.acuerdo_precios; return e; });
+    }
+
+    if (estadoMismatch) {
+      setErrors(prev => ({ ...prev, estado: 'No coincide estado con Score' }));
+    } else if ((field === 'puntaje' || field === 'estado') && errors.estado) {
+      setErrors(prev => { const e = { ...prev }; delete e.estado; return e; });
     }
   };
 
@@ -1151,12 +1197,14 @@ const RegistroModal = memo(function RegistroModal({
                   error={errors.analista}
                 />
               </Field>
-              <Field label="Estado *">
+              <Field label="Estado *" error={errors.estado}>
                 <PremiumSelect
-                  value={form.estado || 'proyeccion'}
+                  value={form.estado ?? ''}
                   onChange={val => set('estado', val)}
                   options={ESTADOS}
                   placeholder="Seleccionar estado..."
+                  error={errors.estado}
+                  maxHeight="none"
                 />
               </Field>
               <Field label={`Monto${(esVentaOAprobado && !isAdmin) ? ' *' : ''}`} error={errors.monto}>
@@ -1919,41 +1967,11 @@ const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RegistrosPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, simulatedAnalista, setSimulatedAnalista, user } = useAuth();
   const { registros, applyRegistroChange, pushRegistroChange, loading, refresh } = useRegistros();
-  const { alertasConfig, permisosConfig } = useSettings();
+  const { alertasConfig, permisosConfig, hasPermiso } = useSettings();
   const { nombres: ANALISTAS } = useAnalistas();
   const searchParams = useSearchParams();
-
-  const canDeleteRegistros = useMemo(() => {
-    if (isAdmin) return true;
-    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'eliminar_registros');
-    return perm ? perm.activo : true; // default true
-  }, [isAdmin, permisosConfig]);
-
-  const canEditRegistros = useMemo(() => {
-    if (isAdmin) return true;
-    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'editar_registros');
-    return perm ? perm.activo : true; // default true
-  }, [isAdmin, permisosConfig]);
-
-  const canSeeComentarios = useMemo(() => {
-    if (isAdmin) return true;
-    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'ver_comentarios');
-    return perm ? perm.activo : true; // default true
-  }, [isAdmin, permisosConfig]);
-
-  const canSeeRecordatorios = useMemo(() => {
-    if (isAdmin) return true;
-    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'ver_recordatorios');
-    return perm ? perm.activo : true; // default true
-  }, [isAdmin, permisosConfig]);
-
-  const canSeeBitacora = useMemo(() => {
-    if (isAdmin) return true;
-    const perm = permisosConfig.find(p => p.rol === 'analista' && p.permiso === 'ver_bitacora');
-    return perm ? perm.activo : true; // default true
-  }, [isAdmin, permisosConfig]);
 
   const {
     filters, setFilter, toggleEtiqueta, limpiarFiltros, hayFiltros,
@@ -1962,6 +1980,12 @@ export default function RegistrosPage() {
     currentPage, setCurrentPage, setTotalResults,
     showFilters, setShowFilters,
   } = useFilter();
+
+  const canPerform = useCallback((permiso: string, recordAnalista?: string) => {
+    if (isAdmin) return true;
+    const target = simulatedAnalista || user?.username || recordAnalista || (filters?.analista && filters.analista !== 'todos' ? filters.analista : null);
+    return hasPermiso(permiso, target);
+  }, [isAdmin, simulatedAnalista, user?.username, filters?.analista, hasPermiso]);
 
   const [showInlineFilters, setShowInlineFilters] = useState(false);
 
@@ -2091,12 +2115,17 @@ export default function RegistrosPage() {
 
   useEffect(() => {
     if (isCreationModalOpen) {
+      if (!canPerform('crear_registros')) {
+        showToast('No tenés permisos para crear registros', 'error');
+        setIsCreationModalOpen(false);
+        return;
+      }
       setEditingId(null);
-      setModalInitialData({ ...initialForm, analista: ANALISTAS[0] ?? '' });
+      setModalInitialData({ ...initialForm, analista: simulatedAnalista || (ANALISTAS[0] ?? '') });
       setModalOpen(true);
       setIsCreationModalOpen(false);
     }
-  }, [isCreationModalOpen, setIsCreationModalOpen]);
+  }, [isCreationModalOpen, setIsCreationModalOpen, canPerform, showToast, simulatedAnalista, ANALISTAS]);
 
   // Pre-computed search index: one lowercase string per record (built once when registros change)
   const searchIndex = useMemo(() => {
@@ -2449,9 +2478,9 @@ export default function RegistrosPage() {
                 width: '6px',
                 height: '6px',
                 borderRadius: '50%',
-                background: Number(reg.puntaje) >= 700 ? 'var(--green)' :
-                            Number(reg.puntaje) >= 600 ? '#60a5fa' :
-                            Number(reg.puntaje) >= 500 ? '#fbbf24' : '#ef4444'
+                background: Number(reg.puntaje) > 700 ? 'var(--green)' :
+                            Number(reg.puntaje) >= 601 ? '#60a5fa' :
+                            Number(reg.puntaje) >= 550 ? '#fbbf24' : '#ef4444'
               }} />
               <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
             </div>
@@ -2505,7 +2534,7 @@ export default function RegistrosPage() {
               data-label={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
               style={{ color: reg.telefono ? '#25D366' : 'var(--fg-muted)' }}
             ><WhatsAppIcon size={16} /></button>
-            {canSeeBitacora && (
+            {canPerform('ver_bitacora', reg.analista) && (
               <button
                 onClick={() => setBitacoraTarget(reg)}
                 className={`table-action-btn ${isVencidoOIngresoHoy ? 'btn-alert-active' : ''}`}
@@ -2513,32 +2542,32 @@ export default function RegistrosPage() {
                 style={{ color: isVencidoOIngresoHoy ? '#ef4444' : '#60a5fa' }}
               ><Bell size={16} /></button>
             )}
-            {canSeeComentarios && reg.comentarios && reg.comentarios.trim() !== '' && (
+            {canPerform('ver_comentarios', reg.analista) && reg.comentarios && reg.comentarios.trim() !== '' && (
               <button
                 onClick={() => setComentariosTarget(reg)}
                 className="table-action-btn"
                 data-label="Ver comentarios"
               ><MessageSquare size={16} /></button>
             )}
-                          {canEditRegistros && (
-                            <button
-                              onClick={() => openEdit(reg)}
-                              className="table-action-btn"
-                              data-label="Editar"
-                            ><Edit2 size={16} /></button>
-                          )}
-                          {canDeleteRegistros && (
-                            <button
-                              onClick={() => setDeleteTarget(reg)}
-                              className="table-action-btn btn-delete"
-                              data-label="Eliminar"
-                            ><Trash2 size={16} /></button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+            {canPerform('editar_registros', reg.analista) && (
+              <button
+                onClick={() => openEdit(reg)}
+                className="table-action-btn"
+                data-label="Editar"
+              ><Edit2 size={16} /></button>
+            )}
+            {canPerform('eliminar_registros', reg.analista) && (
+              <button
+                onClick={() => setDeleteTarget(reg)}
+                className="table-action-btn btn-delete"
+                data-label="Eliminar"
+              ><Trash2 size={16} /></button>
+            )}
+          </div>
+        </td>
+      </tr>
     );
-  }, [vencidoOIngresoHoyIds, proximoIds, canSeeComentarios, canSeeRecordatorios, canSeeBitacora, canEditRegistros, canDeleteRegistros, handleToggleFijado, handleWhatsApp, openEdit]);
+  }, [vencidoOIngresoHoyIds, proximoIds, canPerform, handleToggleFijado, handleWhatsApp, openEdit]);
 
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
 
@@ -2607,6 +2636,59 @@ export default function RegistrosPage() {
             <AlertCircle size={15} />
             {toast.message}
           </div>
+        </div>
+      )}
+
+      {/* Banner de Modo Simulación Activo */}
+      {simulatedAnalista && (
+        <div style={{
+          background: 'linear-gradient(90deg, rgba(168, 85, 247, 0.18), rgba(0, 212, 255, 0.12))',
+          border: '1px solid rgba(168, 85, 247, 0.35)',
+          borderRadius: '12px',
+          padding: '12px 20px',
+          marginBottom: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '28px', height: '28px', borderRadius: '8px',
+              background: 'rgba(168, 85, 247, 0.25)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <User size={16} color="#c084fc" />
+            </div>
+            <div>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
+                Modo Simulación: Viendo la app con los permisos de <span style={{ color: '#00d4ff', fontWeight: 800 }}>{simulatedAnalista}</span>
+              </span>
+              <span style={{ fontSize: '11px', color: '#aaa', marginLeft: '8px' }}>
+                (Las acciones y visibilidad de íconos responden a su rol)
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSimulatedAnalista(null)}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: '#fff',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '11.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+          >
+            ✕ Salir de Simulación
+          </button>
         </div>
       )}
 
