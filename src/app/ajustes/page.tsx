@@ -34,6 +34,7 @@ const VerificadorTab    = dynamic(() => import('./VerificadorTab'),    { ssr: fa
 const CargaRapidaTab    = dynamic(() => import('./CargaRapidaTab'),    { ssr: false, loading: TabFallback });
 const AnalistasTab      = dynamic(() => import('./AnalistasTab'),      { ssr: false, loading: TabFallback });
 const ReasignadosTab    = dynamic(() => import('./ReasignadosTab'),    { ssr: false, loading: TabFallback });
+const DiasHabilesTab    = dynamic(() => import('./DiasHabilesTab').then(m => m.DiasHabilesTab), { ssr: false, loading: TabFallback });
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -846,51 +847,7 @@ export default function AjustesPage() {
 
           {/* TAB: DIAS HABILES */}
           {activeTab === 'configuracion' && configSubTab === 'dias' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-              {['Todos', ...analistasDefault].map(analista => {
-                const entry = diasValues[analista] || { dias_habiles: 22, dias_transcurridos: 0 };
-                return (
-                  <div key={analista} className="data-card" style={{ padding: '24px', background: '#111111' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                      <h4 style={{ fontWeight: 800, fontSize: '16px' }}>{analista === 'Todos' ? 'Punto de Venta' : analista}</h4>
-                      <Clock size={14} color="#333" />
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div className="form-group">
-                        <label className="form-label" style={{ color: '#555', fontSize: '11px' }}>Días Hábiles</label>
-                        <input
-                          className="form-input"
-                          type="number" step="0.5"
-                          value={entry.dias_habiles}
-                          onChange={e => updateDias(analista, 'dias_habiles', e.target.value)}
-                          style={{ height: '42px' }}
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label" style={{ color: '#555', fontSize: '11px' }}>Días Transcurridos</label>
-                        <input
-                          className="form-input"
-                          type="number" step="0.5"
-                          value={entry.dias_transcurridos}
-                          onChange={e => updateDias(analista, 'dias_transcurridos', e.target.value)}
-                          style={{ height: '42px' }}
-                        />
-                      </div>
-                      <button
-                        className="btn-primary"
-                        style={{ width: '100%', justifyContent: 'center', height: '42px', marginTop: '8px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
-                        onClick={() => saveDiasHabiles(analista)}
-                        disabled={savingDias === analista}
-                      >
-                        {savingDias === analista ? '...' : <Save size={14} />}
-                        <span>{savingDias === analista ? 'Guardando' : 'Actualizar'}</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <DiasHabilesTab />
           )}
 
           {/* TAB: ANALISTAS */}

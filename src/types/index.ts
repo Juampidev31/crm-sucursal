@@ -158,11 +158,19 @@ export const analistaSchema = z.object({
 });
 export type Analista = z.infer<typeof analistaSchema>;
 
-// ── DiasConfig ────────────────────────────────────────────────────────────────
+// ── DiasConfig y Feriados ──────────────────────────────────────────────────
+export const feriadoSchema = z.object({
+  id: z.string().optional(),
+  fecha: z.string(),
+  motivo: z.string(),
+});
+export type Feriado = z.infer<typeof feriadoSchema>;
+
 export const diasConfigSchema = z.object({
   analista: z.string(),
   dias_habiles: z.coerce.number(),
   dias_transcurridos: z.coerce.number(),
+  manual: z.boolean().nullish().transform(v => !!v),
 });
 export type DiasConfig = z.infer<typeof diasConfigSchema>;
 

@@ -6,11 +6,17 @@ import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import {
-  AlertaConfig, DiasConfig, PermisoRol, Analista,
+  AlertaConfig, DiasConfig, PermisoRol, Analista, Feriado,
   alertaConfigSchema, diasConfigSchema, permisoRolSchema, analistaSchema, parseRows,
   getPermisoActivo,
 } from '@/types';
 import { validateBroadcast } from '@/lib/broadcast-utils';
+import {
+  calcularDiasTranscurridos,
+  calcularDiasHabilesMes,
+  obtenerFeriadosDB,
+  guardarFeriadosDB,
+} from '@/lib/dias-habiles';
 
 type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
 
@@ -19,11 +25,16 @@ interface SettingsCtx {
   diasConfig: DiasConfig[];
   permisosConfig: PermisoRol[];
   analistas: Analista[];
+  feriados: Feriado[];
+  diasTranscurridosAuto: number;
+  diasHabilesMesAuto: number;
   mutateAlertasConfig: (mapper: (prev: AlertaConfig[]) => AlertaConfig[]) => void;
   pushAlertasConfigChange: (type: ChangeType, config: AlertaConfig) => void;
   applyDiasConfigChange: (type: ChangeType, config: DiasConfig) => void;
   applyPermisoConfigChange: (type: ChangeType, config: PermisoRol) => void;
   applyAnalistaChange: (type: ChangeType, config: Analista) => void;
+  saveFeriados: (feriados: Feriado[]) => Promise<boolean>;
+  syncDiasTranscurridos: (forceAll?: boolean) => Promise<void>;
   hasPermiso: (permiso: string, analista?: string | null, defaultValue?: boolean) => boolean;
 }
 
@@ -34,8 +45,7 @@ const alertaConfigChangeSchema = z.object({ type: changeType, config: alertaConf
 const diasConfigChangeSchema = z.object({ type: changeType, config: diasConfigSchema });
 const permisoConfigChangeSchema = z.object({ type: changeType, config: permisoRolSchema });
 const analistaChangeSchema = z.object({ type: changeType, config: analistaSchema });
-
-
+const feriadosChangeSchema = z.object({ feriados: z.array(z.object({ id: z.string().optional(), fecha: z.string(), motivo: z.string() })) });
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();
@@ -43,14 +53,19 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [diasConfig, setDiasConfig] = useState<DiasConfig[]>([]);
   const [permisosConfig, setPermisosConfig] = useState<PermisoRol[]>([]);
   const [analistas, setAnalistas] = useState<Analista[]>([]);
+  const [feriados, setFeriados] = useState<Feriado[]>([]);
 
   const fetchSettings = useCallback(async () => {
-    const [alertasR, diasR, permisosR, analistasR] = await Promise.all([
+    const [alertasR, diasR, permisosR, analistasR, feriadosData] = await Promise.all([
       supabase.from('alertas_config').select('id,nombre,estado,dias,mensaje,color'),
-      supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos'),
+      supabase.from('dias_habiles_config').select('analista,dias_habiles,dias_transcurridos,manual'),
       supabase.from('permisos_roles').select('id,rol,permiso,activo'),
       supabase.from('analistas').select('id,nombre,color,oculto,tiene_incentivo,orden').order('orden'),
+      obtenerFeriadosDB(supabase),
     ]);
+
+    setFeriados(feriadosData);
+    const autoTrans = calcularDiasTranscurridos(new Date(), feriadosData);
 
     const validateAndSet = <T,>(
       scope: string,
@@ -70,8 +85,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     if (alertasR.error) reportError('refresh:alertas_config', alertasR.error);
     else validateAndSet<AlertaConfig>('alertas_config', alertaConfigSchema, alertasR.data, setAlertasConfig);
-    if (diasR.error) reportError('refresh:dias_habiles_config', diasR.error);
-    else validateAndSet<DiasConfig>('dias_habiles_config', diasConfigSchema, diasR.data, setDiasConfig);
+    
+    if (diasR.error) {
+      reportError('refresh:dias_habiles_config', diasR.error);
+    } else {
+      const parsed = parseRows<DiasConfig>(diasConfigSchema, diasR.data, () => {});
+      // Si la entrada no es manual, reflejar automáticamente los días transcurridos actuales
+      const merged = parsed.map(d => {
+        if (!d.manual) {
+          return { ...d, dias_transcurridos: autoTrans };
+        }
+        return d;
+      });
+      setDiasConfig(merged);
+    }
+
     if (permisosR.error && permisosR.error.code !== '42P01') reportError('refresh:permisos_roles', permisosR.error);
     else if (!permisosR.error) validateAndSet<PermisoRol>('permisos_roles', permisoRolSchema, permisosR.data, setPermisosConfig);
     if (analistasR.error && analistasR.error.code !== '42P01') reportError('refresh:analistas', analistasR.error);
@@ -103,6 +131,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           ? prev.map(d => d.analista === config.analista ? config : d)
           : [...prev, config];
       });
+    },
+    feriados_change: (payload) => {
+      const data = validateBroadcast('feriados_change', feriadosChangeSchema, payload);
+      if (!data) return;
+      setFeriados(data.feriados as Feriado[]);
     },
     permiso_config_change: (payload) => {
       const data = validateBroadcast('permiso_config_change', permisoConfigChangeSchema, payload);
@@ -155,6 +188,47 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => { });
   }, [broadcastRef]);
 
+  const diasTranscurridosAuto = useMemo(() => {
+    return calcularDiasTranscurridos(new Date(), feriados);
+  }, [feriados]);
+
+  const diasHabilesMesAuto = useMemo(() => {
+    const hoy = new Date();
+    return calcularDiasHabilesMes(hoy.getFullYear(), hoy.getMonth() + 1, feriados);
+  }, [feriados]);
+
+  const saveFeriados = useCallback(async (nuevosFeriados: Feriado[]): Promise<boolean> => {
+    const ok = await guardarFeriadosDB(supabase, nuevosFeriados);
+    if (ok) {
+      setFeriados(nuevosFeriados);
+      broadcastRef.current?.send({
+        type: 'broadcast',
+        event: 'feriados_change',
+        payload: { feriados: nuevosFeriados },
+      }).catch(() => {});
+    }
+    return ok;
+  }, [broadcastRef]);
+
+  const syncDiasTranscurridos = useCallback(async (forceAll = false) => {
+    const auto = calcularDiasTranscurridos(new Date(), feriados);
+    const updates = diasConfig
+      .filter(d => forceAll || !d.manual)
+      .map(d => ({
+        analista: d.analista,
+        dias_habiles: d.dias_habiles,
+        dias_transcurridos: auto,
+        manual: d.manual ?? false,
+      }));
+
+    if (updates.length > 0) {
+      for (const u of updates) {
+        await supabase.from('dias_habiles_config').upsert(u, { onConflict: 'analista' });
+        applyDiasConfigChange('UPDATE', u);
+      }
+    }
+  }, [feriados, diasConfig, applyDiasConfigChange]);
+
   const applyAnalistaChange = useCallback((type: ChangeType, config: Analista) => {
     setAnalistas(prev => {
       if (type === 'DELETE') return prev.filter(a => a.nombre !== config.nombre);
@@ -187,9 +261,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<SettingsCtx>(() => ({
     alertasConfig, diasConfig, permisosConfig, analistas,
+    feriados, diasTranscurridosAuto, diasHabilesMesAuto,
     mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange,
+    saveFeriados, syncDiasTranscurridos,
     hasPermiso,
-  }), [alertasConfig, diasConfig, permisosConfig, analistas, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange, hasPermiso]);
+  }), [alertasConfig, diasConfig, permisosConfig, analistas, feriados, diasTranscurridosAuto, diasHabilesMesAuto, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange, saveFeriados, syncDiasTranscurridos, hasPermiso]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
