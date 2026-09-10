@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar, Clock, Save, RefreshCw, Plus, Trash2,
   Check, AlertCircle, CalendarDays, Users
@@ -36,15 +36,20 @@ export function DiasHabilesTab() {
   } = useSettings();
   const { analistas: analistasVisibles } = useAnalistas();
 
-  const hoy = useMemo(() => new Date(), []);
-  const mesActualIndex = hoy.getMonth(); // 0..11
-  const anioActual = hoy.getFullYear();
+  const [ahora, setAhora] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setAhora(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const mesActualIndex = ahora.getMonth(); // 0..11
+  const anioActual = ahora.getFullYear();
   const nombreMesActual = MESES[mesActualIndex];
 
-  // Cálculo automático del día actual con feriados
+  // Cálculo automático del día actual con feriados y cortes de jornada
   const transcurridosHoy = useMemo(() => {
-    return calcularDiasTranscurridos(hoy, feriados);
-  }, [hoy, feriados]);
+    return calcularDiasTranscurridos(ahora, feriados);
+  }, [ahora, feriados]);
 
   // Cálculo sugerido para todo el mes
   const habilesSugeridosMes = useMemo(() => {
@@ -71,7 +76,7 @@ export function DiasHabilesTab() {
   const [feedback, setFeedback] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   // Formulario nuevo feriado
-  const [nuevoFeriadoFecha, setNuevoFeriadoFecha] = useState<string>(formatFechaISO(hoy));
+  const [nuevoFeriadoFecha, setNuevoFeriadoFecha] = useState<string>(formatFechaISO(ahora));
   const [nuevoFeriadoMotivo, setNuevoFeriadoMotivo] = useState<string>('');
   const [guardandoFeriado, setGuardandoFeriado] = useState(false);
 
@@ -420,8 +425,8 @@ export function DiasHabilesTab() {
           }}
         >
           <span>Regla de cálculo:</span>
-          <span>• Lunes a Viernes: <strong style={{ color: '#d4d4d8' }}>1 día</strong></span>
-          <span>• Sábados: <strong style={{ color: '#d4d4d8' }}>0.5 día</strong></span>
+          <span>• Lunes a Viernes: <strong style={{ color: '#d4d4d8' }}>1 día (corte 19:30 hs)</strong></span>
+          <span>• Sábados: <strong style={{ color: '#d4d4d8' }}>0.5 día (corte 12:00 pm)</strong></span>
           <span>• Domingos: <strong style={{ color: '#d4d4d8' }}>0</strong></span>
           <span>• Feriados Nacionales: <strong style={{ color: '#d4d4d8' }}>0</strong> ({feriadosDelMes.length} este mes)</span>
           <span style={{ marginLeft: 'auto', color: '#a1a1aa' }}>

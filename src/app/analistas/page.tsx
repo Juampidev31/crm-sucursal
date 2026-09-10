@@ -336,14 +336,15 @@ export default function AnalistasPage() {
       const cfgDias = diasConfig.find(d => d.analista === analista);
       const diasHabilesAdmin = cfgDias?.dias_habiles ?? 0;
       const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
-      const tieneDiasAdmin = diasHabilesAdmin > 0 && diasTransAdmin > 0;
+      const tieneDiasAdmin = diasHabilesAdmin > 0;
 
-      // Ticket promedio = total vendido (Venta + Aprob. CC) / dias transcurridos
-      const ticket = diasTransAdmin > 0 ? capital / diasTransAdmin : 0;
+      // Ticket promedio y ritmo: en el día 1 antes de las 19:30 hs usa 1 como divisor provisional si ya hay ventas
+      const diasDivisor = diasTransAdmin > 0 ? diasTransAdmin : (capital > 0 ? 1 : 0);
+      const ticket = diasDivisor > 0 ? capital / diasDivisor : 0;
 
       const diasRestantes = Math.max(0, diasHabilesAdmin - diasTransAdmin);
-      const ventaPorDia = tieneDiasAdmin ? capital / diasTransAdmin : null;
-      const opsPorDia = tieneDiasAdmin ? ops / diasTransAdmin : null;
+      const ventaPorDia = diasDivisor > 0 ? capital / diasDivisor : null;
+      const opsPorDia = diasTransAdmin > 0 ? ops / diasTransAdmin : (ops > 0 ? ops / 1 : null);
       
       // La meta diaria se calcula como lo que falta para llegar dividido los días restantes
       // Si ya pasó el mes o no hay días cargados, se usa la meta lineal original
@@ -510,10 +511,11 @@ export default function AnalistasPage() {
       : diasConfig.find(d => d.analista === analista);
     const diasHabilesAdmin = cfgDias?.dias_habiles ?? 0;
     const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
-    const tieneDiasAdmin = diasHabilesAdmin > 0 && diasTransAdmin > 0;
+    const tieneDiasAdmin = diasHabilesAdmin > 0;
     const diasRestantes = Math.max(0, diasHabilesAdmin - diasTransAdmin);
-    const ventaPorDia = tieneDiasAdmin ? capital / diasTransAdmin : null;
-    const opsPorDia = tieneDiasAdmin ? ops / diasTransAdmin : null;
+    const diasDivisor = diasTransAdmin > 0 ? diasTransAdmin : (capital > 0 ? 1 : 0);
+    const ventaPorDia = diasDivisor > 0 ? capital / diasDivisor : null;
+    const opsPorDia = diasTransAdmin > 0 ? ops / diasTransAdmin : (ops > 0 ? ops / 1 : null);
     // (I) x Venta = total del campo Interés de las ventas; Productividad (%) = Interés / Monto otorgado × 100
     const interesXVenta = ventas.reduce((s, r) => s + (Number(r.interes) || 0), 0);
     const productividad = capital > 0 ? (interesXVenta / capital) * 100 : null;

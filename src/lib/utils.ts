@@ -66,6 +66,8 @@ export const STATUS_LABEL: Record<string, string> = {
 export const getStatusLabel = (status: string): string =>
   STATUS_LABEL[status?.toLowerCase()] || status;
 
+import { esJornadaCerrada } from './dias-habiles';
+
 export const calcularDiasHabilesAutomaticos = (mes?: number, anio?: number) => {
   const hoy = new Date();
   const targetAnio = anio ?? hoy.getFullYear();
@@ -75,11 +77,18 @@ export const calcularDiasHabilesAutomaticos = (mes?: number, anio?: number) => {
   const esPasado = (targetAnio < hoy.getFullYear()) ||
     (targetAnio === hoy.getFullYear() && targetMes < hoy.getMonth());
   const esActual = (targetAnio === hoy.getFullYear() && targetMes === hoy.getMonth());
+  const cerradaHoy = esJornadaCerrada(hoy);
+
   for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
     const ds = new Date(targetAnio, targetMes, dia).getDay();
+    const diaTerminado = esPasado || (esActual && (dia < hoy.getDate() || (dia === hoy.getDate() && cerradaHoy)));
+
     if (ds >= 1 && ds <= 5) {
-      diasHabiles++;
-      if (esPasado || (esActual && dia <= hoy.getDate())) diasTranscurridos++;
+      diasHabiles += 1;
+      if (diaTerminado) diasTranscurridos += 1;
+    } else if (ds === 6) {
+      diasHabiles += 0.5;
+      if (diaTerminado) diasTranscurridos += 0.5;
     }
   }
   return { diasHabiles, diasTranscurridos, diasRestantes: Math.max(0, diasHabiles - diasTranscurridos), sonManuales: false };

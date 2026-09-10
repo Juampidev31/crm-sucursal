@@ -88,23 +88,105 @@ export function calcularPesoDia(date: Date, feriados: Feriado[] = []): number {
 }
 
 /**
- * Calcula los días transcurridos en el mes de `fechaRef` hasta el día de `fechaRef` (inclusive).
- * Regla:
- * - Lunes a Viernes: 1 día
- * - Sábados: 0.5 día
- * - Domingos: 0
- * - Feriados: 0
+ * Extrae los componentes de fecha y hora en la zona horaria oficial de Argentina
+ * ('America/Argentina/Buenos_Aires', UTC-3).
+ */
+export function getFechaYHoraArgentina(date: Date = new Date()): {
+  anio: number;
+  mes: number; // 1..12
+  dia: number; // 1..31
+  horas: number; // 0..23
+  minutos: number; // 0..59
+  segundos: number; // 0..59
+  dayOfWeek: number; // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+} {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(date);
+  const getVal = (type: string) => {
+    const p = parts.find(x => x.type === type);
+    return p ? parseInt(p.value, 10) : 0;
+  };
+
+  const anio = getVal('year');
+  const mes = getVal('month');
+  const dia = getVal('day');
+  let horas = getVal('hour');
+  if (horas === 24) horas = 0;
+  const minutos = getVal('minute');
+  const segundos = getVal('second');
+
+  const dayOfWeek = new Date(anio, mes - 1, dia).getDay();
+
+  return { anio, mes, dia, horas, minutos, segundos, dayOfWeek };
+}
+
+/**
+ * Determina si la jornada comercial de la fecha indicada ya ha concluido:
+ * - Lunes a Viernes: corte a las 19:30 hs.
+ * - Sábados: corte a las 12:00 pm (12:00 hs).
+ * - Domingos: siempre cerrada (no laborable).
+ */
+export function esJornadaCerrada(date: Date = new Date()): boolean {
+  const { dayOfWeek, horas, minutos } = getFechaYHoraArgentina(date);
+
+  // Domingos: no laboral
+  if (dayOfWeek === 0) return true;
+
+  const minutosDelDia = horas * 60 + minutos;
+
+  // Sábados: corte a las 12:00 pm (12:00 hs = 720 minutos)
+  if (dayOfWeek === 6) {
+    return minutosDelDia >= 12 * 60;
+  }
+
+  // Lunes a Viernes: corte a las 19:30 hs (19 * 60 + 30 = 1170 minutos)
+  return minutosDelDia >= 19 * 60 + 30;
+}
+
+/**
+ * Calcula los días transcurridos en el mes de `fechaRef` hasta la fecha indicada.
+ * Regla de cierre de jornada:
+ * - Lunes a Viernes: 1 día (se descuenta / computa al llegar a las 19:30 hs).
+ * - Sábados: 0.5 día (se descuenta / computa al llegar a las 12:00 pm).
+ * - Domingos: 0 días.
+ * - Feriados: 0 días.
+ * 
+ * Los días previos del mes se computan completos.
+ * El día de `fechaRef` solo se suma como transcurrido una vez alcanzado el horario de corte comercial.
  */
 export function calcularDiasTranscurridos(fechaRef: Date = new Date(), feriados: Feriado[] = []): number {
-  const anio = fechaRef.getFullYear();
-  const mes = fechaRef.getMonth(); // 0-indexed
-  const diaHasta = fechaRef.getDate();
+  const { anio, mes, dia: diaRef } = getFechaYHoraArgentina(fechaRef);
+  const mes0 = mes - 1;
+
+  const ahoraBA = getFechaYHoraArgentina(new Date());
+  const esMesPasado = anio < ahoraBA.anio || (anio === ahoraBA.anio && mes < ahoraBA.mes);
+  const esDiaPasado = esMesPasado || (anio === ahoraBA.anio && mes === ahoraBA.mes && diaRef < ahoraBA.dia);
 
   let total = 0;
-  for (let dia = 1; dia <= diaHasta; dia++) {
-    const fecha = new Date(anio, mes, dia);
+
+  // Días previos del mes (ya cerrados)
+  for (let dia = 1; dia < diaRef; dia++) {
+    const fecha = new Date(anio, mes0, dia);
     total += calcularPesoDia(fecha, feriados);
   }
+
+  // Día en curso: si es un día ya pasado o si ya cerró la jornada comercial hoy
+  const cerrada = esDiaPasado || esJornadaCerrada(fechaRef);
+  if (cerrada) {
+    const fechaHoy = new Date(anio, mes0, diaRef);
+    total += calcularPesoDia(fechaHoy, feriados);
+  }
+
   return total;
 }
 

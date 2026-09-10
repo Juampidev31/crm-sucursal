@@ -188,14 +188,34 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => { });
   }, [broadcastRef]);
 
+  const [ahora, setAhora] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setAhora(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
   const diasTranscurridosAuto = useMemo(() => {
-    return calcularDiasTranscurridos(new Date(), feriados);
-  }, [feriados]);
+    return calcularDiasTranscurridos(ahora, feriados);
+  }, [ahora, feriados]);
+
+  // Si cambia diasTranscurridosAuto (ej. cruce de las 19:30 o 12:00 del sábado), reflejar en perfiles automáticos
+  useEffect(() => {
+    setDiasConfig(prev => {
+      let changed = false;
+      const next = prev.map(d => {
+        if (!d.manual && d.dias_transcurridos !== diasTranscurridosAuto) {
+          changed = true;
+          return { ...d, dias_transcurridos: diasTranscurridosAuto };
+        }
+        return d;
+      });
+      return changed ? next : prev;
+    });
+  }, [diasTranscurridosAuto]);
 
   const diasHabilesMesAuto = useMemo(() => {
-    const hoy = new Date();
-    return calcularDiasHabilesMes(hoy.getFullYear(), hoy.getMonth() + 1, feriados);
-  }, [feriados]);
+    return calcularDiasHabilesMes(ahora.getFullYear(), ahora.getMonth() + 1, feriados);
+  }, [ahora, feriados]);
 
   const saveFeriados = useCallback(async (nuevosFeriados: Feriado[]): Promise<boolean> => {
     const ok = await guardarFeriadosDB(supabase, nuevosFeriados);
