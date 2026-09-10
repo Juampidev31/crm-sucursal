@@ -163,6 +163,7 @@ export const feriadoSchema = z.object({
   id: z.string().optional(),
   fecha: z.string(),
   motivo: z.string(),
+  fechaOriginal: z.string().optional(),
 });
 export type Feriado = z.infer<typeof feriadoSchema>;
 

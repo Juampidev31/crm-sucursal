@@ -7,7 +7,7 @@ import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import {
   AlertaConfig, DiasConfig, PermisoRol, Analista, Feriado,
-  alertaConfigSchema, diasConfigSchema, permisoRolSchema, analistaSchema, parseRows,
+  alertaConfigSchema, diasConfigSchema, permisoRolSchema, analistaSchema, feriadoSchema, parseRows,
   getPermisoActivo,
 } from '@/types';
 import { validateBroadcast } from '@/lib/broadcast-utils';
@@ -45,7 +45,7 @@ const alertaConfigChangeSchema = z.object({ type: changeType, config: alertaConf
 const diasConfigChangeSchema = z.object({ type: changeType, config: diasConfigSchema });
 const permisoConfigChangeSchema = z.object({ type: changeType, config: permisoRolSchema });
 const analistaChangeSchema = z.object({ type: changeType, config: analistaSchema });
-const feriadosChangeSchema = z.object({ feriados: z.array(z.object({ id: z.string().optional(), fecha: z.string(), motivo: z.string() })) });
+const feriadosChangeSchema = z.object({ feriados: z.array(feriadoSchema) });
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();

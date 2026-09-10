@@ -4,6 +4,7 @@ export interface Feriado {
   id?: string;
   fecha: string; // Formato YYYY-MM-DD
   motivo: string;
+  fechaOriginal?: string; // Formato YYYY-MM-DD (fecha original de calendario si el feriado fue trasladado)
 }
 
 /**

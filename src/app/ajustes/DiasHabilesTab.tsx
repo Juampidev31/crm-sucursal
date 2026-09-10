@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar, Clock, Save, RefreshCw, Plus, Trash2,
-  Check, AlertCircle, CalendarDays, Users
+  Check, AlertCircle, CalendarDays, Users, Pencil, RotateCcw, X
 } from 'lucide-react';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { supabase } from '@/lib/supabase';
@@ -79,6 +79,12 @@ export function DiasHabilesTab() {
   const [nuevoFeriadoFecha, setNuevoFeriadoFecha] = useState<string>(formatFechaISO(ahora));
   const [nuevoFeriadoMotivo, setNuevoFeriadoMotivo] = useState<string>('');
   const [guardandoFeriado, setGuardandoFeriado] = useState(false);
+
+  // Edición de feriado (traslado de fecha)
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFecha, setEditFecha] = useState<string>('');
+  const [editMotivo, setEditMotivo] = useState<string>('');
+  const [guardandoEdit, setGuardandoEdit] = useState(false);
 
   // Feriados del mes actual
   const feriadosDelMes = useMemo(() => {
@@ -226,6 +232,7 @@ export function DiasHabilesTab() {
         id: crypto.randomUUID(),
         fecha: nuevoFeriadoFecha,
         motivo: nuevoFeriadoMotivo.trim(),
+        fechaOriginal: nuevoFeriadoFecha,
       };
 
       const actualizados = [...feriados, nuevo].sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -241,6 +248,114 @@ export function DiasHabilesTab() {
     }
   };
 
+  // Iniciar edición de feriado
+  const handleIniciarEdicion = (f: Feriado) => {
+    setEditingId(f.id || f.fecha);
+    setEditFecha(f.fecha);
+    setEditMotivo(f.motivo);
+  };
+
+  // Cancelar edición
+  const handleCancelarEdicion = () => {
+    setEditingId(null);
+    setEditFecha('');
+    setEditMotivo('');
+  };
+
+  // Guardar edición de feriado (traslado o corrección)
+  const handleGuardarEdicion = async (f: Feriado) => {
+    if (!editFecha || !editMotivo.trim()) {
+      showToast('Completá fecha y motivo', 'error');
+      return;
+    }
+
+    // Si cambió la fecha, verificar que no colisione con otro feriado existente
+    if (editFecha !== f.fecha) {
+      const existe = feriados.some(item => {
+        const isSelf = f.id ? item.id === f.id : item.fecha === f.fecha;
+        return !isSelf && item.fecha === editFecha;
+      });
+      if (existe) {
+        showToast('Ya existe otro feriado en esa fecha', 'error');
+        return;
+      }
+    }
+
+    setGuardandoEdit(true);
+    try {
+      // Mantener la fecha original: si f ya tenía fechaOriginal, conservarla; si no, f.fecha original
+      const fechaOriginalDefinitiva = f.fechaOriginal || f.fecha;
+
+      const actualizados = feriados.map(item => {
+        const match = f.id ? item.id === f.id : item.fecha === f.fecha;
+        if (!match) return item;
+        return {
+          ...item,
+          fecha: editFecha,
+          motivo: editMotivo.trim(),
+          fechaOriginal: fechaOriginalDefinitiva,
+        };
+      }).sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+      const ok = await saveFeriados(actualizados);
+      if (!ok) throw new Error('Error al guardar cambios');
+
+      const fueTrasladado = editFecha !== fechaOriginalDefinitiva;
+      const partesNueva = editFecha.split('-');
+      const partesOrig = fechaOriginalDefinitiva.split('-');
+      showToast(
+        fueTrasladado
+          ? `Feriado trasladado al ${partesNueva[2]}/${partesNueva[1]} (Original: ${partesOrig[2]}/${partesOrig[1]})`
+          : 'Feriado actualizado correctamente'
+      );
+      setEditingId(null);
+    } catch (err: any) {
+      showToast(`Error: ${err.message}`, 'error');
+    } finally {
+      setGuardandoEdit(false);
+    }
+  };
+
+  // Restaurar feriado a su fecha original si fue trasladado
+  const handleRestaurarFechaOriginal = async (f: Feriado) => {
+    const orig = f.fechaOriginal;
+    if (!orig || orig === f.fecha) return;
+
+    // Verificar si la fecha original está ocupada por otro feriado
+    const existe = feriados.some(item => {
+      const isSelf = f.id ? item.id === f.id : item.fecha === f.fecha;
+      return !isSelf && item.fecha === orig;
+    });
+    if (existe) {
+      const origPartes = orig.split('-');
+      showToast(`No se puede restaurar: ya existe otro feriado el ${origPartes[2]}/${origPartes[1]}`, 'error');
+      return;
+    }
+
+    const origPartes = orig.split('-');
+    if (!confirm(`¿Restaurar "${f.motivo}" a su fecha original (${origPartes[2]}/${origPartes[1]}/${origPartes[0]})?`)) return;
+
+    try {
+      const actualizados = feriados.map(item => {
+        const match = f.id ? item.id === f.id : item.fecha === f.fecha;
+        if (!match) return item;
+        return {
+          ...item,
+          fecha: orig,
+        };
+      }).sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+      const ok = await saveFeriados(actualizados);
+      if (!ok) throw new Error('Error al restaurar fecha');
+      showToast(`Feriado restaurado a su fecha original: ${origPartes[2]}/${origPartes[1]}/${origPartes[0]}`);
+      if (editingId && (editingId === f.id || editingId === f.fecha)) {
+        setEditingId(null);
+      }
+    } catch (err: any) {
+      showToast(`Error: ${err.message}`, 'error');
+    }
+  };
+
   // Eliminar feriado
   const handleEliminarFeriado = async (fechaAEliminar: string, motivo: string) => {
     if (!confirm(`¿Eliminar feriado "${motivo}"?`)) return;
@@ -248,6 +363,7 @@ export function DiasHabilesTab() {
       const filtrados = feriados.filter(f => f.fecha !== fechaAEliminar);
       const ok = await saveFeriados(filtrados);
       if (!ok) throw new Error('Error al eliminar');
+      if (editingId) setEditingId(null);
       showToast('Feriado eliminado');
     } catch (err: any) {
       showToast(`Error: ${err.message}`, 'error');
@@ -262,7 +378,12 @@ export function DiasHabilesTab() {
       feriados.forEach(f => mapa.set(f.fecha, f));
       FERIADOS_OFICIALES_ARGENTINA.forEach(f => {
         if (!mapa.has(f.fecha)) {
-          mapa.set(f.fecha, { id: crypto.randomUUID(), fecha: f.fecha, motivo: f.motivo });
+          mapa.set(f.fecha, {
+            id: crypto.randomUUID(),
+            fecha: f.fecha,
+            motivo: f.motivo,
+            fechaOriginal: f.fechaOriginal || f.fecha,
+          });
         }
       });
       const lista = Array.from(mapa.values()).sort((a, b) => a.fecha.localeCompare(b.fecha));
@@ -724,17 +845,141 @@ export function DiasHabilesTab() {
             No hay feriados cargados.
           </div>
         ) : (
-          <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {feriados.map(f => {
+              const itemId = f.id || f.fecha;
+              const isEditing = editingId === itemId;
+
               const esDeEsteMes = f.fecha.startsWith(`${anioActual}-${String(mesActualIndex + 1).padStart(2, '0')}`);
               const partes = f.fecha.split('-');
               const fechaObj = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
               const diaSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][fechaObj.getDay()];
               const fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
 
+              const fechaOriginal = f.fechaOriginal || f.fecha;
+              const esTrasladado = Boolean(f.fechaOriginal && f.fechaOriginal !== f.fecha);
+              const origPartes = fechaOriginal.split('-');
+              const origFormateada = `${origPartes[2]}/${origPartes[1]}/${origPartes[0]}`;
+
+              if (isEditing) {
+                return (
+                  <div
+                    key={itemId}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      background: '#18181b',
+                      border: '1px solid rgba(59, 130, 246, 0.4)',
+                      gap: '12px',
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '300px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <label style={{ fontSize: '10px', color: '#a1a1aa' }}>Fecha efectiva:</label>
+                        <input
+                          type="date"
+                          value={editFecha}
+                          onChange={e => setEditFecha(e.target.value)}
+                          style={{
+                            height: '32px',
+                            background: '#121214',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            borderRadius: '6px',
+                            color: '#fff',
+                            fontSize: '12px',
+                            padding: '0 8px',
+                            boxSizing: 'border-box',
+                          }}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: '180px' }}>
+                        <label style={{ fontSize: '10px', color: '#a1a1aa' }}>Motivo:</label>
+                        <input
+                          type="text"
+                          value={editMotivo}
+                          onChange={e => setEditMotivo(e.target.value)}
+                          placeholder="Motivo del feriado"
+                          style={{
+                            height: '32px',
+                            background: '#121214',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            borderRadius: '6px',
+                            color: '#fff',
+                            fontSize: '12px',
+                            padding: '0 10px',
+                            boxSizing: 'border-box',
+                          }}
+                          required
+                        />
+                      </div>
+
+                      <div style={{ fontSize: '11px', color: '#71717a', alignSelf: 'flex-end', paddingBottom: '6px' }}>
+                        Fecha original: <strong style={{ color: '#d4d4d8' }}>{origFormateada}</strong>
+                        {editFecha !== fechaOriginal && (
+                          <span style={{ marginLeft: '6px', color: '#fbbf24', fontSize: '10px' }}>(Se marcará como trasladado)</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        disabled={guardandoEdit}
+                        onClick={() => handleGuardarEdicion(f)}
+                        style={{
+                          height: '30px',
+                          padding: '0 12px',
+                          background: '#2563eb',
+                          border: 'none',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                        }}
+                      >
+                        <Check size={13} />
+                        <span>{guardandoEdit ? '...' : 'Guardar'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={guardandoEdit}
+                        onClick={handleCancelarEdicion}
+                        style={{
+                          height: '30px',
+                          padding: '0 10px',
+                          background: 'transparent',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          borderRadius: '6px',
+                          color: '#a1a1aa',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <X size={13} />
+                        <span>Cancelar</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
-                  key={f.fecha}
+                  key={itemId}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -742,10 +987,12 @@ export function DiasHabilesTab() {
                     padding: '8px 14px',
                     borderRadius: '6px',
                     background: esDeEsteMes ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    border: esTrasladado
+                      ? '1px solid rgba(245, 158, 11, 0.25)'
+                      : '1px solid rgba(255,255,255,0.05)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
                     <span style={{ minWidth: '85px', fontSize: '12px', fontWeight: 600, color: '#f4f4f5' }}>
                       {fechaFormateada}
                     </span>
@@ -755,6 +1002,22 @@ export function DiasHabilesTab() {
                     <span style={{ fontSize: '12px', color: '#d4d4d8' }}>
                       {f.motivo}
                     </span>
+                    {esTrasladado && (
+                      <span
+                        title={`Fecha original de calendario: ${origFormateada}`}
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 500,
+                          color: '#fbbf24',
+                          background: 'rgba(245, 158, 11, 0.12)',
+                          border: '1px solid rgba(245, 158, 11, 0.25)',
+                          padding: '1px 7px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        Trasladado (Orig: {origPartes[2]}/{origPartes[1]})
+                      </span>
+                    )}
                     {esDeEsteMes && (
                       <span style={{ fontSize: '10px', color: '#a1a1aa', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>
                         Este mes
@@ -762,24 +1025,69 @@ export function DiasHabilesTab() {
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleEliminarFeriado(f.fecha, f.motivo)}
-                    title="Eliminar"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#52525b',
-                      cursor: 'pointer',
-                      padding: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#52525b')}
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {esTrasladado && (
+                      <button
+                        type="button"
+                        onClick={() => handleRestaurarFechaOriginal(f)}
+                        title={`Restaurar a fecha original (${origFormateada})`}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#f59e0b',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          borderRadius: '4px',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#fbbf24')}
+                        onMouseLeave={e => (e.currentTarget.style.color = '#f59e0b')}
+                      >
+                        <RotateCcw size={13} />
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleIniciarEdicion(f)}
+                      title="Editar día / trasladar feriado"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#71717a',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        borderRadius: '4px',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
+                      onMouseLeave={e => (e.currentTarget.style.color = '#71717a')}
+                    >
+                      <Pencil size={13} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleEliminarFeriado(f.fecha, f.motivo)}
+                      title="Eliminar"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#52525b',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        borderRadius: '4px',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                      onMouseLeave={e => (e.currentTarget.style.color = '#52525b')}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
