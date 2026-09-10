@@ -425,8 +425,8 @@ export function DiasHabilesTab() {
           }}
         >
           <span>Regla de cálculo:</span>
-          <span>• Lunes a Viernes: <strong style={{ color: '#d4d4d8' }}>1 día (corte 19:30 hs)</strong></span>
-          <span>• Sábados: <strong style={{ color: '#d4d4d8' }}>0.5 día (corte 12:00 pm)</strong></span>
+          <span>• Lunes a Viernes: <strong style={{ color: '#d4d4d8' }}>1 día (a las 19:30 hs computa el día siguiente)</strong></span>
+          <span>• Sábados: <strong style={{ color: '#d4d4d8' }}>0.5 día (a las 12:00 pm computa el lunes)</strong></span>
           <span>• Domingos: <strong style={{ color: '#d4d4d8' }}>0</strong></span>
           <span>• Feriados Nacionales: <strong style={{ color: '#d4d4d8' }}>0</strong> ({feriadosDelMes.length} este mes)</span>
           <span style={{ marginLeft: 'auto', color: '#a1a1aa' }}>

@@ -66,22 +66,26 @@ export const STATUS_LABEL: Record<string, string> = {
 export const getStatusLabel = (status: string): string =>
   STATUS_LABEL[status?.toLowerCase()] || status;
 
-import { esJornadaCerrada } from './dias-habiles';
+import { getFechaOperativa } from './dias-habiles';
 
 export const calcularDiasHabilesAutomaticos = (mes?: number, anio?: number) => {
   const hoy = new Date();
   const targetAnio = anio ?? hoy.getFullYear();
   const targetMes = mes ?? hoy.getMonth();
   const ultimoDia = new Date(targetAnio, targetMes + 1, 0);
-  let diasHabiles = 0, diasTranscurridos = 0;
-  const esPasado = (targetAnio < hoy.getFullYear()) ||
-    (targetAnio === hoy.getFullYear() && targetMes < hoy.getMonth());
-  const esActual = (targetAnio === hoy.getFullYear() && targetMes === hoy.getMonth());
-  const cerradaHoy = esJornadaCerrada(hoy);
 
+  const { fechaOperativa, anioOriginal, mesOriginal } = getFechaOperativa(hoy);
+  const diaOperativoHasta = (fechaOperativa.getFullYear() > targetAnio || fechaOperativa.getMonth() > targetMes)
+    ? ultimoDia.getDate()
+    : Math.min(fechaOperativa.getDate(), ultimoDia.getDate());
+
+  const esPasado = (targetAnio < anioOriginal) || (targetAnio === anioOriginal && targetMes < (mesOriginal - 1));
+  const esActual = (targetAnio === anioOriginal && targetMes === (mesOriginal - 1));
+
+  let diasHabiles = 0, diasTranscurridos = 0;
   for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
     const ds = new Date(targetAnio, targetMes, dia).getDay();
-    const diaTerminado = esPasado || (esActual && (dia < hoy.getDate() || (dia === hoy.getDate() && cerradaHoy)));
+    const diaTerminado = esPasado || (esActual && dia <= diaOperativoHasta);
 
     if (ds >= 1 && ds <= 5) {
       diasHabiles += 1;

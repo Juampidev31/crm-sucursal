@@ -131,60 +131,95 @@ export function getFechaYHoraArgentina(date: Date = new Date()): {
 }
 
 /**
+ * Determina la fecha operativa del CRM.
+ * Regla de cierre de jornada para avanzar al día siguiente:
+ * - Lunes a Viernes: a las 19:30 hs concluye la jornada y se pasa a computar el día siguiente
+ *   (para que a primera hora de la mañana los números y metas ya estén actualizados).
+ * - Sábados: a las 12:00 pm concluye la jornada y se pasa a computar el próximo día hábil (Lunes).
+ * - Domingos: pasa a computar el Lunes.
+ */
+export function getFechaOperativa(date: Date = new Date()): {
+  fechaOperativa: Date;
+  anioOriginal: number;
+  mesOriginal: number; // 1..12
+  diaOriginal: number; // 1..31
+  horas: number;
+  minutos: number;
+  dayOfWeek: number;
+  debeAvanzar: boolean;
+} {
+  const { anio, mes, dia, horas, minutos, dayOfWeek } = getFechaYHoraArgentina(date);
+  const cur = new Date(anio, mes - 1, dia);
+
+  const minutosDelDia = horas * 60 + minutos;
+  let debeAvanzar = false;
+
+  if (dayOfWeek === 6) {
+    // Sábados: a las 12:00 pm (720 min) concluye y avanza al próximo día hábil (Lunes)
+    if (minutosDelDia >= 12 * 60) {
+      cur.setDate(cur.getDate() + 2); // Domingo -> Lunes
+      debeAvanzar = true;
+    }
+  } else if (dayOfWeek === 0) {
+    // Domingos: avanza al Lunes
+    cur.setDate(cur.getDate() + 1);
+    debeAvanzar = true;
+  } else {
+    // Lunes a Viernes: a las 19:30 hs (1170 min) concluye y avanza al día siguiente
+    if (minutosDelDia >= 19 * 60 + 30) {
+      cur.setDate(cur.getDate() + 1);
+      debeAvanzar = true;
+    }
+  }
+
+  return {
+    fechaOperativa: cur,
+    anioOriginal: anio,
+    mesOriginal: mes,
+    diaOriginal: dia,
+    horas,
+    minutos,
+    dayOfWeek,
+    debeAvanzar,
+  };
+}
+
+/**
  * Determina si la jornada comercial de la fecha indicada ya ha concluido:
  * - Lunes a Viernes: corte a las 19:30 hs.
  * - Sábados: corte a las 12:00 pm (12:00 hs).
  * - Domingos: siempre cerrada (no laborable).
  */
 export function esJornadaCerrada(date: Date = new Date()): boolean {
-  const { dayOfWeek, horas, minutos } = getFechaYHoraArgentina(date);
-
-  // Domingos: no laboral
-  if (dayOfWeek === 0) return true;
-
-  const minutosDelDia = horas * 60 + minutos;
-
-  // Sábados: corte a las 12:00 pm (12:00 hs = 720 minutos)
-  if (dayOfWeek === 6) {
-    return minutosDelDia >= 12 * 60;
-  }
-
-  // Lunes a Viernes: corte a las 19:30 hs (19 * 60 + 30 = 1170 minutos)
-  return minutosDelDia >= 19 * 60 + 30;
+  return getFechaOperativa(date).debeAvanzar;
 }
 
 /**
  * Calcula los días transcurridos en el mes de `fechaRef` hasta la fecha indicada.
- * Regla de cierre de jornada:
- * - Lunes a Viernes: 1 día (se descuenta / computa al llegar a las 19:30 hs).
- * - Sábados: 0.5 día (se descuenta / computa al llegar a las 12:00 pm).
- * - Domingos: 0 días.
- * - Feriados: 0 días.
- * 
- * Los días previos del mes se computan completos.
- * El día de `fechaRef` solo se suma como transcurrido una vez alcanzado el horario de corte comercial.
+ * Regla:
+ * - Hoy siempre está incluido en el cómputo.
+ * - A las 19:30 hs (Lunes a Viernes) o 12:00 pm (Sábados), ya se computa por adelantado
+ *   el próximo día hábil, de modo que a primera hora de la mañana del día siguiente
+ *   los números y proyecciones ya amanecen actualizados.
  */
 export function calcularDiasTranscurridos(fechaRef: Date = new Date(), feriados: Feriado[] = []): number {
-  const { anio, mes, dia: diaRef } = getFechaYHoraArgentina(fechaRef);
-  const mes0 = mes - 1;
+  const { fechaOperativa, anioOriginal, mesOriginal } = getFechaOperativa(fechaRef);
+  const anioOp = fechaOperativa.getFullYear();
+  const mesOp = fechaOperativa.getMonth() + 1; // 1..12
+  const diaOp = fechaOperativa.getDate();
 
-  const ahoraBA = getFechaYHoraArgentina(new Date());
-  const esMesPasado = anio < ahoraBA.anio || (anio === ahoraBA.anio && mes < ahoraBA.mes);
-  const esDiaPasado = esMesPasado || (anio === ahoraBA.anio && mes === ahoraBA.mes && diaRef < ahoraBA.dia);
+  const mes0 = mesOriginal - 1;
+  const ultimoDiaMesOriginal = new Date(anioOriginal, mesOriginal, 0).getDate();
+
+  // Si al avanzar de día pasó al mes siguiente, se computó todo el mes en curso
+  const diaHasta = (anioOp > anioOriginal || mesOp > mesOriginal)
+    ? ultimoDiaMesOriginal
+    : Math.min(diaOp, ultimoDiaMesOriginal);
 
   let total = 0;
-
-  // Días previos del mes (ya cerrados)
-  for (let dia = 1; dia < diaRef; dia++) {
-    const fecha = new Date(anio, mes0, dia);
+  for (let dia = 1; dia <= diaHasta; dia++) {
+    const fecha = new Date(anioOriginal, mes0, dia);
     total += calcularPesoDia(fecha, feriados);
-  }
-
-  // Día en curso: si es un día ya pasado o si ya cerró la jornada comercial hoy
-  const cerrada = esDiaPasado || esJornadaCerrada(fechaRef);
-  if (cerrada) {
-    const fechaHoy = new Date(anio, mes0, diaRef);
-    total += calcularPesoDia(fechaHoy, feriados);
   }
 
   return total;
