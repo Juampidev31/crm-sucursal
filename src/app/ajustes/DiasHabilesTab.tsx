@@ -102,14 +102,16 @@ export function DiasHabilesTab() {
   };
 
   const handleUpdateLocal = (entidad: string, field: keyof DiasLocalEntry, val: any) => {
-    const current = getEntry(entidad);
-    setDiasLocales(prev => ({
-      ...prev,
-      [entidad]: {
-        ...current,
-        [field]: val,
-      },
-    }));
+    setDiasLocales(prev => {
+      const current = prev[entidad] || getEntry(entidad);
+      return {
+        ...prev,
+        [entidad]: {
+          ...current,
+          [field]: val,
+        },
+      };
+    });
   };
 
   // Función principal: Guardar días hábiles y replicar a todos
@@ -548,11 +550,31 @@ export function DiasHabilesTab() {
                     <input
                       type="checkbox"
                       checked={entry.manual}
-                      onChange={e => {
+                      onChange={async e => {
                         const isMan = e.target.checked;
-                        handleUpdateLocal(entidad, 'manual', isMan);
-                        if (!isMan) {
-                          handleUpdateLocal(entidad, 'dias_transcurridos', transcurridosHoy);
+                        const current = getEntry(entidad);
+                        const updated: DiasLocalEntry = {
+                          ...current,
+                          manual: isMan,
+                          dias_transcurridos: isMan ? current.dias_transcurridos : transcurridosHoy,
+                        };
+                        setDiasLocales(prev => ({
+                          ...prev,
+                          [entidad]: updated,
+                        }));
+
+                        try {
+                          const payload = {
+                            analista: entidad,
+                            dias_habiles: Number(updated.dias_habiles) || 0,
+                            dias_transcurridos: Number(updated.dias_transcurridos) || 0,
+                            manual: isMan,
+                          };
+                          await supabase.from('dias_habiles_config').upsert(payload, { onConflict: 'analista' });
+                          applyDiasConfigChange('UPDATE', payload);
+                          showToast(`${entidad === 'Todos' ? 'Punto de Venta' : entidad}: modo ${isMan ? 'Manual' : 'Automático'}`);
+                        } catch (err: any) {
+                          showToast(`Error al cambiar modo: ${err.message}`, 'error');
                         }
                       }}
                     />

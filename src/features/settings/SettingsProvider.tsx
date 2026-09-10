@@ -238,7 +238,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         analista: d.analista,
         dias_habiles: d.dias_habiles,
         dias_transcurridos: auto,
-        manual: d.manual ?? false,
+        manual: forceAll ? false : (d.manual ?? false),
       }));
 
     if (updates.length > 0) {
