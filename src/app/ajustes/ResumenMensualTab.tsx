@@ -6,7 +6,7 @@ import { Registro, Objetivo, CONFIG } from '@/types';
 import { formatCurrency, hexToRgba } from '@/lib/utils';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
-import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
+import { Save, Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown, Clock } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -531,7 +531,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     );
   };
 
-  const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
+  const sectionHeader = (id: number, title: string, icon: React.ReactNode, extra?: React.ReactNode) => {
     const isCollapsed = !!collapsedSections[id];
     return (
       <div style={{ 
@@ -543,9 +543,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)',
         gap: 12
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {icon}
           <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+          {extra}
         </div>
         <button 
           onClick={() => toggleSection(id)}
@@ -707,6 +708,61 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
 
     return { capital, ops, ticket, conversion, conversionGlobal, clientes, tendCapital, tendOps, tendTicket, tendClientes, tendConversion, tendConversionGlobal, metaCapital, metaOps, cumplCapital, restanteCapital, cumplOps, restanteOps, montoVenta, montoAprobCC };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig]);
+
+  // ── Días restantes del período para el badge en Tablero ───────────────────
+  const diasRestantesCalculados = useMemo(() => {
+    const hoy = new Date();
+    const esMesActual = selectedMes === (hoy.getMonth() + 1) && selectedAnio === hoy.getFullYear();
+    const esMesPasado = selectedAnio < hoy.getFullYear() || (selectedAnio === hoy.getFullYear() && selectedMes < (hoy.getMonth() + 1));
+
+    if (esMesPasado) {
+      return 0;
+    }
+
+    const cfgTodos = diasConfig.find(d => d.analista === 'Todos');
+    const diasHabilesAdmin = cfgTodos ? (Number(cfgTodos.dias_habiles) || 0) : 0;
+    const diasTransAdmin = cfgTodos ? (Number(cfgTodos.dias_transcurridos) || 0) : 0;
+
+    if (diasHabilesAdmin > 0) {
+      if (esMesActual) {
+        return Math.max(0, diasHabilesAdmin - diasTransAdmin);
+      }
+      return diasHabilesAdmin;
+    }
+
+    return 0;
+  }, [selectedMes, selectedAnio, diasConfig]);
+
+  const badgeDiasRestantes = useMemo(() => {
+    const num = diasRestantesCalculados;
+    const displayNum = num % 1 === 0 ? num : num.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const texto = num === 1 ? `${displayNum} día restante` : `${displayNum} días restantes`;
+
+    return (
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '3px 10px',
+          borderRadius: 8,
+          background: 'rgba(96, 165, 250, 0.08)',
+          border: '1px solid rgba(96, 165, 250, 0.22)',
+          color: '#93c5fd',
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: '0.4px',
+          fontFamily: "'Outfit', sans-serif",
+          boxShadow: '0 0 14px rgba(59, 130, 246, 0.08)',
+          textTransform: 'none',
+        }}
+        title={`Días hábiles restantes: ${texto}`}
+      >
+        <Clock size={12} strokeWidth={2.5} style={{ color: '#60a5fa' }} />
+        <span>{texto}</span>
+      </div>
+    );
+  }, [diasRestantesCalculados]);
 
   // ── Distribuciones demográficas (ventas del mes) ─────────────────────────
   const ventasMes = useMemo(() =>
@@ -1690,7 +1746,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
+            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />, badgeDiasRestantes)}
             {!collapsedSections[1] && (
               <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24, padding: '24px 32px 0 32px' }}>

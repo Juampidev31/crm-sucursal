@@ -6,10 +6,11 @@ import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
+import { calcularDiasHabilesMes } from '@/lib/dias-habiles';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X, Clock } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -153,7 +154,7 @@ const cumplColor = (pct: number | null) =>
 export default function AnalistasPage() {
   const { registros: allRegistros, loading } = useRegistros();
   const { objetivos } = useObjetivos();
-  const { diasConfig } = useSettings();
+  const { diasConfig, feriados, diasTranscurridosAuto } = useSettings();
   const { nombres: analistasDefault, cobraIncentivo } = useAnalistas();
   const { isAdmin } = useAuth();
   
@@ -271,7 +272,7 @@ export default function AnalistasPage() {
     );
   };
 
-  const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
+  const sectionHeader = (id: number, title: string, icon: React.ReactNode, extra?: React.ReactNode) => {
     return (
       <div 
         style={{ 
@@ -285,9 +286,10 @@ export default function AnalistasPage() {
           userSelect: 'none',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {icon}
           <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+          {extra}
         </div>
       </div>
     );
@@ -443,7 +445,7 @@ export default function AnalistasPage() {
         montoVenta,
         montoAprobCC,
         ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
-        diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
+        diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin, diasRestantes,
         cumplProyCapital, cumplProyOps,
         coefCap, coefOps, incentivoCap, incentivoOps,
         topeKQAplicado, topeKQExcedente,
@@ -575,7 +577,7 @@ export default function AnalistasPage() {
       clientesIngresados: clientes,
       ventaPorDia, opsPorDia, metaDiariaCapital, metaDiariaOps, proyCapital, proyOps, faltaCapital, faltaOps, esMesActual,
       interesXVenta, productividad, productividadApertura, productividadRenov,
-      diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin,
+      diasHabilesAdmin, diasTransAdmin, tieneDiasAdmin, diasRestantes,
       cumplProyCapital, cumplProyOps,
       diaCorte, capitalAntFecha, opsAntFecha, varCapitalFecha, varOpsFecha,
       coefCap: 0, coefOps: 0, incentivoCap, incentivoOps,
@@ -585,6 +587,69 @@ export default function AnalistasPage() {
       incentivoTotal
     };
   }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, analista, kpiPorAnalista]);
+
+  // ── Días restantes del período para el badge en Tablero ───────────────────
+  const diasRestantesCalculados = useMemo(() => {
+    const hoy = new Date();
+    const esMesActual = selectedMes === (hoy.getMonth() + 1) && selectedAnio === hoy.getFullYear();
+    const esMesPasado = selectedAnio < hoy.getFullYear() || (selectedAnio === hoy.getFullYear() && selectedMes < (hoy.getMonth() + 1));
+
+    if (esMesPasado) {
+      return 0;
+    }
+
+    const cfgDias = esVistaGlobal
+      ? diasConfig.find(d => d.analista === 'Todos')
+      : diasConfig.find(d => d.analista === analista);
+
+    const diasHabilesAdmin = cfgDias?.dias_habiles ?? 0;
+    const diasTransAdmin = cfgDias?.dias_transcurridos ?? 0;
+
+    if (diasHabilesAdmin > 0) {
+      if (esMesActual) {
+        return Math.max(0, diasHabilesAdmin - diasTransAdmin);
+      }
+      return diasHabilesAdmin;
+    }
+
+    // Fallback con cálculo automático oficial
+    const diasHabilesAuto = calcularDiasHabilesMes(selectedAnio, selectedMes, feriados || []);
+    if (esMesActual) {
+      return Math.max(0, diasHabilesAuto - (diasTranscurridosAuto ?? 0));
+    }
+    return diasHabilesAuto;
+  }, [selectedMes, selectedAnio, esVistaGlobal, diasConfig, analista, feriados, diasTranscurridosAuto]);
+
+  const badgeDiasRestantes = useMemo(() => {
+    const num = diasRestantesCalculados;
+    const displayNum = num % 1 === 0 ? num : num.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const texto = num === 1 ? `${displayNum} día restante` : `${displayNum} días restantes`;
+
+    return (
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '3px 10px',
+          borderRadius: 8,
+          background: 'rgba(96, 165, 250, 0.08)',
+          border: '1px solid rgba(96, 165, 250, 0.22)',
+          color: '#93c5fd',
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: '0.4px',
+          fontFamily: "'Outfit', sans-serif",
+          boxShadow: '0 0 14px rgba(59, 130, 246, 0.08)',
+          textTransform: 'none',
+        }}
+        title={`Días hábiles restantes: ${texto}`}
+      >
+        <Clock size={12} strokeWidth={2.5} style={{ color: '#60a5fa' }} />
+        <span>{texto}</span>
+      </div>
+    );
+  }, [diasRestantesCalculados]);
 
   // ── Distribución acuerdo de precios ──────────────────────────────────────
   const distribucionAcuerdos = useMemo(() => {
@@ -1354,7 +1419,7 @@ export default function AnalistasPage() {
                 <TrendingUp size={13} /> Rendimiento Histórico
               </button>
             </div>
-            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />)}
+            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />, badgeDiasRestantes)}
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
