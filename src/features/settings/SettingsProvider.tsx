@@ -305,7 +305,12 @@ export function useAnalistas() {
     [all],
   );
   const cobraIncentivo = useCallback(
-    (nombre: string) => all.find(a => a.nombre === nombre)?.tiene_incentivo ?? false,
+    (nombre: string) => {
+      if (!nombre) return false;
+      const clean = (s: string) => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const target = clean(nombre);
+      return all.find(a => clean(a.nombre) === target)?.tiene_incentivo ?? false;
+    },
     [all],
   );
   return { analistas: visibles, analistasAll: all, nombres, colorDe, cobraIncentivo, applyAnalistaChange };

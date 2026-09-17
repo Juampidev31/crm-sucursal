@@ -10,7 +10,7 @@ import { calcularDiasHabilesMes } from '@/lib/dias-habiles';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, Calculator, DollarSign, TrendingUp, X, Clock } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, ChevronDown, Calculator, DollarSign, TrendingUp, X, Clock } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -194,6 +194,7 @@ export default function AnalistasPage() {
   const [periodoAcuerdos, setPeriodoAcuerdos] = useState<'mensual' | 'total'>('mensual');
   const [periodoEmpleo, setPeriodoEmpleo] = useState<'mensual' | 'total'>('mensual');
   const [rendimiento12MOpen, setRendimiento12MOpen] = useState(false);
+  const [incentivosModalOpen, setIncentivosModalOpen] = useState(false);
   const [anioRendimiento, setAnioRendimiento] = useState<number | 'TODOS'>(now.getFullYear());
   const [mesRendimiento, setMesRendimiento] = useState<number | 'TODOS'>('TODOS');
   const [hiddenCols, setHiddenCols] = useState<string[]>([]);
@@ -845,6 +846,11 @@ export default function AnalistasPage() {
     () => (esVistaGlobal ? [kpiTotal] : kpiPorAnalista),
     [esVistaGlobal, kpiTotal, kpiPorAnalista]
   );
+
+  const analistaIndividualKpi = useMemo(() => {
+    if (analista === 'PDV' || !cobraIncentivo(analista)) return null;
+    return kpiCards.find(k => k.analista === analista) || kpiCards[0] || null;
+  }, [analista, cobraIncentivo, kpiCards]);
 
   const chartCumplimiento = useMemo(() => {
     const labels = kpiCards.map(k => k.analista);
@@ -1559,7 +1565,7 @@ export default function AnalistasPage() {
                 </div>
               </div>
 
-                {/* ── FILA: (I) x Venta / Productividad ── */}
+                {/* ── FILA: (I) x Venta / Productividad / Comisión ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>(I) x Venta</div>
@@ -1569,11 +1575,194 @@ export default function AnalistasPage() {
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Productividad</div>
                     <div style={{ fontSize: 22, fontWeight: 900, color: kpiTotal.productividad === null ? '#fff' : (kpiTotal.productividad >= 200 ? '#34d399' : '#f87171') }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
                     {(kpiTotal.productividadApertura !== null || kpiTotal.productividadRenov !== null) && (
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#8f929d', marginTop: 6 }}>
-                        Apertura: {kpiTotal.productividadApertura !== null ? `${kpiTotal.productividadApertura.toFixed(2)}%` : '—'} · Renovación: {kpiTotal.productividadRenov !== null ? `${kpiTotal.productividadRenov.toFixed(2)}%` : '—'}
+                      <div style={{ 
+                        marginTop: 10, 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(2, 1fr)', 
+                        gap: 8, 
+                        fontFamily: "'Outfit', sans-serif" 
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          padding: '5px 6px',
+                          borderRadius: 6,
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                        }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Apertura</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                            {kpiTotal.productividadApertura !== null ? `${kpiTotal.productividadApertura.toFixed(2)}%` : '—'}
+                          </span>
+                        </div>
+
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          padding: '5px 6px',
+                          borderRadius: 6,
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                        }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Renovación</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                            {kpiTotal.productividadRenov !== null ? `${kpiTotal.productividadRenov.toFixed(2)}%` : '—'}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
+                  {analistaIndividualKpi && (
+                    <div 
+                      onClick={() => setIncentivosModalOpen(true)}
+                      style={{ 
+                        background: 'rgba(255,255,255,0.02)', 
+                        borderRadius: 10, 
+                        padding: '16px 20px', 
+                        border: '1px solid rgba(255,255,255,0.04)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
+                      }}
+                      title="Hacé clic para ver el detalle de incentivos y escalas"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Calculator size={13} style={{ color: '#10b981' }} />
+                          <span>Comisión Estimada</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {analistaIndividualKpi.topeKQAplicado && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 800, padding: '2px 5px', borderRadius: 4,
+                              background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)',
+                              textTransform: 'uppercase', letterSpacing: '0.5px'
+                            }}>
+                              TOPE K+Q
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIncentivosModalOpen(true);
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 5,
+                              padding: '3px 9px',
+                              borderRadius: 6,
+                              fontSize: 10,
+                              fontWeight: 800,
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              border: '1px solid rgba(16, 185, 129, 0.35)',
+                              color: '#10b981',
+                              cursor: 'pointer',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              boxShadow: '0 0 10px rgba(16, 185, 129, 0.15)',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.25)';
+                              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.6)';
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
+                              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                          >
+                            <span>Ver Detalle</span>
+                            <span style={{ fontSize: 11 }}>↗</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 900, color: '#10b981' }}>
+                        {formatCurrency(analistaIndividualKpi.incentivoTotal)}
+                      </div>
+                      <div style={{ 
+                        marginTop: 10, 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(3, 1fr)', 
+                        gap: 8, 
+                        fontFamily: "'Outfit', sans-serif"
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          padding: '5px 6px',
+                          borderRadius: 6,
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                        }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Cap</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>{formatCurrency(analistaIndividualKpi.incentivoCap)}</span>
+                        </div>
+
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          padding: '5px 6px',
+                          borderRadius: 6,
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                        }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Ops</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>{formatCurrency(analistaIndividualKpi.incentivoOps)}</span>
+                        </div>
+
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          padding: '5px 6px',
+                          borderRadius: 6,
+                          textAlign: 'center',
+                          whiteSpace: 'nowrap',
+                          minWidth: 0,
+                        }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Cob</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                            {formatCurrency((analistaIndividualKpi.incentivoCobTr90 || 0) + (analistaIndividualKpi.incentivoCobTr120 || 0) + (analistaIndividualKpi.incentivoCobRefin || 0))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* ── BLOQUE DE PROYECCIÓN ── */}
@@ -2005,198 +2194,7 @@ export default function AnalistasPage() {
             <NuevaSeccionSheets analista={analista} />
           </div>
 
-          {/* ── SECCIÓN 5: CÁLCULO DE INCENTIVOS ── */}
-          {cobraIncentivo(analista) && (
-            <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-            {sectionHeader(5, '5. Cálculo de Incentivos', <Calculator size={15} color="#a78bfa" />)}
-              <div style={{ marginTop: 24 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 32 }}>
-                  {/* Reglas de Capital */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#a78bfa', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Target size={14} /> Escala de Incentivos - Capital
-                    </div>
-                    <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                          <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa' }}>ALCANCE</th>
-                          <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa' }}>COEFICIENTE</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { a: '75% < 90%', c: '0.20%' },
-                          { a: '90% < 110%', c: '0.30%' },
-                          { a: '110% < 120%', c: '0.37%' },
-                          { a: '>= 120%', c: '0.45%' },
-                        ].map((r, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
-                            <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
-                      * El tope máximo para Ventas (K + Q) es de $200,000.<br/>
-                      * El tope máximo para Cobranzas es de $50,000 (Tope total: $250,000).
-                    </div>
-                  </div>
 
-                  {/* Reglas de Operaciones */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Activity size={14} /> Escala de Incentivos - Operaciones
-                    </div>
-                    <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                          <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa' }}>ALCANCE</th>
-                          <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa' }}>COEFICIENTE</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { a: '80% y 99.99%', c: '20%' },
-                          { a: '>= 100%', c: '30%' },
-                        ].map((r, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
-                            <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
-                      * Requiere alcance mínimo de 75% en Capital.
-                    </div>
-                  </div>
-
-                  {/* Reglas de Cobranzas */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <DollarSign size={14} /> Escala de Incentivos - Cobranzas
-                    </div>
-                    <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                          <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa' }}>CONCEPTO</th>
-                          <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa' }}>ALCANCE</th>
-                          <th style={{ textAlign: 'right', padding: '8px 4px', color: '#aaa' }}>PREMIO</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {[
-                          { n: 'TRAMO 90-119', a: '90% - 99.99%', p: '$12.643' },
-                          { n: 'TRAMO 90-119', a: '>= 100%', p: '$16.667' },
-                          { n: 'TRAMO 120-209', a: '90% - 99.99%', p: '$12.643' },
-                          { n: 'TRAMO 120-209', a: '>= 100%', p: '$16.667' },
-                          { n: 'REFINANCIACION', a: '90% - 109.99%', p: '$12.643' },
-                          { n: 'REFINANCIACION', a: '>= 110%', p: '$16.667' },
-                        ].map((r, i) => (
-                          <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '8px 4px', color: '#aaa', fontSize: 11 }}>{r.n}</td>
-                            <td style={{ padding: '8px 4px', color: '#bbb' }}>{r.a}</td>
-                            <td style={{ padding: '8px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.p}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-
-                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#fb923c', marginBottom: 8, textTransform: 'uppercase' }}>Ingreso Manual de Cumplimiento (%)</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                        <div>
-                          <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 90</div>
-                          <input 
-                            type="number" 
-                            value={manualCobranzas.pctTr90 || ''} 
-                            onChange={(e) => handleManualCobChange('pctTr90', e.target.value)}
-                            style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
-                            placeholder="0%"
-                          />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 120</div>
-                          <input 
-                            type="number" 
-                            value={manualCobranzas.pctTr120 || ''} 
-                            onChange={(e) => handleManualCobChange('pctTr120', e.target.value)}
-                            style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
-                            placeholder="0%"
-                          />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>REFIN</div>
-                          <input 
-                            type="number" 
-                            value={manualCobranzas.pctRefin || ''} 
-                            onChange={(e) => handleManualCobChange('pctRefin', e.target.value)}
-                            style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
-                            placeholder="0%"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tabla de resultados por Analista */}
-                <div style={{ overflowX: 'auto', background: 'rgba(255,255,255,0.01)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)', padding: 8 }}>
-                  <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Analista</th>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Vendido (K)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Cumpl. (K)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Incent. (K)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Cumpl. (Q)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Incent. (Q)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Incent. (Cob)</th>
-                        <th style={{ textAlign: 'right', padding: '16px 15px', fontSize: 11, fontWeight: 900, color: '#aaa', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Total Final</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {kpiCards.filter(k => k.analista === 'PDV' || cobraIncentivo(k.analista)).map((k, idx) => (
-                        <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                          <td style={{ padding: '18px 15px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {k.analista === 'PDV' ? 'TOTAL GENERAL' : (analista === 'PDV' ? k.analista.toUpperCase() : 'INDIVIDUAL')}
-                          </td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#eee', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.capital)}</td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{k.cumplCapital?.toFixed(1)}%</td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.incentivoCap)}</td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{k.cumplOps?.toFixed(1)}%</td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency(k.incentivoOps)}</td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
-                          <td style={{ padding: '18px 15px', textAlign: 'right', fontSize: 15, color: '#fff', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-                              {k.topeKQAplicado && (
-                                <span
-                                  title={`Tope $250.000 aplicado. Excedente sin pagar: ${formatCurrency(k.topeKQExcedente || 0)}`}
-                                  style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                                    padding: '3px 8px', borderRadius: 6,
-                                    fontSize: 10, fontWeight: 800,
-                                    background: 'rgba(251,191,36,0.15)',
-                                    color: '#fbbf24',
-                                    border: '1px solid rgba(251,191,36,0.35)',
-                                    textTransform: 'uppercase', letterSpacing: '0.5px',
-                                  }}
-                                >
-                                  TOPE
-                                </span>
-                              )}
-                              {formatCurrency(k.incentivoTotal)}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-          </div>
-        )}
       </div>
 
       {rendimiento12MOpen && (
@@ -2381,6 +2379,257 @@ export default function AnalistasPage() {
                 />
               </div>
             )}
+          </div>
+        </div>
+        </ModalPortal>
+      )}
+
+      {/* ── MODAL: CÁLCULO DE INCENTIVOS ── */}
+      {incentivosModalOpen && (
+        <ModalPortal>
+        <div
+          onClick={() => setIncentivosModalOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#111111',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 18,
+              padding: 28,
+              width: 'min(1280px, 100%)',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+              fontFamily: "'Outfit', sans-serif",
+            }}
+          >
+            {/* Header del Modal */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                  <Calculator size={18} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-0.3px' }}>
+                    Cálculo de Incentivos — {analista}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#8f929d', marginTop: 2 }}>
+                    Escalas de liquidación e ingreso manual de cobranzas
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIncentivosModalOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 8,
+                  width: 32, height: 32,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#aaa', cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Escalas: 3 Columnas */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 28 }}>
+              {/* Reglas de Capital */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#a78bfa', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+                  <Target size={14} /> Escala de Incentivos - Capital
+                </div>
+                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                      <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
+                      <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>COEFICIENTE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { a: '75% < 90%', c: '0.20%' },
+                      { a: '90% < 110%', c: '0.30%' },
+                      { a: '110% < 120%', c: '0.37%' },
+                      { a: '>= 120%', c: '0.45%' },
+                    ].map((r, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic', lineHeight: 1.5 }}>
+                  * El tope máximo para Ventas (K + Q) es de $200,000.<br/>
+                  * El tope máximo para Cobranzas es de $50,000 (Tope total: $250,000).
+                </div>
+              </div>
+
+              {/* Reglas de Operaciones */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+                  <Activity size={14} /> Escala de Incentivos - Operaciones
+                </div>
+                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                      <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
+                      <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>COEFICIENTE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { a: '80% y 99.99%', c: '20%' },
+                      { a: '>= 100%', c: '30%' },
+                    ].map((r, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
+                  * Requiere alcance mínimo de 75% en Capital.
+                </div>
+              </div>
+
+              {/* Reglas de Cobranzas */}
+              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+                  <DollarSign size={14} /> Escala de Incentivos - Cobranzas
+                </div>
+                <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>CONCEPTO</th>
+                      <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
+                      <th style={{ textAlign: 'right', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>PREMIO</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { n: 'TRAMO 90-119', a: '90% - 99.99%', p: '$12.643' },
+                      { n: 'TRAMO 90-119', a: '>= 100%', p: '$16.667' },
+                      { n: 'TRAMO 120-209', a: '90% - 99.99%', p: '$12.643' },
+                      { n: 'TRAMO 120-209', a: '>= 100%', p: '$16.667' },
+                      { n: 'REFINANCIACION', a: '90% - 109.99%', p: '$12.643' },
+                      { n: 'REFINANCIACION', a: '>= 110%', p: '$16.667' },
+                    ].map((r, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '8px 4px', color: '#aaa', fontSize: 11 }}>{r.n}</td>
+                        <td style={{ padding: '8px 4px', color: '#bbb' }}>{r.a}</td>
+                        <td style={{ padding: '8px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.p}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: '#fb923c', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Ingreso Manual de Cumplimiento (%)</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 90</div>
+                      <input 
+                        type="number" 
+                        value={manualCobranzas.pctTr90 || ''} 
+                        onChange={(e) => handleManualCobChange('pctTr90', e.target.value)}
+                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                        placeholder="0%"
+                      />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 120</div>
+                      <input 
+                        type="number" 
+                        value={manualCobranzas.pctTr120 || ''} 
+                        onChange={(e) => handleManualCobChange('pctTr120', e.target.value)}
+                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                        placeholder="0%"
+                      />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>REFIN</div>
+                      <input 
+                        type="number" 
+                        value={manualCobranzas.pctRefin || ''} 
+                        onChange={(e) => handleManualCobChange('pctRefin', e.target.value)}
+                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                        placeholder="0%"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabla de resultados por Analista */}
+            <div style={{ overflowX: 'auto', background: 'rgba(255,255,255,0.01)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.04)', padding: 6 }}>
+              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Analista</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Vendido (K)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Cumpl. (K)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (K)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Cumpl. (Q)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (Q)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (Cob)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 900, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Total Final</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kpiCards.filter(k => k.analista === 'PDV' || cobraIncentivo(k.analista)).map((k, idx) => (
+                    <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                      <td style={{ padding: '16px 14px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        {k.analista === 'PDV' ? 'TOTAL GENERAL' : (analista === 'PDV' ? k.analista.toUpperCase() : 'INDIVIDUAL')}
+                      </td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#eee', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.capital)}</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{k.cumplCapital?.toFixed(1)}%</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.incentivoCap)}</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{k.cumplOps?.toFixed(1)}%</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.incentivoOps)}</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 15, color: '#10b981', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                          {k.topeKQAplicado && (
+                            <span
+                              title={`Tope $250.000 aplicado. Excedente sin pagar: ${formatCurrency(k.topeKQExcedente || 0)}`}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                padding: '3px 8px', borderRadius: 6,
+                                fontSize: 10, fontWeight: 800,
+                                background: 'rgba(251,191,36,0.15)',
+                                color: '#fbbf24',
+                                border: '1px solid rgba(251,191,36,0.35)',
+                                textTransform: 'uppercase', letterSpacing: '0.5px',
+                              }}
+                            >
+                              TOPE
+                            </span>
+                          )}
+                          {formatCurrency(k.incentivoTotal)}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
         </ModalPortal>
