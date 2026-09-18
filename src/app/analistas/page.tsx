@@ -1387,9 +1387,9 @@ export default function AnalistasPage() {
               {/* ── Progreso vs Ideal por separado (PDV + cada analista, con su propio Ideal) ── */}
               <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
                 {chartsProgresoSep.map(({ titulo, data }) => (
-                  <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Progreso vs Ideal — {titulo}</div>
-                    <div style={{ minHeight: 240, position: 'relative', width: '100%' }}>
+                  <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal — {titulo}</div>
+                    <div style={{ height: 280, position: 'relative', width: '100%' }}>
                       {chartsLoaded ? (
                         <Line data={data} options={chartProgresoSepOptions as any} plugins={[lineShadowPlugin]} />
                       ) : (
@@ -1767,7 +1767,7 @@ export default function AnalistasPage() {
 
                 {/* ── BLOQUE DE PROYECCIÓN ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginTop: 12, alignItems: 'stretch' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     {kpiTotal.esMesActual && !kpiTotal.tieneDiasAdmin ? (
                       <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
                         Cargá días hábiles en Ajustes para ver proyección
@@ -1887,9 +1887,9 @@ export default function AnalistasPage() {
                     )}
                   </div>
 
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>Progreso vs Ideal</div>
-                    <div style={{ flex: 1, minHeight: 220, position: 'relative', width: '100%' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal</div>
+                    <div style={{ height: 280, position: 'relative', width: '100%' }}>
                       {chartsLoaded ? (
                         <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} />
                       ) : (
