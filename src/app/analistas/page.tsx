@@ -1090,7 +1090,8 @@ export default function AnalistasPage() {
     const isCurrentMonth = selectedMes === (today.getMonth() + 1) && selectedAnio === today.getFullYear();
     const maxDay = isCurrentMonth ? today.getDate() : daysInMonth;
 
-    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+    const chartDays = isCurrentMonth ? maxDay : daysInMonth;
+    const labels = Array.from({ length: chartDays }, (_, i) => `${i + 1}`);
     
     let cumulative = 0;
     const dailyData: (number | null)[] = [];
@@ -1149,7 +1150,8 @@ export default function AnalistasPage() {
     const today = new Date();
     const isCurrentMonth = selectedMes === (today.getMonth() + 1) && selectedAnio === today.getFullYear();
     const maxDay = isCurrentMonth ? today.getDate() : daysInMonth;
-    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
+    const chartDays = isCurrentMonth ? maxDay : daysInMonth;
+    const labels = Array.from({ length: chartDays }, (_, i) => `${i + 1}`);
 
     const regsMes = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
 
@@ -1344,7 +1346,7 @@ export default function AnalistasPage() {
   if (loading) return <div style={{display:'flex',justifyContent:'center',padding:'40px'}}><div className="spinner"></div></div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', paddingTop: '32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 16 }}>
       <style>{`
         .row-hover {
           transition: background 0.2s ease;
@@ -1360,8 +1362,7 @@ export default function AnalistasPage() {
         border: '1px solid rgba(255,255,255,0.04)',
         borderRadius: '16px',
         padding: '12px 24px',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
-        marginBottom: '16px'
+        boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -1454,7 +1455,7 @@ export default function AnalistasPage() {
                 {chartsProgresoSep.map(({ titulo, data }) => (
                   <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal — {titulo}</div>
-                    <div style={{ height: 280, position: 'relative', width: '100%' }}>
+                    <div style={{ height: 200, position: 'relative', width: '100%' }}>
                       {chartsLoaded ? (
                         <Line data={data} options={chartProgresoSepOptions as any} plugins={[lineShadowPlugin]} />
                       ) : (
@@ -1492,7 +1493,7 @@ export default function AnalistasPage() {
             </div>
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />, badgeDiasRestantes)}
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -1631,7 +1632,7 @@ export default function AnalistasPage() {
               </div>
 
                 {/* ── FILA: (I) x Venta / Productividad / Comisión ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>(I) x Venta</div>
                     <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.interesXVenta)}</div>
@@ -1831,7 +1832,7 @@ export default function AnalistasPage() {
                 </div>
 
                 {/* ── BLOQUE DE PROYECCIÓN ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginTop: 12, alignItems: 'stretch' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginTop: 0, alignItems: 'stretch' }}>
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     {kpiTotal.esMesActual && !kpiTotal.tieneDiasAdmin ? (
                       <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
@@ -1954,7 +1955,7 @@ export default function AnalistasPage() {
 
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal</div>
-                    <div style={{ height: 280, position: 'relative', width: '100%' }}>
+                    <div style={{ height: 200, position: 'relative', width: '100%' }}>
                       {chartsLoaded ? (
                         <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} />
                       ) : (
