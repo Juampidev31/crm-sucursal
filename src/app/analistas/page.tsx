@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, memo, useEffect } from 'react';
+import React, { useState, useMemo, memo, useEffect, useCallback } from 'react';
 import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
@@ -10,7 +10,7 @@ import { calcularDiasHabilesMes } from '@/lib/dias-habiles';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, ChevronDown, Calculator, DollarSign, TrendingUp, X, Clock } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, ChevronDown, Calculator, DollarSign, TrendingUp, X, Clock, Trash2 } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -249,15 +249,79 @@ export default function AnalistasPage() {
     return buckets;
   }, [registros, objetivos, analista, anioRendimiento, mesRendimiento, aniosDisponiblesRendimiento]);
 
-  const [manualCobranzas, setManualCobranzas] = useState({
-    pctTr90: 0,
-    pctTr120: 0,
-    pctRefin: 0
-  });
+  // ── Persistencia de cobranzas manuales por analista y período ─────────────
+  const [cobranzasStore, setCobranzasStore] = useState<Record<string, { pctTr90?: string | number; pctTr120?: string | number; pctRefin?: string | number }>>({});
 
-  const handleManualCobChange = (key: string, val: string) => {
-    const num = parseFloat(val) || 0;
-    setManualCobranzas(prev => ({ ...prev, [key]: num }));
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('crm_manual_cobranzas_v1');
+      if (saved) {
+        setCobranzasStore(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error('Error cargando cobranzas manuales de localStorage:', e);
+    }
+  }, []);
+
+  const getCobranzasForAnalista = useCallback((nombreAnalista: string, anio: number, mes: number) => {
+    const keyWithPeriod = `${anio}-${String(mes).padStart(2, '0')}_${nombreAnalista}`;
+    if (cobranzasStore[keyWithPeriod]) {
+      return cobranzasStore[keyWithPeriod];
+    }
+    if (cobranzasStore[nombreAnalista]) {
+      return cobranzasStore[nombreAnalista];
+    }
+    return { pctTr90: '', pctTr120: '', pctRefin: '' };
+  }, [cobranzasStore]);
+
+  const currentCobranzas = useMemo(() => {
+    return getCobranzasForAnalista(analista, selectedAnio, selectedMes);
+  }, [getCobranzasForAnalista, analista, selectedAnio, selectedMes]);
+
+  const handleManualCobChange = (key: 'pctTr90' | 'pctTr120' | 'pctRefin', val: string) => {
+    const keyWithPeriod = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}_${analista}`;
+
+    setCobranzasStore(prev => {
+      const current = prev[keyWithPeriod] || prev[analista] || { pctTr90: '', pctTr120: '', pctRefin: '' };
+      const updated = { ...current, [key]: val };
+
+      const hasAnyValue = (updated.pctTr90 !== undefined && updated.pctTr90 !== '' && Number(updated.pctTr90) !== 0) ||
+                          (updated.pctTr120 !== undefined && updated.pctTr120 !== '' && Number(updated.pctTr120) !== 0) ||
+                          (updated.pctRefin !== undefined && updated.pctRefin !== '' && Number(updated.pctRefin) !== 0) ||
+                          (val !== '' && val !== undefined);
+
+      const nextStore = { ...prev };
+      if (!hasAnyValue) {
+        delete nextStore[keyWithPeriod];
+        delete nextStore[analista];
+      } else {
+        nextStore[keyWithPeriod] = updated;
+        nextStore[analista] = updated;
+      }
+
+      try {
+        localStorage.setItem('crm_manual_cobranzas_v1', JSON.stringify(nextStore));
+      } catch (err) {
+        console.error('Error guardando cobranzas manuales en localStorage:', err);
+      }
+
+      return nextStore;
+    });
+  };
+
+  const handleClearManualCob = () => {
+    const keyWithPeriod = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}_${analista}`;
+    setCobranzasStore(prev => {
+      const nextStore = { ...prev };
+      delete nextStore[keyWithPeriod];
+      delete nextStore[analista];
+      try {
+        localStorage.setItem('crm_manual_cobranzas_v1', JSON.stringify(nextStore));
+      } catch (err) {
+        console.error('Error borrando cobranzas manuales en localStorage:', err);
+      }
+      return nextStore;
+    });
   };
 
   const tendBadge = (pct: number | null, showLabel = true) => {
@@ -412,9 +476,10 @@ export default function AnalistasPage() {
       let pctTr90 = 0, pctTr120 = 0, pctRefin = 0;
 
       if (cobraIncentivo(analista)) {
-        pctTr90 = manualCobranzas.pctTr90;
-        pctTr120 = manualCobranzas.pctTr120;
-        pctRefin = manualCobranzas.pctRefin;
+        const cob = getCobranzasForAnalista(analista, selectedAnio, selectedMes);
+        pctTr90 = parseFloat(String(cob.pctTr90 ?? 0)) || 0;
+        pctTr120 = parseFloat(String(cob.pctTr120 ?? 0)) || 0;
+        pctRefin = parseFloat(String(cob.pctRefin ?? 0)) || 0;
 
         // Tramo 90-119
         if (pctTr90 >= 100) incentivoCobTr90 = 16667;
@@ -455,7 +520,7 @@ export default function AnalistasPage() {
         incentivoTotal
       };
     });
-  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, manualCobranzas, analista, analistasParaMostrar, cobraIncentivo]);
+  }, [registros, objetivos, selectedMes, selectedAnio, mesPrev, anioPrev, diasConfig, cobranzasStore, analista, analistasParaMostrar, cobraIncentivo, getCobranzasForAnalista]);
 
   // ── KPI total ─────────────────────────────────────────────────────────────
   const kpiTotal = useMemo(() => {
@@ -2540,13 +2605,46 @@ export default function AnalistasPage() {
                 </table>
 
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#fb923c', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Ingreso Manual de Cumplimiento (%)</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                      Ingreso Manual de Cumplimiento (%)
+                    </div>
+                    {Boolean(
+                      (currentCobranzas.pctTr90 !== undefined && currentCobranzas.pctTr90 !== '') ||
+                      (currentCobranzas.pctTr120 !== undefined && currentCobranzas.pctTr120 !== '') ||
+                      (currentCobranzas.pctRefin !== undefined && currentCobranzas.pctRefin !== '')
+                    ) && (
+                      <button
+                        type="button"
+                        onClick={handleClearManualCob}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          color: '#f87171',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Borrar porcentajes guardados de cobranzas"
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+                      >
+                        <Trash2 size={11} /> Borrar
+                      </button>
+                    )}
+                  </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     <div>
                       <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 90</div>
                       <input 
                         type="number" 
-                        value={manualCobranzas.pctTr90 || ''} 
+                        value={currentCobranzas.pctTr90 ?? ''} 
                         onChange={(e) => handleManualCobChange('pctTr90', e.target.value)}
                         style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                         placeholder="0%"
@@ -2556,7 +2654,7 @@ export default function AnalistasPage() {
                       <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 120</div>
                       <input 
                         type="number" 
-                        value={manualCobranzas.pctTr120 || ''} 
+                        value={currentCobranzas.pctTr120 ?? ''} 
                         onChange={(e) => handleManualCobChange('pctTr120', e.target.value)}
                         style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                         placeholder="0%"
@@ -2566,7 +2664,7 @@ export default function AnalistasPage() {
                       <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>REFIN</div>
                       <input 
                         type="number" 
-                        value={manualCobranzas.pctRefin || ''} 
+                        value={currentCobranzas.pctRefin ?? ''} 
                         onChange={(e) => handleManualCobChange('pctRefin', e.target.value)}
                         style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                         placeholder="0%"
