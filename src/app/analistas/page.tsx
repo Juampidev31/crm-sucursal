@@ -1088,10 +1088,10 @@ export default function AnalistasPage() {
     const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
     const today = new Date();
     const isCurrentMonth = selectedMes === (today.getMonth() + 1) && selectedAnio === today.getFullYear();
-    const maxDay = isCurrentMonth ? today.getDate() : daysInMonth;
+    const isFutureMonth = selectedAnio > today.getFullYear() || (selectedAnio === today.getFullYear() && selectedMes > (today.getMonth() + 1));
+    const maxDay = isCurrentMonth ? today.getDate() : (isFutureMonth ? 0 : daysInMonth);
 
-    const chartDays = isCurrentMonth ? maxDay : daysInMonth;
-    const labels = Array.from({ length: chartDays }, (_, i) => `${i + 1}`);
+    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
     
     let cumulative = 0;
     const dailyData: (number | null)[] = [];
@@ -1149,9 +1149,9 @@ export default function AnalistasPage() {
     const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
     const today = new Date();
     const isCurrentMonth = selectedMes === (today.getMonth() + 1) && selectedAnio === today.getFullYear();
-    const maxDay = isCurrentMonth ? today.getDate() : daysInMonth;
-    const chartDays = isCurrentMonth ? maxDay : daysInMonth;
-    const labels = Array.from({ length: chartDays }, (_, i) => `${i + 1}`);
+    const isFutureMonth = selectedAnio > today.getFullYear() || (selectedAnio === today.getFullYear() && selectedMes > (today.getMonth() + 1));
+    const maxDay = isCurrentMonth ? today.getDate() : (isFutureMonth ? 0 : daysInMonth);
+    const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
 
     const regsMes = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
 
@@ -1202,12 +1202,18 @@ export default function AnalistasPage() {
         titleColor: '#fff', bodyColor: '#f1f5f9', padding: 16, cornerRadius: 12, usePointStyle: true,
         callbacks: {
           title: (items: any[]) => `Día ${items[0].label}`,
-          label: (ctx: any) => ` ${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`,
+          label: (ctx: any) => {
+            if (ctx.raw == null) return null;
+            return ` ${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`;
+          },
         },
       },
     },
     scales: {
-      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 } } },
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#888', font: { size: 9 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
+      },
       y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } },
     },
   };
@@ -1251,6 +1257,7 @@ export default function AnalistasPage() {
           },
           label: (ctx: any) => {
             const v = ctx.raw;
+            if (v == null) return null;
             if (ctx.datasetIndex === 0) {
               const daily = ctx.dataset.dailyData?.[ctx.dataIndex];
               if (daily != null) {
@@ -1276,7 +1283,10 @@ export default function AnalistasPage() {
       }
     },
     scales: {
-      x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 } } },
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#888', font: { size: 9 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
+      },
       y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } }
     },
     interaction: { mode: 'index' as const, intersect: false }
@@ -1455,7 +1465,7 @@ export default function AnalistasPage() {
                 {chartsProgresoSep.map(({ titulo, data }) => (
                   <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal — {titulo}</div>
-                    <div style={{ height: 200, position: 'relative', width: '100%' }}>
+                    <div style={{ height: 240, position: 'relative', width: '100%' }}>
                       {chartsLoaded ? (
                         <Line data={data} options={chartProgresoSepOptions as any} plugins={[lineShadowPlugin]} />
                       ) : (
@@ -1955,7 +1965,7 @@ export default function AnalistasPage() {
 
                   <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal</div>
-                    <div style={{ height: 200, position: 'relative', width: '100%' }}>
+                    <div style={{ height: 320, position: 'relative', width: '100%' }}>
                       {chartsLoaded ? (
                         <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} />
                       ) : (
