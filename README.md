@@ -1,37 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CRM Sucursal
 
-## Getting Started
+Aplicación interna de seguimiento comercial construida con Next.js 16, React 19,
+TypeScript y Supabase. Incluye gestión de registros, proyecciones, objetivos,
+recordatorios, auditoría, reportes y herramientas administrativas de importación,
+verificación y exportación.
 
-First, run the development server:
+## Requisitos
+
+- Node.js 20.9 o superior.
+- npm (el repositorio versiona `package-lock.json`).
+- Un proyecto Supabase con el esquema de `supabase-schema.sql` y las migraciones
+  operativas de `scripts/` revisadas para el entorno correspondiente.
+
+## Configuración local
+
+1. Instalá las dependencias:
+
+   ```bash
+   npm ci
+   ```
+
+2. Copiá `.env.example` a `.env.local` y completá:
+
+   - `NEXT_PUBLIC_SUPABASE_URL`: URL del proyecto Supabase.
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: clave pública `anon` del proyecto.
+   - `ADMIN_PASSWORD`: contraseña validada por el endpoint de acceso administrativo.
+
+   No versiones `.env.local` ni claves privadas o `service_role`.
+
+3. Iniciá el servidor:
+
+   ```bash
+   npm run dev
+   ```
+
+La aplicación queda disponible en `http://localhost:3000`.
+
+## Comandos
+
+| Comando | Uso |
+| --- | --- |
+| `npm run dev` | Desarrollo; libera antes el puerto configurado (3000 por defecto). |
+| `npm run build` | Genera el build de producción. |
+| `npm start` | Sirve un build existente. |
+| `npm run lint` | Ejecuta ESLint sobre el repositorio. |
+| `npm run typecheck` | Comprueba TypeScript sin emitir archivos. |
+| `npm test` | Ejecuta las pruebas unitarias. |
+| `npm run migrate:csv -- archivo.csv` | Importa un CSV a Supabase; revisá el script antes de usar `--clean`. |
+
+## Rutas principales
+
+- `/registros`: gestión y seguimiento de clientes.
+- `/proyeccion`: proyección comercial del mes actual.
+- `/analistas`: métricas y vistas por analista.
+- `/duplicados`: detección de posibles registros duplicados.
+- `/ajustes`: herramientas administrativas, configuración e importaciones.
+- `/reportes` y `/reportes/cobranzas`: reportes operativos.
+- `/publico/resumen-mensual`: vista compartible de un resumen guardado.
+
+Los handlers bajo `/api` integran Supabase y hojas CSV publicadas. Las fuentes
+externas se cachean durante cinco minutos salvo la sección marcada como dinámica.
+
+## Datos y seguridad
+
+El cliente usa la clave pública de Supabase, por lo que las políticas RLS y los
+permisos de base de datos deben ser la autoridad real. El archivo
+`supabase-schema.sql` es una referencia histórica: verificá el esquema aplicado y
+las políticas antes de usar datos reales. No ejecutes scripts SQL ni migraciones
+CSV contra producción sin una copia de seguridad y una revisión explícita.
+
+## Verificación antes de un cambio
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run typecheck
+npm test
+npm run build
+git diff --check
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-"# trigger deploy"  
