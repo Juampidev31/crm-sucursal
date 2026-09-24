@@ -16,7 +16,7 @@ import {
   Settings, Activity, Copy, Shield, AlertTriangle,
   CheckCircle, User, ShieldCheck, BarChart3, Trash2,
   Search, Filter, ArrowRight, Edit3, Plus, Users,
-  ChevronLeft, ChevronRight, Upload, X
+  ChevronLeft, ChevronRight, Upload, X, TrendingUp
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -27,6 +27,7 @@ const TabFallback = () => (
 );
 
 const ResumenMensualTab = dynamic(() => import('./ResumenMensualTab'), { ssr: false, loading: TabFallback });
+const ComparativaAnalistasTab = dynamic(() => import('./ComparativaAnalistasTab'), { ssr: false, loading: TabFallback });
 const BulkModifyTab     = dynamic(() => import('./BulkModifyTab'),     { ssr: false, loading: TabFallback });
 const MassiveDeleteTab  = dynamic(() => import('./MassiveDeleteTab'),  { ssr: false, loading: TabFallback });
 const AvisosTab         = dynamic(() => import('./AvisosTab'),         { ssr: false, loading: TabFallback });
@@ -44,7 +45,7 @@ type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | s
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
 type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
 type ConfigSubTab = 'alertas' | 'dias' | 'permisos' | 'analistas';
-type ReportesSubTab = 'historico' | 'resumen-mensual' | 'calif-score';
+type ReportesSubTab = 'historico' | 'comparativa' | 'resumen-mensual' | 'calif-score';
 type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
 type ActividadSubTab = 'auditoria' | 'reasignados' | 'avisos';
 
@@ -176,6 +177,7 @@ export default function AjustesPage() {
 
   // Keep-alive: visibilidad y montaje persistente de las tabs pesadas (componentes dinamicos)
   const heavyVisibility = useMemo(() => ({
+    'comparativa-tab': activeTab === 'reportes' && reportesSubTab === 'comparativa',
     'resumen-mensual': activeTab === 'reportes' && reportesSubTab === 'resumen-mensual',
     'bulk-corrector': activeTab === 'datos-masivos' && datosSubTab === 'modificacion-masiva' && isAdmin,
     'bulk-excel': activeTab === 'datos-masivos' && datosSubTab === 'asignar-excel' && isAdmin,
@@ -1151,6 +1153,7 @@ export default function AjustesPage() {
             <SubTabBar
               tabs={[
                 { id: 'historico' as const, label: 'Histórico y Objetivos', icon: History },
+                { id: 'comparativa' as const, label: 'Comparativa de Analistas', icon: TrendingUp },
                 { id: 'resumen-mensual' as const, label: 'Resumen Mensual', icon: BarChart3 },
                 ...(isAdmin ? [{ id: 'calif-score' as const, label: 'Calif. x SCORE', icon: Users }] : []),
               ]}
@@ -1786,6 +1789,11 @@ export default function AjustesPage() {
           })()}
 
           {/* TABS PESADAS (componentes dinamicos) — KEEP-ALIVE: se montan al primer acceso y se ocultan con display:none */}
+          {visitedTabs.has('comparativa-tab') && (
+            <div style={{ display: heavyVisibility['comparativa-tab'] ? 'block' : 'none' }}>
+              <ComparativaAnalistasTab />
+            </div>
+          )}
           {visitedTabs.has('resumen-mensual') && (
             <div style={{ display: heavyVisibility['resumen-mensual'] ? 'block' : 'none' }}>
               <ResumenMensualTab
