@@ -507,7 +507,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
               background: 'rgba(255,255,255,0.06)', color: '#ccc',
               border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer',
             }}>
-              "{search}" ×
+              &ldquo;{search}&rdquo; ×
             </span>
           )}
           <button onClick={clearAll} style={{

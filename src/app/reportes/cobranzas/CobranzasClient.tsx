@@ -251,7 +251,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
     setData(prev => {
       const rows = [...prev.morosidad];
       const row = { ...rows[idx] };
-      let val = row[field];
+      const val = row[field];
       if (val && val !== '-' && !val.includes('%')) {
         const num = parseNumberRobust(val);
         if (!isNaN(num)) {

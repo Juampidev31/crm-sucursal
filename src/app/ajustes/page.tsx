@@ -419,7 +419,7 @@ export default function AjustesPage() {
         const PAGE = 1000;
         let offset = 0;
         const acc: any[] = [];
-        // eslint-disable-next-line no-constant-condition
+
         while (true) {
           if (cancelado) return;
           let q = supabase.from('auditoria').select('*').order('fecha_hora', { ascending: false });

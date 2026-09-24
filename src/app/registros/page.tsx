@@ -848,7 +848,7 @@ const RegistroModal = memo(function RegistroModal({
       setDupBlocked(false);
       setAgendarRecordatorio(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [isOpen, initialData]);
 
   useEffect(() => {

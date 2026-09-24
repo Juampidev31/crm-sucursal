@@ -68,7 +68,7 @@ const addGradients = (chart: any) => {
           const chartObj = context.chart;
           const { ctx, chartArea } = chartObj;
           if (!chartArea) return null;
-          let horizontal = chartObj.config?.options?.indexAxis === 'y';
+          const horizontal = chartObj.config?.options?.indexAxis === 'y';
           const gradient = horizontal 
             ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
             : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);

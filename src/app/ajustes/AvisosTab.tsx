@@ -242,7 +242,7 @@ export default function AvisosTab() {
                 
                 {rec.nota && (
                   <p style={{ fontSize: '12px', color: '#999', margin: 0, fontStyle: 'italic', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '6px' }}>
-                    "{rec.nota}"
+                    &ldquo;{rec.nota}&rdquo;
                   </p>
                 )}
 

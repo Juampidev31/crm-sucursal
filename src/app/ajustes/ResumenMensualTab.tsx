@@ -791,7 +791,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const distEstados = useMemo(() => {
     const map = new Map<string, { monto: number; cantidad: number }>();
     for (const r of ventasMes) {
-      let raw = (r.estado || '').toLowerCase().trim();
+      const raw = (r.estado || '').toLowerCase().trim();
       let label = '';
 
       if (raw.includes('derivado') || raw.includes('aprobado cc')) {
@@ -958,7 +958,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     const chart = context.chart;
     const { ctx, chartArea } = chart;
     if (!chartArea) return null;
-    let horizontal = chart.config.options.indexAxis === 'y';
+    const horizontal = chart.config.options.indexAxis === 'y';
     const gradient = horizontal 
       ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
       : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
