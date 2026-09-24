@@ -35,11 +35,11 @@ function ToastCard({
   return (
     <div style={{
       position: 'fixed', bottom: '24px', [side]: '24px', zIndex,
-      background: 'var(--bg)', color: '#fff', padding: '14px 18px',
+      background: 'var(--bg)', color: 'var(--text-strong)', padding: '14px 18px',
       borderRadius: '12px', boxShadow: '0 8px 40px rgba(0,0,0,0.8)',
       display: 'flex', alignItems: 'flex-start', gap: '14px', maxWidth: '420px',
       animation: 'slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-      border: '1px solid rgba(255,255,255,0.03)',
+      border: '1px solid var(--neutral-03)',
       borderLeft: `3px solid ${accentColor}`,
     }}>
       <div style={{
@@ -49,9 +49,9 @@ function ToastCard({
         {icon}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>{title}</div>
+        <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-strong)' }}>{title}</div>
         {subtitle && (
-          <div style={{ fontSize: '11px', color: 'var(--fg-dim)', marginTop: '2px', fontFamily: 'monospace' }}>{subtitle}</div>
+          <div style={{ fontSize: '11px', color: 'var(--fg-dim)', marginTop: '2px', fontFamily: 'var(--font-code)' }}>{subtitle}</div>
         )}
         {body && (
           <div style={{ fontSize: '12px', color: 'var(--fg-muted)', marginTop: '4px', wordBreak: 'break-word' }}>{body}</div>
@@ -106,19 +106,19 @@ const ReminderAlertPopup = () => {
 
   if (reminderAlert) {
     const isAvisoAdmin = reminderAlert.cuil === 'ADMIN_AVISO';
-    
+
     return (
       <div style={{
         position: 'fixed', inset: 0, zIndex: 2000,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
+        background: 'var(--surface-scrim)', backdropFilter: 'blur(4px)',
         padding: '20px',
       }}>
-        <motion.div 
+        <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           style={{
-            background: 'var(--bg)', border: `1px solid ${isAvisoAdmin ? 'var(--azul)' : 'rgba(255,255,255,0.03)'}`,
+            background: 'var(--bg)', border: `1px solid ${isAvisoAdmin ? 'var(--azul)' : 'var(--neutral-03)'}`,
             borderRadius: '20px', padding: '36px', maxWidth: '620px', width: '100%',
             boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
             display: 'flex', flexDirection: 'column', gap: '20px',
@@ -126,7 +126,7 @@ const ReminderAlertPopup = () => {
           }}
         >
           <div style={{
-            width: '60px', height: '60px', 
+            width: '60px', height: '60px',
             background: isAvisoAdmin ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
             borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
@@ -134,7 +134,7 @@ const ReminderAlertPopup = () => {
           </div>
 
           <div>
-            <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#fff', marginBottom: '8px' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: 900, color: 'var(--text-strong)', marginBottom: '8px' }}>
               {isAvisoAdmin ? 'MENSAJE DEL ADMINISTRADOR' : 'Recordatorio Pendiente'}
             </h3>
             {!isAvisoAdmin && (
@@ -142,23 +142,23 @@ const ReminderAlertPopup = () => {
                 {reminderAlert.nombre} | CUIL: {reminderAlert.cuil}
               </div>
             )}
-            <p style={{ 
-              fontSize: '16px', color: 'var(--fg)', lineHeight: '1.6', 
-              background: 'rgba(255,255,255,0.015)', padding: '16px', borderRadius: '12px' 
+            <p style={{
+              fontSize: '16px', color: 'var(--fg)', lineHeight: '1.6',
+              background: 'var(--neutral-02)', padding: '16px', borderRadius: '12px'
             }}>
               {reminderAlert.nota || 'Sin descripción adicional.'}
             </p>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-            <button 
+            <button
               onClick={() => markReminderCompleted(reminderAlert.id)}
               className="btn-primary"
               style={{ flex: 1, justifyContent: 'center', height: '48px', fontSize: '14px', fontWeight: 700 }}
             >
               ENTENDIDO
             </button>
-            <button 
+            <button
               onClick={clearReminderAlert}
               className="btn-secondary"
               style={{ height: '48px', padding: '0 20px' }}
@@ -204,7 +204,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     setShowFilters(false);
     setSidebarHidden(shouldHideSidebar(pathname, isMinimal));
   }, [pathname, setShowFilters, isMinimal]);
-  
+
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('app_zoom_levels_v2');
@@ -261,7 +261,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       window.removeEventListener('wheel', handleWheel);
     };
   }, [handleZoom, resetZoom]);
-  
+
   // Estados para Split View
   const [isSplitView, setIsSplitView] = useState(false);
   const [leftPath, setLeftPath] = useState('/registros');
@@ -270,7 +270,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   useEffect(() => {
     const saved = localStorage.getItem('admin_split_view');
     if (saved === 'true') setIsSplitView(true);
-    
+
     const savedLeft = localStorage.getItem('admin_split_left');
     const savedRight = localStorage.getItem('admin_split_right');
     if (savedLeft) setLeftPath(savedLeft);
@@ -322,10 +322,10 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
         <header style={{
           height: '60px',
           width: '100%',
-          background: 'rgba(12,12,12,0.95)',
+          background: 'var(--surface-overlay)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: 'none',
+          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           padding: '0 32px',
@@ -343,7 +343,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
             left: 0,
             right: 0,
             height: '45px',
-            background: 'linear-gradient(180deg, rgba(12,12,12,0.7) 0%, rgba(12,12,12,0.3) 50%, rgba(12,12,12,0) 100%)',
+            background: 'linear-gradient(180deg, rgba(255,253,249,0.82) 0%, rgba(255,253,249,0.34) 55%, transparent 100%)',
             pointerEvents: 'none',
             zIndex: 49
           }} />
@@ -359,18 +359,18 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
             justifyContent: 'center'
           }}>
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--fg-muted)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sistema de</span>
-            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
+            <span style={{ fontSize: '16px', fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '2px' }}>PROYECCIONES</span>
             <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--fg-dim)', letterSpacing: '1px' }}>y</span>
-            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
+            <span style={{ fontSize: '16px', fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '2px' }}>VENTAS</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, justifyContent: 'flex-end' }}>
             {isAdmin && !isSplitView && (
-              <button 
+              <button
                 onClick={toggleSplitView}
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.05)',
+                  background: 'var(--neutral-02)',
+                  border: '1px solid var(--neutral-05)',
                   borderRadius: '8px',
                   padding: '6px 12px',
                   color: 'var(--fg-muted)',
@@ -382,8 +382,8 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                   cursor: 'pointer',
                   transition: 'background 0.2s, color 0.2s'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--neutral-06)'; e.currentTarget.style.color = 'var(--text-strong)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--neutral-02)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
               >
                 <Columns size={14} />
                 MODO SPLIT
@@ -401,10 +401,10 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
           <Sidebar
             hidden={sidebarHidden}
             onHide={() => setSidebarHidden(true)}
-            zoom={currentZoom} 
-            onZoomIn={() => handleZoom(0.1)} 
-            onZoomOut={() => handleZoom(-0.1)} 
-            onReset={resetZoom} 
+            zoom={currentZoom}
+            onZoomIn={() => handleZoom(0.1)}
+            onZoomOut={() => handleZoom(-0.1)}
+            onReset={resetZoom}
           />
         )}
         <main
@@ -424,9 +424,9 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                 left: 0,
                 zIndex: 300,
                 background: 'var(--bg-elev-1)',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                borderRight: '1px solid rgba(255,255,255,0.1)',
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                borderTop: '1px solid var(--neutral-10)',
+                borderRight: '1px solid var(--neutral-10)',
+                borderBottom: '1px solid var(--neutral-10)',
                 borderLeft: 'none',
                 borderRadius: '0 12px 12px 0',
                 width: 28,
@@ -434,7 +434,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#fff',
+                color: 'var(--text-strong)',
                 cursor: 'pointer',
                 boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
                 transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',

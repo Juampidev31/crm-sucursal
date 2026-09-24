@@ -85,7 +85,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     if (alertasR.error) reportError('refresh:alertas_config', alertasR.error);
     else validateAndSet<AlertaConfig>('alertas_config', alertaConfigSchema, alertasR.data, setAlertasConfig);
-    
+
     if (diasR.error) {
       reportError('refresh:dias_habiles_config', diasR.error);
     } else {
@@ -301,7 +301,7 @@ export function useAnalistas() {
   const visibles = useMemo(() => all.filter(a => !a.oculto), [all]);
   const nombres = useMemo(() => visibles.map(a => a.nombre), [visibles]);
   const colorDe = useCallback(
-    (nombre: string) => all.find(a => a.nombre === nombre)?.color ?? '#10b981',
+    (nombre: string) => all.find(a => a.nombre === nombre)?.color ?? 'var(--success-strong)',
     [all],
   );
   const cobraIncentivo = useCallback(

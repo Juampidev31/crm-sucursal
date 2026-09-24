@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Outfit } from "next/font/google";
+import { Geist, Geist_Mono, Outfit, Newsreader } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import AppShell from "@/components/AppShell";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-newsreader",
+});
 
 export const metadata: Metadata = {
   title: "Sistema de Proyección de Ventas",
@@ -20,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), 'Outfit', system-ui, sans-serif" }}>
+      <body suppressHydrationWarning className={`${geist.variable} ${geistMono.variable} ${outfit.variable} ${newsreader.variable}`}>
         <AuthProvider>
           <AppShell>
             {children}

@@ -25,12 +25,12 @@ function addDays(n: number) {
 }
 
 const TAG_COLORS = [
-  { color: '#c084fc', fill: 'rgba(192, 132, 252, 0.18)', glow: '#c084fc' },
-  { color: '#3b82f6', fill: 'rgba(59, 130, 246, 0.18)', glow: '#3b82f6' },
-  { color: '#22c55e', fill: 'rgba(34, 197, 94, 0.18)', glow: '#22c55e' },
-  { color: '#eab308', fill: 'rgba(234, 179, 8, 0.18)', glow: '#eab308' },
-  { color: '#ef4444', fill: 'rgba(239, 68, 68, 0.18)', glow: '#ef4444' },
-  { color: '#ec4899', fill: 'rgba(236, 72, 153, 0.18)', glow: '#ec4899' },
+  { color: 'var(--violet)', fill: 'rgba(192, 132, 252, 0.18)', glow: 'var(--violet)' },
+  { color: 'var(--info)', fill: 'rgba(59, 130, 246, 0.18)', glow: 'var(--info)' },
+  { color: 'var(--success)', fill: 'rgba(34, 197, 94, 0.18)', glow: 'var(--success)' },
+  { color: 'var(--warning)', fill: 'rgba(234, 179, 8, 0.18)', glow: 'var(--warning)' },
+  { color: 'var(--danger)', fill: 'rgba(239, 68, 68, 0.18)', glow: 'var(--danger)' },
+  { color: 'var(--pink)', fill: 'rgba(236, 72, 153, 0.18)', glow: 'var(--pink)' },
   { color: '#14b8a6', fill: 'rgba(20, 184, 166, 0.18)', glow: '#14b8a6' },
 ];
 
@@ -43,7 +43,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
   const [nota, setNota] = useState('');
   const [etiquetas, setEtiquetas] = useState<string[]>([]);
   const [nuevaEtiqueta, setNuevaEtiqueta] = useState('');
-  const [selectedColor, setSelectedColor] = useState('#c084fc');
+  const [selectedColor, setSelectedColor] = useState('var(--violet)');
   const [modalZoom, setModalZoom] = useState<number>(1);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
       }, 0);
     }
   };
-  
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const setSaveSuccess = (_val?: boolean) => {};
@@ -227,7 +227,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
   // ── Guardar ───────────────────────────────────────────────────────────────
   const handleGuardar = async () => {
     if (!registro) return;
-    
+
     const etiquetasChanged = JSON.stringify(etiquetas) !== JSON.stringify(registro.etiquetas || []);
     if (!nota.trim() && !fecha && !etiquetasChanged) return;
 
@@ -346,7 +346,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
           right: 0,
           bottom: 0,
           zIndex: 1000,
-          background: 'rgba(0, 0, 0, 0.75)',
+          background: 'var(--surface-scrim)',
           backdropFilter: 'blur(8px)',
           display: 'flex',
           alignItems: 'center',
@@ -364,8 +364,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
             height: 'auto',
             maxHeight: '92vh',
             borderRadius: 14,
-            background: '#0d0d10',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            background: 'var(--surface-base)',
+            border: '1px solid var(--neutral-12)',
             boxShadow: '0 24px 80px rgba(0,0,0,0.95)',
             display: 'flex',
             flexDirection: 'column',
@@ -377,8 +377,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
         >
           {/* ── Header ── */}
           <div style={{
-            background: 'rgba(14, 14, 18, 0.98)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--surface-raised)',
+            borderBottom: '1px solid var(--neutral-08)',
             padding: '10px 16px',
             display: 'flex',
             justifyContent: 'space-between',
@@ -387,7 +387,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 16 }}>📜</span>
-              <h3 style={{ fontSize: 13.5, fontWeight: 900, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              <h3 style={{ fontSize: 13.5, fontWeight: 900, color: 'var(--text-strong)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                 RECORDATORIOS Y SEGUIMIENTOS
               </h3>
             </div>
@@ -396,8 +396,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'var(--surface-subtle)',
+                border: '1px solid var(--neutral-12)',
                 borderRadius: '20px',
                 padding: '2px 4px',
                 gap: '2px'
@@ -408,11 +408,11 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   title="Reducir tamaño (-)"
                   style={{
                     width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'none', border: 'none', color: '#9ca3af',
+                    background: 'none', border: 'none', color: 'var(--text-muted)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-strong)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
                   <Minus size={12} strokeWidth={2.5} />
                 </button>
@@ -420,7 +420,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   onClick={resetModalZoom}
                   title="Restablecer a 100%"
                   style={{
-                    fontSize: '11px', fontWeight: 800, color: modalZoom === 1 ? '#9ca3af' : '#34d399',
+                    fontSize: '11px', fontWeight: 800, color: modalZoom === 1 ? 'var(--text-muted)' : 'var(--success)',
                     padding: '0 4px', cursor: 'pointer', userSelect: 'none'
                   }}
                 >
@@ -432,11 +432,11 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   title="Agrandar tamaño (+)"
                   style={{
                     width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'none', border: 'none', color: '#9ca3af',
+                    background: 'none', border: 'none', color: 'var(--text-muted)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-strong)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
                   <Plus size={12} strokeWidth={2.5} />
                 </button>
@@ -444,9 +444,9 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
               <button
                 onClick={onClose}
-                style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                style={{ background: 'none', border: 'none', color: 'var(--text-subtle)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-strong)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-subtle)')}
               >
                 <X size={16} />
               </button>
@@ -465,7 +465,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
               flex: 1,
             }}
           >
-            
+
             {/* Banners */}
             {saveError && (
               <div style={{
@@ -481,10 +481,10 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
             {/* Selector de Recordatorio (sin título) */}
             <div style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: '1px solid var(--neutral-08)',
               borderRadius: 10,
               padding: 10,
-              background: 'rgba(255, 255, 255, 0.015)',
+              background: 'var(--neutral-02)',
             }}>
               {activeReminder && (
                 <div style={{
@@ -494,7 +494,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   color: '#fca5a5', fontSize: 11
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Bell size={12} style={{ color: '#ef4444' }} />
+                    <Bell size={12} style={{ color: 'var(--danger)' }} />
                     <span>
                       Recordatorio actual: <strong>{new Date(activeReminder.fecha_hora).toLocaleDateString('es-AR')} {new Date(activeReminder.fecha_hora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</strong>
                     </span>
@@ -505,7 +505,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                       onClick={() => handleCompletarRecordatorio(activeReminder.id)}
                       style={{
                         padding: '3px 6px', fontSize: 10, fontWeight: 800,
-                        background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#34d399',
+                        background: 'rgba(16, 185, 129, 0.2)', border: '1px solid var(--success-strong)', color: 'var(--success)',
                         borderRadius: 5, cursor: 'pointer'
                       }}
                     >
@@ -516,7 +516,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                       onClick={() => handleEliminarRecordatorio(activeReminder.id)}
                       style={{
                         padding: '3px 6px', fontSize: 10, fontWeight: 800,
-                        background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#fca5a5',
+                        background: 'rgba(239, 68, 68, 0.2)', border: '1px solid var(--danger)', color: '#fca5a5',
                         borderRadius: 5, cursor: 'pointer'
                       }}
                     >
@@ -533,8 +533,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   onChange={e => setFecha(e.target.value)}
                   style={{
                     width: '100%', height: 30, padding: '0 8px', borderRadius: 6,
-                    background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#fff', fontSize: 11.5, outline: 'none', colorScheme: 'dark'
+                    background: 'var(--surface-muted)', border: '1px solid var(--neutral-08)',
+                    color: 'var(--text-strong)', fontSize: 11.5, outline: 'none', colorScheme: 'light'
                   }}
                 />
                 <input
@@ -543,8 +543,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   onChange={e => setHora(e.target.value)}
                   style={{
                     width: '100%', height: 30, padding: '0 8px', borderRadius: 6,
-                    background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#fff', fontSize: 11.5, outline: 'none', colorScheme: 'dark'
+                    background: 'var(--surface-muted)', border: '1px solid var(--neutral-08)',
+                    color: 'var(--text-strong)', fontSize: 11.5, outline: 'none', colorScheme: 'light'
                   }}
                 />
               </div>
@@ -566,9 +566,9 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                       style={{
                         width: '100%',
                         padding: '4px 4px', fontSize: 10.5, fontWeight: 700,
-                        background: sel ? 'rgba(16,185,129,0.18)' : 'rgba(255, 255, 255, 0.04)',
-                        color: sel ? '#10b981' : '#9ca3af',
-                        border: `1px solid ${sel ? '#10b981' : 'rgba(255, 255, 255, 0.08)'}`,
+                        background: sel ? 'rgba(16,185,129,0.18)' : 'var(--neutral-04)',
+                        color: sel ? 'var(--success-strong)' : 'var(--text-muted)',
+                        border: `1px solid ${sel ? 'var(--success-strong)' : 'var(--neutral-08)'}`,
                         borderRadius: 5, cursor: 'pointer', transition: 'all 0.15s',
                         textAlign: 'center', whiteSpace: 'nowrap'
                       }}
@@ -580,20 +580,20 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
             {/* 2. Card: ETIQUETAS PERSONALIZADAS */}
             <div style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: '1px solid var(--neutral-08)',
               borderRadius: 10,
               padding: 10,
-              background: 'rgba(255, 255, 255, 0.015)',
+              background: 'var(--neutral-02)',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#e5e7eb', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Tag size={13} style={{ color: '#c084fc' }} />
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-default)', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Tag size={13} style={{ color: 'var(--violet)' }} />
                 ETIQUETAS PERSONALIZADAS
               </div>
 
               {/* Lista actual de etiquetas */}
               <div style={{ marginBottom: 6 }}>
                 {etiquetas.length === 0 ? (
-                  <span style={{ fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>Sin etiquetas asignadas a este cliente.</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-subtle)', fontStyle: 'italic' }}>Sin etiquetas asignadas a este cliente.</span>
                 ) : (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                     {etiquetas.map(t => {
@@ -615,12 +615,12 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
               {/* Sub-box: CREAR NUEVA ETIQUETA */}
               <div style={{
-                border: '1px solid rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--neutral-05)',
                 borderRadius: 6,
                 padding: 6,
-                background: 'rgba(0, 0, 0, 0.25)',
+                background: 'var(--surface-subtle)',
               }}>
-                <div style={{ fontSize: 9.5, fontWeight: 800, color: '#9ca3af', letterSpacing: '0.4px', marginBottom: 4, textTransform: 'uppercase' }}>
+                <div style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.4px', marginBottom: 4, textTransform: 'uppercase' }}>
                   CREAR NUEVA ETIQUETA
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -630,8 +630,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAgregarEtiqueta(); } }}
                     style={{
                       flex: 1, minWidth: 0, height: 30, padding: '0 8px',
-                      background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: 5, color: '#fff', fontSize: 11.5, outline: 'none'
+                      background: 'var(--surface-muted)', border: '1px solid var(--neutral-08)',
+                      borderRadius: 5, color: 'var(--text-strong)', fontSize: 11.5, outline: 'none'
                     }}
                   />
 
@@ -641,8 +641,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                     alignItems: 'center',
                     gap: 5,
                     padding: '3px 6px',
-                    background: 'rgba(0, 0, 0, 0.4)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: 'var(--surface-subtle)',
+                    border: '1px solid var(--neutral-08)',
                     borderRadius: 14,
                     flexShrink: 0
                   }}>
@@ -674,12 +674,12 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                     onClick={handleAgregarEtiqueta}
                     style={{
                       height: 30, padding: '0 10px', borderRadius: 5, fontSize: 10.5, fontWeight: 800,
-                      background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.14)', color: '#fff',
+                      background: 'var(--neutral-06)', border: '1px solid var(--neutral-14)', color: 'var(--text-strong)',
                       cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
                       whiteSpace: 'nowrap', transition: 'all 0.15s'
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.14)'; }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--neutral-12)'; e.currentTarget.style.borderColor = 'var(--neutral-25)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--neutral-06)'; e.currentTarget.style.borderColor = 'var(--neutral-14)'; }}
                   >
                     + AGREGAR
                   </button>
@@ -689,13 +689,13 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
             {/* 3. Card: AÑADIR NUEVA NOTA / OBSERVACIÓN */}
             <div style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: '1px solid var(--neutral-08)',
               borderRadius: 10,
               padding: 10,
-              background: 'rgba(255, 255, 255, 0.015)',
+              background: 'var(--neutral-02)',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#e5e7eb', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Edit3 size={13} style={{ color: '#60a5fa' }} />
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-default)', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Edit3 size={13} style={{ color: 'var(--info)' }} />
                 AÑADIR NUEVA NOTA / OBSERVACIÓN
               </div>
 
@@ -705,8 +705,8 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                 rows={2}
                 style={{
                   width: '100%', minHeight: 46, padding: '6px 8px', borderRadius: 6,
-                  background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
-                  color: '#fff', fontSize: 11.5, outline: 'none', resize: 'vertical', fontFamily: 'inherit'
+                  background: 'var(--surface-muted)', border: '1px solid var(--neutral-08)',
+                  color: 'var(--text-strong)', fontSize: 11.5, outline: 'none', resize: 'vertical', fontFamily: 'inherit'
                 }}
               />
 
@@ -717,9 +717,9 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   style={{
                     height: 28, padding: '0 14px', fontSize: 10.5, fontWeight: 900,
                     letterSpacing: '0.4px', textTransform: 'uppercase',
-                    background: canSave && !saving ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-                    color: canSave && !saving ? '#34d399' : '#6b7280',
-                    border: `1px solid ${canSave && !saving ? '#10b981' : 'rgba(255, 255, 255, 0.08)'}`,
+                    background: canSave && !saving ? 'rgba(16, 185, 129, 0.12)' : 'var(--neutral-03)',
+                    color: canSave && !saving ? 'var(--success)' : 'var(--text-subtle)',
+                    border: `1px solid ${canSave && !saving ? 'var(--success-strong)' : 'var(--neutral-08)'}`,
                     borderRadius: 5, cursor: canSave && !saving ? 'pointer' : 'not-allowed',
                     display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s',
                   }}
@@ -734,23 +734,23 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
             {/* 4. Card: HISTORIAL DE NOTAS */}
             <div style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: '1px solid var(--neutral-08)',
               borderRadius: 10,
               padding: 10,
-              background: 'rgba(255, 255, 255, 0.015)',
+              background: 'var(--neutral-02)',
             }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#e5e7eb', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Clock size={13} style={{ color: '#9ca3af' }} />
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-default)', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={13} style={{ color: 'var(--text-muted)' }} />
                 HISTORIAL DE NOTAS ({notas.length})
               </div>
 
               {loadingNotas ? (
-                <div style={{ textAlign: 'center', padding: '8px 0', color: '#6b7280', fontSize: 11.5 }}>
+                <div style={{ textAlign: 'center', padding: '8px 0', color: 'var(--text-subtle)', fontSize: 11.5 }}>
                   <Loader2 size={13} style={{ animation: 'spin 1s linear infinite', display: 'inline-block', marginRight: 5 }} />
                   Cargando historial...
                 </div>
               ) : notas.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '8px 0', color: '#6b7280', fontSize: 11, fontStyle: 'italic' }}>
+                <div style={{ textAlign: 'center', padding: '8px 0', color: 'var(--text-subtle)', fontSize: 11, fontStyle: 'italic' }}>
                   No hay notas registradas para este cliente aún.
                 </div>
               ) : (
@@ -765,30 +765,30 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                     const isOwn = user?.username === 'admin' || user?.username === n.analista;
                     return (
                       <div key={n.id} style={{
-                        padding: '6px 8px', background: 'rgba(0, 0, 0, 0.25)',
-                        border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 6,
+                        padding: '6px 8px', background: 'var(--surface-subtle)',
+                        border: '1px solid var(--neutral-05)', borderRadius: 6,
                         display: 'flex', flexDirection: 'column', gap: 3,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5 }}>
-                            <User size={11} style={{ color: '#34d399' }} />
-                            <span style={{ fontWeight: 700, color: '#fff' }}>{n.analista || 'Anónimo'}</span>
-                            <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
-                            <span style={{ color: '#9ca3af' }}>{dateStr}</span>
+                            <User size={11} style={{ color: 'var(--success)' }} />
+                            <span style={{ fontWeight: 700, color: 'var(--text-strong)' }}>{n.analista || 'Anónimo'}</span>
+                            <span style={{ color: 'var(--neutral-20)' }}>•</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{dateStr}</span>
                           </div>
                           {isOwn && (
                             <button
                               onClick={() => handleEliminar(n.id)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 2 }}
-                              onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                              onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-subtle)', padding: 2 }}
+                              onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-subtle)')}
                               title="Eliminar nota"
                             >
                               <Trash2 size={12} />
                             </button>
                           )}
                         </div>
-                        <p style={{ margin: 0, fontSize: 11.5, color: '#e5e7eb', lineHeight: 1.35, whiteSpace: 'pre-wrap' }}>
+                        <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-default)', lineHeight: 1.35, whiteSpace: 'pre-wrap' }}>
                           {n.nota}
                         </p>
                       </div>

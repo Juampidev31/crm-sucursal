@@ -10,8 +10,8 @@ import CustomSelect from '@/components/CustomSelect';
 
 const CHART_COLORS = {
   venta: 'rgba(74, 222, 128, 0.8)',
-  proyeccion: 'rgba(255, 255, 255, 0.7)',
-  'en seguimiento': 'rgba(255, 255, 255, 0.4)',
+  proyeccion: 'var(--neutral-70)',
+  'en seguimiento': 'var(--neutral-40)',
   'score bajo': 'rgba(248, 113, 113, 0.8)',
   afectaciones: 'rgba(251, 146, 60, 0.8)',
   'derivado / aprobado cc': 'rgba(96, 165, 250, 0.8)',
@@ -72,7 +72,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
     ctxRegs = ctx.registros;
     ctxLoading = ctx.loading;
   } catch { }
-  
+
   const regs = manualRegs || ctxRegs;
   const loading = manualRegs ? false : ctxLoading;
 
@@ -91,7 +91,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
         label: getStatusLabel(st),
         monto: match.reduce((acc, r) => acc + Number(r.monto || 0), 0),
         ops: match.length,
-        color: (CHART_COLORS as Record<string, string>)[st] || '#444'
+        color: (CHART_COLORS as Record<string, string>)[st] || 'var(--text-disabled)'
       };
     });
 
@@ -114,18 +114,18 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
 
   const views = useMemo(() => {
     if (propAnalista && propAnalista !== 'PDV') {
-      return [{ 
-        id: propAnalista.toLowerCase(), 
-        label: propAnalista.toUpperCase(), 
+      return [{
+        id: propAnalista.toLowerCase(),
+        label: propAnalista.toUpperCase(),
         analista: propAnalista,
         data: getStatsForAnalista(propAnalista)
       }];
     }
 
     if (propAnalista === 'PDV') {
-      return [{ 
-        id: 'todos', 
-        label: 'TOTAL GENERAL', 
+      return [{
+        id: 'todos',
+        label: 'TOTAL GENERAL',
         analista: '',
         data: getStatsForAnalista('')
       }];
@@ -137,10 +137,10 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
       label: a,
       analista: a
     }));
-    
-    return [...base, ...analistas].map(v => ({ 
-      ...v, 
-      data: getStatsForAnalista(v.analista) 
+
+    return [...base, ...analistas].map(v => ({
+      ...v,
+      data: getStatsForAnalista(v.analista)
     }));
   }, [regs, internalMes, internalAnio, propAnalista]);
 
@@ -165,9 +165,9 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
         </div>
       )}
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: views.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: views.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: '32px',
         justifyContent: 'center'
       }}>
@@ -175,10 +175,10 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
           const isSingle = views.length === 1;
 
           return (
-            <div key={view.id} style={{ 
-              background: 'rgba(255,255,255,0.01)', 
-              borderRadius: '28px', 
-              border: '1px solid rgba(255,255,255,0.03)',
+            <div key={view.id} style={{
+              background: 'var(--neutral-01)',
+              borderRadius: '28px',
+              border: '1px solid var(--neutral-03)',
               padding: isSingle ? '24px' : '32px',
               display: 'flex',
               flexDirection: 'column',
@@ -199,7 +199,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                   height="280px"
                   width="280px"
                 />
-                <div style={{ marginTop: '20px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                <div style={{ marginTop: '20px', fontSize: '11px', color: 'var(--text-subtle)', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                   {view.data.totalOps} OPERACIONES TOTALES
                 </div>
               </div>
@@ -210,30 +210,30 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                 {view.data.stats.filter(s => s.ops > 0).map(s => {
                   const pct = view.data.totalMonto > 0 ? (s.monto / view.data.totalMonto * 100).toFixed(0) : '0';
                   const tick = s.ops > 0 ? s.monto / s.ops : 0;
-                  
+
                   return (
                     <div key={s.key} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '14px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px',
-                      border: '1px solid rgba(255,255,255,0.01)',
+                      padding: '14px 20px', background: 'var(--neutral-02)', borderRadius: '16px',
+                      border: '1px solid var(--neutral-01)',
                     }}>
                       <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                         <div style={{ width: '4px', height: '24px', background: s.color, borderRadius: '4px' }} />
                         <div>
-                          <div style={{ fontWeight: 800, fontSize: '13px', color: '#eee' }}>{s.label}</div>
-                          <div style={{ fontSize: '10px', color: '#555', fontWeight: 700 }}>{s.ops} OPERACIONES · {pct}%</div>
+                          <div style={{ fontWeight: 800, fontSize: '13px', color: 'var(--text-default)' }}>{s.label}</div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 700 }}>{s.ops} OPERACIONES · {pct}%</div>
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 900, fontSize: '15px', color: '#fff' }}>{formatCurrency(s.monto)}</div>
-                        {isSingle && <div style={{ fontSize: '9px', color: '#444', fontWeight: 800 }}>TICKET: {formatCurrency(tick)}</div>}
+                        <div style={{ fontWeight: 900, fontSize: '15px', color: 'var(--text-strong)' }}>{formatCurrency(s.monto)}</div>
+                        {isSingle && <div style={{ fontSize: '9px', color: 'var(--text-disabled)', fontWeight: 800 }}>TICKET: {formatCurrency(tick)}</div>}
                       </div>
                     </div>
                   );
                 })}
-                
+
                 {view.data.totalOps === 0 && (
-                  <div style={{ textAlign: 'center', padding: '60px 20px', color: '#333', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '24px', fontSize: '13px' }}>
+                  <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-disabled)', border: '1px dashed var(--neutral-05)', borderRadius: '24px', fontSize: '13px' }}>
                     No se encontraron registros para este periodo.
                   </div>
                 )}
@@ -245,4 +245,3 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
     </div>
   );
 }
-

@@ -314,7 +314,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
       errs.monto = 'Debe ser mayor a 0';
     }
   }
-  
+
   if (requiereDependencia(form.empleador) && !form.dependencia?.trim()) {
     errs.dependencia = 'Requerido';
   }
@@ -438,11 +438,11 @@ const PremiumSelect = ({
       style={{
         padding: '10px 12px',
         fontSize: '12px',
-        color: '#34d399',
+        color: 'var(--success)',
         fontWeight: 800,
         cursor: 'pointer',
-        borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-        background: '#141418',
+        borderTop: '1px solid var(--neutral-12)',
+        background: 'var(--surface-input)',
         display: 'flex',
         alignItems: 'center',
         gap: 6,
@@ -451,8 +451,8 @@ const PremiumSelect = ({
         zIndex: 20,
         boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.6)'
       }}
-      onMouseEnter={e => e.currentTarget.style.background = '#1e1e24'}
-      onMouseLeave={e => e.currentTarget.style.background = '#141418'}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'var(--surface-input)'}
     >
       <Plus size={14} /> {search ? `Agregar "${search}"...` : 'Agregar otro...'}
     </div>
@@ -464,11 +464,11 @@ const PremiumSelect = ({
         className="form-select"
         tabIndex={disabled ? -1 : 0}
         onClick={toggleOpen}
-        onKeyDown={e => { 
-          if (!disabled && (e.key === 'Enter' || e.key === ' ')) { 
-            e.preventDefault(); 
+        onKeyDown={e => {
+          if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
             toggleOpen();
-          } 
+          }
           if (e.key === 'Escape') {
             e.stopPropagation();
             setIsOpen(false);
@@ -481,11 +481,11 @@ const PremiumSelect = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 12px',
-          background: disabled ? 'rgba(255,255,255,0.02)' : '#000000',
-          border: `1px solid ${isOpen ? '#34d399' : (error ? 'var(--rojo)' : 'rgba(255, 255, 255, 0.12)')}`,
+          background: disabled ? 'var(--neutral-02)' : 'var(--surface-input)',
+          border: `1px solid ${isOpen ? 'var(--success)' : (error ? 'var(--rojo)' : 'var(--neutral-12)')}`,
           borderRadius: '8px',
           cursor: disabled ? 'not-allowed' : 'pointer',
-          color: disabled ? 'var(--text-muted)' : (value ? '#e7e5e4' : '#9ca3af'),
+          color: disabled ? 'var(--text-muted)' : (value ? 'var(--text-default)' : 'var(--text-muted)'),
           fontSize: '13px',
           transition: 'all 0.2s ease',
           opacity: disabled ? 0.6 : 1,
@@ -513,8 +513,8 @@ const PremiumSelect = ({
           bottom: openUpward ? 'calc(100% + 4px)' : 'auto',
           left: 0,
           right: 0,
-          background: '#0c0c0c',
-          border: '1px solid rgba(255,255,255,0.14)',
+          background: 'var(--surface-canvas)',
+          border: '1px solid var(--neutral-14)',
           borderRadius: '10px',
           boxShadow: '0 12px 36px rgba(0,0,0,0.95)',
           zIndex: 9999,
@@ -525,7 +525,7 @@ const PremiumSelect = ({
             <div style={{
               padding: '8px',
               borderBottom: '1px solid var(--border)',
-              background: 'rgba(255,255,255,0.01)'
+              background: 'var(--neutral-01)'
             }}>
               <div style={{ position: 'relative' }}>
                 <Search size={12} style={{
@@ -545,10 +545,10 @@ const PremiumSelect = ({
                     width: '100%',
                     padding: '8px 8px 8px 28px',
                     fontSize: '12px',
-                    background: 'rgba(255,255,255,0.02)',
+                    background: 'var(--neutral-02)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '6px',
-                    color: '#fff',
+                    color: 'var(--text-strong)',
                     outline: 'none'
                   }}
                 />
@@ -571,13 +571,13 @@ const PremiumSelect = ({
                   cursor: 'pointer',
                   borderRadius: '6px',
                   marginBottom: '4px',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  borderBottom: '1px solid var(--neutral-05)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   fontStyle: 'italic'
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--neutral-04)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <X size={12} /> Sin especificar
@@ -602,13 +602,13 @@ const PremiumSelect = ({
                         style={{
                           padding: '8px 10px',
                           fontSize: '13px',
-                          color: value === opt ? '#86efac' : '#fff',
+                          color: value === opt ? '#86efac' : 'var(--text-strong)',
                           background: value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent',
                           cursor: 'pointer',
                           borderRadius: '6px',
                           margin: '2px 0'
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--neutral-04)'}
                         onMouseLeave={e => e.currentTarget.style.background = value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent'}
                       >
                         {opt}
@@ -628,13 +628,13 @@ const PremiumSelect = ({
                       style={{
                         padding: '8px 10px',
                         fontSize: '13px',
-                        color: value === opt ? '#86efac' : '#fff',
+                        color: value === opt ? '#86efac' : 'var(--text-strong)',
                         background: value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent',
                         cursor: 'pointer',
                         borderRadius: '6px',
                         margin: '2px 0'
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--neutral-04)'}
                       onMouseLeave={e => e.currentTarget.style.background = value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent'}
                     >
                       {opt}
@@ -692,16 +692,16 @@ const WhatsappModal = memo(function WhatsappModal({
   if (!registro) return null;
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onCancel} style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1200 }}>
+      <div className="modal-overlay" onClick={onCancel} style={{ backgroundColor: 'var(--surface-scrim)', zIndex: 1200 }}>
         <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '400px', background: 'var(--bg-elev-1)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
           <div style={{
-              background: 'rgba(14, 14, 18, 0.96)',
+              background: 'var(--surface-raised)',
               backdropFilter: 'blur(20px)',
               WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
+              border: '1px solid var(--neutral-12)',
               borderRadius: '16px 16px 0 0',
               padding: '20px 24px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              borderBottom: '1px solid var(--neutral-06)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
@@ -717,11 +717,11 @@ const WhatsappModal = memo(function WhatsappModal({
                   WhatsApp / Teléfono
                 </h3>
                 <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
-                  {registro.nombre ? <span style={{ color: '#fff', fontWeight: 700 }}>{registro.nombre} — </span> : null}
+                  {registro.nombre ? <span style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{registro.nombre} — </span> : null}
                   Ingresá el número de teléfono para continuar
                 </p>
               </div>
-              <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={16} /></button>
+              <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'var(--neutral-03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={16} /></button>
             </div>
           <div className="modal-body" style={{ padding: '24px 28px 28px' }}>
             <input
@@ -731,7 +731,7 @@ const WhatsappModal = memo(function WhatsappModal({
               value={telefono}
               onChange={e => { setTelefono(e.target.value.replace(/\D/g, '').slice(0, 10)); setErrorVisible(false); }}
               placeholder="Ej: 3434538564 (10 dígitos)"
-              style={{ width: '100%', borderColor: errorVisible ? '#ef4444' : undefined }}
+              style={{ width: '100%', borderColor: errorVisible ? 'var(--danger)' : undefined }}
             />
             {/* Pop-up de error inline */}
             <motion.div
@@ -757,19 +757,19 @@ const WhatsappModal = memo(function WhatsappModal({
               El teléfono es obligatorio
             </motion.div>
           </div>
-          <div className="modal-footer" style={{ padding: '20px 28px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+          <div className="modal-footer" style={{ padding: '20px 28px', background: 'var(--surface-subtle)', borderTop: '1px solid var(--neutral-05)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
             <button className="btn-secondary" onClick={onCancel} style={{
-              background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+              background: 'var(--neutral-02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
               fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
             }}>CANCELAR</button>
             <button className="btn-secondary" onClick={() => handleConfirm('save')} style={{
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 800,
+              background: 'var(--neutral-05)', border: '1px solid var(--neutral-10)', color: 'var(--text-strong)', fontWeight: 800,
               padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
             }}>
               GUARDAR
             </button>
             <button className="btn-primary" onClick={() => handleConfirm('send')} style={{
-              background: '#25D366', color: '#fff', border: 'none', fontWeight: 800,
+              background: '#25D366', color: 'var(--text-strong)', border: 'none', fontWeight: 800,
               padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
             }}>
               ENVIAR
@@ -1082,13 +1082,13 @@ const RegistroModal = memo(function RegistroModal({
   return (
     <>
       <ModalPortal>
-      <div className="modal-overlay" onClick={onClose} style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+      <div className="modal-overlay" onClick={onClose} style={{ backgroundColor: 'var(--surface-scrim)' }}>
         <motion.div drag dragMomentum={false} className="modal-content" onClick={e => e.stopPropagation()} style={{
           background: 'var(--bg-elev-1)',
-          backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.08), transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)',
+          backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.08), transparent 50%), radial-gradient(ellipse at bottom right, var(--neutral-02), transparent 40%)',
           border: '1px solid var(--border)',
           borderTop: '1px solid rgba(16,185,129,0.3)',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px rgba(16,185,129,0.05)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 var(--neutral-05), 0 0 20px rgba(16,185,129,0.05)',
           borderRadius: '16px',
           overflow: 'visible',
           display: 'flex',
@@ -1097,12 +1097,12 @@ const RegistroModal = memo(function RegistroModal({
           transition: 'all 0.2s ease'
         }}>
           <div className="modal-header" style={{
-            background: 'rgba(14, 14, 18, 0.96)',
+            background: 'var(--surface-raised)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            border: '1px solid var(--neutral-12)',
             borderRadius: '16px 16px 0 0',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            borderBottom: '1px solid var(--neutral-06)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
@@ -1110,11 +1110,11 @@ const RegistroModal = memo(function RegistroModal({
           }}>
             <div>
               <h3 style={{
-                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
+                fontSize: '13px', fontWeight: 800, color: 'var(--text-strong)', margin: '0 0 6px 0',
                 textTransform: 'uppercase', letterSpacing: '0.5px',
                 display: 'flex', alignItems: 'center', gap: '8px',
               }}>
-                {editingId ? <Edit2 size={16} strokeWidth={2.5} style={{ color: '#34d399' }} /> : <Plus size={16} strokeWidth={2.5} style={{ color: '#34d399' }} />}
+                {editingId ? <Edit2 size={16} strokeWidth={2.5} style={{ color: 'var(--success)' }} /> : <Plus size={16} strokeWidth={2.5} style={{ color: 'var(--success)' }} />}
                 {editingId ? 'Editar' : 'Nuevo'} registro
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
@@ -1126,8 +1126,8 @@ const RegistroModal = memo(function RegistroModal({
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
+                background: 'var(--surface-subtle)',
+                border: '1px solid var(--neutral-12)',
                 borderRadius: '20px',
                 padding: '2px 4px',
                 gap: '2px'
@@ -1138,11 +1138,11 @@ const RegistroModal = memo(function RegistroModal({
                   title="Reducir tamaño del modal (-)"
                   style={{
                     width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'none', border: 'none', color: '#9ca3af',
+                    background: 'none', border: 'none', color: 'var(--text-muted)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-strong)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
                   <Minus size={12} strokeWidth={2.5} />
                 </button>
@@ -1150,7 +1150,7 @@ const RegistroModal = memo(function RegistroModal({
                   onClick={resetModalZoom}
                   title="Restablecer a 100%"
                   style={{
-                    fontSize: '11px', fontWeight: 800, color: modalZoom === 1 ? '#9ca3af' : '#34d399',
+                    fontSize: '11px', fontWeight: 800, color: modalZoom === 1 ? 'var(--text-muted)' : 'var(--success)',
                     padding: '0 4px', cursor: 'pointer', userSelect: 'none'
                   }}
                 >
@@ -1162,17 +1162,17 @@ const RegistroModal = memo(function RegistroModal({
                   title="Agrandar tamaño del modal (+)"
                   style={{
                     width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'none', border: 'none', color: '#9ca3af',
+                    background: 'none', border: 'none', color: 'var(--text-muted)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                   }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-strong)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
                   <Plus size={12} strokeWidth={2.5} />
                 </button>
               </div>
 
-              <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+              <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'var(--neutral-03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
             </div>
           </div>
           <div className="modal-body" style={{ overflow: 'visible', padding: '16px 20px', flex: 1 }}>
@@ -1510,14 +1510,14 @@ const RegistroModal = memo(function RegistroModal({
                 />
               </Field>
               <Field label="Accion 1" transparentLabel={true}>
-                <label 
+                <label
                   className="modal-check-action"
-                  style={{ 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                     fontWeight: 700, borderRadius: '6px', width: '100%',
-                    background: !!form.es_re ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.4)',
-                    color: !!form.es_re ? '#10b981' : '#999',
-                    border: !!form.es_re ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.12)',
+                    background: !!form.es_re ? 'var(--success-soft)' : 'var(--surface-muted)',
+                    color: !!form.es_re ? 'var(--success-strong)' : 'var(--text-muted)',
+                    border: !!form.es_re ? '1px solid var(--success-strong)' : '1px solid var(--neutral-12)',
                     transition: 'all 0.2s', boxSizing: 'border-box'
                   }}
                 >
@@ -1526,14 +1526,14 @@ const RegistroModal = memo(function RegistroModal({
                 </label>
               </Field>
               <Field label="Accion 2" transparentLabel={true}>
-                <label 
+                <label
                   className="modal-check-action"
-                  style={{ 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                     fontWeight: 700, borderRadius: '6px', width: '100%',
-                    background: agendarRecordatorio ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0,0,0,0.4)',
-                    color: agendarRecordatorio ? '#f59e0b' : '#999',
-                    border: agendarRecordatorio ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.12)',
+                    background: agendarRecordatorio ? 'var(--warning-soft)' : 'var(--surface-muted)',
+                    color: agendarRecordatorio ? 'var(--warning)' : 'var(--text-muted)',
+                    border: agendarRecordatorio ? '1px solid var(--warning)' : '1px solid var(--neutral-12)',
                     transition: 'all 0.2s', boxSizing: 'border-box'
                   }}
                 >
@@ -1547,20 +1547,20 @@ const RegistroModal = memo(function RegistroModal({
             </p>
           </div>
           <div className="modal-footer" style={{
-            background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)'
+            background: 'var(--surface-subtle)', borderTop: '1px solid var(--neutral-05)'
           }}>
-            {errors._ && <span style={{ color: '#f87171', fontSize: '12px', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={13} />{errors._}</span>}
+            {errors._ && <span style={{ color: 'var(--danger)', fontSize: '12px', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={13} />{errors._}</span>}
             {!errors._ && (
               <div style={{ flex: 1, fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center' }}>
                 Registro creado con fecha {initialData.created_at ? new Date(initialData.created_at).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR')} y hora {initialData.created_at ? new Date(initialData.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
             <button className="btn-secondary modal-btn-cancel" onClick={onClose} style={{
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)',
+              background: 'var(--neutral-02)', border: '1px solid var(--neutral-08)', color: 'var(--fg-muted)',
               fontWeight: 700, letterSpacing: '0.3px', transition: 'all 0.2s'
-            }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>CANCELAR</button>
+            }} onMouseEnter={e => e.currentTarget.style.background = 'var(--neutral-05)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--neutral-02)'}>CANCELAR</button>
             <button className="btn-primary modal-btn-save" onClick={() => guardar()} disabled={saving} style={{
-              background: 'linear-gradient(90deg, #34d399, #10b981)', color: '#000', border: 'none',
+              background: 'linear-gradient(90deg, var(--success), var(--success-strong))', color: 'var(--text-on-accent)', border: 'none',
               fontWeight: 800, letterSpacing: '0.3px', boxShadow: '0 4px 12px rgba(16,185,129,0.3)', transition: 'all 0.2s',
               display: 'flex', alignItems: 'center', gap: '5px'
             }}>
@@ -1584,13 +1584,13 @@ const RegistroModal = memo(function RegistroModal({
         <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
           <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
         <div style={{
-            background: 'rgba(14, 14, 18, 0.96)',
+            background: 'var(--surface-raised)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            border: '1px solid var(--neutral-12)',
             borderRadius: '16px 16px 0 0',
             padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            borderBottom: '1px solid var(--neutral-06)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
@@ -1601,7 +1601,7 @@ const RegistroModal = memo(function RegistroModal({
                 fontSize: '13px', fontWeight: 800, margin: '0 0 6px 0',
                 textTransform: 'uppercase', letterSpacing: '0.5px',
                 display: 'flex', alignItems: 'center', gap: '8px',
-                color: dupBlocked ? 'var(--rojo)' : '#f59e0b',
+                color: dupBlocked ? 'var(--rojo)' : 'var(--warning)',
               }}>
                 <AlertCircle size={16} strokeWidth={2.5} />
                 {dupBlocked ? 'Registro duplicado' : 'Registro existente'}
@@ -1610,15 +1610,15 @@ const RegistroModal = memo(function RegistroModal({
                 {dupBlocked ? 'Ya existe un registro activo para este cliente' : 'Ya existe un registro con este CUIL o nombre'}
               </p>
             </div>
-            {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>}
+            {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: 'var(--fg-muted)', background: 'var(--neutral-03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>}
           </div>
             <div className="modal-body" style={{ padding: '20px 28px' }}>
               <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                <AlertCircle size={20} style={{ color: dupBlocked ? 'var(--rojo)' : '#f59e0b', flexShrink: 0, marginTop: 2 }} />
+                <AlertCircle size={20} style={{ color: dupBlocked ? 'var(--rojo)' : 'var(--warning)', flexShrink: 0, marginTop: 2 }} />
                 <div>
-                  <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: 6 }}>{dupRecord.nombre}</p>
+                  <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-strong)', marginBottom: 6 }}>{dupRecord.nombre}</p>
                   <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: 10 }}>
-                    CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong style={{ color: '#fff' }}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
+                    CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong style={{ color: 'var(--text-strong)' }}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
                   </p>
                   {dupBlocked
                     ? <p style={{ fontSize: '13px', color: 'var(--fg-muted)', lineHeight: 1.6 }}>Este cliente ya tiene un registro activo en ese estado. No se puede crear un duplicado. Modificá el registro existente para continuar.</p>
@@ -1629,10 +1629,10 @@ const RegistroModal = memo(function RegistroModal({
             </div>
             <div className="modal-footer">
               {dupBlocked
-                ? <button className="btn-primary" onClick={() => setShowDupModal(false)} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>ENTENDIDO</button>
+                ? <button className="btn-primary" onClick={() => setShowDupModal(false)} style={{ background: 'var(--accent)', color: 'var(--text-on-accent)', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>ENTENDIDO</button>
                 : <>
-                  <button className="btn-secondary" onClick={() => setShowDupModal(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg-muted)', fontWeight: 700, padding: '10px 20px', borderRadius: '10px', fontSize: '13px' }}>CANCELAR</button>
-                  <button className="btn-primary" onClick={() => { setShowDupModal(false); guardar(true); }} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 900, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>GUARDAR DE TODAS FORMAS</button>
+                  <button className="btn-secondary" onClick={() => setShowDupModal(false)} style={{ background: 'transparent', border: '1px solid var(--neutral-10)', color: 'var(--fg-muted)', fontWeight: 700, padding: '10px 20px', borderRadius: '10px', fontSize: '13px' }}>CANCELAR</button>
+                  <button className="btn-primary" onClick={() => { setShowDupModal(false); guardar(true); }} style={{ background: 'var(--accent)', color: 'var(--text-on-accent)', border: 'none', fontWeight: 900, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>GUARDAR DE TODAS FORMAS</button>
                 </>
               }
             </div>
@@ -1692,13 +1692,13 @@ const RecordatorioModal = memo(function RecordatorioModal({
     <div className="modal-overlay" onClick={() => onClose(false)}>
       <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
         <div style={{
-            background: 'rgba(14, 14, 18, 0.96)',
+            background: 'var(--surface-raised)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            border: '1px solid var(--neutral-12)',
             borderRadius: '16px 16px 0 0',
             padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            borderBottom: '1px solid var(--neutral-06)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
@@ -1706,18 +1706,18 @@ const RecordatorioModal = memo(function RecordatorioModal({
           }}>
             <div>
               <h3 style={{
-                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
+                fontSize: '13px', fontWeight: 800, color: 'var(--text-strong)', margin: '0 0 6px 0',
                 textTransform: 'uppercase', letterSpacing: '0.5px',
                 display: 'flex', alignItems: 'center', gap: '8px',
               }}>
-                <Bell size={16} strokeWidth={2.5} style={{ color: '#f59e0b' }} />
+                <Bell size={16} strokeWidth={2.5} style={{ color: 'var(--warning)' }} />
                 Recordatorio & seguimiento
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
                 Agendá un recordatorio para hacer seguimiento de este cliente
               </p>
             </div>
-            <button className="btn-icon" onClick={() => onClose(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+            <button className="btn-icon" onClick={() => onClose(false)} style={{ color: 'var(--fg-muted)', background: 'var(--neutral-03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
           </div>
         <div className="modal-body">
           <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: '20px' }}>{registro.nombre}</p>
@@ -1733,11 +1733,11 @@ const RecordatorioModal = memo(function RecordatorioModal({
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={() => onClose(false)} style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+            background: 'var(--neutral-02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
             fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>CANCELAR</button>
           <button className="btn-primary" onClick={save} disabled={saving || !recForm.fecha || !recForm.hora} style={{
-            background: 'var(--green)', color: '#000', border: 'none', fontWeight: 800,
+            background: 'var(--green)', color: 'var(--text-on-accent)', border: 'none', fontWeight: 800,
             padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>AGENDAR</button>
         </div>
@@ -1778,13 +1778,13 @@ const ComentariosModal = memo(function ComentariosModal({
     <div className="modal-overlay" onClick={() => onClose(false)}>
       <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
         <div style={{
-            background: 'rgba(14, 14, 18, 0.96)',
+            background: 'var(--surface-raised)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            border: '1px solid var(--neutral-12)',
             borderRadius: '16px 16px 0 0',
             padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            borderBottom: '1px solid var(--neutral-06)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
@@ -1792,18 +1792,18 @@ const ComentariosModal = memo(function ComentariosModal({
           }}>
             <div>
               <h3 style={{
-                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
+                fontSize: '13px', fontWeight: 800, color: 'var(--text-strong)', margin: '0 0 6px 0',
                 textTransform: 'uppercase', letterSpacing: '0.5px',
                 display: 'flex', alignItems: 'center', gap: '8px',
               }}>
-                <MessageSquare size={16} strokeWidth={2.5} style={{ color: '#818cf8' }} />
+                <MessageSquare size={16} strokeWidth={2.5} style={{ color: 'var(--violet)' }} />
                 Comentarios
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
                 {registro?.nombre}
               </p>
             </div>
-            <button className="btn-icon" onClick={() => onClose(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+            <button className="btn-icon" onClick={() => onClose(false)} style={{ color: 'var(--fg-muted)', background: 'var(--neutral-03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
           </div>
         <div className="modal-body">
           <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: '16px', fontWeight: 600 }}>{registro.nombre}</p>
@@ -1821,11 +1821,11 @@ const ComentariosModal = memo(function ComentariosModal({
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={() => onClose(false)} style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+            background: 'var(--neutral-02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
             fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>CANCELAR</button>
           <button className="btn-primary" onClick={save} disabled={saving} style={{
-            background: 'var(--green)', color: '#000', border: 'none', fontWeight: 800,
+            background: 'var(--green)', color: 'var(--text-on-accent)', border: 'none', fontWeight: 800,
             padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>{saving ? 'GUARDANDO…' : 'GUARDAR'}</button>
         </div>
@@ -1853,13 +1853,13 @@ const DeleteModal = memo(function DeleteModal({
     <div className="modal-overlay" onClick={onCancel}>
       <motion.div drag dragMomentum={false} className="modal-content modal-content--danger" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
         <div style={{
-            background: 'rgba(14, 14, 18, 0.96)',
+            background: 'var(--surface-raised)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+            border: '1px solid var(--neutral-12)',
             borderRadius: '16px 16px 0 0',
             padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            borderBottom: '1px solid var(--neutral-06)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
@@ -1867,7 +1867,7 @@ const DeleteModal = memo(function DeleteModal({
           }}>
             <div>
               <h3 style={{
-                fontSize: '13px', fontWeight: 800, color: '#ef4444', margin: '0 0 6px 0',
+                fontSize: '13px', fontWeight: 800, color: 'var(--danger)', margin: '0 0 6px 0',
                 textTransform: 'uppercase', letterSpacing: '0.5px',
                 display: 'flex', alignItems: 'center', gap: '8px',
               }}>
@@ -1878,21 +1878,21 @@ const DeleteModal = memo(function DeleteModal({
                 Esta acción es permanente y no se puede deshacer
               </p>
             </div>
-            <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+            <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'var(--neutral-03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
           </div>
         <div className="modal-body" style={{ padding: '32px 28px' }}>
           <p style={{ fontSize: '14px', color: 'var(--fg-muted)', lineHeight: 1.8 }}>
-            ¿Confirmar eliminación de <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?<br />
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginTop: '10px', display: 'block' }}>La acción es permanente.</span>
+            ¿Confirmar eliminación de <strong style={{ color: 'var(--text-strong)' }}>{registro.nombre}</strong>?<br />
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase', marginTop: '10px', display: 'block' }}>La acción es permanente.</span>
           </p>
         </div>
         <div className="modal-footer">
           <button className="btn-secondary" onClick={onCancel} style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
+            background: 'var(--neutral-02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
             fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>CANCELAR</button>
           <button className="btn-danger" onClick={onConfirm} style={{
-            background: '#ef4444', color: '#fff', border: 'none', fontWeight: 800,
+            background: 'var(--danger)', color: 'var(--text-strong)', border: 'none', fontWeight: 800,
             padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
           }}>
             ELIMINAR AHORA
@@ -1908,12 +1908,12 @@ const DeleteModal = memo(function DeleteModal({
 
 const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
   const label = STATUS_LABEL[estado?.toLowerCase()] ?? estado;
-  
+
   // Custom styles for each status type
   let color = 'var(--fg-muted)';
-  let bg = 'rgba(255,255,255,0.02)';
-  let border = '1px solid rgba(255,255,255,0.05)';
-  
+  let bg = 'var(--neutral-02)';
+  let border = '1px solid var(--neutral-05)';
+
   const estLower = estado?.toLowerCase();
   if (estLower === 'venta') {
     color = '#6ee7b7'; // Bright Emerald
@@ -2360,11 +2360,11 @@ export default function RegistrosPage() {
         key={reg.id}
         className="hover-row"
         style={{
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
+          borderBottom: '1px solid var(--neutral-04)',
           borderLeft: isVencidoOIngresoHoy
-            ? '4px solid #ef4444'
+            ? '4px solid var(--danger)'
             : isProximo
-            ? '4px solid #f59e0b'
+            ? '4px solid var(--warning)'
             : '4px solid transparent',
           background: isVencidoOIngresoHoy
             ? 'rgba(239, 68, 68, 0.03)'
@@ -2379,11 +2379,11 @@ export default function RegistrosPage() {
         <td style={{ padding: '18px 24px', minWidth: 260, textAlign: 'left' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
+              <span style={{ fontSize: '15.5px', fontWeight: 600, color: 'var(--text-strong)', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
               {reg.cuil && (
                 <>
-                  <span style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 400 }}>|</span>
-                  <span className="cuil-text" style={{ fontSize: '13.5px', color: '#94a3b8', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{formatearCuil(reg.cuil)}</span>
+                  <span style={{ fontSize: '13.5px', color: 'var(--text-subtle)', fontWeight: 400 }}>|</span>
+                  <span className="cuil-text" style={{ fontSize: '13.5px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{formatearCuil(reg.cuil)}</span>
                 </>
               )}
               {reg.es_re && (
@@ -2430,7 +2430,7 @@ export default function RegistrosPage() {
             )}
             {isProximo && !isVencidoOIngresoHoy && (
               <span style={{
-                fontSize: '10px', fontWeight: 700, color: '#fbbf24',
+                fontSize: '10px', fontWeight: 700, color: 'var(--warning)',
                 background: 'rgba(251,191,36,0.08)', padding: '2px 6px',
                 borderRadius: '4px', border: '1px solid rgba(251,191,36,0.2)',
                 display: 'inline-flex', alignItems: 'center', gap: '5px', width: 'fit-content',
@@ -2461,13 +2461,13 @@ export default function RegistrosPage() {
         </td>
 
         {/* Analista */}
-        <td style={{ padding: '18px 24px', fontSize: '15.5px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
+        <td style={{ padding: '18px 24px', fontSize: '15.5px', color: 'var(--text-strong)', fontWeight: 600, textAlign: 'center' }}>
           {displayAnalista(reg.analista)}
         </td>
 
         {/* Fecha */}
         <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '15.5px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
+          <div style={{ fontSize: '15.5px', color: 'var(--text-strong)', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
         </td>
 
         {/* Score */}
@@ -2479,18 +2479,18 @@ export default function RegistrosPage() {
                 height: '6px',
                 borderRadius: '50%',
                 background: Number(reg.puntaje) > 700 ? 'var(--green)' :
-                            Number(reg.puntaje) >= 601 ? '#60a5fa' :
-                            Number(reg.puntaje) >= 550 ? '#fbbf24' : '#ef4444'
+                            Number(reg.puntaje) >= 601 ? 'var(--info)' :
+                            Number(reg.puntaje) >= 550 ? 'var(--warning)' : 'var(--danger)'
               }} />
-              <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
+              <span style={{ fontSize: '15.5px', fontWeight: 600, color: 'var(--text-strong)' }}>{reg.puntaje}</span>
             </div>
           ) : (
-            <span style={{ color: '#46464e', fontSize: 15.5 }}>—</span>
+            <span style={{ color: 'var(--text-disabled)', fontSize: 15.5 }}>—</span>
           )}
         </td>
 
         {/* Monto */}
-        <td style={{ padding: '18px 24px', fontSize: '15.5px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+        <td style={{ padding: '18px 24px', fontSize: '15.5px', fontWeight: 600, color: reg.monto == null ? 'var(--text-disabled)' : 'var(--text-strong)', textAlign: 'center', whiteSpace: 'nowrap' }}>
           {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
         </td>
 
@@ -2502,14 +2502,14 @@ export default function RegistrosPage() {
         {/* Tipo / Acuerdo */}
         <td style={{ padding: '18px 24px', textAlign: 'center' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-            <span style={{ fontSize: '15.5px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
+            <span style={{ fontSize: '15.5px', fontWeight: 600, color: reg.tipo_cliente ? 'var(--text-strong)' : 'var(--text-disabled)' }}>{reg.tipo_cliente || '—'}</span>
             <span style={{
               fontSize: '12px',
               fontWeight: 700,
               color:
                 reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? 'var(--green)' :
-                  reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
-                    reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
+                  reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? 'var(--danger)' :
+                    reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? 'var(--info)' :
                       'var(--fg-muted)',
               textTransform: 'uppercase',
               letterSpacing: '0.4px'
@@ -2526,7 +2526,7 @@ export default function RegistrosPage() {
               onClick={() => handleToggleFijado(reg)}
               className="table-action-btn"
               data-label={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
-              style={{ color: reg.fijado ? '#34d399' : 'var(--fg-muted)' }}
+              style={{ color: reg.fijado ? 'var(--success)' : 'var(--fg-muted)' }}
             ><Pin size={16} fill={reg.fijado ? 'currentColor' : 'none'} /></button>
             <button
               onClick={() => handleWhatsApp(reg)}
@@ -2539,7 +2539,7 @@ export default function RegistrosPage() {
                 onClick={() => setBitacoraTarget(reg)}
                 className={`table-action-btn ${isVencidoOIngresoHoy ? 'btn-alert-active' : ''}`}
                 data-label="Recordatorio & Seguimiento"
-                style={{ color: isVencidoOIngresoHoy ? '#ef4444' : '#60a5fa' }}
+                style={{ color: isVencidoOIngresoHoy ? 'var(--danger)' : 'var(--info)' }}
               ><Bell size={16} /></button>
             )}
             {canPerform('ver_comentarios', reg.analista) && reg.comentarios && reg.comentarios.trim() !== '' && (
@@ -2631,7 +2631,7 @@ export default function RegistrosPage() {
             padding: '12px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
             background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : toast.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
             border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : toast.type === 'error' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
-            color: toast.type === 'success' ? '#34d399' : toast.type === 'error' ? '#f87171' : '#fbbf24',
+            color: toast.type === 'success' ? 'var(--success)' : toast.type === 'error' ? 'var(--danger)' : 'var(--warning)',
           }}>
             <AlertCircle size={15} />
             {toast.message}
@@ -2659,13 +2659,13 @@ export default function RegistrosPage() {
               background: 'rgba(168, 85, 247, 0.25)', display: 'flex',
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <User size={16} color="#c084fc" />
+              <User size={16} color="var(--violet)" />
             </div>
             <div>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
-                Modo Simulación: Viendo la app con los permisos de <span style={{ color: '#00d4ff', fontWeight: 800 }}>{simulatedAnalista}</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-strong)' }}>
+                Modo Simulación: Viendo la app con los permisos de <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{simulatedAnalista}</span>
               </span>
-              <span style={{ fontSize: '11px', color: '#aaa', marginLeft: '8px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>
                 (Las acciones y visibilidad de íconos responden a su rol)
               </span>
             </div>
@@ -2674,9 +2674,9 @@ export default function RegistrosPage() {
             type="button"
             onClick={() => setSimulatedAnalista(null)}
             style={{
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff',
+              background: 'var(--neutral-10)',
+              border: '1px solid var(--neutral-20)',
+              color: 'var(--text-strong)',
               padding: '6px 12px',
               borderRadius: '8px',
               fontSize: '11.5px',
@@ -2684,8 +2684,8 @@ export default function RegistrosPage() {
               cursor: 'pointer',
               transition: 'background 0.2s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--neutral-20)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--neutral-10)')}
           >
             ✕ Salir de Simulación
           </button>
@@ -2694,7 +2694,7 @@ export default function RegistrosPage() {
 
       {/* Revision Panel */}
       {panelData && panelData.mode === 'full' && (() => {
-        const hColor = panelData.salud === 100 ? '#10b981' : panelData.salud >= 80 ? '#fbbf24' : '#ef4444';
+        const hColor = panelData.salud === 100 ? 'var(--success-strong)' : panelData.salud >= 80 ? 'var(--warning)' : 'var(--danger)';
         const hBg = panelData.salud === 100 ? 'rgba(16,185,129,0.15)' : panelData.salud >= 80 ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
         const r = 26;
         const circ = 2 * Math.PI * r;
@@ -2704,7 +2704,7 @@ export default function RegistrosPage() {
         return (
           <div style={{
             background: 'var(--bg-elev-1)',
-            backgroundImage: `radial-gradient(ellipse at top left, ${hBg}, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)`,
+            backgroundImage: `radial-gradient(ellipse at top left, ${hBg}, transparent 50%), radial-gradient(ellipse at bottom right, var(--neutral-02), transparent 40%)`,
             border: '1px solid var(--border)',
             borderTop: `1px solid ${hColor}50`,
             borderRadius: '16px',
@@ -2713,69 +2713,69 @@ export default function RegistrosPage() {
             display: 'flex',
             alignItems: 'center',
             gap: '32px',
-            boxShadow: `0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px ${hColor}15`,
+            boxShadow: `0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 var(--neutral-05), 0 0 20px ${hColor}15`,
             position: 'relative',
             overflow: 'hidden'
           }}>
             {/* Health Ring */}
             <div style={{ position: 'relative', width: 68, height: 68, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <svg width="68" height="68" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="34" cy="34" r={r} fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+                <circle cx="34" cy="34" r={r} fill="transparent" stroke="var(--neutral-05)" strokeWidth="6" />
                 <circle cx="34" cy="34" r={r} fill="transparent" stroke={hColor} strokeWidth="6" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }} />
               </svg>
               <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '16px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.salud}%</span>
+                <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{panelData.salud}%</span>
               </div>
             </div>
 
             {/* Info */}
             <div style={{ flex: 1, zIndex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(90deg, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(90deg, var(--text-strong), var(--text-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   {panelData.estado}
                 </h2>
-                <div style={{ background: isBad ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`, padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#34d399', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ background: isBad ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`, padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 800, color: isBad ? 'var(--danger)' : 'var(--success)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {isBad ? <AlertTriangle size={12} strokeWidth={3} /> : <CheckCircle2 size={12} strokeWidth={3} />}
                   {isBad ? 'Requiere Atención' : 'OK'}
                 </div>
               </div>
               <p style={{ fontSize: '13px', color: 'var(--fg-muted)', margin: 0, fontWeight: 500, letterSpacing: '0.2px', opacity: 0.8 }}>
-                Límite de gestión: <strong style={{ color: '#fff' }}>{panelData.diasLimite} {panelData.diasLimite === 1 ? 'día' : 'días'}</strong>. Supervisión de tiempos en curso.
+                Límite de gestión: <strong style={{ color: 'var(--text-strong)' }}>{panelData.diasLimite} {panelData.diasLimite === 1 ? 'día' : 'días'}</strong>. Supervisión de tiempos en curso.
               </p>
             </div>
 
             {/* Metrics */}
             <div style={{ display: 'flex', gap: '16px', zIndex: 1, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--surface-subtle)', padding: '12px 20px', borderRadius: '12px', border: '1px solid var(--neutral-03)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.total}</span>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{panelData.total}</span>
                 </div>
-                <Hash size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                <Hash size={24} strokeWidth={1.5} style={{ color: 'var(--neutral-15)' }} />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--surface-subtle)', padding: '12px 20px', borderRadius: '12px', border: '1px solid var(--neutral-03)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Total</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoTotal)}</span>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Total</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{formatCurrency(panelData.montoTotal)}</span>
                 </div>
-                <DollarSign size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                <DollarSign size={24} strokeWidth={1.5} style={{ color: 'var(--neutral-15)' }} />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'var(--neutral-03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vencidos</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? '#f87171' : '#fff', lineHeight: 1 }}>{panelData.vencidos}</span>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? 'var(--danger)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vencidos</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? 'var(--danger)' : 'var(--text-strong)', lineHeight: 1 }}>{panelData.vencidos}</span>
                 </div>
-                <Timer size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.15)' }} />
+                <Timer size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'var(--neutral-15)' }} />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'var(--neutral-03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Vencidos</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? '#f87171' : '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoVencidos)}</span>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? 'var(--danger)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Vencidos</span>
+                  <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? 'var(--danger)' : 'var(--text-strong)', lineHeight: 1 }}>{formatCurrency(panelData.montoVencidos)}</span>
                 </div>
-                <DollarSign size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.15)' }} />
+                <DollarSign size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'var(--neutral-15)' }} />
               </div>
 
             </div>
@@ -2787,26 +2787,26 @@ export default function RegistrosPage() {
       {panelData && panelData.mode === 'lite' && (
         <div style={{
           background: 'var(--bg-elev-1)',
-          backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.12), transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)',
+          backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.12), transparent 50%), radial-gradient(ellipse at bottom right, var(--neutral-02), transparent 40%)',
           border: '1px solid var(--border)',
-          borderTop: '1px solid #10b98150',
+          borderTop: '1px solid var(--success-border)',
           borderRadius: '16px',
           padding: '20px 32px',
           marginBottom: '24px',
           display: 'flex',
           alignItems: 'center',
           gap: '32px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px rgba(16,185,129,0.08)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 var(--neutral-05), 0 0 20px rgba(16,185,129,0.08)',
           position: 'relative',
           overflow: 'hidden'
         }}>
           {/* Info */}
           <div style={{ flex: 1, zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(90deg, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(90deg, var(--text-strong), var(--text-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 Registros Filtrados
               </h2>
-              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 800, color: '#34d399', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 800, color: 'var(--success)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <SlidersHorizontal size={12} strokeWidth={3} />
                 Filtro Activo
               </div>
@@ -2818,20 +2818,20 @@ export default function RegistrosPage() {
 
           {/* Metrics */}
           <div style={{ display: 'flex', gap: '16px', zIndex: 1, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--surface-subtle)', padding: '12px 20px', borderRadius: '12px', border: '1px solid var(--neutral-03)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
-                <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.total}</span>
+                <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
+                <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{panelData.total}</span>
               </div>
-              <Hash size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              <Hash size={24} strokeWidth={1.5} style={{ color: 'var(--neutral-15)' }} />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--surface-subtle)', padding: '12px 20px', borderRadius: '12px', border: '1px solid var(--neutral-03)' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Total</span>
-                <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoTotal)}</span>
+                <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Total</span>
+                <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-strong)', lineHeight: 1 }}>{formatCurrency(panelData.montoTotal)}</span>
               </div>
-              <DollarSign size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              <DollarSign size={24} strokeWidth={1.5} style={{ color: 'var(--neutral-15)' }} />
             </div>
           </div>
         </div>
@@ -2843,11 +2843,11 @@ export default function RegistrosPage() {
         background: 'var(--bg-elev-1)',
         border: '1px solid var(--border)',
         borderRadius: '16px', overflow: 'hidden',
-        boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)'
+        boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)'
       }}>
         {/* Pestañas: Registros / Fijados (solo si hay alguno fijado) */}
         {registrosFijados.length > 0 && (
-          <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', borderBottom: '1px solid var(--neutral-05)' }}>
             {([['registros', 'Registros'], ['fijados', `Fijados (${registrosFijados.length})`]] as const).map(([key, label]) => {
               const active = activeTab === key;
               return (
@@ -2859,8 +2859,8 @@ export default function RegistrosPage() {
                     padding: '10px 18px', fontSize: 12, fontWeight: 800,
                     textTransform: 'uppercase', letterSpacing: '0.5px',
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                    color: active ? '#34d399' : 'var(--fg-muted)',
-                    borderBottom: `2px solid ${active ? '#34d399' : 'transparent'}`,
+                    color: active ? 'var(--success)' : 'var(--fg-muted)',
+                    borderBottom: `2px solid ${active ? 'var(--success)' : 'transparent'}`,
                     marginBottom: -1,
                   }}
                 >
@@ -2873,10 +2873,10 @@ export default function RegistrosPage() {
         )}
         {(activeTab === 'fijados' ? registrosFijados.length === 0 : filteredRegistros.length === 0) && !loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12 }}>
-            <span style={{ fontSize: 40, color: '#64748b' }}>—</span>
+            <span style={{ fontSize: 40, color: 'var(--text-subtle)' }}>—</span>
             <p style={{ fontSize: 16, color: 'var(--fg-muted)', fontWeight: 600 }}>No se encontraron registros coincidentes</p>
             {hayFiltros && (
-              <button onClick={limpiarFiltros} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)', padding: '10px 20px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', marginTop: '12px' }}>
+              <button onClick={limpiarFiltros} style={{ background: 'transparent', border: '1px solid var(--neutral-08)', color: 'var(--fg-muted)', padding: '10px 20px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', marginTop: '12px' }}>
                 <X size={14} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> LIMPIAR FILTROS
               </button>
             )}
@@ -2885,44 +2885,44 @@ export default function RegistrosPage() {
           <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
             {hayFiltros && isRevisionState && (
               <div style={{
-                background: isRevisionState ? 'transparent' : hayFiltros ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0) 100%)' : 'rgba(255, 255, 255, 0.01)',
-                borderBottom: isRevisionState ? '1px solid rgba(255, 255, 255, 0.03)' : `1px solid ${hayFiltros ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.03)'}`,
+                background: isRevisionState ? 'transparent' : hayFiltros ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0) 100%)' : 'var(--neutral-01)',
+                borderBottom: isRevisionState ? '1px solid var(--neutral-03)' : `1px solid ${hayFiltros ? 'rgba(16, 185, 129, 0.2)' : 'var(--neutral-03)'}`,
                 display: 'flex', flexDirection: 'column'
               }}>
                 <div style={{ padding: '12px 24px', display: 'flex', gap: '32px', alignItems: 'center', minHeight: isRevisionState ? '56px' : 'auto' }}>
                   {isRevisionState ? null : hayFiltros ? (
                     <>
                       <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                        Registros filtrados <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
+                        Registros filtrados <span style={{ color: 'var(--success-strong)', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
                       </span>
                       <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                        Total acumulado <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>
+                        Total acumulado <span style={{ color: 'var(--success-strong)', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>
                           {formatCurrency(totales.monto)}
                         </span>
                       </span>
                     </>
                   ) : (
                     <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                      Todos los registros <span style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
+                      Todos los registros <span style={{ color: 'var(--text-strong)', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
                     </span>
                   )}
                   <div style={{ flex: 1 }} />
-                  
+
                   {isRevisionState && (
                     <button
                       onClick={() => setShowInlineFilters(p => !p)}
                       style={{
-                        background: showInlineFilters ? 'rgba(255,255,255,0.1)' : 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: showInlineFilters ? '#fff' : 'var(--fg-muted)', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
+                        background: showInlineFilters ? 'var(--neutral-10)' : 'transparent', border: '1px solid var(--neutral-08)', color: showInlineFilters ? 'var(--text-strong)' : 'var(--fg-muted)', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
                         cursor: 'pointer', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', transition: '0.2s'
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-                      onMouseLeave={e => { if(!showInlineFilters){ e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; } }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-strong)'; e.currentTarget.style.borderColor = 'var(--neutral-20)'; }}
+                      onMouseLeave={e => { if(!showInlineFilters){ e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.borderColor = 'var(--neutral-08)'; } }}
                     >
                       <SlidersHorizontal size={12} strokeWidth={3} /> {showInlineFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}
                     </button>
                   )}
                 </div>
-                
+
                 {/* INLINE FILTERS EXPANDABLE AREA */}
                 {isRevisionState && showInlineFilters && (
                   <div style={{
@@ -2932,16 +2932,16 @@ export default function RegistrosPage() {
                   }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 200px' }}>
                       <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Búsqueda General</label>
-                      <input placeholder="Nombre, CUIL..." value={filters.search} onChange={e => setFilter('search', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                      <input placeholder="Nombre, CUIL..." value={filters.search} onChange={e => setFilter('search', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '12px', borderRadius: '8px', background: 'var(--surface-subtle)', border: '1px solid var(--neutral-10)', color: 'var(--text-strong)', outline: 'none' }} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 200px' }}>
                       <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista</label>
-                      <PremiumSelect 
-                        value={filters.analista} 
-                        onChange={v => setFilter('analista', v)} 
-                        options={ANALISTAS} 
-                        placeholder="Todos los analistas" 
-                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', minHeight: '36px' }}
+                      <PremiumSelect
+                        value={filters.analista}
+                        onChange={v => setFilter('analista', v)}
+                        options={ANALISTAS}
+                        placeholder="Todos los analistas"
+                        style={{ background: 'var(--surface-subtle)', border: '1px solid var(--neutral-10)', minHeight: '36px' }}
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 220px' }}>
@@ -2956,9 +2956,9 @@ export default function RegistrosPage() {
                               onClick={() => toggleEtiqueta(t)}
                               style={{
                                 padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700,
-                                background: isSel ? 'rgba(99,102,241,0.25)' : 'rgba(0,0,0,0.2)',
-                                color: isSel ? '#818cf8' : '#94a3b8',
-                                border: `1px solid ${isSel ? '#6366f1' : 'rgba(255,255,255,0.1)'}`,
+                                background: isSel ? 'var(--violet-soft)' : 'var(--surface-subtle)',
+                                color: isSel ? 'var(--violet)' : 'var(--text-muted)',
+                                border: `1px solid ${isSel ? 'var(--violet)' : 'var(--neutral-10)'}`,
                                 cursor: 'pointer', transition: '0.2s'
                               }}
                             >
@@ -2974,9 +2974,9 @@ export default function RegistrosPage() {
                         onClick={() => setFilter('soloRecontactosHoy', !filters.soloRecontactosHoy)}
                         style={{
                           padding: '8px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700,
-                          background: filters.soloRecontactosHoy ? 'rgba(239,68,68,0.25)' : 'rgba(0,0,0,0.2)',
-                          color: filters.soloRecontactosHoy ? '#f87171' : '#94a3b8',
-                          border: `1px solid ${filters.soloRecontactosHoy ? '#ef4444' : 'rgba(255,255,255,0.1)'}`,
+                          background: filters.soloRecontactosHoy ? 'var(--danger-soft)' : 'var(--surface-subtle)',
+                          color: filters.soloRecontactosHoy ? 'var(--danger)' : 'var(--text-muted)',
+                          border: `1px solid ${filters.soloRecontactosHoy ? 'var(--danger)' : 'var(--neutral-10)'}`,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s'
                         }}
                       >
@@ -2986,21 +2986,21 @@ export default function RegistrosPage() {
                     <div style={{ display: 'flex', gap: '12px', flex: '1 1 200px' }}>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
                          <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha Desde</label>
-                         <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                         <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'var(--surface-subtle)', border: '1px solid var(--neutral-10)', color: 'var(--text-strong)', outline: 'none' }} />
                        </div>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
                          <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha Hasta</label>
-                         <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                         <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'var(--surface-subtle)', border: '1px solid var(--neutral-10)', color: 'var(--text-strong)', outline: 'none' }} />
                        </div>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', flex: '1 1 200px' }}>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
                          <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score Mín</label>
-                         <input type="number" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                         <input type="number" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'var(--surface-subtle)', border: '1px solid var(--neutral-10)', color: 'var(--text-strong)', outline: 'none' }} />
                        </div>
                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
                          <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score Máx</label>
-                         <input type="number" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                         <input type="number" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'var(--surface-subtle)', border: '1px solid var(--neutral-10)', color: 'var(--text-strong)', outline: 'none' }} />
                        </div>
                     </div>
                   </div>
@@ -3009,12 +3009,12 @@ export default function RegistrosPage() {
             )}
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.01)' }}>
+                <tr style={{ background: 'var(--neutral-01)' }}>
                   {['Cliente | CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
                     <th key={i} style={{
                       padding: '20px 24px',
                       fontSize: 12, fontWeight: 800,
-                      color: '#fff',
+                      color: 'var(--text-strong)',
                       textTransform: 'uppercase',
                       letterSpacing: '1.5px',
                       textAlign: (i === 0) ? 'left' : 'center',
@@ -3038,7 +3038,7 @@ export default function RegistrosPage() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '14px 20px',
-                borderTop: '1px solid rgba(255,255,255,0.04)',
+                borderTop: '1px solid var(--neutral-04)',
                 background: 'transparent',
               }}>
                 {/* Info de registros */}
@@ -3112,20 +3112,20 @@ export default function RegistrosPage() {
       />
       <ComentariosModal registro={comentariosTarget} onClose={handleComentariosClose} />
       <DeleteModal registro={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} />
-      <WhatsappModal 
-        registro={whatsappTarget} 
+      <WhatsappModal
+        registro={whatsappTarget}
         onConfirm={async (telefono, action) => {
           if (!whatsappTarget) return;
           const reg = whatsappTarget;
           setWhatsappTarget(null);
-          
+
           const cleanNum = telefono ? telefono.replace(/\D/g, '') : '';
           const { error } = await supabase.from('registros').update({ telefono: cleanNum || null }).eq('id', reg.id);
           if (!error) {
             applyRegistroChange('UPDATE', { ...reg, telefono: cleanNum });
             pushRegistroChange('UPDATE', { ...reg, telefono: cleanNum });
             showToast('Teléfono guardado', 'success');
-            
+
             if (action === 'send' && cleanNum) {
               // Si tiene 10 dígitos (ej: 3434538564), le agregamos el código de país y de celular de Argentina (549)
               const waNum = cleanNum.length === 10 ? `549${cleanNum}` : cleanNum;
@@ -3134,8 +3134,8 @@ export default function RegistrosPage() {
               refresh(true);
             }
           }
-        }} 
-        onCancel={() => setWhatsappTarget(null)} 
+        }}
+        onCancel={() => setWhatsappTarget(null)}
       />
       <BitacoraModal registro={bitacoraTarget} isOpen={!!bitacoraTarget} onClose={() => setBitacoraTarget(null)} onSavedEtiquetas={handleSaveEtiquetas} />
       <EtiquetasModal registro={etiquetasTarget} isOpen={!!etiquetasTarget} onClose={() => setEtiquetasTarget(null)} onSave={handleSaveEtiquetas} />

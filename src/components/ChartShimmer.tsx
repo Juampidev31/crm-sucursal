@@ -15,7 +15,7 @@ export function ChartShimmer({ style }: { style?: CSSProperties }) {
   return (
     <div
       className="shimmer-bg"
-      style={{ height: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.03)', ...style }}
+      style={{ height: '100%', borderRadius: 8, border: '1px solid var(--neutral-03)', ...style }}
     />
   );
 }

@@ -19,12 +19,12 @@ const AVAILABLE_ROUTES = [
 ];
 
 const iconBtnStyle: React.CSSProperties = {
-  background: 'none', border: 'none', color: '#8f929d', cursor: 'pointer',
+  background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
   display: 'flex', alignItems: 'center', padding: '6px', borderRadius: '6px', transition: 'all 0.2s',
 };
 const iconBtnHover = {
-  onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; },
-  onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.color = '#8f929d'; e.currentTarget.style.background = 'transparent'; },
+  onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.color = 'var(--text-strong)'; e.currentTarget.style.background = 'var(--neutral-05)'; },
+  onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; },
 };
 
 const NavControl = ({ side, currentPath, onSelect, onReload }: {
@@ -38,14 +38,14 @@ const NavControl = ({ side, currentPath, onSelect, onReload }: {
     alignItems: 'center',
     gap: '12px',
     padding: '8px 16px',
-    background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    background: 'linear-gradient(to bottom, var(--neutral-04), var(--neutral-01))',
+    borderBottom: '1px solid var(--neutral-08)',
     justifyContent: 'space-between',
     height: '46px'
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Layout size={14} color="#8f929d" />
+      <div style={{ background: 'var(--neutral-05)', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Layout size={14} color="var(--text-muted)" />
       </div>
       <CustomSelect
         value={currentPath}
@@ -63,7 +63,7 @@ const NavControl = ({ side, currentPath, onSelect, onReload }: {
       >
         <RefreshCw size={14} />
       </button>
-      <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.1)' }} />
+      <div style={{ width: '1px', height: '14px', background: 'var(--neutral-10)' }} />
       <a
         href={currentPath}
         target="_blank"
@@ -127,12 +127,12 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      height: '100%', 
-      width: '100%', 
-      background: '#050505',
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      width: '100%',
+      background: 'var(--surface-base)',
       overflow: 'hidden',
       position: 'relative'
     }}>
@@ -145,8 +145,8 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
       <div style={{
         height: '44px',
         width: '100%',
-        background: '#0a0a0a',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--surface-base)',
+        borderBottom: '1px solid var(--neutral-06)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -163,7 +163,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
             borderRadius: '6px',
             fontSize: '10px',
             fontWeight: 900,
-            color: '#a78bfa',
+            color: 'var(--violet)',
             letterSpacing: '1px',
             display: 'flex',
             alignItems: 'center',
@@ -177,14 +177,14 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
           </div>
         </div>
 
-        <button 
+        <button
           onClick={onClose}
           style={{
             background: 'rgba(239, 68, 68, 0.1)',
             border: '1px solid rgba(239, 68, 68, 0.2)',
             borderRadius: '8px',
             padding: '6px 14px',
-            color: '#ff3366',
+            color: 'var(--danger-strong)',
             fontSize: '11px',
             fontWeight: 800,
             cursor: 'pointer',
@@ -195,7 +195,7 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
             boxShadow: '0 2px 8px rgba(239, 68, 68, 0.1)'
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ff5f5f'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.2)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ff3366'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.1)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = 'var(--danger-strong)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.1)'; }}
         >
           SALIR DEL MODO SPLIT
           <X size={14} strokeWidth={2.5} />
@@ -203,59 +203,59 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
       </div>
 
       {/* Contenido Dividido */}
-      <div 
+      <div
         ref={containerRef}
-        style={{ 
-        flex: 1, 
-        display: 'flex', 
-        width: '100%', 
+        style={{
+        flex: 1,
+        display: 'flex',
+        width: '100%',
         overflow: 'hidden',
         position: 'relative'
       }}>
         {/* Panel Izquierdo */}
-        <div style={{ 
+        <div style={{
           width: `${splitRatio}%`,
-          display: 'flex', 
-          flexDirection: 'column', 
+          display: 'flex',
+          flexDirection: 'column',
           minWidth: 0,
-          background: '#0c0c0c'
+          background: 'var(--surface-canvas)'
         }}>
           <NavControl side="left" currentPath={leftPath} onSelect={handleSelect} onReload={reloadIframe} />
-          <iframe 
+          <iframe
             key={`left-${keyLeft}`}
             src={`${leftPath}${leftPath.includes('?') ? '&' : '?'}minimal=true`}
-            style={{ 
-              flex: 1, 
-              width: '100%', 
+            style={{
+              flex: 1,
+              width: '100%',
               border: 'none',
-              background: '#050505',
+              background: 'var(--surface-base)',
               boxShadow: 'inset -10px 0 20px rgba(0,0,0,0.2)'
             }}
           />
         </div>
 
         {/* Resizer Handle */}
-        <div 
+        <div
           onMouseDown={startDrag}
           style={{
             width: '10px',
-            background: isDragging ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.02)',
+            background: isDragging ? 'rgba(167,139,250,0.15)' : 'var(--neutral-02)',
             cursor: 'col-resize',
             zIndex: 40,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             transition: 'background 0.2s',
-            borderLeft: '1px solid rgba(255,255,255,0.05)',
-            borderRight: '1px solid rgba(255,255,255,0.05)',
+            borderLeft: '1px solid var(--neutral-05)',
+            borderRight: '1px solid var(--neutral-05)',
           }}
-          onMouseEnter={e => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-          onMouseLeave={e => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+          onMouseEnter={e => { if (!isDragging) e.currentTarget.style.background = 'var(--neutral-08)'; }}
+          onMouseLeave={e => { if (!isDragging) e.currentTarget.style.background = 'var(--neutral-02)'; }}
         >
-          <div style={{ 
-            width: '4px', 
-            height: '32px', 
-            background: isDragging ? '#a78bfa' : 'rgba(255,255,255,0.3)', 
+          <div style={{
+            width: '4px',
+            height: '32px',
+            background: isDragging ? 'var(--violet)' : 'var(--neutral-30)',
             borderRadius: '4px',
             boxShadow: isDragging ? '0 0 8px rgba(167,139,250,0.8)' : 'none',
             transition: 'all 0.2s'
@@ -263,22 +263,22 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
         </div>
 
         {/* Panel Derecho */}
-        <div style={{ 
+        <div style={{
           width: `calc(${100 - splitRatio}% - 10px)`,
-          display: 'flex', 
+          display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
-          background: '#0c0c0c'
+          background: 'var(--surface-canvas)'
         }}>
           <NavControl side="right" currentPath={rightPath} onSelect={handleSelect} onReload={reloadIframe} />
-          <iframe 
+          <iframe
             key={`right-${keyRight}`}
             src={`${rightPath}${rightPath.includes('?') ? '&' : '?'}minimal=true`}
-            style={{ 
-              flex: 1, 
-              width: '100%', 
+            style={{
+              flex: 1,
+              width: '100%',
               border: 'none',
-              background: '#050505',
+              background: 'var(--surface-base)',
               boxShadow: 'inset 10px 0 20px rgba(0,0,0,0.2)'
             }}
           />

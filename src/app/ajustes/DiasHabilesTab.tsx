@@ -408,9 +408,9 @@ export function DiasHabilesTab() {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            background: feedback.type === 'success' ? '#141e18' : '#221416',
-            border: `1px solid ${feedback.type === 'success' ? '#22543d' : '#742a2a'}`,
-            color: feedback.type === 'success' ? '#9ae6b4' : '#feb2b2',
+            background: feedback.type === 'success' ? 'var(--success-soft)' : 'var(--danger-soft)',
+            border: `1px solid ${feedback.type === 'success' ? 'var(--success-border)' : 'var(--danger)'}`,
+            color: feedback.type === 'success' ? 'var(--success-strong)' : 'var(--danger-strong)',
           }}
         >
           {feedback.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
@@ -421,8 +421,8 @@ export function DiasHabilesTab() {
       {/* PANEL PRINCIPAL SOBRIO: Carga mensual y replicar a todos */}
       <div
         style={{
-          background: '#121214',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--surface-raised)',
+          border: '1px solid var(--neutral-08)',
           borderRadius: '12px',
           padding: '20px 24px',
         }}
@@ -431,20 +431,20 @@ export function DiasHabilesTab() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Calendar size={16} color="#e4e4e7" />
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f4f4f5', margin: 0 }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-strong)', margin: 0 }}>
                 Configuración Mensual de Días Hábiles
               </h3>
             </div>
-            <p style={{ fontSize: '12px', color: '#71717a', marginTop: '4px', marginBottom: 0 }}>
-              Mes en curso: <span style={{ color: '#d4d4d8', fontWeight: 600 }}>{nombreMesActual} {anioActual}</span>.
+            <p style={{ fontSize: '12px', color: 'var(--text-subtle)', marginTop: '4px', marginBottom: 0 }}>
+              Mes en curso: <span style={{ color: 'var(--text-default)', fontWeight: 600 }}>{nombreMesActual} {anioActual}</span>.
               Ingresá los días hábiles del mes y replicalos a todo el equipo con un solo clic.
             </p>
           </div>
 
           {/* Formulario de carga y réplica a todos */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', background: '#18181b', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '0 10px', height: '36px' }}>
-              <span style={{ fontSize: '11px', color: '#a1a1aa', marginRight: '8px' }}>Días Hábiles:</span>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-raised)', border: '1px solid var(--neutral-12)', borderRadius: '8px', padding: '0 10px', height: '36px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginRight: '8px' }}>Días Hábiles:</span>
               <input
                 type="number"
                 step="0.5"
@@ -456,7 +456,7 @@ export function DiasHabilesTab() {
                   width: '54px',
                   background: 'transparent',
                   border: 'none',
-                  color: '#fff',
+                  color: 'var(--text-strong)',
                   fontSize: '13px',
                   fontWeight: 700,
                   outline: 'none',
@@ -472,9 +472,9 @@ export function DiasHabilesTab() {
                 height: '36px',
                 padding: '0 12px',
                 background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.12)',
+                border: '1px solid var(--neutral-12)',
                 borderRadius: '8px',
-                color: '#d4d4d8',
+                color: 'var(--text-default)',
                 fontSize: '12px',
                 cursor: 'pointer',
                 display: 'flex',
@@ -492,10 +492,10 @@ export function DiasHabilesTab() {
               style={{
                 height: '36px',
                 padding: '0 16px',
-                background: '#27272a',
-                border: '1px solid rgba(255,255,255,0.18)',
+                background: 'var(--surface-input)',
+                border: '1px solid var(--neutral-18)',
                 borderRadius: '8px',
-                color: '#fff',
+                color: 'var(--text-strong)',
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -517,9 +517,9 @@ export function DiasHabilesTab() {
                 height: '36px',
                 padding: '0 12px',
                 background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid var(--neutral-08)',
                 borderRadius: '8px',
-                color: '#a1a1aa',
+                color: 'var(--text-muted)',
                 fontSize: '12px',
                 cursor: 'pointer',
                 display: 'flex',
@@ -538,22 +538,22 @@ export function DiasHabilesTab() {
           style={{
             marginTop: '16px',
             paddingTop: '12px',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            borderTop: '1px solid var(--neutral-06)',
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
             gap: '16px',
             fontSize: '11px',
-            color: '#71717a',
+            color: 'var(--text-subtle)',
           }}
         >
           <span>Regla de cálculo:</span>
-          <span>• Lunes a Viernes: <strong style={{ color: '#d4d4d8' }}>1 día (a las 19:30 hs computa el día siguiente)</strong></span>
-          <span>• Sábados: <strong style={{ color: '#d4d4d8' }}>0.5 día (a las 12:00 pm computa el lunes)</strong></span>
-          <span>• Domingos: <strong style={{ color: '#d4d4d8' }}>0</strong></span>
-          <span>• Feriados Nacionales: <strong style={{ color: '#d4d4d8' }}>0</strong> ({feriadosDelMes.length} este mes)</span>
-          <span style={{ marginLeft: 'auto', color: '#a1a1aa' }}>
-            Transcurridos al día de hoy: <strong style={{ color: '#fff' }}>{transcurridosHoy} días</strong>
+          <span>• Lunes a Viernes: <strong style={{ color: 'var(--text-default)' }}>1 día (a las 19:30 hs computa el día siguiente)</strong></span>
+          <span>• Sábados: <strong style={{ color: 'var(--text-default)' }}>0.5 día (a las 12:00 pm computa el lunes)</strong></span>
+          <span>• Domingos: <strong style={{ color: 'var(--text-default)' }}>0</strong></span>
+          <span>• Feriados Nacionales: <strong style={{ color: 'var(--text-default)' }}>0</strong> ({feriadosDelMes.length} este mes)</span>
+          <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>
+            Transcurridos al día de hoy: <strong style={{ color: 'var(--text-strong)' }}>{transcurridosHoy} días</strong>
           </span>
         </div>
       </div>
@@ -561,10 +561,10 @@ export function DiasHabilesTab() {
       {/* TARJETAS POR ANALISTA Y PUNTO DE VENTA */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#a1a1aa', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Detalle por Analista y Punto de Venta
           </h4>
-          <span style={{ fontSize: '11px', color: '#52525b' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-subtle)' }}>
             {entidades.length} perfiles activos
           </span>
         </div>
@@ -579,8 +579,8 @@ export function DiasHabilesTab() {
               <div
                 key={entidad}
                 style={{
-                  background: '#121214',
-                  border: '1px solid rgba(255,255,255,0.07)',
+                  background: 'var(--surface-raised)',
+                  border: '1px solid var(--neutral-07)',
                   borderRadius: '10px',
                   padding: '18px 20px',
                   display: 'flex',
@@ -590,17 +590,17 @@ export function DiasHabilesTab() {
               >
                 {/* Header de la tarjeta */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h5 style={{ fontWeight: 700, fontSize: '14px', margin: 0, color: '#fff' }}>
+                  <h5 style={{ fontWeight: 700, fontSize: '14px', margin: 0, color: 'var(--text-strong)' }}>
                     {isPdv ? 'Punto de Venta (General)' : entidad}
                   </h5>
                   <span
                     style={{
                       fontSize: '10px',
-                      color: entry.manual ? '#a1a1aa' : '#71717a',
-                      background: 'rgba(255,255,255,0.04)',
+                      color: entry.manual ? 'var(--text-muted)' : 'var(--text-subtle)',
+                      background: 'var(--neutral-04)',
                       padding: '2px 8px',
                       borderRadius: '4px',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      border: '1px solid var(--neutral-06)',
                     }}
                   >
                     {entry.manual ? 'Manual' : 'Automático'}
@@ -611,7 +611,7 @@ export function DiasHabilesTab() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   {/* Días Hábiles */}
                   <div>
-                    <label style={{ display: 'block', color: '#71717a', fontSize: '11px', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', color: 'var(--text-subtle)', fontSize: '11px', marginBottom: '6px' }}>
                       Días Hábiles
                     </label>
                     <input
@@ -624,10 +624,10 @@ export function DiasHabilesTab() {
                       style={{
                         width: '100%',
                         height: '36px',
-                        background: '#18181b',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'var(--surface-raised)',
+                        border: '1px solid var(--neutral-10)',
                         borderRadius: '6px',
-                        color: '#fff',
+                        color: 'var(--text-strong)',
                         fontSize: '13px',
                         fontWeight: 600,
                         padding: '0 10px',
@@ -638,7 +638,7 @@ export function DiasHabilesTab() {
 
                   {/* Días Transcurridos */}
                   <div>
-                    <label style={{ display: 'block', color: '#71717a', fontSize: '11px', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', color: 'var(--text-subtle)', fontSize: '11px', marginBottom: '6px' }}>
                       Transcurridos
                     </label>
                     <input
@@ -652,10 +652,10 @@ export function DiasHabilesTab() {
                       style={{
                         width: '100%',
                         height: '36px',
-                        background: entry.manual ? '#18181b' : 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: entry.manual ? 'var(--surface-raised)' : 'var(--neutral-02)',
+                        border: '1px solid var(--neutral-08)',
                         borderRadius: '6px',
-                        color: entry.manual ? '#fff' : '#a1a1aa',
+                        color: entry.manual ? 'var(--text-strong)' : 'var(--text-muted)',
                         fontSize: '13px',
                         fontWeight: 600,
                         padding: '0 10px',
@@ -667,7 +667,7 @@ export function DiasHabilesTab() {
 
                 {/* Footer de la tarjeta: checkbox manual y botón guardar */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#71717a', cursor: 'pointer', margin: 0 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-subtle)', cursor: 'pointer', margin: 0 }}>
                     <input
                       type="checkbox"
                       checked={entry.manual}
@@ -710,9 +710,9 @@ export function DiasHabilesTab() {
                       height: '30px',
                       padding: '0 12px',
                       background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid var(--neutral-10)',
                       borderRadius: '6px',
-                      color: '#d4d4d8',
+                      color: 'var(--text-default)',
                       fontSize: '11px',
                       cursor: 'pointer',
                       display: 'flex',
@@ -733,18 +733,18 @@ export function DiasHabilesTab() {
       {/* SECCION FERIADOS NACIONALES: SOBRIA Y LIMPIA */}
       <div
         style={{
-          background: '#121214',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--surface-raised)',
+          border: '1px solid var(--neutral-08)',
           borderRadius: '12px',
           padding: '20px 24px',
         }}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
           <div>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#f4f4f5', margin: 0 }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-strong)', margin: 0 }}>
               Feriados Nacionales ({feriados.length})
             </h4>
-            <p style={{ fontSize: '12px', color: '#71717a', marginTop: '4px', marginBottom: 0 }}>
+            <p style={{ fontSize: '12px', color: 'var(--text-subtle)', marginTop: '4px', marginBottom: 0 }}>
               Los feriados no computan como días hábiles trabajados y se descuentan automáticamente.
             </p>
           </div>
@@ -756,9 +756,9 @@ export function DiasHabilesTab() {
               height: '32px',
               padding: '0 12px',
               background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.12)',
+              border: '1px solid var(--neutral-12)',
               borderRadius: '6px',
-              color: '#d4d4d8',
+              color: 'var(--text-default)',
               fontSize: '11px',
               cursor: 'pointer',
             }}
@@ -774,10 +774,10 @@ export function DiasHabilesTab() {
             display: 'grid',
             gridTemplateColumns: '170px 1fr 100px',
             gap: '10px',
-            background: '#18181b',
+            background: 'var(--surface-raised)',
             padding: '12px 14px',
             borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.06)',
+            border: '1px solid var(--neutral-06)',
             marginBottom: '16px',
             alignItems: 'center',
           }}
@@ -788,10 +788,10 @@ export function DiasHabilesTab() {
             onChange={e => setNuevoFeriadoFecha(e.target.value)}
             style={{
               height: '34px',
-              background: '#121214',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--neutral-10)',
               borderRadius: '6px',
-              color: '#fff',
+              color: 'var(--text-strong)',
               fontSize: '12px',
               padding: '0 8px',
               boxSizing: 'border-box',
@@ -806,10 +806,10 @@ export function DiasHabilesTab() {
             onChange={e => setNuevoFeriadoMotivo(e.target.value)}
             style={{
               height: '34px',
-              background: '#121214',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--neutral-10)',
               borderRadius: '6px',
-              color: '#fff',
+              color: 'var(--text-strong)',
               fontSize: '12px',
               padding: '0 10px',
               boxSizing: 'border-box',
@@ -822,10 +822,10 @@ export function DiasHabilesTab() {
             disabled={guardandoFeriado}
             style={{
               height: '34px',
-              background: '#27272a',
-              border: '1px solid rgba(255,255,255,0.15)',
+              background: 'var(--surface-input)',
+              border: '1px solid var(--neutral-15)',
               borderRadius: '6px',
-              color: '#fff',
+              color: 'var(--text-strong)',
               fontSize: '12px',
               cursor: 'pointer',
               display: 'flex',
@@ -841,7 +841,7 @@ export function DiasHabilesTab() {
 
         {/* Lista de feriados */}
         {feriados.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '24px', color: '#52525b', fontSize: '12px' }}>
+          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-subtle)', fontSize: '12px' }}>
             No hay feriados cargados.
           </div>
         ) : (
@@ -871,7 +871,7 @@ export function DiasHabilesTab() {
                       justifyContent: 'space-between',
                       padding: '10px 14px',
                       borderRadius: '8px',
-                      background: '#18181b',
+                      background: 'var(--surface-raised)',
                       border: '1px solid rgba(59, 130, 246, 0.4)',
                       gap: '12px',
                       flexWrap: 'wrap',
@@ -879,17 +879,17 @@ export function DiasHabilesTab() {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '300px', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <label style={{ fontSize: '10px', color: '#a1a1aa' }}>Fecha efectiva:</label>
+                        <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Fecha efectiva:</label>
                         <input
                           type="date"
                           value={editFecha}
                           onChange={e => setEditFecha(e.target.value)}
                           style={{
                             height: '32px',
-                            background: '#121214',
-                            border: '1px solid rgba(255,255,255,0.15)',
+                            background: 'var(--surface-raised)',
+                            border: '1px solid var(--neutral-15)',
                             borderRadius: '6px',
-                            color: '#fff',
+                            color: 'var(--text-strong)',
                             fontSize: '12px',
                             padding: '0 8px',
                             boxSizing: 'border-box',
@@ -899,7 +899,7 @@ export function DiasHabilesTab() {
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: '180px' }}>
-                        <label style={{ fontSize: '10px', color: '#a1a1aa' }}>Motivo:</label>
+                        <label style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Motivo:</label>
                         <input
                           type="text"
                           value={editMotivo}
@@ -907,10 +907,10 @@ export function DiasHabilesTab() {
                           placeholder="Motivo del feriado"
                           style={{
                             height: '32px',
-                            background: '#121214',
-                            border: '1px solid rgba(255,255,255,0.15)',
+                            background: 'var(--surface-raised)',
+                            border: '1px solid var(--neutral-15)',
                             borderRadius: '6px',
-                            color: '#fff',
+                            color: 'var(--text-strong)',
                             fontSize: '12px',
                             padding: '0 10px',
                             boxSizing: 'border-box',
@@ -919,10 +919,10 @@ export function DiasHabilesTab() {
                         />
                       </div>
 
-                      <div style={{ fontSize: '11px', color: '#71717a', alignSelf: 'flex-end', paddingBottom: '6px' }}>
-                        Fecha original: <strong style={{ color: '#d4d4d8' }}>{origFormateada}</strong>
+                      <div style={{ fontSize: '11px', color: 'var(--text-subtle)', alignSelf: 'flex-end', paddingBottom: '6px' }}>
+                        Fecha original: <strong style={{ color: 'var(--text-default)' }}>{origFormateada}</strong>
                         {editFecha !== fechaOriginal && (
-                          <span style={{ marginLeft: '6px', color: '#fbbf24', fontSize: '10px' }}>(Se marcará como trasladado)</span>
+                          <span style={{ marginLeft: '6px', color: 'var(--warning)', fontSize: '10px' }}>(Se marcará como trasladado)</span>
                         )}
                       </div>
                     </div>
@@ -938,7 +938,7 @@ export function DiasHabilesTab() {
                           background: '#2563eb',
                           border: 'none',
                           borderRadius: '6px',
-                          color: '#fff',
+                          color: 'var(--text-strong)',
                           fontSize: '11px',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -959,9 +959,9 @@ export function DiasHabilesTab() {
                           height: '30px',
                           padding: '0 10px',
                           background: 'transparent',
-                          border: '1px solid rgba(255,255,255,0.12)',
+                          border: '1px solid var(--neutral-12)',
                           borderRadius: '6px',
-                          color: '#a1a1aa',
+                          color: 'var(--text-muted)',
                           fontSize: '11px',
                           cursor: 'pointer',
                           display: 'flex',
@@ -986,20 +986,20 @@ export function DiasHabilesTab() {
                     justifyContent: 'space-between',
                     padding: '8px 14px',
                     borderRadius: '6px',
-                    background: esDeEsteMes ? 'rgba(255,255,255,0.04)' : 'transparent',
+                    background: esDeEsteMes ? 'var(--neutral-04)' : 'transparent',
                     border: esTrasladado
                       ? '1px solid rgba(245, 158, 11, 0.25)'
-                      : '1px solid rgba(255,255,255,0.05)',
+                      : '1px solid var(--neutral-05)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-                    <span style={{ minWidth: '85px', fontSize: '12px', fontWeight: 600, color: '#f4f4f5' }}>
+                    <span style={{ minWidth: '85px', fontSize: '12px', fontWeight: 600, color: 'var(--text-strong)' }}>
                       {fechaFormateada}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#71717a', minWidth: '70px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-subtle)', minWidth: '70px' }}>
                       {diaSemana}
                     </span>
-                    <span style={{ fontSize: '12px', color: '#d4d4d8' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-default)' }}>
                       {f.motivo}
                     </span>
                     {esTrasladado && (
@@ -1008,7 +1008,7 @@ export function DiasHabilesTab() {
                         style={{
                           fontSize: '10px',
                           fontWeight: 500,
-                          color: '#fbbf24',
+                          color: 'var(--warning)',
                           background: 'rgba(245, 158, 11, 0.12)',
                           border: '1px solid rgba(245, 158, 11, 0.25)',
                           padding: '1px 7px',
@@ -1019,7 +1019,7 @@ export function DiasHabilesTab() {
                       </span>
                     )}
                     {esDeEsteMes && (
-                      <span style={{ fontSize: '10px', color: '#a1a1aa', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', background: 'var(--neutral-06)', padding: '1px 6px', borderRadius: '4px' }}>
                         Este mes
                       </span>
                     )}
@@ -1034,15 +1034,15 @@ export function DiasHabilesTab() {
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#f59e0b',
+                          color: 'var(--warning)',
                           cursor: 'pointer',
                           padding: '4px',
                           display: 'flex',
                           alignItems: 'center',
                           borderRadius: '4px',
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.color = '#fbbf24')}
-                        onMouseLeave={e => (e.currentTarget.style.color = '#f59e0b')}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--warning)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--warning)')}
                       >
                         <RotateCcw size={13} />
                       </button>
@@ -1055,15 +1055,15 @@ export function DiasHabilesTab() {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#71717a',
+                        color: 'var(--text-subtle)',
                         cursor: 'pointer',
                         padding: '4px',
                         display: 'flex',
                         alignItems: 'center',
                         borderRadius: '4px',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
-                      onMouseLeave={e => (e.currentTarget.style.color = '#71717a')}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--info)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-subtle)')}
                     >
                       <Pencil size={13} />
                     </button>
@@ -1075,15 +1075,15 @@ export function DiasHabilesTab() {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#52525b',
+                        color: 'var(--text-subtle)',
                         cursor: 'pointer',
                         padding: '4px',
                         display: 'flex',
                         alignItems: 'center',
                         borderRadius: '4px',
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                      onMouseLeave={e => (e.currentTarget.style.color = '#52525b')}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-subtle)')}
                     >
                       <Trash2 size={13} />
                     </button>

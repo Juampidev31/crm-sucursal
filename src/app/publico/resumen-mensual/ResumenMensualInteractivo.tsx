@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import ResumenMensualView from '../../ajustes/ResumenMensualView';
+import { resolveCssColor } from '@/lib/css-color';
 
 interface DatosGraficos {
   kpiTotal: any;
@@ -69,10 +70,10 @@ const addGradients = (chart: any) => {
           const { ctx, chartArea } = chartObj;
           if (!chartArea) return null;
           const horizontal = chartObj.config?.options?.indexAxis === 'y';
-          const gradient = horizontal 
+          const gradient = horizontal
             ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
             : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-          
+
           let r=255,g=255,b=255;
           if (color.startsWith('#') && color.length === 7) {
             r = parseInt(color.slice(1,3),16); g = parseInt(color.slice(3,5),16); b = parseInt(color.slice(5,7),16);
@@ -80,9 +81,9 @@ const addGradients = (chart: any) => {
             const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
             if (m) { r=parseInt(m[1] as string); g=parseInt(m[2] as string); b=parseInt(m[3] as string); }
           }
-          if (color === 'rgba(255, 255, 255, 0.15)' || (r===255 && g===255 && b===255 && color.includes('0.15'))) {
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.0)');
-            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
+          if (color === 'var(--neutral-15)' || (r===255 && g===255 && b===255 && color.includes('0.15'))) {
+            gradient.addColorStop(0, 'transparent');
+            gradient.addColorStop(1, resolveCssColor('var(--neutral-15)'));
           } else {
             gradient.addColorStop(0, `rgba(${r},${g},${b},0.05)`);
             gradient.addColorStop(1, `rgba(${r},${g},${b},0.85)`);
@@ -97,7 +98,7 @@ const addGradients = (chart: any) => {
 export default function ResumenMensualInteractivo({ datos }: { datos: DatosGraficos }) {
   const [collapsedSections, setCollapsedSections] = useState<Record<number, boolean>>(datos.collapsedSections || { 10: true });
   const toggleSection = (id: number) => setCollapsedSections(prev => ({ ...prev, [id]: !prev[id] }));
-  
+
   const [periodoSec3, setPeriodoSec3] = useState<'mensual' | 'total'>('mensual');
   const [resumen, setResumen] = useState<any>({
     logros: datos.logros || '',

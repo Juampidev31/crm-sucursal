@@ -6,16 +6,16 @@ import React from 'react';
  * ZoomWrapper — Purely applies the scale transformation.
  * The state management and UI are handled by the parent (AppShell/Sidebar).
  */
-export default function ZoomWrapper({ 
+export default function ZoomWrapper({
   children,
   zoom = 1
-}: { 
-  children: React.ReactNode; 
+}: {
+  children: React.ReactNode;
   zoom?: number;
 }) {
   return (
-    <div 
-      style={{ 
+    <div
+      style={{
         width: `${100 / zoom}%`,
         minHeight: `${100 / zoom}%`,
         transform: `scale(${zoom})`,

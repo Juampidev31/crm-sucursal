@@ -51,16 +51,16 @@ function ComboEditable({ value, onChange, options, placeholder, accent }: {
         onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}
         placeholder={placeholder}
         autoComplete="off"
-        style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none' }}
+        style={{ width: '100%', background: 'var(--neutral-06)', border: '1px solid var(--neutral-15)', color: 'var(--text-strong)', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none' }}
       />
       {open && filtered.length > 0 && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 2px)', left: 0, width: '100%', minWidth: 220, maxHeight: 220, overflowY: 'auto', background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', padding: 4 }}>
+        <div style={{ position: 'absolute', top: 'calc(100% + 2px)', left: 0, width: '100%', minWidth: 220, maxHeight: 220, overflowY: 'auto', background: 'var(--surface-canvas)', border: '1px solid var(--neutral-10)', borderRadius: 6, zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', padding: 4 }}>
           {filtered.map(o => (
             <div
               key={o}
               onMouseDown={e => { e.preventDefault(); onChange(o); setOpen(false); }}
               style={{ padding: '6px 8px', borderRadius: 4, fontSize: 12, color: norm(o) === norm(value) ? accent : '#cbd0da', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--neutral-05)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
             >
               {o}
@@ -294,21 +294,21 @@ const EMPTY_CAMPOS: CamposAModificar = {
 // ── Estilos compartidos ──────────────────────────────────────────────────────
 
 const LABEL_STYLE: React.CSSProperties = {
-  display: 'block', fontSize: '9px', color: '#444', fontWeight: 900,
+  display: 'block', fontSize: '9px', color: 'var(--text-disabled)', fontWeight: 900,
   textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px',
 };
 
 const STEP_TITLE_STYLE: React.CSSProperties = {
-  fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase',
+  fontSize: 11, fontWeight: 800, color: 'var(--text-strong)', textTransform: 'uppercase',
   letterSpacing: '1px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, opacity: 0.9,
 };
 
 const stepBadge = (n: number) => (
-  <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#34d399', color: '#000', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, flexShrink: 0 }}>{n}</span>
+  <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--success)', color: 'var(--text-on-accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, flexShrink: 0 }}>{n}</span>
 );
 
 const DARK_INPUT_STYLE: React.CSSProperties = {
-  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
+  background: 'var(--surface-card)', color: 'var(--text-default)', border: '1px solid var(--neutral-08)',
   borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
 };
 
@@ -316,14 +316,14 @@ const DARK_INPUT_FLEX_STYLE: React.CSSProperties = { ...DARK_INPUT_STYLE, width:
 
 const MODAL_OVERLAY_STYLE: React.CSSProperties = {
   position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-  background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
+  background: 'var(--surface-scrim)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   padding: 20,
 };
 
 const corregirBtnStyle = (disabled: boolean): React.CSSProperties => ({
-  background: disabled ? '#333' : '#fbbf24',
-  color: disabled ? '#666' : '#000',
+  background: disabled ? 'var(--text-disabled)' : 'var(--warning)',
+  color: disabled ? 'var(--text-subtle)' : 'var(--text-on-accent)',
   border: 'none', borderRadius: '6px', padding: '10px 24px',
   fontSize: '11px', fontWeight: 900, cursor: disabled ? 'not-allowed' : 'pointer',
   textTransform: 'uppercase', letterSpacing: '1px',
@@ -360,26 +360,26 @@ function VarianteChip({
 }) {
   const [copiado, setCopiado] = useState(false);
 
-  let background = 'rgba(255,255,255,0.04)';
-  let border = '1px solid rgba(255,255,255,0.06)';
-  let color = '#888';
+  let background = 'var(--neutral-04)';
+  let border = '1px solid var(--neutral-06)';
+  let color = 'var(--text-muted)';
   let boxShadow = 'none';
 
   if (isDuplicate) {
     if (selected) {
       background = 'rgba(16,185,129,0.32)';
-      border = '1px solid #34d399';
-      color = '#ffffff';
+      border = '1px solid var(--success)';
+      color = 'var(--text-strong)';
       boxShadow = '0 0 10px rgba(52,211,153,0.35)';
     } else {
       background = 'rgba(16,185,129,0.14)';
       border = '1px solid rgba(52,211,153,0.45)';
-      color = '#34d399';
+      color = 'var(--success)';
     }
   } else if (selected) {
     background = 'rgba(251,191,36,0.2)';
-    border = '1px solid #fbbf24';
-    color = '#fbbf24';
+    border = '1px solid var(--warning)';
+    color = 'var(--warning)';
   }
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -420,9 +420,9 @@ function VarianteChip({
           width: 6,
           height: 6,
           borderRadius: '50%',
-          backgroundColor: selected ? '#ffffff' : '#34d399',
+          backgroundColor: selected ? 'var(--accent)' : 'var(--success)',
           display: 'inline-block',
-          boxShadow: '0 0 5px #34d399',
+          boxShadow: '0 0 5px var(--success)',
           flexShrink: 0,
         }} />
       )}
@@ -438,9 +438,9 @@ function VarianteChip({
             padding: '2px 4px',
             marginLeft: '4px',
             borderRadius: '3px',
-            background: copiado ? 'rgba(52,211,153,0.35)' : 'rgba(255,255,255,0.18)',
-            border: `1px solid ${copiado ? '#34d399' : 'rgba(255,255,255,0.3)'}`,
-            color: copiado ? '#34d399' : '#ffffff',
+            background: copiado ? 'rgba(52,211,153,0.35)' : 'var(--neutral-18)',
+            border: `1px solid ${copiado ? 'var(--success)' : 'var(--neutral-30)'}`,
+            color: copiado ? 'var(--success)' : 'var(--text-strong)',
             cursor: 'pointer',
             transition: 'all 0.15s ease',
           }}
@@ -761,27 +761,27 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
   const thStyle: React.CSSProperties = {
     padding: '8px 12px', fontSize: 10, fontWeight: 700,
-    color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px',
-    textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.06)',
+    color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px',
+    textAlign: 'left', borderBottom: '1px solid var(--neutral-06)',
   };
   const tdStyle: React.CSSProperties = {
-    padding: '9px 12px', fontSize: 12, color: '#ccc',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
+    padding: '9px 12px', fontSize: 12, color: 'var(--text-default)',
+    borderBottom: '1px solid var(--neutral-04)',
   };
 
   return (
     <div style={standalone ? {
       height: 'calc(100vh - 400px)',
       padding: '20px',
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: 'var(--neutral-02)',
+      border: '1px solid var(--neutral-06)',
       borderRadius: '10px',
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
     } : {
       marginBottom: '28px', padding: '20px',
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.06)',
+      background: 'var(--neutral-02)',
+      border: '1px solid var(--neutral-06)',
       borderRadius: '10px',
     }}>
       {!standalone && (
@@ -789,8 +789,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           onClick={() => setExpanded(v => !v)}
           style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: expanded ? 16 : 0, cursor: 'pointer' }}
         >
-          <Users size={18} color="#555" />
-          <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Users size={18} color="var(--text-subtle)" />
+          <h4 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
             Asignar Campos desde Excel
             {expanded ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
           </h4>
@@ -800,17 +800,17 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
       {expanded && (() => {
         const stepBtn = (n: number, label: string, isActive: boolean, isDone: boolean, isDisabled: boolean, onClick: () => void, isLast: boolean): React.ReactNode => {
           const textColor = isActive
-            ? '#ffffff'
+            ? 'var(--text-strong)'
             : isDone
-              ? '#a1a1aa'
-              : '#52525b';
+              ? 'var(--text-muted)'
+              : 'var(--text-subtle)';
           const badgeBorder = isActive
-            ? '1px solid #ffffff'
+            ? '1px solid var(--text-strong)'
             : isDone
               ? '1px solid rgba(161,161,170, 0.5)'
-              : '1px solid rgba(255,255,255,0.08)';
+              : '1px solid var(--neutral-08)';
           const badgeBg = isActive
-            ? 'rgba(255,255,255,0.08)'
+            ? 'var(--neutral-08)'
             : 'transparent';
 
           return (
@@ -824,9 +824,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 justifyContent: 'center',
                 gap: 10,
                 padding: '10px 18px',
-                background: isActive ? 'rgba(255,255,255,0.02)' : 'transparent',
+                background: isActive ? 'var(--neutral-02)' : 'transparent',
                 border: 'none',
-                borderRight: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                borderRight: isLast ? 'none' : '1px solid var(--neutral-05)',
                 borderRadius: 0,
                 fontSize: 12,
                 fontWeight: isActive ? 700 : 500,
@@ -862,7 +862,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   left: '10%',
                   right: '10%',
                   height: '2px',
-                  background: '#ffffff',
+                  background: 'var(--accent)',
                   borderRadius: '2px 2px 0 0',
                 }} />
               )}
@@ -876,8 +876,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
             alignItems: 'center',
             justifyContent: 'space-between',
             marginBottom: 16,
-            background: 'rgba(255,255,255,0.01)',
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--neutral-01)',
+            border: '1px solid var(--neutral-06)',
             borderRadius: 8,
             padding: '4px 12px',
             flexWrap: 'wrap',
@@ -893,37 +893,37 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto', flexWrap: 'wrap' }}>
                 {/* Fechas */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>FECHA:</span>
+                  <span style={{ fontSize: 9, color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>FECHA:</span>
                   <input
                     type="date"
                     value={fechaDesde}
                     onChange={e => setFechaDesde(e.target.value)}
-                    style={{ fontSize: 11, padding: '3px 6px', background: '#121212', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
+                    style={{ fontSize: 11, padding: '3px 6px', background: 'var(--surface-input)', color: 'var(--text-default)', border: '1px solid var(--neutral-06)', borderRadius: 4, outline: 'none' }}
                   />
-                  <span style={{ color: '#444', fontSize: 11 }}>–</span>
+                  <span style={{ color: 'var(--text-disabled)', fontSize: 11 }}>–</span>
                   <input
                     type="date"
                     value={fechaHasta}
                     onChange={e => setFechaHasta(e.target.value)}
-                    style={{ fontSize: 11, padding: '3px 6px', background: '#121212', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
+                    style={{ fontSize: 11, padding: '3px 6px', background: 'var(--surface-input)', color: 'var(--text-default)', border: '1px solid var(--neutral-06)', borderRadius: 4, outline: 'none' }}
                   />
                   {(fechaDesde || fechaHasta) && (
                     <button
                       onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
-                      style={{ fontSize: 9, padding: '2px 6px', background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, cursor: 'pointer' }}
+                      style={{ fontSize: 9, padding: '2px 6px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--neutral-08)', borderRadius: 4, cursor: 'pointer' }}
                     >Limpiar</button>
                   )}
                 </div>
 
                 {/* Separador */}
-                <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+                <div style={{ width: 1, height: 16, background: 'var(--neutral-08)' }} />
 
                 {/* Filtros de completitud */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {([
                     { key: 'todos' as const, label: 'Todos', count: totalRegistros, color: '#a5b4fc', bg: 'rgba(165,180,252,0.08)' },
-                    { key: 'completos' as const, label: 'Completos', count: totalCompletos, color: '#00ff88', bg: 'rgba(74,222,128,0.08)' },
-                    { key: 'faltantes' as const, label: 'Faltantes', count: totalConFaltantes, color: '#ff3366', bg: 'rgba(248,113,113,0.08)' },
+                    { key: 'completos' as const, label: 'Completos', count: totalCompletos, color: 'var(--success)', bg: 'rgba(74,222,128,0.08)' },
+                    { key: 'faltantes' as const, label: 'Faltantes', count: totalConFaltantes, color: 'var(--danger-strong)', bg: 'rgba(248,113,113,0.08)' },
                   ]).map(({ key, label, count, color, bg }) => {
                     const activo = filtroCompletitud === key;
                     return (
@@ -934,7 +934,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                           display: 'inline-flex', alignItems: 'center', gap: 8,
                           background: activo ? bg : 'transparent',
                           border: `1px solid ${activo ? color : 'transparent'}`,
-                          color: activo ? color : '#777',
+                          color: activo ? color : 'var(--text-subtle)',
                           borderRadius: 4, padding: '4px 10px',
                           fontSize: 10, fontWeight: 700, cursor: 'pointer',
                           textTransform: 'uppercase', letterSpacing: '0.3px',
@@ -944,8 +944,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                         <span>{label}</span>
                         <span style={{
                           fontSize: 9, fontWeight: 900,
-                          background: activo ? color : 'rgba(255,255,255,0.06)',
-                          color: activo ? '#111111' : '#aaa',
+                          background: activo ? color : 'var(--neutral-06)',
+                          color: activo ? 'var(--surface-card)' : 'var(--text-muted)',
                           padding: '1px 6px', borderRadius: 8, minWidth: 18, textAlign: 'center',
                         }}>{count}</span>
                       </button>
@@ -958,7 +958,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
           {step === 'paste' && (
           <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
+            <label style={{ display: 'block', fontSize: 9, color: 'var(--text-disabled)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
               Pegar celdas de Excel (CUIL + Apellido/Nombre)
             </label>
             <textarea
@@ -967,7 +967,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               placeholder="Pegá acá las celdas copiadas de Excel..."
               value={pastedText}
               onChange={e => setPastedText(e.target.value)}
-              style={{ width: '100%', fontFamily: 'monospace', fontSize: 11, resize: 'vertical', minHeight: standalone ? 0 : 380, flex: standalone ? 1 : undefined }}
+              style={{ width: '100%', fontFamily: 'var(--font-code)', fontSize: 11, resize: 'vertical', minHeight: standalone ? 0 : 380, flex: standalone ? 1 : undefined }}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, marginBottom: 4, flexShrink: 0 }}>
               <button
@@ -975,10 +975,10 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 disabled={!pastedText.trim()}
                 style={{
                   padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                  background: pastedText.trim() ? '#2d2f5e' : '#111111',
-                  border: `1px solid ${pastedText.trim() ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                  background: pastedText.trim() ? '#2d2f5e' : 'var(--surface-card)',
+                  border: `1px solid ${pastedText.trim() ? 'rgba(99,102,241,0.4)' : 'var(--neutral-08)'}`,
                   borderRadius: 6, cursor: pastedText.trim() ? 'pointer' : 'not-allowed',
-                  color: pastedText.trim() ? '#a5b4fc' : '#444',
+                  color: pastedText.trim() ? '#a5b4fc' : 'var(--text-disabled)',
                 }}
               >
                 Cargar
@@ -988,8 +988,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   onClick={() => setPastedText('')}
                   style={{
                     padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: 'transparent', color: '#888',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'transparent', color: 'var(--text-muted)',
+                    border: '1px solid var(--neutral-10)',
                     borderRadius: 6, cursor: 'pointer',
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                   }}
@@ -1003,12 +1003,12 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
           {step === 'match' && rows.length > 0 && (
             <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-subtle)', marginBottom: 8 }}>
                 {rows.length} fila{rows.length !== 1 ? 's' : ''} detectada{rows.length !== 1 ? 's' : ''}. Asigná las columnas:
               </div>
               <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
                 <div>
-                  <label style={{ fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>
+                  <label style={{ fontSize: 9, color: 'var(--text-disabled)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>
                     Columna CUIL *
                   </label>
                   <select
@@ -1016,8 +1016,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     onChange={e => { setCuilCol(e.target.value === '' ? null : Number(e.target.value)); setSearched(false); }}
                     style={{
                       fontSize: 12, padding: '6px 10px', borderRadius: 6,
-                      background: '#111111', color: '#ccc',
-                      border: '1px solid rgba(255,255,255,0.12)', outline: 'none',
+                      background: 'var(--surface-card)', color: 'var(--text-default)',
+                      border: '1px solid var(--neutral-12)', outline: 'none',
                       cursor: 'pointer', minWidth: 180,
                     }}
                   >
@@ -1063,10 +1063,10 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   disabled={cuilCol === null}
                   style={{
                     padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: cuilCol !== null ? '#2d2f5e' : '#111111',
-                    border: `1px solid ${cuilCol !== null ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    background: cuilCol !== null ? '#2d2f5e' : 'var(--surface-card)',
+                    border: `1px solid ${cuilCol !== null ? 'rgba(99,102,241,0.4)' : 'var(--neutral-08)'}`,
                     borderRadius: 6, cursor: cuilCol !== null ? 'pointer' : 'not-allowed',
-                    color: cuilCol !== null ? '#a5b4fc' : '#444',
+                    color: cuilCol !== null ? '#a5b4fc' : 'var(--text-disabled)',
                     display: 'flex', alignItems: 'center', gap: 6,
                   }}
                 >
@@ -1077,8 +1077,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   onClick={() => { setPastedText(''); setRows([]); setCuilCol(null); setSearched(false); setStep('paste'); setSelectedIds(new Set()); setCamposExcel({ ...EMPTY_CAMPOS_EXCEL }); setClearedByReg({}); }}
                   style={{
                     padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: 'transparent', color: '#888',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'transparent', color: 'var(--text-muted)',
+                    border: '1px solid var(--neutral-10)',
                     borderRadius: 6, cursor: 'pointer',
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                   }}
@@ -1097,7 +1097,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 gap: 8,
                 marginBottom: 8,
                 fontSize: 10,
-                color: '#666',
+                color: 'var(--text-subtle)',
                 fontWeight: 600,
                 textTransform: 'uppercase',
                 letterSpacing: '0.3px',
@@ -1108,9 +1108,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   gap: 6,
                   padding: '2px 8px',
                   borderRadius: 4,
-                  background: totalSeleccionados > 0 ? 'rgba(165,180,252,0.08)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${totalSeleccionados > 0 ? 'rgba(165,180,252,0.2)' : 'rgba(255,255,255,0.04)'}`,
-                  color: totalSeleccionados > 0 ? '#a5b4fc' : '#555',
+                  background: totalSeleccionados > 0 ? 'rgba(165,180,252,0.08)' : 'var(--neutral-02)',
+                  border: `1px solid ${totalSeleccionados > 0 ? 'rgba(165,180,252,0.2)' : 'var(--neutral-04)'}`,
+                  color: totalSeleccionados > 0 ? '#a5b4fc' : 'var(--text-subtle)',
                   fontWeight: 700,
                 }}>
                   <span>{totalSeleccionados} seleccionados</span>
@@ -1126,7 +1126,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               `}</style>
               <div style={standalone ? { flex: 1, minHeight: 0, overflowX: 'auto', overflowY: 'auto' } : { overflowX: 'auto', maxHeight: 'calc(100vh - 360px)', overflowY: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead style={{ position: 'sticky', top: 0, background: '#111' }}>
+                  <thead style={{ position: 'sticky', top: 0, background: 'var(--surface-card)' }}>
                     <tr>
                       <th style={{ ...thStyle, width: 36, textAlign: 'center' }}>
                         <input
@@ -1164,7 +1164,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                       };
                       const renderFaltantes = (missing: string[], isSelected: boolean) => {
                         if (missing.length === 0) {
-                          return <span style={{ fontSize: 10, color: '#00ff88', fontWeight: 700 }}>✓ Completo</span>;
+                          return <span style={{ fontSize: 10, color: 'var(--success)', fontWeight: 700 }}>✓ Completo</span>;
                         }
                         const fixed = isSelected ? missing.filter(willFill) : [];
                         const stillMissing = isSelected ? missing.filter(f => !willFill(f)) : missing;
@@ -1173,14 +1173,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                             {fixed.map(f => (
                               <span key={f} style={{
                                 fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                background: 'rgba(74,222,128,0.12)', color: '#00ff88',
+                                background: 'rgba(74,222,128,0.12)', color: 'var(--success)',
                                 border: '1px solid rgba(74,222,128,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px',
                               }} title="Se completará al aplicar">✓ {f}</span>
                             ))}
                             {stillMissing.map(f => (
                               <span key={f} style={{
                                 fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                background: 'rgba(248,113,113,0.12)', color: '#ff3366',
+                                background: 'rgba(248,113,113,0.12)', color: 'var(--danger-strong)',
                                 border: '1px solid rgba(248,113,113,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px',
                               }}>{f}</span>
                             ))}
@@ -1200,7 +1200,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                               <td style={tdStyle}>{mr.cuil}</td>
                               <td style={tdStyle}>{nombreMostrar}</td>
                               <td style={tdStyle}>—</td>
-                              <td style={{ ...tdStyle, color: '#555' }}>Sin registros</td>
+                              <td style={{ ...tdStyle, color: 'var(--text-subtle)' }}>Sin registros</td>
                               <td style={tdStyle}>—</td>
                               <td style={tdStyle}>—</td>
                               <td style={tdStyle}>—</td>
@@ -1260,10 +1260,10 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                                   style={{ cursor: 'pointer' }}
                                 />
                               </td>
-                              <td style={tdStyle}>{isMulti ? <span style={{ color: '#555' }}>↳ #{ri + 1}</span> : mr.cuil}</td>
+                              <td style={tdStyle}>{isMulti ? <span style={{ color: 'var(--text-subtle)' }}>↳ #{ri + 1}</span> : mr.cuil}</td>
                               <td style={tdStyle}>{isMulti ? '' : nombreMostrar}</td>
                               <td style={tdStyle}>{fmtFecha(reg)}</td>
-                              <td style={{ ...tdStyle, color: '#ccc' }}>{isMulti ? '' : 1}</td>
+                              <td style={{ ...tdStyle, color: 'var(--text-default)' }}>{isMulti ? '' : 1}</td>
                               <td style={tdStyle}>{reg.analista || '—'}</td>
                               <td style={tdStyle}>{reg.empleador || '—'}</td>
                               <td style={tdStyle}>{reg.dependencia || '—'}</td>
@@ -1285,17 +1285,17 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
             <div style={{
               display: 'flex', flexDirection: 'column', gap: 12,
               padding: '14px 0 0',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
+              borderTop: '1px solid var(--neutral-08)',
               marginTop: 12,
               flexShrink: 0,
             }}>
-              <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
+              <div style={{ fontSize: 10, color: 'var(--text-subtle)', fontStyle: 'italic', marginBottom: 4 }}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
               </div>
               <div className="bulk-fields-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingBottom: 4 }}>
                 {(() => {
-                  const labelStyle: React.CSSProperties = { fontSize: 9, color: '#888', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
-                  const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#111111', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
+                  const labelStyle: React.CSSProperties = { fontSize: 9, color: 'var(--text-muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
+                  const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: 'var(--surface-card)', color: 'var(--text-default)', border: '1px solid var(--neutral-15)', borderRadius: 6, outline: 'none' };
                   const setField = (key: keyof CamposExcel) => (v: string) => { setCamposExcel(p => ({ ...p, [key]: v })); setConfirming(false); };
                   const selects: Array<{ key: keyof CamposExcel; label: string; opts: readonly string[] }> = [
                     { key: 'analista', label: 'Analista', opts: ANALISTAS },
@@ -1317,9 +1317,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                         <div key={f.key}>
                           <label style={labelStyle}>{f.label}</label>
                           <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
-                            <option value="" style={{ background: '#111111', color: '#888' }}>— no cambiar —</option>
-                            <option value={SIN_ESPECIFICAR} style={{ background: '#111111', color: '#888' }}>Sin especificar (borrar)</option>
-                            {f.opts.map(o => <option key={o} value={o} style={{ background: '#111111', color: '#ddd' }}>{o}</option>)}
+                            <option value="" style={{ background: 'var(--surface-card)', color: 'var(--text-muted)' }}>— no cambiar —</option>
+                            <option value={SIN_ESPECIFICAR} style={{ background: 'var(--surface-card)', color: 'var(--text-muted)' }}>Sin especificar (borrar)</option>
+                            {f.opts.map(o => <option key={o} value={o} style={{ background: 'var(--surface-card)', color: 'var(--text-default)' }}>{o}</option>)}
                           </select>
                         </div>
                       ))}
@@ -1350,13 +1350,13 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
 
               <div style={{
                 paddingTop: 8,
-                borderTop: '1px solid rgba(255,255,255,0.06)',
+                borderTop: '1px solid var(--neutral-06)',
                 display: 'flex', flexDirection: 'column', gap: 8,
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
-                  <span style={{ color: '#888' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>
                     <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{totalSeleccionados}</span> seleccionado{totalSeleccionados !== 1 ? 's' : ''}
-                    {hayCampos && <> · <span style={{ color: '#00ff88' }}>{Object.keys(payloadPreview).length} campo{Object.keys(payloadPreview).length !== 1 ? 's' : ''}</span></>}
+                    {hayCampos && <> · <span style={{ color: 'var(--success)' }}>{Object.keys(payloadPreview).length} campo{Object.keys(payloadPreview).length !== 1 ? 's' : ''}</span></>}
                   </span>
                   {hayCampos && (
                     <span style={{ color: '#a5b4fc', fontSize: 10 }}>
@@ -1371,17 +1371,17 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   disabled={!hayCampos || totalSeleccionados === 0}
                   style={{
                     alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: hayCampos && totalSeleccionados > 0 ? '#2d2f5e' : '#111111',
-                    border: `1px solid ${hayCampos && totalSeleccionados > 0 ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    background: hayCampos && totalSeleccionados > 0 ? '#2d2f5e' : 'var(--surface-card)',
+                    border: `1px solid ${hayCampos && totalSeleccionados > 0 ? 'rgba(99,102,241,0.4)' : 'var(--neutral-08)'}`,
                     borderRadius: 6, cursor: hayCampos && totalSeleccionados > 0 ? 'pointer' : 'not-allowed',
-                    color: hayCampos && totalSeleccionados > 0 ? '#a5b4fc' : '#444',
+                    color: hayCampos && totalSeleccionados > 0 ? '#a5b4fc' : 'var(--text-disabled)',
                   }}
                 >
                   Asignar a seleccionados ({totalSeleccionados} registro{totalSeleccionados !== 1 ? 's' : ''})
                 </button>
               ) : (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, color: '#ff3366', fontWeight: 600 }}>
+                  <span style={{ fontSize: 12, color: 'var(--danger-strong)', fontWeight: 600 }}>
                     ⚠ Se actualizarán {totalSeleccionados} registro{totalSeleccionados !== 1 ? 's' : ''}
                   </span>
                   <button
@@ -1389,10 +1389,10 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     disabled={assigning}
                     style={{
                       padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                      background: assigning ? '#111111' : '#5a1a1a',
+                      background: assigning ? 'var(--surface-card)' : '#5a1a1a',
                       border: '1px solid rgba(248,113,113,0.5)',
                       borderRadius: 6, cursor: assigning ? 'not-allowed' : 'pointer',
-                      color: '#fff',
+                      color: 'var(--text-strong)',
                     }}
                   >
                     {assigning ? 'Guardando...' : '⚠ Confirmar'}
@@ -1403,8 +1403,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     style={{
                       padding: '6px 14px', fontSize: 12, fontWeight: 600,
                       background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: 6, cursor: 'pointer', color: '#666',
+                      border: '1px solid var(--neutral-10)',
+                      borderRadius: 6, cursor: 'pointer', color: 'var(--text-subtle)',
                     }}
                   >
                     Cancelar
@@ -1413,7 +1413,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               )}
 
               {assignError && (
-                <div style={{ fontSize: 12, color: '#ff3366', padding: '8px 12px', background: 'rgba(248,113,113,0.08)', borderRadius: 6 }}>
+                <div style={{ fontSize: 12, color: 'var(--danger-strong)', padding: '8px 12px', background: 'rgba(248,113,113,0.08)', borderRadius: 6 }}>
                   Error: {assignError}
                 </div>
               )}
@@ -1425,7 +1425,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
             <div style={{
               padding: '10px 16px', background: 'rgba(74,222,128,0.08)',
               border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8,
-              fontSize: 12, color: '#00ff88', fontWeight: 600,
+              fontSize: 12, color: 'var(--success)', fontWeight: 600,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
             }}>
               <span>✓ {assignResult.updated} registro{assignResult.updated !== 1 ? 's' : ''} actualizado{assignResult.updated !== 1 ? 's' : ''}.</span>
@@ -1440,7 +1440,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                   style={{
                     padding: '5px 12px', fontSize: 11, fontWeight: 700,
                     background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)',
-                    borderRadius: 6, cursor: 'pointer', color: '#00ff88',
+                    borderRadius: 6, cursor: 'pointer', color: 'var(--success)',
                   }}
                 >
                   Seguir con estos registros
@@ -1637,10 +1637,10 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     if (!nombre) return 'Sin dato';
     let n = nombre.toUpperCase().trim();
     n = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    
+
     // Quitar tipos societarios de forma más robusta
     n = n.replace(/\b(S\.?R\.?L\.?|S\.?A\.?|S\.?A\.?S\.?|LTDA\.?|CIA\.?|E\.?I\.?R\.?L\.?|INC\.?)\b/gi, '').trim();
-    
+
     // Quitar conectores y palabras geográficas/institucionales/previsionales muy comunes que generan falsos positivos
     // Se agregan abreviaturas comunes (MUNIC, MUNI, PROV) para mejorar la detección
     const stopWords = /\b(EL|LA|LOS|LAS|DE|DEL|Y|E|ENTRE|RIOS|PROVINCIA|SANTA|FE|NACION|NACIONAL|CLUB|ATLETICO|ASOCIACION|MUTUAL|CENTRO|SINDICATO|UNION|AGRUPACION|PENSION|JUBILACION|CAJA|MUNICIPALIDAD|MUNIC|MUNI|COMUNA|ESTADO|GOBIERNO|MINISTERIO|SECRETARIA|DIRECCION|GENERAL|PERSONAL|VIA|TITULAR|COBRO|PAGO|PROV|DPTO|DTO|BS|AS)\b/gi;
@@ -1698,7 +1698,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     // 3) Tokenizar y comparar
     const tokensA = a.split(/\s+/).filter(t => t.length >= 2);
     const tokensB = b.split(/\s+/).filter(t => t.length >= 2);
-    
+
     if (tokensA.length >= 1 && tokensB.length >= 1) {
       let matched = 0;
       const usedB = new Set<number>();
@@ -1729,18 +1729,18 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   // ── Helper para detectar tipo automáticamente si no está en el maestro ──
   const detectarTipoAutomatico = useCallback((nombre: string): { tipo: string, categoria: string } => {
     const n = nombre.toUpperCase().trim();
-    
+
     // 1. Detectar Público por palabras clave
     if (/\b(MUNICIPALIDAD|MUNIC|MUNI|COMUNA|GOBIERNO|MINISTERIO|SECRETARIA|DIRECCION|GENERAL|PERSONAL|PROVINCIA|PROV|NACION|NACIONAL|CONSEJO|JUZGADO|TRIBUNAL|CONGRESO|CAMARA|SENADO|POLICIA|PENITENCIARIO|VIALIDAD|EDUCACION|SALUD|AFIP|ARCA|ANSES|IOSPER|PAMI)\b/i.test(n)) {
       return { tipo: 'Público', categoria: 'Estado' };
     }
-    
+
     // 2. Detectar Persona Física (Patrón: Apellido, Nombre)
     if (n.includes(',') || (n.split(' ').length >= 2 && !/\b(S\.?A\.?|S\.?R\.?L\.?|INC|S\.A\.S|LTDA|CIA)\b/i.test(n) && n.length < 30)) {
       // Si tiene coma o es corto y no tiene siglas de empresa, es probable que sea persona
       return { tipo: 'Persona Física', categoria: 'Otros' };
     }
-    
+
     // 3. Detectar Privado por siglas societarias
     if (/\b(S\.?A\.?|S\.?R\.?L\.?|S\.A\.S|INC|CORP|LTDA|CIA|CONSULTORA|GRUPO|LOGISTICA|TRANSPORTE|SERVICIOS|ESTACION|SUPERMERCADO|DISTRIBUIDORA)\b/i.test(n)) {
       if (/\bS\.?A\.?\b/i.test(n)) return { tipo: 'S.A', categoria: 'Privada' };
@@ -1756,13 +1756,13 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     const n = nombre.toUpperCase().trim();
     // Búsqueda exacta
     if (EMPLEADORES_MAESTROS[n]) return { masterName: n, ...EMPLEADORES_MAESTROS[n], matchType: 'exact' as const };
-    
+
     // Búsqueda por normalización básica (sin SRL/SA/Stopwords)
     const normNombre = normalizar(nombre);
     for (const [mName, mInfo] of Object.entries(EMPLEADORES_MAESTROS)) {
       if (normalizar(mName) === normNombre) return { masterName: mName, ...mInfo, matchType: 'fuzzy' as const };
     }
-    
+
     // Si no está en el maestro, intentar detección automática
     const auto = detectarTipoAutomatico(nombre);
     return { ...auto, matchType: 'auto' as const, masterName: undefined as string | undefined };
@@ -1831,16 +1831,16 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   const variantesFiltradas = useMemo(() => {
     if (!busquedaEmpleador.trim()) return variantesEmpleador;
     const q = busquedaEmpleador.toLowerCase();
-    
+
     // Buscar directamente en todos los empleadores sin pasar por normalización
     // para que cualquier coincidencia sea encontrada
-    const matchingEmpleadores = allEmpleadores.filter(e => 
+    const matchingEmpleadores = allEmpleadores.filter(e =>
       e.toLowerCase().includes(q)
     );
-    
+
     // Si no hay empleadores que coincidan, devolver vacío
     if (matchingEmpleadores.length === 0) return [];
-    
+
     // Crear grupos para mostrar (cada empleador como su propio grupo)
     return matchingEmpleadores.map(e => ({
       normalizado: normalizar(e),
@@ -1905,8 +1905,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   const localidadesFiltradas = useMemo(() => {
     if (!busquedaLocalidad.trim()) return variantesLocalidadConDuplicados;
     const q = busquedaLocalidad.toLowerCase();
-    return variantesLocalidadConDuplicados.filter(v => 
-      v.normalizado.toLowerCase().includes(q) || 
+    return variantesLocalidadConDuplicados.filter(v =>
+      v.normalizado.toLowerCase().includes(q) ||
       v.variantes.some(lv => lv.toLowerCase().includes(q))
     );
   }, [busquedaLocalidad, variantesLocalidadConDuplicados]);
@@ -2283,9 +2283,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         estado: 'derivado / rechazado cc',
         comentarios: 'Localidad agregada desde corrector',
       });
-      
+
       if (error) throw error;
-      
+
       setToast({ message: `Localidad "${localidadCorreccion.trim()}" creada`, type: 'success' });
       setLocalidadCorreccion('');
       pushBulkRefresh();
@@ -2633,7 +2633,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   const handleUndo = async () => {
     if (!undoState) return;
     setUndoing(true);
-    
+
     // Group updates to minimize Supabase calls
     const groups: Record<string, { updates: Record<string, unknown>, ids: string[] }> = {};
     for (const item of undoState) {
@@ -2733,9 +2733,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   const chipStyle = (isActive: boolean) => ({
     padding: '5px 10px', borderRadius: '5px', fontSize: '10px', border: '1px solid',
     whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.15s',
-    background: isActive ? '#fff' : 'rgba(255,255,255,0.02)',
-    borderColor: isActive ? '#fff' : 'rgba(255,255,255,0.06)',
-    color: isActive ? '#000' : '#555',
+    background: isActive ? 'var(--accent)' : 'var(--neutral-02)',
+    borderColor: isActive ? 'var(--accent)' : 'var(--neutral-06)',
+    color: isActive ? 'var(--text-on-accent)' : 'var(--text-subtle)',
     textTransform: 'uppercase' as const, letterSpacing: '0.5px'
   });
 
@@ -2755,7 +2755,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             padding: '12px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
             background: toast.type === 'success' ? 'rgba(0, 255, 136, 0.15)' : 'rgba(239,68,68,0.15)',
             border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-            color: toast.type === 'success' ? '#34d399' : '#ff3366',
+            color: toast.type === 'success' ? 'var(--success)' : 'var(--danger-strong)',
           }}>
             {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}
             {toast.message}
@@ -2764,19 +2764,19 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       )}
 
       <div className="data-card" style={{
-        background: '#111111',
-        border: '1px solid rgba(255,255,255,0.03)',
+        background: 'var(--surface-card)',
+        border: '1px solid var(--neutral-03)',
         width: '100%',
         minHeight: mode === 'excel' ? 'auto' : 'calc(100vh - 200px)'
       }}>
         {mode === 'corrector' && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
           <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <ShieldCheck size={20} style={{ color: '#fbbf24' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-strong)', letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <ShieldCheck size={20} style={{ color: 'var(--warning)' }} />
               Corrector
             </h3>
-            <p style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-subtle)', marginTop: '4px' }}>
               Detecta y corrige variantes de nombres para unificar la base
             </p>
           </div>
@@ -2789,12 +2789,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 alignItems: 'center',
                 gap: '6px',
                 padding: '6px 14px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--neutral-03)',
+                border: '1px solid var(--neutral-08)',
                 borderRadius: '6px',
                 fontSize: '10px',
                 fontWeight: 800,
-                color: '#555',
+                color: 'var(--text-subtle)',
                 textTransform: 'uppercase',
                 cursor: loadingEmpleadoresHoy ? 'not-allowed' : 'pointer',
               }}
@@ -2802,13 +2802,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               {loadingEmpleadoresHoy ? <Loader2 size={12} className="animate-spin" /> : <Users size={12} />}
               Nuevos hoy
               {contadorNuevosHoy > 0 && (
-                <span style={{ 
-                  background: 'rgba(0, 255, 136, 0.15)', 
-                  color: '#34d399', 
-                  padding: '1px 5px', 
-                  borderRadius: 4, 
+                <span style={{
+                  background: 'rgba(0, 255, 136, 0.15)',
+                  color: 'var(--success)',
+                  padding: '1px 5px',
+                  borderRadius: 4,
                   fontSize: '9px',
-                  marginLeft: 4 
+                  marginLeft: 4
                 }}>
                   {contadorNuevosHoy}
                 </span>
@@ -2819,12 +2819,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               alignItems: 'center',
               gap: '6px',
               padding: '6px 14px',
-              background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+              background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.1)' : 'var(--neutral-03)',
+              border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.3)' : 'var(--neutral-08)'}`,
               borderRadius: '6px',
               fontSize: '10px',
               fontWeight: 800,
-              color: variantesConDuplicados.length > 0 ? '#ff3366' : '#555',
+              color: variantesConDuplicados.length > 0 ? 'var(--danger-strong)' : 'var(--text-subtle)',
               textTransform: 'uppercase',
             }}>
               {variantesConDuplicados.length > 0 ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
@@ -2835,8 +2835,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <button
               onClick={resetAll}
               style={{
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                color: '#888', borderRadius: '6px', padding: '6px 12px',
+                background: 'var(--neutral-03)', border: '1px solid var(--neutral-08)',
+                color: 'var(--text-muted)', borderRadius: '6px', padding: '6px 12px',
                 fontSize: '10px', fontWeight: 800, cursor: 'pointer',
               }}
             >
@@ -2850,24 +2850,24 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         {(mode === 'all' || mode === 'corrector') && (
           <div style={{
           marginBottom: '28px', padding: '20px',
-          background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.02)',
-          border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)'}`,
+          background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.04)' : 'var(--neutral-02)',
+          border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.15)' : 'var(--neutral-06)'}`,
           borderRadius: '10px',
         }}>
-          <div 
+          <div
             onClick={() => setCorrectorExpandido(!correctorExpandido)}
             style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorExpandido ? 16 : 0, cursor: 'pointer' }}
           >
             {variantesConDuplicados.length > 0
-              ? <AlertTriangle size={18} color="#ff3366" />
-              : <CheckCircle size={18} color="#555" />}
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ff3366' : '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+              ? <AlertTriangle size={18} color="var(--danger-strong)" />
+              : <CheckCircle size={18} color="var(--text-subtle)" />}
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? 'var(--danger-strong)' : 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
               {variantesConDuplicados.length > 0
                 ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
                 : 'Corrector de Empleador — Sin duplicados'}
               {correctorExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
             </h4>
-            <div 
+            <div
               style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -2876,7 +2876,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   onClick={restaurarDescartados}
                   style={{
                     background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                    color: '#00d4ff', borderRadius: '4px', padding: '4px 10px',
+                    color: 'var(--accent)', borderRadius: '4px', padding: '4px 10px',
                     fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                     textTransform: 'uppercase', letterSpacing: '0.5px',
                   }}
@@ -2888,7 +2888,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 onClick={() => cargarTodosEmpleadores()}
                 style={{
                   background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)',
-                  color: '#fbbf24', borderRadius: '4px', padding: '4px 10px',
+                  color: 'var(--warning)', borderRadius: '4px', padding: '4px 10px',
                   fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                   textTransform: 'uppercase', letterSpacing: '0.5px',
                   display: 'flex', alignItems: 'center', gap: 4,
@@ -2936,7 +2936,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           </div>
 
           {empleadoresSeleccionados.length > 0 && (
-            <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+            <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--warning)', fontWeight: 700 }}>
               Seleccionados: {empleadoresSeleccionados.length} — {empleadorCorreccion || '(sin nombre correcto)'}
             </div>
           )}
@@ -2979,20 +2979,20 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 return (
                   <div key={i} style={{
                     marginBottom: 12, padding: '12px 14px',
-                    background: tieneDuplicados ? 'rgba(16,185,129,0.03)' : 'rgba(0,0,0,0.3)',
+                    background: tieneDuplicados ? 'var(--success-soft)' : 'var(--surface-subtle)',
                     borderRadius: '8px',
-                    border: `1px solid ${tieneDuplicados ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                    border: `1px solid ${tieneDuplicados ? 'rgba(16,185,129,0.2)' : 'var(--neutral-04)'}`,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <div style={{ fontSize: '11px', color: tieneDuplicados ? '#34d399' : '#fbbf24', fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                      <div style={{ fontSize: '11px', color: tieneDuplicados ? 'var(--success)' : 'var(--warning)', fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        {v.normalizado} <span style={{ color: 'var(--text-subtle)' }}>({v.cantidad} variantes)</span>
                         {tieneDuplicados && (
                           <span style={{
                             padding: '2px 7px',
                             borderRadius: '4px',
                             background: 'rgba(16,185,129,0.15)',
                             border: '1px solid rgba(16,185,129,0.35)',
-                            color: '#34d399',
+                            color: 'var(--success)',
                             fontSize: '9px',
                             fontWeight: 800,
                             letterSpacing: '0.5px',
@@ -3014,7 +3014,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             title="Seleccionar todas las variantes duplicadas de este grupo"
                             style={{
                               background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)',
-                              color: '#34d399', borderRadius: '4px', padding: '2px 8px',
+                              color: 'var(--success)', borderRadius: '4px', padding: '2px 8px',
                               fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                               textTransform: 'uppercase', letterSpacing: '0.5px',
                               display: 'flex', alignItems: 'center', gap: 4,
@@ -3032,7 +3032,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             title="Ver todos los registros de este grupo"
                             style={{
                               background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                              color: '#00d4ff', borderRadius: '4px', padding: '2px 8px',
+                              color: 'var(--accent)', borderRadius: '4px', padding: '2px 8px',
                               fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                               textTransform: 'uppercase', letterSpacing: '0.5px',
                               display: 'flex', alignItems: 'center', gap: 4,
@@ -3047,7 +3047,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             title="Marcar como correcto — no es un duplicado real"
                             style={{
                               background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-                              color: '#34d399', borderRadius: '4px', padding: '2px 8px',
+                              color: 'var(--success)', borderRadius: '4px', padding: '2px 8px',
                               fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                               textTransform: 'uppercase', letterSpacing: '0.5px',
                               display: 'flex', alignItems: 'center', gap: 4,
@@ -3076,10 +3076,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               })}
             </div>
           ) : (
-            <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+            <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: 'var(--text-subtle)', fontSize: '13px' }}>
               <p>{busquedaEmpleador ? 'No se encontraron resultados.' : 'No se detectaron empleadores con múltiples variantes.'}</p>
               {busquedaEmpleador && (
-                <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
+                <p style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-disabled)' }}>
                   Intentá con otro término.
                 </p>
               )}
@@ -3094,16 +3094,16 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {(mode === 'all' || mode === 'corrector') && (
         <div style={{
           marginBottom: '28px', padding: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--neutral-02)',
+          border: '1px solid var(--neutral-06)',
           borderRadius: '10px',
         }}>
-          <div 
+          <div
             onClick={() => setCorrectorLocalidadExpandido(!correctorLocalidadExpandido)}
             style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorLocalidadExpandido ? 16 : 0, cursor: 'pointer' }}
           >
-            <CheckCircle size={18} color="#555" />
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CheckCircle size={18} color="var(--text-subtle)" />
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
               Corrector de Localidad
               {correctorLocalidadExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
             </h4>
@@ -3113,7 +3113,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   onClick={restaurarDescartadosLocalidad}
                   style={{
                     background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                    color: '#00d4ff', borderRadius: '4px', padding: '4px 10px',
+                    color: 'var(--accent)', borderRadius: '4px', padding: '4px 10px',
                     fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                     textTransform: 'uppercase', letterSpacing: '0.5px',
                   }}
@@ -3160,8 +3160,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   }}
                   disabled={updating || !localidadCorreccion.trim()}
                   style={{
-                    background: (!localidadCorreccion.trim()) ? '#333' : 'rgba(0, 255, 136, 0.15)',
-                    color: (!localidadCorreccion.trim()) ? '#666' : '#34d399',
+                    background: (!localidadCorreccion.trim()) ? 'var(--text-disabled)' : 'rgba(0, 255, 136, 0.15)',
+                    color: (!localidadCorreccion.trim()) ? 'var(--text-subtle)' : 'var(--success)',
                     border: '1px solid rgba(16,185,129,0.3)',
                     borderRadius: '6px', padding: '10px 24px',
                     fontSize: '11px', fontWeight: 900, cursor: (!localidadCorreccion.trim()) ? 'not-allowed' : 'pointer',
@@ -3181,7 +3181,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               </div>
 
               {localidadesSeleccionadas.length > 0 && (
-                <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+                <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--warning)', fontWeight: 700 }}>
                   Seleccionadas: {localidadesSeleccionadas.length} — {localidadCorreccion || '(sin nombre correcto)'}
                 </div>
               )}
@@ -3192,12 +3192,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   {listaLocalidadess.map((v, i) => (
                     <div key={i} style={{
                       marginBottom: 12, padding: '12px 14px',
-                      background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.04)',
+                      background: 'var(--surface-muted)', borderRadius: '8px',
+                      border: '1px solid var(--neutral-04)',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>
-                          {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                        <div style={{ fontSize: '11px', color: 'var(--warning)', fontWeight: 800, textTransform: 'uppercase' }}>
+                          {v.normalizado} <span style={{ color: 'var(--text-subtle)' }}>({v.cantidad} variantes)</span>
                         </div>
                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                           {v.cantidad > 1 && (
@@ -3206,7 +3206,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               title="Marcar como correcto"
                               style={{
                                 background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-                                color: '#34d399', borderRadius: '4px', padding: '2px 8px',
+                                color: 'var(--success)', borderRadius: '4px', padding: '2px 8px',
                                 fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                                 textTransform: 'uppercase', letterSpacing: '0.5px',
                                 display: 'flex', alignItems: 'center', gap: 4,
@@ -3233,10 +3233,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   ))}
                 </div>
               ) : (
-                <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+                <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: 'var(--text-subtle)', fontSize: '13px' }}>
                   <p>{busquedaLocalidad ? 'No se encontraron resultados.' : 'No hay localidades en la base.'}</p>
                   {busquedaLocalidad && (
-                    <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
+                    <p style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-disabled)' }}>
                       Intentá con otro término.
                     </p>
                   )}
@@ -3251,16 +3251,16 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {(mode === 'all' || mode === 'corrector') && (
         <div style={{
           marginBottom: '28px', padding: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--neutral-02)',
+          border: '1px solid var(--neutral-06)',
           borderRadius: '10px',
         }}>
           <div
             onClick={() => setCorrectorDependenciaExpandido(!correctorDependenciaExpandido)}
             style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorDependenciaExpandido ? 16 : 0, cursor: 'pointer' }}
           >
-            <CheckCircle size={18} color="#555" />
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CheckCircle size={18} color="var(--text-subtle)" />
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
               Corrector de Dependencia
               {correctorDependenciaExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
             </h4>
@@ -3302,7 +3302,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               </div>
 
               {dependenciasSeleccionadas.length > 0 && (
-                <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+                <div style={{ marginTop: '12px', fontSize: '11px', color: 'var(--warning)', fontWeight: 700 }}>
                   Seleccionadas: {dependenciasSeleccionadas.length} — {dependenciaCorreccion || '(sin nombre correcto)'}
                 </div>
               )}
@@ -3312,11 +3312,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   {listaDependencias.map((v, i) => (
                     <div key={i} style={{
                       marginBottom: 12, padding: '12px 14px',
-                      background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.04)',
+                      background: 'var(--surface-muted)', borderRadius: '8px',
+                      border: '1px solid var(--neutral-04)',
                     }}>
-                      <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase', marginBottom: 6 }}>
-                        {v.normalizado} {v.cantidad > 1 && <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>}
+                      <div style={{ fontSize: '11px', color: 'var(--warning)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 6 }}>
+                        {v.normalizado} {v.cantidad > 1 && <span style={{ color: 'var(--text-subtle)' }}>({v.cantidad} variantes)</span>}
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {v.variantes.map((varName, j) => (
@@ -3334,7 +3334,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   ))}
                 </div>
               ) : (
-                <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+                <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: 'var(--text-subtle)', fontSize: '13px' }}>
                   <p>{busquedaDependencia ? 'No se encontraron resultados.' : 'No hay dependencias en la base.'}</p>
                 </div>
               )}
@@ -3347,16 +3347,16 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {(mode === 'all' || mode === 'corrector') && (
         <div style={{
           marginBottom: '28px', padding: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--neutral-02)',
+          border: '1px solid var(--neutral-06)',
           borderRadius: '10px',
         }}>
           <div
             onClick={() => setReasignadorExpandido(!reasignadorExpandido)}
             style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: reasignadorExpandido ? 16 : 0, cursor: 'pointer' }}
           >
-            <Filter size={18} color="#555" />
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Filter size={18} color="var(--text-subtle)" />
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
               Reasignar Empleador / Dependencia
               {reasignadorExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
             </h4>
@@ -3364,7 +3364,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
           {reasignadorExpandido && (
             <>
-              <div style={{ fontSize: '11px', color: '#555', marginBottom: 16, lineHeight: 1.5 }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-subtle)', marginBottom: 16, lineHeight: 1.5 }}>
                 Filtrá registros por empleador o dependencia actual y reasignalos a un nuevo empleador y/o dependencia.
               </div>
 
@@ -3377,9 +3377,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       key={key}
                       onClick={() => { setReasignarModo(key); setReasignarEmpOrigen(''); setReasignarDepOrigen(''); setReasignarBusquedaOrigen(''); }}
                       style={{
-                        background: activo ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${activo ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                        color: activo ? '#00d4ff' : '#666',
+                        background: activo ? 'rgba(96,165,250,0.15)' : 'var(--neutral-04)',
+                        border: `1px solid ${activo ? 'rgba(96,165,250,0.4)' : 'var(--neutral-10)'}`,
+                        color: activo ? 'var(--accent)' : 'var(--text-subtle)',
                         borderRadius: '4px', padding: '4px 12px',
                         fontSize: '10px', fontWeight: 800, cursor: 'pointer',
                         textTransform: 'uppercase', letterSpacing: '0.5px',
@@ -3405,12 +3405,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 />
                 <div style={{
                   maxHeight: 180, overflowY: 'auto',
-                  background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.04)',
+                  background: 'var(--surface-muted)', border: '1px solid var(--neutral-04)',
                   borderRadius: 8, padding: 8,
                 }}>
                   {reasignarModo === 'empleador' ? (
                     empleadoresUnicosFiltrados.length === 0 ? (
-                      <div style={{ color: '#555', fontSize: 12, padding: 8 }}>Sin resultados.</div>
+                      <div style={{ color: 'var(--text-subtle)', fontSize: 12, padding: 8 }}>Sin resultados.</div>
                     ) : (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {empleadoresUnicosFiltrados.slice(0, 200).map(emp => {
@@ -3422,13 +3422,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               onClick={() => setReasignarEmpOrigen(sel ? '' : emp)}
                               style={{
                                 padding: '4px 10px', borderRadius: 4, fontSize: 11,
-                                background: sel ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.04)',
-                                border: sel ? '1px solid #00d4ff' : '1px solid rgba(255,255,255,0.06)',
-                                color: sel ? '#00d4ff' : '#888',
+                                background: sel ? 'rgba(96,165,250,0.2)' : 'var(--neutral-04)',
+                                border: sel ? '1px solid var(--accent)' : '1px solid var(--neutral-06)',
+                                color: sel ? 'var(--accent)' : 'var(--text-muted)',
                                 fontWeight: 600, cursor: 'pointer',
                               }}
                             >
-                              {emp} <span style={{ color: sel ? '#00d4ff' : '#555' }}>({count})</span>
+                              {emp} <span style={{ color: sel ? 'var(--accent)' : 'var(--text-subtle)' }}>({count})</span>
                             </span>
                           );
                         })}
@@ -3436,7 +3436,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     )
                   ) : (
                     dependenciasUnicasFiltradas.length === 0 ? (
-                      <div style={{ color: '#555', fontSize: 12, padding: 8 }}>Sin resultados.</div>
+                      <div style={{ color: 'var(--text-subtle)', fontSize: 12, padding: 8 }}>Sin resultados.</div>
                     ) : (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {dependenciasUnicasFiltradas.slice(0, 200).map(dep => {
@@ -3451,13 +3451,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               title={`Empleador actual: ${parentEmp}`}
                               style={{
                                 padding: '4px 10px', borderRadius: 4, fontSize: 11,
-                                background: sel ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.04)',
-                                border: sel ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.06)',
-                                color: sel ? '#a78bfa' : '#888',
+                                background: sel ? 'rgba(167,139,250,0.2)' : 'var(--neutral-04)',
+                                border: sel ? '1px solid var(--violet)' : '1px solid var(--neutral-06)',
+                                color: sel ? 'var(--violet)' : 'var(--text-muted)',
                                 fontWeight: 600, cursor: 'pointer',
                               }}
                             >
-                              {dep} <span style={{ color: sel ? '#a78bfa' : '#555' }}>({count})</span>
+                              {dep} <span style={{ color: sel ? 'var(--violet)' : 'var(--text-subtle)' }}>({count})</span>
                             </span>
                           );
                         })}
@@ -3500,7 +3500,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               </div>
 
               {(reasignarEmpOrigen || reasignarDepOrigen) && (
-                <div style={{ marginBottom: 12, fontSize: 11, color: '#00d4ff', fontWeight: 700 }}>
+                <div style={{ marginBottom: 12, fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>
                   {reasignarIds.length} registro(s) coinciden con &quot;{reasignarModo === 'empleador' ? reasignarEmpOrigen : reasignarDepOrigen}&quot;
                 </div>
               )}
@@ -3513,8 +3513,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     onClick={reasignarMasivo}
                     disabled={disabled}
                     style={{
-                      background: disabled ? '#333' : '#00d4ff',
-                      color: disabled ? '#666' : '#000',
+                      background: disabled ? 'var(--text-disabled)' : 'var(--accent)',
+                      color: disabled ? 'var(--text-subtle)' : 'var(--text-on-accent)',
                       border: 'none', borderRadius: '6px', padding: '10px 24px',
                       fontSize: '11px', fontWeight: 900,
                       cursor: disabled ? 'not-allowed' : 'pointer',
@@ -3551,24 +3551,24 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 marginBottom: '20px', display: 'flex', alignItems: 'center', gap: 8,
                 flexWrap: 'wrap',
               }}>
-                <Filter size={14} style={{ color: '#00d4ff', flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#888', marginRight: 8 }}>Filtros activos:</span>
+                <Filter size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginRight: 8 }}>Filtros activos:</span>
                 {filtros.estados.map(e => (
-                  <span key={e} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{STATUS_LABEL[e] ?? e}</span>
+                  <span key={e} style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--neutral-08)', borderRadius: '4px', color: 'var(--text-default)', fontWeight: 600 }}>{STATUS_LABEL[e] ?? e}</span>
                 ))}
                 {(filtros.scoreMin || filtros.scoreMax) && (
-                  <span style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>
+                  <span style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--neutral-08)', borderRadius: '4px', color: 'var(--text-default)', fontWeight: 600 }}>
                     Score: {filtros.scoreMin || '0'} - {filtros.scoreMax || '∞'}
                   </span>
                 )}
                 {filtros.acuerdoPrecios.map(a => (
-                  <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(251,191,36,0.15)', borderRadius: '4px', color: '#fbbf24', fontWeight: 600 }}>{a}</span>
+                  <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(251,191,36,0.15)', borderRadius: '4px', color: 'var(--warning)', fontWeight: 600 }}>{a}</span>
                 ))}
                 {filtros.analistas.map(a => (
-                  <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{a}</span>
+                  <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--neutral-08)', borderRadius: '4px', color: 'var(--text-default)', fontWeight: 600 }}>{a}</span>
                 ))}
                 {(filtros.fechaDesde || filtros.fechaHasta) && (
-                  <span style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>
+                  <span style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--neutral-08)', borderRadius: '4px', color: 'var(--text-default)', fontWeight: 600 }}>
                     Fecha: {filtros.fechaDesde || '…'} → {filtros.fechaHasta || '…'}
                   </span>
                 )}
@@ -3578,9 +3578,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <div style={{ display: 'flex', gap: '48px', marginBottom: '24px', alignItems: 'flex-start' }}>
               <div style={{ flex: '1 1 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
-                  <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ESTADO (seleccioná los que querés filtrar)</label>
+                  <label style={{ fontSize: '9px', color: 'var(--text-disabled)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ESTADO (seleccioná los que querés filtrar)</label>
                   {filtros.estados.length > 0 && (
-                    <span style={{ fontSize: '10px', color: '#00d4ff', fontWeight: 700 }}>· {filtros.estados.length} seleccionado{filtros.estados.length > 1 ? 's' : ''}</span>
+                    <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 700 }}>· {filtros.estados.length} seleccionado{filtros.estados.length > 1 ? 's' : ''}</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -3595,9 +3595,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
               <div style={{ flex: '0 0 auto', minWidth: '240px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
-                  <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ANALISTA</label>
+                  <label style={{ fontSize: '9px', color: 'var(--text-disabled)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ANALISTA</label>
                   {filtros.analistas.length > 0 && (
-                    <span style={{ fontSize: '10px', color: '#00d4ff', fontWeight: 700 }}>· {filtros.analistas.length} seleccionado{filtros.analistas.length > 1 ? 's' : ''}</span>
+                    <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 700 }}>· {filtros.analistas.length} seleccionado{filtros.analistas.length > 1 ? 's' : ''}</span>
                   )}
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -3652,8 +3652,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: 'transparent', border: '1px solid rgba(255,255,255,0.06)',
-                color: '#555', borderRadius: 6, padding: '8px 14px',
+                background: 'transparent', border: '1px solid var(--neutral-06)',
+                color: 'var(--text-subtle)', borderRadius: 6, padding: '8px 14px',
                 fontSize: 11, fontWeight: 800, cursor: 'pointer',
                 textTransform: 'uppercase', marginBottom: 16, width: '100%',
                 justifyContent: 'center',
@@ -3733,7 +3733,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 {allEmpleadores.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>EMPLEADOR</label>
+                      <label style={{ fontSize: '9px', color: 'var(--text-disabled)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>EMPLEADOR</label>
                       <div style={{ display: 'flex', gap: 6 }}>
                         {(['S.A.', 'S.R.L.'] as const).map(tipo => {
                           const patron = tipo === 'S.A.' ? /\bS\.?A\.?\b/i : /\bS\.?R\.?L\.?\b/i;
@@ -3748,9 +3748,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                 empleador: activo ? p.empleador.filter(e => !matches.includes(e)) : [...new Set([...p.empleador, ...matches])],
                               }))}
                               style={{
-                                background: activo ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)',
-                                border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                                color: activo ? '#fbbf24' : '#666',
+                                background: activo ? 'rgba(251,191,36,0.15)' : 'var(--neutral-04)',
+                                border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'var(--neutral-10)'}`,
+                                color: activo ? 'var(--warning)' : 'var(--text-subtle)',
                                 borderRadius: '4px', padding: '3px 8px',
                                 fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                                 textTransform: 'uppercase', letterSpacing: '0.5px',
@@ -3765,7 +3765,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             onClick={() => setFiltros(p => ({ ...p, empleador: [] }))}
                             style={{
                               background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                              color: '#ff3366', borderRadius: '4px', padding: '3px 8px',
+                              color: 'var(--danger-strong)', borderRadius: '4px', padding: '3px 8px',
                               fontSize: '9px', fontWeight: 800, cursor: 'pointer',
                               textTransform: 'uppercase', letterSpacing: '0.5px',
                             }}
@@ -3780,9 +3780,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       value={filtros.empleador.length === 1 ? filtros.empleador[0] : ''}
                       onChange={e => setFiltros(p => ({ ...p, empleador: e.target.value ? [e.target.value] : [] }))}
                       style={{
-                        background: '#111',
-                        color: filtros.empleador.length > 1 ? '#fbbf24' : '#ccc',
-                        border: `1px solid ${filtros.empleador.length > 1 ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        background: 'var(--surface-card)',
+                        color: filtros.empleador.length > 1 ? 'var(--warning)' : 'var(--text-default)',
+                        border: `1px solid ${filtros.empleador.length > 1 ? 'rgba(251,191,36,0.3)' : 'var(--neutral-08)'}`,
                         borderRadius: '6px',
                         padding: '10px 12px',
                         fontSize: '13px',
@@ -3791,12 +3791,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         cursor: 'pointer',
                       }}
                     >
-                      <option value="" style={{ background: '#111', color: '#666' }}>
+                      <option value="" style={{ background: 'var(--surface-card)', color: 'var(--text-subtle)' }}>
                         {filtros.empleador.length > 1 ? `${filtros.empleador.length} empleadores seleccionados` : 'Todos'}
                       </option>
-                      <option value={SIN_ESPECIFICAR} style={{ background: '#111', color: '#888' }}>Sin especificar</option>
+                      <option value={SIN_ESPECIFICAR} style={{ background: 'var(--surface-card)', color: 'var(--text-muted)' }}>Sin especificar</option>
                       {allEmpleadores.map(e => (
-                        <option key={e} value={e} style={{ background: '#111', color: '#ccc' }}>{e}</option>
+                        <option key={e} value={e} style={{ background: 'var(--surface-card)', color: 'var(--text-default)' }}>{e}</option>
                       ))}
                     </select>
                     {filtros.empleador.length > 1 && (
@@ -3805,11 +3805,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                           <span key={e} style={{
                             fontSize: '9px', padding: '2px 7px', borderRadius: '4px',
                             background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
-                            color: '#fbbf24', fontWeight: 700,
+                            color: 'var(--warning)', fontWeight: 700,
                           }}>{e}</span>
                         ))}
                         {filtros.empleador.length > 6 && (
-                          <span style={{ fontSize: '9px', color: '#666', padding: '2px 4px' }}>
+                          <span style={{ fontSize: '9px', color: 'var(--text-subtle)', padding: '2px 4px' }}>
                             +{filtros.empleador.length - 6} más
                           </span>
                         )}
@@ -3834,7 +3834,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               <button
                 onClick={previewRecords}
                 style={{
-                  background: '#fff', color: '#000', border: 'none',
+                  background: 'var(--accent)', color: 'var(--text-on-accent)', border: 'none',
                   fontWeight: 900, padding: '12px 28px', borderRadius: '10px',
                   fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 8,
@@ -3856,10 +3856,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             }}>
               <AlertTriangle size={20} style={{ color: '#facc15', flexShrink: 0 }} />
               <div>
-                <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+                <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-strong)', marginBottom: 4 }}>
                   {previewCount} registros serán modificados
                 </p>
-                <p style={{ fontSize: '12px', color: '#888' }}>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   Selecciona los campos que deseas actualizar. Solo los campos con valor se aplicarán.
                 </p>
               </div>
@@ -3947,8 +3947,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               <button
                 onClick={() => setStep('filter')}
                 style={{
-                  background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#666', borderRadius: '8px', padding: '12px 24px',
+                  background: 'transparent', border: '1px solid var(--neutral-10)',
+                  color: 'var(--text-subtle)', borderRadius: '8px', padding: '12px 24px',
                   fontWeight: 700, fontSize: '12px', cursor: 'pointer',
                 }}
               >
@@ -3958,8 +3958,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 onClick={handleUpdate}
                 disabled={updating || Object.values(campos).every(v => !v)}
                 style={{
-                  background: Object.values(campos).every(v => !v) ? '#333' : '#fff',
-                  color: Object.values(campos).every(v => !v) ? '#666' : '#000',
+                  background: Object.values(campos).every(v => !v) ? 'var(--text-disabled)' : 'var(--text-strong)',
+                  color: Object.values(campos).every(v => !v) ? 'var(--text-subtle)' : 'var(--text-on-accent)',
                   border: 'none', fontWeight: 900, padding: '12px 32px',
                   borderRadius: '10px', fontSize: '12px', letterSpacing: '0.5px',
                   cursor: Object.values(campos).every(v => !v) ? 'not-allowed' : 'pointer',
@@ -3976,17 +3976,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         {/* STEP 3: DONE (General / Legacy) */}
         {mode === 'all' && step === 'done' && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: 8 }}>
+            <CheckCircle size={48} style={{ color: 'var(--success)', margin: '0 auto 16px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-strong)', marginBottom: 8 }}>
               ¡Actualización completada!
             </h3>
-            <p style={{ fontSize: '14px', color: '#888', marginBottom: 24 }}>
-              Se actualizaron <strong style={{ color: '#fff' }}>{updatedCount}</strong> registros correctamente.
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: 24 }}>
+              Se actualizaron <strong style={{ color: 'var(--text-strong)' }}>{updatedCount}</strong> registros correctamente.
             </p>
             <button
               onClick={resetAll}
               style={{
-                background: '#fff', color: '#000', border: 'none',
+                background: 'var(--accent)', color: 'var(--text-on-accent)', border: 'none',
                 fontWeight: 800, padding: '12px 28px', borderRadius: '10px',
                 fontSize: '12px', cursor: 'pointer',
               }}
@@ -3999,54 +3999,54 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         {/* --- NUEVO FLUJO MINIMALISTA: CALIF x SCORE (mode === 'bulk') --- */}
         {mode === 'bulk' && step === 'filter' && (
           <div style={{ maxWidth: 1240, margin: '40px auto', display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 420px', minWidth: 0, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '40px 32px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-               <h4 style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
-                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#00d4ff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>1</span>
+            <div style={{ flex: '1 1 420px', minWidth: 0, background: 'var(--neutral-02)', border: '1px solid var(--neutral-04)', borderRadius: 16, padding: '40px 32px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+               <h4 style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-strong)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
+                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--accent)', color: 'var(--text-on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>1</span>
                  Definir Rango de Score
                </h4>
-               
+
                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
                  <div>
-                   <label style={{ display: 'block', fontSize: '10px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>SCORE MÍNIMO</label>
-                   <input className="form-input" type="number" placeholder="Ej: 0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))} style={{ fontSize: 20, padding: '16px', background: '#0a0a0a', textAlign: 'center', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, outline: 'none', width: '100%' }} />
+                   <label style={{ display: 'block', fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>SCORE MÍNIMO</label>
+                   <input className="form-input" type="number" placeholder="Ej: 0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))} style={{ fontSize: 20, padding: '16px', background: 'var(--surface-base)', textAlign: 'center', fontWeight: 800, border: '1px solid var(--neutral-08)', borderRadius: 12, outline: 'none', width: '100%' }} />
                  </div>
                  <div>
-                   <label style={{ display: 'block', fontSize: '10px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>SCORE MÁXIMO</label>
-                   <input className="form-input" type="number" placeholder="Ej: 499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))} style={{ fontSize: 20, padding: '16px', background: '#0a0a0a', textAlign: 'center', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, outline: 'none', width: '100%' }} />
+                   <label style={{ display: 'block', fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>SCORE MÁXIMO</label>
+                   <input className="form-input" type="number" placeholder="Ej: 499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))} style={{ fontSize: 20, padding: '16px', background: 'var(--surface-base)', textAlign: 'center', fontWeight: 800, border: '1px solid var(--neutral-08)', borderRadius: 12, outline: 'none', width: '100%' }} />
                  </div>
                </div>
 
                <div style={{ marginTop: 24, paddingBottom: 24 }}>
-                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ background: 'transparent', border: 'none', color: '#00d4ff', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
                    {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                    Filtros Avanzados (Opcional)
                  </button>
                </div>
-               
+
                {showAdvancedFilters && (
-                  <div style={{ marginTop: 8, marginBottom: 32, paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ marginTop: 8, marginBottom: 32, paddingTop: 32, borderTop: '1px solid var(--neutral-04)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', textAlign: 'left' }}>
                       <div>
                         <label style={LABEL_STYLE}>Estado</label>
-                        <select className="form-select" value={filtros.estados[0] || ''} onChange={e => setFiltros(p => ({ ...p, estados: e.target.value ? [e.target.value] : [] }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                        <select className="form-select" value={filtros.estados[0] || ''} onChange={e => setFiltros(p => ({ ...p, estados: e.target.value ? [e.target.value] : [] }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }}>
                           <option value="">Todos</option>
                           {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
                         </select>
                       </div>
                       <div>
                         <label style={LABEL_STYLE}>Analista</label>
-                        <select className="form-select" value={filtros.analistas[0] || ''} onChange={e => setFiltros(p => ({ ...p, analistas: e.target.value ? [e.target.value] : [] }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                        <select className="form-select" value={filtros.analistas[0] || ''} onChange={e => setFiltros(p => ({ ...p, analistas: e.target.value ? [e.target.value] : [] }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }}>
                           <option value="">Todos</option>
                           {allAnalistas.map(a => <option key={a} value={a}>{a}</option>)}
                         </select>
                       </div>
                       <div>
                         <label style={LABEL_STYLE}>Fecha Desde</label>
-                        <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                        <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }} />
                       </div>
                       <div>
                         <label style={LABEL_STYLE}>Fecha Hasta</label>
-                        <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                        <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }} />
                       </div>
                     </div>
                   </div>
@@ -4057,12 +4057,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                    onClick={previewRecords}
                    disabled={!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta}
                    style={{
-                     background: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? '#222' : '#fff',
-                     color: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? '#555' : '#000',
+                     background: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? '#222' : 'var(--text-strong)',
+                     color: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'var(--text-subtle)' : 'var(--text-on-accent)',
                      border: 'none', fontWeight: 900, padding: '16px 48px', borderRadius: '30px',
                      fontSize: 12, letterSpacing: '0.5px', cursor: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'not-allowed' : 'pointer',
                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                     boxShadow: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'none' : '0 4px 14px rgba(255,255,255,0.2)',
+                     boxShadow: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'none' : '0 4px 14px var(--neutral-20)',
                    }}
                  >
                    BUSCAR REGISTROS
@@ -4071,22 +4071,22 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             {/* ── REASIGNAR REGISTROS ENTRE ANALISTAS (columna al lado del filtro) ── */}
-            <div style={{ flex: '1 1 420px', minWidth: 0, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+            <div style={{ flex: '1 1 420px', minWidth: 0, background: 'var(--neutral-02)', border: '1px solid var(--neutral-04)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
               {/* Header colapsable */}
               <div
                 onClick={() => setRaExpandido(!raExpandido)}
                 style={{ display: 'flex', alignItems: 'center', gap: 10, padding: raExpandido ? '28px 32px 0' : '24px 32px', cursor: 'pointer' }}
               >
-                <Users size={18} color="#34d399" />
-                <h4 style={{ flex: 1, fontSize: 13, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
+                <Users size={18} color="var(--success)" />
+                <h4 style={{ flex: 1, fontSize: 13, fontWeight: 800, color: 'var(--text-strong)', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
                   Reasignar Registros entre Analistas
                 </h4>
-                {raExpandido ? <ChevronUp size={16} color="#888" /> : <ChevronDown size={16} color="#888" />}
+                {raExpandido ? <ChevronUp size={16} color="var(--text-muted)" /> : <ChevronDown size={16} color="var(--text-muted)" />}
               </div>
 
               {raExpandido && (
                 <div style={{ padding: '20px 32px 32px' }}>
-                  <p style={{ fontSize: 12, color: '#888', marginBottom: 28, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 28, lineHeight: 1.5 }}>
                     Elegí un analista origen, acotá por estado/score/fecha (opcional), definí cuántos registros van a cada analista destino y tildalos.
                   </p>
 
@@ -4095,7 +4095,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     <h5 style={STEP_TITLE_STYLE}>{stepBadge(1)} Analista origen</h5>
                     <CustomSelect
                       width="100%"
-                      bg="#0a0a0a"
+                      bg="var(--surface-base)"
                       value={raOrigen}
                       onChange={v => setRaOrigen(String(v))}
                       options={[{ label: '— Elegir analista —', value: '' }, ...ANALISTAS.map(a => ({ label: a, value: a }))]}
@@ -4105,7 +4105,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   {/* PASO 2: Filtros opcionales */}
                   {raOrigen && (
                     <div style={{ marginBottom: 28 }}>
-                      <h5 style={STEP_TITLE_STYLE}>{stepBadge(2)} Acotar <span style={{ color: '#555', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span></h5>
+                      <h5 style={STEP_TITLE_STYLE}>{stepBadge(2)} Acotar <span style={{ color: 'var(--text-subtle)', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span></h5>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                         {ESTADOS.map(e => {
                           const sel = raEstados.includes(e);
@@ -4114,9 +4114,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               key={e}
                               onClick={() => setRaEstados(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e])}
                               style={{
-                                background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
-                                border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`,
-                                color: sel ? '#34d399' : '#888',
+                                background: sel ? 'rgba(52,211,153,0.15)' : 'var(--neutral-02)',
+                                border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'var(--neutral-06)'}`,
+                                color: sel ? 'var(--success)' : 'var(--text-muted)',
                                 borderRadius: 10, padding: '8px 14px', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s',
                               }}
                             >
@@ -4128,23 +4128,23 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                         <div>
                           <label style={LABEL_STYLE}>Score mínimo</label>
-                          <input className="form-input" type="number" placeholder="0" value={raScoreMin} onChange={e => setRaScoreMin(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <input className="form-input" type="number" placeholder="0" value={raScoreMin} onChange={e => setRaScoreMin(e.target.value)} style={{ background: 'var(--surface-base)', fontSize: 12, padding: 10, width: '100%' }} />
                         </div>
                         <div>
                           <label style={LABEL_STYLE}>Score máximo</label>
-                          <input className="form-input" type="number" placeholder="∞" value={raScoreMax} onChange={e => setRaScoreMax(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <input className="form-input" type="number" placeholder="∞" value={raScoreMax} onChange={e => setRaScoreMax(e.target.value)} style={{ background: 'var(--surface-base)', fontSize: 12, padding: 10, width: '100%' }} />
                         </div>
                         <div>
                           <label style={LABEL_STYLE}>Fecha desde</label>
-                          <input className="form-input" type="date" value={raFechaDesde} onChange={e => setRaFechaDesde(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <input className="form-input" type="date" value={raFechaDesde} onChange={e => setRaFechaDesde(e.target.value)} style={{ background: 'var(--surface-base)', fontSize: 12, padding: 10, width: '100%' }} />
                         </div>
                         <div>
                           <label style={LABEL_STYLE}>Fecha hasta</label>
-                          <input className="form-input" type="date" value={raFechaHasta} onChange={e => setRaFechaHasta(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <input className="form-input" type="date" value={raFechaHasta} onChange={e => setRaFechaHasta(e.target.value)} style={{ background: 'var(--surface-base)', fontSize: 12, padding: 10, width: '100%' }} />
                         </div>
                       </div>
-                      <div style={{ fontSize: 13, color: '#888', marginTop: 16 }}>
-                        <strong style={{ color: '#fff', fontSize: 16 }}>{raTotalDisponible}</strong> registro(s) disponibles
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 16 }}>
+                        <strong style={{ color: 'var(--text-strong)', fontSize: 16 }}>{raTotalDisponible}</strong> registro(s) disponibles
                       </div>
                     </div>
                   )}
@@ -4152,13 +4152,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   {/* PASO 3: Cuotas por destino */}
                   {raOrigen && raTotalDisponible > 0 && (
                     <div style={{ marginBottom: 28 }}>
-                      <h5 style={STEP_TITLE_STYLE}>{stepBadge(3)} Cuotas por destino <span style={{ color: '#34d399', fontWeight: 800 }}>({raTotalCuotas}/{raTotalDisponible})</span></h5>
+                      <h5 style={STEP_TITLE_STYLE}>{stepBadge(3)} Cuotas por destino <span style={{ color: 'var(--success)', fontWeight: 800 }}>({raTotalCuotas}/{raTotalDisponible})</span></h5>
                       <div style={{ display: 'flex', gap: 12, marginBottom: 14, alignItems: 'flex-end' }}>
                         <div style={{ flex: 1 }}>
                           <label style={LABEL_STYLE}>Analista destino</label>
                           <CustomSelect
                             width="100%"
-                            bg="#0a0a0a"
+                            bg="var(--surface-base)"
                             value={raNuevoDestino}
                             onChange={v => setRaNuevoDestino(String(v))}
                             options={[{ label: '— Elegir —', value: '' }, ...ANALISTAS.filter(a => a !== raOrigen && !raDestinos.some(d => d.analista === a)).map(a => ({ label: a, value: a }))]}
@@ -4166,9 +4166,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         </div>
                         <div style={{ width: 120 }}>
                           <label style={LABEL_STYLE}>Cantidad</label>
-                          <input className="form-input" type="number" placeholder="Ej: 100" value={raNuevaCuota} onChange={e => setRaNuevaCuota(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <input className="form-input" type="number" placeholder="Ej: 100" value={raNuevaCuota} onChange={e => setRaNuevaCuota(e.target.value)} style={{ background: 'var(--surface-base)', fontSize: 12, padding: 10, width: '100%' }} />
                         </div>
-                        <button onClick={raAgregarDestino} style={{ height: 38, padding: '0 18px', borderRadius: 10, border: '1px solid rgba(52,211,153,0.4)', background: 'rgba(52,211,153,0.12)', color: '#34d399', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Agregar</button>
+                        <button onClick={raAgregarDestino} style={{ height: 38, padding: '0 18px', borderRadius: 10, border: '1px solid rgba(52,211,153,0.4)', background: 'rgba(52,211,153,0.12)', color: 'var(--success)', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Agregar</button>
                       </div>
 
                       {/* Reparto entre varios analistas con cantidad por cada uno */}
@@ -4179,7 +4179,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         const sumaSel = seleccionados.reduce((s, a) => s + (Number(raMultiCant[a]) || 0), 0);
                         const excede = raTotalCuotas + sumaSel > raTotalDisponible;
                         return (
-                          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed rgba(255,255,255,0.08)' }}>
+                          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed var(--neutral-08)' }}>
                             <label style={LABEL_STYLE}>O elegir varios y poner cantidad a cada uno</label>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: seleccionados.length > 0 ? 14 : 0 }}>
                               {disponiblesMulti.map(a => {
@@ -4193,9 +4193,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                       return next;
                                     })}
                                     style={{
-                                      background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
-                                      border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`,
-                                      color: sel ? '#34d399' : '#888',
+                                      background: sel ? 'rgba(52,211,153,0.15)' : 'var(--neutral-02)',
+                                      border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'var(--neutral-06)'}`,
+                                      color: sel ? 'var(--success)' : 'var(--text-muted)',
                                       borderRadius: 10, padding: '8px 14px', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s',
                                     }}
                                   >
@@ -4208,25 +4208,25 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 {seleccionados.map(a => (
                                   <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <span style={{ flex: 1, fontSize: 12.5, color: '#ddd', fontWeight: 700 }}>{a}</span>
+                                    <span style={{ flex: 1, fontSize: 12.5, color: 'var(--text-default)', fontWeight: 700 }}>{a}</span>
                                     <input
                                       className="form-input"
                                       type="number"
                                       placeholder="Cantidad"
                                       value={raMultiCant[a]}
                                       onChange={e => setRaMultiCant(prev => ({ ...prev, [a]: e.target.value }))}
-                                      style={{ width: 130, background: '#0a0a0a', fontSize: 12, padding: 10 }}
+                                      style={{ width: 130, background: 'var(--surface-base)', fontSize: 12, padding: 10 }}
                                     />
                                   </div>
                                 ))}
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: excede ? '#f87171' : '#888' }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: excede ? 'var(--danger)' : 'var(--text-muted)' }}>
                                     Suma: {sumaSel}{excede ? ` · supera ${raTotalDisponible}` : ` / ${raTotalDisponible}`}
                                   </span>
                                   <button
                                     onClick={raAgregarMulti}
                                     disabled={excede}
-                                    style={{ height: 38, padding: '0 18px', borderRadius: 10, border: `1px solid ${excede ? 'rgba(255,255,255,0.06)' : 'rgba(52,211,153,0.4)'}`, background: excede ? 'rgba(255,255,255,0.02)' : 'rgba(52,211,153,0.12)', color: excede ? '#555' : '#34d399', fontWeight: 800, fontSize: 12, cursor: excede ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                                    style={{ height: 38, padding: '0 18px', borderRadius: 10, border: `1px solid ${excede ? 'var(--neutral-06)' : 'rgba(52,211,153,0.4)'}`, background: excede ? 'var(--neutral-02)' : 'rgba(52,211,153,0.12)', color: excede ? 'var(--text-subtle)' : 'var(--success)', fontWeight: 800, fontSize: 12, cursor: excede ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
                                   >
                                     + Agregar {seleccionados.length}
                                   </button>
@@ -4248,14 +4248,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               onClick={() => setRaDestinoActivo(d.analista)}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.15s',
-                                background: activo ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
-                                border: `1px solid ${completo ? 'rgba(52,211,153,0.6)' : activo ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                                background: activo ? 'rgba(52,211,153,0.15)' : 'var(--neutral-02)',
+                                border: `1px solid ${completo ? 'rgba(52,211,153,0.6)' : activo ? 'rgba(52,211,153,0.5)' : 'var(--neutral-08)'}`,
                                 borderRadius: 12, padding: '8px 14px',
                               }}
                             >
-                              <span style={{ fontSize: 13, fontWeight: 800, color: completo ? '#34d399' : '#ddd' }}>{d.analista}</span>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: completo ? '#34d399' : '#888' }}>{hechos}/{d.cuota}</span>
-                              <button onClick={(ev) => { ev.stopPropagation(); raQuitarDestino(d.analista); }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: completo ? 'var(--success)' : 'var(--text-default)' }}>{d.analista}</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: completo ? 'var(--success)' : 'var(--text-muted)' }}>{hechos}/{d.cuota}</span>
+                              <button onClick={(ev) => { ev.stopPropagation(); raQuitarDestino(d.analista); }} style={{ background: 'none', border: 'none', color: 'var(--text-subtle)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
                             </div>
                           );
                         })}
@@ -4267,12 +4267,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   {raDestinos.length > 0 && (
                     <div style={{ marginBottom: 28 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <h5 style={{ ...STEP_TITLE_STYLE, marginBottom: 0 }}>{stepBadge(4)} Tildar para <span style={{ color: '#34d399', fontWeight: 800 }}>{raDestinoActivo || '—'}</span></h5>
-                        <button onClick={raTildarPrimerosN} disabled={!raDestinoActivo} style={{ padding: '8px 14px', borderRadius: 10, border: `1px solid ${raDestinoActivo ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.06)'}`, background: raDestinoActivo ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.02)', color: raDestinoActivo ? '#34d399' : '#555', fontSize: 11, fontWeight: 800, cursor: raDestinoActivo ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
+                        <h5 style={{ ...STEP_TITLE_STYLE, marginBottom: 0 }}>{stepBadge(4)} Tildar para <span style={{ color: 'var(--success)', fontWeight: 800 }}>{raDestinoActivo || '—'}</span></h5>
+                        <button onClick={raTildarPrimerosN} disabled={!raDestinoActivo} style={{ padding: '8px 14px', borderRadius: 10, border: `1px solid ${raDestinoActivo ? 'rgba(52,211,153,0.4)' : 'var(--neutral-06)'}`, background: raDestinoActivo ? 'rgba(52,211,153,0.12)' : 'var(--neutral-02)', color: raDestinoActivo ? 'var(--success)' : 'var(--text-subtle)', fontSize: 11, fontWeight: 800, cursor: raDestinoActivo ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
                           Tildar primeros N
                         </button>
                       </div>
-                      <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, background: '#0a0a0a' }}>
+                      <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid var(--neutral-06)', borderRadius: 12, background: 'var(--surface-base)' }}>
                         {raUniverso.map(r => {
                           const dest = raAsignaciones.get(r.id);
                           return (
@@ -4281,14 +4281,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               onClick={() => raToggleFila(r.id)}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                                borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer',
+                                borderBottom: '1px solid var(--neutral-04)', cursor: 'pointer',
                                 background: dest ? 'rgba(52,211,153,0.08)' : 'transparent',
                               }}
                             >
-                              <input type="checkbox" readOnly checked={!!dest} style={{ accentColor: '#34d399' }} />
-                              <span style={{ flex: 1, fontSize: 12.5, color: '#ddd' }}>{r.nombre ?? r.cuil ?? r.id}</span>
-                              <span style={{ fontSize: 11, color: '#777' }}>{STATUS_LABEL[r.estado ?? ''] ?? r.estado}</span>
-                              {dest && <span style={{ fontSize: 11, fontWeight: 800, color: '#34d399' }}>→ {dest}</span>}
+                              <input type="checkbox" readOnly checked={!!dest} style={{ accentColor: 'var(--success)' }} />
+                              <span style={{ flex: 1, fontSize: 12.5, color: 'var(--text-default)' }}>{r.nombre ?? r.cuil ?? r.id}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text-subtle)' }}>{STATUS_LABEL[r.estado ?? ''] ?? r.estado}</span>
+                              {dest && <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--success)' }}>→ {dest}</span>}
                             </div>
                           );
                         })}
@@ -4303,8 +4303,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       disabled={updating || raAsignaciones.size === 0}
                       style={{
                         width: '100%', padding: '16px', borderRadius: 30, border: 'none',
-                        background: (updating || raAsignaciones.size === 0) ? '#222' : '#34d399',
-                        color: (updating || raAsignaciones.size === 0) ? '#555' : '#000',
+                        background: (updating || raAsignaciones.size === 0) ? '#222' : 'var(--success)',
+                        color: (updating || raAsignaciones.size === 0) ? 'var(--text-subtle)' : 'var(--text-on-accent)',
                         fontWeight: 900, fontSize: 12, letterSpacing: '0.5px',
                         cursor: (updating || raAsignaciones.size === 0) ? 'not-allowed' : 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
@@ -4325,28 +4325,28 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         {mode === 'bulk' && step === 'confirm' && (
           <div style={{ maxWidth: 720, margin: '40px auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
-               <h2 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-1px', color: '#fff', marginBottom: 8 }}>{previewCount}</h2>
-               <p style={{ color: '#888', fontSize: 14, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Registros Encontrados</p>
-               <div style={{ display: 'inline-block', marginTop: 12, padding: '4px 12px', background: 'rgba(0, 212, 255, 0.1)', color: '#00d4ff', borderRadius: 20, fontSize: 11, fontWeight: 800 }}>
+               <h2 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-1px', color: 'var(--text-strong)', marginBottom: 8 }}>{previewCount}</h2>
+               <p style={{ color: 'var(--text-muted)', fontSize: 14, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Registros Encontrados</p>
+               <div style={{ display: 'inline-block', marginTop: 12, padding: '4px 12px', background: 'rgba(0, 212, 255, 0.1)', color: 'var(--accent)', borderRadius: 20, fontSize: 11, fontWeight: 800 }}>
                  Score: {filtros.scoreMin || '0'} a {filtros.scoreMax || '∞'}
                </div>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '40px 32px', marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-               <h4 style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
-                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#34d399', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>2</span>
+            <div style={{ background: 'var(--neutral-02)', border: '1px solid var(--neutral-04)', borderRadius: 16, padding: '40px 32px', marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+               <h4 style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-strong)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
+                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--success)', color: 'var(--text-on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>2</span>
                  Asignar Calificación
                </h4>
-               
+
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
                   {ACUERDOS_OPCIONES.map(a => {
                     const isSelected = campos.acuerdo_precios === a;
                     return (
                       <button key={a} onClick={() => setCampos(p => ({ ...p, acuerdo_precios: a }))} style={{
                          padding: '24px 16px', borderRadius: 16, border: '1px solid',
-                         background: isSelected ? '#fff' : 'rgba(255,255,255,0.02)',
-                         color: isSelected ? '#000' : '#888',
-                         borderColor: isSelected ? '#fff' : 'rgba(255,255,255,0.06)',
+                         background: isSelected ? 'var(--accent)' : 'var(--neutral-02)',
+                         color: isSelected ? 'var(--text-on-accent)' : 'var(--text-muted)',
+                         borderColor: isSelected ? 'var(--accent)' : 'var(--neutral-06)',
                          fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
                          textAlign: 'center', outline: 'none'
                       }}>
@@ -4356,17 +4356,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   })}
                </div>
 
-               <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+               <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--neutral-04)' }}>
+                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
                    {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                    Otras Modificaciones Masivas (Avanzado)
                  </button>
-                 
+
                  {showAdvancedFilters && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: 32, textAlign: 'left' }}>
                         <div>
                           <label style={LABEL_STYLE}>Estado</label>
-                          <select className="form-select" value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                          <select className="form-select" value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }}>
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                             {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
@@ -4375,16 +4375,16 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                         <div>
                           <label style={LABEL_STYLE}>Analista</label>
-                          <select className="form-select" value={campos.analista} onChange={e => setCampos(p => ({ ...p, analista: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                          <select className="form-select" value={campos.analista} onChange={e => setCampos(p => ({ ...p, analista: e.target.value }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }}>
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                             {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
                           </select>
                         </div>
-                        
+
                         <div>
                           <label style={LABEL_STYLE}>Tipo Cliente</label>
-                          <select className="form-select" value={campos.tipo_cliente} onChange={e => setCampos(p => ({ ...p, tipo_cliente: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                          <select className="form-select" value={campos.tipo_cliente} onChange={e => setCampos(p => ({ ...p, tipo_cliente: e.target.value }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }}>
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                             {TIPO_CLIENTE_OPCIONES.map(t => <option key={t} value={t}>{t === 'Renovacion' ? 'Renovación' : t}</option>)}
@@ -4393,12 +4393,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                         <div>
                           <label style={LABEL_STYLE}>Cuotas</label>
-                          <input className="form-input" placeholder="Ej: 12, 24, 36" value={campos.cuotas} onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                          <input className="form-input" placeholder="Ej: 12, 24, 36" value={campos.cuotas} onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }} />
                         </div>
 
                         <div style={{ gridColumn: '1 / -1' }}>
                           <label style={LABEL_STYLE}>Empleador</label>
-                          <input className="form-input" placeholder="Nombre del empleador" value={campos.empleador} onChange={e => setCampos(p => ({ ...p, empleador: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                          <input className="form-input" placeholder="Nombre del empleador" value={campos.empleador} onChange={e => setCampos(p => ({ ...p, empleador: e.target.value }))} style={{ background: 'var(--surface-base)', fontSize: '12px', padding: '10px' }} />
                         </div>
                     </div>
                  )}
@@ -4406,15 +4406,15 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-              <button onClick={() => setStep('filter')} style={{ background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.1)', padding: '16px 32px', borderRadius: '30px', fontSize: 12, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
+              <button onClick={() => setStep('filter')} style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--neutral-10)', padding: '16px 32px', borderRadius: '30px', fontSize: 12, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
                 ATRÁS
               </button>
               <button
                 onClick={handleUpdate}
                 disabled={updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)}
                 style={{
-                  background: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#222' : '#34d399',
-                  color: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#555' : '#000',
+                  background: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#222' : 'var(--success)',
+                  color: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'var(--text-subtle)' : 'var(--text-on-accent)',
                   border: 'none', fontWeight: 900, padding: '16px 40px', borderRadius: '30px',
                   fontSize: 12, letterSpacing: '0.5px', cursor: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', gap: 10,
@@ -4432,13 +4432,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         {mode === 'bulk' && step === 'done' && (
           <div style={{ textAlign: 'center', padding: '64px 20px', maxWidth: 600, margin: '0 auto' }}>
             <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-              <CheckCircle size={40} style={{ color: '#34d399' }} />
+              <CheckCircle size={40} style={{ color: 'var(--success)' }} />
             </div>
-            <h3 style={{ fontSize: '28px', fontWeight: 900, color: '#fff', marginBottom: 12, letterSpacing: '-0.5px' }}>
+            <h3 style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-strong)', marginBottom: 12, letterSpacing: '-0.5px' }}>
               ¡Actualización Exitosa!
             </h3>
-            <p style={{ fontSize: '15px', color: '#888', marginBottom: 40, lineHeight: 1.5 }}>
-              Se asignó la calificación exitosamente a <strong style={{ color: '#fff' }}>{updatedCount}</strong> registros.
+            <p style={{ fontSize: '15px', color: 'var(--text-muted)', marginBottom: 40, lineHeight: 1.5 }}>
+              Se asignó la calificación exitosamente a <strong style={{ color: 'var(--text-strong)' }}>{updatedCount}</strong> registros.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
               {undoState && (
@@ -4446,7 +4446,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   onClick={handleUndo}
                   disabled={undoing}
                   style={{
-                    background: 'transparent', color: '#ff3366', border: '1px solid rgba(255,51,102,0.3)',
+                    background: 'transparent', color: 'var(--danger-strong)', border: '1px solid rgba(255,51,102,0.3)',
                     fontWeight: 900, padding: '16px 32px', borderRadius: '30px',
                     fontSize: '12px', cursor: undoing ? 'not-allowed' : 'pointer', letterSpacing: '0.5px',
                     display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
@@ -4460,10 +4460,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               <button
                 onClick={resetAll}
                 style={{
-                  background: '#fff', color: '#000', border: 'none',
+                  background: 'var(--accent)', color: 'var(--text-on-accent)', border: 'none',
                   fontWeight: 900, padding: '16px 40px', borderRadius: '30px',
                   fontSize: '12px', cursor: 'pointer', letterSpacing: '0.5px',
-                  boxShadow: '0 4px 14px rgba(255,255,255,0.2)',
+                  boxShadow: '0 4px 14px var(--neutral-20)',
                 }}
               >
                 NUEVA ASIGNACIÓN
@@ -4483,7 +4483,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         >
           <div
             style={{
-              background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--surface-card)', border: '1px solid var(--neutral-10)',
               borderRadius: 12, width: '100%', maxWidth: 1200,
               maxHeight: '90vh', display: 'flex', flexDirection: 'column',
             }}
@@ -4491,22 +4491,22 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           >
             {/* Header del modal */}
             <div style={{
-              padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+              padding: '20px 24px', borderBottom: '1px solid var(--neutral-06)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-strong)', marginBottom: 4 }}>
                   Registros del grupo: {modalGrupo}
                 </h3>
-                <p style={{ fontSize: 12, color: '#888' }}>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {modalRegistros.length} registros encontrados
                 </p>
               </div>
               <button
                 onClick={() => setModalOpen(false)}
                 style={{
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#888', borderRadius: 6, padding: '8px 12px',
+                  background: 'var(--neutral-05)', border: '1px solid var(--neutral-10)',
+                  color: 'var(--text-muted)', borderRadius: 6, padding: '8px 12px',
                   fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
                 }}
               >
@@ -4518,23 +4518,23 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <div style={{ padding: 24, overflow: 'auto', flex: 1 }}>
               {modalLoading ? (
                 <div style={{ textAlign: 'center', padding: 40 }}>
-                  <Loader2 size={32} className="animate-spin" style={{ color: '#00d4ff', margin: '0 auto 12px' }} />
-                  <p style={{ color: '#888', fontSize: 13 }}>Cargando registros...</p>
+                  <Loader2 size={32} className="animate-spin" style={{ color: 'var(--accent)', margin: '0 auto 12px' }} />
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Cargando registros...</p>
                 </div>
               ) : modalRegistros.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-subtle)' }}>
                   <p>No se encontraron registros</p>
                 </div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Nombre</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Estado</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Score</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Analista</th>
+                    <tr style={{ borderBottom: '1px solid var(--neutral-06)' }}>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Nombre</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Estado</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Score</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Analista</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4542,23 +4542,23 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       <tr
                         key={r.id}
                         style={{
-                          borderBottom: '1px solid rgba(255,255,255,0.03)',
-                          background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
+                          borderBottom: '1px solid var(--neutral-03)',
+                          background: idx % 2 === 0 ? 'var(--neutral-01)' : 'transparent',
                         }}
                       >
-                        <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600 }}>{r.nombre || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace' }}>{r.cuil || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#fbbf24', fontWeight: 600 }}>{r.empleador}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-default)', fontWeight: 600 }}>{r.nombre || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-muted)', fontFamily: 'var(--font-code)' }}>{r.cuil || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--warning)', fontWeight: 600 }}>{r.empleador}</td>
                         <td style={{ padding: '10px 12px' }}>
                           <span style={{
                             padding: '2px 8px', borderRadius: 4, fontSize: 10,
-                            background: 'rgba(255,255,255,0.05)', color: '#888', fontWeight: 600,
+                            background: 'var(--neutral-05)', color: 'var(--text-muted)', fontWeight: 600,
                           }}>
                             {STATUS_LABEL[r.estado] ?? r.estado}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#00d4ff', fontWeight: 700 }}>{r.puntaje ?? '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#888' }}>{r.analista || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--accent)', fontWeight: 700 }}>{r.puntaje ?? '-'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{r.analista || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -4578,7 +4578,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         >
           <div
             style={{
-              background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--surface-card)', border: '1px solid var(--neutral-10)',
               borderRadius: 12, width: '100%', maxWidth: 1200,
               maxHeight: '92vh', display: 'flex', flexDirection: 'column',
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
@@ -4587,14 +4587,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           >
             {/* Header del modal */}
             <div style={{
-              padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+              padding: '20px 24px', borderBottom: '1px solid var(--neutral-06)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-strong)', marginBottom: 4 }}>
                   Todos los Empleadores
                 </h3>
-                <p style={{ fontSize: 12, color: '#888' }}>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {empleadoresConConteo.filter(e => !e.esDependencia).length} empleadores · {empleadoresConConteo.filter(e => e.esDependencia).length} dependencias
                 </p>
               </div>
@@ -4617,7 +4617,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   }}
                   style={{
                     background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)',
-                    color: '#34d399', borderRadius: 6, padding: '8px 12px',
+                    color: 'var(--success)', borderRadius: 6, padding: '8px 12px',
                     fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
                     fontWeight: 700
                   }}
@@ -4627,8 +4627,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 <button
                   onClick={() => setModalEmpleadoresOpen(false)}
                   style={{
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#888', borderRadius: 6, padding: '8px 12px',
+                    background: 'var(--neutral-05)', border: '1px solid var(--neutral-10)',
+                    color: 'var(--text-muted)', borderRadius: 6, padding: '8px 12px',
                     fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
                   }}
                 >
@@ -4638,7 +4638,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             {/* Buscador + filtros tipo */}
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--neutral-06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <input
                 className="form-input"
                 placeholder="Buscar empleador..."
@@ -4665,9 +4665,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       key={key}
                       onClick={() => setFiltroTipoModal(key)}
                       style={{
-                        background: activo ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                        color: activo ? '#fbbf24' : '#666',
+                        background: activo ? 'rgba(251,191,36,0.15)' : 'var(--neutral-04)',
+                        border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'var(--neutral-10)'}`,
+                        color: activo ? 'var(--warning)' : 'var(--text-subtle)',
                         borderRadius: '4px', padding: '4px 12px',
                         fontSize: '10px', fontWeight: 800, cursor: 'pointer',
                         textTransform: 'uppercase', letterSpacing: '0.5px',
@@ -4684,8 +4684,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <div style={{ padding: 24, overflow: 'auto', flex: 1 }}>
               {empleadoresLoading ? (
                 <div style={{ textAlign: 'center', padding: 40 }}>
-                  <Loader2 size={32} className="animate-spin" style={{ color: '#00d4ff', margin: '0 auto 12px' }} />
-                  <p style={{ color: '#888', fontSize: 13 }}>Cargando empleadores...</p>
+                  <Loader2 size={32} className="animate-spin" style={{ color: 'var(--accent)', margin: '0 auto 12px' }} />
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Cargando empleadores...</p>
                 </div>
               ) : (
                 <>
@@ -4737,25 +4737,25 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       <div style={{ marginBottom: title ? 24 : 0 }}>
                         {title && (
                           <div style={{
-                            fontSize: '10px', fontWeight: 900, color: color || '#888',
+                            fontSize: '10px', fontWeight: 900, color: color || 'var(--text-muted)',
                             textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12,
-                            paddingBottom: 6, borderBottom: `1px solid rgba(255,255,255,0.05)`,
+                            paddingBottom: 6, borderBottom: `1px solid var(--neutral-05)`,
                             display: 'flex', alignItems: 'center', gap: 8
                           }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: color || '#888' }} />
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: color || 'var(--text-muted)' }} />
                             {title} ({items.length})
                           </div>
                         )}
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                             <thead>
-                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Empresa</th>
-                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Tipo</th>
-                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Categoría</th>
-                                <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Cant.</th>
-                                <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>%</th>
-                                <th style={{ textAlign: 'right', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Acciones</th>
+                              <tr style={{ borderBottom: '1px solid var(--neutral-06)' }}>
+                                <th style={{ textAlign: 'left', padding: '12px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase' }}>Empresa</th>
+                                <th style={{ textAlign: 'left', padding: '12px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase' }}>Tipo</th>
+                                <th style={{ textAlign: 'left', padding: '12px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase' }}>Categoría</th>
+                                <th style={{ textAlign: 'center', padding: '12px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase' }}>Cant.</th>
+                                <th style={{ textAlign: 'center', padding: '12px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase' }}>%</th>
+                                <th style={{ textAlign: 'right', padding: '12px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase' }}>Acciones</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -4763,39 +4763,39 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                 const isMaster = emp.masterName === emp.nombre;
                                 const totalGeneral = items.reduce((acc, curr) => acc + curr.cantidad, 0);
                                 const porcentaje = totalGeneral > 0 ? ((emp.cantidad / totalGeneral) * 100).toFixed(1) : '0';
-                                
+
                                 return (
-                                  <tr key={idx} style={{ 
-                                    borderBottom: '1px solid rgba(255,255,255,0.02)',
+                                  <tr key={idx} style={{
+                                    borderBottom: '1px solid var(--neutral-02)',
                                     background: isMaster ? 'rgba(52,211,153,0.02)' : 'transparent'
                                   }}>
                                     <td style={{ padding: '12px' }}>
                                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ color: isMaster ? '#34d399' : '#ccc', fontWeight: 600 }}>{emp.nombre}</span>
+                                        <span style={{ color: isMaster ? 'var(--success)' : 'var(--text-default)', fontWeight: 600 }}>{emp.nombre}</span>
                                       </div>
                                     </td>
                                     <td style={{ padding: '12px' }}>
-                                      <span style={{ 
-                                        padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
-                                        color: '#888', fontSize: '10px', fontWeight: 700 
+                                      <span style={{
+                                        padding: '2px 8px', borderRadius: 4, background: 'var(--neutral-04)',
+                                        color: 'var(--text-muted)', fontSize: '10px', fontWeight: 700
                                       }}>
                                         {emp.tipo}
                                       </span>
                                     </td>
                                     <td style={{ padding: '12px' }}>
-                                      <span style={{ 
-                                        color: emp.categoria === 'Estado' ? '#00d4ff' : '#888',
-                                        fontSize: '11px', fontWeight: 600 
+                                      <span style={{
+                                        color: emp.categoria === 'Estado' ? 'var(--accent)' : 'var(--text-muted)',
+                                        fontSize: '11px', fontWeight: 600
                                       }}>
                                         {emp.categoria}
                                       </span>
                                     </td>
                                     <td style={{ padding: '12px', textAlign: 'center' }}>
-                                      <span style={{ fontWeight: 800, color: '#555' }}>{emp.cantidad}</span>
+                                      <span style={{ fontWeight: 800, color: 'var(--text-subtle)' }}>{emp.cantidad}</span>
                                     </td>
                                     <td style={{ padding: '12px', textAlign: 'center' }}>
-                                      <span style={{ 
-                                        fontWeight: 800, color: '#34d399', fontSize: '11px',
+                                      <span style={{
+                                        fontWeight: 800, color: 'var(--success)', fontSize: '11px',
                                         background: 'rgba(52,211,153,0.1)', padding: '2px 6px', borderRadius: 4
                                       }}>
                                         {porcentaje}%
@@ -4810,8 +4810,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                             setModalEmpleadoresOpen(false);
                                           }}
                                           style={{
-                                            padding: '4px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
-                                            border: '1px solid rgba(255,255,255,0.1)', color: '#aaa',
+                                            padding: '4px 8px', borderRadius: 4, background: 'var(--neutral-04)',
+                                            border: '1px solid var(--neutral-10)', color: 'var(--text-muted)',
                                             fontSize: '10px', fontWeight: 800, cursor: 'pointer'
                                           }}
                                         >
@@ -4830,7 +4830,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                     if (filtered.length === 0) {
                       return (
-                        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-subtle)' }}>
                           <p>No se encontraron empleadores</p>
                         </div>
                       );
@@ -4840,8 +4840,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     const dependencias = filtered.filter(e => e.esDependencia);
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {empleadores.length > 0 && renderTable(empleadores, 'Empleadores', '#00d4ff')}
-                        {dependencias.length > 0 && renderTable(dependencias, 'Dependencias', '#a78bfa')}
+                        {empleadores.length > 0 && renderTable(empleadores, 'Empleadores', 'var(--accent)')}
+                        {dependencias.length > 0 && renderTable(dependencias, 'Dependencias', 'var(--violet)')}
                       </div>
                     );
                   })()}
@@ -4860,7 +4860,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         >
           <div
             style={{
-              background: '#111111', border: '1px solid rgba(16,185,129,0.2)',
+              background: 'var(--surface-card)', border: '1px solid rgba(16,185,129,0.2)',
               borderRadius: 12, width: '100%', maxWidth: 900,
               maxHeight: '90vh', display: 'flex', flexDirection: 'column',
             }}
@@ -4871,37 +4871,37 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
             }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#34d399', marginBottom: 4 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--success)', marginBottom: 4 }}>
                   Registros con Empleador
                 </h3>
-                <p style={{ fontSize: 12, color: '#888' }}>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {empleadoresHoy.length} registro{empleadoresHoy.length !== 1 ? 's' : ''} con empleador cargado
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Desde</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>Desde</span>
                   <input
                     type="date"
                     value={fechaDesdeHoy}
                     onChange={e => setFechaDesdeHoy(e.target.value)}
                     style={{
-                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                      color: '#ccc', borderRadius: 6, padding: '5px 8px', fontSize: 12,
-                      colorScheme: 'dark',
+                      background: 'var(--neutral-05)', border: '1px solid var(--neutral-10)',
+                      color: 'var(--text-default)', borderRadius: 6, padding: '5px 8px', fontSize: 12,
+                      colorScheme: 'light',
                     }}
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Hasta</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>Hasta</span>
                   <input
                     type="date"
                     value={fechaHastaHoy}
                     onChange={e => setFechaHastaHoy(e.target.value)}
                     style={{
-                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                      color: '#ccc', borderRadius: 6, padding: '5px 8px', fontSize: 12,
-                      colorScheme: 'dark',
+                      background: 'var(--neutral-05)', border: '1px solid var(--neutral-10)',
+                      color: 'var(--text-default)', borderRadius: 6, padding: '5px 8px', fontSize: 12,
+                      colorScheme: 'light',
                     }}
                   />
                 </div>
@@ -4910,13 +4910,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 <button
                   onClick={async () => {
                     if (!confirm(`¿Eliminar ${empleadoresHoy.length} registros de la base de datos? Esta acción es irreversible.`)) return;
-                    
+
                     setLoadingEmpleadoresHoy(true);
                     try {
                       const ids = empleadoresHoy.map(r => r.id);
                       const { error } = await supabase.from('registros').delete().in('id', ids);
                       if (error) throw error;
-                      
+
                       setEmpleadoresHoy([]);
                       setShowEmpleadoresHoy(false);
                       setToast({ message: `${ids.length} registros eliminados`, type: 'success' });
@@ -4928,7 +4928,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   }}
                   style={{
                     background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-                    color: '#ff3366', borderRadius: 6, padding: '8px 12px',
+                    color: 'var(--danger-strong)', borderRadius: 6, padding: '8px 12px',
                     fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
                     fontWeight: 700,
                   }}
@@ -4938,8 +4938,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 <button
                   onClick={() => setShowEmpleadoresHoy(false)}
                   style={{
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#888', borderRadius: 6, padding: '8px 12px',
+                    background: 'var(--neutral-05)', border: '1px solid var(--neutral-10)',
+                    color: 'var(--text-muted)', borderRadius: 6, padding: '8px 12px',
                     fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
                   }}
                 >
@@ -4951,21 +4951,21 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px' }}>
               {loadingEmpleadoresHoy ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-                  <Loader2 size={24} className="animate-spin" style={{ color: '#34d399' }} />
+                  <Loader2 size={24} className="animate-spin" style={{ color: 'var(--success)' }} />
                 </div>
               ) : empleadoresHoy.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-subtle)' }}>
                   <p>No se encontraron registros creados hoy.</p>
                 </div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Apellido y Nombre</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Dependencia</th>
-                      <th style={{ textAlign: 'right', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Acciones</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Apellido y Nombre</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
+                      <th style={{ textAlign: 'left', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Dependencia</th>
+                      <th style={{ textAlign: 'right', padding: '10px 12px', color: 'var(--text-subtle)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4979,34 +4979,34 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       <tr
                         key={r.id}
                         style={{
-                          borderBottom: '1px solid rgba(255,255,255,0.03)',
-                          background: editing ? 'rgba(16,185,129,0.06)' : (idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent'),
+                          borderBottom: '1px solid var(--neutral-03)',
+                          background: editing ? 'rgba(16,185,129,0.06)' : (idx % 2 === 0 ? 'var(--neutral-01)' : 'transparent'),
                         }}
                       >
-                        <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace', fontSize: 12 }}>{r.cuil || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600, fontSize: 12 }}>{r.nombre || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: 600, fontSize: 12, minWidth: 220 }}>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-muted)', fontFamily: 'var(--font-code)', fontSize: 12 }}>{r.cuil || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-default)', fontWeight: 600, fontSize: 12 }}>{r.nombre || '-'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--success)', fontWeight: 600, fontSize: 12, minWidth: 220 }}>
                           {editing
-                            ? <ComboEditable value={editHoyEmpleador} onChange={setEditHoyEmpleador} options={allEmpleadoresList} placeholder="Elegí o escribí…" accent="#34d399" />
+                            ? <ComboEditable value={editHoyEmpleador} onChange={setEditHoyEmpleador} options={allEmpleadoresList} placeholder="Elegí o escribí…" accent="var(--success)" />
                             : (r.empleador || '-')}
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 600, fontSize: 12, minWidth: 220 }}>
+                        <td style={{ padding: '10px 12px', color: 'var(--info)', fontWeight: 600, fontSize: 12, minWidth: 220 }}>
                           {editing
-                            ? <ComboEditable value={editHoyDependencia} onChange={setEditHoyDependencia} options={dependenciasParaEmpleador.length > 0 ? dependenciasParaEmpleador : allDependenciasList} placeholder="Elegí o escribí…" accent="#60a5fa" />
+                            ? <ComboEditable value={editHoyDependencia} onChange={setEditHoyDependencia} options={dependenciasParaEmpleador.length > 0 ? dependenciasParaEmpleador : allDependenciasList} placeholder="Elegí o escribí…" accent="var(--info)" />
                             : (r.dependencia || '-')}
                         </td>
                         <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                           {editing ? (
                             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                              <button onClick={() => guardarEdicionHoy(r.id)} title="Guardar" style={iconBtn('rgba(16,185,129,0.12)', 'rgba(16,185,129,0.35)', '#34d399')}>
+                              <button onClick={() => guardarEdicionHoy(r.id)} title="Guardar" style={iconBtn('rgba(16,185,129,0.12)', 'rgba(16,185,129,0.35)', 'var(--success)')}>
                                 <Save size={13} />
                               </button>
-                              <button onClick={cancelarEdicionHoy} title="Cancelar" style={iconBtn('rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)', '#888')}>
+                              <button onClick={cancelarEdicionHoy} title="Cancelar" style={iconBtn('var(--neutral-05)', 'var(--neutral-10)', 'var(--text-muted)')}>
                                 <X size={13} />
                               </button>
                             </div>
                           ) : (
-                            <button onClick={() => iniciarEdicionHoy(r)} title="Editar" style={iconBtn('rgba(96,165,250,0.1)', 'rgba(96,165,250,0.3)', '#60a5fa')}>
+                            <button onClick={() => iniciarEdicionHoy(r)} title="Editar" style={iconBtn('rgba(96,165,250,0.1)', 'rgba(96,165,250,0.3)', 'var(--info)')}>
                               <Pencil size={13} />
                             </button>
                           )}
