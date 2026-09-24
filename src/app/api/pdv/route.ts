@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { parseCSV, cleanCurrency as clean, parsePct } from '@/lib/csv-utils';
+import { cleanCurrency as clean, parsePct } from '@/lib/csv-utils';
+import { fetchCsv } from '@/lib/fetch-csv';
 
 const SHEET_ID = '1ehrJ32n1j1sbrqH3cBzZL9ZaVu9EC79k-6czhp0Ee6k';
 const SHEETS = [
@@ -45,12 +46,10 @@ export async function GET() {
   const yearData: Record<number, { capital: (object | null)[]; operaciones: (object | null)[] | null }> = {};
 
   for (const sheet of SHEETS) {
-    const res = await fetch(
+    const rows = await fetchCsv(
       `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${sheet.gid}`,
       { next: { revalidate: 300 } }
     );
-    const text = await res.text();
-    const rows = parseCSV(text);
     const sections = parseSections(rows);
 
     if (sheet.years.length === 1) {

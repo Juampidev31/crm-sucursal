@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { parseCSV } from '@/lib/csv-utils';
+import { fetchCsv } from '@/lib/fetch-csv';
 
 const SHEETS = {
   'LUCIANA': 'https://docs.google.com/spreadsheets/d/1Ieo3UsHNuL8dvvErbaM6X4wqT8JSuuAW9oDSUV5N87A/export?format=csv&gid=1686263284',
@@ -15,17 +15,14 @@ export async function GET() {
     
     for (const [name, url] of Object.entries(SHEETS)) {
       const fetchUrl = `${url}&t=${Date.now()}`;
-      const res = await fetch(fetchUrl, {
+      const rows = await fetchCsv(fetchUrl, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
         }
       });
-      if (res.ok) {
-        const text = await res.text();
-        data[name] = parseCSV(text);
-      }
+      data[name] = rows;
     }
     
     // Headers explícitos para que el browser y Next.js NO cacheen esta respuesta
@@ -36,7 +33,8 @@ export async function GET() {
         'Expires': '0',
       }
     });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido';
+    return NextResponse.json({ success: false, error: message }, { status: 502 });
   }
 }

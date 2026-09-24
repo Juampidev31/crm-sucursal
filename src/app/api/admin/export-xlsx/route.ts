@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ExcelJS from 'exceljs';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 function isAdminSession(req: NextRequest): boolean {
   const header = req.headers.get('x-session');
@@ -21,6 +16,13 @@ function isAdminSession(req: NextRequest): boolean {
 export async function POST(req: NextRequest) {
   if (!isAdminSession(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  let supabase;
+  try {
+    supabase = createServerSupabaseClient();
+  } catch {
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
 
   const { fechaDesde, fechaHasta, empleador, estados, analista, preview, search, montoMin, montoMax, fechaScoreDesde, fechaScoreHasta, scoreMin, scoreMax, tipoCliente, acuerdoPrecios, tipoAlerta, esRe } = await req.json() as {

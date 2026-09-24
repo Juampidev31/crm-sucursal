@@ -1,5 +1,6 @@
 import 'server-only';
-import { parseCSV, parsePct } from '@/lib/csv-utils';
+import { parsePct } from '@/lib/csv-utils';
+import { fetchCsv } from '@/lib/fetch-csv';
 
 const SHEET_ID = '1RcjEoiOM4PN92fNQv0ZUy-soh7Qa98vdvys0rr9_JlM';
 const SHEETS: Record<string, string> = {
@@ -25,12 +26,10 @@ export async function getCobranzasData(year: string): Promise<CobranzasData | nu
   const gid = SHEETS[year];
   if (!gid) return null;
 
-  const res = await fetch(
+  const rows = await fetchCsv(
     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`,
     { next: { revalidate: 300 } },
   );
-  const text = await res.text();
-  const rows = parseCSV(text);
 
   const tramo90: TramoRow[] = [], tramo120: TramoRow[] = [], refin: TramoRow[] = [];
   for (let i = 1; i <= 12; i++) {

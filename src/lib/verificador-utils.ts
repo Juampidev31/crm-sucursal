@@ -50,13 +50,25 @@ const MESES_ES: Record<string, string> = {
 export function parseFullDate(raw: string): string | null {
   const s = raw.trim();
 
+  const toIsoIfValid = (year: number, month: number, day: number) => {
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    ) {
+      return null;
+    }
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
   // "2025-09-01"
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (iso) return s;
+  if (iso) return toIsoIfValid(Number(iso[1]), Number(iso[2]), Number(iso[3]));
 
   // "04/08/2025" → D/M/YYYY (formato argentino)
   const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+  if (dmy) return toIsoIfValid(Number(dmy[3]), Number(dmy[2]), Number(dmy[1]));
 
   return null;
 }

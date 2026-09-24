@@ -1,12 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getCobranzasData, COBRANZAS_YEARS } from './data';
 import CobranzasClient from './CobranzasClient';
-import { createClient } from '@supabase/supabase-js';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 type SearchParams = Promise<{ year?: string; zoom?: string }>;
 
@@ -17,7 +14,7 @@ export default async function ReporteCobranzasPage({ searchParams }: { searchPar
   // 1. Try Supabase first
   let data = null;
   try {
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createServerSupabaseClient();
     const { data: dbRow } = await supabase
       .from('cobranzas_data')
       .select('payload')

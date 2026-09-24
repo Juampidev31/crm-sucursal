@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { parseCSV, clean, parsePct } from '@/lib/csv-utils';
+import { clean, parsePct } from '@/lib/csv-utils';
+import { fetchCsv } from '@/lib/fetch-csv';
 
 const SHEET_ID = '1ixuDCB2G5i-eDVP1TvVPylHBaxcoTODnRlizNkJqsfw';
 
 export async function GET(req: NextRequest) {
   const gid = req.nextUrl.searchParams.get('gid');
   if (!gid) return NextResponse.json({ error: 'gid requerido' }, { status: 400 });
+  if (!/^\d+$/.test(gid)) {
+    return NextResponse.json({ error: 'gid inválido' }, { status: 400 });
+  }
 
-  const res = await fetch(
+  const rows = await fetchCsv(
     `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`,
     { next: { revalidate: 300 } }
   );
-  const text = await res.text();
-  const rows = parseCSV(text);
 
   const seccionesIdx: number[] = [];
   for (let i = 0; i < rows.length; i++) {

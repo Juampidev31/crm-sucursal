@@ -1,6 +1,5 @@
-import React from 'react';
 import type { Metadata } from 'next';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { AlertTriangle } from 'lucide-react';
 
 const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -8,10 +7,11 @@ const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'J
 type SearchParams = Promise<{ anio?: string; mes?: string; zoom?: string }>;
 
 const parsePeriodo = (params: { anio?: string; mes?: string; zoom?: string }) => {
-  const anio = parseInt(params.anio || '2026');
-  const mes = parseInt(params.mes || '1');
-  const zoom = parseFloat(params.zoom || '1');
-  return { anio, mes, zoom };
+  const parsedYear = Number.parseInt(params.anio || '', 10);
+  const parsedMonth = Number.parseInt(params.mes || '', 10);
+  const anio = parsedYear >= 2000 && parsedYear <= 2100 ? parsedYear : 2026;
+  const mes = parsedMonth >= 1 && parsedMonth <= 12 ? parsedMonth : 1;
+  return { anio, mes };
 };
 
 const ErrorScreen = ({ message }: { message: string }) => (
@@ -32,6 +32,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 }
 
 async function fetchSnapshot(anio: number, mes: number): Promise<{ html?: string, datos?: any, error?: string }> {
+  const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from('resumen_mensual')
     .select('experiencia_cliente')
@@ -63,7 +64,7 @@ async function fetchSnapshot(anio: number, mes: number): Promise<{ html?: string
 import ResumenMensualInteractivo from './ResumenMensualInteractivo';
 
 export default async function ResumenMensualPublico({ searchParams }: { searchParams: SearchParams }) {
-  const { anio, mes, zoom } = parsePeriodo(await searchParams);
+  const { anio, mes } = parsePeriodo(await searchParams);
   const result = await fetchSnapshot(anio, mes);
 
   if ('error' in result) return <ErrorScreen message={result.error || 'Error desconocido'} />;

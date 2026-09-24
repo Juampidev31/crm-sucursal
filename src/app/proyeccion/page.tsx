@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { calcularComisiones } from '@/lib/utils';
 import { ESTADOS_MAP } from '@/types';
 import ProyeccionClient, { type ProyeccionData } from './ProyeccionClient';
@@ -16,6 +16,7 @@ function getTodayBA() {
 }
 
 async function buildProyeccion() {
+  const supabase = createServerSupabaseClient();
   const { anio: anioActual, mes: mesActual, dia: diaActual } = getTodayBA();
   const ultimoDiaMes = new Date(anioActual, mesActual + 1, 0).getDate();
   const maxDiaCalculo = Math.min(diaActual, ultimoDiaMes);
