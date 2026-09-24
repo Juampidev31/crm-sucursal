@@ -12,8 +12,8 @@ import CustomSelect from '@/components/CustomSelect';
 import DistBlock from '@/components/charts/DistBlock';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
 import {
-  Users, BarChart3, TrendingUp, Trophy, Target, Award, PieChart,
-  Shield, Tag, CheckCircle2, DollarSign
+  Users, BarChart3, TrendingUp, PieChart,
+  Shield, Tag, CheckCircle2
 } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import {
@@ -512,10 +512,7 @@ export default function ComparativaAnalistasTab() {
           {/* Card 1: Capital Vendido Total */}
           <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Capital Vendido (PDV)</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(filas.total.capitalK)}</div>
-              <DollarSign size={18} color="#10b981" />
-            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', marginBottom: 4 }}>{formatCurrency(filas.total.capitalK)}</div>
             <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
               Meta: {filas.total.metaCapital > 0 ? formatCurrency(filas.total.metaCapital) : '—'}
             </div>
@@ -530,10 +527,7 @@ export default function ComparativaAnalistasTab() {
           {/* Card 2: Operaciones Totales */}
           <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Operaciones Cerradas</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{filas.total.ventasQ} ops</div>
-              <Target size={18} color="#60a5fa" />
-            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', marginBottom: 4 }}>{filas.total.ventasQ} ops</div>
             <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
               Meta: {filas.total.metaOps > 0 ? `${filas.total.metaOps} ops` : '—'}
             </div>
@@ -548,10 +542,7 @@ export default function ComparativaAnalistasTab() {
           {/* Card 3: Líder en Capital */}
           <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Líder en Ventas</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#fbbf24' }}>{liderCapital ? liderCapital.analista : '—'}</div>
-              <Trophy size={18} color="#fbbf24" />
-            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#fbbf24', marginBottom: 4 }}>{liderCapital ? liderCapital.analista : '—'}</div>
             <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
               {liderCapital ? formatCurrency(liderCapital.capitalK) : '$0'}
             </div>
@@ -566,11 +557,8 @@ export default function ComparativaAnalistasTab() {
           {/* Card 4: Mayor Efectividad */}
           <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Mayor Efectividad de Cierre</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: '#34d399' }}>
-                {liderEfectividad?.tasaCierre ? `${liderEfectividad.tasaCierre.toFixed(1)}%` : '—'}
-              </div>
-              <Award size={18} color="#34d399" />
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#34d399', marginBottom: 4 }}>
+              {liderEfectividad?.tasaCierre ? `${liderEfectividad.tasaCierre.toFixed(1)}%` : '—'}
             </div>
             <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
               Analista: <strong style={{ color: '#fff' }}>{liderEfectividad ? liderEfectividad.analista : '—'}</strong>
@@ -701,17 +689,17 @@ export default function ComparativaAnalistasTab() {
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Analista</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Ingresados</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Vendido ($)</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Meta ($)</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Cumpl. ($)</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Ventas (Q)</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Meta (Q)</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Cumpl. (Q)</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Ticket Prom.</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Tasa Cierre</th>
-                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Conv. Total</th>
+                <th style={{ textAlign: 'left', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Analista</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Ingresados</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Vendido ($)</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Meta ($)</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Cumpl. ($)</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Ventas (Q)</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Meta (Q)</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Cumpl. (Q)</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Ticket Prom.</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Tasa Cierre</th>
+                <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Conv. Total</th>
                 <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>% Renov.</th>
               </tr>
             </thead>
@@ -735,38 +723,38 @@ export default function ComparativaAnalistasTab() {
                       if (!isSelected) e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)';
                     }}
                   >
-                    <td style={{ padding: '16px 14px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <td style={{ padding: '16px 14px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: k.color }} />
                       {k.analista.toUpperCase()}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {k.ingresados}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#eee', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#eee', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {formatCurrency(k.capitalK)}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {k.metaCapital > 0 ? formatCurrency(k.metaCapital) : '—'}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(k.cumplCapital), fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(k.cumplCapital), fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {k.cumplCapital !== null ? `${k.cumplCapital.toFixed(1)}%` : '—'}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#60a5fa', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#60a5fa', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {k.ventasQ}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {k.metaOps > 0 ? k.metaOps : '—'}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(k.cumplOps), fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(k.cumplOps), fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {k.cumplOps !== null ? `${k.cumplOps.toFixed(1)}%` : '—'}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#eee', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#eee', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {formatCurrency(k.ticket)}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(k.tasaCierre), fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(k.tasaCierre), fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {k.tasaCierre !== null ? `${k.tasaCierre.toFixed(1)}%` : '—'}
                     </td>
-                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(k.conversionTotal), fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(k.conversionTotal), fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                       {k.conversionTotal !== null ? `${k.conversionTotal.toFixed(1)}%` : '—'}
                     </td>
                     <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#888', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -786,38 +774,38 @@ export default function ComparativaAnalistasTab() {
                   fontWeight: 900,
                 }}
               >
-                <td style={{ padding: '16px 14px', fontSize: 13, fontWeight: 900, color: '#10b981', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <td style={{ padding: '16px 14px', fontSize: 13, fontWeight: 900, color: '#10b981', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
                   TOTAL GENERAL
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {filas.total.ingresados}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 14, color: '#10b981', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 14, color: '#10b981', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {formatCurrency(filas.total.capitalK)}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {filas.total.metaCapital > 0 ? formatCurrency(filas.total.metaCapital) : '—'}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(filas.total.cumplCapital), fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(filas.total.cumplCapital), fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {filas.total.cumplCapital !== null ? `${filas.total.cumplCapital.toFixed(1)}%` : '—'}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 14, color: '#60a5fa', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 14, color: '#60a5fa', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {filas.total.ventasQ}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#aaa', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {filas.total.metaOps > 0 ? filas.total.metaOps : '—'}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(filas.total.cumplOps), fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(filas.total.cumplOps), fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {filas.total.cumplOps !== null ? `${filas.total.cumplOps.toFixed(1)}%` : '—'}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {formatCurrency(filas.total.ticket)}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(filas.total.tasaCierre), fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(filas.total.tasaCierre), fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {filas.total.tasaCierre !== null ? `${filas.total.tasaCierre.toFixed(1)}%` : '—'}
                 </td>
-                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(filas.total.conversionTotal), fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: cumplColor(filas.total.conversionTotal), fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
                   {filas.total.conversionTotal !== null ? `${filas.total.conversionTotal.toFixed(1)}%` : '—'}
                 </td>
                 <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
