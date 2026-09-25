@@ -21,7 +21,7 @@ import {
 import dynamic from 'next/dynamic';
 
 const TabFallback = () => (
-  <div style={{ padding: 24, color: 'var(--gris)', fontSize: 13, fontFamily: "'Outfit', sans-serif" }}>
+  <div style={{ padding: 24, color: 'var(--gris)', fontSize: 13, fontFamily: 'var(--font-ui)' }}>
     Cargando…
   </div>
 );
@@ -74,10 +74,10 @@ function SubTabBar<T extends string>({ tabs, active, onSelect }: {
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '6px 14px', borderRadius: 6,
-            background: active === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
-            border: `1px solid ${active === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-            color: active === t.id ? '#fff' : 'var(--gris)',
-            fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: active === t.id ? 700 : 500,
+            background: active === t.id ? 'var(--neutral-08)' : 'transparent',
+            border: `1px solid ${active === t.id ? 'var(--neutral-20)' : 'var(--neutral-06)'}`,
+            color: active === t.id ? 'var(--text-strong)' : 'var(--gris)',
+            fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: active === t.id ? 700 : 500,
             cursor: 'pointer',
           }}
         >
@@ -93,8 +93,8 @@ function SubTabBar<T extends string>({ tabs, active, onSelect }: {
 const fmtFechasISO = (v: any) => String(v ?? '').replace(/\d{4}-\d{2}-\d{2}/g, (m) => formatDate(m));
 
 const renderDetalleAudit = (reg: any) => {
-  if (reg.accion === 'Creación') return <span style={{ color: '#888' }}>Nuevo registro</span>;
-  if (reg.accion === 'Eliminación') return <span style={{ color: '#888' }}>Registro eliminado</span>;
+  if (reg.accion === 'Creación') return <span style={{ color: 'var(--text-muted)' }}>Nuevo registro</span>;
+  if (reg.accion === 'Eliminación') return <span style={{ color: 'var(--text-muted)' }}>Registro eliminado</span>;
   if (reg.valor_anterior || reg.valor_nuevo) {
     const campos = String(reg.campo_modificado || '').split(',').map((s: string) => s.trim()).filter(Boolean);
     const anteriores = String(reg.valor_anterior || '').split('|').map((s: string) => s.trim());
@@ -107,30 +107,30 @@ const renderDetalleAudit = (reg: any) => {
           const nue = fmtFechasISO(nuevos[idx] ?? '');
           return (
             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ color: '#666', fontWeight: 600 }}>{campo}:</span>
-              {ant && <span style={{ color: '#ff3366' }}>{ant}</span>}
-              {ant && nue && <ArrowRight size={10} color="#666" />}
-              {nue && <span style={{ color: '#22c55e' }}>{nue}</span>}
+              <span style={{ color: 'var(--text-subtle)', fontWeight: 600 }}>{campo}:</span>
+              {ant && <span style={{ color: 'var(--danger-strong)' }}>{ant}</span>}
+              {ant && nue && <ArrowRight size={10} color="var(--text-subtle)" />}
+              {nue && <span style={{ color: 'var(--success)' }}>{nue}</span>}
             </div>
           );
         })}
       </div>
     );
   }
-  return <span style={{ color: '#888' }}>{reg.campo_modificado || '—'}</span>;
+  return <span style={{ color: 'var(--text-muted)' }}>{reg.campo_modificado || '—'}</span>;
 };
 
 // Detalle desglosado campo por campo (usado en el modal de historial).
 // campo_modificado viene como "Campo1, Campo2" y los valores como "v1 | v2".
 const renderCamposAudit = (reg: any) => {
-  if (reg.accion === 'Creación') return <span style={{ color: '#888', fontSize: 15 }}>Nuevo registro</span>;
-  if (reg.accion === 'Eliminación') return <span style={{ color: '#888', fontSize: 15 }}>Registro eliminado</span>;
+  if (reg.accion === 'Creación') return <span style={{ color: 'var(--text-muted)', fontSize: 15 }}>Nuevo registro</span>;
+  if (reg.accion === 'Eliminación') return <span style={{ color: 'var(--text-muted)', fontSize: 15 }}>Registro eliminado</span>;
 
   const campos = String(reg.campo_modificado || '').split(',').map((s: string) => s.trim()).filter(Boolean);
   const anteriores = String(reg.valor_anterior || '').split('|').map((s: string) => s.trim());
   const nuevos = String(reg.valor_nuevo || '').split('|').map((s: string) => s.trim());
 
-  if (campos.length === 0) return <span style={{ color: '#888', fontSize: 15 }}>—</span>;
+  if (campos.length === 0) return <span style={{ color: 'var(--text-muted)', fontSize: 15 }}>—</span>;
 
   // Si el valor es una fecha ISO (YYYY-MM-DD) la muestra como DD/MM/AAAA.
   const fmtVal = (v: string) => (/^\d{4}-\d{2}-\d{2}/.test(v) ? formatDate(v) : v);
@@ -142,10 +142,10 @@ const renderCamposAudit = (reg: any) => {
         const nue = fmtVal(nuevos[idx] ?? '');
         return (
           <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, flexWrap: 'wrap' }}>
-            <span style={{ color: '#888', fontWeight: 700, minWidth: 100 }}>{campo}:</span>
-            {ant && <span style={{ color: '#ff3366' }}>{ant}</span>}
-            {ant && nue && <ArrowRight size={15} color="#666" />}
-            {nue && <span style={{ color: '#22c55e', fontWeight: 600 }}>{nue}</span>}
+            <span style={{ color: 'var(--text-muted)', fontWeight: 700, minWidth: 100 }}>{campo}:</span>
+            {ant && <span style={{ color: 'var(--danger-strong)' }}>{ant}</span>}
+            {ant && nue && <ArrowRight size={15} color="var(--text-subtle)" />}
+            {nue && <span style={{ color: 'var(--success)', fontWeight: 600 }}>{nue}</span>}
           </div>
         );
       })}
@@ -419,7 +419,7 @@ export default function AjustesPage() {
         const PAGE = 1000;
         let offset = 0;
         const acc: any[] = [];
-        // eslint-disable-next-line no-constant-condition
+
         while (true) {
           if (cancelado) return;
           let q = supabase.from('auditoria').select('*').order('fecha_hora', { ascending: false });
@@ -679,7 +679,7 @@ export default function AjustesPage() {
       )}
 
       {/* Nav Tabs */}
-      <div className="toolbar" style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
+      <div className="toolbar" style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', borderBottom: '1px solid var(--neutral-05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {[
             { id: 'configuracion', label: 'Configuración', icon: Settings },
@@ -693,11 +693,11 @@ export default function AjustesPage() {
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 padding: '10px 16px', border: 'none',
-                background: activeTab === t.id ? '#fff' : 'transparent',
+                background: activeTab === t.id ? 'var(--accent)' : 'transparent',
                 borderRadius: '6px',
-                fontFamily: "'Outfit', sans-serif", fontSize: '13px', fontWeight: activeTab === t.id ? 700 : 500,
+                fontFamily: 'var(--font-ui)', fontSize: '13px', fontWeight: activeTab === t.id ? 700 : 500,
                 cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                color: activeTab === t.id ? '#000' : 'var(--gris)',
+                color: activeTab === t.id ? 'var(--text-on-accent)' : 'var(--gris)',
                 flex: '1 0 160px',
                 maxWidth: '200px',
                 whiteSpace: 'nowrap'
@@ -713,7 +713,7 @@ export default function AjustesPage() {
       {loading ? (
         <div className="loading-container" style={{ minHeight: '400px' }}>
           <div className="spinner" />
-          <span style={{ color: '#555' }}>Cargando configuración...</span>
+          <span style={{ color: 'var(--text-subtle)' }}>Cargando configuración...</span>
         </div>
       ) : (
         <div style={{ width: '100%' }}>
@@ -732,10 +732,10 @@ export default function AjustesPage() {
             />
           )}
           {activeTab === 'configuracion' && configSubTab === 'alertas' && isAdmin && (
-            <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <div className="data-card" style={{ background: 'var(--surface-card)', border: '1px solid var(--neutral-03)' }}>
               <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Gestión de Alertas</h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>Gestión de Alertas</h3>
                   <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Parámetros de vencimiento y colores de indicadores</p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -748,21 +748,21 @@ export default function AjustesPage() {
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div style={{ background: 'var(--neutral-01)', borderRadius: '12px', border: '1px solid var(--neutral-05)' }}>
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th style={{ color: '#444' }}>Tipo de Alerta</th>
-                      <th style={{ color: '#444' }}>Estado Aplicado</th>
-                      <th style={{ color: '#444' }}>Días Límite</th>
-                      <th style={{ color: '#444' }}>Identificador</th>
+                      <th style={{ color: 'var(--text-disabled)' }}>Tipo de Alerta</th>
+                      <th style={{ color: 'var(--text-disabled)' }}>Estado Aplicado</th>
+                      <th style={{ color: 'var(--text-disabled)' }}>Días Límite</th>
+                      <th style={{ color: 'var(--text-disabled)' }}>Identificador</th>
                     </tr>
                   </thead>
                   <tbody>
                     {alertasConfig.map((alerta, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--neutral-02)' }}>
                         <td style={{ fontWeight: 600, fontSize: '14px' }}>{alerta.nombre}</td>
-                        <td><span className="status-badge" style={{ background: 'rgba(255,255,255,0.03)', color: '#888' }}>{alerta.estado}</span></td>
+                        <td><span className="status-badge" style={{ background: 'var(--neutral-03)', color: 'var(--text-muted)' }}>{alerta.estado}</span></td>
                         <td>
                           <input
                             className="form-input"
@@ -770,8 +770,8 @@ export default function AjustesPage() {
                             style={{
                               width: '100px',
                               textAlign: 'center',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
+                              background: 'var(--neutral-02)',
+                              border: '1px solid var(--neutral-08)',
                               borderRadius: '4px'
                             }}
                             value={alerta.dias}
@@ -784,12 +784,12 @@ export default function AjustesPage() {
                         </td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: alerta.color, border: '1px solid rgba(255,255,255,0.1)' }} />
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: alerta.color, border: '1px solid var(--neutral-10)' }} />
                             <input
                               className="form-input"
                               type="text"
                               value={alerta.color}
-                              style={{ width: '90px', fontSize: '11px', fontFamily: 'monospace' }}
+                              style={{ width: '90px', fontSize: '11px', fontFamily: 'var(--font-code)' }}
                               onChange={e => {
                                 const updated = [...alertasConfig];
                                 updated[idx] = { ...updated[idx], color: e.target.value };
@@ -804,9 +804,9 @@ export default function AjustesPage() {
                 </table>
               </div>
 
-              <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)', marginTop: '24px' }}>
+              <div className="data-card" style={{ background: 'var(--surface-card)', border: '1px solid var(--neutral-03)', marginTop: '24px' }}>
                 <div className="data-card-header" style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Consulta de Registros por Estado</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>Consulta de Registros por Estado</h3>
                   <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Acceso rápido para revisar registros por analista y estado (Ej: Registros sin gestión / proyección)</p>
                 </div>
                 <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -834,7 +834,7 @@ export default function AjustesPage() {
                             if (consultaAnalista !== 'todos') setFilter('analista', consultaAnalista);
                             if (consultaEstado !== 'todos') {
                                 setFilter('estado', consultaEstado);
-                                toggleEstado(consultaEstado); 
+                                toggleEstado(consultaEstado);
                             }
                             setFilter('soloAlertasVencidas', true);
                             router.push('/registros');
@@ -859,9 +859,9 @@ export default function AjustesPage() {
 
           {/* TAB: PERMISOS */}
           {activeTab === 'configuracion' && configSubTab === 'permisos' && isAdmin && (
-            <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)' }}>
+            <div className="data-card" style={{ background: 'var(--surface-card)', border: '1px solid var(--neutral-03)' }}>
               <div className="data-card-header" style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Roles y Permisos</h3>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>Roles y Permisos</h3>
                 <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>
                   Habilitá o deshabilitá funciones específicas de forma general o para cada analista en tiempo real.
                 </p>
@@ -869,7 +869,7 @@ export default function AjustesPage() {
 
               {/* Selector de Ámbito: General vs. Analistas Individuales */}
               <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
                   Seleccionar Ámbito de Configuración
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -886,9 +886,9 @@ export default function AjustesPage() {
                       fontWeight: 700,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
-                      background: permisoScope === 'general' ? 'rgba(0, 212, 255, 0.15)' : 'rgba(255,255,255,0.03)',
-                      color: permisoScope === 'general' ? '#00d4ff' : '#9ca3af',
-                      border: `1px solid ${permisoScope === 'general' ? 'rgba(0, 212, 255, 0.4)' : 'rgba(255,255,255,0.06)'}`,
+                      background: permisoScope === 'general' ? 'rgba(0, 212, 255, 0.15)' : 'var(--neutral-03)',
+                      color: permisoScope === 'general' ? 'var(--accent)' : 'var(--text-muted)',
+                      border: `1px solid ${permisoScope === 'general' ? 'rgba(0, 212, 255, 0.4)' : 'var(--neutral-06)'}`,
                       boxShadow: permisoScope === 'general' ? '0 0 12px rgba(0, 212, 255, 0.2)' : 'none',
                     }}
                   >
@@ -896,7 +896,7 @@ export default function AjustesPage() {
                     <span>Rol General: Analista (Por Defecto)</span>
                   </button>
 
-                  <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.08)', margin: '0 4px' }} />
+                  <div style={{ width: '1px', height: '24px', background: 'var(--neutral-08)', margin: '0 4px' }} />
 
                   {analistasDefault.map(analista => {
                     const isSelected = permisoScope === analista;
@@ -917,9 +917,9 @@ export default function AjustesPage() {
                           fontWeight: 700,
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
-                          background: isSelected ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.02)',
-                          color: isSelected ? '#c084fc' : '#9ca3af',
-                          border: `1px solid ${isSelected ? 'rgba(168, 85, 247, 0.4)' : 'rgba(255,255,255,0.06)'}`,
+                          background: isSelected ? 'rgba(168, 85, 247, 0.15)' : 'var(--neutral-02)',
+                          color: isSelected ? 'var(--violet)' : 'var(--text-muted)',
+                          border: `1px solid ${isSelected ? 'rgba(168, 85, 247, 0.4)' : 'var(--neutral-06)'}`,
                           boxShadow: isSelected ? '0 0 12px rgba(168, 85, 247, 0.2)' : 'none',
                         }}
                       >
@@ -932,7 +932,7 @@ export default function AjustesPage() {
                             padding: '1px 6px',
                             borderRadius: '8px',
                             background: isSelected ? 'rgba(192, 132, 252, 0.3)' : 'rgba(0, 212, 255, 0.15)',
-                            color: isSelected ? '#fff' : '#00d4ff',
+                            color: isSelected ? 'var(--text-strong)' : 'var(--accent)',
                             border: `1px solid ${isSelected ? 'rgba(192, 132, 252, 0.5)' : 'rgba(0, 212, 255, 0.3)'}`,
                           }}>
                             {customCount} pers.
@@ -953,42 +953,42 @@ export default function AjustesPage() {
 
                 return (
                   <div style={{
-                    background: 'rgba(255,255,255,0.02)',
+                    background: 'var(--neutral-02)',
                     padding: '24px',
                     borderRadius: '14px',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    border: '1px solid var(--neutral-05)',
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         {isGeneral ? (
                           <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(0, 212, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Shield size={18} color="#00d4ff" />
+                            <Shield size={18} color="var(--accent)" />
                           </div>
                         ) : (
                           <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <User size={18} color="#c084fc" />
+                            <User size={18} color="var(--violet)" />
                           </div>
                         )}
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <h4 style={{ fontWeight: 800, fontSize: '16px', color: '#fff', letterSpacing: '-0.3px' }}>
+                            <h4 style={{ fontWeight: 800, fontSize: '16px', color: 'var(--text-strong)', letterSpacing: '-0.3px' }}>
                               {isGeneral ? 'Rol General: Analista (Por Defecto)' : `Permisos Individuales: ${permisoScope}`}
                             </h4>
                             {isGeneral ? (
-                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(0, 212, 255, 0.1)', color: '#00d4ff', border: '1px solid rgba(0, 212, 255, 0.2)' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(0, 212, 255, 0.1)', color: 'var(--accent)', border: '1px solid rgba(0, 212, 255, 0.2)' }}>
                                 Base Global
                               </span>
                             ) : customCount > 0 ? (
-                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(168, 85, 247, 0.15)', color: 'var(--violet)', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
                                 {customCount} personalizada(s)
                               </span>
                             ) : (
-                              <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', color: '#888' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: 'var(--neutral-05)', color: 'var(--text-muted)' }}>
                                 Hereda todo de General
                               </span>
                             )}
                           </div>
-                          <p style={{ fontSize: '12px', color: '#888', marginTop: '3px' }}>
+                          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>
                             {isGeneral
                               ? 'Estos permisos se aplican a todos los analistas que no tengan una regla personalizada.'
                               : `Configuración específica para ${permisoScope}. Los permisos sin personalizar heredan el valor general.`}
@@ -1007,7 +1007,7 @@ export default function AjustesPage() {
                             gap: '6px',
                             background: 'rgba(248, 113, 113, 0.08)',
                             border: '1px solid rgba(248, 113, 113, 0.25)',
-                            color: '#f87171',
+                            color: 'var(--danger)',
                             padding: '6px 12px',
                             borderRadius: '8px',
                             fontSize: '11.5px',
@@ -1041,9 +1041,9 @@ export default function AjustesPage() {
                               flexDirection: 'column',
                               justifyContent: 'space-between',
                               padding: '16px',
-                              background: isCustom ? 'rgba(168, 85, 247, 0.03)' : 'rgba(0,0,0,0.25)',
+                              background: isCustom ? 'var(--violet-soft)' : 'var(--surface-subtle)',
                               borderRadius: '10px',
-                              border: `1px solid ${isCustom ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.04)'}`,
+                              border: `1px solid ${isCustom ? 'rgba(168, 85, 247, 0.15)' : 'var(--neutral-04)'}`,
                               gap: '12px',
                               transition: 'all 0.2s ease',
                             }}
@@ -1051,7 +1051,7 @@ export default function AjustesPage() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                               <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#eee' }}>{p.label}</div>
+                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-default)' }}>{p.label}</div>
                                   {!isGeneral && (
                                     isCustom ? (
                                       <span style={{
@@ -1060,7 +1060,7 @@ export default function AjustesPage() {
                                         padding: '2px 7px',
                                         borderRadius: '6px',
                                         background: 'rgba(168, 85, 247, 0.18)',
-                                        color: '#c084fc',
+                                        color: 'var(--violet)',
                                         border: '1px solid rgba(168, 85, 247, 0.35)',
                                         display: 'inline-flex',
                                         alignItems: 'center',
@@ -1074,16 +1074,16 @@ export default function AjustesPage() {
                                         fontWeight: 600,
                                         padding: '2px 7px',
                                         borderRadius: '6px',
-                                        background: 'rgba(255,255,255,0.04)',
-                                        color: '#777',
-                                        border: '1px solid rgba(255,255,255,0.06)',
+                                        background: 'var(--neutral-04)',
+                                        color: 'var(--text-subtle)',
+                                        border: '1px solid var(--neutral-06)',
                                       }}>
                                         Heredado ({generalActive ? 'Activado' : 'Desactivado'})
                                       </span>
                                     )
                                   )}
                                 </div>
-                                <div style={{ fontSize: '11.5px', color: '#777', marginTop: '4px', lineHeight: 1.4 }}>
+                                <div style={{ fontSize: '11.5px', color: 'var(--text-subtle)', marginTop: '4px', lineHeight: 1.4 }}>
                                   {p.desc}
                                 </div>
                               </div>
@@ -1095,7 +1095,7 @@ export default function AjustesPage() {
                                 style={{
                                   background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(248, 113, 113, 0.12)',
                                   border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(248, 113, 113, 0.35)'}`,
-                                  color: isActive ? '#00ff88' : '#ff3366',
+                                  color: isActive ? 'var(--success)' : 'var(--danger-strong)',
                                   padding: '7px 14px',
                                   borderRadius: '20px',
                                   fontSize: '11.5px',
@@ -1113,7 +1113,7 @@ export default function AjustesPage() {
                             </div>
 
                             {!isGeneral && isCustom && (
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid var(--neutral-03)' }}>
                                 <button
                                   type="button"
                                   onClick={() => resetPermisoAnalista(permisoScope, p.id)}
@@ -1121,7 +1121,7 @@ export default function AjustesPage() {
                                   style={{
                                     background: 'transparent',
                                     border: 'none',
-                                    color: '#888',
+                                    color: 'var(--text-muted)',
                                     fontSize: '11px',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -1130,8 +1130,8 @@ export default function AjustesPage() {
                                     padding: '2px 6px',
                                     transition: 'color 0.2s',
                                   }}
-                                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                                  onMouseLeave={e => (e.currentTarget.style.color = '#888')}
+                                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-strong)')}
+                                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
                                 >
                                   <RotateCcw size={11} />
                                   <span>Heredar de General</span>
@@ -1162,10 +1162,10 @@ export default function AjustesPage() {
             />
           )}
           {activeTab === 'reportes' && reportesSubTab === 'historico' && (
-            <div className="data-card" style={{ background: '#111111' }}>
+            <div className="data-card" style={{ background: 'var(--surface-card)' }}>
               <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Histórico y Objetivos</h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>Histórico y Objetivos</h3>
                   <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Control de objetivos y resultados por analista y año</p>
                 </div>
                 <button className="btn-primary" onClick={saveHistorico} disabled={savingHist}>
@@ -1174,18 +1174,18 @@ export default function AjustesPage() {
               </div>
 
               {/* Selectors */}
-              <div style={{ display: 'flex', gap: '32px', marginBottom: '32px', padding: '24px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ display: 'flex', gap: '32px', marginBottom: '32px', padding: '24px', background: 'var(--neutral-02)', borderRadius: '12px', border: '1px solid var(--neutral-04)' }}>
                 <div style={{ flex: 1 }}>
                   <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seleccionar Analista</label>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {['PDV', ...analistasDefault].map(a => (
                       <button key={a} onClick={() => setHistAnalista(a)} style={{
                         padding: '10px 20px', borderRadius: '6px', border: '1px solid',
-                        fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600,
+                        fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600,
                         cursor: 'pointer', transition: 'all 0.2s',
-                        borderColor: histAnalista === a ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)',
-                        background: histAnalista === a ? '#fff' : 'transparent',
-                        color: histAnalista === a ? '#000' : 'var(--gris)',
+                        borderColor: histAnalista === a ? 'var(--neutral-30)' : 'var(--neutral-05)',
+                        background: histAnalista === a ? 'var(--accent)' : 'transparent',
+                        color: histAnalista === a ? 'var(--text-on-accent)' : 'var(--gris)',
                       }}>{a}</button>
                     ))}
                   </div>
@@ -1196,11 +1196,11 @@ export default function AjustesPage() {
                     {Array.from({ length: new Date().getFullYear() - 2021 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
                       <button key={y} onClick={() => setHistAnio(y)} style={{
                         padding: '10px 16px', borderRadius: '6px', border: '1px solid',
-                        fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600,
+                        fontFamily: 'var(--font-ui)', fontSize: '12px', fontWeight: 600,
                         cursor: 'pointer', transition: 'all 0.2s',
-                        borderColor: histAnio === y ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)',
-                        background: histAnio === y ? '#fff' : 'transparent',
-                        color: histAnio === y ? '#000' : 'var(--gris)',
+                        borderColor: histAnio === y ? 'var(--neutral-30)' : 'var(--neutral-05)',
+                        background: histAnio === y ? 'var(--accent)' : 'transparent',
+                        color: histAnio === y ? 'var(--text-on-accent)' : 'var(--gris)',
                       }}>{y}</button>
                     ))}
                   </div>
@@ -1208,28 +1208,28 @@ export default function AjustesPage() {
               </div>
 
               <div style={{ overflowX: 'auto' }}>
-                <table className="data-table" style={{ border: '1px solid rgba(255,255,255,0.03)' }}>
+                <table className="data-table" style={{ border: '1px solid var(--neutral-03)' }}>
                   <thead>
                     <tr>
                       <th style={{ color: 'var(--gris)', width: '120px', fontSize: '11px' }}>MES</th>
                       <th style={{ color: 'var(--gris)', opacity: 0.8, fontSize: '11px' }}>METAS CAPITAL ($)</th>
                       <th style={{ color: 'var(--gris)', opacity: 0.8, fontSize: '11px' }}>METAS OPS</th>
-                      <th style={{ color: '#fff', opacity: 0.9, fontSize: '11px' }}>REAL CAPITAL ($)</th>
-                      <th style={{ color: '#fff', opacity: 0.9, fontSize: '11px' }}>REAL OPS</th>
+                      <th style={{ color: 'var(--text-strong)', opacity: 0.9, fontSize: '11px' }}>REAL CAPITAL ($)</th>
+                      <th style={{ color: 'var(--text-strong)', opacity: 0.9, fontSize: '11px' }}>REAL OPS</th>
                     </tr>
                   </thead>
                   <tbody>
                     {CONFIG.MESES_NOMBRES.map((mes, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', height: '54px' }}>
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--neutral-02)', height: '54px' }}>
                         <td style={{ fontWeight: 800, fontSize: '12px', color: 'var(--gris)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{mes}</td>
                         <td>
                           <input
                             className="form-input" type="number"
                             style={{
                               width: '140px',
-                              background: 'rgba(255,255,255,0.01)',
+                              background: 'var(--neutral-01)',
                               border: 'none',
-                              borderBottom: '1.5px solid rgba(255,255,255,0.1)',
+                              borderBottom: '1.5px solid var(--neutral-10)',
                               borderRadius: 0,
                               padding: '8px 4px'
                             }}
@@ -1246,7 +1246,7 @@ export default function AjustesPage() {
                         <td>
                           <input
                             className="form-input" type="number"
-                            style={{ width: '80px', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: 0, textAlign: 'center' }}
+                            style={{ width: '80px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--neutral-05)', borderRadius: 0, textAlign: 'center' }}
                             placeholder="-"
                             value={histRows[idx].meta_operaciones}
                             onChange={e => setHistRows(prev => {
@@ -1259,9 +1259,9 @@ export default function AjustesPage() {
                             className="form-input" type="number"
                             style={{
                               width: '140px',
-                              background: 'rgba(255,255,255,0.02)',
+                              background: 'var(--neutral-02)',
                               border: 'none',
-                              borderBottom: '1.5px solid rgba(255,255,255,0.15)',
+                              borderBottom: '1.5px solid var(--neutral-15)',
                               borderRadius: 0,
                               padding: '8px 4px'
                             }}
@@ -1280,9 +1280,9 @@ export default function AjustesPage() {
                             className="form-input" type="number"
                             style={{
                               width: '100px',
-                              background: 'rgba(255,255,255,0.02)',
+                              background: 'var(--neutral-02)',
                               border: 'none',
-                              borderBottom: '1.5px solid rgba(255,255,255,0.15)',
+                              borderBottom: '1.5px solid var(--neutral-15)',
                               borderRadius: 0,
                               textAlign: 'center',
                               padding: '8px 4px'
@@ -1320,26 +1320,26 @@ export default function AjustesPage() {
           {activeTab === 'datos-masivos' && datosSubTab === 'duplicados' && (
             <div style={{ width: '100%', margin: '0 auto', padding: '20px 0 60px' }}>
               <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0,212,255,0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                   <Copy size={28} />
                 </div>
-                <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Detección de Duplicados</h2>
-                <p style={{ color: '#888', fontSize: 13, marginTop: 8, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                <h2 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>Detección de Duplicados</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                   {duplicados.length} Grupos Potenciales Encontrados
                 </p>
               </div>
 
               {/* Minimalist Filters */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '24px', marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+              <div style={{ background: 'var(--neutral-02)', border: '1px solid var(--neutral-04)', borderRadius: 16, padding: '24px', marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filtrar por Estados</label>
+                    <label style={{ display: 'block', fontSize: '9px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filtrar por Estados</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {allEstados.map(e => (
                         <button key={e} onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)} style={{
-                          background: selectedEstados.includes(e) ? '#fff' : 'rgba(255,255,255,0.03)',
-                          color: selectedEstados.includes(e) ? '#000' : '#888',
-                          border: `1px solid ${selectedEstados.includes(e) ? '#fff' : 'rgba(255,255,255,0.08)'}`,
+                          background: selectedEstados.includes(e) ? 'var(--accent)' : 'var(--neutral-03)',
+                          color: selectedEstados.includes(e) ? 'var(--text-on-accent)' : 'var(--text-muted)',
+                          border: `1px solid ${selectedEstados.includes(e) ? 'var(--accent)' : 'var(--neutral-08)'}`,
                           padding: '6px 12px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
                         }}>
                           {e}
@@ -1348,13 +1348,13 @@ export default function AjustesPage() {
                     </div>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filtrar por Analistas</label>
+                    <label style={{ display: 'block', fontSize: '9px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filtrar por Analistas</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {allAnalistas.map(a => (
                         <button key={a} onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)} style={{
-                          background: selectedAnalistas.includes(a) ? '#fff' : 'rgba(255,255,255,0.03)',
-                          color: selectedAnalistas.includes(a) ? '#000' : '#888',
-                          border: `1px solid ${selectedAnalistas.includes(a) ? '#fff' : 'rgba(255,255,255,0.08)'}`,
+                          background: selectedAnalistas.includes(a) ? 'var(--accent)' : 'var(--neutral-03)',
+                          color: selectedAnalistas.includes(a) ? 'var(--text-on-accent)' : 'var(--text-muted)',
+                          border: `1px solid ${selectedAnalistas.includes(a) ? 'var(--accent)' : 'var(--neutral-08)'}`,
                           padding: '6px 12px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
                         }}>
                           {displayAnalista(a)}
@@ -1363,11 +1363,11 @@ export default function AjustesPage() {
                     </div>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Rango de Fecha</label>
+                    <label style={{ display: 'block', fontSize: '9px', color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Rango de Fecha</label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input type="date" value={duplicadosFechaDesde} onChange={e => setDuplicadosFechaDesde(e.target.value)} style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', padding: '10px', borderRadius: 8, fontSize: 11, outline: 'none' }} />
-                      <span style={{ color: '#444' }}>-</span>
-                      <input type="date" value={duplicadosFechaHasta} onChange={e => setDuplicadosFechaHasta(e.target.value)} style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', padding: '10px', borderRadius: 8, fontSize: 11, outline: 'none' }} />
+                      <input type="date" value={duplicadosFechaDesde} onChange={e => setDuplicadosFechaDesde(e.target.value)} style={{ flex: 1, background: 'var(--surface-base)', border: '1px solid var(--neutral-10)', color: 'var(--text-default)', padding: '10px', borderRadius: 8, fontSize: 11, outline: 'none' }} />
+                      <span style={{ color: 'var(--text-disabled)' }}>-</span>
+                      <input type="date" value={duplicadosFechaHasta} onChange={e => setDuplicadosFechaHasta(e.target.value)} style={{ flex: 1, background: 'var(--surface-base)', border: '1px solid var(--neutral-10)', color: 'var(--text-default)', padding: '10px', borderRadius: 8, fontSize: 11, outline: 'none' }} />
                     </div>
                   </div>
                 </div>
@@ -1376,38 +1376,38 @@ export default function AjustesPage() {
               {/* Duplicados List */}
               {duplicados.length === 0 ? (
                  <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                    <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px', opacity: 0.8 }} />
-                    <p style={{ color: '#34d399', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Pool Limpio</p>
-                    <p style={{ color: '#666', fontSize: 12, marginTop: 8 }}>No se encontraron registros duplicados con estos filtros.</p>
+                    <CheckCircle size={48} style={{ color: 'var(--success)', margin: '0 auto 16px', opacity: 0.8 }} />
+                    <p style={{ color: 'var(--success)', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Pool Limpio</p>
+                    <p style={{ color: 'var(--text-subtle)', fontSize: 12, marginTop: 8 }}>No se encontraron registros duplicados con estos filtros.</p>
                  </div>
               ) : (
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: 24 }}>
                    {duplicados.map(grupo => (
-                      <div key={grupo.key} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+                      <div key={grupo.key} style={{ background: 'var(--surface-base)', border: '1px solid var(--neutral-06)', borderRadius: 16, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                             <div>
-                               <h4 style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 4 }}>{grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre?.toUpperCase()}</h4>
-                               <div style={{ fontSize: 10, color: '#888', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                               <h4 style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-strong)', marginBottom: 4 }}>{grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre?.toUpperCase()}</h4>
+                               <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                  Coincidencia por {grupo.tipo}
                                </div>
                             </div>
-                            <div style={{ background: 'rgba(255,51,102,0.1)', color: '#ff3366', fontSize: 11, fontWeight: 900, padding: '6px 12px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ background: 'rgba(255,51,102,0.1)', color: 'var(--danger-strong)', fontSize: 11, fontWeight: 900, padding: '6px 12px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                               <AlertTriangle size={12} /> {grupo.registros.length} Registros
                             </div>
                          </div>
-                         
+
                          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
                             {grupo.registros.map((r: any) => (
-                               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, transition: 'all 0.2s' }}>
+                               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'var(--neutral-02)', borderRadius: 10, transition: 'all 0.2s' }}>
                                   <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
-                                    <div style={{ color: '#eee', fontSize: 13, fontWeight: 700, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.nombre}</div>
-                                    <div style={{ color: '#666', fontSize: 11, fontWeight: 500, fontFamily: 'monospace' }}>{r.cuil} • {displayAnalista(r.analista)}</div>
+                                    <div style={{ color: 'var(--text-default)', fontSize: 13, fontWeight: 700, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.nombre}</div>
+                                    <div style={{ color: 'var(--text-subtle)', fontSize: 11, fontWeight: 500, fontFamily: 'var(--font-code)' }}>{r.cuil} • {displayAnalista(r.analista)}</div>
                                   </div>
                                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div style={{ color: '#fff', fontSize: 14, fontWeight: 900, marginBottom: 4 }}>{formatCurrency(r.monto)}</div>
+                                    <div style={{ color: 'var(--text-strong)', fontSize: 14, fontWeight: 900, marginBottom: 4 }}>{formatCurrency(r.monto)}</div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
-                                      <span style={{ color: '#34d399', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{r.estado}</span>
-                                      <span style={{ color: '#555', fontSize: 10 }}>{r.fecha ? formatDate(r.fecha) : '—'}</span>
+                                      <span style={{ color: 'var(--success)', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{r.estado}</span>
+                                      <span style={{ color: 'var(--text-subtle)', fontSize: 10 }}>{r.fecha ? formatDate(r.fecha) : '—'}</span>
                                     </div>
                                   </div>
                                </div>
@@ -1420,37 +1420,37 @@ export default function AjustesPage() {
 
               {/* Variantes de Empleador */}
               <div style={{ marginTop: 80, textAlign: 'center', marginBottom: 40 }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(251,191,36,0.1)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(251,191,36,0.1)', color: 'var(--warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                   <Users size={28} />
                 </div>
-                <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Variantes de Empleador</h2>
-                <p style={{ color: '#888', fontSize: 13, marginTop: 8, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                <h2 style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>Variantes de Empleador</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                   {variantesEmpleador.length} Grupos con Discrepancias
                 </p>
               </div>
 
               {variantesEmpleador.length === 0 ? (
                  <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                    <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px', opacity: 0.8 }} />
-                    <p style={{ color: '#34d399', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Completamente Normalizado</p>
-                    <p style={{ color: '#666', fontSize: 12, marginTop: 8 }}>No se encontraron empleadores con múltiples formas de escritura.</p>
+                    <CheckCircle size={48} style={{ color: 'var(--success)', margin: '0 auto 16px', opacity: 0.8 }} />
+                    <p style={{ color: 'var(--success)', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Completamente Normalizado</p>
+                    <p style={{ color: 'var(--text-subtle)', fontSize: 12, marginTop: 8 }}>No se encontraron empleadores con múltiples formas de escritura.</p>
                  </div>
               ) : (
                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 16 }}>
                    {variantesEmpleador.map((v, i) => (
-                      <div key={i} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+                      <div key={i} style={{ background: 'var(--surface-base)', border: '1px solid var(--neutral-06)', borderRadius: 16, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                            <div>
-                              <h4 style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', marginBottom: 6 }}>{v.normalizado}</h4>
-                              <p style={{ fontSize: 11, color: '#888', fontWeight: 600 }}>{v.cantidad} Registros Afectados • {formatCurrency(v.monto)}</p>
+                              <h4 style={{ fontSize: 16, fontWeight: 900, color: 'var(--warning)', marginBottom: 6 }}>{v.normalizado}</h4>
+                              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{v.cantidad} Registros Afectados • {formatCurrency(v.monto)}</p>
                            </div>
-                           <div style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', fontSize: 11, fontWeight: 900, padding: '6px 12px', borderRadius: 20 }}>
+                           <div style={{ background: 'rgba(251,191,36,0.1)', color: 'var(--warning)', fontSize: 11, fontWeight: 900, padding: '6px 12px', borderRadius: 20 }}>
                              {v.variantes.length} Variantes
                            </div>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                            {v.variantes.map((varName, j) => (
-                              <span key={j} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '8px 14px', color: '#ccc', fontSize: 12, fontWeight: 600 }}>
+                              <span key={j} style={{ background: 'var(--neutral-03)', border: '1px solid var(--neutral-06)', borderRadius: 8, padding: '8px 14px', color: 'var(--text-default)', fontSize: 12, fontWeight: 600 }}>
                                 {varName}
                               </span>
                            ))}
@@ -1503,10 +1503,10 @@ export default function AjustesPage() {
             };
 
             const accionColor = (accion: string) => {
-              if (accion === 'Creación') return { bg: 'rgba(34,197,94,0.08)', color: '#22c55e', border: 'rgba(34,197,94,0.15)' };
-              if (accion === 'Eliminación') return { bg: 'rgba(239,68,68,0.08)', color: '#ff3366', border: 'rgba(239,68,68,0.15)' };
+              if (accion === 'Creación') return { bg: 'rgba(34,197,94,0.08)', color: 'var(--success)', border: 'rgba(34,197,94,0.15)' };
+              if (accion === 'Eliminación') return { bg: 'rgba(239,68,68,0.08)', color: 'var(--danger-strong)', border: 'rgba(239,68,68,0.15)' };
               if (accion?.includes('Recordatorio')) return { bg: 'rgba(168,85,247,0.08)', color: '#a855f7', border: 'rgba(168,85,247,0.15)' };
-              return { bg: 'rgba(251,191,36,0.08)', color: '#fbbf24', border: 'rgba(251,191,36,0.15)' };
+              return { bg: 'rgba(251,191,36,0.08)', color: 'var(--warning)', border: 'rgba(251,191,36,0.15)' };
             };
 
             // — filtering —
@@ -1571,10 +1571,10 @@ export default function AjustesPage() {
                 {/* HEADER */}
                 <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 4, height: 28, borderRadius: 2, background: '#fff' }} />
+                    <div style={{ width: 4, height: 28, borderRadius: 2, background: 'var(--accent)' }} />
                     <div>
-                      <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Log de Auditoría</h1>
-                      <p style={{ fontSize: '12px', color: '#555', marginTop: 2 }}>Registro de actividad del sistema</p>
+                      <h1 style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>Log de Auditoría</h1>
+                      <p style={{ fontSize: '12px', color: 'var(--text-subtle)', marginTop: 2 }}>Registro de actividad del sistema</p>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
@@ -1585,7 +1585,7 @@ export default function AjustesPage() {
                         fontSize: '11px', fontWeight: 700, border: 'none',
                         cursor: (limpiandoLog || !auditoriaRegistros?.length) ? 'not-allowed' : 'pointer',
                         background: limpiandoLog ? 'rgba(220,53,69,0.5)' : 'rgba(220,53,69,0.1)',
-                        color: limpiandoLog ? '#888' : '#ff3366',
+                        color: limpiandoLog ? 'var(--text-muted)' : 'var(--danger-strong)',
                         opacity: (limpiandoLog || !auditoriaRegistros?.length) ? 0.4 : 1, transition: 'all 0.2s',
                       }}>
                       <Trash2 size={13} /> {limpiandoLog ? 'Limpiando...' : 'Limpiar Todo'}
@@ -1596,23 +1596,23 @@ export default function AjustesPage() {
                 {/* FILTERS TOOLBAR */}
                 <div style={{
                   display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center',
-                  paddingBottom: 20, marginBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.04)'
+                  paddingBottom: 20, marginBottom: 20, borderBottom: '1px solid var(--neutral-04)'
                 }}>
                   <div style={{ position: 'relative', flex: '1 1 200px' }}>
-                    <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+                    <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-subtle)' }} />
                     <input
                       value={auditSearch} onChange={e => { setAuditSearch(e.target.value); setAuditPage(1); }}
                       placeholder="Buscar cliente, analista o acción..."
                       style={{
-                        width: '100%', padding: '8px 12px 8px 36px', background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#eaeaea',
+                        width: '100%', padding: '8px 12px 8px 36px', background: 'var(--neutral-02)',
+                        border: '1px solid var(--neutral-08)', borderRadius: 6, color: 'var(--text-strong)',
                         fontSize: '12px', outline: 'none', transition: 'all 0.2s'
                       }}
-                      onFocus={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
-                      onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                      onFocus={e => e.currentTarget.style.borderColor = 'var(--neutral-20)'}
+                      onBlur={e => e.currentTarget.style.borderColor = 'var(--neutral-08)'}
                     />
                   </div>
-                  
+
                   <CustomSelect
                     value={auditFilterAccion}
                     onChange={val => { setAuditFilterAccion(String(val)); setAuditPage(1); }}
@@ -1641,19 +1641,19 @@ export default function AjustesPage() {
                       onChange={e => { setAuditFechaDesde(e.target.value); setAuditPage(1); }}
                       title="Fecha desde"
                       style={{
-                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                        color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer', colorScheme: 'dark',
+                        background: 'var(--neutral-02)', border: '1px solid var(--neutral-08)', borderRadius: 6,
+                        color: 'var(--text-default)', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer', colorScheme: 'light',
                       }}
                     />
-                    <span style={{ color: '#555', fontSize: 12 }}>→</span>
+                    <span style={{ color: 'var(--text-subtle)', fontSize: 12 }}>→</span>
                     <input
                       type="date"
                       value={auditFechaHasta}
                       onChange={e => { setAuditFechaHasta(e.target.value); setAuditPage(1); }}
                       title="Fecha hasta"
                       style={{
-                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                        color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer', colorScheme: 'dark',
+                        background: 'var(--neutral-02)', border: '1px solid var(--neutral-08)', borderRadius: 6,
+                        color: 'var(--text-default)', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer', colorScheme: 'light',
                       }}
                     />
                     {(auditFechaDesde || auditFechaHasta) && (
@@ -1661,8 +1661,8 @@ export default function AjustesPage() {
                         onClick={() => { setAuditFechaDesde(''); setAuditFechaHasta(''); setAuditPage(1); }}
                         title="Limpiar fechas"
                         style={{
-                          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                          color: '#888', fontSize: '12px', padding: '8px 10px', outline: 'none', cursor: 'pointer', lineHeight: 1,
+                          background: 'var(--neutral-03)', border: '1px solid var(--neutral-08)', borderRadius: 6,
+                          color: 'var(--text-muted)', fontSize: '12px', padding: '8px 10px', outline: 'none', cursor: 'pointer', lineHeight: 1,
                         }}
                       >✕</button>
                     )}
@@ -1670,25 +1670,25 @@ export default function AjustesPage() {
                 </div>
 
                 {/* DATA TABLE */}
-                <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6, overflow: 'hidden' }}>
+                <div style={{ background: 'var(--surface-card)', border: '1px solid var(--neutral-04)', borderRadius: 6, overflow: 'hidden' }}>
                   {auditoriaLoading ? (
                     <div className="loading-container" style={{ minHeight: 200 }}><div className="spinner" /><span>Cargando registros...</span></div>
                   ) : !filtered.length ? (
                     <div className="empty-state" style={{ minHeight: 200 }}>
-                      <Shield size={36} color="#333" style={{ marginBottom: 8 }} />
-                      <p style={{ fontWeight: 800, fontSize: '13px', color: '#444' }}>{auditSearch || auditFilterAccion !== 'todas' || auditFilterAnalista !== 'todos' || auditFilterPeriodo !== 'todo' ? 'Sin resultados para los filtros aplicados' : 'No hay registros de auditoría'}</p>
+                      <Shield size={36} color="var(--text-disabled)" style={{ marginBottom: 8 }} />
+                      <p style={{ fontWeight: 800, fontSize: '13px', color: 'var(--text-disabled)' }}>{auditSearch || auditFilterAccion !== 'todas' || auditFilterAnalista !== 'todos' || auditFilterPeriodo !== 'todo' ? 'Sin resultados para los filtros aplicados' : 'No hay registros de auditoría'}</p>
                     </div>
                   ) : (
                     <>
                       <div style={{ overflowX: 'auto' }}>
                         <table className="data-table" style={{ marginBottom: 0, tableLayout: 'fixed', minWidth: 1200 }}>
                           <thead>
-                            <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Fecha / Hora</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Analista</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '180px' }}>Acción</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '240px' }}>Cliente</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px' }}>Detalles</th>
+                            <tr style={{ background: 'var(--neutral-02)' }}>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Fecha / Hora</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Analista</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '180px' }}>Acción</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '240px' }}>Cliente</th>
+                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px' }}>Detalles</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1698,16 +1698,16 @@ export default function AjustesPage() {
                               return (
                                 <tr
                                   key={rowKey}
-                                  style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)'; }}
+                                  style={{ borderBottom: '1px solid var(--neutral-03)' }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--neutral-02)'; }}
                                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                 >
                                   <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                    <div style={{ fontSize: '12px', color: '#eaeaea', whiteSpace: 'nowrap', fontWeight: 600 }}>{relativeTime(reg.fecha_hora)}</div>
-                                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap' }}>{formatDateTime(reg.fecha_hora)}</div>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-strong)', whiteSpace: 'nowrap', fontWeight: 600 }}>{relativeTime(reg.fecha_hora)}</div>
+                                    <div style={{ fontSize: '10px', color: 'var(--text-subtle)', marginTop: 2, whiteSpace: 'nowrap' }}>{formatDateTime(reg.fecha_hora)}</div>
                                   </td>
                                   <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                    <span style={{ fontSize: '12px', color: '#ccc', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', display: 'block' }}>{reg.analista || reg.id_analista || '—'}</span>
+                                    <span style={{ fontSize: '12px', color: 'var(--text-default)', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', display: 'block' }}>{reg.analista || reg.id_analista || '—'}</span>
                                   </td>
                                   <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
                                     <span style={{
@@ -1719,17 +1719,17 @@ export default function AjustesPage() {
                                     </span>
                                   </td>
                                   <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                    <div style={{ fontSize: '12px', color: '#eaeaea', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{reg.nombre || '—'}</div>
-                                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{reg.cuil || '—'}</div>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-strong)', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{reg.nombre || '—'}</div>
+                                    <div style={{ fontSize: '10px', color: 'var(--text-subtle)', marginTop: 2, whiteSpace: 'nowrap', fontFamily: 'var(--font-code)' }}>{reg.cuil || '—'}</div>
                                   </td>
                                   <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
                                     {renderDetalleAudit(reg)}
                                     {reg.isGroup && reg.subRecords?.length > 1 && (
                                       <button
                                         onClick={() => setAuditGroupModal({ title: `Historial de ${reg.nombre || 'Registro'}`, records: reg.subRecords })}
-                                        style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#aaa', padding: '4px 8px', borderRadius: 4, fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
-                                        onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                                        style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--neutral-05)', border: '1px solid var(--neutral-10)', color: 'var(--text-muted)', padding: '4px 8px', borderRadius: 4, fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
+                                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-strong)'; e.currentTarget.style.background = 'var(--neutral-10)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--neutral-05)'; }}
                                       >
                                         <History size={10} /> Ver historial completo ({reg.subRecords.length})
                                       </button>
@@ -1745,15 +1745,15 @@ export default function AjustesPage() {
                       {/* PAGINATION */}
                       <div style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(0,0,0,0.2)'
+                        padding: '12px 20px', borderTop: '1px solid var(--neutral-04)', background: 'var(--surface-subtle)'
                       }}>
-                        <span style={{ fontSize: '11px', color: '#555', fontWeight: 600 }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-subtle)', fontWeight: 600 }}>
                           Mostrando {(safePage - 1) * AUDIT_PAGE_SIZE + (groupedFiltered.length > 0 ? 1 : 0)}–{Math.min(safePage * AUDIT_PAGE_SIZE, groupedFiltered.length)} de {groupedFiltered.length}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <button onClick={() => setAuditPage(p => Math.max(1, p - 1))} disabled={safePage <= 1} style={{
-                            width: 28, height: 28, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
-                            background: 'rgba(255,255,255,0.02)', color: safePage <= 1 ? '#333' : '#888',
+                            width: 28, height: 28, borderRadius: 4, border: '1px solid var(--neutral-06)',
+                            background: 'var(--neutral-02)', color: safePage <= 1 ? 'var(--text-disabled)' : 'var(--text-muted)',
                             cursor: safePage <= 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}><ChevronLeft size={14} /></button>
                           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -1766,16 +1766,16 @@ export default function AjustesPage() {
                               <button key={page} onClick={() => setAuditPage(page)} style={{
                                 width: 28, height: 28, borderRadius: 4, border: '1px solid',
                                 fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                                fontFamily: "'Outfit', sans-serif",
-                                borderColor: safePage === page ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)',
-                                background: safePage === page ? '#fff' : 'rgba(255,255,255,0.02)',
-                                color: safePage === page ? '#000' : '#666',
+                                fontFamily: 'var(--font-ui)',
+                                borderColor: safePage === page ? 'var(--neutral-20)' : 'var(--neutral-06)',
+                                background: safePage === page ? 'var(--accent)' : 'var(--neutral-02)',
+                                color: safePage === page ? 'var(--text-on-accent)' : 'var(--text-subtle)',
                               }}>{page}</button>
                             );
                           })}
                           <button onClick={() => setAuditPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} style={{
-                            width: 28, height: 28, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
-                            background: 'rgba(255,255,255,0.02)', color: safePage >= totalPages ? '#333' : '#888',
+                            width: 28, height: 28, borderRadius: 4, border: '1px solid var(--neutral-06)',
+                            background: 'var(--neutral-02)', color: safePage >= totalPages ? 'var(--text-disabled)' : 'var(--text-muted)',
                             cursor: safePage >= totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}><ChevronRight size={14} /></button>
                         </div>
@@ -1849,31 +1849,31 @@ export default function AjustesPage() {
       {auditGroupModal && typeof document !== 'undefined' && ReactDOM.createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', zIndex: 99999,
+          background: 'var(--surface-scrim)', backdropFilter: 'blur(5px)', zIndex: 99999,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
           animation: 'fadeIn 0.2s ease-out'
         }}>
           <div style={{
-            background: '#111', border: '1px solid rgba(255,255,255,0.1)',
+            background: 'var(--surface-card)', border: '1px solid var(--neutral-10)',
             borderRadius: 12, width: '100%', maxWidth: 880, maxHeight: '90vh',
             display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
             animation: 'slideInUp 0.2s ease-out'
           }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--neutral-05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h3 style={{ fontSize: 21, fontWeight: 800, color: '#fff' }}>{auditGroupModal.title}</h3>
-                <p style={{ fontSize: 13, color: '#888', marginTop: 4 }}>{auditGroupModal.records.length} modificaciones registradas</p>
+                <h3 style={{ fontSize: 21, fontWeight: 800, color: 'var(--text-strong)' }}>{auditGroupModal.title}</h3>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{auditGroupModal.records.length} modificaciones registradas</p>
               </div>
-              <button onClick={() => setAuditGroupModal(null)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#888', cursor: 'pointer', padding: 6, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#888'; }}>
+              <button onClick={() => setAuditGroupModal(null)} style={{ background: 'var(--neutral-05)', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 6, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--neutral-10)'; e.currentTarget.style.color = 'var(--text-strong)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'var(--neutral-05)'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
                 <X size={16} />
               </button>
             </div>
             <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {auditGroupModal.records.map((r, i) => (
-                <div key={i} style={{ background: 'rgba(255,255,255,0.02)', padding: '20px 24px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 14, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                    <span style={{ fontSize: 14, color: '#aaa', fontWeight: 600 }}>{formatDateTime(r.fecha_hora)}</span>
-                    <span style={{ fontSize: 14, color: '#eaeaea', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '5px 12px', borderRadius: 4 }}>
+                <div key={i} style={{ background: 'var(--neutral-02)', padding: '20px 24px', borderRadius: 8, border: '1px solid var(--neutral-05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 14, borderBottom: '1px dashed var(--neutral-05)' }}>
+                    <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>{formatDateTime(r.fecha_hora)}</span>
+                    <span style={{ fontSize: 14, color: 'var(--text-strong)', fontWeight: 700, background: 'var(--neutral-05)', padding: '5px 12px', borderRadius: 4 }}>
                       {r.analista || r.id_analista}
                     </span>
                   </div>

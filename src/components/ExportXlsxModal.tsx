@@ -62,7 +62,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
     options: string[],
     selected: string[],
     setFn: React.Dispatch<React.SetStateAction<string[]>>,
-    accent: { bg: string; color: string; border: string } = { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: 'rgba(16, 185, 129, 0.3)' },
+    accent: { bg: string; color: string; border: string } = { bg: 'rgba(16, 185, 129, 0.15)', color: 'var(--success-strong)', border: 'rgba(16, 185, 129, 0.3)' },
   ) => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
       {options.map(opt => {
@@ -71,9 +71,9 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           <span key={opt} onClick={() => toggleArray(opt, setFn)}
             style={{
               padding: '10px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-              background: isActive ? accent.bg : 'rgba(255,255,255,0.02)',
-              color: isActive ? accent.color : '#8f929d',
-              border: `1px solid ${isActive ? accent.border : 'rgba(255,255,255,0.06)'}`,
+              background: isActive ? accent.bg : 'var(--neutral-02)',
+              color: isActive ? accent.color : 'var(--text-muted)',
+              border: `1px solid ${isActive ? accent.border : 'var(--neutral-06)'}`,
               transition: 'all 0.2s', whiteSpace: 'nowrap',
             }}>{opt}</span>
         );
@@ -152,8 +152,8 @@ export function ExportXlsxModal({ open, onClose }: Props) {
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '12px 16px', borderRadius: 10, boxSizing: 'border-box',
-    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-    color: '#fff', fontSize: 16, outline: 'none',
+    background: 'var(--neutral-02)', border: '1px solid var(--neutral-06)',
+    color: 'var(--text-strong)', fontSize: 16, outline: 'none',
   };
   const labelStyle: React.CSSProperties = {
     display: 'block', marginBottom: 8,
@@ -161,14 +161,14 @@ export function ExportXlsxModal({ open, onClose }: Props) {
     textTransform: 'uppercase', letterSpacing: '0.8px',
   };
   const cellStyle: React.CSSProperties = {
-    padding: '10px 12px', fontSize: 13, color: '#fff',
-    borderBottom: '1px solid rgba(255,255,255,0.02)', whiteSpace: 'nowrap',
+    padding: '10px 12px', fontSize: 13, color: 'var(--text-strong)',
+    borderBottom: '1px solid var(--neutral-02)', whiteSpace: 'nowrap',
     overflow: 'hidden', textOverflow: 'ellipsis',
   };
   const headStyle: React.CSSProperties = {
-    padding: '10px 12px', fontSize: 11, fontWeight: 800, color: '#8f929d',
+    padding: '10px 12px', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)',
     textTransform: 'uppercase', letterSpacing: '0.5px',
-    borderBottom: '1px solid rgba(255,255,255,0.04)', whiteSpace: 'nowrap',
+    borderBottom: '1px solid var(--neutral-04)', whiteSpace: 'nowrap',
   };
 
   const errorEl = error ? <p style={{ color: '#e53e3e', fontSize: 13, margin: 0 }}>{error}</p> : null;
@@ -178,14 +178,14 @@ export function ExportXlsxModal({ open, onClose }: Props) {
       className="modal-overlay"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.7)',
+        background: 'var(--surface-scrim)',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
         overflowY: 'auto', padding: '20px 16px',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <motion.div drag dragMomentum={false} style={{
-        background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)',
+        background: 'var(--surface-canvas)', border: '1px solid var(--neutral-03)',
         borderRadius: 16, padding: '36px 32px',
         width: preview ? 1200 : 960, maxWidth: '97vw',
         boxShadow: '0 24px 80px rgba(0,0,0,0.8)', margin: 'auto',
@@ -198,16 +198,16 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           {preview && (
             <button
               onClick={() => { setPreview(null); setError(''); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8f929d', padding: 0 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 0 }}
             >
               <ArrowLeft size={18} />
             </button>
           )}
-          <Download size={24} style={{ color: '#fff' }} />
-          <span style={{ color: '#fff', fontWeight: 800, fontSize: 20 }}>
+          <Download size={24} style={{ color: 'var(--text-strong)' }} />
+          <span style={{ color: 'var(--text-strong)', fontWeight: 800, fontSize: 20 }}>
             {preview ? `Vista previa — ${preview.total} registros` : 'Exportar XLSX Avanzado'}
           </span>
-          <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8f929d', marginLeft: 'auto' }}>
+          <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', marginLeft: 'auto' }}>
             <X size={24} />
           </button>
         </div>
@@ -216,11 +216,11 @@ export function ExportXlsxModal({ open, onClose }: Props) {
           /* ── PASO 2: Tabla de registros ── */
           <>
             {preview.total === 0 ? (
-              <div style={{ color: '#8f929d', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: 14, textAlign: 'center', padding: '32px 0' }}>
                 No hay registros con los filtros aplicados.
               </div>
             ) : (
-              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '60vh', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '60vh', borderRadius: 8, border: '1px solid var(--neutral-04)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                   <colgroup>
                     <col style={{ width: 180 }} />
@@ -231,7 +231,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
                     <col style={{ width: 220 }} />
                     <col style={{ width: 220 }} />
                   </colgroup>
-                  <thead style={{ background: 'rgba(255,255,255,0.01)', position: 'sticky', top: 0, zIndex: 1 }}>
+                  <thead style={{ background: 'var(--neutral-01)', position: 'sticky', top: 0, zIndex: 1 }}>
                     <tr>
                       <th style={headStyle}>Nombre</th>
                       <th style={headStyle}>CUIL</th>
@@ -244,7 +244,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
                   </thead>
                   <tbody>
                     {preview.registros.map((r, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                      <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'var(--neutral-01)' }}>
                         <td style={cellStyle} title={r.nombre}>{r.nombre || '—'}</td>
                         <td style={cellStyle}>{r.cuil || '—'}</td>
                         <td style={cellStyle}>{r.analista || '—'}</td>
@@ -266,9 +266,9 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               disabled={loading || preview.total === 0}
               style={{
                 width: '100%', padding: '10px',
-                background: preview.total === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(16, 185, 129, 0.15)',
-                color: preview.total === 0 ? '#64748b' : '#10b981',
-                border: preview.total === 0 ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(16, 185, 129, 0.3)',
+                background: preview.total === 0 ? 'var(--neutral-02)' : 'rgba(16, 185, 129, 0.15)',
+                color: preview.total === 0 ? 'var(--text-subtle)' : 'var(--success-strong)',
+                border: preview.total === 0 ? '1px solid var(--neutral-06)' : '1px solid rgba(16, 185, 129, 0.3)',
                 borderRadius: 8, fontWeight: 700, fontSize: 15,
                 cursor: (loading || preview.total === 0) ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -287,7 +287,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
                 <label style={labelStyle}>Búsqueda General</label>
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Nombre, CUIL, etc." style={inputStyle} />
               </div>
-              
+
               <div>
                 <label style={labelStyle}>Analista</label>
                 <div style={{ transform: 'scale(1.15)', transformOrigin: 'top left', width: '87%' }}>
@@ -377,7 +377,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
 
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={labelStyle}>Tipo de Alerta</label>
-                {renderChips(ALERTAS_OPCIONES, tipoAlerta, setTipoAlerta, { bg: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: 'rgba(239, 68, 68, 0.3)' })}
+                {renderChips(ALERTAS_OPCIONES, tipoAlerta, setTipoAlerta, { bg: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', border: 'rgba(239, 68, 68, 0.3)' })}
               </div>
             </div>
 
@@ -388,7 +388,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
               disabled={loading}
               style={{
                 marginTop: 8, width: '100%', padding: '16px',
-                background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)',
+                background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success-strong)', border: '1px solid rgba(16, 185, 129, 0.3)',
                 borderRadius: 12, fontWeight: 800, fontSize: 18,
                 cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,

@@ -36,10 +36,10 @@ interface RecordatoriosCtx {
 const RecordatoriosContext = createContext<RecordatoriosCtx | null>(null);
 
 const changeType = z.enum(['INSERT', 'UPDATE', 'DELETE']);
-const recordatorioChangeSchema = z.object({ 
-  type: changeType, 
+const recordatorioChangeSchema = z.object({
+  type: changeType,
   mostrado: z.boolean().optional(),
-  recordatorio: z.object({ id: z.string() }).optional() 
+  recordatorio: z.object({ id: z.string() }).optional()
 });
 
 
@@ -96,13 +96,13 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
       if (next) {
         shownIds.current.add(next.id);
         setReminderAlert({
-          id: next.id, 
+          id: next.id,
           registro_id: next.registro_id,
-          nombre: next.nombre, 
+          nombre: next.nombre,
           cuil: next.cuil,
           nota: next.nota,
-          fecha_hora: next.fecha_hora, 
-          analista: next.analista, 
+          fecha_hora: next.fecha_hora,
+          analista: next.analista,
           estado: next.estado,
         });
       }
@@ -136,7 +136,7 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
       const data = validateBroadcast('recordatorio_change', recordatorioChangeSchema, payload);
       if (!data) return;
       const { type, mostrado, recordatorio } = data;
-      
+
       // Si es un recordatorio específico, lo quitamos de shownIds para permitir que se muestre de nuevo (re-trigger)
       if (recordatorio?.id) {
         shownIds.current.delete(recordatorio.id);
@@ -170,7 +170,7 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
       event: 'recordatorio_change',
       payload: { type, recordatorio, mostrado: 'mostrado' in recordatorio ? recordatorio.mostrado : undefined },
     }).catch(() => { });
-    
+
     // También procesar localmente si es un trigger de admin
     if (recordatorio?.id) {
       shownIds.current.delete(recordatorio.id);

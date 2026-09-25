@@ -10,22 +10,22 @@ import { formatCurrency } from '@/lib/utils';
 // distinta y se mantiene aparte a propósito.
 const THEMES = {
   dark: {
-    cardBg: '#111111',
+    cardBg: 'var(--surface-card)',
     boxShadow: undefined as string | undefined,
-    labelColor: '#888',
-    montoColor: '#444',
-    cantidadColor: '#aaa',
-    noEspColor: '#999',
-    noEspMontoColor: '#888',
+    labelColor: 'var(--text-muted)',
+    montoColor: 'var(--text-disabled)',
+    cantidadColor: 'var(--text-muted)',
+    noEspColor: 'var(--text-muted)',
+    noEspMontoColor: 'var(--text-muted)',
   },
   elevated: {
-    cardBg: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)',
-    boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' as string | undefined,
-    labelColor: '#8f929d',
-    montoColor: '#8f929d',
-    cantidadColor: '#fff',
-    noEspColor: '#8f929d',
-    noEspMontoColor: '#8f929d',
+    cardBg: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)',
+    boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' as string | undefined,
+    labelColor: 'var(--text-muted)',
+    montoColor: 'var(--text-muted)',
+    cantidadColor: 'var(--text-strong)',
+    noEspColor: 'var(--text-muted)',
+    noEspMontoColor: 'var(--text-muted)',
   },
 };
 
@@ -66,12 +66,12 @@ const DistBlock = ({
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
         <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-        <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-subtle)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>{titulo}</span>
       </div>
       <div style={{
         background: t.cardBg,
         borderRadius: 10,
-        border: '1px solid rgba(255,255,255,0.04)',
+        border: '1px solid var(--neutral-04)',
         boxShadow: t.boxShadow,
         overflowX: 'hidden',
         overflowY: 'hidden',
@@ -91,11 +91,11 @@ const DistBlock = ({
                   <span style={{ fontSize: 12, color: t.labelColor, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                     <span style={{ fontSize: 10, color: t.montoColor }}>{formatCurrency(d.monto)}</span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: t.cantidadColor, background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: t.cantidadColor, background: 'var(--neutral-05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color, minWidth: 34, textAlign: 'right' as const }}>{pct.toFixed(0)}%</span>
                   </div>
                 </div>
-                <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: 2, background: 'var(--neutral-04)', borderRadius: 2, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pctMonto}%`, background: color, opacity: 0.6, borderRadius: 2 }} />
                 </div>
               </div>
@@ -107,8 +107,8 @@ const DistBlock = ({
         {noEspData && noEspData.cantidad > 0 && (
           <div style={{
             padding: '8px 14px',
-            background: 'rgba(255,255,255,0.01)',
-            borderTop: '1px solid rgba(255,255,255,0.03)',
+            background: 'var(--neutral-01)',
+            borderTop: '1px solid var(--neutral-03)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -127,9 +127,9 @@ const DistBlock = ({
             style={{
               width: '100%',
               padding: '12px',
-              background: 'rgba(255,255,255,0.04)',
+              background: 'var(--neutral-04)',
               border: 'none',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              borderTop: '1px solid var(--neutral-06)',
               color: color,
               fontSize: '10px',
               fontWeight: 900,

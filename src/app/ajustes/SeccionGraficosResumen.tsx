@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import { CONFIG } from '@/types';
 import { filterByMonth, isVenta } from '@/lib/registro-stats';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
+import { resolveCssColor } from '@/lib/css-color';
 
 const labelsPlugin: any = {
   id: 'labelsPlugin',
@@ -17,7 +18,7 @@ const labelsPlugin: any = {
         if (!val) return;
         const isPct = chart.config.options?._isPct === true;
         const text = isPct ? `${val.toFixed(0)}%` : val.toString();
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = 'var(--text-strong)';
         ctx.font = '800 11px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
@@ -58,14 +59,14 @@ const baseChartOpts = (yLabel = '', isPct = false): any => ({
   layout: { padding: { bottom: 0 } },
   plugins: { legend: { display: false }, tooltip: {
     backgroundColor: 'rgba(10, 10, 15, 0.95)',
-    titleColor: '#ffffff',
+    titleColor: 'var(--text-strong)',
     titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
     titleAlign: 'center' as const,
     titleMarginBottom: 16,
-    bodyColor: '#f1f5f9',
+    bodyColor: 'var(--text-strong)',
     bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
     bodySpacing: 10,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'var(--neutral-15)',
     borderWidth: 2,
     padding: 24,
     cornerRadius: 16,
@@ -74,7 +75,7 @@ const baseChartOpts = (yLabel = '', isPct = false): any => ({
   } },
   scales: {
     x: { display: false },
-    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666', font: { size: 9 }, callback: (v: any) => v + yLabel }, border: { display: false }, beginAtZero: true }
+    y: { grid: { color: 'var(--neutral-03)' }, ticks: { color: 'var(--text-subtle)', font: { size: 9 }, callback: (v: any) => v + yLabel }, border: { display: false }, beginAtZero: true }
   }
 });
 
@@ -83,8 +84,8 @@ const getGradient = (context: any, color1: string, color2: string) => {
   const { ctx, chartArea } = chart;
   if (!chartArea) return null;
   const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-  gradient.addColorStop(0, color1);
-  gradient.addColorStop(1, color2);
+  gradient.addColorStop(0, resolveCssColor(color1));
+  gradient.addColorStop(1, resolveCssColor(color2));
   return gradient;
 };
 
@@ -96,7 +97,7 @@ const DoughnutLegend = ({ data, total }: { data: { labels: string[]; datasets: {
       return (
         <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: data.datasets[0].backgroundColor[i] }} />
-          <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+          <span style={{ fontSize: 9, color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
         </div>
       );
     })}
@@ -118,9 +119,9 @@ export default function SeccionGraficosResumen({
       labels: [''],
       datasets: [
         { label: `Capital ${mesActualLabel}`, data: [kpiTotal.cumplCapital || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Capital ${mesAntLabel}`, data: [kpiTotal.cumplCapitalAnt || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        { label: `Capital ${mesAntLabel}`, data: [kpiTotal.cumplCapitalAnt || 0], backgroundColor: (c: any) => getGradient(c, 'transparent', 'var(--neutral-15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
         { label: `Ops ${mesActualLabel}`, data: [kpiTotal.cumplOps || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Ops ${mesAntLabel}`, data: [kpiTotal.cumplOpsAnt || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        { label: `Ops ${mesAntLabel}`, data: [kpiTotal.cumplOpsAnt || 0], backgroundColor: (c: any) => getGradient(c, 'transparent', 'var(--neutral-15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
       ],
     };
   }, [kpiTotal, mesActualLabel, mesAntLabel]);
@@ -129,19 +130,19 @@ export default function SeccionGraficosResumen({
     return {
       labels: [''],
       datasets: [
-        { 
-          label: 'Variación Capital %', 
-          data: [kpiTotal.tendCapital ?? 0], 
-          backgroundColor: (kpiTotal.tendCapital >= 0) ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)', 
-          borderColor: (kpiTotal.tendCapital >= 0) ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)', 
-          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 
+        {
+          label: 'Variación Capital %',
+          data: [kpiTotal.tendCapital ?? 0],
+          backgroundColor: (kpiTotal.tendCapital >= 0) ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+          borderColor: (kpiTotal.tendCapital >= 0) ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)',
+          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100
         },
-        { 
-          label: 'Variación Ops %', 
-          data: [kpiTotal.tendOps ?? 0], 
-          backgroundColor: (kpiTotal.tendOps >= 0) ? 'rgba(167,139,250,0.15)' : 'rgba(248,113,113,0.15)', 
-          borderColor: (kpiTotal.tendOps >= 0) ? 'rgba(167,139,250,0.5)' : 'rgba(248,113,113,0.5)', 
-          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 
+        {
+          label: 'Variación Ops %',
+          data: [kpiTotal.tendOps ?? 0],
+          backgroundColor: (kpiTotal.tendOps >= 0) ? 'rgba(167,139,250,0.15)' : 'rgba(248,113,113,0.15)',
+          borderColor: (kpiTotal.tendOps >= 0) ? 'rgba(167,139,250,0.5)' : 'rgba(248,113,113,0.5)',
+          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100
         },
       ],
     };
@@ -165,7 +166,7 @@ export default function SeccionGraficosResumen({
         labels: categories,
         datasets: [{
           data: displayData,
-          backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+          backgroundColor: ['var(--success-strong)', 'var(--info)', 'var(--warning)', 'var(--danger)'],
           borderWidth: 0, hoverOffset: 10, borderRadius: 4, spacing: 4
         }]
       },
@@ -182,15 +183,15 @@ export default function SeccionGraficosResumen({
     };
     const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
     ventas.forEach(r => counts[classify(r)]++);
-    
+
     const labels = ['Público', 'Privado', 'Sin dato'];
-    
+
     return {
       chartEmpleoData: {
         labels: labels,
         datasets: [{
           data: labels.map(l => counts[l] ?? 0),
-          backgroundColor: labels.map(l => l === 'Público' ? '#10b981' : l === 'Privado' ? '#3b82f6' : 'rgba(255,255,255,0.15)'),
+          backgroundColor: labels.map(l => l === 'Público' ? 'var(--success-strong)' : l === 'Privado' ? 'var(--info)' : 'var(--neutral-15)'),
           borderWidth: 0, hoverOffset: 10, borderRadius: 4, spacing: 4
         }],
       },
@@ -202,17 +203,17 @@ export default function SeccionGraficosResumen({
     <div style={{ marginBottom: 0 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
         {/* 1. Cumplimiento */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
             <div style={{ display: 'flex', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesActualLabel}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>{mesActualLabel}</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesAntLabel}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>{mesAntLabel}</span>
               </div>
             </div>
           </div>
@@ -222,17 +223,17 @@ export default function SeccionGraficosResumen({
         </div>
 
         {/* 2. Variación */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
             <div style={{ display: 'flex', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Capital</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>Capital</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(167,139,250,0.7)' }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Operaciones</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>Operaciones</span>
               </div>
             </div>
           </div>
@@ -242,14 +243,14 @@ export default function SeccionGraficosResumen({
         </div>
 
         {/* 3. Acuerdos */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
               Distribución de Acuerdos
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
-                <Users size={12} color="#666" />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>
+                <Users size={12} color="var(--text-subtle)" />
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)' }}>
                   {kpiTotal.ops} TOTAL
                 </span>
             </div>
@@ -257,7 +258,7 @@ export default function SeccionGraficosResumen({
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
             <div style={{ height: 200, width: '100%', margin: 'auto 0' }}>
               <ModernDoughnut data={chartAcuerdosData} label="Acuerdos" padding={30}
-                value={<>{chartAcuerdosTotal}<span style={{ fontSize: '12px', color: '#888', fontWeight: 700, marginLeft: '2px' }}>{' Ops'}</span></>}
+                value={<>{chartAcuerdosTotal}<span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700, marginLeft: '2px' }}>{' Ops'}</span></>}
                 tooltipLabel={(ctx) => ` ${ctx.label}: ${ctx.raw} Ops`} />
             </div>
             <DoughnutLegend data={chartAcuerdosData} total={chartAcuerdosTotal} />
@@ -265,17 +266,17 @@ export default function SeccionGraficosResumen({
         </div>
 
         {/* 4. Empleo */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+            <div style={{ width: 3, height: 12, background: 'var(--success)', borderRadius: 2 }} />
+            <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
               % Empleo Público / Privado
             </span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
             <div style={{ height: 200, width: '100%', margin: 'auto 0' }}>
               <ModernDoughnut data={chartEmpleoData} label="Total" padding={30}
-                value={<>{chartEmpleoTotal}<span style={{ fontSize: '12px', color: '#888', fontWeight: 700, marginLeft: '2px' }}>{' Ops'}</span></>}
+                value={<>{chartEmpleoTotal}<span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700, marginLeft: '2px' }}>{' Ops'}</span></>}
                 tooltipLabel={(ctx) => ` ${ctx.label}: ${ctx.raw} Ops`} />
             </div>
             <DoughnutLegend data={chartEmpleoData} total={chartEmpleoTotal} />

@@ -1,6 +1,5 @@
-import React from 'react';
 import type { Metadata } from 'next';
-import { supabase } from '@/lib/supabase';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { AlertTriangle } from 'lucide-react';
 
 const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -8,20 +7,21 @@ const MESES_NOMBRES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'J
 type SearchParams = Promise<{ anio?: string; mes?: string; zoom?: string }>;
 
 const parsePeriodo = (params: { anio?: string; mes?: string; zoom?: string }) => {
-  const anio = parseInt(params.anio || '2026');
-  const mes = parseInt(params.mes || '1');
-  const zoom = parseFloat(params.zoom || '1');
-  return { anio, mes, zoom };
+  const parsedYear = Number.parseInt(params.anio || '', 10);
+  const parsedMonth = Number.parseInt(params.mes || '', 10);
+  const anio = parsedYear >= 2000 && parsedYear <= 2100 ? parsedYear : 2026;
+  const mes = parsedMonth >= 1 && parsedMonth <= 12 ? parsedMonth : 1;
+  return { anio, mes };
 };
 
 const ErrorScreen = ({ message }: { message: string }) => (
-  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0c0c0c', padding: '20px' }}>
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-canvas)', padding: '20px' }}>
     <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '12px', padding: '40px', maxWidth: '500px', textAlign: 'center' }}>
       <div style={{ width: '48px', height: '48px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-        <AlertTriangle color="#ff3366" size={24} />
+        <AlertTriangle color="var(--danger-strong)" size={24} />
       </div>
-      <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 800, marginBottom: '12px' }}>Error al cargar el reporte</h2>
-      <p style={{ color: '#999', fontSize: '14px', lineHeight: '1.6' }}>{message}</p>
+      <h2 style={{ color: 'var(--text-strong)', fontSize: '20px', fontWeight: 800, marginBottom: '12px' }}>Error al cargar el reporte</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6' }}>{message}</p>
     </div>
   </div>
 );
@@ -32,6 +32,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 }
 
 async function fetchSnapshot(anio: number, mes: number): Promise<{ html?: string, datos?: any, error?: string }> {
+  const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from('resumen_mensual')
     .select('experiencia_cliente')
@@ -63,27 +64,27 @@ async function fetchSnapshot(anio: number, mes: number): Promise<{ html?: string
 import ResumenMensualInteractivo from './ResumenMensualInteractivo';
 
 export default async function ResumenMensualPublico({ searchParams }: { searchParams: SearchParams }) {
-  const { anio, mes, zoom } = parsePeriodo(await searchParams);
+  const { anio, mes } = parsePeriodo(await searchParams);
   const result = await fetchSnapshot(anio, mes);
 
   if ('error' in result) return <ErrorScreen message={result.error || 'Error desconocido'} />;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0c0c0c', color: '#ccc', fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--surface-canvas)', color: 'var(--text-default)', fontFamily: "'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", width: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
       <header style={{
         padding: '24px',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        background: 'rgba(0,0,0,0.8)',
+        borderBottom: '1px solid var(--neutral-04)',
+        background: 'var(--surface-scrim)',
         backdropFilter: 'blur(10px)',
         position: 'sticky',
         top: 0,
         zIndex: 100,
       }}>
         <div style={{ margin: '0' }}>
-          <div style={{ fontSize: 11, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4 }}>
             Sistema de Proyecciones y Ventas
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', margin: 0 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-strong)', letterSpacing: '-0.5px', margin: 0 }}>
             Resumen Mensual — {MESES_NOMBRES[mes - 1]} {anio}
           </h1>
         </div>
@@ -106,4 +107,3 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
     </div>
   );
 }
-

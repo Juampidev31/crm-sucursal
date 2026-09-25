@@ -23,10 +23,10 @@ const countColumn = (rows: string[][], colIdx: number) => {
 };
 
 const CHART_PALETTE = [
-  '#34d399', '#60a5fa', '#a78bfa', '#f472b6', '#fb923c', 
-  '#facc15', '#2dd4bf', '#fb7185', '#818cf8', '#4ade80',
-  '#c084fc', '#38bdf8', '#f87171', '#a3e635', '#e879f9',
-  '#fde047', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6'
+  'var(--success)', 'var(--info)', 'var(--violet)', 'var(--pink)', 'var(--orange)',
+  '#facc15', '#2dd4bf', '#fb7185', 'var(--violet)', 'var(--success)',
+  'var(--violet)', 'var(--accent)', 'var(--danger)', '#a3e635', '#e879f9',
+  '#fde047', 'var(--info)', 'var(--success-strong)', 'var(--pink)', '#8b5cf6'
 ];
 
 
@@ -64,22 +64,22 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
     if (key === 'PDV' || key === 'GLOBAL') {
       const keys = Object.keys(dataSources);
       if (keys.length === 0) return [];
-      
+
       const firstKey = keys[0];
       const headers = dataSources[firstKey][0];
-      
+
       const combined = [headers];
       for (const k of keys) {
         combined.push(...dataSources[k].slice(1));
       }
       return combined;
     }
-    
+
     const match = Object.keys(dataSources).find(k => k.includes(key) || key.includes(k));
     if (match) {
       return dataSources[match];
     }
-    
+
     return [];
   }, [dataSources, analista]);
 
@@ -119,15 +119,15 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
       flexDirection: 'column',
       minHeight: 400,
       height: '100%',
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)',
-      boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+      background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)',
+      boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)',
       padding: 24,
       borderRadius: 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexShrink: 0 }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Tag size={15} color="#34d399" />
-          <h2 style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#fff', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
+          <Tag size={15} color="var(--success)" />
+          <h2 style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-strong)', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
             CATEGORÍAS
           </h2>
         </div>
@@ -149,7 +149,7 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
             </>
           )}
 
-          <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+          <div style={{ display: 'flex', gap: 4, background: 'var(--neutral-03)', border: '1px solid var(--neutral-06)', borderRadius: 8, padding: 3 }}>
             {(['mensual', 'total'] as const).map(p => (
               <button
                 key={p}
@@ -157,8 +157,8 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
                 style={{
                   padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
                   fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                  background: viewMode === p ? '#fb923c' : 'transparent',
-                  color: viewMode === p ? '#000' : '#555',
+                  background: viewMode === p ? 'var(--orange)' : 'transparent',
+                  color: viewMode === p ? 'var(--text-on-accent)' : 'var(--text-subtle)',
                   transition: 'all 0.2s ease',
                 }}
               >
@@ -167,7 +167,7 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
             ))}
           </div>
 
-          <span style={{ fontSize: 11, color: '#444', minWidth: 40, textAlign: 'right' }}>{filteredData ? filteredData.length - 1 : 0} ops</span>
+          <span style={{ fontSize: 11, color: 'var(--text-disabled)', minWidth: 40, textAlign: 'right' }}>{filteredData ? filteredData.length - 1 : 0} ops</span>
         </div>
       </div>
 
@@ -176,8 +176,8 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
           <div className="flex items-center justify-center w-full text-zinc-500 text-sm" style={{ height: '100%' }}>Cargando datos...</div>
         ) : (
           <>
-            <DistBlockSheets titulo="TIPO DE CLIENTE" icon={<FileText size={12} color="#34d399" />} datos={stats} color="#34d399" />
-            <DistBlockSheets titulo="POR DONDE NOS CONOCIO" icon={<Tag size={12} color="#60a5fa" />} datos={statsColF} color="#60a5fa" />
+            <DistBlockSheets titulo="TIPO DE CLIENTE" icon={<FileText size={12} color="var(--success)" />} datos={stats} color="var(--success)" />
+            <DistBlockSheets titulo="POR DONDE NOS CONOCIO" icon={<Tag size={12} color="var(--info)" />} datos={statsColF} color="var(--info)" />
           </>
         )}
       </div>
@@ -185,18 +185,18 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
   );
 }
 
-function DistBlockSheets({ 
+function DistBlockSheets({
   titulo, icon, datos, color
-}: { 
-  titulo: string; icon: React.ReactNode; 
-  datos: { label: string; cantidad: number }[]; 
+}: {
+  titulo: string; icon: React.ReactNode;
+  datos: { label: string; cantidad: number }[];
   color: string;
 }) {
   const validData = datos.filter(d => {
     const l = d.label?.trim()?.toLowerCase();
     return l !== 'no especificado' && l !== 'sin dato' && l !== '';
   });
-  
+
   const noEspData = datos.find(d => {
     const l = d.label?.trim()?.toLowerCase();
     return l === 'no especificado' || l === 'sin dato' || l === '';
@@ -205,10 +205,10 @@ function DistBlockSheets({
   const totalCant = validData.reduce((s, d) => s + d.cantidad, 0);
 
   return (
-    <div style={{ 
-      flex: 1, 
-      minWidth: 240, 
-      display: 'flex', 
+    <div style={{
+      flex: 1,
+      minWidth: 240,
+      display: 'flex',
       flexDirection: 'column',
       minHeight: 0,
       transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
@@ -216,23 +216,23 @@ function DistBlockSheets({
       {titulo && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
           <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-          <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: 0.8 }}>{titulo}</span>
+          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{titulo}</span>
         </div>
       )}
-      <div style={{ 
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', 
-        borderRadius: 10, 
-        border: '1px solid rgba(255,255,255,0.04)', 
-        boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
-        overflowX: 'hidden', 
+      <div style={{
+        background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)',
+        borderRadius: 10,
+        border: '1px solid var(--neutral-04)',
+        boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)',
+        overflowX: 'hidden',
         overflowY: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        flex: 1, 
+        flex: 1,
         minHeight: 0,
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
-        <div style={{ padding: '24px 0 8px 0', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+        <div style={{ padding: '24px 0 8px 0', flexShrink: 0, borderBottom: '1px solid var(--neutral-03)' }}>
           <ModernDoughnut
             label="Total Ops"
             value={totalCant}
@@ -249,7 +249,7 @@ function DistBlockSheets({
                 borderRadius: 6,
                 spacing: 4
               }]
-            }} 
+            }}
           />
         </div>
         <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto' }}>
@@ -261,24 +261,24 @@ function DistBlockSheets({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: itemColor, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: '#8f929d', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-strong)', background: 'var(--neutral-05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: itemColor, minWidth: 34, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
                   </div>
                 </div>
-                <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: 2, background: 'var(--neutral-04)', borderRadius: 2, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: itemColor, opacity: 0.8, borderRadius: 2 }} />
                 </div>
               </div>
             );
           })}
         </div>
-        
+
         {noEspData && (
-          <div style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-            <span style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>* {noEspData.cantidad} sin especificar</span>
+          <div style={{ padding: '12px 14px', background: 'var(--surface-subtle)', borderTop: '1px solid var(--neutral-03)' }}>
+            <span style={{ fontSize: 10, color: 'var(--text-subtle)', fontStyle: 'italic' }}>* {noEspData.cantidad} sin especificar</span>
           </div>
         )}
       </div>

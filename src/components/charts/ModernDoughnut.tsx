@@ -43,14 +43,14 @@ const ModernDoughnut = memo(function ModernDoughnut({
       legend: { display: false },
       tooltip: {
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
+        titleColor: 'var(--text-strong)',
         titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
         titleAlign: 'center' as const,
         titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
+        bodyColor: 'var(--text-strong)',
         bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
         bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderColor: 'var(--neutral-15)',
         borderWidth: 2,
         padding: 24,
         cornerRadius: 16,
@@ -76,8 +76,8 @@ const ModernDoughnut = memo(function ModernDoughnut({
         transform: 'translate(-50%, -50%)', textAlign: 'center',
         width: '100%', pointerEvents: 'none'
       }}>
-        <div style={{ fontSize: labelSize, color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: valueSize, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+        <div style={{ fontSize: labelSize, color: 'var(--text-subtle)', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ fontSize: valueSize, fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>
           {value}
         </div>
       </div>

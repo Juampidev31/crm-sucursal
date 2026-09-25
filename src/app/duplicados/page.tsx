@@ -18,9 +18,9 @@ const normalizarNombreKey = (nombre?: string | null) =>
 const chipStyle = (isActive: boolean) => ({
   padding: '6px 12px', borderRadius: '4px', fontSize: '10px', border: '1px solid',
   whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.15s',
-  background: isActive ? 'rgba(0,120,212,0.1)' : 'rgba(255,255,255,0.01)',
-  borderColor: isActive ? 'var(--azul)' : 'rgba(255,255,255,0.05)',
-  color: isActive ? 'var(--azul)' : '#8f929d',
+  background: isActive ? 'rgba(0,120,212,0.1)' : 'var(--neutral-01)',
+  borderColor: isActive ? 'var(--azul)' : 'var(--neutral-05)',
+  color: isActive ? 'var(--azul)' : 'var(--text-muted)',
   textTransform: 'uppercase' as const, letterSpacing: '0.8px'
 });
 
@@ -30,16 +30,16 @@ export default function DuplicadosPage() {
   const [selectedEstados, setSelectedEstados] = useState<string[]>([]);
   const [selectedAnalistas, setSelectedAnalistas] = useState<string[]>([]);
 
-  const allEstados = useMemo(() => 
+  const allEstados = useMemo(() =>
     Array.from(new Set(registros.map(r => r.estado?.toLowerCase()).filter(Boolean)))
       .filter(e => !e?.toLowerCase().includes('column') && !e?.toLowerCase().includes('estado'))
-      .sort() as string[], 
+      .sort() as string[],
     [registros]
   );
-  const allAnalistas = useMemo(() => 
+  const allAnalistas = useMemo(() =>
     Array.from(new Set(registros.map(r => r.analista?.trim()).filter(Boolean)))
       .filter(a => !a?.toLowerCase().includes('column') && !a?.toLowerCase().includes('analista'))
-      .sort() as string[], 
+      .sort() as string[],
     [registros]
   );
 
@@ -101,7 +101,7 @@ export default function DuplicadosPage() {
       {/* Filtros de Pool - TODO EN UNA LINEA POR COLUMNA */}
       <div className="toolbar-container" style={{ marginBottom: '24px', padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '40px' }}>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               <ShieldCheck size={13} color="var(--azul)" />
@@ -136,7 +136,7 @@ export default function DuplicadosPage() {
       {loading ? (
         <div className="loading-container"><div className="spinner" /><span>Buscando registros...</span></div>
       ) : duplicados.length === 0 ? (
-        <div className="empty-state" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '12px', padding: '60px' }}>
+        <div className="empty-state" style={{ background: 'var(--surface-canvas)', border: '1px solid var(--neutral-04)', borderRadius: '12px', padding: '60px' }}>
           <CheckCircle size={40} color="var(--verde)" style={{ margin: '0 auto 16px', opacity: 0.4 }} />
           <p style={{ color: 'var(--verde)', fontWeight: 800, fontSize: '16px', opacity: 0.8 }}>SISTEMA LIMPIO</p>
         </div>
@@ -144,15 +144,15 @@ export default function DuplicadosPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {duplicados.map(grupo => (
             <div key={grupo.key} className="data-card" style={{ borderLeft: 'none' /* Eliminado borde rojo */ }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', paddingBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', paddingBottom: '14px', borderBottom: '1px solid var(--neutral-04)' }}>
                 <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'rgba(239,68,68,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <AlertTriangle size={16} color="var(--rojo)" />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-strong)' }}>
                     {grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre.toUpperCase()}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#8f929d', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {grupo.registros.length} duplicados detectados • {grupo.tipo}
                   </div>
                 </div>
@@ -173,15 +173,15 @@ export default function DuplicadosPage() {
                     {grupo.registros.map((r, i) => (
                       <tr key={r.id}>
                         <td style={{ padding: '10px 16px' }}>
-                          <div style={{ fontWeight: 700, color: i === 0 ? '#fff' : '#999' }}>{r.nombre}</div>
-                          <div style={{ fontSize: '10px', color: '#8f929d', fontFamily: 'monospace' }}>{r.cuil}</div>
+                          <div style={{ fontWeight: 700, color: i === 0 ? 'var(--text-strong)' : 'var(--text-muted)' }}>{r.nombre}</div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-code)' }}>{r.cuil}</div>
                         </td>
-                        <td style={{ color: '#8f929d', fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
+                        <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{displayAnalista(r.analista)}</td>
                         <td>
                           <span className="status-badge" style={{ fontSize: '9px', padding: '2px 8px' }}>{r.estado}</span>
                         </td>
                         <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--dorado)' }}>{formatCurrency(r.monto ?? 0)}</td>
-                        <td style={{ textAlign: 'center', color: '#8f929d', fontSize: '11px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
+                        <td style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '11px' }}>{r.fecha ? formatDate(r.fecha) : '—'}</td>
                       </tr>
                     ))}
                   </tbody>

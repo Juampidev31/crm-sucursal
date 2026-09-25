@@ -39,9 +39,9 @@ const ROLE_ORDER: ColumnRole[] = [
 ];
 
 const STATUS_CONFIG = {
-  found:     { label: 'Encontrado',        color: '#00ff88', Icon: CheckCircle2 },
-  mismatch:  { label: 'Importe diferente', color: '#fbbf24', Icon: AlertCircle  },
-  not_found: { label: 'No encontrado',     color: '#ff3366', Icon: XCircle      },
+  found:     { label: 'Encontrado',        color: 'var(--success)', Icon: CheckCircle2 },
+  mismatch:  { label: 'Importe diferente', color: 'var(--warning)', Icon: AlertCircle  },
+  not_found: { label: 'No encontrado',     color: 'var(--danger-strong)', Icon: XCircle      },
 };
 
 const STATUS_OPTS = (Object.keys(STATUS_CONFIG) as MatchStatus[])
@@ -57,7 +57,7 @@ const parseMontoExcel = (raw: string): number => {
 };
 
 const TH_STYLE: React.CSSProperties = {
-  padding: '10px 14px', textAlign: 'left', color: '#555',
+  padding: '10px 14px', textAlign: 'left', color: 'var(--text-subtle)',
   fontWeight: 700, fontSize: 11, letterSpacing: '0.05em',
   whiteSpace: 'nowrap', verticalAlign: 'top', minWidth: 120,
 };
@@ -91,8 +91,8 @@ export default function VerificadorTab() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 }}>Verificador de Excel</h3>
-          <p style={{ fontSize: 13, color: '#666', marginTop: 3 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-strong)', margin: 0 }}>Verificador de Excel</h3>
+          <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 3 }}>
             Pegá celdas copiadas de Excel y cruzalas contra los registros cargados.
           </p>
         </div>
@@ -100,8 +100,8 @@ export default function VerificadorTab() {
           <button onClick={handleReset} style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '7px 14px', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7,
-            color: '#777', cursor: 'pointer', fontSize: 12,
+            border: '1px solid var(--neutral-10)', borderRadius: 7,
+            color: 'var(--text-subtle)', cursor: 'pointer', fontSize: 12,
           }}>
             <RotateCcw size={12} /> Nueva consulta
           </button>
@@ -118,19 +118,19 @@ export default function VerificadorTab() {
             rows={rows.length === 0 ? 18 : 8}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 8, color: '#e5e5e5',
-              fontFamily: 'monospace', fontSize: 12, lineHeight: 1.7,
+              background: 'var(--neutral-02)',
+              border: '1px solid var(--neutral-08)',
+              borderRadius: 8, color: 'var(--text-default)',
+              fontFamily: 'var(--font-code)', fontSize: 12, lineHeight: 1.7,
               padding: '12px 14px', resize: 'vertical', outline: 'none',
             }}
           />
-          <p style={{ fontSize: 12, color: '#555', marginTop: 8 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-subtle)', marginTop: 8 }}>
             Copiá desde Excel incluyendo la columna de CUIL — es el campo requerido para cruzar contra la base.
             Podés incluir también Nombre, Mes e Importe en columnas separadas.
           </p>
           {rows.length > 0 && (
-            <p style={{ fontSize: 12, color: '#888', marginTop: 6 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
               {rows.length} fila{rows.length !== 1 ? 's' : ''} · {colCount} columna{colCount !== 1 ? 's' : ''} detectadas
             </p>
           )}
@@ -140,21 +140,21 @@ export default function VerificadorTab() {
       {/* Column mapping */}
       {rows.length > 0 && !results && (
         <div>
-          <p style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Asignar columnas
           </p>
-          <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
+          <div style={{ overflowX: 'auto', border: '1px solid var(--neutral-07)', borderRadius: 10 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <tr style={{ borderBottom: '1px solid var(--neutral-07)' }}>
                   {Array.from({ length: colCount }, (_, i) => (
-                    <th key={i} style={{ padding: '10px 12px', textAlign: 'left', background: 'rgba(255,255,255,0.02)' }}>
+                    <th key={i} style={{ padding: '10px 12px', textAlign: 'left', background: 'var(--neutral-02)' }}>
                       <select
                         value={mapping[i] ?? 'ignore'}
                         onChange={e => setMapping(prev => ({ ...prev, [i]: e.target.value as ColumnRole }))}
                         style={{
-                          background: '#111', color: '#ccc',
-                          border: '1px solid rgba(255,255,255,0.12)',
+                          background: 'var(--surface-card)', color: 'var(--text-default)',
+                          border: '1px solid var(--neutral-12)',
                           borderRadius: 5, padding: '5px 8px',
                           fontSize: 11, cursor: 'pointer', outline: 'none',
                         }}
@@ -167,9 +167,9 @@ export default function VerificadorTab() {
               </thead>
               <tbody>
                 {rows.slice(0, 8).map((row, ri) => (
-                  <tr key={ri} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <tr key={ri} style={{ borderBottom: '1px solid var(--neutral-04)' }}>
                     {Array.from({ length: colCount }, (_, ci) => (
-                      <td key={ci} style={{ padding: '8px 12px', color: '#888' }}>
+                      <td key={ci} style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>
                         {row.cells[ci] ?? ''}
                       </td>
                     ))}
@@ -179,7 +179,7 @@ export default function VerificadorTab() {
             </table>
           </div>
           {rows.length > 8 && (
-            <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>... y {rows.length - 8} filas más</p>
+            <p style={{ fontSize: 11, color: 'var(--text-subtle)', marginTop: 6 }}>... y {rows.length - 8} filas más</p>
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
@@ -188,8 +188,8 @@ export default function VerificadorTab() {
               disabled={!hasCuil}
               style={{
                 padding: '9px 24px',
-                background: hasCuil ? '#fff' : 'rgba(255,255,255,0.07)',
-                color: hasCuil ? '#000' : '#444',
+                background: hasCuil ? 'var(--accent)' : 'var(--neutral-07)',
+                color: hasCuil ? 'var(--text-on-accent)' : 'var(--text-disabled)',
                 border: 'none', borderRadius: 7,
                 fontWeight: 700, fontSize: 13,
                 cursor: hasCuil ? 'pointer' : 'not-allowed',
@@ -198,7 +198,7 @@ export default function VerificadorTab() {
               Verificar {rows.length} fila{rows.length !== 1 ? 's' : ''}
             </button>
             {!hasCuil && (
-              <span style={{ fontSize: 12, color: '#666' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-subtle)' }}>
                 Asigná al menos la columna CUIL para continuar
               </span>
             )}
@@ -389,7 +389,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
           borderRadius: 8,
           transition: 'all 0.15s',
         }}>
-          <span style={{ fontSize: 12, color: '#ff3366', fontWeight: 600 }}>
+          <span style={{ fontSize: 12, color: 'var(--danger-strong)', fontWeight: 600 }}>
             {duplicateCount} CUIL{duplicateCount > 1 ? 's' : ''} duplicado{duplicateCount > 1 ? 's' : ''} —{' '}
             {selectedForDeletion.size} seleccionado{selectedForDeletion.size !== 1 ? 's' : ''} para eliminar
           </span>
@@ -401,11 +401,11 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 14px',
-                background: selectedForDeletion.size === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(248,113,113,0.15)',
-                border: `1px solid ${selectedForDeletion.size === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(248,113,113,0.3)'}`,
+                background: selectedForDeletion.size === 0 ? 'var(--neutral-04)' : 'rgba(248,113,113,0.15)',
+                border: `1px solid ${selectedForDeletion.size === 0 ? 'var(--neutral-08)' : 'rgba(248,113,113,0.3)'}`,
                 borderRadius: 6,
                 cursor: selectedForDeletion.size === 0 ? 'not-allowed' : 'pointer',
-                color: selectedForDeletion.size === 0 ? '#555' : '#ff3366',
+                color: selectedForDeletion.size === 0 ? 'var(--text-subtle)' : 'var(--danger-strong)',
                 fontSize: 12, fontWeight: 700,
               }}
             >
@@ -420,11 +420,11 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '6px 14px',
-                  background: deleting ? 'rgba(255,255,255,0.05)' : 'rgba(248,113,113,0.3)',
+                  background: deleting ? 'var(--neutral-05)' : 'rgba(248,113,113,0.3)',
                   border: '1px solid rgba(248,113,113,0.5)',
                   borderRadius: 6,
                   cursor: deleting ? 'not-allowed' : 'pointer',
-                  color: '#fff', fontSize: 12, fontWeight: 700,
+                  color: 'var(--text-strong)', fontSize: 12, fontWeight: 700,
                 }}
               >
                 <Trash2 size={12} />
@@ -436,9 +436,9 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                 style={{
                   padding: '6px 14px',
                   background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  border: '1px solid var(--neutral-10)',
                   borderRadius: 6, cursor: 'pointer',
-                  color: '#666', fontSize: 12, fontWeight: 600,
+                  color: 'var(--text-subtle)', fontSize: 12, fontWeight: 600,
                 }}
               >
                 Cancelar
@@ -454,7 +454,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
           background: 'rgba(74,222,128,0.08)',
           border: '1px solid rgba(74,222,128,0.2)',
           borderRadius: 8,
-          fontSize: 12, color: '#00ff88', fontWeight: 600,
+          fontSize: 12, color: 'var(--success)', fontWeight: 600,
         }}>
           ✓ {deleteResult.deleted} registro{deleteResult.deleted > 1 ? 's' : ''} eliminado{deleteResult.deleted > 1 ? 's' : ''} correctamente.
         </div>
@@ -466,7 +466,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
           background: 'rgba(248,113,113,0.08)',
           border: '1px solid rgba(248,113,113,0.25)',
           borderRadius: 8,
-          fontSize: 12, color: '#ff3366', fontWeight: 600,
+          fontSize: 12, color: 'var(--danger-strong)', fontWeight: 600,
         }}>
           Error al eliminar: {deleteError}
         </div>
@@ -476,15 +476,15 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
       {hasFilters && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-          padding: '8px 14px', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8,
+          padding: '8px 14px', background: 'var(--neutral-02)',
+          border: '1px solid var(--neutral-07)', borderRadius: 8,
         }}>
-          <span style={{ fontSize: 11, color: '#555', fontWeight: 600 }}>Filtros activos:</span>
+          <span style={{ fontSize: 11, color: 'var(--text-subtle)', fontWeight: 600 }}>Filtros activos:</span>
           {Array.from(selectedStatuses).map(s => (
             <span key={s} onClick={() => toggleStatus(s)} style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-              background: 'rgba(255,255,255,0.08)', color: STATUS_CONFIG[s].color,
+              background: 'var(--neutral-08)', color: STATUS_CONFIG[s].color,
               border: `1px solid ${STATUS_CONFIG[s].color}44`, cursor: 'pointer',
             }}>
               {STATUS_CONFIG[s].label} ×
@@ -494,8 +494,8 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
             <span key={k} onClick={() => setCol(k, '')} style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-              background: 'rgba(255,255,255,0.06)', color: '#ccc',
-              border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer',
+              background: 'var(--neutral-06)', color: 'var(--text-default)',
+              border: '1px solid var(--neutral-12)', cursor: 'pointer',
             }}>
               {v} ×
             </span>
@@ -504,16 +504,16 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
             <span onClick={() => setSearch('')} style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-              background: 'rgba(255,255,255,0.06)', color: '#ccc',
-              border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer',
+              background: 'var(--neutral-06)', color: 'var(--text-default)',
+              border: '1px solid var(--neutral-12)', cursor: 'pointer',
             }}>
-              "{search}" ×
+              &ldquo;{search}&rdquo; ×
             </span>
           )}
           <button onClick={clearAll} style={{
             marginLeft: 'auto', padding: '3px 10px', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-            color: '#555', cursor: 'pointer', fontSize: 11,
+            border: '1px solid var(--neutral-08)', borderRadius: 6,
+            color: 'var(--text-subtle)', cursor: 'pointer', fontSize: 11,
           }}>Limpiar todo</button>
         </div>
       )}
@@ -525,16 +525,16 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
         placeholder="Buscar en todos los campos..."
         style={{
           width: '100%', boxSizing: 'border-box',
-          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 8, color: '#e5e5e5', fontSize: 13, padding: '9px 14px', outline: 'none',
+          background: 'var(--neutral-02)', border: '1px solid var(--neutral-08)',
+          borderRadius: 8, color: 'var(--text-default)', fontSize: 13, padding: '9px 14px', outline: 'none',
         }}
       />
 
       {/* Estado toggle pills */}
       <div>
-        <div style={{ fontSize: 11, color: '#555', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: 'var(--text-subtle)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
           Estado (seleccioná los que querés filtrar)
-          {selectedStatuses.size > 0 && <span style={{ color: '#00ff88', marginLeft: 8 }}>· {selectedStatuses.size} seleccionado{selectedStatuses.size > 1 ? 's' : ''}</span>}
+          {selectedStatuses.size > 0 && <span style={{ color: 'var(--success)', marginLeft: 8 }}>· {selectedStatuses.size} seleccionado{selectedStatuses.size > 1 ? 's' : ''}</span>}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {STATUS_OPTS.map(({ key, label }) => {
@@ -543,9 +543,9 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
             return (
               <button key={key} onClick={() => toggleStatus(key)} style={{
                 padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                background: active ? '#fff' : 'transparent',
-                color: active ? '#000' : '#666',
-                border: active ? '1px solid #fff' : '1px solid rgba(255,255,255,0.12)',
+                background: active ? 'var(--accent)' : 'transparent',
+                color: active ? 'var(--text-on-accent)' : 'var(--text-subtle)',
+                border: active ? '1px solid var(--text-strong)' : '1px solid var(--neutral-12)',
               }}>
                 {label} <span style={{ fontWeight: 400, opacity: 0.6 }}>({count})</span>
               </button>
@@ -556,18 +556,18 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
 
       {/* Summary bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 12, color: '#666' }}>
-          Mostrando <span style={{ color: '#fff', fontWeight: 700 }}>{visible.length}</span> de {results.length - hiddenIndices.size} filas
+        <span style={{ fontSize: 12, color: 'var(--text-subtle)' }}>
+          Mostrando <span style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{visible.length}</span> de {results.length - hiddenIndices.size} filas
         </span>
-        <span style={{ fontSize: 12, color: '#666' }}>
-          Total monto: <span style={{ color: '#fff', fontWeight: 700 }}>${totalMonto.toLocaleString('es-AR')}</span>
+        <span style={{ fontSize: 12, color: 'var(--text-subtle)' }}>
+          Total monto: <span style={{ color: 'var(--text-strong)', fontWeight: 700 }}>${totalMonto.toLocaleString('es-AR')}</span>
         </span>
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
+      <div style={{ overflowX: 'auto', border: '1px solid var(--neutral-07)', borderRadius: 10 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'auto' }}>
-          <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <thead style={{ background: 'var(--neutral-02)', borderBottom: '1px solid var(--neutral-08)' }}>
             <tr>
               <th style={{ ...TH_STYLE, width: 36, minWidth: 36 }} />
               {orderedCols.map(({ role, colIndex }) => (
@@ -609,8 +609,8 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
               return (
                 <tr
                   key={idx}
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: baseBg, transition: 'background 0.12s ease' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                  style={{ borderBottom: '1px solid var(--neutral-04)', background: baseBg, transition: 'background 0.12s ease' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--neutral-05)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = baseBg ?? ''; }}
                 >
                   <td style={{ padding: '9px 14px', textAlign: 'center', width: 36 }}>
@@ -619,7 +619,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                         type="checkbox"
                         checked={selectedForDeletion.has(resultIdx)}
                         onChange={() => toggleSelected(resultIdx)}
-                        style={{ cursor: 'pointer', accentColor: '#ff3366', width: 14, height: 14 }}
+                        style={{ cursor: 'pointer', accentColor: 'var(--danger-strong)', width: 14, height: 14 }}
                       />
                     )}
                   </td>
@@ -627,7 +627,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                     const raw = res.row.cells[colIndex] ?? '';
                     const display = role === 'fecha' ? formatDateAR(raw) : raw;
                     return (
-                      <td key={role} style={{ padding: '9px 14px', color: '#aaa', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <td key={role} style={{ padding: '9px 14px', color: 'var(--text-muted)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {display}
                       </td>
                     );
@@ -637,23 +637,23 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                       <Icon size={12} />
                       {STATUS_CONFIG[res.status].label}
                     </span>
-                    {res.diffDetail && <span style={{ color: '#666', fontSize: 11, marginLeft: 8 }}>{res.diffDetail}</span>}
+                    {res.diffDetail && <span style={{ color: 'var(--text-subtle)', fontSize: 11, marginLeft: 8 }}>{res.diffDetail}</span>}
                   </td>
-                  <td style={{ padding: '9px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>
-                    {res.dbImporte != null ? `$${res.dbImporte.toLocaleString('es-AR')}` : <span style={{ color: '#444' }}>—</span>}
+                  <td style={{ padding: '9px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    {res.dbImporte != null ? `$${res.dbImporte.toLocaleString('es-AR')}` : <span style={{ color: 'var(--text-disabled)' }}>—</span>}
                   </td>
-                  <td style={{ padding: '9px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>
-                    {res.dbFecha ? formatDateAR(res.dbFecha) : <span style={{ color: '#444' }}>—</span>}
+                  <td style={{ padding: '9px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    {res.dbFecha ? formatDateAR(res.dbFecha) : <span style={{ color: 'var(--text-disabled)' }}>—</span>}
                   </td>
-                  <td style={{ padding: '9px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>
-                    {res.dbEstado ?? <span style={{ color: '#444' }}>—</span>}
+                  <td style={{ padding: '9px 14px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    {res.dbEstado ?? <span style={{ color: 'var(--text-disabled)' }}>—</span>}
                   </td>
                 </tr>
               );
             })}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={orderedCols.length + 4} style={{ padding: '24px', textAlign: 'center', color: '#555' }}>
+                <td colSpan={orderedCols.length + 4} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-subtle)' }}>
                   No hay resultados con los filtros aplicados
                 </td>
               </tr>

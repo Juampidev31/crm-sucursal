@@ -14,9 +14,9 @@ interface TagColorConfig {
 }
 
 export const TAG_CONFIGS: Record<string, TagColorConfig> = {
-  VIP:            { label: 'VIP',            bg: 'rgba(168,85,247,0.15)',  color: '#c084fc', border: 'rgba(168,85,247,0.35)' },
+  VIP:            { label: 'VIP',            bg: 'rgba(168,85,247,0.15)',  color: 'var(--violet)', border: 'rgba(168,85,247,0.35)' },
   Urgente:        { label: 'Urgente',        bg: 'rgba(239,68,68,0.15)',   color: '#fca5a5', border: 'rgba(239,68,68,0.35)' },
-  'Sin Respuesta':{ label: 'Sin Respuesta',  bg: 'rgba(100,116,139,0.15)', color: '#94a3b8', border: 'rgba(100,116,139,0.35)' },
+  'Sin Respuesta':{ label: 'Sin Respuesta',  bg: 'rgba(100,116,139,0.15)', color: 'var(--text-muted)', border: 'rgba(100,116,139,0.35)' },
   Caliente:       { label: 'Caliente',       bg: 'rgba(249,115,22,0.15)',  color: '#fdba74', border: 'rgba(249,115,22,0.35)' },
   Presupuestado:  { label: 'Presupuestado',  bg: 'rgba(16,185,129,0.15)', color: '#6ee7b7', border: 'rgba(16,185,129,0.35)' },
 };
@@ -30,7 +30,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 export function getTagStyle(tag: string): TagColorConfig {
-  if (!tag) return { label: '', bg: 'rgba(100,116,139,0.15)', color: '#94a3b8', border: 'rgba(100,116,139,0.35)' };
+  if (!tag) return { label: '', bg: 'rgba(100,116,139,0.15)', color: 'var(--text-muted)', border: 'rgba(100,116,139,0.35)' };
 
   let name = tag;
   let colorHex = '';
@@ -57,22 +57,22 @@ export function getTagStyle(tag: string): TagColorConfig {
   // Keyword check
   const lower = name.toLowerCase();
   if (lower.includes('amarillo') || lower.includes('yellow') || lower.includes('duda') || lower.includes('pend')) {
-    return { label: name, bg: 'rgba(234,179,8,0.18)', color: '#eab308', border: 'rgba(234,179,8,0.4)' };
+    return { label: name, bg: 'rgba(234,179,8,0.18)', color: 'var(--warning)', border: 'rgba(234,179,8,0.4)' };
   }
   if (lower.includes('rojo') || lower.includes('red') || lower.includes('urg') || lower.includes('canc')) {
     return { label: name, bg: 'rgba(239,68,68,0.18)', color: '#fca5a5', border: 'rgba(239,68,68,0.4)' };
   }
   if (lower.includes('verde') || lower.includes('green') || lower.includes('ok') || lower.includes('ganad')) {
-    return { label: name, bg: 'rgba(34,197,94,0.18)', color: '#4ade80', border: 'rgba(34,197,94,0.4)' };
+    return { label: name, bg: 'rgba(34,197,94,0.18)', color: 'var(--success)', border: 'rgba(34,197,94,0.4)' };
   }
   if (lower.includes('azul') || lower.includes('blue') || lower.includes('info')) {
-    return { label: name, bg: 'rgba(59,130,246,0.18)', color: '#60a5fa', border: 'rgba(59,130,246,0.4)' };
+    return { label: name, bg: 'rgba(59,130,246,0.18)', color: 'var(--info)', border: 'rgba(59,130,246,0.4)' };
   }
   if (lower.includes('violeta') || lower.includes('purp') || lower.includes('vip')) {
-    return { label: name, bg: 'rgba(168,85,247,0.18)', color: '#c084fc', border: 'rgba(168,85,247,0.4)' };
+    return { label: name, bg: 'rgba(168,85,247,0.18)', color: 'var(--violet)', border: 'rgba(168,85,247,0.4)' };
   }
   if (lower.includes('rosa') || lower.includes('pink')) {
-    return { label: name, bg: 'rgba(236,72,153,0.18)', color: '#f472b6', border: 'rgba(236,72,153,0.4)' };
+    return { label: name, bg: 'rgba(236,72,153,0.18)', color: 'var(--pink)', border: 'rgba(236,72,153,0.4)' };
   }
 
   // Deterministic color hash mapping for non-preset custom tags
@@ -81,12 +81,12 @@ export function getTagStyle(tag: string): TagColorConfig {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
   const colors = [
-    { bg: 'rgba(234,179,8,0.18)', color: '#eab308', border: 'rgba(234,179,8,0.4)' },
-    { bg: 'rgba(168,85,247,0.18)', color: '#c084fc', border: 'rgba(168,85,247,0.4)' },
-    { bg: 'rgba(59,130,246,0.18)', color: '#60a5fa', border: 'rgba(59,130,246,0.4)' },
-    { bg: 'rgba(34,197,94,0.18)', color: '#4ade80', border: 'rgba(34,197,94,0.4)' },
+    { bg: 'rgba(234,179,8,0.18)', color: 'var(--warning)', border: 'rgba(234,179,8,0.4)' },
+    { bg: 'rgba(168,85,247,0.18)', color: 'var(--violet)', border: 'rgba(168,85,247,0.4)' },
+    { bg: 'rgba(59,130,246,0.18)', color: 'var(--info)', border: 'rgba(59,130,246,0.4)' },
+    { bg: 'rgba(34,197,94,0.18)', color: 'var(--success)', border: 'rgba(34,197,94,0.4)' },
     { bg: 'rgba(239,68,68,0.18)', color: '#fca5a5', border: 'rgba(239,68,68,0.4)' },
-    { bg: 'rgba(236,72,153,0.18)', color: '#f472b6', border: 'rgba(236,72,153,0.4)' },
+    { bg: 'rgba(236,72,153,0.18)', color: 'var(--pink)', border: 'rgba(236,72,153,0.4)' },
     { bg: 'rgba(20,184,166,0.18)', color: '#2dd4bf', border: 'rgba(20,184,166,0.4)' },
   ];
   return {
@@ -180,9 +180,9 @@ export function EtiquetasSelector({ etiquetas = [], onChange }: EtiquetasSelecto
                 display: 'inline-flex', alignItems: 'center', gap: 4,
                 fontSize: 12, fontWeight: 600,
                 padding: '5px 10px', borderRadius: 8,
-                background: isSelected ? s.bg : 'rgba(255,255,255,0.04)',
+                background: isSelected ? s.bg : 'var(--neutral-04)',
                 color: isSelected ? s.color : 'var(--fg-muted)',
-                border: `1px solid ${isSelected ? s.border : 'rgba(255,255,255,0.1)'}`,
+                border: `1px solid ${isSelected ? s.border : 'var(--neutral-10)'}`,
                 transition: 'all 0.15s',
               }}
             >
@@ -233,9 +233,9 @@ export function EtiquetasSelector({ etiquetas = [], onChange }: EtiquetasSelecto
             autoFocus
             style={{
               flex: 1, padding: '7px 10px', fontSize: 12,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 8, color: '#fff', outline: 'none',
+              background: 'var(--neutral-06)',
+              border: '1px solid var(--neutral-15)',
+              borderRadius: 8, color: 'var(--text-strong)', outline: 'none',
               fontFamily: 'inherit',
             }}
           />
@@ -244,7 +244,7 @@ export function EtiquetasSelector({ etiquetas = [], onChange }: EtiquetasSelecto
             disabled={!customTag.trim()}
             style={{
               padding: '7px 14px', fontSize: 12, fontWeight: 700,
-              background: 'var(--green)', color: '#000',
+              background: 'var(--green)', color: 'var(--text-on-accent)',
               border: 'none', borderRadius: 8,
               cursor: customTag.trim() ? 'pointer' : 'not-allowed',
               opacity: customTag.trim() ? 1 : 0.5,
@@ -258,8 +258,8 @@ export function EtiquetasSelector({ etiquetas = [], onChange }: EtiquetasSelecto
             onClick={() => setShowInput(false)}
             style={{
               padding: '7px 10px', fontSize: 12, fontWeight: 600,
-              background: 'rgba(255,255,255,0.05)', color: 'var(--fg-muted)',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
+              background: 'var(--neutral-05)', color: 'var(--fg-muted)',
+              border: '1px solid var(--neutral-10)', borderRadius: 8,
               cursor: 'pointer',
             }}
           >
@@ -312,15 +312,15 @@ export function EtiquetasModal({
           position: 'fixed', inset: 0, zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 16,
-          background: 'rgba(0,0,0,0.75)',
+          background: 'var(--surface-scrim)',
           backdropFilter: 'blur(6px)',
         }}
         onClick={onClose}
       >
         <div
           style={{
-            background: '#111111',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--surface-card)',
+            border: '1px solid var(--neutral-08)',
             borderRadius: 16,
             padding: '20px 22px',
             boxShadow: '0 24px 80px rgba(0,0,0,0.7)',
@@ -332,10 +332,10 @@ export function EtiquetasModal({
           <div style={{
             display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
             marginBottom: 16, paddingBottom: 14,
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            borderBottom: '1px solid var(--neutral-06)',
           }}>
             <div>
-              <div style={{ fontWeight: 800, color: '#fff', fontSize: 13, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontWeight: 800, color: 'var(--text-strong)', fontSize: 13, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 Etiquetas
               </div>
               <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 3 }}>
@@ -349,7 +349,7 @@ export function EtiquetasModal({
                 color: 'var(--fg-muted)', padding: 4, borderRadius: 6, display: 'flex',
                 transition: 'color 0.15s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-strong)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
             >
               <X style={{ width: 16, height: 16 }} />

@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { parseCSV, clean, parsePct } from '@/lib/csv-utils';
+import { clean, parsePct } from '@/lib/csv-utils';
+import { fetchCsv } from '@/lib/fetch-csv';
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/1ixuDCB2G5i-eDVP1TvVPylHBaxcoTODnRlizNkJqsfw/export?format=csv&gid=862186907';
 
 export async function GET() {
-  const res = await fetch(CSV_URL, { next: { revalidate: 300 } });
-  const text = await res.text();
-  const rows = parseCSV(text);
+  const rows = await fetchCsv(CSV_URL, { next: { revalidate: 300 } });
 
   // Fila 0: Alcances Trimestrales_XXXX, Q1, Q2, Q3, Q4
   // Fila 1: nombre, pct Q1, pct Q2, pct Q3, pct Q4

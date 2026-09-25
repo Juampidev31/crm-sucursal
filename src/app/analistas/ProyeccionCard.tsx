@@ -23,19 +23,19 @@ export interface ProyeccionKpi {
   tieneDiasAdmin: boolean;
 }
 
-const labelStyle: React.CSSProperties = { fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 };
-const valueStyle: React.CSSProperties = { fontSize: 20, fontWeight: 900, color: '#fff' };
-const ritmoStyle: React.CSSProperties = { fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 };
-const divider: React.CSSProperties = { height: 1, background: 'rgba(255,255,255,0.04)' };
-const panelStyle: React.CSSProperties = { background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.04)', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 };
+const labelStyle: React.CSSProperties = { fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 };
+const valueStyle: React.CSSProperties = { fontSize: 20, fontWeight: 900, color: 'var(--text-strong)' };
+const ritmoStyle: React.CSSProperties = { fontSize: 10, color: 'var(--text-subtle)', fontWeight: 700, marginTop: 4 };
+const divider: React.CSSProperties = { height: 1, background: 'var(--neutral-04)' };
+const panelStyle: React.CSSProperties = { background: 'var(--neutral-02)', borderRadius: 12, border: '1px solid var(--neutral-04)', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 };
 
 export default function ProyeccionCard({ kpi, titulo, showActual = true, showProy = true }: { kpi: ProyeccionKpi; titulo: string; showActual?: boolean; showProy?: boolean }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: 1 }}>{titulo}</div>
+      <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-strong)', textTransform: 'uppercase', letterSpacing: 1 }}>{titulo}</div>
 
       {kpi.esMesActual && !kpi.tieneDiasAdmin ? (
-        <div style={{ ...panelStyle, fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center', alignItems: 'center' }}>
+        <div style={{ ...panelStyle, fontSize: 11, color: 'var(--text-subtle)', fontStyle: 'italic', textAlign: 'center', alignItems: 'center' }}>
           Cargá días hábiles en Ajustes para ver proyección
         </div>
       ) : (
@@ -86,7 +86,7 @@ export default function ProyeccionCard({ kpi, titulo, showActual = true, showPro
                     {(() => {
                       const diff = kpi.capital - kpi.ventaIdealFecha!;
                       return (
-                        <span style={{ fontSize: 12, fontWeight: 800, color: diff >= 0 ? '#10b981' : '#f87171' }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: diff >= 0 ? 'var(--success-strong)' : 'var(--danger)' }}>
                           {diff >= 0 ? '+' : '−'}{formatCurrency(Math.abs(diff))}
                         </span>
                       );
@@ -102,7 +102,7 @@ export default function ProyeccionCard({ kpi, titulo, showActual = true, showPro
           {/* ── Panel 2: proyección fin de mes ── */}
           {showProy && (
           <div style={panelStyle}>
-            <div style={{ fontSize: 11, fontWeight: 900, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: 1.2 }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-default)', textTransform: 'uppercase', letterSpacing: 1.2 }}>
               {kpi.esMesActual ? 'Proyección fin de mes' : 'Cierre del mes'}
             </div>
 
@@ -112,9 +112,9 @@ export default function ProyeccionCard({ kpi, titulo, showActual = true, showPro
                   <>
                     <div style={labelStyle}>{kpi.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                      <div style={{ ...valueStyle, color: kpi.proyCapital >= kpi.metaCapital ? '#10b981' : '#f87171' }}>{formatCurrency(kpi.proyCapital)}</div>
+                      <div style={{ ...valueStyle, color: kpi.proyCapital >= kpi.metaCapital ? 'var(--success-strong)' : 'var(--danger)' }}>{formatCurrency(kpi.proyCapital)}</div>
                       {kpi.cumplProyCapital !== null && (
-                        <span style={{ fontSize: 12, fontWeight: 800, color: kpi.cumplProyCapital >= 100 ? '#10b981' : '#f87171' }}>({kpi.cumplProyCapital.toFixed(2)}%)</span>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: kpi.cumplProyCapital >= 100 ? 'var(--success-strong)' : 'var(--danger)' }}>({kpi.cumplProyCapital.toFixed(2)}%)</span>
                       )}
                     </div>
                   </>
@@ -125,9 +125,9 @@ export default function ProyeccionCard({ kpi, titulo, showActual = true, showPro
                   <>
                     <div style={labelStyle}>{kpi.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                      <div style={{ ...valueStyle, color: kpi.proyOps >= kpi.metaOps ? '#10b981' : '#f87171' }}>{Math.round(kpi.proyOps)}</div>
+                      <div style={{ ...valueStyle, color: kpi.proyOps >= kpi.metaOps ? 'var(--success-strong)' : 'var(--danger)' }}>{Math.round(kpi.proyOps)}</div>
                       {kpi.cumplProyOps !== null && (
-                        <span style={{ fontSize: 12, fontWeight: 800, color: kpi.cumplProyOps >= 100 ? '#10b981' : '#f87171' }}>({kpi.cumplProyOps.toFixed(2)}%)</span>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: kpi.cumplProyOps >= 100 ? 'var(--success-strong)' : 'var(--danger)' }}>({kpi.cumplProyOps.toFixed(2)}%)</span>
                       )}
                     </div>
                   </>
@@ -142,7 +142,7 @@ export default function ProyeccionCard({ kpi, titulo, showActual = true, showPro
                 {kpi.faltaCapital !== null && (
                   <>
                     <div style={labelStyle}>Falta 100% (K)</div>
-                    <div style={{ ...valueStyle, color: kpi.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(kpi.faltaCapital)}</div>
+                    <div style={{ ...valueStyle, color: kpi.faltaCapital === 0 ? 'var(--success-strong)' : 'var(--danger)' }}>{formatCurrency(kpi.faltaCapital)}</div>
                   </>
                 )}
               </div>
@@ -150,7 +150,7 @@ export default function ProyeccionCard({ kpi, titulo, showActual = true, showPro
                 {kpi.faltaOps !== null && (
                   <>
                     <div style={labelStyle}>Falta 100% (Q)</div>
-                    <div style={{ ...valueStyle, color: kpi.faltaOps === 0 ? '#10b981' : '#f87171' }}>{Math.round(kpi.faltaOps || 0)}</div>
+                    <div style={{ ...valueStyle, color: kpi.faltaOps === 0 ? 'var(--success-strong)' : 'var(--danger)' }}>{Math.round(kpi.faltaOps || 0)}</div>
                   </>
                 )}
               </div>

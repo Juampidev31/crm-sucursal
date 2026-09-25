@@ -35,12 +35,12 @@ export default function LoginPage() {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      minHeight: '100vh', background: '#000',
-      fontFamily: "'Outfit', sans-serif",
+      minHeight: '100vh', background: 'var(--surface-input)',
+      fontFamily: 'var(--font-ui)',
     }}>
       <form onSubmit={handleLogin} autoComplete="off" style={{
-        background: '#0c0c0c',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: 'var(--surface-canvas)',
+        border: '1px solid var(--neutral-08)',
         borderRadius: '16px', padding: '40px',
         width: '100%', maxWidth: '320px',
         display: 'flex', flexDirection: 'column', gap: '16px',
@@ -59,18 +59,18 @@ export default function LoginPage() {
           autoCapitalize="off"
           spellCheck={false}
           style={{
-            background: '#111', border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '10px', color: '#fff', fontSize: '14px',
+            background: 'var(--surface-card)', border: '1px solid var(--neutral-08)',
+            borderRadius: '10px', color: 'var(--text-strong)', fontSize: '14px',
             padding: '12px 16px', outline: 'none',
-            fontFamily: "'Outfit', sans-serif",
+            fontFamily: 'var(--font-ui)',
           }}
         />
-        {error && <div style={{ color: '#ff3366', fontSize: '13px' }}>{error}</div>}
+        {error && <div style={{ color: 'var(--danger-strong)', fontSize: '13px' }}>{error}</div>}
         <button type="submit" style={{
-          background: '#f7e479', color: '#000', border: 'none',
+          background: '#f7e479', color: 'var(--text-on-accent)', border: 'none',
           borderRadius: '10px', padding: '12px',
           fontSize: '14px', fontWeight: 700, cursor: 'pointer',
-          fontFamily: "'Outfit', sans-serif",
+          fontFamily: 'var(--font-ui)',
         }}>
           Entrar
         </button>

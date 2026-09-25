@@ -10,7 +10,7 @@ import { Eye, EyeOff, Trash2, Plus } from 'lucide-react';
 export default function AnalistasTab() {
   const { analistasAll, applyAnalistaChange } = useAnalistas();
   const [nombre, setNombre] = useState('');
-  const [color, setColor] = useState('#6366f1');
+  const [color, setColor] = useState('var(--violet)');
   const [incentivo, setIncentivo] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +26,7 @@ export default function AnalistasTab() {
     const { data, error: e } = await supabase.from('analistas').insert(fila).select().single();
     if (e) { setError(e.message); return; }
     applyAnalistaChange('INSERT', data as Analista);
-    setNombre(''); setColor('#6366f1'); setIncentivo(true); setError(null);
+    setNombre(''); setColor('var(--violet)'); setIncentivo(true); setError(null);
   };
 
   const toggleOculto = async (a: Analista) => {
@@ -63,9 +63,9 @@ export default function AnalistasTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
       {/* FORMULARIO AGREGAR */}
-      <div className="data-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)' }}>
+      <div className="data-card" style={{ background: 'var(--surface-canvas)', border: '1px solid var(--neutral-03)' }}>
         <div className="data-card-header" style={{ marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>Agregar Analista</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-strong)' }}>Agregar Analista</h3>
           <p style={{ fontSize: '13px', color: 'var(--gris)' }}>
             Los analistas nuevos se agregan al final del listado y están visibles de inmediato.
           </p>
@@ -86,7 +86,7 @@ export default function AnalistasTab() {
                 onChange={e => { setNombre(e.target.value); setError(null); }}
                 placeholder="Ej: Martínez"
                 onKeyDown={e => e.key === 'Enter' && agregar()}
-                style={{ background: 'rgba(255,255,255,0.02)' }}
+                style={{ background: 'var(--neutral-02)' }}
               />
             </div>
 
@@ -102,11 +102,11 @@ export default function AnalistasTab() {
                   onChange={e => setColor(e.target.value)}
                   style={{
                     width: '42px', height: '38px', padding: '2px', borderRadius: '6px',
-                    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid var(--neutral-10)', background: 'var(--neutral-02)',
                     cursor: 'pointer'
                   }}
                 />
-                <span style={{ fontSize: '11px', color: '#555', fontFamily: 'monospace' }}>{color}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-subtle)', fontFamily: 'var(--font-code)' }}>{color}</span>
               </div>
             </div>
 
@@ -125,7 +125,7 @@ export default function AnalistasTab() {
                 />
                 <label
                   htmlFor="incentivo-check"
-                  style={{ fontSize: '13px', color: incentivo ? '#fff' : 'var(--gris)', cursor: 'pointer', userSelect: 'none' }}
+                  style={{ fontSize: '13px', color: incentivo ? 'var(--text-strong)' : 'var(--gris)', cursor: 'pointer', userSelect: 'none' }}
                 >
                   {incentivo ? 'Sí' : 'No'}
                 </label>
@@ -146,7 +146,7 @@ export default function AnalistasTab() {
             <div style={{
               padding: '10px 14px', borderRadius: '8px', fontSize: '13px',
               background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-              color: '#f87171'
+              color: 'var(--danger)'
             }}>
               {error}
             </div>
@@ -155,9 +155,9 @@ export default function AnalistasTab() {
       </div>
 
       {/* LISTA DE ANALISTAS */}
-      <div className="data-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)' }}>
+      <div className="data-card" style={{ background: 'var(--surface-canvas)', border: '1px solid var(--neutral-03)' }}>
         <div className="data-card-header" style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-strong)' }}>
             Analistas ({analistasAll.length})
           </h3>
           <p style={{ fontSize: '13px', color: 'var(--gris)' }}>
@@ -167,8 +167,8 @@ export default function AnalistasTab() {
 
         {analistasAll.length === 0 ? (
           <div style={{
-            padding: '40px', textAlign: 'center', color: '#444', fontSize: '13px',
-            background: 'rgba(255,255,255,0.01)', borderRadius: '12px'
+            padding: '40px', textAlign: 'center', color: 'var(--text-disabled)', fontSize: '13px',
+            background: 'var(--neutral-01)', borderRadius: '12px'
           }}>
             No hay analistas registrados.
           </div>
@@ -179,8 +179,8 @@ export default function AnalistasTab() {
                 key={a.nombre}
                 style={{
                   padding: '12px 16px',
-                  background: a.oculto ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${a.oculto ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.06)'}`,
+                  background: a.oculto ? 'var(--neutral-01)' : 'var(--neutral-02)',
+                  border: `1px solid ${a.oculto ? 'var(--neutral-04)' : 'var(--neutral-06)'}`,
                   borderRadius: '10px',
                   display: 'flex', alignItems: 'center', gap: '12px',
                   opacity: a.oculto ? 0.55 : 1,
@@ -191,11 +191,11 @@ export default function AnalistasTab() {
                 <div style={{
                   width: '28px', height: '28px', borderRadius: '6px',
                   background: a.color, flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.1)'
+                  border: '1px solid var(--neutral-10)'
                 }} />
 
                 {/* Nombre */}
-                <span style={{ fontWeight: 700, fontSize: '14px', color: a.oculto ? '#555' : '#fff', flex: 1 }}>
+                <span style={{ fontWeight: 700, fontSize: '14px', color: a.oculto ? 'var(--text-subtle)' : 'var(--text-strong)', flex: 1 }}>
                   {a.nombre}
                 </span>
 
@@ -204,7 +204,7 @@ export default function AnalistasTab() {
                   {a.oculto && (
                     <span style={{
                       fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '4px',
-                      background: 'rgba(255,255,255,0.05)', color: '#555', textTransform: 'uppercase', letterSpacing: '0.4px'
+                      background: 'var(--neutral-05)', color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '0.4px'
                     }}>
                       Oculto
                     </span>
@@ -224,13 +224,13 @@ export default function AnalistasTab() {
                   onClick={() => toggleOculto(a)}
                   title={a.oculto ? 'Mostrar' : 'Ocultar'}
                   style={{
-                    background: 'none', border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'none', border: '1px solid var(--neutral-08)',
                     borderRadius: '6px', padding: '6px 8px', cursor: 'pointer',
-                    color: a.oculto ? 'var(--azul)' : '#555',
+                    color: a.oculto ? 'var(--azul)' : 'var(--text-subtle)',
                     display: 'flex', alignItems: 'center', transition: 'all 0.15s'
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = a.oculto ? 'var(--azul)' : '#555'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--neutral-18)'; e.currentTarget.style.color = 'var(--text-strong)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--neutral-08)'; e.currentTarget.style.color = a.oculto ? 'var(--azul)' : 'var(--text-subtle)'; }}
                 >
                   {a.oculto ? <Eye size={15} /> : <EyeOff size={15} />}
                 </button>
@@ -240,12 +240,12 @@ export default function AnalistasTab() {
                   onClick={() => eliminar(a)}
                   title="Eliminar analista"
                   style={{
-                    background: 'none', border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'none', border: '1px solid var(--neutral-08)',
                     borderRadius: '6px', padding: '6px 8px', cursor: 'pointer',
-                    color: '#555', display: 'flex', alignItems: 'center', transition: 'all 0.15s'
+                    color: 'var(--text-subtle)', display: 'flex', alignItems: 'center', transition: 'all 0.15s'
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.color = '#ef4444'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#555'; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.color = 'var(--danger)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--neutral-08)'; e.currentTarget.style.color = 'var(--text-subtle)'; }}
                 >
                   <Trash2 size={15} />
                 </button>

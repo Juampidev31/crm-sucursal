@@ -5,6 +5,7 @@ import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { Registro, Objetivo, CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
+import { resolveCssColor } from '@/lib/css-color';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { calcularDiasHabilesMes } from '@/lib/dias-habiles';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
@@ -63,7 +64,7 @@ const labelsPlugin: any = {
       if (!meta || meta.hidden || meta.type !== 'bar') return;
 
       ctx.save();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = 'var(--text-strong)';
       ctx.font = 'bold 11px Outfit, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = isStacked ? 'middle' : 'bottom';
@@ -107,29 +108,29 @@ const labelsPlugin: any = {
     });
   },
 };
- 
+
 // ── Plugin inline: líneas de referencia horizontales (Meta/Objetivo) ─────
 const referenceLinesPlugin: any = {
   id: 'referenceLinesPlugin',
   afterDraw(chart: any) {
     const { ctx, chartArea: { left, right }, scales } = chart;
-    
+
     chart.data.datasets.forEach((dataset: any) => {
       if (dataset.horizontalReferenceValue !== undefined) {
         const yAxisID = dataset.yAxisID || 'y';
         const yScale = scales[yAxisID];
         if (!yScale) return;
-        
+
         const yValue = yScale.getPixelForValue(dataset.horizontalReferenceValue);
         ctx.save();
         ctx.beginPath();
         ctx.setLineDash(dataset.borderDash || []);
         ctx.lineWidth = dataset.borderWidth || 2;
-        ctx.strokeStyle = dataset.borderColor || '#fff';
+        ctx.strokeStyle = dataset.borderColor || 'var(--text-strong)';
         ctx.moveTo(left, yValue);
         ctx.lineTo(right, yValue);
         ctx.stroke();
-        
+
         // Etiqueta opcional
         if (dataset.showLabelOnLine) {
           ctx.fillStyle = dataset.borderColor;
@@ -137,19 +138,19 @@ const referenceLinesPlugin: any = {
           ctx.textAlign = 'right';
           ctx.fillText(dataset.label, right - 5, yValue - 5);
         }
-        
+
         ctx.restore();
       }
     });
   }
 };
- 
+
 import { useSearchParams } from 'next/navigation';
 
 const now = new Date();
 
 const cumplColor = (pct: number | null) =>
-  pct === null ? '#64748b' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
+  pct === null ? 'var(--text-subtle)' : pct >= 100 ? 'var(--success)' : pct >= 75 ? 'var(--warning)' : 'var(--danger)';
 
 export default function AnalistasPage() {
   const { registros: allRegistros, loading } = useRegistros();
@@ -157,7 +158,7 @@ export default function AnalistasPage() {
   const { diasConfig, feriados, diasTranscurridosAuto } = useSettings();
   const { nombres: analistasDefault, cobraIncentivo } = useAnalistas();
   const { isAdmin } = useAuth();
-  
+
   const searchParams = useSearchParams();
   const [analista, setAnalista] = useState<string>('PDV');
 
@@ -214,19 +215,19 @@ export default function AnalistasPage() {
 
   const mesesAnioKQ = useMemo(() => {
     const buckets: { key: string; mes0: number; anio: number; label: string; monto: number; ops: number; metaK: number; metaQ: number }[] = [];
-    
+
     const aniosToInclude = anioRendimiento === 'TODOS' ? aniosDisponiblesRendimiento.slice().sort((a,b) => a - b) : [anioRendimiento];
     const mesesToInclude = mesRendimiento === 'TODOS' ? Array.from({length: 12}, (_, i) => i) : [mesRendimiento as number];
 
     for (const y of aniosToInclude) {
       for (const m of mesesToInclude) {
         const key = `${y}-${String(m + 1).padStart(2, '0')}`;
-        buckets.push({ 
-           key, 
-           mes0: m, 
-           anio: y, 
-           label: anioRendimiento === 'TODOS' ? `${CONFIG.MESES_NOMBRES[m]} ${y}` : CONFIG.MESES_NOMBRES[m], 
-           monto: 0, ops: 0, metaK: 0, metaQ: 0 
+        buckets.push({
+           key,
+           mes0: m,
+           anio: y,
+           label: anioRendimiento === 'TODOS' ? `${CONFIG.MESES_NOMBRES[m]} ${y}` : CONFIG.MESES_NOMBRES[m],
+           monto: 0, ops: 0, metaK: 0, metaQ: 0
         });
       }
     }
@@ -325,12 +326,12 @@ export default function AnalistasPage() {
   };
 
   const tendBadge = (pct: number | null, showLabel = true) => {
-    if (pct === null) return <span style={{ color: '#64748b' }}>—</span>;
-    const color = pct >= 0 ? '#34d399' : '#f87171';
+    if (pct === null) return <span style={{ color: 'var(--text-subtle)' }}>—</span>;
+    const color = pct >= 0 ? 'var(--success)' : 'var(--danger)';
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
-        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
+        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
+        <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-strong)', background: 'var(--neutral-02)', border: '1px solid var(--neutral-05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
           <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
       </div>
@@ -339,21 +340,21 @@ export default function AnalistasPage() {
 
   const sectionHeader = (id: number, title: string, icon: React.ReactNode, extra?: React.ReactNode) => {
     return (
-      <div 
-        style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          marginBottom: 16, 
-          paddingBottom: 10, 
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 16,
+          paddingBottom: 10,
+          borderBottom: '1px solid var(--neutral-05)',
           gap: 12,
           userSelect: 'none',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {icon}
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
           {extra}
         </div>
       </div>
@@ -412,13 +413,13 @@ export default function AnalistasPage() {
       const diasRestantes = Math.max(0, diasHabilesAdmin - diasTransAdmin);
       const ventaPorDia = diasDivisor > 0 ? capital / diasDivisor : null;
       const opsPorDia = diasTransAdmin > 0 ? ops / diasTransAdmin : (ops > 0 ? ops / 1 : null);
-      
+
       // La meta diaria se calcula como lo que falta para llegar dividido los días restantes
       // Si ya pasó el mes o no hay días cargados, se usa la meta lineal original
       const metaDiariaCapital = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
         ? Math.max(0, metaCapital - capital) / diasRestantes
         : (tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null);
-      
+
       const metaDiariaOps = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
         ? Math.max(0, metaOps - ops) / diasRestantes
         : (tieneDiasAdmin ? metaOps / diasHabilesAdmin : null);
@@ -433,7 +434,7 @@ export default function AnalistasPage() {
 
       // Cálculo de incentivos (analistas con incentivo)
       const tieneIncentivo = cobraIncentivo(analista);
-      
+
       let coefCap = 0;
       let coefOps = 0;
       let incentivoCap = 0;
@@ -448,7 +449,7 @@ export default function AnalistasPage() {
           else if (cumplCapital >= 90) coefCap = 0.0030;
           else if (cumplCapital >= 75) coefCap = 0.0020;
         }
-        
+
         if (cumplOps !== null && cumplCapital !== null && cumplCapital >= 75) {
           if (cumplOps >= 100) coefOps = 0.0030;
           else if (cumplOps >= 80) coefOps = 0.0020;
@@ -456,7 +457,7 @@ export default function AnalistasPage() {
 
         const incentivoCapVariable = capital * coefCap;
         incentivoCap = incentivoCapVariable + 21470;
-        
+
         // El incentivo de operaciones es un % del incentivo de capital VARIABLE (sin los 21470)
         incentivoOps = incentivoCapVariable * (coefOps === 0.0030 ? 0.30 : (coefOps === 0.0020 ? 0.20 : 0));
 
@@ -600,7 +601,7 @@ export default function AnalistasPage() {
     const metaDiariaCapital = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
       ? Math.max(0, metaCapital - capital) / diasRestantes
       : (tieneDiasAdmin ? metaCapital / diasHabilesAdmin : null);
-      
+
     const metaDiariaOps = (esMesActual && tieneDiasAdmin && diasRestantes > 0)
       ? Math.max(0, metaOps - ops) / diasRestantes
       : (tieneDiasAdmin ? metaOps / diasHabilesAdmin : null);
@@ -628,7 +629,7 @@ export default function AnalistasPage() {
     // Cálculo de incentivos global - Suma de individuales (Solo Luciana y Victoria)
     const incentivoCap = kpiPorAnalista.reduce((s, k) => s + (k.incentivoCap || 0), 0);
     const incentivoOps = kpiPorAnalista.reduce((s, k) => s + (k.incentivoOps || 0), 0);
-    
+
     // Cobranzas Total (Suma de analistas con incentivo)
     const incentivoCobTr90 = kpiPorAnalista.reduce((s, k) => s + (k.incentivoCobTr90 || 0), 0);
     const incentivoCobTr120 = kpiPorAnalista.reduce((s, k) => s + (k.incentivoCobTr120 || 0), 0);
@@ -705,13 +706,13 @@ export default function AnalistasPage() {
           fontSize: 11,
           fontWeight: 800,
           letterSpacing: '0.4px',
-          fontFamily: "'Outfit', sans-serif",
+          fontFamily: 'var(--font-ui)',
           boxShadow: '0 0 14px rgba(59, 130, 246, 0.08)',
           textTransform: 'none',
         }}
         title={`Días hábiles restantes: ${texto}`}
       >
-        <Clock size={12} strokeWidth={2.5} style={{ color: '#60a5fa' }} />
+        <Clock size={12} strokeWidth={2.5} style={{ color: 'var(--info)' }} />
         <span>{texto}</span>
       </div>
     );
@@ -790,12 +791,12 @@ export default function AnalistasPage() {
     const chart = context.chart;
     const { ctx, chartArea } = chart;
     if (!chartArea) return null;
-    let horizontal = chart.config.options.indexAxis === 'y';
-    const gradient = horizontal 
+    const horizontal = chart.config.options.indexAxis === 'y';
+    const gradient = horizontal
       ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
       : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-    gradient.addColorStop(0, colorStart);
-    gradient.addColorStop(1, colorEnd);
+    gradient.addColorStop(0, resolveCssColor(colorStart));
+    gradient.addColorStop(1, resolveCssColor(colorEnd));
     return gradient;
   };
 
@@ -810,18 +811,18 @@ export default function AnalistasPage() {
         display: showLegend,
         position: 'top' as const,
         align: 'end' as const,
-        labels: { color: '#666', font: { size: 10 }, usePointStyle: true, padding: 10 }
+        labels: { color: 'var(--text-subtle)', font: { size: 10 }, usePointStyle: true, padding: 10 }
       },
       tooltip: {
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
+        titleColor: 'var(--text-strong)',
         titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
         titleAlign: 'center' as const,
         titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
+        bodyColor: 'var(--text-strong)',
         bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
         bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderColor: 'var(--neutral-15)',
         borderWidth: 2,
         padding: 24,
         cornerRadius: 16,
@@ -833,7 +834,7 @@ export default function AnalistasPage() {
         align: stacked ? 'center' as const : 'top' as const,
         anchor: stacked ? 'center' as const : 'end' as const,
         offset: stacked ? 0 : 12,
-        color: '#fff',
+        color: 'var(--text-strong)',
         formatter: (v: any) => {
           if (v === 0 || v === undefined || v === null) return '';
           const n = Number(v);
@@ -855,7 +856,7 @@ export default function AnalistasPage() {
         stacked,
         ticks: {
           display: !hideXLabels,
-          color: '#555', font: { size: 10 },
+          color: 'var(--text-subtle)', font: { size: 10 },
           maxRotation: 0, minRotation: 0, padding: 0, autoSkip: false,
           callback: function (this: any, val: any) {
             let label = this.getLabelForValue(val);
@@ -868,12 +869,12 @@ export default function AnalistasPage() {
             return label;
           }
         },
-        grid: { color: 'rgba(255,255,255,0.03)' }
+        grid: { color: 'var(--neutral-03)' }
       },
       y: {
         stacked,
         ticks: {
-          color: '#555', font: { size: 10 },
+          color: 'var(--text-subtle)', font: { size: 10 },
           callback: function (this: any, val: any) {
             let label = this.getLabelForValue(val);
             if (label === undefined) label = val;
@@ -885,7 +886,7 @@ export default function AnalistasPage() {
             return label;
           }
         },
-        grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true,
+        grid: { color: 'var(--neutral-04)' }, beginAtZero: true,
       },
     },
   });
@@ -896,7 +897,7 @@ export default function AnalistasPage() {
     label: 'Meta 100%',
     data: Array(n).fill(100),
     horizontalReferenceValue: 100,
-    borderColor: '#f87171',
+    borderColor: 'var(--danger)',
     borderWidth: 1.5,
     borderDash: [5, 4],
     pointRadius: 0,
@@ -926,7 +927,7 @@ export default function AnalistasPage() {
           label: `Capital ${mesActualLabel}`,
           data: kpiCards.map(k => k.cumplCapital ?? 0),
           backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
-          borderColor: '#10b981',
+          borderColor: 'var(--success-strong)',
           borderWidth: 0,
           borderRadius: 4, order: 1,
         },
@@ -939,8 +940,8 @@ export default function AnalistasPage() {
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-          backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
-          borderColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: (context: any) => getGradient(context, 'transparent', 'var(--neutral-15)'),
+          borderColor: 'var(--neutral-15)',
           borderWidth: 0,
           borderRadius: 4, order: 1,
         },
@@ -948,7 +949,7 @@ export default function AnalistasPage() {
           label: `Ops ${mesActualLabel}`,
           data: kpiCards.map(k => k.cumplOps ?? 0),
           backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
-          borderColor: '#06b6d4',
+          borderColor: 'var(--accent)',
           borderWidth: 0,
           borderRadius: 4, order: 1,
         },
@@ -961,8 +962,8 @@ export default function AnalistasPage() {
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
           }),
-          backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
-          borderColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: (context: any) => getGradient(context, 'transparent', 'var(--neutral-15)'),
+          borderColor: 'var(--neutral-15)',
           borderWidth: 0,
           borderRadius: 4, order: 1, // Purpura oscuro
         },
@@ -994,11 +995,11 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: '#10b981', borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { 
-          type: 'line' as const, label: 'Objetivo ($)', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 1,
-          horizontalReferenceValue: isSingle ? objetivo[0] : undefined 
+        { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: 'var(--success-strong)', borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: (context: any) => getGradient(context, 'transparent', 'var(--neutral-15)'), borderColor: 'var(--neutral-15)', borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        {
+          type: 'line' as const, label: 'Objetivo ($)', data: objetivo, borderColor: 'var(--danger)', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 1,
+          horizontalReferenceValue: isSingle ? objetivo[0] : undefined
         },
       ],
     };
@@ -1025,8 +1026,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Ticket ${mesActualLabel}`, data: ticketAct, backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'), borderColor: '#f59e0b', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Ticket ${mesActualLabel}`, data: ticketAct, backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'), borderColor: 'var(--warning)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: (context: any) => getGradient(context, 'transparent', 'var(--neutral-15)'), borderColor: 'var(--neutral-15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
@@ -1035,30 +1036,30 @@ export default function AnalistasPage() {
   const chartVariacion = useMemo(() => {
     const isGlobal = analista === 'PDV';
     const labels = isGlobal ? ['TOTAL GENERAL'] : ['INDIVIDUAL'];
-    
+
     const capitalVar = isGlobal ? [kpiTotal.tendCapital ?? 0] : [kpiPorAnalista[0]?.tendCapital ?? 0];
     const opsVar = isGlobal ? [kpiTotal.tendOps ?? 0] : [kpiPorAnalista[0]?.tendOps ?? 0];
 
     return {
       labels,
       datasets: [
-        { 
-          label: 'Variación Capital %', 
-          data: capitalVar, 
-          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(45, 212, 191, 0.2)' : 'rgba(239, 68, 68, 0.1)'), 
+        {
+          label: 'Variación Capital %',
+          data: capitalVar,
+          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(45, 212, 191, 0.2)' : 'rgba(239, 68, 68, 0.1)'),
           borderColor: capitalVar.map(v => v >= 0 ? 'rgba(45, 212, 191, 0.5)' : 'rgba(239, 68, 68, 0.4)'),
           borderWidth: 1.5,
-          borderRadius: 4, 
-          maxBarThickness: 100 
+          borderRadius: 4,
+          maxBarThickness: 100
         },
-        { 
-          label: 'Variación Ops %', 
-          data: opsVar, 
-          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(239, 68, 68, 0.1)'), 
-          borderColor: opsVar.map(v => v >= 0 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(239, 68, 68, 0.4)'),
+        {
+          label: 'Variación Ops %',
+          data: opsVar,
+          backgroundColor: opsVar.map(v => v >= 0 ? 'var(--neutral-15)' : 'rgba(239, 68, 68, 0.1)'),
+          borderColor: opsVar.map(v => v >= 0 ? 'var(--neutral-50)' : 'rgba(239, 68, 68, 0.4)'),
           borderWidth: 1.5,
-          borderRadius: 4, 
-          maxBarThickness: 100 
+          borderRadius: 4,
+          maxBarThickness: 100
         },
       ],
     };
@@ -1084,7 +1085,7 @@ export default function AnalistasPage() {
 
   const chartProgreso = useMemo(() => {
     const regsMes = filterByMonth(registros, selectedMes, selectedAnio).filter(isVenta);
-    
+
     const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
     const today = new Date();
     const isCurrentMonth = selectedMes === (today.getMonth() + 1) && selectedAnio === today.getFullYear();
@@ -1092,7 +1093,7 @@ export default function AnalistasPage() {
     const maxDay = isCurrentMonth ? today.getDate() : (isFutureMonth ? 0 : daysInMonth);
 
     const labels = Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`);
-    
+
     let cumulative = 0;
     const dailyData: (number | null)[] = [];
     const realData = labels.map((_, i) => {
@@ -1122,10 +1123,10 @@ export default function AnalistasPage() {
           label: 'Vendido',
           data: realData,
           dailyData,
-          borderColor: '#10b981',
+          borderColor: 'var(--success-strong)',
           borderWidth: 2,
-          pointBackgroundColor: '#10b981',
-          pointBorderColor: '#10b981',
+          pointBackgroundColor: 'var(--success-strong)',
+          pointBorderColor: 'var(--success-strong)',
           pointRadius: 2,
           fill: false,
           tension: 0.2
@@ -1133,7 +1134,7 @@ export default function AnalistasPage() {
         {
           label: 'Ideal',
           data: idealData,
-          borderColor: '#fb923c',
+          borderColor: 'var(--orange)',
           borderWidth: 1,
           borderDash: [5, 5],
           pointRadius: 0,
@@ -1173,12 +1174,12 @@ export default function AnalistasPage() {
       labels,
       datasets: [
         {
-          label: 'Vendido', data: cumFor(pred), borderColor: '#10b981', borderWidth: 2,
-          pointBackgroundColor: '#10b981', pointBorderColor: '#10b981', pointRadius: 2, fill: false, tension: 0.2,
+          label: 'Vendido', data: cumFor(pred), borderColor: 'var(--success-strong)', borderWidth: 2,
+          pointBackgroundColor: 'var(--success-strong)', pointBorderColor: 'var(--success-strong)', pointRadius: 2, fill: false, tension: 0.2,
         },
         {
           label: 'Ideal', data: labels.map((_, i) => (meta / daysInMonth) * (i + 1)),
-          borderColor: '#fb923c', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0,
+          borderColor: 'var(--orange)', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0,
         },
       ],
     });
@@ -1196,10 +1197,10 @@ export default function AnalistasPage() {
     maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
     plugins: {
-      legend: { display: true, position: 'top' as const, labels: { color: '#ccc', font: { size: 10 }, usePointStyle: true } },
+      legend: { display: true, position: 'top' as const, labels: { color: 'var(--text-default)', font: { size: 10 }, usePointStyle: true } },
       tooltip: {
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#fff', bodyColor: '#f1f5f9', padding: 16, cornerRadius: 12, usePointStyle: true,
+        titleColor: 'var(--text-strong)', bodyColor: 'var(--text-strong)', padding: 16, cornerRadius: 12, usePointStyle: true,
         callbacks: {
           title: (items: any[]) => `Día ${items[0].label}`,
           label: (ctx: any) => {
@@ -1211,10 +1212,10 @@ export default function AnalistasPage() {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255,255,255,0.05)' },
-        ticks: { color: '#888', font: { size: 9 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
+        grid: { color: 'var(--neutral-05)' },
+        ticks: { color: 'var(--text-muted)', font: { size: 9 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
       },
-      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } },
+      y: { grid: { color: 'var(--neutral-05)' }, ticks: { color: 'var(--text-muted)', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } },
     },
   };
 
@@ -1222,30 +1223,30 @@ export default function AnalistasPage() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: true, position: 'top' as const, labels: { color: '#ccc', font: { size: 10 } } },
+      legend: { display: true, position: 'top' as const, labels: { color: 'var(--text-default)', font: { size: 10 } } },
       tooltip: {
         itemSort: (a: any, b: any) => b.datasetIndex - a.datasetIndex,
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
+        titleColor: 'var(--text-strong)',
         titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
         titleAlign: 'center' as const,
         titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
+        bodyColor: 'var(--text-strong)',
         bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
         bodySpacing: 10,
         footerColor: (ctx: any) => {
           const tooltipItems = ctx.tooltip.dataPoints;
-          if (!tooltipItems || !tooltipItems[0]) return '#34d399';
+          if (!tooltipItems || !tooltipItems[0]) return 'var(--success)';
           const index = tooltipItems[0].dataIndex;
           const vendido = tooltipItems[0].chart.data.datasets[0].data[index];
           const ideal = tooltipItems[0].chart.data.datasets[1].data[index];
-          if (vendido == null || ideal == null || ideal === 0) return '#34d399';
+          if (vendido == null || ideal == null || ideal === 0) return 'var(--success)';
           const pct = ((vendido / ideal) - 1) * 100;
-          return pct < 0 ? '#f87171' : '#34d399';
+          return pct < 0 ? 'var(--danger)' : 'var(--success)';
         },
         footerFont: { size: 16, weight: 900, family: "'Outfit', sans-serif" },
         footerMarginTop: 16,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderColor: 'var(--neutral-15)',
         borderWidth: 2,
         padding: 24,
         cornerRadius: 16,
@@ -1284,10 +1285,10 @@ export default function AnalistasPage() {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255,255,255,0.05)' },
-        ticks: { color: '#888', font: { size: 9 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
+        grid: { color: 'var(--neutral-05)' },
+        ticks: { color: 'var(--text-muted)', font: { size: 9 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
       },
-      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } }
+      y: { grid: { color: 'var(--neutral-05)' }, ticks: { color: 'var(--text-muted)', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } }
     },
     interaction: { mode: 'index' as const, intersect: false }
   };
@@ -1301,8 +1302,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: '#10b981', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: 'var(--success-strong)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'transparent', 'var(--neutral-15)'), borderColor: 'var(--neutral-15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, apertVsRenData, analista]);
@@ -1316,8 +1317,8 @@ export default function AnalistasPage() {
     return {
       labels,
       datasets: [
-        { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(59, 130, 246, 0.05)', 'rgba(59, 130, 246, 0.85)'), borderColor: '#3b82f6', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(59, 130, 246, 0.05)', 'rgba(59, 130, 246, 0.85)'), borderColor: 'var(--info)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'transparent', 'var(--neutral-15)'), borderColor: 'var(--neutral-15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, apertVsRenData, analista]);
@@ -1338,7 +1339,7 @@ export default function AnalistasPage() {
   const chartEmpleoPublPriv = useMemo(() => {
     const { counts } = empleoPublPrivData;
     const labels = ['Público', 'Privado', 'Sin dato'];
-    const colors = ['#10b981', '#3b82f6', 'rgba(100,100,100,0.5)'];
+    const colors = ['var(--success-strong)', 'var(--info)', 'rgba(100,100,100,0.5)'];
     const filtered = labels.filter(l => (counts[l] ?? 0) > 0);
     return {
       labels: filtered,
@@ -1362,28 +1363,28 @@ export default function AnalistasPage() {
           transition: background 0.2s ease;
         }
         .row-hover:hover {
-          background: rgba(255,255,255,0.02);
+          background: var(--neutral-02);
         }
       `}</style>
 
       {/* Toolbar Superior */}
-      <div style={{ 
-        background: 'rgba(255,255,255,0.01)',
-        border: '1px solid rgba(255,255,255,0.04)',
+      <div style={{
+        background: 'var(--neutral-01)',
+        border: '1px solid var(--neutral-04)',
         borderRadius: '16px',
         padding: '12px 24px',
         boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.02)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <BarChart3 size={24} color="#fff" />
+            <div style={{ width: 36, height: 36, background: 'var(--neutral-02)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--neutral-08)' }}>
+              <BarChart3 size={24} color="var(--text-strong)" />
             </div>
             <div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '-0.5px' }}>
                 {analista === 'PDV' ? 'PDV' : analista.charAt(0).toUpperCase() + analista.slice(1).toLowerCase()}
               </div>
-              <div style={{ fontSize: 13, color: '#8f929d', marginTop: 2 }}>Métricas</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>Métricas</div>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1423,7 +1424,7 @@ export default function AnalistasPage() {
                   <button
                     key={label}
                     onClick={toggle}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: open ? 'rgba(255,255,255,0.04)' : 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', color: open ? '#e2e8f0' : '#64748b', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.8 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: open ? 'var(--neutral-04)' : 'transparent', border: '1px solid var(--neutral-08)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', color: open ? '#e2e8f0' : 'var(--text-subtle)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.8 }}
                   >
                     <ChevronRight size={14} style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
                     {label}
@@ -1463,8 +1464,8 @@ export default function AnalistasPage() {
               {/* ── Progreso vs Ideal por separado (PDV + cada analista, con su propio Ideal) ── */}
               <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
                 {chartsProgresoSep.map(({ titulo, data }) => (
-                  <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal — {titulo}</div>
+                  <div key={titulo} style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal — {titulo}</div>
                     <div style={{ height: 240, position: 'relative', width: '100%' }}>
                       {chartsLoaded ? (
                         <Line data={data} options={chartProgresoSepOptions as any} plugins={[lineShadowPlugin]} />
@@ -1480,7 +1481,7 @@ export default function AnalistasPage() {
               <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)', position: 'relative' }}>
+          <div className="data-card" style={{ background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)', position: 'relative' }}>
             <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 2 }}>
               <button
                 type="button"
@@ -1488,48 +1489,48 @@ export default function AnalistasPage() {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '6px 12px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  color: '#ffffff',
-                  boxShadow: '0 0 10px rgba(255,255,255,0.1)',
+                  background: 'var(--neutral-05)',
+                  border: '1px solid var(--neutral-20)',
+                  color: 'var(--text-strong)',
+                  boxShadow: '0 0 10px var(--neutral-10)',
                   fontSize: 11, fontWeight: 800, letterSpacing: '0.6px',
                   textTransform: 'uppercase',
                   cursor: 'pointer',
-                  fontFamily: "'Outfit', sans-serif",
+                  fontFamily: 'var(--font-ui)',
                 }}
               >
                 <TrendingUp size={13} /> Rendimiento Histórico
               </button>
             </div>
-            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />, badgeDiasRestantes)}
+            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="var(--info)" />, badgeDiasRestantes)}
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
+                <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '16px 20px', border: '1px solid var(--neutral-04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-strong)' }}>{formatCurrency(kpiTotal.capital)}</div>
                     {tendBadge(kpiTotal.tendCapital)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>
                     Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
                   </div>
                   {kpiTotal.cumplCapital !== null && (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-strong)' }}>
                       <span style={{ color: cumplColor(kpiTotal.cumplCapital), marginRight: 4 }}>●</span>
                       {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
                     </div>
                   )}
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--neutral-05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
                       <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
@@ -1545,38 +1546,38 @@ export default function AnalistasPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
+                <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '16px 20px', border: '1px solid var(--neutral-04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-strong)' }}>{kpiTotal.ops}</div>
                     {tendBadge(kpiTotal.tendOps)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>
                     Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
                   </div>
                   {kpiTotal.cumplOps !== null && (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-strong)' }}>
                       <span style={{ color: cumplColor(kpiTotal.cumplOps), marginRight: 4 }}>●</span>
                       {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
                     </div>
                   )}
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--neutral-05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
                       <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--info)' }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--info)', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
                         <div id="chart-aperturas" style={{ height: 180, position: 'relative', width: '100%' }}>
                           {chartsLoaded ? (
                             <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
@@ -1586,7 +1587,7 @@ export default function AnalistasPage() {
                         </div>
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--violet)', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
                         <div id="chart-renovaciones" style={{ height: 180, position: 'relative', width: '100%' }}>
                           {chartsLoaded ? (
                             <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
@@ -1598,35 +1599,35 @@ export default function AnalistasPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
+                <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '16px 20px', border: '1px solid var(--neutral-04)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-strong)' }}>{formatCurrency(kpiTotal.ticket)}</div>
                     {tendBadge(kpiTotal.tendTicket)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#8f929d' }} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {kpiTotal.conversionGlobal.toFixed(1)}%</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {kpiTotal.conversionGlobal.toFixed(1)}%</div>
                     {tendBadge(kpiTotal.tendConversionGlobal, false)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#8f929d' }} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
                     {tendBadge(kpiTotal.tendConversion, false)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 11, color: '#8f929d' }}>{kpiTotal.clientes} clientes ingresados</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{kpiTotal.clientes} clientes ingresados</div>
                     {tendBadge(kpiTotal.tendClientes, false)}
                   </div>
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--neutral-05)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
                       <div style={{ display: 'flex', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
@@ -1643,36 +1644,36 @@ export default function AnalistasPage() {
 
                 {/* ── FILA: (I) x Venta / Productividad / Comisión ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>(I) x Venta</div>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.interesXVenta)}</div>
+                  <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '16px 20px', border: '1px solid var(--neutral-04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>(I) x Venta</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-strong)' }}>{formatCurrency(kpiTotal.interesXVenta)}</div>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Productividad</div>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: kpiTotal.productividad === null ? '#fff' : (kpiTotal.productividad >= 200 ? '#34d399' : '#f87171') }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
+                  <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '16px 20px', border: '1px solid var(--neutral-04)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Productividad</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: kpiTotal.productividad === null ? 'var(--text-strong)' : (kpiTotal.productividad >= 200 ? 'var(--success)' : 'var(--danger)') }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
                     {(kpiTotal.productividadApertura !== null || kpiTotal.productividadRenov !== null) && (
-                      <div style={{ 
-                        marginTop: 10, 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(2, 1fr)', 
-                        gap: 8, 
-                        fontFamily: "'Outfit', sans-serif" 
+                      <div style={{
+                        marginTop: 10,
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: 8,
+                        fontFamily: 'var(--font-ui)'
                       }}>
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          background: 'var(--neutral-03)',
+                          border: '1px solid var(--neutral-07)',
                           padding: '5px 6px',
                           borderRadius: 6,
                           textAlign: 'center',
                           whiteSpace: 'nowrap',
                           minWidth: 0,
                         }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Apertura</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Apertura</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-strong)' }}>
                             {kpiTotal.productividadApertura !== null ? `${kpiTotal.productividadApertura.toFixed(2)}%` : '—'}
                           </span>
                         </div>
@@ -1682,16 +1683,16 @@ export default function AnalistasPage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          background: 'var(--neutral-03)',
+                          border: '1px solid var(--neutral-07)',
                           padding: '5px 6px',
                           borderRadius: 6,
                           textAlign: 'center',
                           whiteSpace: 'nowrap',
                           minWidth: 0,
                         }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Renovación</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Renovación</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-strong)' }}>
                             {kpiTotal.productividadRenov !== null ? `${kpiTotal.productividadRenov.toFixed(2)}%` : '—'}
                           </span>
                         </div>
@@ -1699,37 +1700,37 @@ export default function AnalistasPage() {
                     )}
                   </div>
                   {analistaIndividualKpi && (
-                    <div 
+                    <div
                       onClick={() => setIncentivosModalOpen(true)}
-                      style={{ 
-                        background: 'rgba(255,255,255,0.02)', 
-                        borderRadius: 10, 
-                        padding: '16px 20px', 
-                        border: '1px solid rgba(255,255,255,0.04)',
+                      style={{
+                        background: 'var(--neutral-02)',
+                        borderRadius: 10,
+                        padding: '16px 20px',
+                        border: '1px solid var(--neutral-04)',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
                         position: 'relative'
                       }}
                       onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                        e.currentTarget.style.background = 'var(--neutral-04)';
+                        e.currentTarget.style.borderColor = 'var(--neutral-08)';
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.background = 'var(--neutral-02)';
+                        e.currentTarget.style.borderColor = 'var(--neutral-04)';
                       }}
                       title="Hacé clic para ver el detalle de incentivos y escalas"
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Calculator size={13} style={{ color: '#10b981' }} />
+                        <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Calculator size={13} style={{ color: 'var(--success-strong)' }} />
                           <span>Comisión Estimada</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           {analistaIndividualKpi.topeKQAplicado && (
                             <span style={{
                               fontSize: 9, fontWeight: 800, padding: '2px 5px', borderRadius: 4,
-                              background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)',
+                              background: 'rgba(251,191,36,0.15)', color: 'var(--warning)', border: '1px solid rgba(251,191,36,0.3)',
                               textTransform: 'uppercase', letterSpacing: '0.5px'
                             }}>
                               TOPE K+Q
@@ -1751,7 +1752,7 @@ export default function AnalistasPage() {
                               fontWeight: 800,
                               background: 'rgba(16, 185, 129, 0.12)',
                               border: '1px solid rgba(16, 185, 129, 0.35)',
-                              color: '#10b981',
+                              color: 'var(--success-strong)',
                               cursor: 'pointer',
                               textTransform: 'uppercase',
                               letterSpacing: '0.5px',
@@ -1774,31 +1775,31 @@ export default function AnalistasPage() {
                           </button>
                         </div>
                       </div>
-                      <div style={{ fontSize: 22, fontWeight: 900, color: '#10b981' }}>
+                      <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--success-strong)' }}>
                         {formatCurrency(analistaIndividualKpi.incentivoTotal)}
                       </div>
-                      <div style={{ 
-                        marginTop: 10, 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(3, 1fr)', 
-                        gap: 8, 
-                        fontFamily: "'Outfit', sans-serif"
+                      <div style={{
+                        marginTop: 10,
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 8,
+                        fontFamily: 'var(--font-ui)'
                       }}>
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          background: 'var(--neutral-03)',
+                          border: '1px solid var(--neutral-07)',
                           padding: '5px 6px',
                           borderRadius: 6,
                           textAlign: 'center',
                           whiteSpace: 'nowrap',
                           minWidth: 0,
                         }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Cap</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>{formatCurrency(analistaIndividualKpi.incentivoCap)}</span>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Cap</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-strong)' }}>{formatCurrency(analistaIndividualKpi.incentivoCap)}</span>
                         </div>
 
                         <div style={{
@@ -1806,16 +1807,16 @@ export default function AnalistasPage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          background: 'var(--neutral-03)',
+                          border: '1px solid var(--neutral-07)',
                           padding: '5px 6px',
                           borderRadius: 6,
                           textAlign: 'center',
                           whiteSpace: 'nowrap',
                           minWidth: 0,
                         }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Ops</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>{formatCurrency(analistaIndividualKpi.incentivoOps)}</span>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Ops</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-strong)' }}>{formatCurrency(analistaIndividualKpi.incentivoOps)}</span>
                         </div>
 
                         <div style={{
@@ -1823,16 +1824,16 @@ export default function AnalistasPage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
+                          background: 'var(--neutral-03)',
+                          border: '1px solid var(--neutral-07)',
                           padding: '5px 6px',
                           borderRadius: 6,
                           textAlign: 'center',
                           whiteSpace: 'nowrap',
                           minWidth: 0,
                         }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Cob</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Cob</span>
+                          <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-strong)' }}>
                             {formatCurrency((analistaIndividualKpi.incentivoCobTr90 || 0) + (analistaIndividualKpi.incentivoCobTr120 || 0) + (analistaIndividualKpi.incentivoCobRefin || 0))}
                           </span>
                         </div>
@@ -1843,9 +1844,9 @@ export default function AnalistasPage() {
 
                 {/* ── BLOQUE DE PROYECCIÓN ── */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginTop: 0, alignItems: 'stretch' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 20px', border: '1px solid var(--neutral-04)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     {kpiTotal.esMesActual && !kpiTotal.tieneDiasAdmin ? (
-                      <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-subtle)', fontStyle: 'italic', textAlign: 'center' }}>
                         Cargá días hábiles en Ajustes para ver proyección
                       </div>
                     ) : (
@@ -1855,34 +1856,34 @@ export default function AnalistasPage() {
                           <div style={{ flex: 1 }}>
                             {kpiTotal.metaDiariaCapital !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Venta / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.metaDiariaCapital)}</div>
-                                {kpiTotal.ventaPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {formatCurrency(kpiTotal.ventaPorDia)}</div>}
+                                <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Venta / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-strong)' }}>{formatCurrency(kpiTotal.metaDiariaCapital)}</div>
+                                {kpiTotal.ventaPorDia !== null && <div style={{ fontSize: 10, color: 'var(--text-subtle)', fontWeight: 700, marginTop: 4 }}>RITMO: {formatCurrency(kpiTotal.ventaPorDia)}</div>}
                               </>
                             )}
                           </div>
                           <div style={{ flex: 1 }}>
                             {kpiTotal.metaDiariaOps !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ops. / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{Math.round(kpiTotal.metaDiariaOps)}</div>
-                                {kpiTotal.opsPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {Math.round(kpiTotal.opsPorDia)}</div>}
+                                <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ops. / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-strong)' }}>{Math.round(kpiTotal.metaDiariaOps)}</div>
+                                {kpiTotal.opsPorDia !== null && <div style={{ fontSize: 10, color: 'var(--text-subtle)', fontWeight: 700, marginTop: 4 }}>RITMO: {Math.round(kpiTotal.opsPorDia)}</div>}
                               </>
                             )}
                           </div>
                         </div>
-                        
-                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+
+                        <div style={{ height: '1px', background: 'var(--neutral-04)' }} />
 
                         <div style={{ display: 'flex', gap: 32 }}>
                           <div style={{ flex: 1 }}>
                             {kpiTotal.proyCapital !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                                  <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.proyCapital >= kpiTotal.metaCapital ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.proyCapital)}</div>
+                                  <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.proyCapital >= kpiTotal.metaCapital ? 'var(--success-strong)' : 'var(--danger)' }}>{formatCurrency(kpiTotal.proyCapital)}</div>
                                   {kpiTotal.cumplProyCapital !== null && (
-                                    <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.cumplProyCapital >= 100 ? '#10b981' : '#f87171' }}>
+                                    <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.cumplProyCapital >= 100 ? 'var(--success-strong)' : 'var(--danger)' }}>
                                       ({kpiTotal.cumplProyCapital.toFixed(2)}%)
                                     </span>
                                   )}
@@ -1893,11 +1894,11 @@ export default function AnalistasPage() {
                           <div style={{ flex: 1 }}>
                             {kpiTotal.proyOps !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                                  <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.proyOps)}</div>
+                                  <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.proyOps >= kpiTotal.metaOps ? 'var(--success-strong)' : 'var(--danger)' }}>{Math.round(kpiTotal.proyOps)}</div>
                                   {kpiTotal.cumplProyOps !== null && (
-                                    <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.cumplProyOps >= 100 ? '#10b981' : '#f87171' }}>
+                                    <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.cumplProyOps >= 100 ? 'var(--success-strong)' : 'var(--danger)' }}>
                                       ({kpiTotal.cumplProyOps.toFixed(2)}%)
                                     </span>
                                   )}
@@ -1907,22 +1908,22 @@ export default function AnalistasPage() {
                           </div>
                         </div>
 
-                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+                        <div style={{ height: '1px', background: 'var(--neutral-04)' }} />
 
                         <div style={{ display: 'flex', gap: 32 }}>
                           <div style={{ flex: 1 }}>
                             {kpiTotal.faltaCapital !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (K)</div>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.faltaCapital)}</div>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (K)</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaCapital === 0 ? 'var(--success-strong)' : 'var(--danger)' }}>{formatCurrency(kpiTotal.faltaCapital)}</div>
                               </>
                             )}
                           </div>
                           <div style={{ flex: 1 }}>
                             {kpiTotal.faltaOps !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (Q)</div>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.faltaOps || 0)}</div>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (Q)</div>
+                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaOps === 0 ? 'var(--success-strong)' : 'var(--danger)' }}>{Math.round(kpiTotal.faltaOps || 0)}</div>
                               </>
                             )}
                           </div>
@@ -1930,29 +1931,29 @@ export default function AnalistasPage() {
 
                        </div>
 
-                       <div style={{ width: 1, background: 'rgba(255,255,255,0.06)', alignSelf: 'stretch' }} />
+                       <div style={{ width: 1, background: 'var(--neutral-06)', alignSelf: 'stretch' }} />
 
                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20 }}>
-                         <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+                         <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1 }}>
                            {CONFIG.MESES_NOMBRES[mesPrev - 1]} al día {kpiTotal.diaCorte}
                          </div>
                          <div>
-                           <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ventas (K)</div>
+                           <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ventas (K)</div>
                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                             <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capitalAntFecha)}</div>
+                             <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-strong)' }}>{formatCurrency(kpiTotal.capitalAntFecha)}</div>
                              {kpiTotal.varCapitalFecha !== null && (
-                               <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.varCapitalFecha >= 0 ? '#10b981' : '#f87171' }}>
+                               <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.varCapitalFecha >= 0 ? 'var(--success-strong)' : 'var(--danger)' }}>
                                  {kpiTotal.varCapitalFecha >= 0 ? '▲' : '▼'} {Math.abs(kpiTotal.varCapitalFecha).toFixed(2)}%
                                </span>
                              )}
                            </div>
                          </div>
                          <div>
-                           <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Operaciones (Q)</div>
+                           <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Operaciones (Q)</div>
                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                             <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{kpiTotal.opsAntFecha}</div>
+                             <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-strong)' }}>{kpiTotal.opsAntFecha}</div>
                              {kpiTotal.varOpsFecha !== null && (
-                               <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.varOpsFecha >= 0 ? '#10b981' : '#f87171' }}>
+                               <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.varOpsFecha >= 0 ? 'var(--success-strong)' : 'var(--danger)' }}>
                                  {kpiTotal.varOpsFecha >= 0 ? '▲' : '▼'} {Math.abs(kpiTotal.varOpsFecha).toFixed(2)}%
                                </span>
                              )}
@@ -1963,8 +1964,8 @@ export default function AnalistasPage() {
                     )}
                   </div>
 
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal</div>
+                  <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal</div>
                     <div style={{ height: 320, position: 'relative', width: '100%' }}>
                       {chartsLoaded ? (
                         <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} />
@@ -1978,23 +1979,23 @@ export default function AnalistasPage() {
               </div>
 
           {/* ── SECCIÓN 2: GRÁFICOS ── */}
-          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-            {sectionHeader(2, '2. Gráficos', <BarChart3 size={15} color="#a78bfa" />)}
+          <div className="data-card" style={{ background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' }}>
+            {sectionHeader(2, '2. Gráficos', <BarChart3 size={15} color="var(--violet)" />)}
               <>
                 <div style={{ marginBottom: 28 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
                     {/* 1. Cumplimiento */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
                         <div style={{ display: 'flex', gap: 10 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                           </div>
                         </div>
                       </div>
@@ -2008,17 +2009,17 @@ export default function AnalistasPage() {
                     </div>
 
                     {/* 2. Variación */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
                         <div style={{ display: 'flex', gap: 10 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Positivo</span>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>Positivo</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(248,113,113,0.7)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Negativo</span>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-subtle)', textTransform: 'uppercase' }}>Negativo</span>
                           </div>
                         </div>
                       </div>
@@ -2033,9 +2034,9 @@ export default function AnalistasPage() {
 
                     {/* 3. Embudo */}
                     {/* 3. Acuerdos por Analista */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
                           Distribución de Acuerdos
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
@@ -2044,8 +2045,8 @@ export default function AnalistasPage() {
                             style={{
                               padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
                               fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                              background: periodoAcuerdos === 'mensual' ? '#fb923c' : 'transparent',
-                              color: periodoAcuerdos === 'mensual' ? '#000' : '#666',
+                              background: periodoAcuerdos === 'mensual' ? 'var(--orange)' : 'transparent',
+                              color: periodoAcuerdos === 'mensual' ? 'var(--text-on-accent)' : 'var(--text-subtle)',
                               transition: 'all 0.2s ease',
                             }}
                           >
@@ -2056,8 +2057,8 @@ export default function AnalistasPage() {
                             style={{
                               padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
                               fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                              background: periodoAcuerdos === 'total' ? '#fb923c' : 'transparent',
-                              color: periodoAcuerdos === 'total' ? '#000' : '#666',
+                              background: periodoAcuerdos === 'total' ? 'var(--orange)' : 'transparent',
+                              color: periodoAcuerdos === 'total' ? 'var(--text-on-accent)' : 'var(--text-subtle)',
                               transition: 'all 0.2s ease',
                             }}
                           >
@@ -2067,11 +2068,11 @@ export default function AnalistasPage() {
                       </div>
                       {(() => {
                         const regs = periodoAcuerdos === 'mensual' ? ventasMes.filter(isVenta) : registros;
-                        
+
                         const categories = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica'];
-                        const bgColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+                        const bgColors = ['var(--success-strong)', 'var(--info)', 'var(--warning)', 'var(--danger)'];
                         const displayLabels = categories;
-                        
+
                         const displayData = categories.map(cat => {
                           return regs.filter(r => {
                              const ac = (r.acuerdo_precios || '').toLowerCase();
@@ -2105,7 +2106,7 @@ export default function AnalistasPage() {
                                 return (
                                   <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: bgColors[i] }} />
-                                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                                    <span style={{ fontSize: 9, color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
                                   </div>
                                 );
                               })}
@@ -2118,11 +2119,11 @@ export default function AnalistasPage() {
                     </div>
 
                     {/* 4. Empleo */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ background: 'var(--neutral-02)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--neutral-04)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-                          <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+                          <div style={{ width: 3, height: 12, background: 'var(--success)', borderRadius: 2 }} />
+                          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-disabled)', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
                             % Empleo Público / Privado
                           </span>
                         </div>
@@ -2132,8 +2133,8 @@ export default function AnalistasPage() {
                             style={{
                               padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
                               fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                              background: periodoEmpleo === 'mensual' ? '#fb923c' : 'transparent',
-                              color: periodoEmpleo === 'mensual' ? '#000' : '#666',
+                              background: periodoEmpleo === 'mensual' ? 'var(--orange)' : 'transparent',
+                              color: periodoEmpleo === 'mensual' ? 'var(--text-on-accent)' : 'var(--text-subtle)',
                               transition: 'all 0.2s ease',
                             }}
                           >
@@ -2144,8 +2145,8 @@ export default function AnalistasPage() {
                             style={{
                               padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
                               fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                              background: periodoEmpleo === 'total' ? '#fb923c' : 'transparent',
-                              color: periodoEmpleo === 'total' ? '#000' : '#666',
+                              background: periodoEmpleo === 'total' ? 'var(--orange)' : 'transparent',
+                              color: periodoEmpleo === 'total' ? 'var(--text-on-accent)' : 'var(--text-subtle)',
                               transition: 'all 0.2s ease',
                             }}
                           >
@@ -2156,7 +2157,7 @@ export default function AnalistasPage() {
                       {(() => {
                         const counts = chartEmpleoPublPriv.datasets[0].data as number[];
                         const total = counts.reduce((s, v) => s + v, 0);
-                        
+
                         return chartsLoaded ? (
                           <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <ModernDoughnut data={chartEmpleoPublPriv} label="Total" value={`${total} Ops`} padding={36} height="220px" width="220px" labelSize={8} valueSize={15} />
@@ -2167,7 +2168,7 @@ export default function AnalistasPage() {
                                 return (
                                   <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
-                                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                                    <span style={{ fontSize: 9, color: 'var(--text-subtle)', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
                                   </div>
                                 );
                               })}
@@ -2184,11 +2185,11 @@ export default function AnalistasPage() {
           </div>
 
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
-          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+          <div className="data-card" style={{ background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
-              <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+              <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="var(--orange)" />)}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <span style={{ fontSize: 11, color: '#444', fontWeight: 600 }}>
+                <span style={{ fontSize: 11, color: 'var(--text-disabled)', fontWeight: 600 }}>
                   {periodoSec3 === 'mensual'
                     ? (() => {
                         const v = ventasMes.filter(isVenta);
@@ -2196,7 +2197,7 @@ export default function AnalistasPage() {
                       })()
                     : `TOTAL: Todos los estados (${registros.length} ops · ${formatCurrency(registros.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`}
                 </span>
-                <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+                <div style={{ display: 'flex', gap: 4, background: 'var(--neutral-03)', border: '1px solid var(--neutral-06)', borderRadius: 8, padding: 3 }}>
                   {(['mensual', 'total'] as const).map(p => (
                     <button
                       key={p}
@@ -2204,8 +2205,8 @@ export default function AnalistasPage() {
                       style={{
                         padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
                         fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                        background: periodoSec3 === p ? '#fb923c' : 'transparent',
-                        color: periodoSec3 === p ? '#000' : '#555',
+                        background: periodoSec3 === p ? 'var(--orange)' : 'transparent',
+                        color: periodoSec3 === p ? 'var(--text-on-accent)' : 'var(--text-subtle)',
                         transition: 'all 0.2s ease',
                       }}
                     >
@@ -2228,12 +2229,12 @@ export default function AnalistasPage() {
                 const lo = isMensual ? distLocalidad : distLocalidadTotal;
                 return (
                   <>
-                    <DistBlock theme="elevated" titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={ac} color="#f97316" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={cu} color="#60a5fa" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={re} color="#34d399" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={sx} color="#f472b6" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={em} color="#fbbf24" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={lo} color="#a78bfa" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Acuerdo" icon={<PieChart size={12} color="var(--orange)" />} datos={ac} color="var(--orange)" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Cuotas" icon={<BarChart3 size={12} color="var(--info)" />} datos={cu} color="var(--info)" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Rango Etario" icon={<Users size={12} color="var(--success)" />} datos={re} color="var(--success)" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Sexo" icon={<Users size={12} color="var(--pink)" />} datos={sx} color="var(--pink)" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Empleador" icon={<Shield size={12} color="var(--warning)" />} datos={em} color="var(--warning)" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Localidad" icon={<FileText size={12} color="var(--violet)" />} datos={lo} color="var(--violet)" totalMes={base} />
                   </>
                 );
               })()}
@@ -2242,11 +2243,11 @@ export default function AnalistasPage() {
 
           {/* ── SECCIÓN 4 Y SHEETS: GRID ── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 32 }}>
-            <div className="data-card" style={{ margin: 0, height: '100%', background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.05)', gap: 12, userSelect: 'none' }}>
+            <div className="data-card" style={{ margin: 0, height: '100%', background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid var(--neutral-05)', gap: 12, userSelect: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <PieChart size={15} color="#4ade80" />
-                  <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1px' }}>4. Distribucion por Estado</span>
+                  <PieChart size={15} color="var(--success)" />
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>4. Distribucion por Estado</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <CustomSelect
@@ -2254,14 +2255,14 @@ export default function AnalistasPage() {
                     onChange={val => setSec4Mes(String(val))}
                     options={[{ label: 'Todos', value: '' }, ...CONFIG.MESES_NOMBRES.map((m, i) => ({ label: m, value: String(i + 1).padStart(2, '0') }))]}
                     width="140px"
-                    bg="#1a1a1a"
+                    bg="var(--surface-card)"
                   />
                   <CustomSelect
                     value={sec4Anio}
                     onChange={val => setSec4Anio(Number(val))}
                     options={[2024, 2025, 2026].map(y => ({ label: String(y), value: y }))}
                     width="100px"
-                    bg="#1a1a1a"
+                    bg="var(--surface-card)"
                   />
                 </div>
               </div>
@@ -2279,7 +2280,7 @@ export default function AnalistasPage() {
           onClick={() => setRendimiento12MOpen(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+            background: 'var(--surface-scrim)', backdropFilter: 'blur(4px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 24,
           }}
@@ -2287,8 +2288,8 @@ export default function AnalistasPage() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: '#111111',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--surface-card)',
+              border: '1px solid var(--neutral-08)',
               borderRadius: 18,
               padding: 24,
               width: 'min(1480px, 100%)',
@@ -2298,12 +2299,12 @@ export default function AnalistasPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
                 Rendimiento por Año {analista !== 'PDV' && `— ${analista}`}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {isAdmin && (
-                  <div style={{ display: 'flex', gap: 4, marginRight: 16, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 8 }}>
+                  <div style={{ display: 'flex', gap: 4, marginRight: 16, background: 'var(--neutral-03)', padding: 4, borderRadius: 8 }}>
                     {['OBJETIVO', 'ALCANCE', 'VAR.', 'CUMPL.'].map(col => {
                       const isHidden = hiddenCols.includes(col);
                       return (
@@ -2311,8 +2312,8 @@ export default function AnalistasPage() {
                           key={col}
                           onClick={() => setHiddenCols(prev => isHidden ? prev.filter(c => c !== col) : [...prev, col])}
                           style={{
-                            background: isHidden ? 'transparent' : 'rgba(255,255,255,0.1)',
-                            color: isHidden ? '#555' : '#aaa',
+                            background: isHidden ? 'transparent' : 'var(--neutral-10)',
+                            color: isHidden ? 'var(--text-subtle)' : 'var(--text-muted)',
                             border: 'none', borderRadius: 6, padding: '4px 8px',
                             fontSize: 10, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
                             textDecoration: isHidden ? 'line-through' : 'none'
@@ -2348,10 +2349,10 @@ export default function AnalistasPage() {
                   }}
                   disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) >= aniosDisponiblesRendimiento.length - 1}
                   style={{
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'transparent', border: '1px solid var(--neutral-10)',
                     borderRadius: 8, width: 32, height: 32,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#aaa', cursor: 'pointer',
+                    color: 'var(--text-muted)', cursor: 'pointer',
                   }}
                 >
                   <ChevronLeft size={16} />
@@ -2375,10 +2376,10 @@ export default function AnalistasPage() {
                   }}
                   disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) <= 0}
                   style={{
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'transparent', border: '1px solid var(--neutral-10)',
                     borderRadius: 8, width: 32, height: 32,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#aaa', cursor: 'pointer',
+                    color: 'var(--text-muted)', cursor: 'pointer',
                   }}
                 >
                   <ChevronRight size={16} />
@@ -2387,10 +2388,10 @@ export default function AnalistasPage() {
                   type="button"
                   onClick={() => setRendimiento12MOpen(false)}
                   style={{
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                    background: 'transparent', border: '1px solid var(--neutral-10)',
                     borderRadius: 8, width: 32, height: 32,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#aaa', cursor: 'pointer', marginLeft: 8,
+                    color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 8,
                   }}
                 >
                   <X size={16} />
@@ -2405,8 +2406,8 @@ export default function AnalistasPage() {
                   if (bucketsYear.length === 0) return null;
                   return (
                     <div key={anio}>
-                      <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 4, height: 16, background: '#a78bfa', borderRadius: 4 }} />
+                      <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--text-strong)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 4, height: 16, background: 'var(--violet)', borderRadius: 4 }} />
                         AÑO {anio}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -2467,7 +2468,7 @@ export default function AnalistasPage() {
           onClick={() => setIncentivosModalOpen(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
+            background: 'var(--surface-scrim)', backdropFilter: 'blur(6px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: 24,
           }}
@@ -2475,28 +2476,28 @@ export default function AnalistasPage() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: '#111111',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--surface-card)',
+              border: '1px solid var(--neutral-08)',
               borderRadius: 18,
               padding: 28,
               width: 'min(1280px, 100%)',
               maxHeight: '90vh',
               overflow: 'auto',
               boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
-              fontFamily: "'Outfit', sans-serif",
+              fontFamily: 'var(--font-ui)',
             }}
           >
             {/* Header del Modal */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 14, borderBottom: '1px solid var(--neutral-06)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success-strong)' }}>
                   <Calculator size={18} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-0.3px' }}>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-strong)', letterSpacing: '-0.3px' }}>
                     Cálculo de Incentivos — {analista}
                   </div>
-                  <div style={{ fontSize: 12, color: '#8f929d', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                     Escalas de liquidación e ingreso manual de cobranzas
                   </div>
                 </div>
@@ -2506,16 +2507,16 @@ export default function AnalistasPage() {
                 type="button"
                 onClick={() => setIncentivosModalOpen(false)}
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'var(--neutral-04)',
+                  border: '1px solid var(--neutral-08)',
                   borderRadius: 8,
                   width: 32, height: 32,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#aaa', cursor: 'pointer',
+                  color: 'var(--text-muted)', cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-strong)'; e.currentTarget.style.background = 'var(--neutral-10)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--neutral-04)'; }}
               >
                 <X size={16} />
               </button>
@@ -2524,15 +2525,15 @@ export default function AnalistasPage() {
             {/* Escalas: 3 Columnas */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 28 }}>
               {/* Reglas de Capital */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#a78bfa', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+              <div style={{ background: 'var(--neutral-02)', borderRadius: 12, padding: 18, border: '1px solid var(--neutral-04)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--violet)', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
                   <Target size={14} /> Escala de Incentivos - Capital
                 </div>
                 <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
-                      <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>COEFICIENTE</th>
+                    <tr style={{ borderBottom: '1px solid var(--neutral-10)' }}>
+                      <th style={{ textAlign: 'left', padding: '10px 4px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
+                      <th style={{ textAlign: 'right', padding: '10px 4px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 800 }}>COEFICIENTE</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2542,29 +2543,29 @@ export default function AnalistasPage() {
                       { a: '110% < 120%', c: '0.37%' },
                       { a: '>= 120%', c: '0.45%' },
                     ].map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
-                        <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
+                      <tr key={i} style={{ borderBottom: '1px solid var(--neutral-05)' }}>
+                        <td style={{ padding: '10px 4px', color: 'var(--text-muted)' }}>{r.a}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'right', color: 'var(--text-strong)', fontWeight: 800 }}>{r.c}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic', lineHeight: 1.5 }}>
+                <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
                   * El tope máximo para Ventas (K + Q) es de $200,000.<br/>
                   * El tope máximo para Cobranzas es de $50,000 (Tope total: $250,000).
                 </div>
               </div>
 
               {/* Reglas de Operaciones */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+              <div style={{ background: 'var(--neutral-02)', borderRadius: 12, padding: 18, border: '1px solid var(--neutral-04)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--success)', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
                   <Activity size={14} /> Escala de Incentivos - Operaciones
                 </div>
                 <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
-                      <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>COEFICIENTE</th>
+                    <tr style={{ borderBottom: '1px solid var(--neutral-10)' }}>
+                      <th style={{ textAlign: 'left', padding: '10px 4px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
+                      <th style={{ textAlign: 'right', padding: '10px 4px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 800 }}>COEFICIENTE</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2572,29 +2573,29 @@ export default function AnalistasPage() {
                       { a: '80% y 99.99%', c: '20%' },
                       { a: '>= 100%', c: '30%' },
                     ].map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
-                        <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
+                      <tr key={i} style={{ borderBottom: '1px solid var(--neutral-05)' }}>
+                        <td style={{ padding: '10px 4px', color: 'var(--text-muted)' }}>{r.a}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'right', color: 'var(--text-strong)', fontWeight: 800 }}>{r.c}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
+                <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
                   * Requiere alcance mínimo de 75% en Capital.
                 </div>
               </div>
 
               {/* Reglas de Cobranzas */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+              <div style={{ background: 'var(--neutral-02)', borderRadius: 12, padding: 18, border: '1px solid var(--neutral-04)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--orange)', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
                   <DollarSign size={14} /> Escala de Incentivos - Cobranzas
                 </div>
                 <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>CONCEPTO</th>
-                      <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
-                      <th style={{ textAlign: 'right', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>PREMIO</th>
+                    <tr style={{ borderBottom: '1px solid var(--neutral-10)' }}>
+                      <th style={{ textAlign: 'left', padding: '8px 4px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 800 }}>CONCEPTO</th>
+                      <th style={{ textAlign: 'left', padding: '8px 4px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
+                      <th style={{ textAlign: 'right', padding: '8px 4px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 800 }}>PREMIO</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2606,18 +2607,18 @@ export default function AnalistasPage() {
                       { n: 'REFINANCIACION', a: '90% - 109.99%', p: '$12.643' },
                       { n: 'REFINANCIACION', a: '>= 110%', p: '$16.667' },
                     ].map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '8px 4px', color: '#aaa', fontSize: 11 }}>{r.n}</td>
-                        <td style={{ padding: '8px 4px', color: '#bbb' }}>{r.a}</td>
-                        <td style={{ padding: '8px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.p}</td>
+                      <tr key={i} style={{ borderBottom: '1px solid var(--neutral-05)' }}>
+                        <td style={{ padding: '8px 4px', color: 'var(--text-muted)', fontSize: 11 }}>{r.n}</td>
+                        <td style={{ padding: '8px 4px', color: 'var(--text-muted)' }}>{r.a}</td>
+                        <td style={{ padding: '8px 4px', textAlign: 'right', color: 'var(--text-strong)', fontWeight: 800 }}>{r.p}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
 
-                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--neutral-05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--orange)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                       Ingreso Manual de Cumplimiento (%)
                     </div>
                     {Boolean(
@@ -2631,7 +2632,7 @@ export default function AnalistasPage() {
                         style={{
                           background: 'rgba(239, 68, 68, 0.1)',
                           border: '1px solid rgba(239, 68, 68, 0.25)',
-                          color: '#f87171',
+                          color: 'var(--danger)',
                           fontSize: 10,
                           fontWeight: 700,
                           cursor: 'pointer',
@@ -2652,32 +2653,32 @@ export default function AnalistasPage() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
                     <div>
-                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 90</div>
-                      <input 
-                        type="number" 
-                        value={currentCobranzas.pctTr90 ?? ''} 
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>TR 90</div>
+                      <input
+                        type="number"
+                        value={currentCobranzas.pctTr90 ?? ''}
                         onChange={(e) => handleManualCobChange('pctTr90', e.target.value)}
-                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                        style={{ width: '100%', background: 'var(--surface-card)', border: '1px solid var(--neutral-06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: 'var(--text-strong)', outline: 'none' }}
                         placeholder="0%"
                       />
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 120</div>
-                      <input 
-                        type="number" 
-                        value={currentCobranzas.pctTr120 ?? ''} 
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>TR 120</div>
+                      <input
+                        type="number"
+                        value={currentCobranzas.pctTr120 ?? ''}
                         onChange={(e) => handleManualCobChange('pctTr120', e.target.value)}
-                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                        style={{ width: '100%', background: 'var(--surface-card)', border: '1px solid var(--neutral-06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: 'var(--text-strong)', outline: 'none' }}
                         placeholder="0%"
                       />
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>REFIN</div>
-                      <input 
-                        type="number" 
-                        value={currentCobranzas.pctRefin ?? ''} 
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>REFIN</div>
+                      <input
+                        type="number"
+                        value={currentCobranzas.pctRefin ?? ''}
                         onChange={(e) => handleManualCobChange('pctRefin', e.target.value)}
-                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                        style={{ width: '100%', background: 'var(--surface-card)', border: '1px solid var(--neutral-06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: 'var(--text-strong)', outline: 'none' }}
                         placeholder="0%"
                       />
                     </div>
@@ -2687,33 +2688,33 @@ export default function AnalistasPage() {
             </div>
 
             {/* Tabla de resultados por Analista */}
-            <div style={{ overflowX: 'auto', background: 'rgba(255,255,255,0.01)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.04)', padding: 6 }}>
+            <div style={{ overflowX: 'auto', background: 'var(--neutral-01)', borderRadius: 14, border: '1px solid var(--neutral-04)', padding: 6 }}>
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Analista</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Vendido (K)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Cumpl. (K)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (K)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Cumpl. (Q)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (Q)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (Cob)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 900, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Total Final</th>
+                    <th style={{ textAlign: 'left', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid var(--neutral-08)' }}>Analista</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid var(--neutral-08)' }}>Vendido (K)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid var(--neutral-08)' }}>Cumpl. (K)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid var(--neutral-08)' }}>Incent. (K)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid var(--neutral-08)' }}>Cumpl. (Q)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid var(--neutral-08)' }}>Incent. (Q)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid var(--neutral-08)' }}>Incent. (Cob)</th>
+                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid var(--neutral-08)' }}>Total Final</th>
                   </tr>
                 </thead>
                 <tbody>
                   {kpiCards.filter(k => k.analista === 'PDV' || cobraIncentivo(k.analista)).map((k, idx) => (
-                    <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                      <td style={{ padding: '16px 14px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'var(--neutral-01)' }}>
+                      <td style={{ padding: '16px 14px', fontSize: 13, fontWeight: 800, color: 'var(--text-strong)', borderBottom: '1px solid var(--neutral-04)' }}>
                         {k.analista === 'PDV' ? 'TOTAL GENERAL' : (analista === 'PDV' ? k.analista.toUpperCase() : 'INDIVIDUAL')}
                       </td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#eee', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.capital)}</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{k.cumplCapital?.toFixed(1)}%</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.incentivoCap)}</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{k.cumplOps?.toFixed(1)}%</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.incentivoOps)}</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 15, color: '#10b981', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: 'var(--text-default)', borderBottom: '1px solid var(--neutral-04)' }}>{formatCurrency(k.capital)}</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? 'var(--success-strong)' : 'var(--danger)', fontWeight: 800, borderBottom: '1px solid var(--neutral-04)' }}>{k.cumplCapital?.toFixed(1)}%</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: 'var(--text-strong)', fontWeight: 700, borderBottom: '1px solid var(--neutral-04)' }}>{formatCurrency(k.incentivoCap)}</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? 'var(--success-strong)' : 'var(--danger)', fontWeight: 800, borderBottom: '1px solid var(--neutral-04)' }}>{k.cumplOps?.toFixed(1)}%</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: 'var(--text-strong)', fontWeight: 700, borderBottom: '1px solid var(--neutral-04)' }}>{formatCurrency(k.incentivoOps)}</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: 'var(--text-strong)', fontWeight: 700, borderBottom: '1px solid var(--neutral-04)' }}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
+                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 15, color: 'var(--success-strong)', fontWeight: 900, borderBottom: '1px solid var(--neutral-04)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
                           {k.topeKQAplicado && (
                             <span
@@ -2723,7 +2724,7 @@ export default function AnalistasPage() {
                                 padding: '3px 8px', borderRadius: 6,
                                 fontSize: 10, fontWeight: 800,
                                 background: 'rgba(251,191,36,0.15)',
-                                color: '#fbbf24',
+                                color: 'var(--warning)',
                                 border: '1px solid rgba(251,191,36,0.35)',
                                 textTransform: 'uppercase', letterSpacing: '0.5px',
                               }}
@@ -2762,31 +2763,31 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
 }) {
   const fmt = formatValue || ((v: number) => String(v));
   const dotColor = (pct: number | null) => {
-    if (pct === null) return '#555';
-    if (pct >= 100) return '#4ade80';
-    if (pct >= 75)  return '#fbbf24';
-    return '#f87171';
+    if (pct === null) return 'var(--text-subtle)';
+    if (pct >= 100) return 'var(--success)';
+    if (pct >= 75)  return 'var(--warning)';
+    return 'var(--danger)';
   };
   const th: React.CSSProperties = {
     padding: '10px 12px', fontSize: 10, fontWeight: 800,
-    color: '#666', textTransform: 'uppercase', letterSpacing: '1px',
-    borderBottom: '1px solid rgba(255,255,255,0.06)', textAlign: 'left',
+    color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '1px',
+    borderBottom: '1px solid var(--neutral-06)', textAlign: 'left',
   };
   const td: React.CSSProperties = {
-    padding: '11px 12px', fontSize: 13, color: '#ccc',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
+    padding: '11px 12px', fontSize: 13, color: 'var(--text-default)',
+    borderBottom: '1px solid var(--neutral-04)',
   };
 
   return (
     <div style={{
-      background: '#111111',
-      border: '1px solid rgba(255,255,255,0.05)',
+      background: 'var(--surface-card)',
+      border: '1px solid var(--neutral-05)',
       borderRadius: 14,
       padding: '20px 22px',
       display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ fontSize: 11, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 16 }}>{total}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-subtle)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-strong)', lineHeight: 1.1, marginBottom: 16 }}>{total}</div>
 
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
@@ -2805,13 +2806,13 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
             const pct = meta > 0 ? (v / meta) * 100 : null;
             const prev = i > 0 ? accessor(buckets[i - 1]) : null;
             const variacion = v > 0 && prev !== null && prev > 0 ? ((v - prev) / prev) * 100 : null;
-            const varColor = variacion === null ? '#64748b' : Math.abs(variacion) < 0.5 ? '#8f929d' : variacion > 0 ? '#4ade80' : '#f87171';
-            const varBg = variacion === null ? 'transparent' : Math.abs(variacion) < 0.5 ? 'rgba(255,255,255,0.04)' : variacion > 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
+            const varColor = variacion === null ? 'var(--text-subtle)' : Math.abs(variacion) < 0.5 ? 'var(--text-muted)' : variacion > 0 ? 'var(--success)' : 'var(--danger)';
+            const varBg = variacion === null ? 'transparent' : Math.abs(variacion) < 0.5 ? 'var(--neutral-04)' : variacion > 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
             return (
               <tr key={b.key}>
-                <td style={{ ...td, color: '#8f929d', fontWeight: 600 }}>{b.label}</td>
-                {!hiddenCols.includes('OBJETIVO') && <td style={{ ...td, textAlign: 'center', color: '#8f929d' }}>{meta > 0 ? fmt(meta) : '—'}</td>}
-                {!hiddenCols.includes('ALCANCE') && <td style={{ ...td, textAlign: 'center', color: '#fff', fontWeight: 700 }}>{fmt(v)}</td>}
+                <td style={{ ...td, color: 'var(--text-muted)', fontWeight: 600 }}>{b.label}</td>
+                {!hiddenCols.includes('OBJETIVO') && <td style={{ ...td, textAlign: 'center', color: 'var(--text-muted)' }}>{meta > 0 ? fmt(meta) : '—'}</td>}
+                {!hiddenCols.includes('ALCANCE') && <td style={{ ...td, textAlign: 'center', color: 'var(--text-strong)', fontWeight: 700 }}>{fmt(v)}</td>}
                 {!hiddenCols.includes('VAR.') && <td style={{ ...td, textAlign: 'center' }}>
                   {variacion !== null ? (
                     <span style={{
@@ -2823,7 +2824,7 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
                       {Math.abs(variacion) < 0.5 ? '—' : variacion > 0 ? '▲' : '▼'} {variacion >= 0 ? '+' : ''}{variacion.toFixed(1)}%
                     </span>
                   ) : (
-                    <span style={{ color: '#444' }}>—</span>
+                    <span style={{ color: 'var(--text-disabled)' }}>—</span>
                   )}
                 </td>}
                 {!hiddenCols.includes('CUMPL.') && <td style={{ ...td, textAlign: 'right' }}>
@@ -2833,9 +2834,9 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
                       padding: '4px 10px',
                       borderRadius: 8,
                       fontSize: 11, fontWeight: 700,
-                      color: '#e5e5e5',
-                      background: '#141414',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      color: 'var(--text-default)',
+                      background: 'var(--surface-raised)',
+                      border: '1px solid var(--neutral-06)',
                     }}>
                       <span style={{
                         width: 6, height: 6, borderRadius: '50%',
@@ -2845,7 +2846,7 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
                       {pct.toFixed(2)}%
                     </span>
                   ) : (
-                    <span style={{ color: '#444' }}>—</span>
+                    <span style={{ color: 'var(--text-disabled)' }}>—</span>
                   )}
                 </td>}
               </tr>

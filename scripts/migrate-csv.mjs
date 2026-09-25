@@ -15,8 +15,14 @@ import { readFileSync } from 'fs';
 import { parse } from 'csv-parse/sync';
 
 // ─── CONFIG ────────────────────────────────────
-const SUPABASE_URL = 'https://cnjqjvqgmclwkuswjzzf.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNuanFqdnFnbWNsd2t1c3dqenpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjY5NjEsImV4cCI6MjA5MDA0Mjk2MX0.LI-74p-ctrQN2mNfp2s53WO-xtLFiUd1n3xHqIo0sBg';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  throw new Error(
+    'Faltan NEXT_PUBLIC_SUPABASE_URL y/o NEXT_PUBLIC_SUPABASE_ANON_KEY en el entorno.',
+  );
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 

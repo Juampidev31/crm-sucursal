@@ -72,7 +72,7 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
       {
         label: 'Meta Lineal',
         data: metaLineal,
-        borderColor: 'rgba(255,255,255,0.15)',
+        borderColor: 'var(--neutral-15)',
         borderDash: [5, 5],
         borderWidth: 1,
         pointRadius: 0,
@@ -107,7 +107,7 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: '#888', font: { family: 'Outfit' } } },
+      legend: { labels: { color: 'var(--text-muted)', font: { family: 'Outfit' } } },
       tooltip: {
         callbacks: {
           label: (ctx: { dataset: { label?: string }; parsed: { y: number | null } }) =>
@@ -116,10 +116,10 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
       },
     },
     scales: {
-      x: { ticks: { color: '#555', maxTicksLimit: 15 }, grid: { color: 'rgba(255,255,255,0.03)' } },
+      x: { ticks: { color: 'var(--text-subtle)', maxTicksLimit: 15 }, grid: { color: 'var(--neutral-03)' } },
       y: {
-        ticks: { color: '#555', callback: (v: string | number) => formatCurrency(Number(v)) },
-        grid: { color: 'rgba(255,255,255,0.03)' },
+        ticks: { color: 'var(--text-subtle)', callback: (v: string | number) => formatCurrency(Number(v)) },
+        grid: { color: 'var(--neutral-03)' },
       },
     },
   };
@@ -129,7 +129,7 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
       <header className="dashboard-header">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800 }}>Proyección Predictiva</h1>
-          <p style={{ color: '#888', fontSize: '14px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
             {CONFIG.MESES_NOMBRES[mesActual]} {anioActual} — Día {diaActual} de {d.diasDelMes}
           </p>
         </div>
@@ -190,10 +190,10 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
           { label: 'Score Bajo', monto: d.scoreBajoMonto, ops: d.scoreBajoOp, color: 'var(--rojo)' },
           { label: 'Afectaciones', monto: d.afectacionesMonto, ops: d.afectacionesOp, color: 'var(--naranja)' },
           { label: 'Aprobado CC', monto: d.derivadoAprobadoMonto, ops: d.derivadoAprobadoOp, color: '#9B59B6' },
-          { label: 'Rechazado CC', monto: d.derivadoRechazadoMonto, ops: d.derivadoRechazadoOp, color: '#E67E22' },
+          { label: 'Rechazado CC', monto: d.derivadoRechazadoMonto, ops: d.derivadoRechazadoOp, color: 'var(--orange)' },
         ].map(item => (
           <div key={item.label} className="kpi-card" style={{ borderLeft: `3px solid ${item.color}` }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-subtle)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
               {item.label}
             </div>
             <div style={{ fontSize: '20px', fontWeight: 800 }}>{formatCurrency(item.monto)}</div>
@@ -209,15 +209,15 @@ export default function ProyeccionClient({ data, mesActual, anioActual, diaActua
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: '#555', marginBottom: '8px', textTransform: 'uppercase' }}>Capital</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-subtle)', marginBottom: '8px', textTransform: 'uppercase' }}>Capital</div>
               <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--verde)' }}>{formatCurrency(d.comisionCapital)}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '12px', color: '#555', marginBottom: '8px', textTransform: 'uppercase' }}>Operaciones</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-subtle)', marginBottom: '8px', textTransform: 'uppercase' }}>Operaciones</div>
               <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--azul)' }}>{formatCurrency(d.comisionOperaciones)}</div>
             </div>
-            <div style={{ textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,0.05)', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ fontSize: '12px', color: '#555', marginBottom: '8px', textTransform: 'uppercase' }}>Total</div>
+            <div style={{ textAlign: 'center', borderLeft: '1px solid var(--neutral-05)', borderRight: '1px solid var(--neutral-05)' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-subtle)', marginBottom: '8px', textTransform: 'uppercase' }}>Total</div>
               <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--verde)' }}>{formatCurrency(d.comisionTotal)}</div>
             </div>
           </div>

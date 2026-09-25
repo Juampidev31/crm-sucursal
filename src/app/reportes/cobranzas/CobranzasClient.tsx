@@ -20,9 +20,9 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointEleme
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 function cumplColor(pct: number | null): string {
-  if (pct === null) return '#64748b';
-  if (pct >= 100) return '#34d399';
-  return '#f87171';
+  if (pct === null) return 'var(--text-subtle)';
+  if (pct >= 100) return 'var(--success)';
+  return 'var(--danger)';
 }
 
 // ── Editable Cell ────────────────────────────────────────────────────────────
@@ -42,10 +42,10 @@ function EditCell({
         padding: '5px 8px',
         fontSize: '12px',
         fontWeight: 600,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: 'var(--neutral-03)',
+        border: '1px solid var(--neutral-08)',
         borderRadius: '6px',
-        color: '#fff',
+        color: 'var(--text-strong)',
         textAlign: align,
         outline: 'none',
         fontFamily: 'inherit',
@@ -53,7 +53,7 @@ function EditCell({
       }}
       onFocus={e => e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'}
       onBlur={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+        e.currentTarget.style.borderColor = 'var(--neutral-08)';
         if (onBlur) onBlur();
       }}
     />
@@ -69,16 +69,16 @@ function TramoTable({
   onRowChange: (idx: number, field: keyof TramoRow, value: string) => void;
 }) {
   return (
-    <div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', flex: 1, minWidth: '280px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+    <div style={{ background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', border: '1px solid var(--neutral-06)', borderRadius: '16px', overflow: 'hidden', flex: 1, minWidth: '280px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--neutral-06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={{ width: '3px', height: '14px', background: color, borderRadius: '4px' }} />
-        <span style={{ fontSize: '11px', fontWeight: 800, color: '#9a9aa3', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
+        <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
         <thead>
-          <tr style={{ background: 'rgba(255,255,255,0.005)' }}>
+          <tr style={{ background: 'var(--neutral-01)' }}>
             {['Mes', 'Objetivo', 'Recupero', 'Cumpl.'].map(h => (
-              <th key={h} style={{ padding: '12px 14px', textAlign: h === 'Mes' ? 'left' : 'right', color: '#9a9aa3', fontWeight: 800, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
+              <th key={h} style={{ padding: '12px 14px', textAlign: h === 'Mes' ? 'left' : 'right', color: 'var(--text-muted)', fontWeight: 800, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--neutral-06)' }}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -90,41 +90,41 @@ function TramoTable({
                 key={i}
                 className="hover-row"
                 style={{
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  borderBottom: '1px solid var(--neutral-04)',
                   transition: 'all 0.1s ease',
                   cursor: 'default',
                 }}
               >
-                <td style={{ padding: '10px 14px', color: '#eaeaea', fontWeight: 700 }}>
+                <td style={{ padding: '10px 14px', color: 'var(--text-strong)', fontWeight: 700 }}>
                   {editing ? r.mes || MESES[i] || `Mes ${i + 1}` : r.mes}
                 </td>
                 <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                   {editing ? (
                     <EditCell value={r.objetivo} onChange={v => onRowChange(i, 'objetivo', v)} placeholder="0" />
                   ) : (
-                    <span style={{ color: '#64748b', fontWeight: 600 }}>{r.objetivo}</span>
+                    <span style={{ color: 'var(--text-subtle)', fontWeight: 600 }}>{r.objetivo}</span>
                   )}
                 </td>
                 <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                   {editing ? (
                     <EditCell value={r.recupero} onChange={v => onRowChange(i, 'recupero', v)} placeholder="0" />
                   ) : (
-                    <span style={{ color: '#eaeaea', fontWeight: 700 }}>{r.recupero}</span>
+                    <span style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{r.recupero}</span>
                   )}
                 </td>
                 <td style={{ padding: '8px 10px', textAlign: 'right' }}>
                   {editing ? (
-                    <span style={{ color: '#fff', fontWeight: 800, fontSize: '11px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ color: 'var(--text-strong)', fontWeight: 800, fontSize: '11px', background: 'var(--neutral-04)', border: '1px solid var(--neutral-08)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <span style={{ color: c }}>●</span>
                       {r.cumplimiento !== '-' ? r.cumplimiento : '0%'}
                     </span>
                   ) : (
                     r.pct !== null ? (
-                      <span style={{ color: '#fff', fontWeight: 800, fontSize: '11px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ color: 'var(--text-strong)', fontWeight: 800, fontSize: '11px', background: 'var(--neutral-04)', border: '1px solid var(--neutral-08)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ color: c }}>●</span>
                         {r.cumplimiento}
                       </span>
-                    ) : <span style={{ color: '#64748b' }}>—</span>
+                    ) : <span style={{ color: 'var(--text-subtle)' }}>—</span>
                   )}
                 </td>
               </tr>
@@ -142,12 +142,12 @@ const chartOpts = (yLabel: string) => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: { labels: { color: '#9a9aa3', font: { size: 10, weight: 600 }, usePointStyle: true, padding: 16 } },
-    tooltip: { backgroundColor: '#0c0c0c', titleColor: '#fff', bodyColor: '#9a9aa3', borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1 },
+    legend: { labels: { color: 'var(--text-muted)', font: { size: 10, weight: 600 }, usePointStyle: true, padding: 16 } },
+    tooltip: { backgroundColor: 'var(--surface-canvas)', titleColor: 'var(--text-strong)', bodyColor: 'var(--text-muted)', borderColor: 'var(--neutral-06)', borderWidth: 1 },
   },
   scales: {
-    x: { ticks: { color: '#9a9aa3', font: { size: 10, weight: 600 } }, grid: { color: 'rgba(255,255,255,0.02)' }, border: { display: false } },
-    y: { ticks: { color: '#9a9aa3', font: { size: 10, weight: 600 }, callback: (v: number | string) => `${v}${yLabel}` }, grid: { color: 'rgba(255,255,255,0.025)' }, border: { display: false } },
+    x: { ticks: { color: 'var(--text-muted)', font: { size: 10, weight: 600 } }, grid: { color: 'var(--neutral-02)' }, border: { display: false } },
+    y: { ticks: { color: 'var(--text-muted)', font: { size: 10, weight: 600 }, callback: (v: number | string) => `${v}${yLabel}` }, grid: { color: 'var(--neutral-03)' }, border: { display: false } },
   },
 });
 
@@ -210,7 +210,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
     setData(prev => {
       const rows = [...prev[tramo]];
       rows[idx] = { ...rows[idx], [field]: value };
-      
+
       if (field === 'objetivo' || field === 'recupero') {
         const objStr = rows[idx].objetivo;
         const recStr = rows[idx].recupero;
@@ -251,7 +251,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
     setData(prev => {
       const rows = [...prev.morosidad];
       const row = { ...rows[idx] };
-      let val = row[field];
+      const val = row[field];
       if (val && val !== '-' && !val.includes('%')) {
         const num = parseNumberRobust(val);
         if (!isNaN(num)) {
@@ -305,7 +305,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
         type: 'line' as const,
         label: 'Meta 100%',
         data: Array(meses.length).fill(100),
-        borderColor: '#f87171',
+        borderColor: 'var(--danger)',
         borderWidth: 2,
         borderDash: [5, 5],
         pointRadius: 0,
@@ -318,9 +318,9 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
   const moresData = {
     labels: moresMeses,
     datasets: [
-      { label: data.anioCurrent || 'Actual', data: data.morosidad.map(r => r.currentPct), borderColor: '#f87171', backgroundColor: 'rgba(248,113,113,0.05)', tension: 0.3, pointRadius: 3, fill: true },
-      { label: data.anioAnterior || 'Anterior', data: data.morosidad.map(r => r.anteriorPct), borderColor: '#9a9aa3', backgroundColor: 'transparent', tension: 0.3, pointRadius: 3, borderDash: [4, 4] },
-      { label: 'Media Emp.', data: data.morosidad.map(r => r.mediaPct), borderColor: '#fbbf24', backgroundColor: 'transparent', tension: 0, pointRadius: 0, borderDash: [6, 3] },
+      { label: data.anioCurrent || 'Actual', data: data.morosidad.map(r => r.currentPct), borderColor: 'var(--danger)', backgroundColor: 'rgba(248,113,113,0.05)', tension: 0.3, pointRadius: 3, fill: true },
+      { label: data.anioAnterior || 'Anterior', data: data.morosidad.map(r => r.anteriorPct), borderColor: 'var(--text-muted)', backgroundColor: 'transparent', tension: 0.3, pointRadius: 3, borderDash: [4, 4] },
+      { label: 'Media Emp.', data: data.morosidad.map(r => r.mediaPct), borderColor: 'var(--warning)', backgroundColor: 'transparent', tension: 0, pointRadius: 0, borderDash: [6, 3] },
     ],
   };
 
@@ -337,7 +337,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
         label: 'Dif. vs Media Emp.',
         data: data.morosidad.map(r => (r.currentPct !== null && r.mediaPct !== null) ? Number((r.currentPct - r.mediaPct).toFixed(2)) : 0),
         backgroundColor: (context: any) => context.raw > 0 ? 'rgba(248, 113, 113, 0.3)' : 'rgba(52, 211, 153, 0.3)',
-        borderColor: (context: any) => context.raw > 0 ? '#f87171' : '#34d399',
+        borderColor: (context: any) => context.raw > 0 ? 'var(--danger)' : 'var(--success)',
         borderWidth: 1,
         borderRadius: 4,
       },
@@ -356,7 +356,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
             padding: '12px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
             background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
             border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-            color: toast.type === 'success' ? '#34d399' : '#f87171',
+            color: toast.type === 'success' ? 'var(--success)' : 'var(--danger)',
           }}>
             {toast.msg}
           </div>
@@ -374,7 +374,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
                   padding: '8px 20px', borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #10b981, #059669)', color: '#050505', border: 'none',
+                  background: 'linear-gradient(135deg, var(--success-strong), #059669)', color: 'var(--surface-base)', border: 'none',
                   fontWeight: 800, fontSize: '12px', cursor: saving ? 'wait' : 'pointer',
                   letterSpacing: '0.5px', opacity: saving ? 0.7 : 1,
                   boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
@@ -390,7 +390,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
                   padding: '8px 16px', borderRadius: '10px',
-                  background: 'transparent', color: '#9a9aa3', border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--neutral-06)',
                   fontWeight: 700, fontSize: '12px', cursor: 'pointer',
                   transition: 'all 0.2s',
                 }}
@@ -404,13 +404,13 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
               style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '8px 20px', borderRadius: '10px',
-                background: 'rgba(255,255,255,0.03)', color: '#9a9aa3',
-                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'var(--neutral-03)', color: 'var(--text-muted)',
+                border: '1px solid var(--neutral-06)',
                 fontWeight: 800, fontSize: '12px', cursor: 'pointer',
                 transition: 'all 0.2s', letterSpacing: '0.3px',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#9a9aa3'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--neutral-06)'; e.currentTarget.style.color = 'var(--text-strong)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--neutral-03)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
             >
               <Edit2 size={14} /> EDITAR DATOS
             </button>
@@ -431,7 +431,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.15)',
           borderRadius: '12px', padding: '14px 20px', marginBottom: '24px',
           display: 'flex', alignItems: 'center', gap: '10px',
-          fontSize: '12px', color: '#34d399', fontWeight: 700,
+          fontSize: '12px', color: 'var(--success)', fontWeight: 700,
         }}>
           <Edit2 size={14} />
           Modo edición — Modificá los valores directamente en las tablas y hacé clic en GUARDAR.
@@ -443,21 +443,21 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
         <TramoTable
           titulo="Tramo 90-119"
           rows={data.tramo90}
-          color="#60a5fa"
+          color="var(--info)"
           editing={editing}
           onRowChange={(idx, field, value) => updateTramo('tramo90', idx, field, value)}
         />
         <TramoTable
           titulo="Tramo 120-209"
           rows={data.tramo120}
-          color="#a78bfa"
+          color="var(--violet)"
           editing={editing}
           onRowChange={(idx, field, value) => updateTramo('tramo120', idx, field, value)}
         />
         <TramoTable
           titulo="Refinanciaciones"
           rows={data.refin}
-          color="#fbbf24"
+          color="var(--warning)"
           editing={editing}
           onRowChange={(idx, field, value) => updateTramo('refin', idx, field, value)}
         />
@@ -465,8 +465,8 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
 
       {/* Charts */}
       <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Cumplimiento por Tramo</h3>
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', border: '1px solid var(--neutral-06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' }}>
+          <h3 style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Cumplimiento por Tramo</h3>
           <div style={{ height: '260px' }}>
             {chartsLoaded ? (
               <Chart type="bar" data={cumplData} options={chartOpts('%') as any} />
@@ -476,8 +476,8 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           </div>
         </div>
 
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Morosidad Anual</h3>
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', border: '1px solid var(--neutral-06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' }}>
+          <h3 style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Morosidad Anual</h3>
           <div style={{ height: '260px' }}>
             {chartsLoaded ? (
               <Line data={moresData} options={chartOpts('%') as any} />
@@ -487,8 +487,8 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           </div>
         </div>
 
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Variación Morosidad (+/-)</h3>
+        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', border: '1px solid var(--neutral-06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' }}>
+          <h3 style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Variación Morosidad (+/-)</h3>
           <div style={{ height: '260px' }}>
             {chartsLoaded ? (
               <Chart type="bar" data={variationData} options={{ ...chartOpts(' p.p.'), maintainAspectRatio: false } as any} />
@@ -501,32 +501,32 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
 
       {/* Morosidad Detail Table */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#9a9aa3', letterSpacing: '1px', textTransform: 'uppercase' }}>Detalle Morosidad</span>
+        <div style={{ flex: 1, background: 'linear-gradient(180deg, var(--neutral-03) 0%, transparent 100%), var(--bg-elev-1)', border: '1px solid var(--neutral-06)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 var(--neutral-03)' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--neutral-06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>Detalle Morosidad</span>
             {editing && (
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 700 }}>Año actual:</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 700 }}>Año actual:</span>
                   <input
                     value={data.anioCurrent}
                     onChange={e => updateMorosidadMeta('anioCurrent', e.target.value)}
                     style={{
                       width: '60px', padding: '3px 6px', fontSize: '11px',
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '4px', color: '#fff', textAlign: 'center', outline: 'none',
+                      background: 'var(--neutral-03)', border: '1px solid var(--neutral-08)',
+                      borderRadius: '4px', color: 'var(--text-strong)', textAlign: 'center', outline: 'none',
                     }}
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 700 }}>Año anterior:</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-subtle)', fontWeight: 700 }}>Año anterior:</span>
                   <input
                     value={data.anioAnterior}
                     onChange={e => updateMorosidadMeta('anioAnterior', e.target.value)}
                     style={{
                       width: '60px', padding: '3px 6px', fontSize: '11px',
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '4px', color: '#fff', textAlign: 'center', outline: 'none',
+                      background: 'var(--neutral-03)', border: '1px solid var(--neutral-08)',
+                      borderRadius: '4px', color: 'var(--text-strong)', textAlign: 'center', outline: 'none',
                     }}
                   />
                 </div>
@@ -535,26 +535,26 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.005)' }}>
+              <tr style={{ background: 'var(--neutral-01)' }}>
                 {['Mes', data.anioCurrent || 'Actual', data.anioAnterior || 'Anterior', 'Media Emp.'].map(h => (
-                  <th key={h} style={{ padding: '14px 16px', textAlign: 'center', color: '#9a9aa3', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
+                  <th key={h} style={{ padding: '14px 16px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--neutral-06)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {(data.morosidad.length > 0 ? data.morosidad : ensureMorosidadRows([])).map((r, i) => {
-                const c = r.currentPct !== null ? (r.currentPct < (r.mediaPct ?? 99) ? '#34d399' : '#f87171') : '#64748b';
+                const c = r.currentPct !== null ? (r.currentPct < (r.mediaPct ?? 99) ? 'var(--success)' : 'var(--danger)') : 'var(--text-subtle)';
                 return (
                   <tr
                     key={i}
                     className="hover-row"
                     style={{
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      borderBottom: '1px solid var(--neutral-04)',
                       transition: 'all 0.1s ease',
                       cursor: 'default',
                     }}
                   >
-                    <td style={{ padding: '12px 14px', color: '#eaeaea', fontWeight: 700, textAlign: 'center' }}>
+                    <td style={{ padding: '12px 14px', color: 'var(--text-strong)', fontWeight: 700, textAlign: 'center' }}>
                       {r.mes || MESES[i]}
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center' }}>
@@ -562,25 +562,25 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
                         <EditCell value={r.current} onChange={v => updateMorosidad(i, 'current', v)} onBlur={() => formatMorosidadPct(i, 'current')} placeholder="0%" width="70px" />
                       ) : (
                         r.currentPct !== null ? (
-                          <span style={{ color: '#fff', fontWeight: 800, fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '3px 9px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ color: 'var(--text-strong)', fontWeight: 800, fontSize: '12px', background: 'var(--neutral-04)', border: '1px solid var(--neutral-08)', padding: '3px 9px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                             <span style={{ color: c }}>●</span>
                             {r.current}
                           </span>
-                        ) : <span style={{ color: '#64748b' }}>—</span>
+                        ) : <span style={{ color: 'var(--text-subtle)' }}>—</span>
                       )}
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                       {editing ? (
                         <EditCell value={r.anterior} onChange={v => updateMorosidad(i, 'anterior', v)} onBlur={() => formatMorosidadPct(i, 'anterior')} placeholder="0%" width="70px" />
                       ) : (
-                        <span style={{ color: '#9a9aa3', fontWeight: 600 }}>{r.anteriorPct !== null ? r.anterior : '—'}</span>
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{r.anteriorPct !== null ? r.anterior : '—'}</span>
                       )}
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center' }}>
                       {editing ? (
                         <EditCell value={r.mediaEmp} onChange={v => updateMorosidad(i, 'mediaEmp', v)} onBlur={() => formatMorosidadPct(i, 'mediaEmp')} placeholder="0%" width="70px" />
                       ) : (
-                        <span style={{ color: '#9a9aa3', fontWeight: 600 }}>{r.mediaPct !== null ? r.mediaEmp : '—'}</span>
+                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{r.mediaPct !== null ? r.mediaEmp : '—'}</span>
                       )}
                     </td>
                   </tr>

@@ -31,48 +31,48 @@ export default function SelectReporte({ options, value, onChange, icon, width = 
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          background: 'linear-gradient(145deg, #0f0f0f 0%, #050505 100%)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'linear-gradient(145deg, var(--surface-base) 0%, var(--surface-base) 100%)',
+          border: '1px solid var(--neutral-06)',
           borderRadius: '12px',
           padding: '10px 16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           cursor: 'pointer',
-          color: '#fff',
+          color: 'var(--text-strong)',
           fontSize: '12px',
           fontWeight: 700,
           letterSpacing: '0.5px',
           userSelect: 'none',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           height: '42px',
-          boxShadow: isOpen 
-            ? '0 0 20px rgba(255,255,255,0.03), inset 0 0 10px rgba(255,255,255,0.02)' 
+          boxShadow: isOpen
+            ? '0 0 20px var(--neutral-03), inset 0 0 10px var(--neutral-02)'
             : '0 4px 12px rgba(0,0,0,0.5)',
-          borderColor: isOpen ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)',
+          borderColor: isOpen ? 'var(--neutral-20)' : 'var(--neutral-06)',
           textTransform: 'uppercase'
         }}
         onMouseEnter={(e) => {
           if (!isOpen) {
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-            e.currentTarget.style.background = 'linear-gradient(145deg, #141414 0%, #080808 100%)';
+            e.currentTarget.style.borderColor = 'var(--neutral-15)';
+            e.currentTarget.style.background = 'linear-gradient(145deg, var(--surface-raised) 0%, var(--surface-canvas) 100%)';
           }
         }}
         onMouseLeave={(e) => {
           if (!isOpen) {
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-            e.currentTarget.style.background = 'linear-gradient(145deg, #0f0f0f 0%, #050505 100%)';
+            e.currentTarget.style.borderColor = 'var(--neutral-06)';
+            e.currentTarget.style.background = 'linear-gradient(145deg, var(--surface-base) 0%, var(--surface-base) 100%)';
           }
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
           {icon === 'user' && <User size={14} style={{ opacity: 0.5 }} />}
           {icon === 'calendar' && <Calendar size={14} style={{ opacity: 0.5 }} />}
-          <span style={{ 
-            whiteSpace: 'nowrap', 
-            overflow: 'hidden', 
+          <span style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
             textOverflow: 'ellipsis',
-            background: 'linear-gradient(90deg, #fff 0%, #aaa 100%)',
+            background: 'linear-gradient(90deg, var(--text-strong) 0%, var(--text-muted) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
           }}>
@@ -82,7 +82,7 @@ export default function SelectReporte({ options, value, onChange, icon, width = 
         <ChevronDown size={14} style={{
           transform: isOpen ? 'rotate(180deg)' : 'none',
           transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-          color: '#666',
+          color: 'var(--text-subtle)',
           flexShrink: 0
         }} />
       </div>
@@ -96,10 +96,10 @@ export default function SelectReporte({ options, value, onChange, icon, width = 
           minWidth: '100%',
           background: 'rgba(10, 10, 10, 0.95)',
           backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: '1px solid var(--neutral-08)',
           borderRadius: '16px',
           zIndex: 1000,
-          boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.03)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.8), 0 0 0 1px var(--neutral-03)',
           padding: '8px',
           maxHeight: '400px',
           overflowY: 'auto',
@@ -119,8 +119,8 @@ export default function SelectReporte({ options, value, onChange, icon, width = 
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
-                color: String(opt.value) === String(value) ? '#fff' : 'rgba(255,255,255,0.5)',
-                background: String(opt.value) === String(value) ? 'rgba(255,255,255,0.06)' : 'transparent',
+                color: String(opt.value) === String(value) ? 'var(--text-strong)' : 'var(--neutral-50)',
+                background: String(opt.value) === String(value) ? 'var(--neutral-06)' : 'transparent',
                 transition: 'all 0.2s',
                 marginBottom: i === options.length - 1 ? 0 : '2px',
                 display: 'flex',
@@ -131,19 +131,19 @@ export default function SelectReporte({ options, value, onChange, icon, width = 
               }}
               onMouseEnter={e => {
                 if (String(opt.value) !== String(value)) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                  e.currentTarget.style.color = '#fff';
+                  e.currentTarget.style.background = 'var(--neutral-03)';
+                  e.currentTarget.style.color = 'var(--text-strong)';
                 }
               }}
               onMouseLeave={e => {
                 if (String(opt.value) !== String(value)) {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+                  e.currentTarget.style.color = 'var(--neutral-50)';
                 }
               }}
             >
               {String(opt.value) === String(value) && (
-                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#fff' }} />
+                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent)' }} />
               )}
               {opt.label}
             </div>

@@ -10,18 +10,18 @@ export default function Error({
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', height: '100vh', background: '#000',
-      color: '#fff', fontFamily: "'Outfit', sans-serif", gap: 16,
+      justifyContent: 'center', height: '100vh', background: 'var(--surface-input)',
+      color: 'var(--text-strong)', fontFamily: 'var(--font-ui)', gap: 16,
     }}>
       <h2 style={{ fontSize: 20, fontWeight: 700 }}>Algo salió mal</h2>
-      <p style={{ color: '#888', fontSize: 14, maxWidth: 400, textAlign: 'center' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 400, textAlign: 'center' }}>
         {error.message || 'Ocurrió un error inesperado.'}
       </p>
       <button
         onClick={reset}
         style={{
           marginTop: 8, padding: '10px 24px', borderRadius: 8,
-          background: '#fff', color: '#000', border: 'none',
+          background: 'var(--accent)', color: 'var(--text-on-accent)', border: 'none',
           fontWeight: 700, fontSize: 14, cursor: 'pointer',
         }}
       >

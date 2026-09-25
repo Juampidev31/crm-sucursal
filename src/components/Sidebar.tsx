@@ -21,20 +21,20 @@ import { ExportXlsxModal } from '@/components/ExportXlsxModal';
 import { useSettings } from '@/features/settings/SettingsProvider';
 
 const REGISTRO_STATES = [
-  { label: 'Proyección', value: 'proyeccion', color: '#60a5fa' },
-  { label: 'Venta', value: 'venta', color: '#10b981' },
-  { label: 'En seguimiento', value: 'en seguimiento', color: '#fbbf24' },
-  { label: 'Score bajo', value: 'score bajo', color: '#f87171' },
-  { label: 'Afectaciones', value: 'afectaciones', color: '#c084fc' },
-  { label: 'Aprobado CC', value: 'derivado / aprobado cc', color: '#34d399' },
-  { label: 'Rechazado CC', value: 'derivado / rechazado cc', color: '#ef4444' }
+  { label: 'Proyección', value: 'proyeccion', color: 'var(--info)' },
+  { label: 'Venta', value: 'venta', color: 'var(--success-strong)' },
+  { label: 'En seguimiento', value: 'en seguimiento', color: 'var(--warning)' },
+  { label: 'Score bajo', value: 'score bajo', color: 'var(--danger)' },
+  { label: 'Afectaciones', value: 'afectaciones', color: 'var(--violet)' },
+  { label: 'Aprobado CC', value: 'derivado / aprobado cc', color: 'var(--success)' },
+  { label: 'Rechazado CC', value: 'derivado / rechazado cc', color: 'var(--danger)' }
 ];
 
 // ── NavItem — Pure CSS tooltip via data-label ─────────────────────────────────
 
 function NavItem({
-  href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = '#10b981',
-  isMessage = false, avatarColor = '#ccc', isTreeItem = false, isLastTreeItem = false, isDoubleTreeItem = false, iconColor
+  href, icon: Icon, label, active, badge, onClick, indent, rightIcon: RightIcon, badgeColor = 'var(--success-strong)',
+  isMessage = false, avatarColor = 'var(--text-default)', isTreeItem = false, isLastTreeItem = false, isDoubleTreeItem = false, iconColor
 }: {
   href: string; icon?: React.ElementType; label: string; active?: boolean; badge?: number | string; onClick?: (e: React.MouseEvent) => void; indent?: boolean; rightIcon?: React.ElementType; badgeColor?: string;
   isMessage?: boolean; avatarColor?: string; isTreeItem?: boolean; isLastTreeItem?: boolean; isDoubleTreeItem?: boolean; iconColor?: string;
@@ -50,7 +50,7 @@ function NavItem({
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         width: '100%', padding: '8px 16px', paddingLeft: indent ? (isDoubleTreeItem ? '66px' : (isTreeItem ? '46px' : '40px')) : '16px',
         borderRadius: 16,
-        color: active ? '#ffffff' : '#9a9a9a',
+        color: active ? 'var(--text-strong)' : '#9a9a9a',
         background: 'transparent',
         textDecoration: 'none',
         outline: 'none',
@@ -59,7 +59,7 @@ function NavItem({
       }}
       onMouseEnter={(e) => {
         if (!active) {
-          e.currentTarget.style.color = '#ffffff';
+          e.currentTarget.style.color = 'var(--text-strong)';
         }
       }}
       onMouseLeave={(e) => {
@@ -75,7 +75,7 @@ function NavItem({
             left: 24,
             top: 0,
             bottom: isLastTreeItem && !isDoubleTreeItem ? '50%' : -2,
-            borderLeft: '1px solid rgba(255,255,255,0.15)',
+            borderLeft: '1px solid var(--neutral-15)',
             borderBottomLeftRadius: isLastTreeItem && !isDoubleTreeItem ? 12 : 0,
             zIndex: 0
           }} />
@@ -86,7 +86,7 @@ function NavItem({
                 left: 24,
                 top: '50%',
                 width: 10,
-                borderTop: '1px solid rgba(255,255,255,0.15)',
+                borderTop: '1px solid var(--neutral-15)',
                 zIndex: 0
               }} />
               <div style={{
@@ -97,7 +97,7 @@ function NavItem({
                 width: 4,
                 height: 4,
                 borderRadius: '50%',
-                background: 'rgba(255,255,255,0.2)',
+                background: 'var(--neutral-20)',
                 zIndex: 0
               }} />
             </>
@@ -111,7 +111,7 @@ function NavItem({
             left: 24,
             top: 0,
             bottom: -2,
-            borderLeft: '1px solid rgba(255,255,255,0.15)',
+            borderLeft: '1px solid var(--neutral-15)',
             zIndex: 0
           }} />
           <div style={{
@@ -119,7 +119,7 @@ function NavItem({
             left: 44,
             top: 0,
             bottom: isLastTreeItem ? '50%' : -2,
-            borderLeft: '1px solid rgba(255,255,255,0.15)',
+            borderLeft: '1px solid var(--neutral-15)',
             borderBottomLeftRadius: isLastTreeItem ? 12 : 0,
             zIndex: 0
           }} />
@@ -128,7 +128,7 @@ function NavItem({
             left: 44,
             top: '50%',
             width: 10,
-            borderTop: '1px solid rgba(255,255,255,0.15)',
+            borderTop: '1px solid var(--neutral-15)',
             zIndex: 0
           }} />
           <div style={{
@@ -139,14 +139,14 @@ function NavItem({
             width: 4,
             height: 4,
             borderRadius: '50%',
-            background: 'rgba(255,255,255,0.2)',
+            background: 'var(--neutral-20)',
             zIndex: 0
           }} />
         </>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, zIndex: 1, position: 'relative' }}>
         {isMessage ? (
-          <div style={{ width: 24, height: 24, borderRadius: '50%', background: avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111', fontWeight: 800, fontSize: 11 }}>
+          <div style={{ width: 24, height: 24, borderRadius: '50%', background: avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--surface-card)', fontWeight: 800, fontSize: 11 }}>
             {label.substring(0, 1)}
           </div>
         ) : (
@@ -156,7 +156,7 @@ function NavItem({
                 <Icon size={16} strokeWidth={2.5} color={iconColor} />
               </div>
             ) : (
-              <Icon size={21} strokeWidth={2} style={{ color: active ? '#ffffff' : '#777777' }} fill={active ? '#ffffff' : 'transparent'} />
+              <Icon size={21} strokeWidth={2} style={{ color: active ? 'var(--text-strong)' : 'var(--text-subtle)' }} fill={active ? 'var(--text-strong)' : 'transparent'} />
             )
           )
         )}
@@ -165,39 +165,39 @@ function NavItem({
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, zIndex: 1, position: 'relative' }}>
         {badge ? (
           <span style={{
-            background: badgeColor, color: '#ffffff',
+            background: badgeColor, color: 'var(--text-strong)',
             fontSize: 11, fontWeight: 700,
             padding: '0 7px', borderRadius: 4,
             height: 20, minWidth: 22,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 8px rgba(255, 255, 255, 0.4)',
-            border: '1px solid rgba(255, 255, 255, 0.5)',
+            boxShadow: '0 0 8px var(--neutral-40)',
+            border: '1px solid var(--neutral-50)',
             textShadow: '0 1px 2px rgba(0,0,0,0.8)'
           }}>
             {badge}
           </span>
         ) : null}
-        {RightIcon && <RightIcon size={14} style={{ color: '#555' }} />}
+        {RightIcon && <RightIcon size={14} style={{ color: 'var(--text-subtle)' }} />}
       </div>
     </Link>
   );
 }
 
 function SidebarDivider() {
-  return <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '16px 20px' }} />;
+  return <div style={{ height: 1, background: 'var(--neutral-06)', margin: '16px 20px' }} />;
 }
 
 // ── Modal overlay shared shell ────────────────────────────────────────────────
 
 const MODAL_OVERLAY_STYLE: React.CSSProperties = {
   position: 'fixed', inset: 0, zIndex: 9999,
-  background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+  background: 'var(--surface-scrim)', backdropFilter: 'blur(8px)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   padding: '20px 16px',
 };
 
 const MODAL_CARD_STYLE: React.CSSProperties = {
-  background: 'var(--bg-elev-2)', border: '1px solid rgba(255,255,255,0.1)',
+  background: 'var(--bg-elev-2)', border: '1px solid var(--neutral-10)',
   borderRadius: 24, padding: '32px',
   boxShadow: '0 24px 80px rgba(0,0,0,0.8)', margin: 'auto',
   fontFamily: 'var(--font-outfit), sans-serif',
@@ -220,7 +220,7 @@ function AdminLoginModal({
           <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,155,66,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FF9B42' }}>
             <Lock size={20} />
           </div>
-          <span style={{ color: '#fff', fontWeight: 600, fontSize: 18 }}>Acceso JUAN PABLO</span>
+          <span style={{ color: 'var(--text-strong)', fontWeight: 600, fontSize: 18 }}>Acceso JUAN PABLO</span>
         </div>
         <input
           ref={passwordRef}
@@ -231,19 +231,19 @@ function AdminLoginModal({
           placeholder="Contraseña de administrador"
           style={{
             width: '100%', padding: '14px 16px', borderRadius: 12,
-            background: '#0c0c0c', border: `1px solid ${error ? '#ff3366' : 'rgba(255,255,255,0.1)'}`,
-            color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box',
+            background: 'var(--surface-canvas)', border: `1px solid ${error ? 'var(--danger-strong)' : 'var(--neutral-10)'}`,
+            color: 'var(--text-strong)', fontSize: 15, outline: 'none', boxSizing: 'border-box',
             fontFamily: 'inherit',
           }}
         />
         {error && (
-          <div style={{ color: '#ff3366', fontSize: 13, marginTop: 8, fontWeight: 500 }}>Contraseña incorrecta</div>
+          <div style={{ color: 'var(--danger-strong)', fontSize: 13, marginTop: 8, fontWeight: 500 }}>Contraseña incorrecta</div>
         )}
         <button
           onClick={onSubmit}
           style={{
             marginTop: 24, width: '100%', padding: '14px',
-            background: '#5e6cff', color: '#fff', border: 'none',
+            background: '#5e6cff', color: 'var(--text-strong)', border: 'none',
             borderRadius: 12, fontWeight: 600, fontSize: 15, cursor: 'pointer',
             fontFamily: 'inherit', transition: 'transform 0.2s',
             boxShadow: '0 8px 24px rgba(94, 108, 255, 0.25)',
@@ -260,7 +260,7 @@ function AdminLoginModal({
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
-export default function Sidebar({ 
+export default function Sidebar({
   hidden,
   zoom,
   onZoomIn,
@@ -353,12 +353,12 @@ export default function Sidebar({
       }
     }
     const colors: Record<string, string> = {
-      'Nuevo': '#34d399', 'Contactado': '#60a5fa', 'Interesado': '#f59e0b',
-      'No responde': '#f87171', 'No interesa': '#a78bfa', 'Llamar': '#f472b6',
+      'Nuevo': 'var(--success)', 'Contactado': 'var(--info)', 'Interesado': 'var(--warning)',
+      'No responde': 'var(--danger)', 'No interesa': 'var(--violet)', 'Llamar': 'var(--pink)',
     };
     return Array.from(map.entries()).map(([name, count]) => ({
       name, count,
-      color: colors[name] || '#94a3b8',
+      color: colors[name] || 'var(--text-muted)',
     })).sort((a, b) => b.count - a.count);
   }, [registros]);
 
@@ -425,10 +425,10 @@ export default function Sidebar({
     position: 'absolute',
     left: 104,
     zIndex: 500,
-    background: 'rgba(14, 14, 18, 0.96)',
+    background: 'var(--surface-raised)',
     backdropFilter: 'blur(20px)',
     WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
+    border: '1px solid var(--neutral-12)',
     borderRadius: 16,
     padding: '16px',
     minWidth: 230,
@@ -472,14 +472,14 @@ export default function Sidebar({
               position: 'absolute', top: '50%', right: -24, zIndex: 300,
               transform: 'translateY(-50%)',
               background: 'var(--bg-elev-1)',
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-              borderRight: '1px solid rgba(255,255,255,0.1)',
-              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              borderTop: '1px solid var(--neutral-10)',
+              borderRight: '1px solid var(--neutral-10)',
+              borderBottom: '1px solid var(--neutral-10)',
               borderLeft: 'none',
               borderRadius: '0 12px 12px 0',
               width: 24, height: 56,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', cursor: 'pointer',
+              color: 'var(--text-strong)', cursor: 'pointer',
               boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
@@ -504,7 +504,7 @@ export default function Sidebar({
                 width: '100%',
                 minWidth: '100%',
                 background: 'var(--bg-elev-1)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid var(--neutral-08)',
                 borderRadius: '16px',
                 margin: 0,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -539,25 +539,25 @@ export default function Sidebar({
                     width: 60,
                     height: 60,
                     borderRadius: 16,
-                    background: '#10b981',
+                    background: 'var(--success-strong)',
                     border: 'none',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#09090b',
+                    color: 'var(--text-on-accent)',
                     cursor: 'pointer',
                     transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                     boxShadow: '0 4px 16px rgba(16, 185, 129, 0.35)',
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = '#059669';
-                    e.currentTarget.style.color = '#fff';
+                    e.currentTarget.style.color = 'var(--text-strong)';
                     e.currentTarget.style.transform = 'scale(1.05)';
                     e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.5)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.background = '#10b981';
-                    e.currentTarget.style.color = '#09090b';
+                    e.currentTarget.style.background = 'var(--success-strong)';
+                    e.currentTarget.style.color = 'var(--text-on-accent)';
                     e.currentTarget.style.transform = 'scale(1)';
                     e.currentTarget.style.boxShadow = '0 4px 16px rgba(16, 185, 129, 0.35)';
                   }}
@@ -566,10 +566,10 @@ export default function Sidebar({
                 </button>
                 {activeHover === 'nuevo' && (
                   <div style={{ ...flyoutStyle, top: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#34d399', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--success)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Nuevo Registro
                     </div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--neutral-60)', lineHeight: 1.4 }}>
                       Agregar un nuevo cliente o lead al sistema.
                     </div>
                   </div>
@@ -577,7 +577,7 @@ export default function Sidebar({
               </div>
             )}
 
-            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', marginBottom: 12 }} />
+            <div style={{ width: 60, height: 1, background: 'var(--neutral-08)', marginBottom: 12 }} />
             {/* 1. Registros */}
             <div
               onMouseEnter={() => handleMouseEnter('registros')}
@@ -595,23 +595,23 @@ export default function Sidebar({
                   height: 60,
                   borderRadius: 16,
                   background: pathname === '/registros' ? 'rgba(16, 185, 129, 0.18)' : 'transparent',
-                  border: pathname === '/registros' ? '1px solid #10b981' : '1px solid transparent',
+                  border: pathname === '/registros' ? '1px solid var(--success-strong)' : '1px solid transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: pathname === '/registros' ? '#34d399' : 'rgba(255, 255, 255, 0.65)',
+                  color: pathname === '/registros' ? 'var(--success)' : 'var(--neutral-65)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={e => {
                   if (pathname !== '/registros') {
-                    e.currentTarget.style.color = '#fff';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                    e.currentTarget.style.color = 'var(--text-strong)';
+                    e.currentTarget.style.background = 'var(--neutral-06)';
                   }
                 }}
                 onMouseLeave={e => {
                   if (pathname !== '/registros') {
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                    e.currentTarget.style.color = 'var(--neutral-65)';
                     e.currentTarget.style.background = 'transparent';
                   }
                 }}
@@ -626,7 +626,7 @@ export default function Sidebar({
                   onMouseLeave={handleMouseLeave}
                   style={{ ...flyoutStyle, top: 0, minWidth: 250 }}
                 >
-                  <div style={{ fontSize: 11, fontWeight: 900, color: '#34d399', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--success)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
                     Registros
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -636,19 +636,19 @@ export default function Sidebar({
                         if (pathname !== '/registros') router.push('/registros');
                       }}
                       style={{
-                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-                        color: '#fff', fontSize: 13, textAlign: 'left', padding: '8px 12px', borderRadius: 8,
+                        background: 'var(--neutral-02)', border: '1px solid var(--neutral-05)',
+                        color: 'var(--text-strong)', fontSize: 13, textAlign: 'left', padding: '8px 12px', borderRadius: 8,
                         cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8,
                         transition: 'all 0.2s ease'
                       }}
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.12)'; e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--neutral-02)'; e.currentTarget.style.borderColor = 'var(--neutral-05)'; }}
                     >
                       <span>📊</span> Todos los Registros
                     </button>
 
-                    <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 0' }} />
-                    <div style={{ fontSize: 10, fontWeight: 900, color: '#f472b6', padding: '2px 4px 4px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                    <div style={{ height: 1, background: 'var(--neutral-06)', margin: '6px 0' }} />
+                    <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--pink)', padding: '2px 4px 4px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
                       Clientes en Revisión
                     </div>
 
@@ -665,17 +665,17 @@ export default function Sidebar({
                           }}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: 'transparent', border: '1px solid transparent', color: 'rgba(255,255,255,0.7)',
+                            background: 'transparent', border: '1px solid transparent', color: 'var(--neutral-70)',
                             fontSize: 12, textAlign: 'left', padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
                             transition: 'all 0.15s ease'
                           }}
                           onMouseEnter={e => {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                            e.currentTarget.style.color = '#fff';
+                            e.currentTarget.style.background = 'var(--neutral-05)';
+                            e.currentTarget.style.color = 'var(--text-strong)';
                           }}
                           onMouseLeave={e => {
                             e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+                            e.currentTarget.style.color = 'var(--neutral-70)';
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -683,7 +683,7 @@ export default function Sidebar({
                             <span>{s.label}</span>
                           </div>
                           {count > 0 && (
-                            <span style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
+                            <span style={{ background: 'var(--neutral-08)', color: 'var(--text-strong)', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>
                               {count}
                             </span>
                           )}
@@ -693,12 +693,12 @@ export default function Sidebar({
 
                     {isAdmin && (
                       <>
-                        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 0' }} />
+                        <div style={{ height: 1, background: 'var(--neutral-06)', margin: '6px 0' }} />
                         <button
                           onClick={() => router.push('/duplicados')}
                           style={{
                             background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.15)',
-                            color: '#fbbf24', fontSize: 12, textAlign: 'left', padding: '7px 10px', borderRadius: 8,
+                            color: 'var(--warning)', fontSize: 12, textAlign: 'left', padding: '7px 10px', borderRadius: 8,
                             cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8,
                             transition: 'all 0.2s ease'
                           }}
@@ -714,7 +714,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'var(--neutral-08)', margin: '10px 0' }} />
 
             {/* 2. Reportes */}
             <div
@@ -730,23 +730,23 @@ export default function Sidebar({
                   height: 60,
                   borderRadius: 16,
                   background: pathname.includes('/reportes') || pathname.includes('/analistas') ? 'rgba(59, 130, 246, 0.18)' : 'transparent',
-                  border: pathname.includes('/reportes') || pathname.includes('/analistas') ? '1px solid #3b82f6' : '1px solid transparent',
+                  border: pathname.includes('/reportes') || pathname.includes('/analistas') ? '1px solid var(--info)' : '1px solid transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: pathname.includes('/reportes') || pathname.includes('/analistas') ? '#3b82f6' : 'rgba(255, 255, 255, 0.65)',
+                  color: pathname.includes('/reportes') || pathname.includes('/analistas') ? 'var(--info)' : 'var(--neutral-65)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={e => {
                   if (!pathname.includes('/reportes')) {
-                    e.currentTarget.style.color = '#fff';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                    e.currentTarget.style.color = 'var(--text-strong)';
+                    e.currentTarget.style.background = 'var(--neutral-06)';
                   }
                 }}
                 onMouseLeave={e => {
                   if (!pathname.includes('/reportes')) {
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                    e.currentTarget.style.color = 'var(--neutral-65)';
                     e.currentTarget.style.background = 'transparent';
                   }
                 }}
@@ -760,43 +760,43 @@ export default function Sidebar({
                   onMouseLeave={handleMouseLeave}
                   style={{ ...flyoutStyle, top: 0 }}
                 >
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#60a5fa', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--info)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Reportes
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <button
                       onClick={() => router.push('/analistas?analista=PDV')}
-                      style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 13, textAlign: 'left', padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-strong)', fontSize: 13, textAlign: 'left', padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--neutral-06)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                      <TrendingUp size={14} style={{ color: '#60a5fa' }} /> Reporte PDV
+                      <TrendingUp size={14} style={{ color: 'var(--info)' }} /> Reporte PDV
                     </button>
                     {analistaNombres.map(nombre => (
                       <button
                         key={nombre}
                         onClick={() => router.push(`/analistas?analista=${encodeURIComponent(nombre)}`)}
                         style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', fontSize: 12.5, textAlign: 'left', padding: '5px 8px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--neutral-06)'; e.currentTarget.style.color = 'var(--text-strong)'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-dim)'; }}
                       >
-                        <UserCheck size={14} style={{ color: 'rgba(255,255,255,0.4)' }} /> {nombre}
+                        <UserCheck size={14} style={{ color: 'var(--neutral-40)' }} /> {nombre}
                       </button>
                     ))}
                     <button
                       onClick={() => router.push('/reportes/cobranzas')}
-                      style={{ background: 'transparent', border: 'none', color: '#f59e0b', fontSize: 12.5, textAlign: 'left', padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--warning)', fontSize: 12.5, textAlign: 'left', padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}
                       onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.1)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                      <DollarSign size={14} style={{ color: '#f59e0b' }} /> Cobranzas
+                      <DollarSign size={14} style={{ color: 'var(--warning)' }} /> Cobranzas
                     </button>
                   </div>
                 </div>
               )}
             </div>
 
-            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'var(--neutral-08)', margin: '10px 0' }} />
 
             {/* 3. Filtros avanzados */}
             <div
@@ -821,19 +821,19 @@ export default function Sidebar({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: showFilters ? '#c084fc' : 'rgba(255, 255, 255, 0.65)',
+                  color: showFilters ? 'var(--violet)' : 'var(--neutral-65)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={e => {
                   if (!showFilters) {
-                    e.currentTarget.style.color = '#c084fc';
+                    e.currentTarget.style.color = 'var(--violet)';
                     e.currentTarget.style.background = 'rgba(168, 85, 247, 0.12)';
                   }
                 }}
                 onMouseLeave={e => {
                   if (!showFilters) {
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                    e.currentTarget.style.color = 'var(--neutral-65)';
                     e.currentTarget.style.background = 'transparent';
                   }
                 }}
@@ -844,7 +844,7 @@ export default function Sidebar({
 
               {activeHover === 'filtros' && !showFilters && (
                 <div style={{ ...flyoutStyle, top: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#c084fc', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--violet)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Filtros avanzados
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
@@ -857,7 +857,7 @@ export default function Sidebar({
             {/* 4. Recordatorios & Etiquetas */}
             {canSeeRecordatorios && (
               <>
-                <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+                <div style={{ width: 60, height: 1, background: 'var(--neutral-08)', margin: '10px 0' }} />
                 <div
                   onMouseEnter={() => handleMouseEnter('recordatorios')}
                   onMouseLeave={handleMouseLeave}
@@ -877,16 +877,16 @@ export default function Sidebar({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'rgba(255, 255, 255, 0.65)',
+                  color: 'var(--neutral-65)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.color = '#f59e0b';
+                  e.currentTarget.style.color = 'var(--warning)';
                   e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                  e.currentTarget.style.color = 'var(--neutral-65)';
                   e.currentTarget.style.background = 'transparent';
                 }}
               >
@@ -895,34 +895,34 @@ export default function Sidebar({
 
               {activeHover === 'recordatorios' && (
                 <div style={{ ...flyoutStyle, bottom: 0, minWidth: 280 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--warning)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Bell size={14} /> Recordatorios
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {recordatorios.length === 0 ? (
-                      <span style={{ fontStyle: 'italic', color: '#666' }}>Sin recordatorios pendientes</span>
+                      <span style={{ fontStyle: 'italic', color: 'var(--text-subtle)' }}>Sin recordatorios pendientes</span>
                     ) : (
                       recordatorios.slice(0, 5).map(rec => (
-                        <div key={rec.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <Bell size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                        <div key={rec.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: '1px solid var(--neutral-04)' }}>
+                          <Bell size={12} style={{ color: 'var(--warning)', flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ color: '#fff', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nombre}</div>
-                            {rec.nota && <div style={{ color: '#888', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nota}</div>}
+                            <div style={{ color: 'var(--text-strong)', fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nombre}</div>
+                            {rec.nota && <div style={{ color: 'var(--text-muted)', fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rec.nota}</div>}
                           </div>
-                          <div style={{ fontSize: 10, color: '#888', whiteSpace: 'nowrap' }}>{rec.fecha_hora ? new Date(rec.fecha_hora).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) : ''}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{rec.fecha_hora ? new Date(rec.fecha_hora).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }) : ''}</div>
                         </div>
                       ))
                     )}
                     {recordatorios.length > 5 && (
-                      <div style={{ fontSize: 11, color: '#888', textAlign: 'center', marginTop: 2 }}>+{recordatorios.length - 5} más</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 2 }}>+{recordatorios.length - 5} más</div>
                     )}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#818cf8', margin: '14px 0 8px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--violet)', margin: '14px 0 8px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Tag size={14} /> Etiquetas
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                     {etiquetasList.length === 0 ? (
-                      <span style={{ fontStyle: 'italic', color: '#666', fontSize: 12 }}>Sin etiquetas</span>
+                      <span style={{ fontStyle: 'italic', color: 'var(--text-subtle)', fontSize: 12 }}>Sin etiquetas</span>
                     ) : (
                       etiquetasList.map(et => (
                         <span key={et.name} style={{
@@ -941,7 +941,7 @@ export default function Sidebar({
           </>
         )}
 
-            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'var(--neutral-08)', margin: '10px 0' }} />
 
             {/* 5. Mostrar */}
             <div
@@ -960,12 +960,12 @@ export default function Sidebar({
                   width: 60,
                   height: 60,
                   borderRadius: 16,
-                  background: 'rgba(255, 255, 255, 0.03)',
+                  background: 'var(--neutral-03)',
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#34d399',
+                  color: 'var(--success)',
                   fontWeight: 800,
                   fontSize: 18,
                   cursor: 'pointer',
@@ -976,7 +976,7 @@ export default function Sidebar({
                   e.currentTarget.style.transform = 'scale(1.05)';
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                  e.currentTarget.style.background = 'var(--neutral-03)';
                   e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
@@ -985,7 +985,7 @@ export default function Sidebar({
 
               {activeHover === 'mostrar' && (
                 <div style={{ ...flyoutStyle, top: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#34d399', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--success)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Mostrar Registros
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
@@ -1015,23 +1015,23 @@ export default function Sidebar({
                     height: 60,
                     borderRadius: 16,
                     background: showCalculator ? 'rgba(0, 212, 255, 0.2)' : 'transparent',
-                    border: showCalculator ? '1px solid #00d4ff' : '1px solid transparent',
+                    border: showCalculator ? '1px solid var(--accent)' : '1px solid transparent',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: showCalculator ? '#00d4ff' : 'rgba(255, 255, 255, 0.65)',
+                    color: showCalculator ? 'var(--accent)' : 'var(--neutral-65)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                   }}
                   onMouseEnter={e => {
                     if (!showCalculator) {
-                      e.currentTarget.style.color = '#fff';
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                      e.currentTarget.style.color = 'var(--text-strong)';
+                      e.currentTarget.style.background = 'var(--neutral-06)';
                     }
                   }}
                   onMouseLeave={e => {
                     if (!showCalculator) {
-                      e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                      e.currentTarget.style.color = 'var(--neutral-65)';
                       e.currentTarget.style.background = 'transparent';
                     }
                   }}
@@ -1041,7 +1041,7 @@ export default function Sidebar({
 
                 {activeHover === 'calculadora' && !showCalculator && (
                   <div style={{ ...flyoutStyle, bottom: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#00d4ff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Calculadora
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
@@ -1071,16 +1071,16 @@ export default function Sidebar({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'rgba(255, 255, 255, 0.65)',
+                    color: 'var(--neutral-65)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                   }}
                   onMouseEnter={e => {
-                    e.currentTarget.style.color = '#10b981';
+                    e.currentTarget.style.color = 'var(--success-strong)';
                     e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
+                    e.currentTarget.style.color = 'var(--neutral-65)';
                     e.currentTarget.style.background = 'transparent';
                   }}
                 >
@@ -1089,7 +1089,7 @@ export default function Sidebar({
 
                 {activeHover === 'xlsx' && (
                   <div style={{ ...flyoutStyle, bottom: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#10b981', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--success-strong)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Descargar XLSX
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4 }}>
@@ -1116,24 +1116,24 @@ export default function Sidebar({
                   width: 60,
                   height: 60,
                   borderRadius: 16,
-                  background: pathname.startsWith('/ajustes') ? 'rgba(255,255,255,0.1)' : simulatedAnalista ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+                  background: pathname.startsWith('/ajustes') ? 'var(--neutral-10)' : simulatedAnalista ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
                   border: simulatedAnalista ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: simulatedAnalista ? '#c084fc' : 'rgba(255, 255, 255, 0.65)',
+                  color: simulatedAnalista ? 'var(--violet)' : 'var(--neutral-65)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.color = simulatedAnalista ? '#e9d5ff' : '#fff')}
-                onMouseLeave={e => (e.currentTarget.style.color = simulatedAnalista ? '#c084fc' : 'rgba(255, 255, 255, 0.65)')}
+                onMouseEnter={e => (e.currentTarget.style.color = simulatedAnalista ? '#e9d5ff' : 'var(--text-strong)')}
+                onMouseLeave={e => (e.currentTarget.style.color = simulatedAnalista ? 'var(--violet)' : 'var(--neutral-65)')}
               >
                 {realIsAdmin ? (simulatedAnalista ? <User size={28} /> : <Settings size={32} />) : <Lock size={32} />}
               </button>
 
               {activeHover === 'ajustes' && (
                 <div style={{ ...flyoutStyle, bottom: 0, minWidth: realIsAdmin ? 250 : 200 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: simulatedAnalista ? '#c084fc' : '#fff', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: simulatedAnalista ? 'var(--violet)' : 'var(--text-strong)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {simulatedAnalista ? `Simulando: ${simulatedAnalista}` : realIsAdmin ? 'Ajustes' : 'ACCESO'}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.4, marginBottom: realIsAdmin ? 12 : 0 }}>
@@ -1143,8 +1143,8 @@ export default function Sidebar({
                   </div>
 
                   {realIsAdmin && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '10px' }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--neutral-08)', paddingTop: '10px' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Probar vista como analista
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
@@ -1157,8 +1157,8 @@ export default function Sidebar({
                             fontSize: '11px',
                             fontWeight: 700,
                             cursor: 'pointer',
-                            background: !simulatedAnalista ? 'rgba(0, 212, 255, 0.2)' : 'rgba(255,255,255,0.04)',
-                            color: !simulatedAnalista ? '#00d4ff' : '#aaa',
+                            background: !simulatedAnalista ? 'rgba(0, 212, 255, 0.2)' : 'var(--neutral-04)',
+                            color: !simulatedAnalista ? 'var(--accent)' : 'var(--text-muted)',
                             border: `1px solid ${!simulatedAnalista ? 'rgba(0, 212, 255, 0.4)' : 'transparent'}`,
                           }}
                         >
@@ -1177,8 +1177,8 @@ export default function Sidebar({
                                 fontSize: '11px',
                                 fontWeight: 700,
                                 cursor: 'pointer',
-                                background: isSim ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255,255,255,0.04)',
-                                color: isSim ? '#c084fc' : '#aaa',
+                                background: isSim ? 'rgba(168, 85, 247, 0.25)' : 'var(--neutral-04)',
+                                color: isSim ? 'var(--violet)' : 'var(--text-muted)',
                                 border: `1px solid ${isSim ? 'rgba(168, 85, 247, 0.5)' : 'transparent'}`,
                               }}
                             >
@@ -1198,7 +1198,7 @@ export default function Sidebar({
                           gap: '6px',
                           background: 'transparent',
                           border: 'none',
-                          color: '#f87171',
+                          color: 'var(--danger)',
                           fontSize: '11.5px',
                           fontWeight: 700,
                           cursor: 'pointer',
@@ -1215,20 +1215,20 @@ export default function Sidebar({
             </div>
 
             {/* 9. Zoom controls */}
-            <div style={{ width: 60, height: 1, background: 'rgba(255, 255, 255, 0.08)', margin: '10px 0' }} />
+            <div style={{ width: 60, height: 1, background: 'var(--neutral-08)', margin: '10px 0' }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
               <button
                 onClick={onZoomIn}
                 title="Acercar (Ctrl++)"
                 style={{
                   width: 60, height: 36, borderRadius: 12,
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'var(--neutral-03)', border: '1px solid var(--neutral-06)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+                  color: 'var(--neutral-50)', cursor: 'pointer',
                   transition: 'all 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-strong)'; e.currentTarget.style.background = 'var(--neutral-08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--neutral-50)'; e.currentTarget.style.background = 'var(--neutral-03)'; }}
               >
                 <ZoomIn size={18} />
               </button>
@@ -1238,13 +1238,13 @@ export default function Sidebar({
                 style={{
                   width: 60, height: 24,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'rgba(255,255,255,0.4)', cursor: 'pointer',
+                  color: 'var(--neutral-40)', cursor: 'pointer',
                   fontSize: 11, fontWeight: 700, transition: 'all 0.2s',
-                  borderTop: '1px solid rgba(255,255,255,0.06)',
-                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  borderTop: '1px solid var(--neutral-06)',
+                  borderBottom: '1px solid var(--neutral-06)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-strong)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--neutral-40)'; }}
               >
                 {zoom ? Math.round(zoom * 100) : 100}%
               </div>
@@ -1253,13 +1253,13 @@ export default function Sidebar({
                 title="Alejar (Ctrl+-)"
                 style={{
                   width: 60, height: 36, borderRadius: 12,
-                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'var(--neutral-03)', border: '1px solid var(--neutral-06)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
+                  color: 'var(--neutral-50)', cursor: 'pointer',
                   transition: 'all 0.2s',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-strong)'; e.currentTarget.style.background = 'var(--neutral-08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--neutral-50)'; e.currentTarget.style.background = 'var(--neutral-03)'; }}
               >
                 <ZoomOut size={18} />
               </button>
@@ -1274,7 +1274,7 @@ export default function Sidebar({
               width: '100%',
               display: 'flex', flexDirection: 'column',
               background: 'var(--bg-elev-1)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid var(--neutral-08)',
               borderRadius: '16px',
               margin: 0,
               boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -1285,7 +1285,7 @@ export default function Sidebar({
                 padding: '18px 20px 14px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
-                <span style={{ fontSize: '20px', fontWeight: 600, color: '#ffffff' }}>Filtros Avanzados</span>
+                <span style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-strong)' }}>Filtros Avanzados</span>
                 <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
                   <X size={20} />
                 </button>
@@ -1304,7 +1304,7 @@ export default function Sidebar({
               width: '100%',
               display: 'flex', flexDirection: 'column',
               background: 'var(--bg-elev-1)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid var(--neutral-08)',
               borderRadius: '16px',
               margin: 0,
               boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -1315,7 +1315,7 @@ export default function Sidebar({
                 padding: '18px 20px 14px',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
-                <span style={{ fontSize: '17px', fontWeight: 600, color: '#ffffff' }}>Calculadora Sucursal B</span>
+                <span style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-strong)' }}>Calculadora Sucursal B</span>
                 <button onClick={() => setShowCalculator(false)} style={{ background: 'transparent', border: 'none', color: '#90929a', cursor: 'pointer' }}>
                   <X size={20} />
                 </button>
@@ -1367,7 +1367,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
 
   const optStyle = (active: boolean): React.CSSProperties => ({
     padding: '10px 10px', fontSize: '16px', borderRadius: '6px', cursor: 'pointer', margin: '2px 0',
-    color: active ? '#10b981' : '#eaeaea',
+    color: active ? 'var(--success-strong)' : 'var(--text-strong)',
     background: active ? 'rgba(16,185,129,0.1)' : 'transparent',
     transition: 'background 0.15s'
   });
@@ -1384,10 +1384,10 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           width: '100%', height: 42, padding: '0 12px',
-          background: 'rgba(255,255,255,0.03)',
-          border: `1px solid ${isOpen ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+          background: 'var(--neutral-03)',
+          border: `1px solid ${isOpen ? 'rgba(16,185,129,0.4)' : 'var(--neutral-08)'}`,
           borderRadius: '8px', fontSize: '16.5px',
-          color: value ? '#eaeaea' : '#8f929d',
+          color: value ? 'var(--text-strong)' : 'var(--text-muted)',
           cursor: 'pointer', outline: 'none', transition: 'all 0.2s'
         }}
       >
@@ -1398,17 +1398,17 @@ const CustomSelect = ({ value, onChange, options, placeholder }: {
       {isOpen && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
-          background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px',
+          background: 'var(--surface-canvas)', border: '1px solid var(--neutral-10)', borderRadius: '10px',
           boxShadow: '0 8px 30px rgba(0,0,0,0.6)', zIndex: 1000, padding: '4px',
           maxHeight: 240, overflowY: 'auto'
         }}>
           <div onClick={() => select('')} style={optStyle(value === '')}
-            onMouseEnter={e => { if (value !== '') e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+            onMouseEnter={e => { if (value !== '') e.currentTarget.style.background = 'var(--neutral-04)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = value === '' ? 'rgba(16,185,129,0.1)' : 'transparent'; }}
           >{placeholder}</div>
           {options.map(opt => (
             <div key={opt} onClick={() => select(opt)} style={optStyle(opt === value)}
-              onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+              onMouseEnter={e => { if (opt !== value) e.currentTarget.style.background = 'var(--neutral-04)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = opt === value ? 'rgba(16,185,129,0.1)' : 'transparent'; }}
             >{opt}</div>
           ))}
@@ -1430,15 +1430,15 @@ const FiltersContent = () => {
 
   const chipStyle = (active: boolean) => ({
     padding: '6px 10px', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
-    background: active ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)',
-    color: active ? '#10b981' : '#8f929d',
-    border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.06)'}`,
+    background: active ? 'rgba(16, 185, 129, 0.15)' : 'var(--neutral-02)',
+    color: active ? 'var(--success-strong)' : 'var(--text-muted)',
+    border: `1px solid ${active ? 'rgba(16, 185, 129, 0.3)' : 'var(--neutral-06)'}`,
     transition: 'all 0.2s', textAlign: 'center', display: 'block', width: '100%', boxSizing: 'border-box',
     overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   } as React.CSSProperties);
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '6px', lineHeight: 1.05 };
-  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', fontSize: '16.5px' };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: 'var(--text-strong)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '6px', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'var(--neutral-03)', border: '1px solid var(--neutral-08)', borderRadius: '10px', fontSize: '16.5px' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', gap: '10px', paddingBottom: '4px' }}>
@@ -1448,7 +1448,7 @@ const FiltersContent = () => {
           placeholder="Nombre, CUIL..."
           value={filters.search}
           onChange={e => setFilter('search', e.target.value)}
-          style={{ ...fieldBase, width: '100%', height: 42, padding: '0 12px', color: '#eaeaea', outline: 'none' }}
+          style={{ ...fieldBase, width: '100%', height: 42, padding: '0 12px', color: 'var(--text-strong)', outline: 'none' }}
         />
       </div>
 
@@ -1472,9 +1472,9 @@ const FiltersContent = () => {
             onClick={() => setFilter('esRe', filters.esRe === 'si' ? '' : 'si')}
             style={{
               padding: '6px 10px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
-              background: filters.esRe === 'si' ? 'rgba(167,139,250,0.18)' : 'rgba(255,255,255,0.02)',
-              color: filters.esRe === 'si' ? '#a78bfa' : '#8f929d',
-              border: `1px solid ${filters.esRe === 'si' ? 'rgba(167,139,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
+              background: filters.esRe === 'si' ? 'rgba(167,139,250,0.18)' : 'var(--neutral-02)',
+              color: filters.esRe === 'si' ? 'var(--violet)' : 'var(--text-muted)',
+              border: `1px solid ${filters.esRe === 'si' ? 'rgba(167,139,250,0.4)' : 'var(--neutral-06)'}`,
               transition: 'all 0.2s', textAlign: 'center', display: 'block', width: '100%', boxSizing: 'border-box',
               overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
             }}
@@ -1487,31 +1487,31 @@ const FiltersContent = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
           {allAcuerdos.length > 0 ? allAcuerdos.map(a => (
             <span key={a} onClick={() => toggleAcuerdoPrecios(a)} style={chipStyle(filters.acuerdoPrecios.includes(a))}>{a}</span>
-          )) : <span style={{ fontSize: '11px', color: '#64748b' }}>Sin acuerdos registrados</span>}
+          )) : <span style={{ fontSize: '11px', color: 'var(--text-subtle)' }}>Sin acuerdos registrados</span>}
         </div>
       </div>
 
       <div>
         <label style={secLabel}>SCORE MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', textAlign: 'center' }} />
-          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', textAlign: 'center' }} />
+          <input type="number" placeholder="Mín" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: 'var(--text-strong)', outline: 'none', textAlign: 'center' }} />
+          <input type="number" placeholder="Máx" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: 'var(--text-strong)', outline: 'none', textAlign: 'center' }} />
         </div>
       </div>
 
       <div>
         <label style={secLabel}>MONTO MIN/MAX</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', textAlign: 'center' }} />
-          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', textAlign: 'center' }} />
+          <input type="number" placeholder="Mín" value={filters.montoMin} onChange={e => setFilter('montoMin', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: 'var(--text-strong)', outline: 'none', textAlign: 'center' }} />
+          <input type="number" placeholder="Máx" value={filters.montoMax} onChange={e => setFilter('montoMax', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: 'var(--text-strong)', outline: 'none', textAlign: 'center' }} />
         </div>
       </div>
 
       <div>
         <label style={secLabel}>PERÍODO</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', colorScheme: 'dark', textAlign: 'center' }} />
-          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: '#eaeaea', outline: 'none', colorScheme: 'dark', textAlign: 'center' }} />
+          <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: 'var(--text-strong)', outline: 'none', colorScheme: 'light', textAlign: 'center' }} />
+          <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ ...fieldBase, flex: 1, minWidth: 0, padding: '6px 12px', color: 'var(--text-strong)', outline: 'none', colorScheme: 'light', textAlign: 'center' }} />
         </div>
       </div>
 
@@ -1520,7 +1520,7 @@ const FiltersContent = () => {
         disabled={!hayFiltros}
         style={{
           width: '100%', padding: '10px', background: 'rgba(248,113,113,0.06)',
-          border: '1px solid rgba(248,113,113,0.12)', color: '#ff3366', borderRadius: '10px',
+          border: '1px solid rgba(248,113,113,0.12)', color: 'var(--danger-strong)', borderRadius: '10px',
           fontSize: '13px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px',
           cursor: hayFiltros ? 'pointer' : 'not-allowed', opacity: hayFiltros ? 1 : 0.45,
           transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
@@ -1549,7 +1549,7 @@ const CalculadoraContent = () => {
   const calculate = (type: string, val: string) => {
     const pct = parseFloat(val);
     if (isNaN(pct) || pct < 80) return 0;
-    
+
     const values: Record<string, { c1: number; c2: number; c3: number }> = {
       capital: { c1: 62055, c2: 93703, c3: 141492 },
       operacion: { c1: 42836, c2: 64682, c3: 97671 },
@@ -1575,30 +1575,30 @@ const CalculadoraContent = () => {
   const comisiones = Object.values(results).reduce((s, v) => s + v, 0);
   const totalGeneral = comisiones + SUELDO_FIJO;
 
-  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: '#ffffff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '6px', lineHeight: 1.05 };
-  const fieldBase: React.CSSProperties = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', fontSize: '16.5px' };
+  const secLabel: React.CSSProperties = { display: 'inline-block', fontSize: '13px', color: 'var(--text-strong)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.9px', marginBottom: '6px', lineHeight: 1.05 };
+  const fieldBase: React.CSSProperties = { background: 'var(--neutral-03)', border: '1px solid var(--neutral-08)', borderRadius: '8px', fontSize: '16.5px' };
 
   const inputRow = (label: string, key: keyof typeof pacts) => (
     <div style={{
-      background: 'rgba(255,255,255,0.015)',
+      background: 'var(--neutral-02)',
       padding: '12px 14px',
       borderRadius: '12px',
-      border: '1px solid rgba(255,255,255,0.03)',
+      border: '1px solid var(--neutral-03)',
       transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
     }}
-    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.015)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)'; e.currentTarget.style.transform = 'none'; }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'var(--neutral-03)'; e.currentTarget.style.borderColor = 'var(--neutral-08)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'var(--neutral-02)'; e.currentTarget.style.borderColor = 'var(--neutral-03)'; e.currentTarget.style.transform = 'none'; }}
     >
-      <label style={{ display: 'block', fontSize: '9.5px', color: '#9ca3af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>{label} (%)</label>
+      <label style={{ display: 'block', fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>{label} (%)</label>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <input
           type="number"
           placeholder="0"
           value={pacts[key]}
           onChange={e => setPacts(p => ({ ...p, [key]: e.target.value }))}
-          style={{ ...fieldBase, width: '70px', height: 38, textAlign: 'center', color: '#fff', outline: 'none', fontWeight: 600, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)' }}
+          style={{ ...fieldBase, width: '70px', height: 38, textAlign: 'center', color: 'var(--text-strong)', outline: 'none', fontWeight: 600, background: 'var(--surface-subtle)', border: '1px solid var(--neutral-06)' }}
         />
-        <div style={{ flex: 1, textAlign: 'right', fontSize: 13.5, fontWeight: 700, color: results[key] > 0 ? '#34d399' : '#4b5563', transition: 'color 0.2s' }}>
+        <div style={{ flex: 1, textAlign: 'right', fontSize: 13.5, fontWeight: 700, color: results[key] > 0 ? 'var(--success)' : '#4b5563', transition: 'color 0.2s' }}>
           {results[key] > 0 ? `$ ${results[key].toLocaleString('es-AR')}` : '—'}
         </div>
       </div>
@@ -1608,7 +1608,7 @@ const CalculadoraContent = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '4px' }}>
       <div>
-        <label style={{ ...secLabel, color: '#fb923c', backgroundImage: 'linear-gradient(90deg, rgba(251,146,60,0.5), rgba(251,146,60,0))' }}>VENTA</label>
+        <label style={{ ...secLabel, color: 'var(--orange)', backgroundImage: 'linear-gradient(90deg, rgba(251,146,60,0.5), rgba(251,146,60,0))' }}>VENTA</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {inputRow('Capital', 'capital')}
           {inputRow('Operación', 'operacion')}
@@ -1616,7 +1616,7 @@ const CalculadoraContent = () => {
       </div>
 
       <div>
-        <label style={{ ...secLabel, color: '#00d4ff', backgroundImage: 'linear-gradient(90deg, rgba(0,212,255,0.5), rgba(0,212,255,0))' }}>COBRANZAS</label>
+        <label style={{ ...secLabel, color: 'var(--accent)', backgroundImage: 'linear-gradient(90deg, rgba(0,212,255,0.5), rgba(0,212,255,0))' }}>COBRANZAS</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {inputRow('Recupero 90-119', 'recupero90')}
           {inputRow('Recupero 120-209', 'recupero120')}
@@ -1624,24 +1624,24 @@ const CalculadoraContent = () => {
         </div>
       </div>
 
-      <div style={{ marginTop: 'auto', padding: '18px 16px', background: 'rgba(0,0,0,0.15)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
+      <div style={{ marginTop: 'auto', padding: '18px 16px', background: 'var(--neutral-03)', borderRadius: '16px', border: '1px solid var(--neutral-04)', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sueldo Fijo</span>
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: '#e5e7eb' }}>$ {SUELDO_FIJO.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-        </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 10.5, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comisiones</span>
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: '#34d399' }}>$ {comisiones.toLocaleString('es-AR')}</span>
+          <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sueldo Fijo</span>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text-default)' }}>$ {SUELDO_FIJO.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
         </div>
 
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Comisiones</span>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--success)' }}>$ {comisiones.toLocaleString('es-AR')}</span>
+        </div>
+
+        <div style={{ height: 1, background: 'var(--neutral-06)', margin: '4px 0' }} />
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 900, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Cobrar</span>
-          <span style={{ fontSize: 19, fontWeight: 900, background: 'linear-gradient(135deg, #ffffff, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>$ {totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+          <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-strong)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Cobrar</span>
+          <span style={{ fontSize: 19, fontWeight: 900, background: 'linear-gradient(135deg, var(--text-strong), var(--violet))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>$ {totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
         </div>
-        <div style={{ fontSize: 9.5, color: '#6b7280', textAlign: 'right', fontWeight: 600, marginTop: '2px', letterSpacing: '0.5px' }}>SUCURSAL B</div>
+        <div style={{ fontSize: 9.5, color: 'var(--text-subtle)', textAlign: 'right', fontWeight: 600, marginTop: '2px', letterSpacing: '0.5px' }}>SUCURSAL B</div>
       </div>
     </div>
   );
