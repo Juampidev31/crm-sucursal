@@ -1320,6 +1320,7 @@ iframe::-webkit-scrollbar {
 .records-cell__empty, .records-cell--amount.is-empty { color: #8b98ad; }
 .records-cell--amount { white-space: nowrap; }
 .records-cell--state { text-align: left; }
+.records-calif-badge { max-width: 150px; font-size: 10px; letter-spacing: .2px; text-transform: capitalize; background: #f4f7fa; color: #31415c; }
 .records-state-type { min-width: 112px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 2px 0; line-height: 1.15; text-align: center; }
 .records-state-type__primary { color: #1c2942; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .records-state-type__secondary { font-size: 9px; font-weight: 700; letter-spacing: .25px; text-transform: uppercase; white-space: nowrap; }

@@ -1826,17 +1826,27 @@ export default function RegistrosPage() {
           {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
         </td>
 
-        {/* Estado / Tipo */}
+        {/* Calif. — el estado del registro, en columna propia. Antes se perdía: la celda
+            combinada mostraba `tipo_cliente || estado`, de modo que el estado quedaba
+            invisible en los registros que tienen ambos campos. */}
+        <td className="records-cell records-cell--center">
+          {reg.estado ? (
+            <span className="status-badge records-calif-badge">
+              {reg.estado.toLowerCase().replace(/(^|\s|\/)([a-záéíóúñ])/g, (_m, p1, p2) => `${p1}${p2.toUpperCase()}`)}
+            </span>
+          ) : (
+            <span className="records-cell__empty">—</span>
+          )}
+        </td>
+
+        {/* Tipo / Acuerdo */}
         <td className="records-cell records-cell--state">
           {(() => {
             const score = Number(reg.puntaje || 0);
             const level = score > 700 ? 'alta' : score >= 550 ? 'media' : 'baja';
-            const estado = reg.tipo_cliente || (reg.estado
-              ? reg.estado.toLowerCase().replace(/(^|\s|\/)([a-záéíóúñ])/g, (_m, p1, p2) => `${p1}${p2.toUpperCase()}`)
-              : '—');
             return (
               <div className={`records-state-type is-${level}`}>
-                <span className="records-state-type__primary">{estado}</span>
+                <span className="records-state-type__primary">{reg.tipo_cliente || '—'}</span>
                 <span className="records-state-type__secondary">{reg.acuerdo_precios || 'Sin acuerdo'}</span>
               </div>
             );
@@ -2319,7 +2329,7 @@ export default function RegistrosPage() {
             <table className="records-data-table">
               <thead>
                 <tr>
-                  {['Cliente | CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Estado / Tipo', 'Acciones'].map((h, i) => (
+                  {['Cliente | CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
                     <th key={i}>{h}</th>
                   ))}
                 </tr>
