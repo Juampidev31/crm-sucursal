@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import styles from './AjustesPage.module.css';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
@@ -8,7 +9,7 @@ import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useHistorico } from '@/features/historico/HistoricoProvider';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useToast } from '@/hooks/useToast';
-import { CONFIG, HistoricoVenta, LISTA_PERMISOS_ROLES, getPermisoOverride } from '@/types';
+import { AlertaConfig, CONFIG, HistoricoVenta, LISTA_PERMISOS_ROLES, getPermisoOverride } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
 import CustomSelect from '@/components/CustomSelect';
 import {
@@ -21,7 +22,7 @@ import {
 import dynamic from 'next/dynamic';
 
 const TabFallback = () => (
-  <div style={{ padding: 24, color: 'var(--gris)', fontSize: 13, fontFamily: "'Outfit', sans-serif" }}>
+  <div className={[styles["uPadding24px"], styles["uColortext-primary"], styles["uFontSize13px"], styles.uFontFamilyUi].join(' ')}>
     Cargando…
   </div>
 );
@@ -40,9 +41,11 @@ const DiasHabilesTab    = dynamic(() => import('./DiasHabilesTab').then(m => m.D
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
+import { fetchAllRows } from '@/lib/supabase-paginate';
+import { normalizarNombreKey } from '@/lib/registro-stats';
 
-type DiasEntry = { dias_habiles: number | string; dias_transcurridos: number | string };
 type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
+
 type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
 type ConfigSubTab = 'alertas' | 'dias' | 'permisos' | 'analistas';
 type ReportesSubTab = 'historico' | 'comparativa' | 'resumen-mensual' | 'calif-score';
@@ -66,22 +69,13 @@ function SubTabBar<T extends string>({ tabs, active, onSelect }: {
   onSelect: (id: T) => void;
 }) {
   return (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+    <div className={styles.subTabBar}>
       {tabs.map(t => (
-        <button
+        <button className={`${styles.subTab}${active === t.id ? ` ${styles.subTabActive}` : ''}`}
           key={t.id}
           onClick={() => onSelect(t.id)}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 14px', borderRadius: 6,
-            background: active === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
-            border: `1px solid ${active === t.id ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)'}`,
-            color: active === t.id ? '#fff' : 'var(--gris)',
-            fontFamily: "'Outfit', sans-serif", fontSize: 12, fontWeight: active === t.id ? 700 : 500,
-            cursor: 'pointer',
-          }}
         >
-          <t.icon size={13} style={{ opacity: active === t.id ? 1 : 0.7 }} />
+          <t.icon size={14} />
           {t.label}
         </button>
       ))}
@@ -93,59 +87,59 @@ function SubTabBar<T extends string>({ tabs, active, onSelect }: {
 const fmtFechasISO = (v: any) => String(v ?? '').replace(/\d{4}-\d{2}-\d{2}/g, (m) => formatDate(m));
 
 const renderDetalleAudit = (reg: any) => {
-  if (reg.accion === 'Creación') return <span style={{ color: '#888' }}>Nuevo registro</span>;
-  if (reg.accion === 'Eliminación') return <span style={{ color: '#888' }}>Registro eliminado</span>;
+  if (reg.accion === 'Creación') return <span className={[styles["uColortext-muted"]].join(' ')}>Nuevo registro</span>;
+  if (reg.accion === 'Eliminación') return <span className={[styles["uColortext-muted"]].join(' ')}>Registro eliminado</span>;
   if (reg.valor_anterior || reg.valor_nuevo) {
     const campos = String(reg.campo_modificado || '').split(',').map((s: string) => s.trim()).filter(Boolean);
     const anteriores = String(reg.valor_anterior || '').split('|').map((s: string) => s.trim());
     const nuevos = String(reg.valor_nuevo || '').split('|').map((s: string) => s.trim());
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '11px' }}>
+      <div className={[styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uGap4px"], styles["uFontSize11px"]].join(' ')}>
         {campos.map((campo, idx) => {
           const ant = fmtFechasISO(anteriores[idx] ?? '');
           const nue = fmtFechasISO(nuevos[idx] ?? '');
           return (
-            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ color: '#666', fontWeight: 600 }}>{campo}:</span>
-              {ant && <span style={{ color: '#ff3366' }}>{ant}</span>}
+            <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap6px"], styles["uFlexWrapwrap"]].join(' ')} key={idx}>
+              <span className={[styles["uColortext-muted"], styles["uFontWeight600"]].join(' ')}>{campo}:</span>
+              {ant && <span className={[styles["uColorff3366"]].join(' ')}>{ant}</span>}
               {ant && nue && <ArrowRight size={10} color="#666" />}
-              {nue && <span style={{ color: '#22c55e' }}>{nue}</span>}
+              {nue && <span className={[styles["uColor22c55e"]].join(' ')}>{nue}</span>}
             </div>
           );
         })}
       </div>
     );
   }
-  return <span style={{ color: '#888' }}>{reg.campo_modificado || '—'}</span>;
+  return <span className={[styles["uColortext-muted"]].join(' ')}>{reg.campo_modificado || '—'}</span>;
 };
 
 // Detalle desglosado campo por campo (usado en el modal de historial).
 // campo_modificado viene como "Campo1, Campo2" y los valores como "v1 | v2".
 const renderCamposAudit = (reg: any) => {
-  if (reg.accion === 'Creación') return <span style={{ color: '#888', fontSize: 15 }}>Nuevo registro</span>;
-  if (reg.accion === 'Eliminación') return <span style={{ color: '#888', fontSize: 15 }}>Registro eliminado</span>;
+  if (reg.accion === 'Creación') return <span className={[styles["uColortext-muted"], styles["uFontSize15px"]].join(' ')}>Nuevo registro</span>;
+  if (reg.accion === 'Eliminación') return <span className={[styles["uColortext-muted"], styles["uFontSize15px"]].join(' ')}>Registro eliminado</span>;
 
   const campos = String(reg.campo_modificado || '').split(',').map((s: string) => s.trim()).filter(Boolean);
   const anteriores = String(reg.valor_anterior || '').split('|').map((s: string) => s.trim());
   const nuevos = String(reg.valor_nuevo || '').split('|').map((s: string) => s.trim());
 
-  if (campos.length === 0) return <span style={{ color: '#888', fontSize: 15 }}>—</span>;
+  if (campos.length === 0) return <span className={[styles["uColortext-muted"], styles["uFontSize15px"]].join(' ')}>—</span>;
 
   // Si el valor es una fecha ISO (YYYY-MM-DD) la muestra como DD/MM/AAAA.
   const fmtVal = (v: string) => (/^\d{4}-\d{2}-\d{2}/.test(v) ? formatDate(v) : v);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className={[styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uGap10px"]].join(' ')}>
       {campos.map((campo, idx) => {
         const ant = fmtVal(anteriores[idx] ?? '');
         const nue = fmtVal(nuevos[idx] ?? '');
         return (
-          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 15, flexWrap: 'wrap' }}>
-            <span style={{ color: '#888', fontWeight: 700, minWidth: 100 }}>{campo}:</span>
-            {ant && <span style={{ color: '#ff3366' }}>{ant}</span>}
+          <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap10px"], styles["uFontSize15px"], styles["uFlexWrapwrap"]].join(' ')} key={idx}>
+            <span className={[styles["uColortext-muted"], styles["uFontWeight700"], styles["uMinWidth100px"]].join(' ')}>{campo}:</span>
+            {ant && <span className={[styles["uColorff3366"]].join(' ')}>{ant}</span>}
             {ant && nue && <ArrowRight size={15} color="#666" />}
-            {nue && <span style={{ color: '#22c55e', fontWeight: 600 }}>{nue}</span>}
+            {nue && <span className={[styles["uColor22c55e"], styles["uFontWeight600"]].join(' ')}>{nue}</span>}
           </div>
         );
       })}
@@ -158,12 +152,13 @@ export default function AjustesPage() {
   const { registros: ctxRegistros } = useRegistros();
   const {
     alertasConfig: ctxAlertas, mutateAlertasConfig: setCtxAlertas, pushAlertasConfigChange,
-    diasConfig: ctxDias, applyDiasConfigChange,
-    permisosConfig: ctxPermisos, applyPermisoConfigChange
+    diasConfig: ctxDias,
+    permisosConfig: ctxPermisos, applyPermisoConfigChange,
+    settingsLoaded,
   } = useSettings();
   const { nombres: analistasDefault } = useAnalistas();
   const { objetivos: ctxObjetivos, mutateObjetivos: setCtxObjetivos, pushObjetivosChange } = useObjetivos();
-  const { historicoVentas: ctxHistorico, mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange } = useHistorico();
+  const { mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange } = useHistorico();
 
   const router = useRouter();
   const { setFilter, limpiarFiltros, toggleEstado } = useFilter();
@@ -198,12 +193,21 @@ export default function AjustesPage() {
       return changed ? next : prev;
     });
   }, [heavyVisibility]);
-  const [alertasConfig, setAlertasConfig] = useState(CONFIG.ALERTAS_DEFAULT);
-  const [diasValues, setDiasValues] = useState<Record<string, DiasEntry>>({});
+  // `null` = todavía sin hidratar. Nunca arranca con CONFIG.ALERTAS_DEFAULT: si el usuario
+  // pulsara Guardar antes de que el provider resuelva, los valores por defecto pisarían la
+  // configuración real de la base.
+  const [alertasConfig, setAlertasConfig] = useState<AlertaConfig[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [savingDias, setSavingDias] = useState<string | null>(null);
-  const [savingPermiso, setSavingPermiso] = useState<string | null>(null);
+  // Conjunto de claves en vuelo. Con un único `string` una segunda petición pisaba la clave de
+  // la primera y el toggle anterior volvía a habilitarse con su request todavía pendiente.
+  const [savingPermisos, setSavingPermisos] = useState<Set<string>>(() => new Set());
+  const marcarGuardando = (key: string) => setSavingPermisos(prev => {
+    const next = new Set(prev); next.add(key); return next;
+  });
+  const desmarcarGuardando = (key: string) => setSavingPermisos(prev => {
+    const next = new Set(prev); next.delete(key); return next;
+  });
   const [permisoScope, setPermisoScope] = useState<string>('general');
 
   const [histAnalista, setHistAnalista] = useState('');
@@ -245,40 +249,44 @@ export default function AjustesPage() {
     }
   }, [isAdmin, activeTab, configSubTab, datosSubTab]);
 
-  const fetchConfig = useCallback(async () => {
-    setLoading(true);
-    const { data: alertas } = await supabase.from('alertas_config').select('*');
-    if (alertas && alertas.length > 0) {
-      setAlertasConfig(alertas.map(a => ({
-        nombre: a.nombre, estado: a.estado, dias: a.dias,
+  // `alertasConfig` es el borrador editable del editor de alertas. Antes se
+  // llenaba con un `alertas_config.select('*')` propio, que repetía la consulta
+  // que SettingsProvider ya hace con exactamente estos campos. Ahora se siembra
+  // desde el contexto: una request menos y una sola fuente de verdad.
+  // El guard por ref evita pisar ediciones sin guardar en refrescos posteriores.
+  // Se siembra una sola vez, y sólo cuando el provider confirmó que terminó de cargar.
+  // Se conserva `id`: es la PK con la que después se hace el upsert. Sin él habría que
+  // borrar la tabla entera para poder reinsertar, que es justo lo que se quiere evitar.
+  const alertasSembradas = useRef(false);
+  useEffect(() => {
+    if (!alertasSembradas.current && settingsLoaded) {
+      alertasSembradas.current = true;
+      setAlertasConfig(ctxAlertas.map(a => ({
+        id: a.id, nombre: a.nombre, estado: a.estado, dias: a.dias,
         mensaje: a.mensaje, color: a.color,
       })));
     }
+    if (settingsLoaded) setLoading(false);
+  }, [ctxAlertas, settingsLoaded]);
 
-    const { data: dias } = await supabase.from('dias_habiles_config').select('*');
-    const initialDias: Record<string, DiasEntry> = {};
-    ['Todos', ...analistasDefault].forEach(analista => {
-      const cfg = dias?.find(d => d.analista === analista);
-      initialDias[analista] = {
-        dias_habiles: Number(cfg?.dias_habiles) || 22,
-        dias_transcurridos: Number(cfg?.dias_transcurridos) || 0,
-      };
-    });
-    setDiasValues(initialDias);
-    setLoading(false);
-  }, [analistasDefault]);
-
-  useEffect(() => { fetchConfig(); }, [fetchConfig]);
+  // Guardar sólo es posible con un borrador hidratado, con filas y con `id` en todas ellas.
+  const alertasHidratadas = alertasConfig !== null
+    && alertasConfig.length > 0
+    && alertasConfig.every(a => !!a.id);
 
 
   const saveAlertas = async () => {
+    // Guarda defensiva: el botón ya está deshabilitado en este caso.
+    if (!alertasHidratadas || !alertasConfig) return;
     setSaving(true);
     try {
-      await supabase.from('alertas_config').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      for (const alerta of alertasConfig) {
-        const { error } = await supabase.from('alertas_config').insert(alerta);
-        if (error) throw error;
-      }
+      // El conjunto es fijo (6 filas, sin altas ni bajas desde la UI) y cada fila conserva su
+      // PK, así que basta un único upsert. Una sola sentencia → atómica. Antes se borraba la
+      // tabla entera y se reinsertaba fila por fila: un fallo intermedio la dejaba a medias.
+      const { error } = await supabase
+        .from('alertas_config')
+        .upsert(alertasConfig, { onConflict: 'id' });
+      if (error) throw error;
 
       // Actualizar contexto y enviar broadcast
       setCtxAlertas(() => [...alertasConfig]);
@@ -290,35 +298,21 @@ export default function AjustesPage() {
   };
 
   const resetAlertas = () => {
-    setAlertasConfig(CONFIG.ALERTAS_DEFAULT);
+    // Restablece los valores por defecto SOBRE los ids ya cargados, emparejando por `estado`
+    // (que el usuario no puede editar). Así el borrador nunca pierde su identidad.
+    setAlertasConfig(prev => {
+      if (!prev) return prev;
+      return prev.map(a => {
+        const def = CONFIG.ALERTAS_DEFAULT.find(d => d.estado === a.estado);
+        return def ? { ...a, ...def, id: a.id } : a;
+      });
+    });
     showSuccess('Configuración restablecida');
-  };
-
-  const saveDiasHabiles = async (analista: string) => {
-    const entry = diasValues[analista];
-    if (!entry) return;
-    setSavingDias(analista);
-    try {
-      const config = {
-        analista,
-        dias_habiles: Number(entry.dias_habiles) || 0,
-        dias_transcurridos: Number(entry.dias_transcurridos) || 0,
-        manual: true,
-      };
-      const { error } = await supabase.from('dias_habiles_config').upsert(config, { onConflict: 'analista' });
-      if (error) throw error;
-
-      // Actualizar contexto y enviar broadcast (atómico: local + broadcast)
-      applyDiasConfigChange('UPDATE', config);
-
-      showSuccess(`Días guardados para ${analista}`);
-    } catch (err: any) { showError(`Error: ${err.message}`); }
-    setSavingDias(null);
   };
 
   const togglePermiso = async (rol: string, permiso: string, current: boolean) => {
     const key = `${rol}-${permiso}`;
-    setSavingPermiso(key);
+    marcarGuardando(key);
     try {
       const config = { rol, permiso, activo: !current };
       const { error } = await supabase.from('permisos_roles').upsert(config, { onConflict: 'rol,permiso' });
@@ -328,13 +322,13 @@ export default function AjustesPage() {
     } catch (err: any) {
       showError(`Error al actualizar permiso: ${err.message}`);
     }
-    setSavingPermiso(null);
+    desmarcarGuardando(key);
   };
 
   const resetPermisoAnalista = async (analista: string, permiso: string) => {
     const rol = `analista:${analista}`;
     const key = `${rol}-${permiso}`;
-    setSavingPermiso(key);
+    marcarGuardando(key);
     try {
       const { error } = await supabase.from('permisos_roles').delete().eq('rol', rol).eq('permiso', permiso);
       if (error) throw error;
@@ -343,13 +337,13 @@ export default function AjustesPage() {
     } catch (err: any) {
       showError(`Error al restablecer permiso: ${err.message}`);
     }
-    setSavingPermiso(null);
+    desmarcarGuardando(key);
   };
 
   const resetAllPermisosAnalista = async (analista: string) => {
     const rol = `analista:${analista}`;
     const key = `reset-all-${rol}`;
-    setSavingPermiso(key);
+    marcarGuardando(key);
     try {
       const { error } = await supabase.from('permisos_roles').delete().eq('rol', rol);
       if (error) throw error;
@@ -360,7 +354,7 @@ export default function AjustesPage() {
     } catch (err: any) {
       showError(`Error: ${err.message}`);
     }
-    setSavingPermiso(null);
+    desmarcarGuardando(key);
   };
 
   const loadHistorico = useCallback(async (anal: string, anio: number) => {
@@ -392,17 +386,35 @@ export default function AjustesPage() {
     if (activeTab === 'reportes' && reportesSubTab === 'historico') loadHistorico(histAnalista, histAnio);
   }, [histAnalista, histAnio, loadHistorico, activeTab, reportesSubTab]);
 
-  // Fetch datos para Duplicados
+  // Fetch datos para Duplicados.
+  // Debe paginar: sin `.range()` Supabase devuelve sólo las primeras 1000 filas
+  // (content-range 0-999/*) y la detección se calculaba sobre un dataset parcial.
+  //
+  // El orden DEBE incluir un desempate único (`id`): `created_at` tiene empates
+  // de hasta 500 filas y, al paginar sobre un orden no determinista, Postgres
+  // puede repetir filas en una página y omitirlas en otra (medido: 371 filas
+  // duplicadas sobre 6996). Con el desempate, las páginas son estables.
   useEffect(() => {
-    if (activeTab === 'datos-masivos' && datosSubTab === 'duplicados') {
-      supabase
-        .from('registros')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .then(({ data }) => {
-          setDuplicadosRegistros(data || []);
-        });
-    }
+    if (activeTab !== 'datos-masivos' || datosSubTab !== 'duplicados') return;
+
+    let cancelado = false;
+    (async () => {
+      const { rows, error, cancelled } = await fetchAllRows(
+        (from, to) =>
+          supabase
+            .from('registros')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: true })
+            .range(from, to),
+        { isCancelled: () => cancelado },
+      );
+      if (cancelled || cancelado) return;
+      if (error) { console.error('[Duplicados] Error cargando registros:', error); return; }
+      setDuplicadosRegistros(rows);
+    })();
+
+    return () => { cancelado = true; };
   }, [activeTab, datosSubTab]);
 
   // Fetch datos para Auditoria + suscripción realtime
@@ -419,10 +431,11 @@ export default function AjustesPage() {
         const PAGE = 1000;
         let offset = 0;
         const acc: any[] = [];
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           if (cancelado) return;
-          let q = supabase.from('auditoria').select('*').order('fecha_hora', { ascending: false });
+          // `id.asc` sólo como desempate: `fecha_hora` no es única y esta
+          // consulta se pagina con `.range()`.
+          let q = supabase.from('auditoria').select('*').order('fecha_hora', { ascending: false }).order('id', { ascending: true });
           if (auditFechaDesde) q = q.gte('fecha_hora', new Date(auditFechaDesde + 'T00:00:00').toISOString());
           if (auditFechaHasta) q = q.lte('fecha_hora', new Date(auditFechaHasta + 'T23:59:59').toISOString());
           const { data, error } = await q.range(offset, offset + PAGE - 1);
@@ -559,10 +572,6 @@ export default function AjustesPage() {
     setSavingHist(false);
   };
 
-  const updateDias = (analista: string, field: keyof DiasEntry, value: number | string) => {
-    setDiasValues(prev => ({ ...prev, [analista]: { ...prev[analista], [field]: value } }));
-  };
-
   // ========== DUPLICADOS HELPERS ==========
   interface GrupoDuplicado {
     key: string;
@@ -611,17 +620,27 @@ export default function AjustesPage() {
       if (regs.length > 1) grupos.push({ key: cuil, tipo: 'cuil', registros: regs });
     }
 
+    // Nombres ya cubiertos por un grupo de CUIL. Igual que en /duplicados: se
+    // precalcula una sola vez en lugar de re-escanear `grupos` (y re-normalizar
+    // cada nombre) dentro del bucle, que era O(grupos × registros).
+    const nombresEnGruposCuil = new Set<string>();
+    for (const g of grupos) {
+      for (const r of g.registros) {
+        const n = normalizarNombreKey(r.nombre);
+        if (n) nombresEnGruposCuil.add(n);
+      }
+    }
+
     const byNombre = new Map<string, any[]>();
     for (const r of pool) {
-      const nombre = r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
+      const nombre = normalizarNombreKey(r.nombre);
       if (!nombre || nombre.length < 3) continue;
       if (!byNombre.has(nombre)) byNombre.set(nombre, []);
       byNombre.get(nombre)!.push(r);
     }
     for (const [nombre, regs] of byNombre) {
-      if (regs.length > 1) {
-        const existsInCuil = grupos.some(g => g.tipo === 'cuil' && g.registros.some(r => r.nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ') === nombre));
-        if (!existsInCuil) grupos.push({ key: nombre, tipo: 'nombre', registros: regs });
+      if (regs.length > 1 && !nombresEnGruposCuil.has(nombre)) {
+        grupos.push({ key: nombre, tipo: 'nombre', registros: regs });
       }
     }
     return grupos.sort((a, b) => b.registros.length - a.registros.length);
@@ -673,37 +692,25 @@ export default function AjustesPage() {
         <div className="toast-container">
           <div className={`toast ${toast.type}`}>
             <AlertCircle size={18} />
-            <span style={{ fontSize: '14px' }}>{toast.message}</span>
+            <span className={[styles["uFontSize14px"]].join(' ')}>{toast.message}</span>
           </div>
         </div>
       )}
 
       {/* Nav Tabs */}
-      <div className="toolbar" style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px', borderRadius: 0, background: 'transparent' }}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div className={["toolbar", styles["uDisplayflex"], styles["uJustifyContentcenter"], styles["uMarginBottom16px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uPaddingBottom16px"], styles["uBorderRadius0"], styles["uBackgroundtransparent"]].join(' ')}>
+        <div className={styles.sectionSwitcher}>
           {[
             { id: 'configuracion', label: 'Configuración', icon: Settings },
             { id: 'reportes', label: 'Reportes', icon: BarChart3 },
             { id: 'datos-masivos', label: 'Datos masivos', icon: Edit3 },
             { id: 'actividad', label: 'Actividad', icon: Activity },
           ].map(t => (
-            <button
+            <button className={`${styles.sectionTab}${activeTab === t.id ? ` ${styles.sectionTabActive}` : ''}`}
               key={t.id}
               onClick={() => setActiveTab(t.id as ActiveTab)}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                padding: '10px 16px', border: 'none',
-                background: activeTab === t.id ? '#fff' : 'transparent',
-                borderRadius: '6px',
-                fontFamily: "'Outfit', sans-serif", fontSize: '13px', fontWeight: activeTab === t.id ? 700 : 500,
-                cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                color: activeTab === t.id ? '#000' : 'var(--gris)',
-                flex: '1 0 160px',
-                maxWidth: '200px',
-                whiteSpace: 'nowrap'
-              }}
             >
-              <t.icon size={15} style={{ opacity: activeTab === t.id ? 1 : 0.7 }} />
+              <t.icon size={15} />
               {t.label}
             </button>
           ))}
@@ -711,12 +718,12 @@ export default function AjustesPage() {
       </div>
 
       {loading ? (
-        <div className="loading-container" style={{ minHeight: '400px' }}>
+        <div className={["loading-container", styles["uMinHeight400px"]].join(' ')}>
           <div className="spinner" />
-          <span style={{ color: '#555' }}>Cargando configuración...</span>
+          <span className={[styles["uColortext-muted"]].join(' ')}>Cargando configuración...</span>
         </div>
       ) : (
-        <div style={{ width: '100%' }}>
+        <div className={[styles["uWidth100"]].join(' ')}>
 
           {/* TAB: ALERTAS */}
           {activeTab === 'configuracion' && (
@@ -732,68 +739,58 @@ export default function AjustesPage() {
             />
           )}
           {activeTab === 'configuracion' && configSubTab === 'alertas' && isAdmin && (
-            <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)' }}>
-              <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <div className={["data-card", styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.alertCard].join(' ')}>
+              <div className={["data-card-header", styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uMarginBottom32px"], styles.alertHeader].join(' ')}>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Gestión de Alertas</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Parámetros de vencimiento y colores de indicadores</p>
+                  <h3 className={[styles["uFontSize18px"], styles["uFontWeight800"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Gestión de Alertas</h3>
+                  <p className={[styles["uFontSize13px"], styles["uColortext-primary"], styles["uMarginTop4px"]].join(' ')}>Parámetros de vencimiento y colores de indicadores</p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn-secondary" onClick={resetAlertas} style={{ fontSize: '12px' }}>
+                <div className={[styles["uDisplayflex"], styles["uGap10px"], styles.alertActions].join(' ')}>
+                  <button className={["btn-secondary", styles["uFontSize12px"]].join(' ')} onClick={resetAlertas} disabled={!alertasHidratadas}>
                     <RotateCcw size={14} /> Restaurar
                   </button>
-                  <button className="btn-primary" onClick={saveAlertas} disabled={saving} style={{ fontSize: '12px' }}>
+                  <button className={["btn-primary", styles["uFontSize12px"]].join(' ')} onClick={saveAlertas} disabled={saving || !alertasHidratadas}>
                     <Save size={14} /> {saving ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className={[styles["uBackgroundsurface-sunken"], styles["uBorderRadius12px"], styles["uBorder1px-solid-border-subtle"], styles.alertTableScroll].join(' ')}>
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th style={{ color: '#444' }}>Tipo de Alerta</th>
-                      <th style={{ color: '#444' }}>Estado Aplicado</th>
-                      <th style={{ color: '#444' }}>Días Límite</th>
-                      <th style={{ color: '#444' }}>Identificador</th>
+                      <th className={[styles["uColortext-muted"]].join(' ')}>Tipo de Alerta</th>
+                      <th className={[styles["uColortext-muted"]].join(' ')}>Estado Aplicado</th>
+                      <th className={[styles["uColortext-muted"]].join(' ')}>Días Límite</th>
+                      <th className={[styles["uColortext-muted"]].join(' ')}>Identificador</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {alertasConfig.map((alerta, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                        <td style={{ fontWeight: 600, fontSize: '14px' }}>{alerta.nombre}</td>
-                        <td><span className="status-badge" style={{ background: 'rgba(255,255,255,0.03)', color: '#888' }}>{alerta.estado}</span></td>
+                    {(alertasConfig ?? []).map((alerta, idx) => (
+                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} key={alerta.id ?? idx}>
+                        <td className={[styles["uFontWeight600"], styles["uFontSize14px"]].join(' ')}>{alerta.nombre}</td>
+                        <td><span className={["status-badge", styles["uBackgroundsurface-sunken"], styles["uColortext-muted"]].join(' ')}>{alerta.estado}</span></td>
                         <td>
                           <input
-                            className="form-input"
+                            className={["form-input", styles["uWidth100px"], styles["uTextAligncenter"], styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius4px"]].join(' ')}
                             type="number"
-                            style={{
-                              width: '100px',
-                              textAlign: 'center',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '4px'
-                            }}
                             value={alerta.dias}
                             onChange={e => {
-                              const updated = [...alertasConfig];
-                              updated[idx] = { ...updated[idx], dias: Number(e.target.value) };
-                              setAlertasConfig(updated);
+                              const dias = Number(e.target.value);
+                              setAlertasConfig(prev => prev && prev.map((a, i) => i === idx ? { ...a, dias } : a));
                             }}
                           />
                         </td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: alerta.color, border: '1px solid rgba(255,255,255,0.1)' }} />
+                          <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap12px"]].join(' ')}>
+                            <div className={[styles["uWidth24px"], styles["uHeight24px"], styles["uBorderRadius6px"], styles["uBorder1px-solid-rgba-255-255-255-0-1"]].join(' ')} style={{ background: alerta.color }} />
                             <input
-                              className="form-input"
+                              className={["form-input", styles["uWidth90px"], styles["uFontSize11px"], styles["uFontFamilymonospace"]].join(' ')}
                               type="text"
                               value={alerta.color}
-                              style={{ width: '90px', fontSize: '11px', fontFamily: 'monospace' }}
                               onChange={e => {
-                                const updated = [...alertasConfig];
-                                updated[idx] = { ...updated[idx], color: e.target.value };
-                                setAlertasConfig(updated);
+                                const color = e.target.value;
+                                setAlertasConfig(prev => prev && prev.map((a, i) => i === idx ? { ...a, color } : a));
                               }}
                             />
                           </div>
@@ -804,14 +801,14 @@ export default function AjustesPage() {
                 </table>
               </div>
 
-              <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)', marginTop: '24px' }}>
-                <div className="data-card-header" style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Consulta de Registros por Estado</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Acceso rápido para revisar registros por analista y estado (Ej: Registros sin gestión / proyección)</p>
+              <div className={["data-card", styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles["uMarginTop24px"]].join(' ')}>
+                <div className={["data-card-header", styles["uMarginBottom24px"]].join(' ')}>
+                  <h3 className={[styles["uFontSize16px"], styles["uFontWeight800"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Consulta de Registros por Estado</h3>
+                  <p className={[styles["uFontSize13px"], styles["uColortext-primary"], styles["uMarginTop4px"]].join(' ')}>Acceso rápido para revisar registros por analista y estado (Ej: Registros sin gestión / proyección)</p>
                 </div>
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista</label>
+                <div className={[styles["uDisplayflex"], styles["uGap20px"], styles["uAlignItemsflex-end"], styles["uFlexWrapwrap"]].join(' ')}>
+                  <div className={[styles["uFlex1"], styles["uMinWidth200px"]].join(' ')}>
+                    <label className={["form-label", styles["uColortext-primary"], styles["uMarginBottom8px"], styles["uFontSize11px"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>Analista</label>
                     <CustomSelect
                       value={consultaAnalista}
                       onChange={val => setConsultaAnalista(String(val))}
@@ -819,8 +816,8 @@ export default function AjustesPage() {
                       width="100%"
                     />
                   </div>
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Estado</label>
+                  <div className={[styles["uFlex1"], styles["uMinWidth200px"]].join(' ')}>
+                    <label className={["form-label", styles["uColortext-primary"], styles["uMarginBottom8px"], styles["uFontSize11px"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>Estado</label>
                     <CustomSelect
                       value={consultaEstado}
                       onChange={val => setConsultaEstado(String(val))}
@@ -840,7 +837,7 @@ export default function AjustesPage() {
                             router.push('/registros');
                         }, 50);
                   }}>
-                    <Search size={14} style={{ marginRight: '6px' }} /> Ver Registros
+                    <Search className={[styles["uMarginRight6px"]].join(' ')} size={14} /> Ver Registros
                   </button>
                 </div>
               </div>
@@ -859,82 +856,46 @@ export default function AjustesPage() {
 
           {/* TAB: PERMISOS */}
           {activeTab === 'configuracion' && configSubTab === 'permisos' && isAdmin && (
-            <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.03)' }}>
-              <div className="data-card-header" style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Roles y Permisos</h3>
-                <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>
+            <div className={["data-card", styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+              <div className={["data-card-header", styles["uMarginBottom24px"]].join(' ')}>
+                <h3 className={[styles["uFontSize18px"], styles["uFontWeight800"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Roles y Permisos</h3>
+                <p className={[styles["uFontSize13px"], styles["uColortext-primary"], styles["uMarginTop4px"]].join(' ')}>
                   Habilitá o deshabilitá funciones específicas de forma general o para cada analista en tiempo real.
                 </p>
               </div>
 
               {/* Selector de Ámbito: General vs. Analistas Individuales */}
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+              <div className={[styles["uMarginBottom24px"]].join(' ')}>
+                <div className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uColortext-muted"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"], styles["uMarginBottom10px"]].join(' ')}>
                   Seleccionar Ámbito de Configuración
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <button
+                <div className={[styles["uDisplayflex"], styles["uGap8px"], styles["uFlexWrapwrap"], styles["uAlignItemscenter"]].join(' ')}>
+                  <button className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap8px"], styles["uPadding8px-16px"], styles["uBorderRadius10px"], styles["uFontSize13px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s-ease"]].join(' ')}
                     type="button"
                     onClick={() => setPermisoScope('general')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 16px',
-                      borderRadius: '10px',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      background: permisoScope === 'general' ? 'rgba(0, 212, 255, 0.15)' : 'rgba(255,255,255,0.03)',
-                      color: permisoScope === 'general' ? '#00d4ff' : '#9ca3af',
-                      border: `1px solid ${permisoScope === 'general' ? 'rgba(0, 212, 255, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-                      boxShadow: permisoScope === 'general' ? '0 0 12px rgba(0, 212, 255, 0.2)' : 'none',
-                    }}
+                    style={{ background: permisoScope === 'general' ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: permisoScope === 'general' ? 'var(--action-primary)' : 'var(--text-muted)', border: `1px solid ${permisoScope === 'general' ? 'var(--control-border-focus)' : 'var(--border-subtle)'}`, boxShadow: permisoScope === 'general' ? 'var(--shadow-xs)' : 'none' }}
                   >
                     <Users size={15} />
                     <span>Rol General: Analista (Por Defecto)</span>
                   </button>
 
-                  <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.08)', margin: '0 4px' }} />
+                  <div className={[styles["uWidth1px"], styles["uHeight24px"], styles["uBackgroundrgba-255-255-255-0-08"], styles["uMargin0-4px"]].join(' ')} />
 
                   {analistasDefault.map(analista => {
                     const isSelected = permisoScope === analista;
                     const customCount = LISTA_PERMISOS_ROLES.filter(p => !!getPermisoOverride(ctxPermisos, p.id, analista)).length;
 
                     return (
-                      <button
+                      <button className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap8px"], styles["uPadding8px-14px"], styles["uBorderRadius10px"], styles["uFontSize13px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s-ease"]].join(' ')}
                         key={analista}
                         type="button"
                         onClick={() => setPermisoScope(analista)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px 14px',
-                          borderRadius: '10px',
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          background: isSelected ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.02)',
-                          color: isSelected ? '#c084fc' : '#9ca3af',
-                          border: `1px solid ${isSelected ? 'rgba(168, 85, 247, 0.4)' : 'rgba(255,255,255,0.06)'}`,
-                          boxShadow: isSelected ? '0 0 12px rgba(168, 85, 247, 0.2)' : 'none',
-                        }}
+                        style={{ background: isSelected ? 'rgba(96, 125, 168, 0.12)' : 'var(--surface-card)', color: isSelected ? '#4f678c' : 'var(--text-muted)', border: `1px solid ${isSelected ? '#9aabc1' : 'var(--border-subtle)'}`, boxShadow: isSelected ? 'var(--shadow-xs)' : 'none' }}
                       >
                         <User size={14} />
                         <span>{analista}</span>
                         {customCount > 0 && (
-                          <span style={{
-                            fontSize: '10px',
-                            fontWeight: 800,
-                            padding: '1px 6px',
-                            borderRadius: '8px',
-                            background: isSelected ? 'rgba(192, 132, 252, 0.3)' : 'rgba(0, 212, 255, 0.15)',
-                            color: isSelected ? '#fff' : '#00d4ff',
-                            border: `1px solid ${isSelected ? 'rgba(192, 132, 252, 0.5)' : 'rgba(0, 212, 255, 0.3)'}`,
-                          }}>
+                          <span className={[styles["uFontSize10px"], styles["uFontWeight800"], styles["uPadding1px-6px"], styles["uBorderRadius8px"]].join(' ')} style={{ background: isSelected ? '#4f678c' : 'var(--brand-muted-soft)', color: isSelected ? '#fff' : 'var(--action-primary)', border: `1px solid ${isSelected ? '#4f678c' : 'var(--control-border)'}` }}>
                             {customCount} pers.
                           </span>
                         )}
@@ -952,43 +913,38 @@ export default function AjustesPage() {
                   : LISTA_PERMISOS_ROLES.filter(p => !!getPermisoOverride(ctxPermisos, p.id, permisoScope)).length;
 
                 return (
-                  <div style={{
-                    background: 'rgba(255,255,255,0.02)',
-                    padding: '24px',
-                    borderRadius: '14px',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className={[styles["uBackgroundsurface-sunken"], styles["uPadding24px"], styles["uBorderRadius14px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                    <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uMarginBottom20px"], styles["uFlexWrapwrap"], styles["uGap12px"]].join(' ')}>
+                      <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap10px"]].join(' ')}>
                         {isGeneral ? (
-                          <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(0, 212, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Shield size={18} color="#00d4ff" />
+                          <div className={[styles["uWidth36px"], styles["uHeight36px"], styles["uBorderRadius10px"], styles["uBackgroundrgba-0-212-255-0-1"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"]].join(' ')}>
+                            <Shield size={18} color="#315b7d" />
                           </div>
                         ) : (
-                          <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div className={[styles["uWidth36px"], styles["uHeight36px"], styles["uBorderRadius10px"], styles["uBackgroundrgba-168-85-247-0-1"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"]].join(' ')}>
                             <User size={18} color="#c084fc" />
                           </div>
                         )}
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <h4 style={{ fontWeight: 800, fontSize: '16px', color: '#fff', letterSpacing: '-0.3px' }}>
+                          <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap10px"]].join(' ')}>
+                            <h4 className={[styles["uFontWeight800"], styles["uFontSize16px"], styles["uColortext-strong"], styles["uLetterSpacing0-3px"]].join(' ')}>
                               {isGeneral ? 'Rol General: Analista (Por Defecto)' : `Permisos Individuales: ${permisoScope}`}
                             </h4>
                             {isGeneral ? (
-                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(0, 212, 255, 0.1)', color: '#00d4ff', border: '1px solid rgba(0, 212, 255, 0.2)' }}>
+                              <span className={[styles["uFontSize11px"], styles["uFontWeight700"], styles["uPadding2px-8px"], styles["uBorderRadius6px"], styles["uBackgroundrgba-0-212-255-0-1"], styles["uColor00d4ff"], styles["uBorder1px-solid-rgba-0-212-255-0-2"]].join(' ')}>
                                 Base Global
                               </span>
                             ) : customCount > 0 ? (
-                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                              <span className={[styles["uFontSize11px"], styles["uFontWeight700"], styles["uPadding2px-8px"], styles["uBorderRadius6px"], styles["uBackgroundrgba-168-85-247-0-15"], styles["uColorc084fc"], styles["uBorder1px-solid-rgba-168-85-247-0-3"]].join(' ')}>
                                 {customCount} personalizada(s)
                               </span>
                             ) : (
-                              <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', color: '#888' }}>
+                              <span className={[styles["uFontSize11px"], styles["uFontWeight600"], styles["uPadding2px-8px"], styles["uBorderRadius6px"], styles["uBackgroundsurface-sunken"], styles["uColortext-muted"]].join(' ')}>
                                 Hereda todo de General
                               </span>
                             )}
                           </div>
-                          <p style={{ fontSize: '12px', color: '#888', marginTop: '3px' }}>
+                          <p className={[styles["uFontSize12px"], styles["uColortext-muted"], styles["uMarginTop3px"]].join(' ')}>
                             {isGeneral
                               ? 'Estos permisos se aplican a todos los analistas que no tengan una regla personalizada.'
                               : `Configuración específica para ${permisoScope}. Los permisos sin personalizar heredan el valor general.`}
@@ -997,26 +953,10 @@ export default function AjustesPage() {
                       </div>
 
                       {!isGeneral && customCount > 0 && (
-                        <button
+                        <button className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap6px"], styles["uBackgroundrgba-248-113-113-0-08"], styles["uBorder1px-solid-rgba-248-113-113-0-25"], styles["uColorf87171"], styles["uPadding6px-12px"], styles["uBorderRadius8px"], styles["uFontSize11-5px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s"], styles.resetAllButton].join(' ')}
                           type="button"
                           onClick={() => resetAllPermisosAnalista(permisoScope)}
-                          disabled={savingPermiso === `reset-all-analista:${permisoScope}`}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            background: 'rgba(248, 113, 113, 0.08)',
-                            border: '1px solid rgba(248, 113, 113, 0.25)',
-                            color: '#f87171',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '11.5px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(248, 113, 113, 0.15)')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(248, 113, 113, 0.08)')}
+                          disabled={savingPermisos.has(`reset-all-analista:${permisoScope}`)}
                         >
                           <RotateCcw size={13} />
                           <span>Restablecer todos a General</span>
@@ -1024,114 +964,57 @@ export default function AjustesPage() {
                       )}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                    <div className={[styles["uDisplaygrid"], styles["uGridTemplateColumnsrepeat-auto-fit-minmax-320px-1fr"], styles["uGap16px"]].join(' ')}>
                       {LISTA_PERMISOS_ROLES.map(p => {
                         const targetRol = isGeneral ? 'analista' : `analista:${permisoScope}`;
                         const override = isGeneral ? undefined : getPermisoOverride(ctxPermisos, p.id, permisoScope);
                         const isCustom = override !== undefined;
                         const generalActive = ctxPermisos.find(cp => cp.rol === 'analista' && cp.permiso === p.id)?.activo ?? true;
                         const isActive = isCustom ? override.activo : (isGeneral ? generalActive : generalActive);
-                        const isSaving = savingPermiso === `${targetRol}-${p.id}` || savingPermiso === `${permisoScope}-${p.id}`;
+                        const isSaving = savingPermisos.has(`${targetRol}-${p.id}`) || savingPermisos.has(`${permisoScope}-${p.id}`);
 
                         return (
-                          <div
+                          <div className={[styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uJustifyContentspace-between"], styles["uPadding16px"], styles["uBorderRadius10px"], styles["uGap12px"], styles["uTransitionall-0-2s-ease"]].join(' ')}
                             key={p.id}
-                            style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              padding: '16px',
-                              background: isCustom ? 'rgba(168, 85, 247, 0.03)' : 'rgba(0,0,0,0.25)',
-                              borderRadius: '10px',
-                              border: `1px solid ${isCustom ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.04)'}`,
-                              gap: '12px',
-                              transition: 'all 0.2s ease',
-                            }}
+                            style={{ background: isCustom ? 'rgba(96, 125, 168, 0.08)' : 'var(--surface-card)', border: `1px solid ${isCustom ? '#bdc9d8' : 'var(--border-subtle)'}` }}
                           >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#eee' }}>{p.label}</div>
+                            <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemsflex-start"], styles["uGap12px"]].join(' ')}>
+                              <div className={[styles["uFlex1"]].join(' ')}>
+                                <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap8px"], styles["uFlexWrapwrap"]].join(' ')}>
+                                  <div className={[styles["uFontSize13-5px"], styles["uFontWeight700"], styles["uColortext-strong"]].join(' ')}>{p.label}</div>
                                   {!isGeneral && (
                                     isCustom ? (
-                                      <span style={{
-                                        fontSize: '10px',
-                                        fontWeight: 800,
-                                        padding: '2px 7px',
-                                        borderRadius: '6px',
-                                        background: 'rgba(168, 85, 247, 0.18)',
-                                        color: '#c084fc',
-                                        border: '1px solid rgba(168, 85, 247, 0.35)',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '4px',
-                                      }}>
+                                      <span className={[styles["uFontSize10px"], styles["uFontWeight800"], styles["uPadding2px-7px"], styles["uBorderRadius6px"], styles["uBackgroundrgba-168-85-247-0-18"], styles["uColorc084fc"], styles["uBorder1px-solid-rgba-168-85-247-0-35"], styles["uDisplayinline-flex"], styles["uAlignItemscenter"], styles["uGap4px"]].join(' ')}>
                                         Personalizado
                                       </span>
                                     ) : (
-                                      <span style={{
-                                        fontSize: '10px',
-                                        fontWeight: 600,
-                                        padding: '2px 7px',
-                                        borderRadius: '6px',
-                                        background: 'rgba(255,255,255,0.04)',
-                                        color: '#777',
-                                        border: '1px solid rgba(255,255,255,0.06)',
-                                      }}>
+                                      <span className={[styles["uFontSize10px"], styles["uFontWeight600"], styles["uPadding2px-7px"], styles["uBorderRadius6px"], styles["uBackgroundsurface-sunken"], styles["uColortext-muted"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
                                         Heredado ({generalActive ? 'Activado' : 'Desactivado'})
                                       </span>
                                     )
                                   )}
                                 </div>
-                                <div style={{ fontSize: '11.5px', color: '#777', marginTop: '4px', lineHeight: 1.4 }}>
+                                <div className={[styles["uFontSize11-5px"], styles["uColortext-muted"], styles["uMarginTop4px"], styles["uLineHeight1-4"]].join(' ')}>
                                   {p.desc}
                                 </div>
                               </div>
 
-                              <button
+                              <button className={[styles["uPadding7px-14px"], styles["uBorderRadius20px"], styles["uFontSize11-5px"], styles["uFontWeight800"], styles["uTransitionall-0-2s"], styles["uMinWidth95px"], styles["uTextAligncenter"]].join(' ')}
                                 type="button"
                                 onClick={() => togglePermiso(targetRol, p.id, isActive)}
                                 disabled={isSaving}
-                                style={{
-                                  background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(248, 113, 113, 0.12)',
-                                  border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(248, 113, 113, 0.35)'}`,
-                                  color: isActive ? '#00ff88' : '#ff3366',
-                                  padding: '7px 14px',
-                                  borderRadius: '20px',
-                                  fontSize: '11.5px',
-                                  fontWeight: 800,
-                                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                                  opacity: isSaving ? 0.6 : 1,
-                                  transition: 'all 0.2s',
-                                  minWidth: '95px',
-                                  textAlign: 'center',
-                                  boxShadow: isActive ? '0 0 10px rgba(16, 185, 129, 0.15)' : 'none',
-                                }}
+                                style={{ background: isActive ? 'var(--state-success-soft)' : 'var(--state-danger-soft)', border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(180, 35, 24, 0.28)'}`, color: isActive ? '#047857' : '#b42318', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.6 : 1 }}
                               >
                                 {isSaving ? '...' : isActive ? 'Activado' : 'Desactivado'}
                               </button>
                             </div>
 
                             {!isGeneral && isCustom && (
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-                                <button
+                              <div className={[styles["uDisplayflex"], styles["uJustifyContentflex-end"], styles["uPaddingTop4px"], styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
+                                <button className={[styles["uBackgroundtransparent"], styles["uBordernone"], styles["uColortext-muted"], styles["uFontSize11px"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap5px"], styles["uCursorpointer"], styles["uPadding2px-6px"], styles["uTransitioncolor-0-2s"], styles.inheritButton].join(' ')}
                                   type="button"
                                   onClick={() => resetPermisoAnalista(permisoScope, p.id)}
                                   disabled={isSaving}
-                                  style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: '#888',
-                                    fontSize: '11px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '5px',
-                                    cursor: 'pointer',
-                                    padding: '2px 6px',
-                                    transition: 'color 0.2s',
-                                  }}
-                                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                                  onMouseLeave={e => (e.currentTarget.style.color = '#888')}
                                 >
                                   <RotateCcw size={11} />
                                   <span>Heredar de General</span>
@@ -1162,11 +1045,11 @@ export default function AjustesPage() {
             />
           )}
           {activeTab === 'reportes' && reportesSubTab === 'historico' && (
-            <div className="data-card" style={{ background: '#111111' }}>
-              <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <div className={["data-card", styles["uBackgroundsurface-card"]].join(' ')}>
+              <div className={["data-card-header", styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uMarginBottom32px"]].join(' ')}>
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Histórico y Objetivos</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--gris)', marginTop: '4px' }}>Control de objetivos y resultados por analista y año</p>
+                  <h3 className={[styles["uFontSize18px"], styles["uFontWeight800"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Histórico y Objetivos</h3>
+                  <p className={[styles["uFontSize13px"], styles["uColortext-primary"], styles["uMarginTop4px"]].join(' ')}>Control de objetivos y resultados por analista y año</p>
                 </div>
                 <button className="btn-primary" onClick={saveHistorico} disabled={savingHist}>
                   <Save size={14} /> {savingHist ? 'Guardando...' : 'Guardar Cambios'}
@@ -1174,65 +1057,43 @@ export default function AjustesPage() {
               </div>
 
               {/* Selectors */}
-              <div style={{ display: 'flex', gap: '32px', marginBottom: '32px', padding: '24px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ flex: 1 }}>
-                  <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seleccionar Analista</label>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div className={[styles["uDisplayflex"], styles["uGap32px"], styles["uMarginBottom32px"], styles["uPadding24px"], styles["uBackgroundsurface-sunken"], styles["uBorderRadius12px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                <div className={[styles["uFlex1"]].join(' ')}>
+                  <label className={["form-label", styles["uColortext-primary"], styles["uMarginBottom12px"], styles["uFontSize11px"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>Seleccionar Analista</label>
+                  <div className={[styles["uDisplayflex"], styles["uGap8px"], styles["uFlexWrapwrap"]].join(' ')}>
                     {['PDV', ...analistasDefault].map(a => (
-                      <button key={a} onClick={() => setHistAnalista(a)} style={{
-                        padding: '10px 20px', borderRadius: '6px', border: '1px solid',
-                        fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600,
-                        cursor: 'pointer', transition: 'all 0.2s',
-                        borderColor: histAnalista === a ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)',
-                        background: histAnalista === a ? '#fff' : 'transparent',
-                        color: histAnalista === a ? '#000' : 'var(--gris)',
-                      }}>{a}</button>
+                      <button className={[styles["uPadding10px-20px"], styles["uBorderRadius6px"], styles["uBorder1px-solid"], styles.uFontFamilyUi, styles["uFontSize12px"], styles["uFontWeight600"], styles["uCursorpointer"], styles["uTransitionall-0-2s"]].join(' ')} key={a} onClick={() => setHistAnalista(a)} style={{ borderColor: histAnalista === a ? 'var(--control-border-focus)' : 'var(--border-subtle)', background: histAnalista === a ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: histAnalista === a ? 'var(--action-primary)' : 'var(--text-primary)' }}>{a}</button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="form-label" style={{ color: 'var(--gris)', marginBottom: '12px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Año</label>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <label className={["form-label", styles["uColortext-primary"], styles["uMarginBottom12px"], styles["uFontSize11px"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>Año</label>
+                  <div className={[styles["uDisplayflex"], styles["uGap8px"], styles["uFlexWrapwrap"]].join(' ')}>
                     {Array.from({ length: new Date().getFullYear() - 2021 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                      <button key={y} onClick={() => setHistAnio(y)} style={{
-                        padding: '10px 16px', borderRadius: '6px', border: '1px solid',
-                        fontFamily: "'Outfit', sans-serif", fontSize: '12px', fontWeight: 600,
-                        cursor: 'pointer', transition: 'all 0.2s',
-                        borderColor: histAnio === y ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)',
-                        background: histAnio === y ? '#fff' : 'transparent',
-                        color: histAnio === y ? '#000' : 'var(--gris)',
-                      }}>{y}</button>
+                      <button className={[styles["uPadding10px-16px"], styles["uBorderRadius6px"], styles["uBorder1px-solid"], styles.uFontFamilyUi, styles["uFontSize12px"], styles["uFontWeight600"], styles["uCursorpointer"], styles["uTransitionall-0-2s"]].join(' ')} key={y} onClick={() => setHistAnio(y)} style={{ borderColor: histAnio === y ? 'var(--control-border-focus)' : 'var(--border-subtle)', background: histAnio === y ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: histAnio === y ? 'var(--action-primary)' : 'var(--text-primary)' }}>{y}</button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table className="data-table" style={{ border: '1px solid rgba(255,255,255,0.03)' }}>
+              <div className={[styles["uOverflowXauto"]].join(' ')}>
+                <table className={["data-table", styles["uBorder1px-solid-border-subtle"]].join(' ')}>
                   <thead>
                     <tr>
-                      <th style={{ color: 'var(--gris)', width: '120px', fontSize: '11px' }}>MES</th>
-                      <th style={{ color: 'var(--gris)', opacity: 0.8, fontSize: '11px' }}>METAS CAPITAL ($)</th>
-                      <th style={{ color: 'var(--gris)', opacity: 0.8, fontSize: '11px' }}>METAS OPS</th>
-                      <th style={{ color: '#fff', opacity: 0.9, fontSize: '11px' }}>REAL CAPITAL ($)</th>
-                      <th style={{ color: '#fff', opacity: 0.9, fontSize: '11px' }}>REAL OPS</th>
+                      <th className={[styles["uColortext-primary"], styles["uWidth120px"], styles["uFontSize11px"]].join(' ')}>MES</th>
+                      <th className={[styles["uColortext-primary"], styles["uOpacity0-8"], styles["uFontSize11px"]].join(' ')}>METAS CAPITAL ($)</th>
+                      <th className={[styles["uColortext-primary"], styles["uOpacity0-8"], styles["uFontSize11px"]].join(' ')}>METAS OPS</th>
+                      <th className={[styles["uColortext-strong"], styles["uOpacity0-9"], styles["uFontSize11px"]].join(' ')}>REAL CAPITAL ($)</th>
+                      <th className={[styles["uColortext-strong"], styles["uOpacity0-9"], styles["uFontSize11px"]].join(' ')}>REAL OPS</th>
                     </tr>
                   </thead>
                   <tbody>
                     {CONFIG.MESES_NOMBRES.map((mes, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', height: '54px' }}>
-                        <td style={{ fontWeight: 800, fontSize: '12px', color: 'var(--gris)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{mes}</td>
+                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"], styles["uHeight54px"]].join(' ')} key={idx}>
+                        <td className={[styles["uFontWeight800"], styles["uFontSize12px"], styles["uColortext-primary"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>{mes}</td>
                         <td>
                           <input
-                            className="form-input" type="number"
-                            style={{
-                              width: '140px',
-                              background: 'rgba(255,255,255,0.01)',
-                              border: 'none',
-                              borderBottom: '1.5px solid rgba(255,255,255,0.1)',
-                              borderRadius: 0,
-                              padding: '8px 4px'
-                            }}
+                            className={["form-input", styles["uWidth140px"], styles["uBackgroundsurface-sunken"], styles["uBordernone"], styles["uBorderBottom1-5px-solid-rgba-255-255-255-0-1"], styles["uBorderRadius0"], styles["uPadding8px-4px"]].join(' ')} type="number"
                             placeholder="-"
                             value={histRows[idx].meta_ventas}
                             onChange={e => setHistRows(prev => {
@@ -1245,8 +1106,7 @@ export default function AjustesPage() {
                         </td>
                         <td>
                           <input
-                            className="form-input" type="number"
-                            style={{ width: '80px', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', borderRadius: 0, textAlign: 'center' }}
+                            className={["form-input", styles["uWidth80px"], styles["uBackgroundtransparent"], styles["uBordernone"], styles["uBorderBottom1px-solid-border-subtle"], styles["uBorderRadius0"], styles["uTextAligncenter"]].join(' ')} type="number"
                             placeholder="-"
                             value={histRows[idx].meta_operaciones}
                             onChange={e => setHistRows(prev => {
@@ -1256,15 +1116,7 @@ export default function AjustesPage() {
                         </td>
                         <td>
                           <input
-                            className="form-input" type="number"
-                            style={{
-                              width: '140px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: 'none',
-                              borderBottom: '1.5px solid rgba(255,255,255,0.15)',
-                              borderRadius: 0,
-                              padding: '8px 4px'
-                            }}
+                            className={["form-input", styles["uWidth140px"], styles["uBackgroundsurface-sunken"], styles["uBordernone"], styles["uBorderBottom1-5px-solid-rgba-255-255-255-0-15"], styles["uBorderRadius0"], styles["uPadding8px-4px"]].join(' ')} type="number"
                             placeholder="-"
                             value={histRows[idx].capital_real}
                             onChange={e => setHistRows(prev => {
@@ -1277,16 +1129,7 @@ export default function AjustesPage() {
                         </td>
                         <td>
                           <input
-                            className="form-input" type="number"
-                            style={{
-                              width: '100px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: 'none',
-                              borderBottom: '1.5px solid rgba(255,255,255,0.15)',
-                              borderRadius: 0,
-                              textAlign: 'center',
-                              padding: '8px 4px'
-                            }}
+                            className={["form-input", styles["uWidth100px"], styles["uBackgroundsurface-sunken"], styles["uBordernone"], styles["uBorderBottom1-5px-solid-rgba-255-255-255-0-15"], styles["uBorderRadius0"], styles["uTextAligncenter"], styles["uPadding8px-4px"]].join(' ')} type="number"
                             placeholder="-"
                             value={histRows[idx].ops_real}
                             onChange={e => setHistRows(prev => {
@@ -1318,56 +1161,46 @@ export default function AjustesPage() {
             />
           )}
           {activeTab === 'datos-masivos' && datosSubTab === 'duplicados' && (
-            <div style={{ width: '100%', margin: '0 auto', padding: '20px 0 60px' }}>
-              <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0,212,255,0.1)', color: '#00d4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <div className={[styles["uWidth100"], styles["uMargin0-auto"], styles["uPadding20px-0-60px"]].join(' ')}>
+              <div className={[styles["uTextAligncenter"], styles["uMarginBottom40px"]].join(' ')}>
+                <div className={[styles["uWidth64px"], styles["uHeight64px"], styles["uBorderRadius50"], styles["uBackgroundrgba-0-212-255-0-111zoi"], styles["uColor00d4ff"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"], styles["uMargin0-auto-20px"]].join(' ')}>
                   <Copy size={28} />
                 </div>
-                <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Detección de Duplicados</h2>
-                <p style={{ color: '#888', fontSize: 13, marginTop: 8, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                <h2 className={[styles["uFontSize28px"], styles["uFontWeight900"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Detección de Duplicados</h2>
+                <p className={[styles["uColortext-muted"], styles["uFontSize13px"], styles["uMarginTop8px"], styles["uFontWeight600"], styles["uLetterSpacing0-5px1llh9"], styles["uTextTransformuppercase"]].join(' ')}>
                   {duplicados.length} Grupos Potenciales Encontrados
                 </p>
               </div>
 
               {/* Minimalist Filters */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '24px', marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px' }}>
+              <div className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uPadding24px"], styles["uMarginBottom32px"], styles["uBoxShadow0-8px-32px-rgba-0-0-0-0-1"]].join(' ')}>
+                <div className={[styles["uDisplaygrid"], styles["uGridTemplateColumnsrepeat-auto-fit-minmax-200px-1fr"], styles["uGap24px"]].join(' ')}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filtrar por Estados</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    <label className={[styles["uDisplayblock"], styles["uFontSize9px"], styles["uColortext-muted"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom12px"]].join(' ')}>Filtrar por Estados</label>
+                    <div className={[styles["uDisplayflex"], styles["uFlexWrapwrap"], styles["uGap6px"]].join(' ')}>
                       {allEstados.map(e => (
-                        <button key={e} onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)} style={{
-                          background: selectedEstados.includes(e) ? '#fff' : 'rgba(255,255,255,0.03)',
-                          color: selectedEstados.includes(e) ? '#000' : '#888',
-                          border: `1px solid ${selectedEstados.includes(e) ? '#fff' : 'rgba(255,255,255,0.08)'}`,
-                          padding: '6px 12px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
-                        }}>
+                        <button className={[styles["uPadding6px-12px"], styles["uBorderRadius8px"], styles["uFontSize10px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s"]].join(' ')} key={e} onClick={() => toggleFilter(selectedEstados, setSelectedEstados, e)} style={{ background: selectedEstados.includes(e) ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: selectedEstados.includes(e) ? 'var(--action-primary)' : 'var(--text-secondary)', border: `1px solid ${selectedEstados.includes(e) ? 'var(--control-border-focus)' : 'var(--border-subtle)'}` }}>
                           {e}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Filtrar por Analistas</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    <label className={[styles["uDisplayblock"], styles["uFontSize9px"], styles["uColortext-muted"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom12px"]].join(' ')}>Filtrar por Analistas</label>
+                    <div className={[styles["uDisplayflex"], styles["uFlexWrapwrap"], styles["uGap6px"]].join(' ')}>
                       {allAnalistas.map(a => (
-                        <button key={a} onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)} style={{
-                          background: selectedAnalistas.includes(a) ? '#fff' : 'rgba(255,255,255,0.03)',
-                          color: selectedAnalistas.includes(a) ? '#000' : '#888',
-                          border: `1px solid ${selectedAnalistas.includes(a) ? '#fff' : 'rgba(255,255,255,0.08)'}`,
-                          padding: '6px 12px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
-                        }}>
+                        <button className={[styles["uPadding6px-12px"], styles["uBorderRadius8px"], styles["uFontSize10px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s"]].join(' ')} key={a} onClick={() => toggleFilter(selectedAnalistas, setSelectedAnalistas, a)} style={{ background: selectedAnalistas.includes(a) ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: selectedAnalistas.includes(a) ? 'var(--action-primary)' : 'var(--text-secondary)', border: `1px solid ${selectedAnalistas.includes(a) ? 'var(--control-border-focus)' : 'var(--border-subtle)'}` }}>
                           {displayAnalista(a)}
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '9px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Rango de Fecha</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input type="date" value={duplicadosFechaDesde} onChange={e => setDuplicadosFechaDesde(e.target.value)} style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', padding: '10px', borderRadius: 8, fontSize: 11, outline: 'none' }} />
-                      <span style={{ color: '#444' }}>-</span>
-                      <input type="date" value={duplicadosFechaHasta} onChange={e => setDuplicadosFechaHasta(e.target.value)} style={{ flex: 1, background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', color: '#ccc', padding: '10px', borderRadius: 8, fontSize: 11, outline: 'none' }} />
+                    <label className={[styles["uDisplayblock"], styles["uFontSize9px"], styles["uColortext-muted"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom12px"]].join(' ')}>Rango de Fecha</label>
+                    <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap8px"]].join(' ')}>
+                      <input className={[styles["uFlex1"], styles["uBackground0a0a0a"], styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles["uColorccc"], styles["uPadding10px"], styles["uBorderRadius8px"], styles["uFontSize11px"], styles["uOutlinenone"]].join(' ')} type="date" value={duplicadosFechaDesde} onChange={e => setDuplicadosFechaDesde(e.target.value)} />
+                      <span className={[styles["uColortext-muted"]].join(' ')}>-</span>
+                      <input className={[styles["uFlex1"], styles["uBackground0a0a0a"], styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles["uColorccc"], styles["uPadding10px"], styles["uBorderRadius8px"], styles["uFontSize11px"], styles["uOutlinenone"]].join(' ')} type="date" value={duplicadosFechaHasta} onChange={e => setDuplicadosFechaHasta(e.target.value)} />
                     </div>
                   </div>
                 </div>
@@ -1375,39 +1208,39 @@ export default function AjustesPage() {
 
               {/* Duplicados List */}
               {duplicados.length === 0 ? (
-                 <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                    <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px', opacity: 0.8 }} />
-                    <p style={{ color: '#34d399', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Pool Limpio</p>
-                    <p style={{ color: '#666', fontSize: 12, marginTop: 8 }}>No se encontraron registros duplicados con estos filtros.</p>
+                 <div className={[styles["uTextAligncenter"], styles["uPadding60px-0"]].join(' ')}>
+                    <CheckCircle className={[styles["uColor34d399"], styles["uMargin0-auto-16px"], styles["uOpacity0-8"]].join(' ')} size={48} />
+                    <p className={[styles["uColor34d399"], styles["uFontSize14px"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing1px"]].join(' ')}>Pool Limpio</p>
+                    <p className={[styles["uColortext-muted"], styles["uFontSize12px"], styles["uMarginTop8px"]].join(' ')}>No se encontraron registros duplicados con estos filtros.</p>
                  </div>
               ) : (
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: 24 }}>
+                 <div className={[styles["uDisplaygrid"], styles["uGridTemplateColumnsrepeat-auto-fill-minmax-450px-1fr"], styles["uGap24px"]].join(' ')}>
                    {duplicados.map(grupo => (
-                      <div key={grupo.key} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                      <div className={[styles["uBackground0a0a0a"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uPadding24px"], styles["uBoxShadowshadow-md"]].join(' ')} key={grupo.key}>
+                         <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uMarginBottom20px"]].join(' ')}>
                             <div>
-                               <h4 style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 4 }}>{grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre?.toUpperCase()}</h4>
-                               <div style={{ fontSize: 10, color: '#888', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                               <h4 className={[styles["uFontSize16px"], styles["uFontWeight900"], styles["uColortext-strong"], styles["uMarginBottom4px"]].join(' ')}>{grupo.tipo === 'cuil' ? grupo.key : grupo.registros[0].nombre?.toUpperCase()}</h4>
+                               <div className={[styles["uFontSize10px"], styles["uColortext-muted"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>
                                  Coincidencia por {grupo.tipo}
                                </div>
                             </div>
-                            <div style={{ background: 'rgba(255,51,102,0.1)', color: '#ff3366', fontSize: 11, fontWeight: 900, padding: '6px 12px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div className={[styles["uBackgroundrgba-255-51-102-0-1"], styles["uColorff3366"], styles["uFontSize11px"], styles["uFontWeight900"], styles["uPadding6px-12px"], styles["uBorderRadius20px"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap6px"]].join(' ')}>
                               <AlertTriangle size={12} /> {grupo.registros.length} Registros
                             </div>
                          </div>
                          
-                         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+                         <div className={[styles["uDisplaygrid"], styles["uGridTemplateColumns1fr"], styles["uGap8px"]].join(' ')}>
                             {grupo.registros.map((r: any) => (
-                               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: 10, transition: 'all 0.2s' }}>
-                                  <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
-                                    <div style={{ color: '#eee', fontSize: 13, fontWeight: 700, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.nombre}</div>
-                                    <div style={{ color: '#666', fontSize: 11, fontWeight: 500, fontFamily: 'monospace' }}>{r.cuil} • {displayAnalista(r.analista)}</div>
+                               <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uPadding16px"], styles["uBackgroundsurface-sunken"], styles["uBorderRadius10px"], styles["uTransitionall-0-2s"]].join(' ')} key={r.id}>
+                                  <div className={[styles["uFlex1"], styles["uMinWidth0"], styles["uPaddingRight16px"]].join(' ')}>
+                                    <div className={[styles["uColortext-strong"], styles["uFontSize13px"], styles["uFontWeight700"], styles["uMarginBottom4px"], styles["uWhiteSpacenowrap"], styles["uOverflowhidden"], styles["uTextOverflowellipsis"]].join(' ')}>{r.nombre}</div>
+                                    <div className={[styles["uColortext-muted"], styles["uFontSize11px"], styles["uFontWeight500"], styles["uFontFamilymonospace"]].join(' ')}>{r.cuil} • {displayAnalista(r.analista)}</div>
                                   </div>
-                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div style={{ color: '#fff', fontSize: 14, fontWeight: 900, marginBottom: 4 }}>{formatCurrency(r.monto)}</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
-                                      <span style={{ color: '#34d399', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{r.estado}</span>
-                                      <span style={{ color: '#555', fontSize: 10 }}>{r.fecha ? formatDate(r.fecha) : '—'}</span>
+                                  <div className={[styles["uTextAlignright"], styles["uFlexShrink0"]].join(' ')}>
+                                    <div className={[styles["uColortext-strong"], styles["uFontSize14px"], styles["uFontWeight900"], styles["uMarginBottom4px"]].join(' ')}>{formatCurrency(r.monto)}</div>
+                                    <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap8px"], styles["uJustifyContentflex-end"]].join(' ')}>
+                                      <span className={[styles["uColor34d399"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>{r.estado}</span>
+                                      <span className={[styles["uColortext-muted"], styles["uFontSize10px"]].join(' ')}>{r.fecha ? formatDate(r.fecha) : '—'}</span>
                                     </div>
                                   </div>
                                </div>
@@ -1419,38 +1252,38 @@ export default function AjustesPage() {
               )}
 
               {/* Variantes de Empleador */}
-              <div style={{ marginTop: 80, textAlign: 'center', marginBottom: 40 }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(251,191,36,0.1)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <div className={[styles["uMarginTop80px"], styles["uTextAligncenter"], styles["uMarginBottom40px"]].join(' ')}>
+                <div className={[styles["uWidth64px"], styles["uHeight64px"], styles["uBorderRadius50"], styles["uBackgroundrgba-251-191-36-0-1"], styles["uColorfbbf24"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"], styles["uMargin0-auto-20px"]].join(' ')}>
                   <Users size={28} />
                 </div>
-                <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Variantes de Empleador</h2>
-                <p style={{ color: '#888', fontSize: 13, marginTop: 8, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                <h2 className={[styles["uFontSize28px"], styles["uFontWeight900"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Variantes de Empleador</h2>
+                <p className={[styles["uColortext-muted"], styles["uFontSize13px"], styles["uMarginTop8px"], styles["uFontWeight600"], styles["uLetterSpacing0-5px1llh9"], styles["uTextTransformuppercase"]].join(' ')}>
                   {variantesEmpleador.length} Grupos con Discrepancias
                 </p>
               </div>
 
               {variantesEmpleador.length === 0 ? (
-                 <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                    <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px', opacity: 0.8 }} />
-                    <p style={{ color: '#34d399', fontSize: 14, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>Completamente Normalizado</p>
-                    <p style={{ color: '#666', fontSize: 12, marginTop: 8 }}>No se encontraron empleadores con múltiples formas de escritura.</p>
+                 <div className={[styles["uTextAligncenter"], styles["uPadding60px-0"]].join(' ')}>
+                    <CheckCircle className={[styles["uColor34d399"], styles["uMargin0-auto-16px"], styles["uOpacity0-8"]].join(' ')} size={48} />
+                    <p className={[styles["uColor34d399"], styles["uFontSize14px"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing1px"]].join(' ')}>Completamente Normalizado</p>
+                    <p className={[styles["uColortext-muted"], styles["uFontSize12px"], styles["uMarginTop8px"]].join(' ')}>No se encontraron empleadores con múltiples formas de escritura.</p>
                  </div>
               ) : (
-                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 16 }}>
+                 <div className={[styles["uDisplaygrid"], styles["uGridTemplateColumnsrepeat-auto-fill-minmax-400px-1fr"], styles["uGap16px"]].join(' ')}>
                    {variantesEmpleador.map((v, i) => (
-                      <div key={i} style={{ background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24, boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                      <div className={[styles["uBackground0a0a0a"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uPadding24px"], styles["uBoxShadowshadow-md"]].join(' ')} key={i}>
+                        <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemsflex-start"], styles["uMarginBottom20px"]].join(' ')}>
                            <div>
-                              <h4 style={{ fontSize: 16, fontWeight: 900, color: '#fbbf24', marginBottom: 6 }}>{v.normalizado}</h4>
-                              <p style={{ fontSize: 11, color: '#888', fontWeight: 600 }}>{v.cantidad} Registros Afectados • {formatCurrency(v.monto)}</p>
+                              <h4 className={[styles["uFontSize16px"], styles["uFontWeight900"], styles["uColorfbbf24"], styles["uMarginBottom6px"]].join(' ')}>{v.normalizado}</h4>
+                              <p className={[styles["uFontSize11px"], styles["uColortext-muted"], styles["uFontWeight600"]].join(' ')}>{v.cantidad} Registros Afectados • {formatCurrency(v.monto)}</p>
                            </div>
-                           <div style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', fontSize: 11, fontWeight: 900, padding: '6px 12px', borderRadius: 20 }}>
+                           <div className={[styles["uBackgroundrgba-251-191-36-0-1"], styles["uColorfbbf24"], styles["uFontSize11px"], styles["uFontWeight900"], styles["uPadding6px-12px"], styles["uBorderRadius20px"]].join(' ')}>
                              {v.variantes.length} Variantes
                            </div>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        <div className={[styles["uDisplayflex"], styles["uFlexWrapwrap"], styles["uGap8px"]].join(' ')}>
                            {v.variantes.map((varName, j) => (
-                              <span key={j} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: '8px 14px', color: '#ccc', fontSize: 12, fontWeight: 600 }}>
+                              <span className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius8px"], styles["uPadding8px-14px"], styles["uColorccc"], styles["uFontSize12px"], styles["uFontWeight600"]].join(' ')} key={j}>
                                 {varName}
                               </span>
                            ))}
@@ -1567,47 +1400,32 @@ export default function AjustesPage() {
             const paged = groupedFiltered.slice((safePage - 1) * AUDIT_PAGE_SIZE, safePage * AUDIT_PAGE_SIZE);
 
             return (
-              <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+              <div className={[styles["uAnimationfadeIn-0-3s-ease-out"]].join(' ')}>
                 {/* HEADER */}
-                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 4, height: 28, borderRadius: 2, background: '#fff' }} />
+                <header className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemsflex-start"], styles["uMarginBottom24px"]].join(' ')}>
+                  <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap12px"]].join(' ')}>
+                    <div className={[styles["uWidth4px"], styles["uHeight28px"], styles["uBorderRadius2px"], styles["uBackgroundfff"]].join(' ')} />
                     <div>
-                      <h1 style={{ fontSize: '24px', fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>Log de Auditoría</h1>
-                      <p style={{ fontSize: '12px', color: '#555', marginTop: 2 }}>Registro de actividad del sistema</p>
+                      <h1 className={[styles["uFontSize24px"], styles["uFontWeight900"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Log de Auditoría</h1>
+                      <p className={[styles["uFontSize12px"], styles["uColortext-muted"], styles["uMarginTop2px"]].join(' ')}>Registro de actividad del sistema</p>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <button onClick={limpiarLogAuditoria}
+                  <div className={[styles["uDisplayflex"], styles["uGap12px"]].join(' ')}>
+                    <button className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap6px"], styles["uPadding8px-14px"], styles["uBorderRadius6px"], styles["uFontSize11px"], styles["uFontWeight700"], styles["uBordernone"], styles["uTransitionall-0-2s"], styles.auditDeleteButton].join(' ')} onClick={limpiarLogAuditoria}
                       disabled={limpiandoLog || !auditoriaRegistros?.length}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6,
-                        fontSize: '11px', fontWeight: 700, border: 'none',
-                        cursor: (limpiandoLog || !auditoriaRegistros?.length) ? 'not-allowed' : 'pointer',
-                        background: limpiandoLog ? 'rgba(220,53,69,0.5)' : 'rgba(220,53,69,0.1)',
-                        color: limpiandoLog ? '#888' : '#ff3366',
-                        opacity: (limpiandoLog || !auditoriaRegistros?.length) ? 0.4 : 1, transition: 'all 0.2s',
-                      }}>
+                      style={{ cursor: (limpiandoLog || !auditoriaRegistros?.length) ? 'not-allowed' : 'pointer', opacity: (limpiandoLog || !auditoriaRegistros?.length) ? 0.45 : 1 }}>
                       <Trash2 size={13} /> {limpiandoLog ? 'Limpiando...' : 'Limpiar Todo'}
                     </button>
                   </div>
                 </header>
 
                 {/* FILTERS TOOLBAR */}
-                <div style={{
-                  display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center',
-                  paddingBottom: 20, marginBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.04)'
-                }}>
-                  <div style={{ position: 'relative', flex: '1 1 200px' }}>
-                    <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
-                    <input
+                <div className={[styles["uDisplayflex"], styles["uFlexWrapwrap"], styles["uGap12px"], styles["uAlignItemscenter"], styles["uPaddingBottom20px"], styles["uMarginBottom20px"], styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
+                  <div className={[styles["uPositionrelative"], styles["uFlex1-1-200px"]].join(' ')}>
+                    <Search className={[styles["uPositionabsolute"], styles["uLeft12px"], styles["uTop50"], styles["uTransformtranslateY-50"], styles["uColortext-muted"]].join(' ')} size={14} />
+                    <input className={[styles["uWidth100"], styles["uPadding8px-12px-8px-36px"], styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uColoreaeaea"], styles["uFontSize12px"], styles["uOutlinenone"], styles["uTransitionall-0-2s"]].join(' ')}
                       value={auditSearch} onChange={e => { setAuditSearch(e.target.value); setAuditPage(1); }}
                       placeholder="Buscar cliente, analista o acción..."
-                      style={{
-                        width: '100%', padding: '8px 12px 8px 36px', background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, color: '#eaeaea',
-                        fontSize: '12px', outline: 'none', transition: 'all 0.2s'
-                      }}
                       onFocus={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
                       onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
                     />
@@ -1634,61 +1452,49 @@ export default function AjustesPage() {
                     width="140px"
                   />
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <input
+                  <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap6px"]].join(' ')}>
+                    <input className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uColorccc"], styles["uFontSize12px"], styles["uPadding8px-12px"], styles["uOutlinenone"], styles["uCursorpointer"], styles["uColorSchemedark"]].join(' ')}
                       type="date"
                       value={auditFechaDesde}
                       onChange={e => { setAuditFechaDesde(e.target.value); setAuditPage(1); }}
                       title="Fecha desde"
-                      style={{
-                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                        color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer', colorScheme: 'dark',
-                      }}
                     />
-                    <span style={{ color: '#555', fontSize: 12 }}>→</span>
-                    <input
+                    <span className={[styles["uColortext-muted"], styles["uFontSize12px"]].join(' ')}>→</span>
+                    <input className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uColorccc"], styles["uFontSize12px"], styles["uPadding8px-12px"], styles["uOutlinenone"], styles["uCursorpointer"], styles["uColorSchemedark"]].join(' ')}
                       type="date"
                       value={auditFechaHasta}
                       onChange={e => { setAuditFechaHasta(e.target.value); setAuditPage(1); }}
                       title="Fecha hasta"
-                      style={{
-                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                        color: '#ccc', fontSize: '12px', padding: '8px 12px', outline: 'none', cursor: 'pointer', colorScheme: 'dark',
-                      }}
                     />
                     {(auditFechaDesde || auditFechaHasta) && (
-                      <button
+                      <button className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uColortext-muted"], styles["uFontSize12px"], styles["uPadding8px-10px"], styles["uOutlinenone"], styles["uCursorpointer"], styles["uLineHeight1"]].join(' ')}
                         onClick={() => { setAuditFechaDesde(''); setAuditFechaHasta(''); setAuditPage(1); }}
                         title="Limpiar fechas"
-                        style={{
-                          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-                          color: '#888', fontSize: '12px', padding: '8px 10px', outline: 'none', cursor: 'pointer', lineHeight: 1,
-                        }}
                       >✕</button>
                     )}
                   </div>
                 </div>
 
                 {/* DATA TABLE */}
-                <div style={{ background: '#111111', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 6, overflow: 'hidden' }}>
+                <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uOverflowhidden"]].join(' ')}>
                   {auditoriaLoading ? (
-                    <div className="loading-container" style={{ minHeight: 200 }}><div className="spinner" /><span>Cargando registros...</span></div>
+                    <div className={["loading-container", styles["uMinHeight200px"]].join(' ')}><div className="spinner" /><span>Cargando registros...</span></div>
                   ) : !filtered.length ? (
-                    <div className="empty-state" style={{ minHeight: 200 }}>
-                      <Shield size={36} color="#333" style={{ marginBottom: 8 }} />
-                      <p style={{ fontWeight: 800, fontSize: '13px', color: '#444' }}>{auditSearch || auditFilterAccion !== 'todas' || auditFilterAnalista !== 'todos' || auditFilterPeriodo !== 'todo' ? 'Sin resultados para los filtros aplicados' : 'No hay registros de auditoría'}</p>
+                    <div className={["empty-state", styles["uMinHeight200px"]].join(' ')}>
+                      <Shield className={[styles["uMarginBottom8px"]].join(' ')} size={36} color="#333" />
+                      <p className={[styles["uFontWeight800"], styles["uFontSize13px"], styles["uColortext-muted"]].join(' ')}>{auditSearch || auditFilterAccion !== 'todas' || auditFilterAnalista !== 'todos' || auditFilterPeriodo !== 'todo' ? 'Sin resultados para los filtros aplicados' : 'No hay registros de auditoría'}</p>
                     </div>
                   ) : (
                     <>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table className="data-table" style={{ marginBottom: 0, tableLayout: 'fixed', minWidth: 1200 }}>
+                      <div className={[styles["uOverflowXauto"]].join(' ')}>
+                        <table className={["data-table", styles["uMarginBottom0"], styles["uTableLayoutfixed"], styles["uMinWidth1200px"]].join(' ')}>
                           <thead>
-                            <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Fecha / Hora</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '160px' }}>Analista</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '180px' }}>Acción</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px', width: '240px' }}>Cliente</th>
-                              <th style={{ textAlign: 'left', fontSize: '10px', fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '12px 16px' }}>Detalles</th>
+                            <tr className={[styles["uBackgroundsurface-sunken"]].join(' ')}>
+                              <th className={[styles["uTextAlignleft"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uColortext-muted"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"], styles["uPadding12px-16px"], styles["uWidth160px"]].join(' ')}>Fecha / Hora</th>
+                              <th className={[styles["uTextAlignleft"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uColortext-muted"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"], styles["uPadding12px-16px"], styles["uWidth160px"]].join(' ')}>Analista</th>
+                              <th className={[styles["uTextAlignleft"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uColortext-muted"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"], styles["uPadding12px-16px"], styles["uWidth180px"]].join(' ')}>Acción</th>
+                              <th className={[styles["uTextAlignleft"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uColortext-muted"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"], styles["uPadding12px-16px"], styles["uWidth240px"]].join(' ')}>Cliente</th>
+                              <th className={[styles["uTextAlignleft"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uColortext-muted"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"], styles["uPadding12px-16px"]].join(' ')}>Detalles</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1696,40 +1502,31 @@ export default function AjustesPage() {
                               const rowKey = reg.id ?? `${reg.fecha_hora}-${idx}`;
                               const ac = accionColor(reg.accion);
                               return (
-                                <tr
+                                <tr className={[styles["uBorderBottom1px-solid-border-subtle"], styles.auditRow].join(' ')}
                                   key={rowKey}
-                                  style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.015)'; }}
-                                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                                 >
-                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                    <div style={{ fontSize: '12px', color: '#eaeaea', whiteSpace: 'nowrap', fontWeight: 600 }}>{relativeTime(reg.fecha_hora)}</div>
-                                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap' }}>{formatDateTime(reg.fecha_hora)}</div>
+                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
+                                    <div className={[styles["uFontSize12px"], styles["uColoreaeaea"], styles["uWhiteSpacenowrap"], styles["uFontWeight600"]].join(' ')}>{relativeTime(reg.fecha_hora)}</div>
+                                    <div className={[styles["uFontSize10px"], styles["uColortext-muted"], styles["uMarginTop2px"], styles["uWhiteSpacenowrap"]].join(' ')}>{formatDateTime(reg.fecha_hora)}</div>
                                   </td>
-                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                    <span style={{ fontSize: '12px', color: '#ccc', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', display: 'block' }}>{reg.analista || reg.id_analista || '—'}</span>
+                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
+                                    <span className={[styles["uFontSize12px"], styles["uColorccc"], styles["uFontWeight600"], styles["uWhiteSpacenowrap"], styles["uTextOverflowellipsis"], styles["uOverflowhidden"], styles["uDisplayblock"]].join(' ')}>{reg.analista || reg.id_analista || '—'}</span>
                                   </td>
-                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                    <span style={{
-                                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                                      fontSize: '11px', fontWeight: 700, color: ac.color, whiteSpace: 'nowrap'
-                                    }}>
+                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
+                                    <span className={[styles["uDisplayinline-flex"], styles["uAlignItemscenter"], styles["uGap6px"], styles["uFontSize11px"], styles["uFontWeight700"], styles["uWhiteSpacenowrap"]].join(' ')} style={{ color: ac.color }}>
                                       {accionIcon(reg.accion)}
                                       {reg.accion}
                                     </span>
                                   </td>
-                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
-                                    <div style={{ fontSize: '12px', color: '#eaeaea', fontWeight: 600, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{reg.nombre || '—'}</div>
-                                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2, whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{reg.cuil || '—'}</div>
+                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
+                                    <div className={[styles["uFontSize12px"], styles["uColoreaeaea"], styles["uFontWeight600"], styles["uWhiteSpacenowrap"], styles["uTextOverflowellipsis"], styles["uOverflowhidden"]].join(' ')}>{reg.nombre || '—'}</div>
+                                    <div className={[styles["uFontSize10px"], styles["uColortext-muted"], styles["uMarginTop2px"], styles["uWhiteSpacenowrap"], styles["uFontFamilymonospace"]].join(' ')}>{reg.cuil || '—'}</div>
                                   </td>
-                                  <td style={{ padding: '12px 16px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
                                     {renderDetalleAudit(reg)}
                                     {reg.isGroup && reg.subRecords?.length > 1 && (
-                                      <button
+                                      <button className={[styles["uMarginTop6px"], styles["uDisplayinline-flex"], styles["uAlignItemscenter"], styles["uGap4px"], styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles["uColortext-muted"], styles["uPadding4px-8px"], styles["uBorderRadius4px"], styles["uFontSize10px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s"], styles.historyButton].join(' ')}
                                         onClick={() => setAuditGroupModal({ title: `Historial de ${reg.nombre || 'Registro'}`, records: reg.subRecords })}
-                                        style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#aaa', padding: '4px 8px', borderRadius: 4, fontSize: '10px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}
-                                        onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
                                       >
                                         <History size={10} /> Ver historial completo ({reg.subRecords.length})
                                       </button>
@@ -1743,19 +1540,12 @@ export default function AjustesPage() {
                       </div>
 
                       {/* PAGINATION */}
-                      <div style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.04)', background: 'rgba(0,0,0,0.2)'
-                      }}>
-                        <span style={{ fontSize: '11px', color: '#555', fontWeight: 600 }}>
+                      <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uPadding12px-20px"], styles["uBorderTop1px-solid-border-subtle"], styles["uBackgroundsurface-sunken"]].join(' ')}>
+                        <span className={[styles["uFontSize11px"], styles["uColortext-muted"], styles["uFontWeight600"]].join(' ')}>
                           Mostrando {(safePage - 1) * AUDIT_PAGE_SIZE + (groupedFiltered.length > 0 ? 1 : 0)}–{Math.min(safePage * AUDIT_PAGE_SIZE, groupedFiltered.length)} de {groupedFiltered.length}
                         </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <button onClick={() => setAuditPage(p => Math.max(1, p - 1))} disabled={safePage <= 1} style={{
-                            width: 28, height: 28, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
-                            background: 'rgba(255,255,255,0.02)', color: safePage <= 1 ? '#333' : '#888',
-                            cursor: safePage <= 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}><ChevronLeft size={14} /></button>
+                        <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap6px"]].join(' ')}>
+                          <button className={[styles["uWidth28px"], styles["uHeight28px"], styles["uBorderRadius4px"], styles["uBorder1px-solid-border-subtle"], styles["uBackgroundsurface-sunken"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"]].join(' ')} onClick={() => setAuditPage(p => Math.max(1, p - 1))} disabled={safePage <= 1} style={{ color: safePage <= 1 ? 'var(--text-muted)' : 'var(--text-secondary)', cursor: safePage <= 1 ? 'not-allowed' : 'pointer' }}><ChevronLeft size={14} /></button>
                           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                             let page: number;
                             if (totalPages <= 5) page = i + 1;
@@ -1763,21 +1553,10 @@ export default function AjustesPage() {
                             else if (safePage >= totalPages - 2) page = totalPages - 4 + i;
                             else page = safePage - 2 + i;
                             return (
-                              <button key={page} onClick={() => setAuditPage(page)} style={{
-                                width: 28, height: 28, borderRadius: 4, border: '1px solid',
-                                fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                                fontFamily: "'Outfit', sans-serif",
-                                borderColor: safePage === page ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.06)',
-                                background: safePage === page ? '#fff' : 'rgba(255,255,255,0.02)',
-                                color: safePage === page ? '#000' : '#666',
-                              }}>{page}</button>
+                              <button className={[styles["uWidth28px"], styles["uHeight28px"], styles["uBorderRadius4px"], styles["uBorder1px-solid"], styles["uFontSize11px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-15s"], styles.uFontFamilyUi].join(' ')} key={page} onClick={() => setAuditPage(page)} style={{ borderColor: safePage === page ? 'var(--control-border-focus)' : 'var(--border-subtle)', background: safePage === page ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: safePage === page ? 'var(--action-primary)' : 'var(--text-secondary)' }}>{page}</button>
                             );
                           })}
-                          <button onClick={() => setAuditPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} style={{
-                            width: 28, height: 28, borderRadius: 4, border: '1px solid rgba(255,255,255,0.06)',
-                            background: 'rgba(255,255,255,0.02)', color: safePage >= totalPages ? '#333' : '#888',
-                            cursor: safePage >= totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}><ChevronRight size={14} /></button>
+                          <button className={[styles["uWidth28px"], styles["uHeight28px"], styles["uBorderRadius4px"], styles["uBorder1px-solid-border-subtle"], styles["uBackgroundsurface-sunken"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"]].join(' ')} onClick={() => setAuditPage(p => Math.min(totalPages, p + 1))} disabled={safePage >= totalPages} style={{ color: safePage >= totalPages ? 'var(--text-muted)' : 'var(--text-secondary)', cursor: safePage >= totalPages ? 'not-allowed' : 'pointer' }}><ChevronRight size={14} /></button>
                         </div>
                       </div>
                     </>
@@ -1789,10 +1568,9 @@ export default function AjustesPage() {
           })()}
 
           {/* TABS PESADAS (componentes dinamicos) — KEEP-ALIVE: se montan al primer acceso y se ocultan con display:none */}
-          {visitedTabs.has('comparativa-tab') && (
-            <div style={{ display: heavyVisibility['comparativa-tab'] ? 'block' : 'none' }}>
-              <ComparativaAnalistasTab />
-            </div>
+          {/* P-C: sin estado critico ni operaciones activas -> montaje condicional real */}
+          {heavyVisibility['comparativa-tab'] && (
+            <ComparativaAnalistasTab />
           )}
           {visitedTabs.has('resumen-mensual') && (
             <div style={{ display: heavyVisibility['resumen-mensual'] ? 'block' : 'none' }}>
@@ -1802,6 +1580,7 @@ export default function AjustesPage() {
                 diasConfig={ctxDias}
                 onSuccess={showSuccess}
                 onError={showError}
+                active={heavyVisibility['resumen-mensual']}
               />
             </div>
           )}
@@ -1847,37 +1626,27 @@ export default function AjustesPage() {
 
       {/* MODAL HISTORIAL DE CAMBIOS — Portal al body para evitar stacking context */}
       {auditGroupModal && typeof document !== 'undefined' && ReactDOM.createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', zIndex: 99999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-          animation: 'fadeIn 0.2s ease-out'
-        }}>
-          <div style={{
-            background: '#111', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 12, width: '100%', maxWidth: 880, maxHeight: '90vh',
-            display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-            animation: 'slideInUp 0.2s ease-out'
-          }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={[styles["uPositionfixed"], styles["uTop0"], styles["uLeft0"], styles["uRight0"], styles["uBottom0"], styles["uBackgroundrgba-0-0-0-0-6"], styles["uBackdropFilterblur-5px"], styles["uZIndex99999"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"], styles["uPadding20px"], styles["uAnimationfadeIn-0-2s-ease-out"]].join(' ')}>
+          <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles["uBorderRadius12px"], styles["uWidth100"], styles["uMaxWidth880px"], styles["uMaxHeight90vh"], styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uBoxShadowshadow-md"], styles["uAnimationslideInUp-0-2s-ease-out"]].join(' ')}>
+            <div className={[styles["uPadding20px-24px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"]].join(' ')}>
               <div>
-                <h3 style={{ fontSize: 21, fontWeight: 800, color: '#fff' }}>{auditGroupModal.title}</h3>
-                <p style={{ fontSize: 13, color: '#888', marginTop: 4 }}>{auditGroupModal.records.length} modificaciones registradas</p>
+                <h3 className={[styles["uFontSize21px"], styles["uFontWeight800"], styles["uColortext-strong"]].join(' ')}>{auditGroupModal.title}</h3>
+                <p className={[styles["uFontSize13px"], styles["uColortext-muted"], styles["uMarginTop4px"]].join(' ')}>{auditGroupModal.records.length} modificaciones registradas</p>
               </div>
-              <button onClick={() => setAuditGroupModal(null)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#888', cursor: 'pointer', padding: 6, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = '#888'; }}>
+              <button className={[styles["uBackgroundsurface-sunken"], styles["uBordernone"], styles["uColortext-muted"], styles["uCursorpointer"], styles["uPadding6px"], styles["uBorderRadius50"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"], styles["uTransitionall-0-2s"], styles.modalCloseButton].join(' ')} onClick={() => setAuditGroupModal(null)}>
                 <X size={16} />
               </button>
             </div>
-            <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className={[styles["uPadding24px"], styles["uOverflowYauto"], styles["uFlex1"], styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uGap12px"]].join(' ')}>
               {auditGroupModal.records.map((r, i) => (
-                <div key={i} style={{ background: 'rgba(255,255,255,0.02)', padding: '20px 24px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 14, borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                    <span style={{ fontSize: 14, color: '#aaa', fontWeight: 600 }}>{formatDateTime(r.fecha_hora)}</span>
-                    <span style={{ fontSize: 14, color: '#eaeaea', fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '5px 12px', borderRadius: 4 }}>
+                <div className={[styles["uBackgroundsurface-sunken"], styles["uPadding20px-24px"], styles["uBorderRadius8px"], styles["uBorder1px-solid-border-subtle"]].join(' ')} key={i}>
+                  <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uMarginBottom16px"], styles["uPaddingBottom14px"], styles["uBorderBottom1px-dashed-border-subtle"]].join(' ')}>
+                    <span className={[styles["uFontSize14px"], styles["uColortext-muted"], styles["uFontWeight600"]].join(' ')}>{formatDateTime(r.fecha_hora)}</span>
+                    <span className={[styles["uFontSize14px"], styles["uColoreaeaea"], styles["uFontWeight700"], styles["uBackgroundsurface-sunken"], styles["uPadding5px-12px"], styles["uBorderRadius4px"]].join(' ')}>
                       {r.analista || r.id_analista}
                     </span>
                   </div>
-                  <div style={{ paddingLeft: 4 }}>
+                  <div className={[styles["uPaddingLeft4px"]].join(' ')}>
                     {renderCamposAudit(r)}
                   </div>
                 </div>

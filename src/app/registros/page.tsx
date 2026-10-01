@@ -5,10 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL, parsePastedNumber } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, Maximize2, Minimize2, User } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, User, ArrowUpDown, List, Grid2X2, Rows3 } from 'lucide-react';
+import CustomSelect from '@/components/CustomSelect';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
-import { useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
@@ -16,10 +16,12 @@ import { logAudit } from '@/lib/audit';
 import { corregirTildes } from '@/lib/correccion-tildes';
 import ModalPortal from '@/components/ModalPortal';
 import BitacoraModal from '@/components/BitacoraModal';
-import { TagBadge, EtiquetasModal } from '@/components/EtiquetasSelector';
-import { Tag } from 'lucide-react';
+import { TagBadge } from '@/components/EtiquetasSelector';
 import { getLocalidadesByCP, getCPByLocalidad, addCustomMapping } from '@/lib/codigos-postales';
 import { useSearchParams } from 'next/navigation';
+import { PremiumSelect } from '@/components/PremiumSelect';
+import { CorporateDatePicker } from '@/components/CorporateDatePicker';
+import styles from './RegistrosPage.module.css';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -198,6 +200,16 @@ const ESTABLECIMIENTOS_CONSEJO_EDUCACION = [
   'Unidad Educativa del Centenario Nivel Inicial 2',
 ].sort();
 
+/**
+ * Abre el chat de WhatsApp del número. Si tiene 10 dígitos (ej. 3434538564) se
+ * le antepone el código de país y de celular de Argentina (549).
+ * Estaba repetido en las tres ramas que ofrecen "guardar y enviar".
+ */
+function abrirWhatsApp(telefono: string) {
+  const waNum = telefono.length === 10 ? `549${telefono}` : telefono;
+  window.open(`https://web.whatsapp.com/send?phone=${waNum}`, '_blank');
+}
+
 function norm(s: string) {
   return s.toUpperCase()
     .replace(/[ÁÀÄÂ]/g, 'A')
@@ -350,311 +362,15 @@ const Field = memo(function Field({ label, error, children, transparentLabel }: 
 
   return (
     <div className="form-group">
-      <label className="form-label" style={transparentLabel ? { color: 'transparent', userSelect: 'none' } : undefined}>
+      <label className={`form-label ${transparentLabel ? styles.fieldLabelTransparent : ''}`}>
         {cleanLabel || '—'}
-        {isRequired && <span style={{ color: 'var(--rojo)', marginLeft: 4 }}>*</span>}
-        {error && <span style={{ color: 'var(--rojo)', fontWeight: 400, marginLeft: 6 }}>— {error}</span>}
+        {isRequired && <span className={`form-label__required ${styles.fieldRequired}`}>*</span>}
+        {error && <span className={`form-label__error ${styles.fieldError}`}>— {error}</span>}
       </label>
       {children}
     </div>
   );
 });
-
-// ── PremiumSelect Component ───────────────────────────────────────────────────
-
-const PremiumSelect = ({
-  value,
-  onChange,
-  options,
-  placeholder = "Seleccionar...",
-  isSearchable = false,
-  groups,
-  onAddCustom,
-  error,
-  disabled = false,
-  style,
-  maxHeight,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  options?: string[];
-  placeholder?: string;
-  isSearchable?: boolean;
-  groups?: { label: string; items: string[] }[];
-  onAddCustom?: () => void;
-  error?: string;
-  disabled?: boolean;
-  style?: React.CSSProperties;
-  maxHeight?: string;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [openUpward, setOpenUpward] = useState(false);
-  const [search, setSearch] = useState("");
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  const toggleOpen = () => {
-    if (disabled) return;
-    if (!isOpen && ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      setOpenUpward(spaceBelow < 250);
-    }
-    setIsOpen(prev => !prev);
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
-    };
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  const filteredOptions = useMemo(() => {
-    if (!search.trim()) return options || [];
-    const q = search.toLowerCase();
-    return (options || []).filter(opt => opt.toLowerCase().includes(q));
-  }, [options, search]);
-
-  const filteredGroups = useMemo(() => {
-    if (!groups) return null;
-    if (!search.trim()) return groups;
-    const q = search.toLowerCase();
-    return groups.map(g => ({
-      ...g,
-      items: g.items.filter(item => item.toLowerCase().includes(q))
-    })).filter(g => g.items.length > 0);
-  }, [groups, search]);
-
-  const handleSelect = (val: string) => {
-    onChange(val);
-    setIsOpen(false);
-    setSearch("");
-  };
-
-  const addCustomBtn = onAddCustom && (
-    <div
-      onClick={(e) => { e.stopPropagation(); onAddCustom(); setIsOpen(false); }}
-      style={{
-        padding: '10px 12px',
-        fontSize: '12px',
-        color: '#34d399',
-        fontWeight: 800,
-        cursor: 'pointer',
-        borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-        background: '#141418',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        position: 'sticky',
-        bottom: 0,
-        zIndex: 20,
-        boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.6)'
-      }}
-      onMouseEnter={e => e.currentTarget.style.background = '#1e1e24'}
-      onMouseLeave={e => e.currentTarget.style.background = '#141418'}
-    >
-      <Plus size={14} /> {search ? `Agregar "${search}"...` : 'Agregar otro...'}
-    </div>
-  );
-
-  return (
-    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
-      <div
-        className="form-select"
-        tabIndex={disabled ? -1 : 0}
-        onClick={toggleOpen}
-        onKeyDown={e => { 
-          if (!disabled && (e.key === 'Enter' || e.key === ' ')) { 
-            e.preventDefault(); 
-            toggleOpen();
-          } 
-          if (e.key === 'Escape') {
-            e.stopPropagation();
-            setIsOpen(false);
-          }
-        }}
-        style={{
-          width: '100%',
-          height: '38px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 12px',
-          background: disabled ? 'rgba(255,255,255,0.02)' : '#000000',
-          border: `1px solid ${isOpen ? '#34d399' : (error ? 'var(--rojo)' : 'rgba(255, 255, 255, 0.12)')}`,
-          borderRadius: '8px',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          color: disabled ? 'var(--text-muted)' : (value ? '#e7e5e4' : '#9ca3af'),
-          fontSize: '13px',
-          transition: 'all 0.2s ease',
-          opacity: disabled ? 0.6 : 1,
-          outline: 'none',
-          boxSizing: 'border-box',
-          ...style
-        }}
-      >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {value || placeholder}
-        </span>
-        <ChevronDown size={14} style={{
-          flexShrink: 0,
-          marginLeft: 8,
-          transition: 'transform 0.3s ease',
-          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-          opacity: 0.5
-        }} />
-      </div>
-
-      {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: openUpward ? 'auto' : 'calc(100% + 4px)',
-          bottom: openUpward ? 'calc(100% + 4px)' : 'auto',
-          left: 0,
-          right: 0,
-          background: '#0c0c0c',
-          border: '1px solid rgba(255,255,255,0.14)',
-          borderRadius: '10px',
-          boxShadow: '0 12px 36px rgba(0,0,0,0.95)',
-          zIndex: 9999,
-          overflow: 'hidden',
-          animation: 'selectFade 0.2s ease-out'
-        }}>
-          {isSearchable && (
-            <div style={{
-              padding: '8px',
-              borderBottom: '1px solid var(--border)',
-              background: 'rgba(255,255,255,0.01)'
-            }}>
-              <div style={{ position: 'relative' }}>
-                <Search size={12} style={{
-                  position: 'absolute',
-                  left: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-muted)'
-                }} />
-                <input
-                  autoFocus
-                  placeholder="Buscar..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  onClick={e => e.stopPropagation()}
-                  style={{
-                    width: '100%',
-                    padding: '8px 8px 8px 28px',
-                    fontSize: '12px',
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    outline: 'none'
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          <div style={{
-            maxHeight: maxHeight !== undefined ? maxHeight : (isSearchable ? '300px' : 'none'),
-            overflowY: (maxHeight !== undefined ? maxHeight !== 'none' : isSearchable) ? 'auto' : 'visible',
-            padding: '4px'
-          }}>
-            {!search && (
-              <div
-                onClick={(e) => { e.stopPropagation(); handleSelect(""); }}
-                style={{
-                  padding: '8px 10px',
-                  fontSize: '13px',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  borderRadius: '6px',
-                  marginBottom: '4px',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontStyle: 'italic'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <X size={12} /> Sin especificar
-              </div>
-            )}
-            {groups ? (
-              <>
-                {filteredGroups?.map((g, idx) => (
-                  <div key={idx}>
-                    <div style={{
-                      padding: '8px 10px 4px',
-                      fontSize: '9px',
-                      fontWeight: 800,
-                      color: 'var(--gris)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
-                    }}>{g.label}</div>
-                    {g.items.map(opt => (
-                      <div
-                        key={opt}
-                        onClick={(e) => { e.stopPropagation(); handleSelect(opt); }}
-                        style={{
-                          padding: '8px 10px',
-                          fontSize: '13px',
-                          color: value === opt ? '#86efac' : '#fff',
-                          background: value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent',
-                          cursor: 'pointer',
-                          borderRadius: '6px',
-                          margin: '2px 0'
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                        onMouseLeave={e => e.currentTarget.style.background = value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent'}
-                      >
-                        {opt}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-                {addCustomBtn}
-              </>
-            ) : (
-              <>
-                {filteredOptions.length > 0 ? (
-                  filteredOptions.map(opt => (
-                    <div
-                      key={opt}
-                      onClick={(e) => { e.stopPropagation(); handleSelect(opt); }}
-                      style={{
-                        padding: '8px 10px',
-                        fontSize: '13px',
-                        color: value === opt ? '#86efac' : '#fff',
-                        background: value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent',
-                        cursor: 'pointer',
-                        borderRadius: '6px',
-                        margin: '2px 0'
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                      onMouseLeave={e => e.currentTarget.style.background = value === opt ? 'rgba(134, 239, 172, 0.1)' : 'transparent'}
-                    >
-                      {opt}
-                    </div>
-                  ))
-                ) : !onAddCustom && (
-                  <div style={{ padding: '12px', textAlign: 'center', color: 'var(--gris)', fontSize: '12px' }}>
-                    Sin resultados
-                  </div>
-                )}
-                {addCustomBtn}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-      {/* selectFade animation is in globals.css */}
-    </div>
-  );
-};
 
 // ── Modal: WhatsApp ─────────────────────────────────────────────────────────────
 
@@ -692,87 +408,63 @@ const WhatsappModal = memo(function WhatsappModal({
   if (!registro) return null;
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onCancel} style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1200 }}>
-        <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '400px', background: 'var(--bg-elev-1)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-          <div style={{
-              background: 'rgba(14, 14, 18, 0.96)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '16px 16px 0 0',
-              padding: '20px 24px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: '16px',
-            }}>
+      <div className={`modal-overlay ${styles.phoneOverlay}`} onClick={onCancel}>
+        <motion.div className={`modal-content ${styles.phoneModal}`} onClick={e => e.stopPropagation()}>
+          <div className={styles.phoneHeader}>
+            <div className={styles.phoneHeaderCopy}>
+              <span className={styles.phoneIcon} aria-hidden="true">
+                <WhatsAppIcon size={20} />
+              </span>
               <div>
-                <h3 style={{
-                  fontSize: '13px', fontWeight: 800, color: '#25D366', margin: '0 0 6px 0',
-                  textTransform: 'uppercase', letterSpacing: '0.5px',
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                }}>
-                  <WhatsAppIcon size={16} />
-                  WhatsApp / Teléfono
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
-                  {registro.nombre ? <span style={{ color: '#fff', fontWeight: 700 }}>{registro.nombre} — </span> : null}
-                  Ingresá el número de teléfono para continuar
-                </p>
+                <h3 className={styles.phoneTitle}>WhatsApp y teléfono</h3>
+                <p className={styles.phoneSubtitle}>Guardá el número o iniciá una conversación.</p>
               </div>
-              <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={16} /></button>
             </div>
-          <div className="modal-body" style={{ padding: '24px 28px 28px' }}>
+            <button type="button" className={styles.phoneClose} onClick={onCancel} aria-label="Cerrar modal">
+              <X size={19} />
+            </button>
+          </div>
+          <div className={styles.phoneBody}>
+            {registro.nombre ? (
+              <div className={styles.phoneContact}>
+                <span className={styles.phoneContactLabel}>Cliente</span>
+                <strong>{registro.nombre}</strong>
+              </div>
+            ) : null}
+            <label className={styles.phoneLabel} htmlFor="whatsapp-phone">Número de teléfono</label>
             <input
+              id="whatsapp-phone"
               autoFocus
               type="tel"
-              className="form-input"
+              inputMode="numeric"
               value={telefono}
               onChange={e => { setTelefono(e.target.value.replace(/\D/g, '').slice(0, 10)); setErrorVisible(false); }}
-              placeholder="Ej: 3434538564 (10 dígitos)"
-              style={{ width: '100%', borderColor: errorVisible ? '#ef4444' : undefined }}
+              placeholder="Ej: 3434538564"
+              className={`form-input ${styles.phoneInput} ${errorVisible ? styles.phoneInputError : ''}`}
+              aria-invalid={errorVisible}
+              aria-describedby={errorVisible ? 'whatsapp-phone-error' : 'whatsapp-phone-hint'}
             />
-            {/* Pop-up de error inline */}
-            <motion.div
-              initial={false}
-              animate={errorVisible ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: -6, scale: 0.97 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              style={{
-                marginTop: 10,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '9px 13px',
-                borderRadius: 8,
-                background: 'rgba(239,68,68,0.13)',
-                border: '1px solid rgba(239,68,68,0.35)',
-                color: '#fca5a5',
-                fontSize: 12,
-                fontWeight: 700,
-                pointerEvents: 'none',
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              El teléfono es obligatorio
-            </motion.div>
+            {errorVisible ? (
+              <motion.div
+                id="whatsapp-phone-error"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={styles.phoneError}
+              >
+                El teléfono es obligatorio.
+              </motion.div>
+            ) : (
+              <p id="whatsapp-phone-hint" className={styles.phoneHint}>Ingresá 10 dígitos, sin 0 ni 15.</p>
+            )}
           </div>
-          <div className="modal-footer" style={{ padding: '20px 28px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <button className="btn-secondary" onClick={onCancel} style={{
-              background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
-              fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-            }}>CANCELAR</button>
-            <button className="btn-secondary" onClick={() => handleConfirm('save')} style={{
-              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontWeight: 800,
-              padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
-            }}>
-              GUARDAR
+          <div className={styles.phoneFooter}>
+            <button type="button" className={styles.phoneCancel} onClick={onCancel}>Cancelar</button>
+            <button type="button" className={styles.phoneSave} onClick={() => handleConfirm('save')}>
+              Guardar
             </button>
-            <button className="btn-primary" onClick={() => handleConfirm('send')} style={{
-              background: '#25D366', color: '#fff', border: 'none', fontWeight: 800,
-              padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer'
-            }}>
-              ENVIAR
+            <button type="button" className={styles.phoneSend} onClick={() => handleConfirm('send')}>
+              <WhatsAppIcon size={17} />
+              Enviar por WhatsApp
             </button>
           </div>
         </motion.div>
@@ -805,6 +497,22 @@ const RegistroModal = memo(function RegistroModal({
   const [cpAddOpen, setCpAddOpen] = useState(false);
   const [cpAddLoc, setCpAddLoc] = useState('');
   const [cpMapVersion, setCpMapVersion] = useState(0);
+  const [modalZoom, setModalZoom] = useState(1);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const savedZoom = window.localStorage.getItem('crm_modal_edit_zoom_level_v1');
+      const parsedZoom = savedZoom ? Number.parseFloat(savedZoom) : 1;
+      if (Number.isFinite(parsedZoom)) setModalZoom(Math.min(1.3, Math.max(0.7, parsedZoom)));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const updateModalZoom = useCallback((nextZoom: number) => {
+    const normalizedZoom = Math.min(1.3, Math.max(0.7, Math.round(nextZoom * 100) / 100));
+    setModalZoom(normalizedZoom);
+    window.localStorage.setItem('crm_modal_edit_zoom_level_v1', String(normalizedZoom));
+  }, []);
   const { registros: allRegistros } = useRegistros();
 
   // Derivar empleadores y localidades reactivamente desde DataContext
@@ -848,7 +556,6 @@ const RegistroModal = memo(function RegistroModal({
       setDupBlocked(false);
       setAgendarRecordatorio(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, initialData]);
 
   useEffect(() => {
@@ -1014,10 +721,7 @@ const RegistroModal = memo(function RegistroModal({
       if (agendarRecordatorio && onSavedWithRecordatorio) onSavedWithRecordatorio(savedReg);
       else onSaved(savedReg);
 
-      if (action === 'send' && cleanTel) {
-        const waNum = cleanTel.length === 10 ? `549${cleanTel}` : cleanTel;
-        window.open(`https://web.whatsapp.com/send?phone=${waNum}`, '_blank');
-      }
+      if (action === 'send' && cleanTel) abrirWhatsApp(cleanTel);
     } else {
       const { data: newReg, error } = await supabase.from('registros').insert(payload).select().single();
       if (error) { setErrors({ _: error.message }); setSaving(false); return; }
@@ -1026,55 +730,9 @@ const RegistroModal = memo(function RegistroModal({
       if (agendarRecordatorio && onSavedWithRecordatorio && newReg) onSavedWithRecordatorio(newReg as Registro);
       else onSaved(newReg as Registro);
 
-      if (action === 'send' && cleanTel) {
-        const waNum = cleanTel.length === 10 ? `549${cleanTel}` : cleanTel;
-        window.open(`https://web.whatsapp.com/send?phone=${waNum}`, '_blank');
-      }
+      if (action === 'send' && cleanTel) abrirWhatsApp(cleanTel);
     }
     setSaving(false);
-  };
-
-  const [modalZoom, setModalZoom] = useState<number>(1);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('crm_modal_edit_zoom_level_v1');
-      if (saved) {
-        const val = parseFloat(saved);
-        if (!isNaN(val)) setModalZoom(val);
-      }
-    }
-
-    const handleZoomEvent = (e: Event) => {
-      const customEvt = e as CustomEvent<number>;
-      if (customEvt.detail) setModalZoom(customEvt.detail);
-    };
-
-    window.addEventListener('crm_modal_edit_zoom_changed', handleZoomEvent);
-    return () => window.removeEventListener('crm_modal_edit_zoom_changed', handleZoomEvent);
-  }, []);
-
-  const handleModalZoom = (delta: number) => {
-    setModalZoom(prev => {
-      const next = Math.max(0.7, Math.round((prev + delta) * 100) / 100);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('crm_modal_edit_zoom_level_v1', String(next));
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('crm_modal_edit_zoom_changed', { detail: next }));
-        }, 0);
-      }
-      return next;
-    });
-  };
-
-  const resetModalZoom = () => {
-    setModalZoom(1);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('crm_modal_edit_zoom_level_v1', '1');
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('crm_modal_edit_zoom_changed', { detail: 1 }));
-      }, 0);
-    }
   };
 
   if (!isOpen) return null;
@@ -1082,101 +740,59 @@ const RegistroModal = memo(function RegistroModal({
   return (
     <>
       <ModalPortal>
-      <div className="modal-overlay" onClick={onClose} style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
-        <motion.div drag dragMomentum={false} className="modal-content" onClick={e => e.stopPropagation()} style={{
-          background: 'var(--bg-elev-1)',
-          backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.08), transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)',
-          border: '1px solid var(--border)',
-          borderTop: '1px solid rgba(16,185,129,0.3)',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px rgba(16,185,129,0.05)',
-          borderRadius: '16px',
-          overflow: 'visible',
-          display: 'flex',
-          flexDirection: 'column',
-          zoom: modalZoom,
-          transition: 'all 0.2s ease'
-        }}>
-          <div className="modal-header" style={{
-            background: 'rgba(14, 14, 18, 0.96)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '16px 16px 0 0',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: '16px',
-          }}>
+      <div className={`modal-overlay ${styles.editOverlay}`} onClick={onClose}>
+        <motion.div
+          className={`modal-content ${styles.editModal}`}
+          style={{ '--modal-scale': modalZoom } as React.CSSProperties}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className={`modal-header ${styles.canonicalModalHeader}`}>
             <div>
-              <h3 style={{
-                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
-                textTransform: 'uppercase', letterSpacing: '0.5px',
-                display: 'flex', alignItems: 'center', gap: '8px',
-              }}>
-                {editingId ? <Edit2 size={16} strokeWidth={2.5} style={{ color: '#34d399' }} /> : <Plus size={16} strokeWidth={2.5} style={{ color: '#34d399' }} />}
+              <h3 className={styles.editTitle}>
+                {editingId ? <Edit2 className={styles.editTitleIcon} size={16} strokeWidth={2.5} /> : <Plus className={styles.editTitleIcon} size={16} strokeWidth={2.5} />}
                 {editingId ? 'Editar' : 'Nuevo'} registro
               </h3>
-              <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+              <p className={styles.editSubtitle}>
                 {editingId ? 'Modificá los datos del registro seleccionado' : 'Completá los campos para crear un nuevo registro'}
               </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-              {/* Zoom Controls (- % +) */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '20px',
-                padding: '2px 4px',
-                gap: '2px'
-              }}>
+            <div className={styles.modalHeaderActions}>
+              <div className={styles.modalZoomControls} aria-label="Tamaño del modal">
                 <button
                   type="button"
-                  onClick={() => handleModalZoom(-0.05)}
-                  title="Reducir tamaño del modal (-)"
-                  style={{
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'none', border: 'none', color: '#9ca3af',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                  className={styles.modalZoomButton}
+                  onClick={() => updateModalZoom(modalZoom - 0.05)}
+                  disabled={modalZoom <= 0.7}
+                  aria-label="Achicar modal"
+                  title="Achicar modal"
                 >
-                  <Minus size={12} strokeWidth={2.5} />
+                  <Minus size={14} strokeWidth={2.5} />
                 </button>
-                <span
-                  onClick={resetModalZoom}
-                  title="Restablecer a 100%"
-                  style={{
-                    fontSize: '11px', fontWeight: 800, color: modalZoom === 1 ? '#9ca3af' : '#34d399',
-                    padding: '0 4px', cursor: 'pointer', userSelect: 'none'
-                  }}
+                <button
+                  type="button"
+                  className={`${styles.modalZoomValue} ${modalZoom !== 1 ? styles.modalZoomValueChanged : ''}`}
+                  onClick={() => updateModalZoom(1)}
+                  aria-label="Restablecer tamaño del modal al 100%"
+                  title="Restablecer al 100%"
                 >
                   {Math.round(modalZoom * 100)}%
-                </span>
+                </button>
                 <button
                   type="button"
-                  onClick={() => handleModalZoom(0.05)}
-                  title="Agrandar tamaño del modal (+)"
-                  style={{
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'none', border: 'none', color: '#9ca3af',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                  className={styles.modalZoomButton}
+                  onClick={() => updateModalZoom(modalZoom + 0.05)}
+                  disabled={modalZoom >= 1.3}
+                  aria-label="Agrandar modal"
+                  title="Agrandar modal"
                 >
-                  <Plus size={12} strokeWidth={2.5} />
+                  <Plus size={14} strokeWidth={2.5} />
                 </button>
               </div>
-
-              <button className="btn-icon" onClick={onClose} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+              <button type="button" aria-label="Cerrar" className={`btn-icon ${styles.canonicalModalClose}`} onClick={onClose}><X size={18} /></button>
             </div>
           </div>
-          <div className="modal-body" style={{ overflow: 'visible', padding: '16px 20px', flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px 14px', marginBottom: '12px', alignItems: 'start' }}>
+          <div className={`modal-body ${styles.editBody}`}>
+            <div className={styles.editGrid}>
               <Field label="CUIL *" error={errors.cuil}>
                 <input className="form-input" value={formatearCuil(form.cuil || '')} onChange={e => set('cuil', sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
               </Field>
@@ -1297,10 +913,9 @@ const RegistroModal = memo(function RegistroModal({
                     </datalist>
                   </>
                 ) : empleadorCustom ? (
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div className={styles.fieldInline}>
                     <input
-                      className="form-input"
-                      style={{ flex: 1 }}
+                      className={`form-input ${styles.fieldGrow}`}
                       value={form.empleador || ''}
                       onChange={e => set('empleador', corregirTildes(e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1).toLowerCase()))}
                       onBlur={e => {
@@ -1334,8 +949,7 @@ const RegistroModal = memo(function RegistroModal({
                       type="button"
                       onClick={() => { setEmpleadorCustom(false); set('empleador', ''); }}
                       title="Volver a la lista / No especificar"
-                      className="btn-icon"
-                      style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      className={`btn-icon ${styles.fieldIconButton}`}
                     >
                       <X size={16} />
                     </button>
@@ -1398,14 +1012,14 @@ const RegistroModal = memo(function RegistroModal({
                   const matches = getLocalidadesByCP(cp);
                   if (matches.length === 1) {
                     return (
-                      <div style={{ marginTop: 6, fontSize: 13, color: '#86efac', fontWeight: 600 }}>
+                      <div className={styles.locationResult}>
                         📍 {matches[0]}
                       </div>
                     );
                   }
                   if (matches.length > 1) {
                     return (
-                      <div style={{ marginTop: 6 }}>
+                      <div className={styles.locationSelect}>
                         <PremiumSelect
                           value={form.localidad || ''}
                           onChange={val => set('localidad', val)}
@@ -1416,21 +1030,21 @@ const RegistroModal = memo(function RegistroModal({
                     );
                   }
                   return (
-                    <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <div style={{ fontSize: 12, color: 'var(--warning, #b45309)' }}>Sin coincidencia</div>
+                    <div className={styles.locationMissing}>
+                      <div className={styles.locationWarning}>Sin coincidencia</div>
                       {isAdmin && !cpAddOpen && (
-                        <button type="button" className="btn-secondary"
-                          style={{ alignSelf: 'flex-start', fontSize: 12, padding: '4px 8px' }}
+                        <button type="button" className={`btn-secondary ${styles.locationAddButton}`}
                           onClick={() => { setCpAddOpen(true); setCpAddLoc(''); }}>
                           + Agregar localidad
                         </button>
                       )}
                       {isAdmin && cpAddOpen && (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <input className="form-input" value={cpAddLoc}
+                        <div className={styles.locationAddRow}>
+                          <input value={cpAddLoc}
                             onChange={e => setCpAddLoc(corregirTildes(capitalizarTexto(e.target.value)))}
-                            placeholder="Nombre" style={{ flex: 1, height: 32 }} autoFocus />
-                          <button type="button" className="btn-primary" style={{ padding: '0 10px', height: 32 }}
+                            placeholder="Nombre" className={`form-input ${styles.locationAddInput}`} autoFocus />
+                          <button type="button" className={`btn-primary ${styles.locationSaveButton}`}
+                            disabled={!cpAddLoc.trim()}
                             onClick={() => {
                               const name = cpAddLoc.trim();
                               if (!name) return;
@@ -1439,9 +1053,9 @@ const RegistroModal = memo(function RegistroModal({
                               setCpAddOpen(false); setCpAddLoc('');
                               setCpMapVersion(v => v + 1);
                             }}>Guardar</button>
-                          <button type="button" className="btn-icon"
+                          <button type="button" className={`btn-icon ${styles.locationCancelButton}`}
                             onClick={() => { setCpAddOpen(false); setCpAddLoc(''); }}
-                            style={{ height: 32, width: 32, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          >
                             <X size={14} />
                           </button>
                         </div>
@@ -1455,20 +1069,18 @@ const RegistroModal = memo(function RegistroModal({
               <div className="form-row">
                 <Field label={`${(esConsejoEducacion(form.empleador) || esMinisterioSalud(form.empleador)) ? 'Establecimiento' : 'Repartición'} *`} error={errors.dependencia}>
                   {dependenciaCustom ? (
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className={styles.fieldInline}>
                       <input
-                        className="form-input"
                         value={form.dependencia || ''}
                         onChange={e => set('dependencia', e.target.value)}
                         placeholder="Nombre de la dependencia"
-                        style={{ flex: 1 }}
+                        className={`form-input ${styles.fieldGrow}`}
                         autoFocus
                       />
                       <button
                         type="button"
                         onClick={() => { setDependenciaCustom(false); set('dependencia', ''); }}
-                        className="btn-icon"
-                        style={{ height: 40, width: 40, background: 'var(--surface2)', border: '1px solid var(--border-color)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        className={`btn-icon ${styles.fieldIconButton}`}
                       >
                         <X size={16} />
                       </button>
@@ -1498,72 +1110,46 @@ const RegistroModal = memo(function RegistroModal({
                 </Field>
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: '6px', alignItems: 'start' }}>
+            <div className={styles.editSupplementalGrid}>
               <Field label={`Comentarios${form.estado === 'derivado / rechazado cc' ? ' *' : ''}`} error={errors.comentarios}>
                 <textarea
-                  className="form-input"
                   value={form.comentarios || ''}
                   onChange={e => set('comentarios', corregirTildes(e.target.value))}
                   rows={1}
-                  style={{ resize: 'vertical', fontFamily: 'inherit', height: '100%', minHeight: '100%', padding: '6px 10px' }}
+                  className={`form-input ${styles.editComments}`}
                   placeholder={form.estado === 'derivado / rechazado cc' ? 'Motivo de rechazo (obligatorio)...' : ''}
                 />
               </Field>
-              <Field label="Accion 1" transparentLabel={true}>
+              <Field label="Resumen ejecutivo">
                 <label 
-                  className="modal-check-action"
-                  style={{ 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
-                    fontWeight: 700, borderRadius: '6px', width: '100%',
-                    background: !!form.es_re ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.4)',
-                    color: !!form.es_re ? '#10b981' : '#999',
-                    border: !!form.es_re ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.12)',
-                    transition: 'all 0.2s', boxSizing: 'border-box'
-                  }}
+                  className={`modal-check-action ${styles.editCheckAction} ${form.es_re ? styles.editCheckSuccess : ''}`}
                 >
-                  <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} style={{ display: 'none' }} />
+                  <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} className={styles.visuallyHidden} />
                   Resumen Ejecutivo (RE)
                 </label>
               </Field>
-              <Field label="Accion 2" transparentLabel={true}>
+              <Field label="Recordatorio">
                 <label 
-                  className="modal-check-action"
-                  style={{ 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', 
-                    fontWeight: 700, borderRadius: '6px', width: '100%',
-                    background: agendarRecordatorio ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0,0,0,0.4)',
-                    color: agendarRecordatorio ? '#f59e0b' : '#999',
-                    border: agendarRecordatorio ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.12)',
-                    transition: 'all 0.2s', boxSizing: 'border-box'
-                  }}
+                  className={`modal-check-action ${styles.editCheckAction} ${agendarRecordatorio ? styles.editCheckWarning : ''}`}
                 >
-                  <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} style={{ display: 'none' }} />
+                  <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} className={styles.visuallyHidden} />
                   Agendar Recordatorio
                 </label>
               </Field>
             </div>
-            <p className="modal-required-legend" style={{ color: 'var(--rojo)', margin: '2px 0 0 0' }}>
-              <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
+            <p className={`modal-required-legend ${styles.requiredLegend}`}>
+              <span className={styles.requiredMark}>*</span> CAMPOS OBLIGATORIOS
             </p>
           </div>
-          <div className="modal-footer" style={{
-            background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)'
-          }}>
-            {errors._ && <span style={{ color: '#f87171', fontSize: '12px', flex: 1, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={13} />{errors._}</span>}
+          <div className={`modal-footer ${styles.editFooter}`}>
+            {errors._ && <span className={styles.editFooterError}><AlertTriangle size={13} />{errors._}</span>}
             {!errors._ && (
-              <div style={{ flex: 1, fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center' }}>
+              <div className={styles.editFooterInfo}>
                 Registro creado con fecha {initialData.created_at ? new Date(initialData.created_at).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR')} y hora {initialData.created_at ? new Date(initialData.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
-            <button className="btn-secondary modal-btn-cancel" onClick={onClose} style={{
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)',
-              fontWeight: 700, letterSpacing: '0.3px', transition: 'all 0.2s'
-            }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}>CANCELAR</button>
-            <button className="btn-primary modal-btn-save" onClick={() => guardar()} disabled={saving} style={{
-              background: 'linear-gradient(90deg, #34d399, #10b981)', color: '#000', border: 'none',
-              fontWeight: 800, letterSpacing: '0.3px', boxShadow: '0 4px 12px rgba(16,185,129,0.3)', transition: 'all 0.2s',
-              display: 'flex', alignItems: 'center', gap: '5px'
-            }}>
+            <button className={`btn-secondary modal-btn-cancel ${styles.editCancel}`} onClick={onClose}>CANCELAR</button>
+            <button className={`btn-primary modal-btn-save ${styles.editSave}`} onClick={() => guardar()} disabled={saving}>
               <Save size={13} strokeWidth={2.5} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
             </button>
           </div>
@@ -1581,58 +1167,41 @@ const RegistroModal = memo(function RegistroModal({
 
       {showDupModal && dupRecord && (
         <ModalPortal>
-        <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
-          <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
-        <div style={{
-            background: 'rgba(14, 14, 18, 0.96)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '16px 16px 0 0',
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: '16px',
-          }}>
+        <div className={`modal-overlay ${styles.duplicateOverlay}`} onClick={() => { if (!dupBlocked) setShowDupModal(false); }}>
+          <motion.div drag dragMomentum={false} className={`modal-content ${styles.duplicateModal}`} onClick={e => e.stopPropagation()}>
+        <div className={styles.compactModalHeader}>
             <div>
-              <h3 style={{
-                fontSize: '13px', fontWeight: 800, margin: '0 0 6px 0',
-                textTransform: 'uppercase', letterSpacing: '0.5px',
-                display: 'flex', alignItems: 'center', gap: '8px',
-                color: dupBlocked ? 'var(--rojo)' : '#f59e0b',
-              }}>
+              <h3 className={`${styles.compactModalTitle} ${dupBlocked ? styles.duplicateTitleBlocked : styles.duplicateTitleWarning}`}>
                 <AlertCircle size={16} strokeWidth={2.5} />
                 {dupBlocked ? 'Registro duplicado' : 'Registro existente'}
               </h3>
-              <p style={{ fontSize: '12px', color: dupBlocked ? '#fca5a5' : 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+              <p className={`${styles.compactModalSubtitle} ${dupBlocked ? styles.duplicateSubtitleBlocked : ''}`}>
                 {dupBlocked ? 'Ya existe un registro activo para este cliente' : 'Ya existe un registro con este CUIL o nombre'}
               </p>
             </div>
-            {!dupBlocked && <button className="btn-icon" onClick={() => setShowDupModal(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>}
+            {!dupBlocked && <button className={`btn-icon ${styles.compactModalClose}`} onClick={() => setShowDupModal(false)}><X size={18} /></button>}
           </div>
-            <div className="modal-body" style={{ padding: '20px 28px' }}>
-              <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                <AlertCircle size={20} style={{ color: dupBlocked ? 'var(--rojo)' : '#f59e0b', flexShrink: 0, marginTop: 2 }} />
+            <div className={`modal-body ${styles.duplicateBody}`}>
+              <div className={styles.duplicateMessage}>
+                <AlertCircle size={20} className={dupBlocked ? styles.duplicateTitleBlocked : styles.duplicateTitleWarning} />
                 <div>
-                  <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: 6 }}>{dupRecord.nombre}</p>
-                  <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: 10 }}>
-                    CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong style={{ color: '#fff' }}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
+                  <p className={styles.duplicateName}>{dupRecord.nombre}</p>
+                  <p className={styles.duplicateMeta}>
+                    CUIL: {dupRecord.cuil} &nbsp;·&nbsp; Estado: <strong className={styles.compactModalStrong}>{STATUS_LABEL[dupRecord.estado] ?? dupRecord.estado}</strong>
                   </p>
                   {dupBlocked
-                    ? <p style={{ fontSize: '13px', color: 'var(--fg-muted)', lineHeight: 1.6 }}>Este cliente ya tiene un registro activo en ese estado. No se puede crear un duplicado. Modificá el registro existente para continuar.</p>
-                    : <p style={{ fontSize: '13px', color: 'var(--fg-muted)', lineHeight: 1.6 }}>Ya existe un registro con este CUIL o nombre. ¿Deseás guardar de todas formas?</p>
+                    ? <p className={styles.duplicateDescription}>Este cliente ya tiene un registro activo en ese estado. No se puede crear un duplicado. Modificá el registro existente para continuar.</p>
+                    : <p className={styles.duplicateDescription}>Ya existe un registro con este CUIL o nombre. ¿Deseás guardar de todas formas?</p>
                   }
                 </div>
               </div>
             </div>
             <div className="modal-footer">
               {dupBlocked
-                ? <button className="btn-primary" onClick={() => setShowDupModal(false)} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 800, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>ENTENDIDO</button>
+                ? <button className={`btn-primary ${styles.duplicatePrimary}`} onClick={() => setShowDupModal(false)}>ENTENDIDO</button>
                 : <>
-                  <button className="btn-secondary" onClick={() => setShowDupModal(false)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--fg-muted)', fontWeight: 700, padding: '10px 20px', borderRadius: '10px', fontSize: '13px' }}>CANCELAR</button>
-                  <button className="btn-primary" onClick={() => { setShowDupModal(false); guardar(true); }} style={{ background: '#fff', color: '#000', border: 'none', fontWeight: 900, padding: '10px 24px', borderRadius: '10px', fontSize: '13px' }}>GUARDAR DE TODAS FORMAS</button>
+                  <button className={`btn-secondary ${styles.duplicateCancel}`} onClick={() => setShowDupModal(false)}>CANCELAR</button>
+                  <button className={`btn-primary ${styles.duplicatePrimary} ${styles.duplicatePrimaryStrong}`} onClick={() => { setShowDupModal(false); guardar(true); }}>GUARDAR DE TODAS FORMAS</button>
                 </>
               }
             </div>
@@ -1644,113 +1213,15 @@ const RegistroModal = memo(function RegistroModal({
   );
 });
 
-// ── Modal: Recordatorio ───────────────────────────────────────────────────────
-
-const RecordatorioModal = memo(function RecordatorioModal({
-  registro, onClose,
-}: { registro: Registro | null; onClose: (saved: boolean, newRec?: Recordatorio) => void }) {
-  const [recForm, setRecForm] = useState({ nota: '', fecha: '', hora: '09:00' });
-  const [saving, setSaving] = useState(false);
-  const { pushRecordatorioChange } = useRecordatorios();
-
-  useEffect(() => {
-    if (registro) {
-      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-      setRecForm({ nota: '', fecha: tomorrow.toISOString().split('T')[0], hora: '09:00' });
-    }
-  }, [registro]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(false); };
-    if (registro) window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [registro, onClose]);
-
-  if (!registro) return null;
-
-  const save = async () => {
-    setSaving(true);
-    const { data, error } = await supabase.from('recordatorios').insert({
-      registro_id: registro.id, nombre: registro.nombre, cuil: registro.cuil,
-      analista: registro.analista, estado: registro.estado, nota: recForm.nota,
-      fecha_hora: `${recForm.fecha}T${recForm.hora}:00-03:00`,
-      creado_por: registro.analista || 'Sistema', mostrado: false,
-    }).select().single();
-
-    if (error) {
-      setSaving(false);
-      return;
-    }
-
-    logAudit({ id_registro: registro.id, nombre: registro.nombre, cuil: registro.cuil, analista: registro.analista, accion: 'Recordatorio creado', campo_modificado: 'Recordatorio', valor_nuevo: `${registro.nombre} | ${recForm.fecha} ${recForm.hora}${recForm.nota ? ' | ' + recForm.nota : ''}` });
-    // Broadcast a otros usuarios
-    pushRecordatorioChange('INSERT', data as Recordatorio);
-    setSaving(false); onClose(true, data as Recordatorio);
-  };
-
-  return (
-    <div className="modal-overlay" onClick={() => onClose(false)}>
-      <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '460px' }} onClick={e => e.stopPropagation()}>
-        <div style={{
-            background: 'rgba(14, 14, 18, 0.96)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '16px 16px 0 0',
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: '16px',
-          }}>
-            <div>
-              <h3 style={{
-                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
-                textTransform: 'uppercase', letterSpacing: '0.5px',
-                display: 'flex', alignItems: 'center', gap: '8px',
-              }}>
-                <Bell size={16} strokeWidth={2.5} style={{ color: '#f59e0b' }} />
-                Recordatorio & seguimiento
-              </h3>
-              <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
-                Agendá un recordatorio para hacer seguimiento de este cliente
-              </p>
-            </div>
-            <button className="btn-icon" onClick={() => onClose(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
-          </div>
-        <div className="modal-body">
-          <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: '20px' }}>{registro.nombre}</p>
-          <div className="form-row">
-            <Field label="Fecha *"><input className="form-input" type="date" value={recForm.fecha} onChange={e => setRecForm(p => ({ ...p, fecha: e.target.value }))} /></Field>
-            <Field label="Hora *"><input className="form-input" type="time" value={recForm.hora} onChange={e => setRecForm(p => ({ ...p, hora: e.target.value }))} /></Field>
-          </div>
-          <Field label="Nota"><textarea className="form-textarea" value={recForm.nota} onChange={e => setRecForm(p => ({ ...p, nota: e.target.value }))} /></Field>
-
-          <p className="modal-required-legend" style={{ color: 'var(--rojo)' }}>
-            <span style={{ fontWeight: 700 }}>*</span> CAMPOS OBLIGATORIOS
-          </p>
-        </div>
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={() => onClose(false)} style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
-            fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-          }}>CANCELAR</button>
-          <button className="btn-primary" onClick={save} disabled={saving || !recForm.fecha || !recForm.hora} style={{
-            background: 'var(--green)', color: '#000', border: 'none', fontWeight: 800,
-            padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-          }}>AGENDAR</button>
-        </div>
-      </motion.div>
-    </div>
-  );
-});
-
 // ── Modal: Comentarios ───────────────────────────────────────────────────────
 
 const ComentariosModal = memo(function ComentariosModal({
   registro, onClose,
-}: { registro: Registro | null; onClose: (saved: boolean, updatedComentarios?: string) => void }) {
+}: {
+  registro: Registro | null;
+  /** Devuelve `true` si la operación terminó bien. En `false` el modal sigue abierto y se rehabilita. */
+  onClose: (saved: boolean, updatedComentarios?: string) => Promise<boolean>;
+}) {
   const [comentarios, setComentarios] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -1771,66 +1242,47 @@ const ComentariosModal = memo(function ComentariosModal({
 
   const save = async () => {
     setSaving(true);
-    onClose(true, comentarios);
+    // El padre resuelve a `false` si el write falló: el modal queda abierto y se rehabilita
+    // para reintentar. El toast lo muestra el padre, no se duplica acá.
+    const ok = await onClose(true, comentarios);
+    if (!ok) setSaving(false);
   };
 
   return (
+    <ModalPortal>
     <div className="modal-overlay" onClick={() => onClose(false)}>
-      <motion.div drag dragMomentum={false} className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
-        <div style={{
-            background: 'rgba(14, 14, 18, 0.96)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '16px 16px 0 0',
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: '16px',
-          }}>
+      <motion.div className={`modal-content ${styles.commentsModal}`} onClick={e => e.stopPropagation()}>
+        <div className={`modal-header ${styles.canonicalModalHeader}`}>
             <div>
-              <h3 style={{
-                fontSize: '13px', fontWeight: 800, color: '#fff', margin: '0 0 6px 0',
-                textTransform: 'uppercase', letterSpacing: '0.5px',
-                display: 'flex', alignItems: 'center', gap: '8px',
-              }}>
-                <MessageSquare size={16} strokeWidth={2.5} style={{ color: '#818cf8' }} />
+              <h3 className={styles.editTitle}>
+                <MessageSquare size={16} strokeWidth={2.5} className={styles.commentsIcon} />
                 Comentarios
               </h3>
-              <p style={{ fontSize: '12px', color: 'var(--fg-dim)', margin: 0, lineHeight: 1.4 }}>
+              <p className={styles.editSubtitle}>
                 {registro?.nombre}
               </p>
             </div>
-            <button className="btn-icon" onClick={() => onClose(false)} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+            <button type="button" aria-label="Cerrar" className={`btn-icon ${styles.canonicalModalClose}`} onClick={() => onClose(false)}><X size={18} /></button>
           </div>
-        <div className="modal-body">
-          <p style={{ fontSize: '13px', color: 'var(--fg-muted)', marginBottom: '16px', fontWeight: 600 }}>{registro.nombre}</p>
+        <div className={`modal-body ${styles.commentsBody}`}>
           <Field label="Comentarios">
             <textarea
-              className="form-input"
               value={comentarios}
               onChange={e => setComentarios(corregirTildes(e.target.value))}
               rows={6}
-              style={{ resize: 'vertical', fontFamily: 'inherit' }}
+              className={`form-input ${styles.commentsTextarea}`}
               placeholder="Sin comentarios..."
               autoFocus
             />
           </Field>
         </div>
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={() => onClose(false)} style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
-            fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-          }}>CANCELAR</button>
-          <button className="btn-primary" onClick={save} disabled={saving} style={{
-            background: 'var(--green)', color: '#000', border: 'none', fontWeight: 800,
-            padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-          }}>{saving ? 'GUARDANDO…' : 'GUARDAR'}</button>
+          <button className="btn-secondary modal-btn-cancel" onClick={() => onClose(false)}>CANCELAR</button>
+          <button className="btn-primary modal-btn-save" onClick={save} disabled={saving}>{saving ? 'GUARDANDO…' : 'GUARDAR'}</button>
         </div>
       </motion.div>
     </div>
+    </ModalPortal>
   );
 });
 
@@ -1851,50 +1303,28 @@ const DeleteModal = memo(function DeleteModal({
   return (
     <ModalPortal>
     <div className="modal-overlay" onClick={onCancel}>
-      <motion.div drag dragMomentum={false} className="modal-content modal-content--danger" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-        <div style={{
-            background: 'rgba(14, 14, 18, 0.96)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            borderRadius: '16px 16px 0 0',
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: '16px',
-          }}>
+      <motion.div drag dragMomentum={false} className={`modal-content modal-content--danger ${styles.deleteModal}`} onClick={e => e.stopPropagation()}>
+        <div className={styles.compactModalHeader}>
             <div>
-              <h3 style={{
-                fontSize: '13px', fontWeight: 800, color: '#ef4444', margin: '0 0 6px 0',
-                textTransform: 'uppercase', letterSpacing: '0.5px',
-                display: 'flex', alignItems: 'center', gap: '8px',
-              }}>
+              <h3 className={`${styles.compactModalTitle} ${styles.deleteTitle}`}>
                 <AlertTriangle size={16} strokeWidth={2.5} />
                 Eliminar registro
               </h3>
-              <p style={{ fontSize: '12px', color: '#fca5a5', margin: 0, lineHeight: 1.4 }}>
+              <p className={`${styles.compactModalSubtitle} ${styles.deleteSubtitle}`}>
                 Esta acción es permanente y no se puede deshacer
               </p>
             </div>
-            <button className="btn-icon" onClick={onCancel} style={{ color: 'var(--fg-muted)', background: 'rgba(255,255,255,0.03)', borderRadius: '50%', padding: '6px', flexShrink: 0 }}><X size={18} /></button>
+            <button className={`btn-icon ${styles.compactModalClose}`} onClick={onCancel}><X size={18} /></button>
           </div>
-        <div className="modal-body" style={{ padding: '32px 28px' }}>
-          <p style={{ fontSize: '14px', color: 'var(--fg-muted)', lineHeight: 1.8 }}>
-            ¿Confirmar eliminación de <strong style={{ color: '#fff' }}>{registro.nombre}</strong>?<br />
-            <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginTop: '10px', display: 'block' }}>La acción es permanente.</span>
+        <div className={`modal-body ${styles.deleteBody}`}>
+          <p className={styles.deleteCopy}>
+            ¿Confirmar eliminación de <strong className={styles.compactModalStrong}>{registro.nombre}</strong>?<br />
+            <span className={styles.deleteWarning}>La acción es permanente.</span>
           </p>
         </div>
         <div className="modal-footer">
-          <button className="btn-secondary" onClick={onCancel} style={{
-            background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', color: 'var(--fg-muted)',
-            fontWeight: 700, padding: '10px 20px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-          }}>CANCELAR</button>
-          <button className="btn-danger" onClick={onConfirm} style={{
-            background: '#ef4444', color: '#fff', border: 'none', fontWeight: 800,
-            padding: '10px 24px', borderRadius: '8px', fontSize: '12px', letterSpacing: '0.5px'
-          }}>
+          <button className="btn-secondary modal-btn-cancel" onClick={onCancel}>CANCELAR</button>
+          <button className={`btn-danger ${styles.deleteConfirm}`} onClick={onConfirm}>
             ELIMINAR AHORA
           </button>
         </div>
@@ -1904,81 +1334,20 @@ const DeleteModal = memo(function DeleteModal({
   );
 });
 
-// ── StatusBadge ───────────────────────────────────────────────────────────────
-
-const StatusBadge = memo(function StatusBadge({ estado }: { estado: string }) {
-  const label = STATUS_LABEL[estado?.toLowerCase()] ?? estado;
-  
-  // Custom styles for each status type
-  let color = 'var(--fg-muted)';
-  let bg = 'rgba(255,255,255,0.02)';
-  let border = '1px solid rgba(255,255,255,0.05)';
-  
-  const estLower = estado?.toLowerCase();
-  if (estLower === 'venta') {
-    color = '#6ee7b7'; // Bright Emerald
-    bg = 'rgba(16,185,129,0.18)';
-    border = '1px solid rgba(16,185,129,0.35)';
-  } else if (estLower === 'proyeccion') {
-    color = '#fcd34d'; // Bright Amber
-    bg = 'rgba(251,191,36,0.18)';
-    border = '1px solid rgba(251,191,36,0.35)';
-  } else if (estLower === 'en seguimiento') {
-    color = '#7dd3fc'; // Bright Sky Blue
-    bg = 'rgba(0, 212, 255, 0.18)';
-    border = '1px solid rgba(0, 212, 255, 0.35)';
-  } else if (estLower === 'derivado / aprobado cc') {
-    color = '#86efac'; // Bright Mint Green
-    bg = 'rgba(52,211,153,0.18)';
-    border = '1px solid rgba(52,211,153,0.35)';
-  } else if (estLower === 'derivado / rechazado cc' || estLower === 'no califica') {
-    color = '#fca5a5'; // Bright Red
-    bg = 'rgba(248,113,113,0.18)';
-    border = '1px solid rgba(248,113,113,0.35)';
-  } else if (estLower === 'score bajo') {
-    color = '#fdba74'; // Bright Orange
-    bg = 'rgba(249,115,22,0.18)';
-    border = '1px solid rgba(249,115,22,0.35)';
-  } else if (estLower === 'afectaciones') {
-    color = '#d8b4fe'; // Bright Violet
-    bg = 'rgba(178,102,255,0.18)';
-    border = '1px solid rgba(178,102,255,0.35)';
-  }
-
-  return (
-    <span style={{
-      display: 'inline-block',
-      padding: '4px 10px',
-      borderRadius: '6px',
-      fontSize: '11px',
-      fontWeight: 700,
-      letterSpacing: '0.3px',
-      background: bg,
-      color: color,
-      border: border,
-      whiteSpace: 'nowrap',
-      textTransform: 'uppercase',
-    }}>
-      {label}
-    </span>
-  );
-});
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RegistrosPage() {
   const { isAdmin, simulatedAnalista, setSimulatedAnalista, user } = useAuth();
   const { registros, applyRegistroChange, pushRegistroChange, loading, refresh } = useRegistros();
-  const { alertasConfig, permisosConfig, hasPermiso } = useSettings();
+  const { alertasConfig, hasPermiso } = useSettings();
   const { nombres: ANALISTAS } = useAnalistas();
   const searchParams = useSearchParams();
 
   const {
     filters, setFilter, toggleEtiqueta, limpiarFiltros, hayFiltros,
     isCreationModalOpen, setIsCreationModalOpen,
-    pageSize,
-    currentPage, setCurrentPage, setTotalResults,
-    showFilters, setShowFilters,
+    pageSize, setPageSize,
+    currentPage, setCurrentPage,
   } = useFilter();
 
   const canPerform = useCallback((permiso: string, recordAnalista?: string) => {
@@ -1988,6 +1357,9 @@ export default function RegistrosPage() {
   }, [isAdmin, simulatedAnalista, user?.username, filters?.analista, hasPermiso]);
 
   const [showInlineFilters, setShowInlineFilters] = useState(false);
+  const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
+  const [sortMode, setSortMode] = useState<'fecha-desc' | 'fecha-asc' | 'monto-desc' | 'score-desc' | 'nombre-asc'>('fecha-desc');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
@@ -2016,12 +1388,10 @@ export default function RegistrosPage() {
     }
   }, [registros, modalOpen, editingId]);
 
-  const [recordatorioTarget, setRecordatorioTarget] = useState<Registro | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
   const [whatsappTarget, setWhatsappTarget] = useState<Registro | null>(null);
   const [comentariosTarget, setComentariosTarget] = useState<Registro | null>(null);
   const [bitacoraTarget, setBitacoraTarget] = useState<Registro | null>(null);
-  const [etiquetasTarget, setEtiquetasTarget] = useState<Registro | null>(null);
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
 
   // Fetch recordatorios
@@ -2092,14 +1462,14 @@ export default function RegistrosPage() {
         }
         if (hayFiltros) {
           limpiarFiltros();
-        } else if (showFilters) {
-          setShowFilters(false);
+        } else if (filtersPanelOpen) {
+          setFiltersPanelOpen(false);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hayFiltros, limpiarFiltros, showFilters, setShowFilters, modalOpen, showInlineFilters]);
+  }, [hayFiltros, limpiarFiltros, filtersPanelOpen, modalOpen, showInlineFilters]);
 
 
 
@@ -2195,16 +1565,24 @@ export default function RegistrosPage() {
       return true;
     });
 
-    // Data is already sorted by fecha desc from the provider. Only re-sort if needed for
-    // the secondary priority sort (ventas/aprobados first within same date).
     return list.sort((a, b) => {
+      if (sortMode === 'fecha-asc') return (a.fecha || '').localeCompare(b.fecha || '');
+      if (sortMode === 'monto-desc') return Number(b.monto || 0) - Number(a.monto || 0);
+      if (sortMode === 'score-desc') return Number(b.puntaje || 0) - Number(a.puntaje || 0);
+      if (sortMode === 'nombre-asc') return (a.nombre || '').localeCompare(b.nombre || '', 'es', { sensitivity: 'base' });
       const dA = a.fecha || '', dB = b.fecha || '';
       if (dA !== dB) return dA > dB ? -1 : 1;
       const priA = a.estado === 'venta' || a.estado === 'derivado / aprobado cc';
       const priB = b.estado === 'venta' || b.estado === 'derivado / aprobado cc';
       return priA === priB ? 0 : priA ? -1 : 1;
     });
-  }, [registros, searchIndex, debouncedSearch, filters.estados, filters.analista, filters.fechaDesde, filters.fechaHasta, filters.montoMin, filters.montoMax, filters.scoreMin, filters.scoreMax, filters.esRe, filters.soloAlertasVencidas, filters.acuerdoPrecios, alertasConfig]);
+    // `filters.etiquetas`, `filters.soloRecontactosHoy` y `vencidoOIngresoHoyIds`
+    // se leen en el cuerpo (filtros de Etiquetas Lead y Re-contactos Hoy) y
+    // faltaban aquí. Como `setFilters` actualiza de forma inmutable conservando
+    // la referencia del resto de propiedades, al cambiar sólo una de ellas
+    // NINGUNA dependencia listada cambiaba y el memo devolvía la lista cacheada:
+    // el filtro no surtía efecto hasta que se tocaba otro filtro.
+  }, [registros, searchIndex, debouncedSearch, filters.estados, filters.analista, filters.fechaDesde, filters.fechaHasta, filters.montoMin, filters.montoMax, filters.scoreMin, filters.scoreMax, filters.esRe, filters.soloAlertasVencidas, filters.acuerdoPrecios, filters.etiquetas, filters.soloRecontactosHoy, vencidoOIngresoHoyIds, alertasConfig, sortMode]);
 
   // Modo revisión: solo cuando se entra desde "Clientes en revisión" (no al filtrar la tabla por estado)
   const isRevisionState = filters.revisionMode && filters.estados.length === 1 && (alertasConfig?.some(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) ?? false);
@@ -2221,8 +1599,6 @@ export default function RegistrosPage() {
       return daysDiff >= activeConfig.dias;
     });
   }, [baseFilteredRegistros, activeConfig]);
-
-  useEffect(() => { setTotalResults(filteredRegistros.length); }, [filteredRegistros.length, setTotalResults]);
 
   const totales = useMemo(() => {
     let suma = 0;
@@ -2269,8 +1645,15 @@ export default function RegistrosPage() {
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     const reg = deleteTarget;
+    // El error se comprobaba: supabase-js no lanza ante un fallo de PostgREST. Sin esto se
+    // auditaba una eliminación que no ocurrió, se quitaba la fila de la UI propia y se
+    // emitía un broadcast de DELETE a las demás sesiones, todo con un toast de éxito.
+    const { error } = await supabase.from('registros').delete().eq('id', reg.id);
+    if (error) {
+      showToast('Error al eliminar el registro', 'error');
+      return; // el modal sigue abierto para reintentar o cancelar
+    }
     setDeleteTarget(null);
-    await supabase.from('registros').delete().eq('id', reg.id);
     logAudit({ id_registro: reg.id, nombre: reg.nombre, cuil: reg.cuil, analista: reg.analista, accion: 'Eliminación', campo_modificado: 'Registro', valor_anterior: `${reg.nombre} | ${reg.estado} | $${reg.monto}` });
     applyRegistroChange('DELETE', reg);
     pushRegistroChange('DELETE', reg);
@@ -2296,15 +1679,7 @@ export default function RegistrosPage() {
     setBitacoraTarget(reg);
   }, [applyRegistroChange, pushRegistroChange, refresh, registros, showToast]);
 
-  const handleRecordatorioClose = useCallback((saved: boolean, newRec?: Recordatorio) => {
-    setRecordatorioTarget(null);
-    if (saved) {
-      showToast('Recordatorio agendado', 'success');
-      if (newRec) setRecordatorios(prev => [...prev, newRec]);
-    }
-  }, [showToast]);
-
-  const handleComentariosClose = useCallback(async (saved: boolean, updatedComentarios?: string) => {
+  const handleComentariosClose = useCallback(async (saved: boolean, updatedComentarios?: string): Promise<boolean> => {
     if (saved && comentariosTarget && updatedComentarios !== undefined) {
       const { error } = await supabase
         .from('registros')
@@ -2313,16 +1688,19 @@ export default function RegistrosPage() {
 
       if (error) {
         showToast('Error al guardar comentarios', 'error');
-      } else {
-        showToast('Comentarios guardados', 'success');
-        setComentariosTarget(null);
-        applyRegistroChange('UPDATE', { ...comentariosTarget, comentarios: updatedComentarios });
-        pushRegistroChange('UPDATE', { ...comentariosTarget, comentarios: updatedComentarios });
-        refresh(true);
+        // El modal sigue montado con la misma referencia de `registro`, así que es él
+        // quien debe rehabilitarse: se lo indicamos devolviendo `false`.
+        return false;
       }
-    } else {
+      showToast('Comentarios guardados', 'success');
       setComentariosTarget(null);
+      applyRegistroChange('UPDATE', { ...comentariosTarget, comentarios: updatedComentarios });
+      pushRegistroChange('UPDATE', { ...comentariosTarget, comentarios: updatedComentarios });
+      refresh(true);
+      return true;
     }
+    setComentariosTarget(null);
+    return true;
   }, [comentariosTarget, showToast, refresh, applyRegistroChange, pushRegistroChange]);
 
   const handleToggleFijado = useCallback(async (reg: Registro) => {
@@ -2338,7 +1716,6 @@ export default function RegistrosPage() {
   const handleSaveEtiquetas = useCallback(async (registroId: string, nuevasEtiquetas: string[]) => {
     const reg = registros.find(r => r.id === registroId);
     if (!reg) return;
-    setEtiquetasTarget(null);
     const { error } = await supabase.from('registros').update({ etiquetas: nuevasEtiquetas }).eq('id', registroId);
     if (!error) {
       applyRegistroChange('UPDATE', { ...reg, etiquetas: nuevasEtiquetas });
@@ -2358,41 +1735,21 @@ export default function RegistrosPage() {
     return (
       <tr
         key={reg.id}
-        className="hover-row"
-        style={{
-          borderBottom: '1px solid rgba(255,255,255,0.04)',
-          borderLeft: isVencidoOIngresoHoy
-            ? '4px solid #ef4444'
-            : isProximo
-            ? '4px solid #f59e0b'
-            : '4px solid transparent',
-          background: isVencidoOIngresoHoy
-            ? 'rgba(239, 68, 68, 0.03)'
-            : isProximo
-            ? 'rgba(245, 158, 11, 0.02)'
-            : 'transparent',
-          transition: 'all 0.1s ease',
-          cursor: 'default',
-        }}
+        className={`hover-row records-row${isVencidoOIngresoHoy ? ' is-overdue' : isProximo ? ' is-upcoming' : ''}`}
       >
         {/* Cliente */}
-        <td style={{ padding: '18px 24px', minWidth: 260, textAlign: 'left' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff', letterSpacing: '-0.1px' }}>{reg.nombre}</span>
+        <td className="records-cell records-cell--client">
+          <div className="records-client">
+            <div className="records-client__identity">
+              <span className="records-client__name">{reg.nombre}</span>
               {reg.cuil && (
                 <>
-                  <span style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 400 }}>|</span>
-                  <span className="cuil-text" style={{ fontSize: '13.5px', color: '#94a3b8', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{formatearCuil(reg.cuil)}</span>
+                  <span className="records-client__separator">|</span>
+                  <span className="cuil-text">{formatearCuil(reg.cuil)}</span>
                 </>
               )}
               {reg.es_re && (
-                <span style={{
-                  fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '3px',
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  color: 'var(--green)', border: '1px solid rgba(16, 185, 129, 0.25)',
-                  letterSpacing: '0.5px'
-                }}>RE</span>
+                <span className="records-client__re">RE</span>
               )}
               {(reg.etiquetas || []).map(t => (
                 <TagBadge key={t} tag={t} />
@@ -2400,58 +1757,40 @@ export default function RegistrosPage() {
             </div>
 
             {isVencidoOIngresoHoy && (
-              <span style={{
-                fontSize: '10px', fontWeight: 700, color: 'var(--rojo)',
-                background: 'rgba(220,53,69,0.08)', padding: '2px 6px',
-                borderRadius: '4px', border: '1px solid rgba(220,53,69,0.2)',
-                display: 'inline-flex', alignItems: 'center', gap: '5px', width: 'fit-content',
-                marginTop: '3px'
-              }}>
+              <span className="records-reminder is-overdue">
                 🔴 Re-contacto Hoy / Vencido
                 <button
                   type="button"
                   onClick={async (e) => {
                     e.stopPropagation();
-                    await supabase.from('recordatorios').update({ mostrado: true }).eq('registro_id', reg.id);
+                    // Se quita de la lista sólo si el write tuvo éxito: antes desaparecía de
+                    // pantalla aunque la base siguiera con `mostrado = false`.
+                    const { error } = await supabase.from('recordatorios').update({ mostrado: true }).eq('registro_id', reg.id);
+                    if (error) { showToast('No se pudo marcar el recordatorio', 'error'); return; }
                     setRecordatorios(prev => prev.filter(r => r.registro_id !== reg.id));
                   }}
                   title="Marcar recordatorio como atendido / quitar vencido"
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.2)', border: 'none', color: '#fca5a5',
-                    cursor: 'pointer', padding: '1px 3px', fontSize: '9px', borderRadius: '3px',
-                    display: 'inline-flex', alignItems: 'center', lineHeight: 1
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.5)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
+                  className="records-reminder__dismiss"
                 >
                   <X size={10} />
                 </button>
               </span>
             )}
             {isProximo && !isVencidoOIngresoHoy && (
-              <span style={{
-                fontSize: '10px', fontWeight: 700, color: '#fbbf24',
-                background: 'rgba(251,191,36,0.08)', padding: '2px 6px',
-                borderRadius: '4px', border: '1px solid rgba(251,191,36,0.2)',
-                display: 'inline-flex', alignItems: 'center', gap: '5px', width: 'fit-content',
-                marginTop: '3px'
-              }}>
+              <span className="records-reminder is-upcoming">
                 🟡 Re-contacto Próximo
                 <button
                   type="button"
                   onClick={async (e) => {
                     e.stopPropagation();
-                    await supabase.from('recordatorios').update({ mostrado: true }).eq('registro_id', reg.id);
+                    // Se quita de la lista sólo si el write tuvo éxito: antes desaparecía de
+                    // pantalla aunque la base siguiera con `mostrado = false`.
+                    const { error } = await supabase.from('recordatorios').update({ mostrado: true }).eq('registro_id', reg.id);
+                    if (error) { showToast('No se pudo marcar el recordatorio', 'error'); return; }
                     setRecordatorios(prev => prev.filter(r => r.registro_id !== reg.id));
                   }}
                   title="Marcar recordatorio como atendido / quitar"
-                  style={{
-                    background: 'rgba(251, 191, 36, 0.2)', border: 'none', color: '#fcd34d',
-                    cursor: 'pointer', padding: '1px 3px', fontSize: '9px', borderRadius: '3px',
-                    display: 'inline-flex', alignItems: 'center', lineHeight: 1
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(251, 191, 36, 0.5)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(251, 191, 36, 0.2)')}
+                  className="records-reminder__dismiss"
                 >
                   <X size={10} />
                 </button>
@@ -2461,113 +1800,97 @@ export default function RegistrosPage() {
         </td>
 
         {/* Analista */}
-        <td style={{ padding: '18px 24px', fontSize: '15.5px', color: '#fff', fontWeight: 600, textAlign: 'center' }}>
+        <td className="records-cell records-cell--center records-cell--analyst">
           {displayAnalista(reg.analista)}
         </td>
 
         {/* Fecha */}
-        <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '15.5px', color: '#ededed', fontWeight: 500 }}>{formatDate(reg.fecha)}</div>
+        <td className="records-cell records-cell--center">
+          <div className="records-cell__date">{formatDate(reg.fecha)}</div>
         </td>
 
         {/* Score */}
-        <td style={{ padding: '18px 24px', textAlign: 'center' }}>
+        <td className="records-cell records-cell--center">
           {reg.puntaje ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <span style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                background: Number(reg.puntaje) > 700 ? 'var(--green)' :
-                            Number(reg.puntaje) >= 601 ? '#60a5fa' :
-                            Number(reg.puntaje) >= 550 ? '#fbbf24' : '#ef4444'
-              }} />
-              <span style={{ fontSize: '15.5px', fontWeight: 600, color: '#fff' }}>{reg.puntaje}</span>
+            <div className="records-score">
+              <span className={`records-score-dot is-${Number(reg.puntaje) > 700 ? 'alta' : Number(reg.puntaje) >= 550 ? 'media' : 'baja'}`} />
+              <span>{reg.puntaje}</span>
             </div>
           ) : (
-            <span style={{ color: '#46464e', fontSize: 15.5 }}>—</span>
+            <span className="records-cell__empty">—</span>
           )}
         </td>
 
         {/* Monto */}
-        <td style={{ padding: '18px 24px', fontSize: '15.5px', fontWeight: 600, color: reg.monto == null ? '#46464e' : '#fff', textAlign: 'center', whiteSpace: 'nowrap' }}>
+        <td className={`records-cell records-cell--center records-cell--amount${reg.monto == null ? ' is-empty' : ''}`}>
           {reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}
         </td>
 
-        {/* Estado */}
-        <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-          <StatusBadge estado={reg.estado} />
-        </td>
-
-        {/* Tipo / Acuerdo */}
-        <td style={{ padding: '18px 24px', textAlign: 'center' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-            <span style={{ fontSize: '15.5px', fontWeight: 600, color: reg.tipo_cliente ? '#fff' : '#46464e' }}>{reg.tipo_cliente || '—'}</span>
-            <span style={{
-              fontSize: '12px',
-              fontWeight: 700,
-              color:
-                reg.acuerdo_precios?.toUpperCase().includes('RIESGO BAJO') ? 'var(--green)' :
-                  reg.acuerdo_precios?.toUpperCase().includes('RIESGO MEDIO') ? '#f87171' :
-                    reg.acuerdo_precios?.toUpperCase().includes('PREMIUM') ? '#60a5fa' :
-                      'var(--fg-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.4px'
-            }}>
-              {reg.acuerdo_precios || '—'}
-            </span>
-          </div>
+        {/* Estado / Tipo */}
+        <td className="records-cell records-cell--state">
+          {(() => {
+            const score = Number(reg.puntaje || 0);
+            const level = score > 700 ? 'alta' : score >= 550 ? 'media' : 'baja';
+            const estado = reg.tipo_cliente || (reg.estado
+              ? reg.estado.toLowerCase().replace(/(^|\s|\/)([a-záéíóúñ])/g, (_m, p1, p2) => `${p1}${p2.toUpperCase()}`)
+              : '—');
+            return (
+              <div className={`records-state-type is-${level}`}>
+                <span className="records-state-type__primary">{estado}</span>
+                <span className="records-state-type__secondary">{reg.acuerdo_precios || 'Sin acuerdo'}</span>
+              </div>
+            );
+          })()}
         </td>
 
         {/* Acciones */}
-        <td style={{ padding: '18px 24px' }}>
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-            <button
-              onClick={() => handleToggleFijado(reg)}
-              className="table-action-btn"
-              data-label={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
-              style={{ color: reg.fijado ? '#34d399' : 'var(--fg-muted)' }}
-            ><Pin size={16} fill={reg.fijado ? 'currentColor' : 'none'} /></button>
-            <button
-              onClick={() => handleWhatsApp(reg)}
-              className="table-action-btn"
-              data-label={reg.telefono ? 'Abrir WhatsApp' : 'Agregar Teléfono'}
-              style={{ color: reg.telefono ? '#25D366' : 'var(--fg-muted)' }}
-            ><WhatsAppIcon size={16} /></button>
-            {canPerform('ver_bitacora', reg.analista) && (
+        <td className="records-cell records-cell--actions">
+          <div className="records-actions">
+            <div className="records-actions__group">
               <button
-                onClick={() => setBitacoraTarget(reg)}
-                className={`table-action-btn ${isVencidoOIngresoHoy ? 'btn-alert-active' : ''}`}
-                data-label="Recordatorio & Seguimiento"
-                style={{ color: isVencidoOIngresoHoy ? '#ef4444' : '#60a5fa' }}
-              ><Bell size={16} /></button>
-            )}
-            {canPerform('ver_comentarios', reg.analista) && reg.comentarios && reg.comentarios.trim() !== '' && (
+                onClick={() => handleToggleFijado(reg)}
+                className={`records-action-icon${reg.fijado ? ' is-active' : ''}`}
+                aria-label={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
+              ><Pin size={16} fill={reg.fijado ? 'currentColor' : 'none'} /></button>
               <button
-                onClick={() => setComentariosTarget(reg)}
-                className="table-action-btn"
-                data-label="Ver comentarios"
-              ><MessageSquare size={16} /></button>
-            )}
+                onClick={() => handleWhatsApp(reg)}
+                className="records-action-icon"
+                aria-label={reg.telefono ? 'Abrir WhatsApp' : 'Agregar teléfono'}
+                title={reg.telefono ? 'Abrir WhatsApp' : 'Agregar teléfono'}
+              ><WhatsAppIcon size={16} /></button>
+              {canPerform('ver_bitacora', reg.analista) && (
+                <button
+                  onClick={() => setBitacoraTarget(reg)}
+                  className={`records-action-icon${isVencidoOIngresoHoy ? ' has-alert' : ''}`}
+                  aria-label="Recordatorio y seguimiento"
+                ><Bell size={16} /></button>
+              )}
+              {canPerform('ver_comentarios', reg.analista) && reg.comentarios && reg.comentarios.trim() !== '' && (
+                <button
+                  onClick={() => setComentariosTarget(reg)}
+                  className="records-action-icon"
+                  aria-label="Ver comentarios"
+                ><MessageSquare size={16} /></button>
+              )}
+            </div>
             {canPerform('editar_registros', reg.analista) && (
               <button
                 onClick={() => openEdit(reg)}
-                className="table-action-btn"
-                data-label="Editar"
-              ><Edit2 size={16} /></button>
+                className="records-action-edit"
+              ><Edit2 size={16} /><span>Editar</span></button>
             )}
             {canPerform('eliminar_registros', reg.analista) && (
               <button
                 onClick={() => setDeleteTarget(reg)}
-                className="table-action-btn btn-delete"
-                data-label="Eliminar"
+                className="records-action-delete"
+                aria-label="Eliminar"
               ><Trash2 size={16} /></button>
             )}
           </div>
         </td>
       </tr>
     );
-  }, [vencidoOIngresoHoyIds, proximoIds, canPerform, handleToggleFijado, handleWhatsApp, openEdit]);
+  }, [vencidoOIngresoHoyIds, proximoIds, canPerform, handleToggleFijado, handleWhatsApp, openEdit, showToast]);
 
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
 
@@ -2621,18 +1944,12 @@ export default function RegistrosPage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, width: '100%' }}>
+    <div className={`records-reference-page ${styles.page}`}>
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '12px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : toast.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
-            border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : toast.type === 'error' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
-            color: toast.type === 'success' ? '#34d399' : toast.type === 'error' ? '#f87171' : '#fbbf24',
-          }}>
+        <div className={styles.toastRegion}>
+          <div className={`${styles.toast} ${toast.type === 'success' ? styles.toastSuccess : toast.type === 'error' ? styles.toastError : styles.toastWarning}`}>
             <AlertCircle size={15} />
             {toast.message}
           </div>
@@ -2641,31 +1958,16 @@ export default function RegistrosPage() {
 
       {/* Banner de Modo Simulación Activo */}
       {simulatedAnalista && (
-        <div style={{
-          background: 'linear-gradient(90deg, rgba(168, 85, 247, 0.18), rgba(0, 212, 255, 0.12))',
-          border: '1px solid rgba(168, 85, 247, 0.35)',
-          borderRadius: '12px',
-          padding: '12px 20px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{
-              width: '28px', height: '28px', borderRadius: '8px',
-              background: 'rgba(168, 85, 247, 0.25)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-            }}>
+        <div className={styles.simulationBanner}>
+          <div className={styles.simulationIdentity}>
+            <div className={styles.simulationIcon}>
               <User size={16} color="#c084fc" />
             </div>
             <div>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#fff' }}>
-                Modo Simulación: Viendo la app con los permisos de <span style={{ color: '#00d4ff', fontWeight: 800 }}>{simulatedAnalista}</span>
+              <span className={styles.simulationTitle}>
+                Modo Simulación: Viendo la app con los permisos de <span className={styles.simulationAnalyst}>{simulatedAnalista}</span>
               </span>
-              <span style={{ fontSize: '11px', color: '#aaa', marginLeft: '8px' }}>
+              <span className={styles.simulationHint}>
                 (Las acciones y visibilidad de íconos responden a su rol)
               </span>
             </div>
@@ -2673,19 +1975,7 @@ export default function RegistrosPage() {
           <button
             type="button"
             onClick={() => setSimulatedAnalista(null)}
-            style={{
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              fontSize: '11.5px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              transition: 'background 0.2s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+            className={styles.simulationExit}
           >
             ✕ Salir de Simulación
           </button>
@@ -2694,88 +1984,73 @@ export default function RegistrosPage() {
 
       {/* Revision Panel */}
       {panelData && panelData.mode === 'full' && (() => {
-        const hColor = panelData.salud === 100 ? '#10b981' : panelData.salud >= 80 ? '#fbbf24' : '#ef4444';
-        const hBg = panelData.salud === 100 ? 'rgba(16,185,129,0.15)' : panelData.salud >= 80 ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.15)';
+        const healthClass = panelData.salud === 100 ? styles.summaryHealthGood : panelData.salud >= 80 ? styles.summaryHealthWarning : styles.summaryHealthDanger;
         const r = 26;
         const circ = 2 * Math.PI * r;
         const offset = circ - (panelData.salud / 100) * circ;
         const isBad = panelData.vencidos > 0;
 
         return (
-          <div style={{
-            background: 'var(--bg-elev-1)',
-            backgroundImage: `radial-gradient(ellipse at top left, ${hBg}, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)`,
-            border: '1px solid var(--border)',
-            borderTop: `1px solid ${hColor}50`,
-            borderRadius: '16px',
-            padding: '20px 32px',
-            marginBottom: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '32px',
-            boxShadow: `0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px ${hColor}15`,
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
+          <div className={`records-filtered-summary ${styles.summaryPanel} ${styles.summaryPanelFull} ${healthClass}`}>
             {/* Health Ring */}
-            <div style={{ position: 'relative', width: 68, height: 68, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="68" height="68" style={{ transform: 'rotate(-90deg)' }}>
+            <div className={styles.summaryHealthRing}>
+              <svg width="68" height="68" className={styles.summaryHealthSvg}>
                 <circle cx="34" cy="34" r={r} fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
-                <circle cx="34" cy="34" r={r} fill="transparent" stroke={hColor} strokeWidth="6" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+                <circle className={styles.summaryHealthProgress} cx="34" cy="34" r={r} fill="transparent" stroke="currentColor" strokeWidth="6" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
               </svg>
-              <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '16px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.salud}%</span>
+              <div className={styles.summaryHealthValueWrap}>
+                <span className={styles.summaryHealthValue}>{panelData.salud}%</span>
               </div>
             </div>
 
             {/* Info */}
-            <div style={{ flex: 1, zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(90deg, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <div className={styles.summaryInfo}>
+              <div className={styles.summaryHeadingRow}>
+                <h2 className={styles.summaryTitle}>
                   {panelData.estado}
                 </h2>
-                <div style={{ background: isBad ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`, padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#34d399', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className={`${styles.summaryBadge} ${isBad ? styles.summaryBadgeDanger : styles.summaryBadgeSuccess}`}>
                   {isBad ? <AlertTriangle size={12} strokeWidth={3} /> : <CheckCircle2 size={12} strokeWidth={3} />}
                   {isBad ? 'Requiere Atención' : 'OK'}
                 </div>
               </div>
-              <p style={{ fontSize: '13px', color: 'var(--fg-muted)', margin: 0, fontWeight: 500, letterSpacing: '0.2px', opacity: 0.8 }}>
-                Límite de gestión: <strong style={{ color: '#fff' }}>{panelData.diasLimite} {panelData.diasLimite === 1 ? 'día' : 'días'}</strong>. Supervisión de tiempos en curso.
+              <p className={styles.summaryDescription}>
+                Límite de gestión: <strong className={styles.summaryStrong}>{panelData.diasLimite} {panelData.diasLimite === 1 ? 'día' : 'días'}</strong>. Supervisión de tiempos en curso.
               </p>
             </div>
 
             {/* Metrics */}
-            <div style={{ display: 'flex', gap: '16px', zIndex: 1, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.total}</span>
+            <div className={styles.summaryMetrics}>
+              <div className={`${styles.summaryMetric} ${styles.summaryMetricLight}`}>
+                <div className={styles.summaryMetricCopy}>
+                  <span className={styles.summaryMetricLabel}>Total Registros</span>
+                  <span className={`${styles.summaryMetricValue} ${styles.summaryMetricValueDark}`}>{panelData.total}</span>
                 </div>
-                <Hash size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                <Hash size={24} strokeWidth={1.5} className={styles.summaryMetricIconLight} />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Total</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoTotal)}</span>
+              <div className={`${styles.summaryMetric} ${styles.summaryMetricLight}`}>
+                <div className={styles.summaryMetricCopy}>
+                  <span className={styles.summaryMetricLabel}>Monto Total</span>
+                  <span className={`${styles.summaryMetricValue} ${styles.summaryMetricValueDark}`}>{formatCurrency(panelData.montoTotal)}</span>
                 </div>
-                <DollarSign size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+                <DollarSign size={24} strokeWidth={1.5} className={styles.summaryMetricIconLight} />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vencidos</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? '#f87171' : '#fff', lineHeight: 1 }}>{panelData.vencidos}</span>
+              <div className={`${styles.summaryMetric} ${isBad ? styles.summaryMetricDanger : styles.summaryMetricDark}`}>
+                <div className={styles.summaryMetricCopy}>
+                  <span className={`${styles.summaryMetricLabel} ${isBad ? styles.summaryMetricDangerText : ''}`}>Vencidos</span>
+                  <span className={`${styles.summaryMetricValue} ${isBad ? styles.summaryMetricDangerText : ''}`}>{panelData.vencidos}</span>
                 </div>
-                <Timer size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.15)' }} />
+                <Timer size={24} strokeWidth={1.5} className={isBad ? styles.summaryMetricIconDanger : styles.summaryMetricIconDark} />
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: isBad ? 'rgba(239,68,68,0.08)' : 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: `1px solid ${isBad ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'}`, boxShadow: isBad ? 'inset 0 0 20px rgba(239,68,68,0.05)' : 'none' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: 800, color: isBad ? '#f87171' : '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Vencidos</span>
-                  <span style={{ fontSize: '24px', fontWeight: 800, color: isBad ? '#f87171' : '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoVencidos)}</span>
+              <div className={`${styles.summaryMetric} ${isBad ? styles.summaryMetricDanger : styles.summaryMetricDark}`}>
+                <div className={styles.summaryMetricCopy}>
+                  <span className={`${styles.summaryMetricLabel} ${isBad ? styles.summaryMetricDangerText : ''}`}>Monto Vencidos</span>
+                  <span className={`${styles.summaryMetricValue} ${isBad ? styles.summaryMetricDangerText : ''}`}>{formatCurrency(panelData.montoVencidos)}</span>
                 </div>
-                <DollarSign size={24} strokeWidth={1.5} style={{ color: isBad ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.15)' }} />
+                <DollarSign size={24} strokeWidth={1.5} className={isBad ? styles.summaryMetricIconDanger : styles.summaryMetricIconDark} />
               </div>
 
             </div>
@@ -2785,138 +2060,188 @@ export default function RegistrosPage() {
 
       {/* Filtered Panel (lite) — mismo diseño, sin vencidos/salud */}
       {panelData && panelData.mode === 'lite' && (
-        <div style={{
-          background: 'var(--bg-elev-1)',
-          backgroundImage: 'radial-gradient(ellipse at top left, rgba(16,185,129,0.12), transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02), transparent 40%)',
-          border: '1px solid var(--border)',
-          borderTop: '1px solid #10b98150',
-          borderRadius: '16px',
-          padding: '20px 32px',
-          marginBottom: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '32px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px rgba(16,185,129,0.08)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
+        <div className={`records-filtered-summary ${styles.summaryPanel} ${styles.summaryPanelLite}`}>
           {/* Info */}
-          <div style={{ flex: 1, zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '1px', background: 'linear-gradient(90deg, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <div className={styles.summaryInfo}>
+            <div className={styles.summaryHeadingRow}>
+              <h2 className={`${styles.summaryTitle} ${styles.summaryTitleLite}`}>
                 Registros Filtrados
               </h2>
-              <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 800, color: '#34d399', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className={`${styles.summaryBadge} ${styles.summaryBadgeSuccess}`}>
                 <SlidersHorizontal size={12} strokeWidth={3} />
                 Filtro Activo
               </div>
             </div>
-            <p style={{ fontSize: '13px', color: 'var(--fg-muted)', margin: 0, fontWeight: 500, letterSpacing: '0.2px', opacity: 0.8 }}>
+            <p className={styles.summaryDescription}>
               Resultados según los filtros aplicados.
             </p>
           </div>
 
           {/* Metrics */}
-          <div style={{ display: 'flex', gap: '16px', zIndex: 1, flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Registros</span>
-                <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{panelData.total}</span>
+          <div className={styles.summaryMetrics}>
+            <div className={`${styles.summaryMetric} ${styles.summaryMetricDark}`}>
+              <div className={styles.summaryMetricCopy}>
+                <span className={styles.summaryMetricLabel}>Total Registros</span>
+                <span className={styles.summaryMetricValue}>{panelData.total}</span>
               </div>
-              <Hash size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              <Hash size={24} strokeWidth={1.5} className={styles.summaryMetricIconDark} />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.25)', padding: '12px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '10px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monto Total</span>
-                <span style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1 }}>{formatCurrency(panelData.montoTotal)}</span>
+            <div className={`${styles.summaryMetric} ${styles.summaryMetricDark}`}>
+              <div className={styles.summaryMetricCopy}>
+                <span className={styles.summaryMetricLabel}>Monto Total</span>
+                <span className={styles.summaryMetricValue}>{formatCurrency(panelData.montoTotal)}</span>
               </div>
-              <DollarSign size={24} strokeWidth={1.5} style={{ color: 'rgba(255,255,255,0.15)' }} />
+              <DollarSign size={24} strokeWidth={1.5} className={styles.summaryMetricIconDark} />
             </div>
           </div>
         </div>
       )}
 
       {/* Table */}
-      <div style={{
-        width: '100%',
-        background: 'var(--bg-elev-1)',
-        border: '1px solid var(--border)',
-        borderRadius: '16px', overflow: 'hidden',
-        boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)'
-      }}>
+      <div className="records-table-card">
         {/* Pestañas: Registros / Fijados (solo si hay alguno fijado) */}
-        {registrosFijados.length > 0 && (
-          <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="records-tabs">
             {([['registros', 'Registros'], ['fijados', `Fijados (${registrosFijados.length})`]] as const).map(([key, label]) => {
               const active = activeTab === key;
               return (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '10px 18px', fontSize: 12, fontWeight: 800,
-                    textTransform: 'uppercase', letterSpacing: '0.5px',
-                    background: 'transparent', border: 'none', cursor: 'pointer',
-                    color: active ? '#34d399' : 'var(--fg-muted)',
-                    borderBottom: `2px solid ${active ? '#34d399' : 'transparent'}`,
-                    marginBottom: -1,
-                  }}
+                  className={active ? 'is-active' : undefined}
                 >
-                  {key === 'fijados' && <Pin size={13} fill={active ? 'currentColor' : 'none'} />}
+                  {key === 'registros' ? <FileText size={14} /> : <Pin size={13} fill={active ? 'currentColor' : 'none'} />}
                   {label}
                 </button>
               );
             })}
           </div>
+        <div className="records-toolbar">
+          <label className="records-search"><Search size={18} /><input value={filters.search} onChange={e => setFilter('search', e.target.value)} placeholder="Buscar cliente, CUIL o gestor..." /></label>
+          <button type="button" className={`records-toolbar-btn${hayFiltros || filtersPanelOpen ? ' is-active' : ''}`} onClick={() => setFiltersPanelOpen(open => !open)} aria-expanded={filtersPanelOpen}><SlidersHorizontal size={17} /> Filtros <ChevronDown size={14} /></button>
+          <CorporateDatePicker
+            compact
+            value={filters.fechaDesde === filters.fechaHasta ? filters.fechaDesde : ''}
+            placeholder={`Hoy, ${formatDate(new Date().toISOString())}`}
+            onChange={value => {
+              setFilter('fechaDesde', value);
+              setFilter('fechaHasta', value);
+            }}
+          />
+          <span className="records-toolbar-spacer" />
+          <span className="records-count">{activeTab === 'fijados' ? registrosFijados.length : filteredRegistros.length} registros</span>
+          <i className="records-toolbar-divider" />
+          <div className="records-sort-control">
+            <ArrowUpDown size={17} />
+            <CustomSelect
+              width="118px"
+              value={sortMode}
+              onChange={value => setSortMode(String(value) as typeof sortMode)}
+              options={[
+                { value: 'fecha-desc', label: 'Más recientes' },
+                { value: 'fecha-asc', label: 'Más antiguos' },
+                { value: 'monto-desc', label: 'Mayor monto' },
+                { value: 'score-desc', label: 'Mayor score' },
+                { value: 'nombre-asc', label: 'Nombre A–Z' },
+              ]}
+            />
+          </div>
+          <div className="records-view-toggle">
+            <button type="button" className={viewMode === 'list' ? 'is-active' : ''} aria-label="Vista de lista" onClick={() => setViewMode('list')}><List size={18} /></button>
+            <button type="button" className={viewMode === 'grid' ? 'is-active' : ''} aria-label="Vista de cuadrícula" onClick={() => setViewMode('grid')}><Grid2X2 size={17} /></button>
+          </div>
+          {/* Filas por página. Ciclo [25, 50, 100, 200], igual que el selector del Sidebar
+              retirado en la migración. No hace falta acotar la página: FilterContext ya
+              resetea a la 1 cuando cambia `pageSize`. */}
+          <button
+            type="button"
+            className="records-toolbar-btn"
+            onClick={() => {
+              const sizes = [25, 50, 100, 200];
+              setPageSize(sizes[(sizes.indexOf(pageSize || 25) + 1) % sizes.length]);
+            }}
+            title={`Mostrando ${pageSize || 25} filas por página. Hacé clic para cambiar a 25, 50, 100 o 200.`}
+            aria-label={`Filas por página: ${pageSize || 25}. Cambiar.`}
+          >
+            <Rows3 size={16} /> {pageSize || 25}
+          </button>
+          {canPerform('crear_registros') && (
+            <button
+              type="button"
+              className="btn-primary records-new-btn"
+              onClick={() => setIsCreationModalOpen(true)}
+              aria-label="Nuevo registro"
+            >
+              <Plus size={16} /> Nuevo registro
+            </button>
+          )}
+        </div>
+        {filtersPanelOpen && (
+          <div className="records-filters-panel">
+            <div className="records-filter-field">
+              <span>Analista</span>
+              <CustomSelect width="100%" value={filters.analista} onChange={value => setFilter('analista', String(value))} options={[{ value: '', label: 'Todos los analistas' }, ...ANALISTAS.map(nombre => ({ value: nombre, label: nombre }))]} />
+            </div>
+            <div className="records-filter-field">
+              <span>Estado</span>
+              <CustomSelect width="100%" value={filters.estados[0] || ''} onChange={value => setFilter('estados', value ? [String(value)] : [])} options={[{ value: '', label: 'Todos los estados' }, ...ESTADOS.map(estado => ({ value: estado, label: capitalizarTexto(estado) }))]} />
+            </div>
+            <div className="records-filter-field">
+              <span>Desde</span>
+              <CorporateDatePicker value={filters.fechaDesde} onChange={value => setFilter('fechaDesde', value)} placeholder="Desde" />
+            </div>
+            <div className="records-filter-field">
+              <span>Hasta</span>
+              <CorporateDatePicker value={filters.fechaHasta} onChange={value => setFilter('fechaHasta', value)} placeholder="Hasta" />
+            </div>
+            <label className="records-filter-field">
+              <span>Score mínimo</span>
+              <input type="number" min="0" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} placeholder="0" />
+            </label>
+            <label className="records-filter-field">
+              <span>Score máximo</span>
+              <input type="number" min="0" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} placeholder="999" />
+            </label>
+            <button type="button" className="records-clear-filters" onClick={limpiarFiltros} disabled={!hayFiltros}><X size={15} /> Limpiar</button>
+          </div>
         )}
         {(activeTab === 'fijados' ? registrosFijados.length === 0 : filteredRegistros.length === 0) && !loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 300, gap: 12 }}>
-            <span style={{ fontSize: 40, color: '#64748b' }}>—</span>
-            <p style={{ fontSize: 16, color: 'var(--fg-muted)', fontWeight: 600 }}>No se encontraron registros coincidentes</p>
+          <div className="records-empty">
+            <span className="records-empty__mark">—</span>
+            <p>No se encontraron registros coincidentes</p>
             {hayFiltros && (
-              <button onClick={limpiarFiltros} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--fg-muted)', padding: '10px 20px', borderRadius: '10px', fontSize: '13px', cursor: 'pointer', marginTop: '12px' }}>
-                <X size={14} style={{ verticalAlign: 'middle', marginRight: '8px' }} /> LIMPIAR FILTROS
+              <button onClick={limpiarFiltros}>
+                <X size={14} /> LIMPIAR FILTROS
               </button>
             )}
           </div>
         ) : (
-          <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div className="records-table-scroll">
             {hayFiltros && isRevisionState && (
-              <div style={{
-                background: isRevisionState ? 'transparent' : hayFiltros ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0) 100%)' : 'rgba(255, 255, 255, 0.01)',
-                borderBottom: isRevisionState ? '1px solid rgba(255, 255, 255, 0.03)' : `1px solid ${hayFiltros ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.03)'}`,
-                display: 'flex', flexDirection: 'column'
-              }}>
-                <div style={{ padding: '12px 24px', display: 'flex', gap: '32px', alignItems: 'center', minHeight: isRevisionState ? '56px' : 'auto' }}>
+              <div className={styles.revisionFilters}>
+                <div className={styles.revisionFiltersHeader}>
                   {isRevisionState ? null : hayFiltros ? (
                     <>
-                      <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                        Registros filtrados <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
+                      <span className={styles.revisionStat}>
+                        Registros filtrados <span className={styles.revisionStatValue}>{totales.cantidad}</span>
                       </span>
-                      <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                        Total acumulado <span style={{ color: '#10b981', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>
+                      <span className={styles.revisionStat}>
+                        Total acumulado <span className={styles.revisionStatValue}>
                           {formatCurrency(totales.monto)}
                         </span>
                       </span>
                     </>
                   ) : (
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--fg-muted)', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                      Todos los registros <span style={{ color: '#fff', fontSize: '14px', fontWeight: 700, marginLeft: '8px' }}>{totales.cantidad}</span>
+                    <span className={styles.revisionStat}>
+                      Todos los registros <span className={`${styles.revisionStatValue} ${styles.revisionStatValueNeutral}`}>{totales.cantidad}</span>
                     </span>
                   )}
-                  <div style={{ flex: 1 }} />
+                  <div className={styles.revisionSpacer} />
                   
                   {isRevisionState && (
                     <button
                       onClick={() => setShowInlineFilters(p => !p)}
-                      style={{
-                        background: showInlineFilters ? 'rgba(255,255,255,0.1)' : 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: showInlineFilters ? '#fff' : 'var(--fg-muted)', fontSize: '10px', fontWeight: 800, borderRadius: '6px',
-                        cursor: 'pointer', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', transition: '0.2s'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-                      onMouseLeave={e => { if(!showInlineFilters){ e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; } }}
+                      className={`${styles.inlineFiltersToggle} ${showInlineFilters ? styles.inlineFiltersToggleActive : ''}`}
                     >
                       <SlidersHorizontal size={12} strokeWidth={3} /> {showInlineFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}
                     </button>
@@ -2925,28 +2250,23 @@ export default function RegistrosPage() {
                 
                 {/* INLINE FILTERS EXPANDABLE AREA */}
                 {isRevisionState && showInlineFilters && (
-                  <div style={{
-                    padding: '0 24px 20px 24px',
-                    display: 'flex', gap: '24px', flexWrap: 'wrap',
-                    animation: 'selectFade 0.2s ease-out'
-                  }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 200px' }}>
-                      <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Búsqueda General</label>
-                      <input placeholder="Nombre, CUIL..." value={filters.search} onChange={e => setFilter('search', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                  <div className={styles.inlineFiltersPanel}>
+                    <div className={styles.inlineFilterField}>
+                      <label className={styles.inlineFilterLabel}>Búsqueda General</label>
+                      <input className={`${styles.inlineFilterInput} ${styles.inlineFilterSearch}`} placeholder="Nombre, CUIL..." value={filters.search} onChange={e => setFilter('search', e.target.value)} />
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 200px' }}>
-                      <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Analista</label>
+                    <div className={styles.inlineFilterField}>
+                      <label className={styles.inlineFilterLabel}>Analista</label>
                       <PremiumSelect 
                         value={filters.analista} 
                         onChange={v => setFilter('analista', v)} 
                         options={ANALISTAS} 
                         placeholder="Todos los analistas" 
-                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', minHeight: '36px' }}
                       />
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: '1 1 220px' }}>
-                      <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Etiquetas Lead</label>
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    <div className={`${styles.inlineFilterField} ${styles.inlineFilterTags}`}>
+                      <label className={styles.inlineFilterLabel}>Etiquetas Lead</label>
+                      <div className={styles.inlineFilterChipList}>
                         {['Presupuestado'].map(t => {
                           const isSel = filters.etiquetas.includes(t);
                           return (
@@ -2954,13 +2274,7 @@ export default function RegistrosPage() {
                               key={t}
                               type="button"
                               onClick={() => toggleEtiqueta(t)}
-                              style={{
-                                padding: '4px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700,
-                                background: isSel ? 'rgba(99,102,241,0.25)' : 'rgba(0,0,0,0.2)',
-                                color: isSel ? '#818cf8' : '#94a3b8',
-                                border: `1px solid ${isSel ? '#6366f1' : 'rgba(255,255,255,0.1)'}`,
-                                cursor: 'pointer', transition: '0.2s'
-                              }}
+                              className={`${styles.inlineFilterChip} ${isSel ? styles.inlineFilterChipActive : ''}`}
                             >
                               {t}
                             </button>
@@ -2968,61 +2282,45 @@ export default function RegistrosPage() {
                         })}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'flex-end' }}>
+                    <div className={styles.inlineFilterRecontacts}>
                       <button
                         type="button"
                         onClick={() => setFilter('soloRecontactosHoy', !filters.soloRecontactosHoy)}
-                        style={{
-                          padding: '8px 12px', borderRadius: '8px', fontSize: '11px', fontWeight: 700,
-                          background: filters.soloRecontactosHoy ? 'rgba(239,68,68,0.25)' : 'rgba(0,0,0,0.2)',
-                          color: filters.soloRecontactosHoy ? '#f87171' : '#94a3b8',
-                          border: `1px solid ${filters.soloRecontactosHoy ? '#ef4444' : 'rgba(255,255,255,0.1)'}`,
-                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: '0.2s'
-                        }}
+                        className={`${styles.inlineFilterRecontactButton} ${filters.soloRecontactosHoy ? styles.inlineFilterRecontactButtonActive : ''}`}
                       >
                         🔴 Re-contactos Hoy / Vencidos
                       </button>
                     </div>
-                    <div style={{ display: 'flex', gap: '12px', flex: '1 1 200px' }}>
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                         <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha Desde</label>
-                         <input type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                    <div className={styles.inlineFilterPair}>
+                       <div className={styles.inlineFilterPairField}>
+                         <label className={styles.inlineFilterLabel}>Fecha Desde</label>
+                         <input className={styles.inlineFilterInput} type="date" value={filters.fechaDesde} onChange={e => setFilter('fechaDesde', e.target.value)} />
                        </div>
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                         <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fecha Hasta</label>
-                         <input type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                       <div className={styles.inlineFilterPairField}>
+                         <label className={styles.inlineFilterLabel}>Fecha Hasta</label>
+                         <input className={styles.inlineFilterInput} type="date" value={filters.fechaHasta} onChange={e => setFilter('fechaHasta', e.target.value)} />
                        </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '12px', flex: '1 1 200px' }}>
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                         <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score Mín</label>
-                         <input type="number" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                    <div className={styles.inlineFilterPair}>
+                       <div className={styles.inlineFilterPairField}>
+                         <label className={styles.inlineFilterLabel}>Score Mín</label>
+                         <input className={styles.inlineFilterInput} type="number" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} />
                        </div>
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                         <label style={{ fontSize: '9px', fontWeight: 800, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Score Máx</label>
-                         <input type="number" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '11px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }} />
+                       <div className={styles.inlineFilterPairField}>
+                         <label className={styles.inlineFilterLabel}>Score Máx</label>
+                         <input className={styles.inlineFilterInput} type="number" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} />
                        </div>
                     </div>
                   </div>
                 )}
               </div>
             )}
-            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+            {viewMode === 'list' ? (
+            <table className="records-data-table">
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.01)' }}>
-                  {['Cliente | CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Calif.', 'Tipo / Acuerdo', 'Acciones'].map((h, i) => (
-                    <th key={i} style={{
-                      padding: '20px 24px',
-                      fontSize: 12, fontWeight: 800,
-                      color: '#fff',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1.5px',
-                      textAlign: (i === 0) ? 'left' : 'center',
-                      whiteSpace: 'nowrap',
-                      borderBottom: '1px solid var(--border)',
-                      borderTopLeftRadius: i === 0 ? 16 : 0,
-                      borderTopRightRadius: i === 7 ? 16 : 0,
-                    }}>{h}</th>
+                <tr>
+                  {['Cliente | CUIL', 'Gestión', 'Fecha', 'Score', 'Monto', 'Estado / Tipo', 'Acciones'].map((h, i) => (
+                    <th key={i}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -3030,24 +2328,43 @@ export default function RegistrosPage() {
                 {(activeTab === 'fijados' ? registrosFijados : paginatedRegistros).map(renderFila)}
               </tbody>
             </table>
+            ) : (
+              <div className="records-grid">
+                {(activeTab === 'fijados' ? registrosFijados : paginatedRegistros).map(reg => {
+                  const score = Number(reg.puntaje || 0);
+                  const level = score > 700 ? 'alta' : score >= 550 ? 'media' : 'baja';
+                  return (
+                    <article className="records-grid-card" key={reg.id}>
+                      <div className="records-grid-card__head">
+                        <div><strong>{reg.nombre}</strong><span>{reg.cuil ? formatearCuil(reg.cuil) : 'Sin CUIL'}</span></div>
+                        <button type="button" onClick={() => openEdit(reg)} aria-label={`Editar ${reg.nombre}`}><Edit2 size={15} /></button>
+                      </div>
+                      <div className="records-grid-card__metrics">
+                        <span><small>Gestión</small><b>{displayAnalista(reg.analista)}</b></span>
+                        <span><small>Fecha</small><b>{formatDate(reg.fecha)}</b></span>
+                        <span><small>Score</small><b>{reg.puntaje || '—'}</b></span>
+                        <span><small>Monto</small><b>{reg.monto == null ? '—' : formatCurrency(Number(reg.monto))}</b></span>
+                      </div>
+                      <div className={`records-grid-card__status is-${level}`}>
+                        <strong>{reg.tipo_cliente || capitalizarTexto(reg.estado || 'Sin estado')}</strong>
+                        <span>{reg.acuerdo_precios || 'Sin acuerdo'}</span>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Paginación: Primera, Anterior, Página, Siguiente, Última */}
             {activeTab === 'registros' && filteredRegistros.length > pageSize && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 20px',
-                borderTop: '1px solid rgba(255,255,255,0.04)',
-                background: 'transparent',
-              }}>
+              <div className="records-pagination">
                 {/* Info de registros */}
-                <div style={{ fontSize: '13px', color: 'var(--fg-muted)', fontWeight: 600 }}>
+                <div className="records-pagination__text">
                   Mostrando {rangeEnd} de {filteredRegistros.length} registros
                 </div>
 
                 {/* Botones de paginación */}
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div className="records-pagination__controls">
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
@@ -3064,8 +2381,8 @@ export default function RegistrosPage() {
                     ← Anterior
                   </button>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '13px', color: 'var(--fg-muted)', fontWeight: 600 }}>Página</span>
+                  <div className="records-pagination__page">
+                    <span>Página</span>
                     <input
                       type="number"
                       min="1"
@@ -3079,7 +2396,7 @@ export default function RegistrosPage() {
                       }}
                       className="pagination-input"
                     />
-                    <span style={{ fontSize: '13px', color: 'var(--fg-muted)', fontWeight: 600 }}>de {totalPages}</span>
+                    <span>de {totalPages}</span>
                   </div>
 
                   <button
@@ -3127,9 +2444,7 @@ export default function RegistrosPage() {
             showToast('Teléfono guardado', 'success');
             
             if (action === 'send' && cleanNum) {
-              // Si tiene 10 dígitos (ej: 3434538564), le agregamos el código de país y de celular de Argentina (549)
-              const waNum = cleanNum.length === 10 ? `549${cleanNum}` : cleanNum;
-              window.open(`https://web.whatsapp.com/send?phone=${waNum}`, '_blank');
+              abrirWhatsApp(cleanNum);
             } else {
               refresh(true);
             }
@@ -3138,7 +2453,6 @@ export default function RegistrosPage() {
         onCancel={() => setWhatsappTarget(null)} 
       />
       <BitacoraModal registro={bitacoraTarget} isOpen={!!bitacoraTarget} onClose={() => setBitacoraTarget(null)} onSavedEtiquetas={handleSaveEtiquetas} />
-      <EtiquetasModal registro={etiquetasTarget} isOpen={!!etiquetasTarget} onClose={() => setEtiquetasTarget(null)} onSave={handleSaveEtiquetas} />
     </div>
   );
 }

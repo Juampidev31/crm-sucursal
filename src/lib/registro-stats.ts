@@ -48,6 +48,36 @@ export const normalizarEmpleador = (nombre: string): string => {
   return n || 'No especificado';
 };
 
+/**
+ * Clave de agrupación por nombre para la detección de duplicados.
+ *
+ * La comparten `/duplicados` y `Ajustes > Datos masivos > Duplicados`: si las
+ * dos pantallas no normalizan igual, agrupan distinto y dejan de coincidir.
+ */
+export const normalizarNombreKey = (nombre?: string | null) =>
+  nombre?.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
+
+/**
+ * Distribución de `fuente` agrupada por un campo del registro, ordenada por
+ * cantidad descendente. Los valores vacíos caen en "No especificado".
+ *
+ * Es una función pura: depende sólo de sus argumentos. Vivía duplicada e
+ * idéntica dentro de `analistas/page.tsx` y `ResumenMensualTab.tsx`, donde se
+ * recreaba en cada render y por eso quedaba fuera de las dependencias de los
+ * `useMemo` que la consumen. A nivel de módulo su identidad es estable.
+ */
+export const distPor = (campo: keyof Registro, fuente: Registro[]) => {
+  const map = new Map<string, { monto: number; cantidad: number }>();
+  for (const r of fuente) {
+    const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
+    const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
+    map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => b[1].cantidad - a[1].cantidad)
+    .map(([label, data]) => ({ label, ...data }));
+};
+
 export const buildDistEmpleador = (fuente: Registro[]) => {
   const map = new Map<string, { monto: number; cantidad: number; variantes: Map<string, number>; displayLabel: string }>();
   for (const r of fuente) {

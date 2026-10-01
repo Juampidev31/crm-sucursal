@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -7,6 +7,7 @@ import { logAudit } from '@/lib/audit';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { Trash2, AlertTriangle, Calendar, Search, ShieldAlert, CheckCircle } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import styles from './MassiveDeleteTab.module.css';
 
 // Única fuente de verdad para el rango: preview y delete deben apuntar siempre a las mismas filas
 const buildRangeFilter = (desde: string, hasta: string) =>
@@ -14,10 +15,10 @@ const buildRangeFilter = (desde: string, hasta: string) =>
 
 const DateField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
   <div className="form-group">
-    <label className="form-label" style={{ color: 'var(--gris)', fontSize: '11px', textTransform: 'uppercase' }}>{label}</label>
-    <div style={{ position: 'relative' }}>
-      <Calendar size={14} style={{ position: 'absolute', left: '12px', top: '14px', color: '#555' }} />
-      <input type="date" className="form-input" style={{ paddingLeft: '38px' }} value={value} onChange={e => onChange(e.target.value)} />
+    <label className={`form-label ${styles.dateLabel}`}>{label}</label>
+    <div className={styles.dateField}>
+      <Calendar size={14} className={styles.dateIcon} />
+      <input type="date" className={`form-input ${styles.dateInput}`} value={value} onChange={e => onChange(e.target.value)} />
     </div>
   </div>
 );
@@ -95,37 +96,27 @@ export default function MassiveDeleteTab() {
   };
 
   return (
-    <div className="data-card" style={{ background: '#111111', border: '1px solid rgba(255,22,22,0.1)' }}>
-      <div className="data-card-header" style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'rgba(255,0,0,0.1)', padding: '10px', borderRadius: '10px' }}>
+    <div className={`data-card ${styles.root}`}>
+      <div className={`data-card-header ${styles.header}`}>
+        <div className={styles.headerRow}>
+          <div className={styles.headerIcon}>
             <ShieldAlert size={24} color="#ff4444" />
           </div>
           <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>Eliminación Masiva por Fecha</h3>
-            <p style={{ fontSize: '13px', color: '#ff4444', fontWeight: 600, marginTop: '4px' }}>Zona Restringida: Solo Administrador Maestro</p>
+            <h3 className={styles.title}>Eliminación Masiva por Fecha</h3>
+            <p className={styles.subtitle}>Zona Restringida: Solo Administrador Maestro</p>
           </div>
         </div>
       </div>
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: '24px', 
-        padding: '24px', 
-        background: 'rgba(255,255,255,0.02)', 
-        borderRadius: '12px', 
-        border: '1px solid rgba(255,255,255,0.05)',
-        marginBottom: '32px'
-      }}>
+      <div className={styles.filterGrid}>
         <DateField label="Desde Fecha" value={fechaDesde} onChange={v => { setFechaDesde(v); setCount(null); }} />
 
         <DateField label="Hasta Fecha" value={fechaHasta} onChange={v => { setFechaHasta(v); setCount(null); }} />
 
-        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-          <button 
-            className="btn-secondary" 
-            style={{ width: '100%', height: '42px', justifyContent: 'center' }}
+        <div className={styles.previewAction}>
+          <button
+            className={`btn-secondary ${styles.previewButton}`}
             onClick={checkCount}
             disabled={loading || deleting}
           >
@@ -135,34 +126,18 @@ export default function MassiveDeleteTab() {
       </div>
 
       {count !== null && (
-        <div style={{ 
-          animation: 'fadeIn 0.3s ease',
-          padding: '24px', 
-          background: count > 0 ? 'rgba(255,68,68,0.05)' : 'rgba(74,222,128,0.05)', 
-          borderRadius: '12px', 
-          border: '1px solid',
-          borderColor: count > 0 ? 'rgba(255,68,68,0.2)' : 'rgba(74,222,128,0.2)',
-          textAlign: 'center'
-        }}>
+        <div className={`${styles.result} ${count > 0 ? styles.hasRecords : styles.isEmpty}`}>
           {count > 0 ? (
             <>
-              <div style={{ color: '#ff4444', fontSize: '16px', fontWeight: 800, marginBottom: '8px' }}>
-                <AlertTriangle size={24} style={{ marginBottom: '8px' }} /><br />
+              <div className={styles.resultDanger}>
+                <AlertTriangle size={24} className={styles.resultIcon} /><br />
                 Se encontraron {count} registros para eliminar
               </div>
-              <p style={{ color: 'var(--gris)', fontSize: '13px', marginBottom: '20px' }}>
+              <p className={styles.resultDescription}>
                 Esta acción eliminará todos los registros entre el {formatDate(fechaDesde)} y el {formatDate(fechaHasta)}.
               </p>
               <button 
-                className="btn-primary" 
-                style={{ 
-                  background: '#ff4444', 
-                  color: '#fff', 
-                  border: 'none', 
-                  padding: '12px 32px',
-                  fontSize: '14px',
-                  fontWeight: 800
-                }}
+                className={`btn-primary ${styles.deleteButton}`}
                 onClick={handleDelete}
                 disabled={deleting}
               >
@@ -170,24 +145,17 @@ export default function MassiveDeleteTab() {
               </button>
             </>
           ) : (
-            <div style={{ color: '#00ff88', fontSize: '16px', fontWeight: 700 }}>
-              <CheckCircle size={24} style={{ marginBottom: '8px' }} /><br />
+            <div className={styles.resultEmpty}>
+              <CheckCircle size={24} className={styles.resultIcon} /><br />
               No se encontraron registros en este rango de fechas.
             </div>
           )}
         </div>
       )}
 
-      <div style={{ marginTop: '32px', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', fontSize: '12px', color: '#555' }}>
+      <div className={styles.securityNote}>
         <strong>Nota de seguridad:</strong> Cada eliminación masiva queda registrada en el log de auditoría con tu nombre de usuario, la fecha del rango y la cantidad de registros afectados.
       </div>
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }

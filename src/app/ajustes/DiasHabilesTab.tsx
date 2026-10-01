@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Calendar, Clock, Save, RefreshCw, Plus, Trash2,
-  Check, AlertCircle, CalendarDays, Users, Pencil, RotateCcw, X
+  Calendar, Save, RefreshCw, Plus, Trash2,
+  Check, AlertCircle, Users, Pencil, RotateCcw, X
 } from 'lucide-react';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { supabase } from '@/lib/supabase';
@@ -139,7 +139,10 @@ export function DiasHabilesTab() {
           dias_transcurridos: diasTransNum,
           manual: entry.manual,
         };
-        await supabase.from('dias_habiles_config').upsert(payload, { onConflict: 'analista' });
+        // supabase-js no lanza ante un error de PostgREST: devuelve { data, error }. Sin este
+        // chequeo el bucle seguía y se reportaba éxito aunque fallaran todas las filas.
+        const { error } = await supabase.from('dias_habiles_config').upsert(payload, { onConflict: 'analista' });
+        if (error) throw error;
         applyDiasConfigChange('UPDATE', payload);
       }
 
@@ -396,55 +399,35 @@ export function DiasHabilesTab() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="business-days">
       {/* Notificación Toast sobria */}
       {feedback && (
-        <div
-          style={{
-            padding: '10px 16px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: feedback.type === 'success' ? '#141e18' : '#221416',
-            border: `1px solid ${feedback.type === 'success' ? '#22543d' : '#742a2a'}`,
-            color: feedback.type === 'success' ? '#9ae6b4' : '#feb2b2',
-          }}
-        >
+        <div className={`business-days__toast is-${feedback.type}`}>
           {feedback.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
           <span>{feedback.msg}</span>
         </div>
       )}
 
       {/* PANEL PRINCIPAL SOBRIO: Carga mensual y replicar a todos */}
-      <div
-        style={{
-          background: '#121214',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '12px',
-          padding: '20px 24px',
-        }}
-      >
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+      <div className="business-days__panel">
+        <div className="business-days__panel-header">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Calendar size={16} color="#e4e4e7" />
-              <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#f4f4f5', margin: 0 }}>
+            <div className="business-days__title-row">
+              <Calendar size={16} />
+              <h3 className="business-days__title">
                 Configuración Mensual de Días Hábiles
               </h3>
             </div>
-            <p style={{ fontSize: '12px', color: '#71717a', marginTop: '4px', marginBottom: 0 }}>
-              Mes en curso: <span style={{ color: '#d4d4d8', fontWeight: 600 }}>{nombreMesActual} {anioActual}</span>.
+            <p className="business-days__description">
+              Mes en curso: <span className="business-days__emphasis">{nombreMesActual} {anioActual}</span>.
               Ingresá los días hábiles del mes y replicalos a todo el equipo con un solo clic.
             </p>
           </div>
 
           {/* Formulario de carga y réplica a todos */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', background: '#18181b', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', padding: '0 10px', height: '36px' }}>
-              <span style={{ fontSize: '11px', color: '#a1a1aa', marginRight: '8px' }}>Días Hábiles:</span>
+          <div className="business-days__controls">
+            <div className="business-days__global-field">
+              <span className="business-days__global-label">Días Hábiles:</span>
               <input
                 type="number"
                 step="0.5"
@@ -452,15 +435,7 @@ export function DiasHabilesTab() {
                 max="31"
                 value={diasGlobalesInput}
                 onChange={e => setDiasGlobalesInput(e.target.value)}
-                style={{
-                  width: '54px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#fff',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  outline: 'none',
-                }}
+                className="business-days__global-input"
               />
             </div>
 
@@ -468,19 +443,7 @@ export function DiasHabilesTab() {
               type="button"
               onClick={() => setDiasGlobalesInput(habilesSugeridosMes)}
               title="Calcular según calendario y feriados"
-              style={{
-                height: '36px',
-                padding: '0 12px',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '8px',
-                color: '#d4d4d8',
-                fontSize: '12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
+              className="business-days__button"
             >
               <span>Sugerir ({habilesSugeridosMes})</span>
             </button>
@@ -489,20 +452,7 @@ export function DiasHabilesTab() {
               type="button"
               onClick={handleReplicarHabilesATodos}
               disabled={applyingToAll}
-              style={{
-                height: '36px',
-                padding: '0 16px',
-                background: '#27272a',
-                border: '1px solid rgba(255,255,255,0.18)',
-                borderRadius: '8px',
-                color: '#fff',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
+              className="business-days__button is-primary"
             >
               <Users size={13} />
               <span>{applyingToAll ? 'Replicando...' : 'Replicar a Todos'}</span>
@@ -513,19 +463,7 @@ export function DiasHabilesTab() {
               onClick={handleSincronizarTranscurridos}
               disabled={syncingTranscurridos}
               title="Actualizar los días transcurridos al cálculo de hoy"
-              style={{
-                height: '36px',
-                padding: '0 12px',
-                background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '8px',
-                color: '#a1a1aa',
-                fontSize: '12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
+              className="business-days__button is-muted"
             >
               <RefreshCw size={12} className={syncingTranscurridos ? 'spin' : ''} />
               <span>Hoy: {transcurridosHoy} d</span>
@@ -534,84 +472,52 @@ export function DiasHabilesTab() {
         </div>
 
         {/* Regla de negocio en formato sobrio y discreto */}
-        <div
-          style={{
-            marginTop: '16px',
-            paddingTop: '12px',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: '16px',
-            fontSize: '11px',
-            color: '#71717a',
-          }}
-        >
+        <div className="business-days__rules">
           <span>Regla de cálculo:</span>
-          <span>• Lunes a Viernes: <strong style={{ color: '#d4d4d8' }}>1 día (a las 19:30 hs computa el día siguiente)</strong></span>
-          <span>• Sábados: <strong style={{ color: '#d4d4d8' }}>0.5 día (a las 12:00 pm computa el lunes)</strong></span>
-          <span>• Domingos: <strong style={{ color: '#d4d4d8' }}>0</strong></span>
-          <span>• Feriados Nacionales: <strong style={{ color: '#d4d4d8' }}>0</strong> ({feriadosDelMes.length} este mes)</span>
-          <span style={{ marginLeft: 'auto', color: '#a1a1aa' }}>
-            Transcurridos al día de hoy: <strong style={{ color: '#fff' }}>{transcurridosHoy} días</strong>
+          <span>• Lunes a Viernes: <strong>1 día (a las 19:30 hs computa el día siguiente)</strong></span>
+          <span>• Sábados: <strong>0.5 día (a las 12:00 pm computa el lunes)</strong></span>
+          <span>• Domingos: <strong>0</strong></span>
+          <span>• Feriados Nacionales: <strong>0</strong> ({feriadosDelMes.length} este mes)</span>
+          <span className="business-days__rules-current">
+            Transcurridos al día de hoy: <strong>{transcurridosHoy} días</strong>
           </span>
         </div>
       </div>
 
       {/* TARJETAS POR ANALISTA Y PUNTO DE VENTA */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#a1a1aa', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <div className="business-days__section-header">
+          <h4 className="business-days__section-title">
             Detalle por Analista y Punto de Venta
           </h4>
-          <span style={{ fontSize: '11px', color: '#52525b' }}>
+          <span className="business-days__section-count">
             {entidades.length} perfiles activos
           </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+        <div className="business-days__profiles">
           {entidades.map(entidad => {
             const entry = getEntry(entidad);
             const isPdv = entidad === 'Todos';
             const isSaving = savingKey === entidad;
 
             return (
-              <div
-                key={entidad}
-                style={{
-                  background: '#121214',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: '10px',
-                  padding: '18px 20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px',
-                }}
-              >
+              <div key={entidad} className="business-days__profile">
                 {/* Header de la tarjeta */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h5 style={{ fontWeight: 700, fontSize: '14px', margin: 0, color: '#fff' }}>
+                <div className="business-days__profile-header">
+                  <h5 className="business-days__profile-name">
                     {isPdv ? 'Punto de Venta (General)' : entidad}
                   </h5>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      color: entry.manual ? '#a1a1aa' : '#71717a',
-                      background: 'rgba(255,255,255,0.04)',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                    }}
-                  >
+                  <span className={`business-days__mode${entry.manual ? ' is-manual' : ''}`}>
                     {entry.manual ? 'Manual' : 'Automático'}
                   </span>
                 </div>
 
                 {/* Inputs */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="business-days__profile-fields">
                   {/* Días Hábiles */}
                   <div>
-                    <label style={{ display: 'block', color: '#71717a', fontSize: '11px', marginBottom: '6px' }}>
+                    <label className="business-days__field-label">
                       Días Hábiles
                     </label>
                     <input
@@ -621,24 +527,13 @@ export function DiasHabilesTab() {
                       max="31"
                       value={entry.dias_habiles}
                       onChange={e => handleUpdateLocal(entidad, 'dias_habiles', e.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '36px',
-                        background: '#18181b',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '6px',
-                        color: '#fff',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        padding: '0 10px',
-                        boxSizing: 'border-box',
-                      }}
+                      className="business-days__number-input"
                     />
                   </div>
 
                   {/* Días Transcurridos */}
                   <div>
-                    <label style={{ display: 'block', color: '#71717a', fontSize: '11px', marginBottom: '6px' }}>
+                    <label className="business-days__field-label">
                       Transcurridos
                     </label>
                     <input
@@ -649,25 +544,14 @@ export function DiasHabilesTab() {
                       disabled={!entry.manual}
                       value={entry.manual ? entry.dias_transcurridos : transcurridosHoy}
                       onChange={e => handleUpdateLocal(entidad, 'dias_transcurridos', e.target.value)}
-                      style={{
-                        width: '100%',
-                        height: '36px',
-                        background: entry.manual ? '#18181b' : 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: '6px',
-                        color: entry.manual ? '#fff' : '#a1a1aa',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        padding: '0 10px',
-                        boxSizing: 'border-box',
-                      }}
+                      className={`business-days__number-input${entry.manual ? '' : ' is-automatic'}`}
                     />
                   </div>
                 </div>
 
                 {/* Footer de la tarjeta: checkbox manual y botón guardar */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#71717a', cursor: 'pointer', margin: 0 }}>
+                <div className="business-days__profile-footer">
+                  <label className="business-days__manual-toggle">
                     <input
                       type="checkbox"
                       checked={entry.manual}
@@ -691,7 +575,8 @@ export function DiasHabilesTab() {
                             dias_transcurridos: Number(updated.dias_transcurridos) || 0,
                             manual: isMan,
                           };
-                          await supabase.from('dias_habiles_config').upsert(payload, { onConflict: 'analista' });
+                          const { error } = await supabase.from('dias_habiles_config').upsert(payload, { onConflict: 'analista' });
+                          if (error) throw error;
                           applyDiasConfigChange('UPDATE', payload);
                           showToast(`${entidad === 'Todos' ? 'Punto de Venta' : entidad}: modo ${isMan ? 'Manual' : 'Automático'}`);
                         } catch (err: any) {
@@ -706,19 +591,7 @@ export function DiasHabilesTab() {
                     type="button"
                     onClick={() => handleGuardarEntidad(entidad)}
                     disabled={isSaving}
-                    style={{
-                      height: '30px',
-                      padding: '0 12px',
-                      background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '6px',
-                      color: '#d4d4d8',
-                      fontSize: '11px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
+                    className="business-days__save-button"
                   >
                     <Save size={11} />
                     <span>{isSaving ? '...' : 'Guardar'}</span>
@@ -731,20 +604,13 @@ export function DiasHabilesTab() {
       </div>
 
       {/* SECCION FERIADOS NACIONALES: SOBRIA Y LIMPIA */}
-      <div
-        style={{
-          background: '#121214',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '12px',
-          padding: '20px 24px',
-        }}
-      >
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+      <div className="business-days__panel">
+        <div className="business-days__holidays-header">
           <div>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#f4f4f5', margin: 0 }}>
+            <h4 className="business-days__holidays-title">
               Feriados Nacionales ({feriados.length})
             </h4>
-            <p style={{ fontSize: '12px', color: '#71717a', marginTop: '4px', marginBottom: 0 }}>
+            <p className="business-days__description">
               Los feriados no computan como días hábiles trabajados y se descuentan automáticamente.
             </p>
           </div>
@@ -752,50 +618,19 @@ export function DiasHabilesTab() {
           <button
             type="button"
             onClick={handleCargarFeriadosOficiales}
-            style={{
-              height: '32px',
-              padding: '0 12px',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '6px',
-              color: '#d4d4d8',
-              fontSize: '11px',
-              cursor: 'pointer',
-            }}
+            className="business-days__official-button"
           >
             Cargar Feriados Oficiales de Argentina
           </button>
         </div>
 
         {/* Formulario nuevo feriado */}
-        <form
-          onSubmit={handleAgregarFeriado}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '170px 1fr 100px',
-            gap: '10px',
-            background: '#18181b',
-            padding: '12px 14px',
-            borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.06)',
-            marginBottom: '16px',
-            alignItems: 'center',
-          }}
-        >
+        <form onSubmit={handleAgregarFeriado} className="business-days__holiday-form">
           <input
             type="date"
             value={nuevoFeriadoFecha}
             onChange={e => setNuevoFeriadoFecha(e.target.value)}
-            style={{
-              height: '34px',
-              background: '#121214',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px',
-              color: '#fff',
-              fontSize: '12px',
-              padding: '0 8px',
-              boxSizing: 'border-box',
-            }}
+            className="business-days__holiday-input"
             required
           />
 
@@ -804,35 +639,14 @@ export function DiasHabilesTab() {
             placeholder="Motivo del feriado (ej. Día de la Bandera)"
             value={nuevoFeriadoMotivo}
             onChange={e => setNuevoFeriadoMotivo(e.target.value)}
-            style={{
-              height: '34px',
-              background: '#121214',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px',
-              color: '#fff',
-              fontSize: '12px',
-              padding: '0 10px',
-              boxSizing: 'border-box',
-            }}
+            className="business-days__holiday-input"
             required
           />
 
           <button
             type="submit"
             disabled={guardandoFeriado}
-            style={{
-              height: '34px',
-              background: '#27272a',
-              border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: '6px',
-              color: '#fff',
-              fontSize: '12px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px',
-            }}
+            className="business-days__add-button"
           >
             <Plus size={13} />
             <span>{guardandoFeriado ? '...' : 'Agregar'}</span>
@@ -841,11 +655,11 @@ export function DiasHabilesTab() {
 
         {/* Lista de feriados */}
         {feriados.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '24px', color: '#52525b', fontSize: '12px' }}>
+          <div className="business-days__empty">
             No hay feriados cargados.
           </div>
         ) : (
-          <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div className="business-days__holiday-list">
             {feriados.map(f => {
               const itemId = f.id || f.fecha;
               const isEditing = editingId === itemId;
@@ -863,89 +677,45 @@ export function DiasHabilesTab() {
 
               if (isEditing) {
                 return (
-                  <div
-                    key={itemId}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      background: '#18181b',
-                      border: '1px solid rgba(59, 130, 246, 0.4)',
-                      gap: '12px',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '300px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        <label style={{ fontSize: '10px', color: '#a1a1aa' }}>Fecha efectiva:</label>
+                  <div key={itemId} className="business-days__holiday-edit">
+                    <div className="business-days__holiday-edit-fields">
+                      <div className="business-days__holiday-edit-field">
+                        <label>Fecha efectiva:</label>
                         <input
                           type="date"
                           value={editFecha}
                           onChange={e => setEditFecha(e.target.value)}
-                          style={{
-                            height: '32px',
-                            background: '#121214',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            borderRadius: '6px',
-                            color: '#fff',
-                            fontSize: '12px',
-                            padding: '0 8px',
-                            boxSizing: 'border-box',
-                          }}
+                          className="business-days__holiday-edit-input"
                           required
                         />
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: '180px' }}>
-                        <label style={{ fontSize: '10px', color: '#a1a1aa' }}>Motivo:</label>
+                      <div className="business-days__holiday-edit-field is-wide">
+                        <label>Motivo:</label>
                         <input
                           type="text"
                           value={editMotivo}
                           onChange={e => setEditMotivo(e.target.value)}
                           placeholder="Motivo del feriado"
-                          style={{
-                            height: '32px',
-                            background: '#121214',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            borderRadius: '6px',
-                            color: '#fff',
-                            fontSize: '12px',
-                            padding: '0 10px',
-                            boxSizing: 'border-box',
-                          }}
+                          className="business-days__holiday-edit-input"
                           required
                         />
                       </div>
 
-                      <div style={{ fontSize: '11px', color: '#71717a', alignSelf: 'flex-end', paddingBottom: '6px' }}>
-                        Fecha original: <strong style={{ color: '#d4d4d8' }}>{origFormateada}</strong>
+                      <div className="business-days__holiday-original">
+                        Fecha original: <strong>{origFormateada}</strong>
                         {editFecha !== fechaOriginal && (
-                          <span style={{ marginLeft: '6px', color: '#fbbf24', fontSize: '10px' }}>(Se marcará como trasladado)</span>
+                          <span>(Se marcará como trasladado)</span>
                         )}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div className="business-days__holiday-edit-actions">
                       <button
                         type="button"
                         disabled={guardandoEdit}
                         onClick={() => handleGuardarEdicion(f)}
-                        style={{
-                          height: '30px',
-                          padding: '0 12px',
-                          background: '#2563eb',
-                          border: 'none',
-                          borderRadius: '6px',
-                          color: '#fff',
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                        }}
+                        className="business-days__edit-button is-save"
                       >
                         <Check size={13} />
                         <span>{guardandoEdit ? '...' : 'Guardar'}</span>
@@ -955,19 +725,7 @@ export function DiasHabilesTab() {
                         type="button"
                         disabled={guardandoEdit}
                         onClick={handleCancelarEdicion}
-                        style={{
-                          height: '30px',
-                          padding: '0 10px',
-                          background: 'transparent',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          borderRadius: '6px',
-                          color: '#a1a1aa',
-                          fontSize: '11px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                        }}
+                        className="business-days__edit-button"
                       >
                         <X size={13} />
                         <span>Cancelar</span>
@@ -978,71 +736,36 @@ export function DiasHabilesTab() {
               }
 
               return (
-                <div
-                  key={itemId}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 14px',
-                    borderRadius: '6px',
-                    background: esDeEsteMes ? 'rgba(255,255,255,0.04)' : 'transparent',
-                    border: esTrasladado
-                      ? '1px solid rgba(245, 158, 11, 0.25)'
-                      : '1px solid rgba(255,255,255,0.05)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-                    <span style={{ minWidth: '85px', fontSize: '12px', fontWeight: 600, color: '#f4f4f5' }}>
+                <div key={itemId} className={`business-days__holiday${esDeEsteMes ? ' is-current' : ''}${esTrasladado ? ' is-transferred' : ''}`}>
+                  <div className="business-days__holiday-info">
+                    <span className="business-days__holiday-date">
                       {fechaFormateada}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#71717a', minWidth: '70px' }}>
+                    <span className="business-days__holiday-weekday">
                       {diaSemana}
                     </span>
-                    <span style={{ fontSize: '12px', color: '#d4d4d8' }}>
+                    <span className="business-days__holiday-reason">
                       {f.motivo}
                     </span>
                     {esTrasladado && (
-                      <span
-                        title={`Fecha original de calendario: ${origFormateada}`}
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 500,
-                          color: '#fbbf24',
-                          background: 'rgba(245, 158, 11, 0.12)',
-                          border: '1px solid rgba(245, 158, 11, 0.25)',
-                          padding: '1px 7px',
-                          borderRadius: '4px',
-                        }}
-                      >
+                      <span title={`Fecha original de calendario: ${origFormateada}`} className="business-days__transferred-badge">
                         Trasladado (Orig: {origPartes[2]}/{origPartes[1]})
                       </span>
                     )}
                     {esDeEsteMes && (
-                      <span style={{ fontSize: '10px', color: '#a1a1aa', background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>
+                      <span className="business-days__current-badge">
                         Este mes
                       </span>
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div className="business-days__holiday-actions">
                     {esTrasladado && (
                       <button
                         type="button"
                         onClick={() => handleRestaurarFechaOriginal(f)}
                         title={`Restaurar a fecha original (${origFormateada})`}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#f59e0b',
-                          cursor: 'pointer',
-                          padding: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          borderRadius: '4px',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.color = '#fbbf24')}
-                        onMouseLeave={e => (e.currentTarget.style.color = '#f59e0b')}
+                        className="business-days__icon-button is-restore"
                       >
                         <RotateCcw size={13} />
                       </button>
@@ -1052,18 +775,7 @@ export function DiasHabilesTab() {
                       type="button"
                       onClick={() => handleIniciarEdicion(f)}
                       title="Editar día / trasladar feriado"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#71717a',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        borderRadius: '4px',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
-                      onMouseLeave={e => (e.currentTarget.style.color = '#71717a')}
+                      className="business-days__icon-button is-edit"
                     >
                       <Pencil size={13} />
                     </button>
@@ -1072,18 +784,7 @@ export function DiasHabilesTab() {
                       type="button"
                       onClick={() => handleEliminarFeriado(f.fecha, f.motivo)}
                       title="Eliminar"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#52525b',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        borderRadius: '4px',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
-                      onMouseLeave={e => (e.currentTarget.style.color = '#52525b')}
+                      className="business-days__icon-button is-delete"
                     >
                       <Trash2 size={13} />
                     </button>

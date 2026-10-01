@@ -1,6 +1,12 @@
 'use client';
 
 import React from 'react';
+import styles from './ZoomWrapper.module.css';
+
+type ZoomStyle = React.CSSProperties & {
+  '--app-zoom': number;
+  '--app-zoom-size': string;
+};
 
 /**
  * ZoomWrapper — Purely applies the scale transformation.
@@ -14,17 +20,12 @@ export default function ZoomWrapper({
   zoom?: number;
 }) {
   return (
-    <div 
-      style={{ 
-        width: `${100 / zoom}%`,
-        minHeight: `${100 / zoom}%`,
-        transform: `scale(${zoom})`,
-        transformOrigin: 'top left',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
-        willChange: 'transform'
-      }}
+    <div
+      className={styles.root}
+      style={{
+        '--app-zoom': zoom,
+        '--app-zoom-size': `${100 / zoom}%`,
+      } as ZoomStyle}
     >
       {children}
     </div>

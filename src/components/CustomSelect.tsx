@@ -15,11 +15,13 @@ interface CustomSelectProps {
   value: string | number;
   onChange: (val: string | number) => void;
   width?: string;
-  /** Color de fondo del control cerrado (default: '#0c0c0c'). */
+  /** Color de fondo del control cerrado. */
   bg?: string;
+  /** Altura máxima del menú; permite mostrar listas completas cuando hay espacio. */
+  menuMaxHeight?: string;
 }
 
-export default function CustomSelect({ options, value, onChange, width = '180px', bg = '#0c0c0c' }: CustomSelectProps) {
+export default function CustomSelect({ options, value, onChange, width = '180px', bg = '#ffffff', menuMaxHeight = '300px' }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -29,86 +31,40 @@ export default function CustomSelect({ options, value, onChange, width = '180px'
   useClickOutside(containerRef, closeDropdown);
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width }}>
+    <div ref={containerRef} className="custom-select" style={{ '--custom-select-width': width, '--custom-select-bg': bg, '--custom-select-menu-max-height': menuMaxHeight } as React.CSSProperties}>
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          background: bg,
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-          padding: '8px 12px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          cursor: 'pointer',
-          color: '#fff',
-          fontSize: '13px',
-          fontWeight: 600,
-          userSelect: 'none',
-          transition: 'border-color 0.2s',
-          height: '38px',
-          borderColor: isOpen ? '#10b981' : 'rgba(255,255,255,0.06)',
+        role="button"
+        tabIndex={0}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen(open => !open)}
+        onKeyDown={event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setIsOpen(open => !open);
+          }
         }}
+        className={`custom-select__trigger${isOpen ? ' is-open' : ''}`}
       >
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span className="custom-select__value">
           {selectedOption.label}
         </span>
-        <ChevronDown size={14} style={{
-          transform: isOpen ? 'rotate(180deg)' : 'none',
-          transition: 'transform 0.2s',
-          color: '#8f929d'
-        }} />
+        <ChevronDown size={14} className={`custom-select__chevron${isOpen ? ' is-open' : ''}`} />
       </div>
 
       {isOpen && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0,
-          width: '100%',
-          background: '#0c0c0c',
-          border: '1px solid rgba(255,255,255,0.03)',
-          borderRadius: '10px',
-          zIndex: 100,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.8)',
-          padding: '4px',
-          maxHeight: '300px',
-          overflowY: 'auto',
-          animation: 'dropdownIn 0.15s ease-out'
-        }}>
+        <div className="custom-select__menu" role="listbox">
           {options.map(opt => (
             <div
               key={opt.value}
+              role="option"
+              aria-selected={opt.value === value}
               onClick={() => {
                 if (opt.disabled) return;
                 onChange(opt.value);
                 setIsOpen(false);
               }}
-              style={{
-                padding: '8px 10px',
-                borderRadius: '7px',
-                fontSize: '12.5px',
-                fontWeight: 500,
-                cursor: opt.disabled ? 'default' : 'pointer',
-                color: opt.disabled ? '#64748b' : (opt.value === value ? '#10b981' : '#8f929d'),
-                background: opt.value === value ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-                transition: 'all 0.1s',
-                pointerEvents: opt.disabled ? 'none' : 'auto',
-              }}
-              onMouseEnter={e => {
-                if (opt.disabled) return;
-                if (opt.value !== value) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                  e.currentTarget.style.color = '#fff';
-                }
-              }}
-              onMouseLeave={e => {
-                if (opt.disabled) return;
-                if (opt.value !== value) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#8f929d';
-                }
-              }}
+              className={`custom-select__option${opt.value === value ? ' is-selected' : ''}${opt.disabled ? ' is-disabled' : ''}`}
             >
               {opt.label}
             </div>

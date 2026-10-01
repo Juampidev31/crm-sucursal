@@ -1,0 +1,317 @@
+.root,
+.results,
+.success {
+  display: flex;
+  flex-direction: column;
+}
+
+.root {
+  gap: 24px;
+}
+
+.header,
+.clearButton,
+.processActions,
+.summary,
+.statusLabel,
+.resultActions {
+  display: flex;
+  align-items: center;
+}
+
+.header {
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.clearButton {
+  gap: 6px;
+  padding: 6px 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+.pasteArea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 16px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+  background: var(--surface-card);
+  border: 1px dashed var(--control-border);
+  border-radius: 8px;
+}
+
+.pasteArea.hasContent {
+  color: var(--text-strong);
+  font-family: var(--font-sans);
+}
+
+.mappingPanel {
+  padding: 16px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.mappingDescription {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.tableViewport {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+
+.mappingHeadCell {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mappingSelect {
+  width: 100%;
+  padding: 4px 6px;
+  color: var(--text-strong);
+  font-size: 11px;
+  background: var(--surface-card);
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+}
+
+.mappingCell {
+  max-width: 160px;
+  padding: 5px 8px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.moreRows {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.processActions,
+.resultActions {
+  gap: 8px;
+}
+
+.processActions {
+  margin-top: 16px;
+}
+
+.processButton {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 16px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  background: var(--action-primary);
+  border: 1px solid var(--action-primary);
+  border-radius: 6px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.processButton:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  background: var(--surface-hover);
+  border-color: var(--border-subtle);
+}
+
+.processHint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.results {
+  gap: 12px;
+}
+
+.summary {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.summaryBadge {
+  padding: 6px 14px;
+  color: var(--status-color);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--surface-card);
+  border: 1px solid color-mix(in srgb, var(--status-color) 13%, transparent);
+  border-radius: 6px;
+}
+
+.resultsViewport {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.resultsHeadRow {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.resultsHeadCell {
+  padding: 10px 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-align: left;
+}
+
+.resultRow {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.resultCell {
+  padding: 8px 12px;
+}
+
+.statusLabel {
+  gap: 4px;
+  color: var(--status-color);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.clientCell {
+  color: var(--text-strong);
+}
+
+.cuilCell {
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 11px;
+}
+
+.newLabel,
+.emptyValue {
+  font-size: 11px;
+}
+
+.newLabel {
+  color: var(--text-primary);
+}
+
+.emptyValue {
+  color: var(--text-muted);
+}
+
+.confirmButton {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 22px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  background: #047857;
+  border: 1px solid rgb(74 222 128 / 40%);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgb(74 222 128 / 25%);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.confirmButton:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  background: var(--surface-hover);
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+
+.remapButton,
+.newLoadButton {
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+.remapButton {
+  padding: 8px 14px;
+}
+
+.error {
+  padding: 10px 14px;
+  color: #ff3366;
+  font-size: 12px;
+  background: rgb(239 68 68 / 8%);
+  border: 1px solid rgb(239 68 68 / 20%);
+  border-radius: 6px;
+}
+
+.success {
+  gap: 12px;
+  align-items: center;
+  padding: 40px;
+}
+
+.successText {
+  color: #047857;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.newLoadButton {
+  padding: 8px 20px;
+  color: var(--text-strong);
+  font-size: 13px;
+  background: var(--surface-hover);
+}
+
+@media (max-width: 560px) {
+  .header {
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .resultActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .confirmButton,
+  .remapButton {
+    justify-content: center;
+    width: 100%;
+  }
+}

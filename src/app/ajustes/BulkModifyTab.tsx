@@ -15,6 +15,7 @@ import {
   Copy, Check
 } from 'lucide-react';
 import { parsePastedText, normalizeCuil, ParsedRow } from '@/lib/verificador-utils';
+import styles from './BulkModifyTab.module.css';
 
 // Combo editable buscable: al hacer foco muestra TODAS las opciones; filtra al tipear
 // y permite ingresar un valor nuevo (texto libre).
@@ -43,7 +44,7 @@ function ComboEditable({ value, onChange, options, placeholder, accent }: {
   const filtered = (q ? options.filter(o => norm(o).includes(q)) : options).slice(0, 200);
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} className={styles.comboEditable} style={{ '--combo-accent': accent } as React.CSSProperties}>
       <input
         value={value}
         onChange={e => { onChange(e.target.value); setTyped(true); setOpen(true); }}
@@ -51,17 +52,15 @@ function ComboEditable({ value, onChange, options, placeholder, accent }: {
         onKeyDown={e => { if (e.key === 'Escape') setOpen(false); }}
         placeholder={placeholder}
         autoComplete="off"
-        style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 6, padding: '5px 8px', fontSize: 12, outline: 'none' }}
+        className={styles.comboEditableInput}
       />
       {open && filtered.length > 0 && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 2px)', left: 0, width: '100%', minWidth: 220, maxHeight: 220, overflowY: 'auto', background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.8)', padding: 4 }}>
+        <div className={styles.comboEditableMenu}>
           {filtered.map(o => (
             <div
               key={o}
               onMouseDown={e => { e.preventDefault(); onChange(o); setOpen(false); }}
-              style={{ padding: '6px 8px', borderRadius: 4, fontSize: 12, color: norm(o) === norm(value) ? accent : '#cbd0da', cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              className={`${styles.comboEditableOption}${norm(o) === norm(value) ? ` ${styles.isSelected}` : ''}`}
             >
               {o}
             </div>
@@ -208,6 +207,18 @@ function esMinisterioSaludBulk(s?: string) {
 const TIPO_CLIENTE_OPCIONES = ['Apertura', 'Renovacion'];
 const RANGOS_ETARIOS = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'];
 const SEXOS = ['Masculino', 'Femenino', 'Otro'];
+
+interface VarianteEmpleador {
+  normalizado: string;
+  variantes: string[];
+  cantidad: number;
+}
+
+// Referencias vacías estables: los modes 'excel' y 'bulk' no consumen la lógica
+// del Corrector, y devolver siempre el MISMO array evita invalidar los memos
+// que dependen de estos valores.
+const EMPTY_STRINGS: string[] = [];
+const EMPTY_VARIANTES: VarianteEmpleador[] = [];
 const DEPENDENCIAS_OFICIALES = [
   'Ministerio de Salud de Entre Rios',
   'Consejo General de Educación de Entre Rios',
@@ -293,42 +304,13 @@ const EMPTY_CAMPOS: CamposAModificar = {
 
 // ── Estilos compartidos ──────────────────────────────────────────────────────
 
-const LABEL_STYLE: React.CSSProperties = {
-  display: 'block', fontSize: '9px', color: '#444', fontWeight: 900,
-  textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px',
-};
-
-const STEP_TITLE_STYLE: React.CSSProperties = {
-  fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase',
-  letterSpacing: '1px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, opacity: 0.9,
-};
+/* LABEL_STYLE, DARK_INPUT_STYLE, DARK_INPUT_FLEX_STYLE y MODAL_OVERLAY_STYLE
+   viven ahora en BulkModifyTab.module.css como .label, .darkInput,
+   .darkInputFlex y .modalOverlay. */
 
 const stepBadge = (n: number) => (
-  <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#34d399', color: '#000', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, flexShrink: 0 }}>{n}</span>
+  <span className={styles.stepBadge}>{n}</span>
 );
-
-const DARK_INPUT_STYLE: React.CSSProperties = {
-  background: '#111', color: '#ccc', border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: '6px', padding: '10px 12px', fontSize: '13px', width: '100%', outline: 'none',
-};
-
-const DARK_INPUT_FLEX_STYLE: React.CSSProperties = { ...DARK_INPUT_STYLE, width: undefined, flex: 1 };
-
-const MODAL_OVERLAY_STYLE: React.CSSProperties = {
-  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-  background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(20px) saturate(120%)', WebkitBackdropFilter: 'blur(20px) saturate(120%)', zIndex: 9999,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  padding: 20,
-};
-
-const corregirBtnStyle = (disabled: boolean): React.CSSProperties => ({
-  background: disabled ? '#333' : '#fbbf24',
-  color: disabled ? '#666' : '#000',
-  border: 'none', borderRadius: '6px', padding: '10px 24px',
-  fontSize: '11px', fontWeight: 900, cursor: disabled ? 'not-allowed' : 'pointer',
-  textTransform: 'uppercase', letterSpacing: '1px',
-  flexShrink: 0,
-});
 
 // Helper para simplificar nombres y detectar variantes duplicadas (sin tildes, mayúsculas, puntuación ni sufijos societarios)
 function simplificarParaDuplicados(nombre: string): string {
@@ -360,28 +342,6 @@ function VarianteChip({
 }) {
   const [copiado, setCopiado] = useState(false);
 
-  let background = 'rgba(255,255,255,0.04)';
-  let border = '1px solid rgba(255,255,255,0.06)';
-  let color = '#888';
-  let boxShadow = 'none';
-
-  if (isDuplicate) {
-    if (selected) {
-      background = 'rgba(16,185,129,0.32)';
-      border = '1px solid #34d399';
-      color = '#ffffff';
-      boxShadow = '0 0 10px rgba(52,211,153,0.35)';
-    } else {
-      background = 'rgba(16,185,129,0.14)';
-      border = '1px solid rgba(52,211,153,0.45)';
-      color = '#34d399';
-    }
-  } else if (selected) {
-    background = 'rgba(251,191,36,0.2)';
-    border = '1px solid #fbbf24';
-    color = '#fbbf24';
-  }
-
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -398,52 +358,17 @@ function VarianteChip({
     <span
       onClick={onToggle}
       title={title || (isDuplicate ? 'Variante duplicada detectada' : undefined)}
-      style={{
-        padding: selected ? '3px 8px 3px 10px' : '4px 10px',
-        borderRadius: '4px',
-        fontSize: '11px',
-        background,
-        border,
-        color,
-        boxShadow,
-        fontWeight: isDuplicate ? 700 : 600,
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '5px',
-        transition: 'all 0.15s ease',
-        userSelect: 'none',
-      }}
+      className={`${styles.variantChip}${selected ? ` ${styles.isSelected}` : ''}${isDuplicate ? ` ${styles.isDuplicate}` : ''}`}
     >
       {isDuplicate && (
-        <span style={{
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          backgroundColor: selected ? '#ffffff' : '#34d399',
-          display: 'inline-block',
-          boxShadow: '0 0 5px #34d399',
-          flexShrink: 0,
-        }} />
+        <span className={styles.variantChipDot} />
       )}
       <span>{label}</span>
       {selected && (
         <span
           onClick={handleCopy}
           title={copiado ? '¡Copiado!' : 'Copiar nombre'}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '2px 4px',
-            marginLeft: '4px',
-            borderRadius: '3px',
-            background: copiado ? 'rgba(52,211,153,0.35)' : 'rgba(255,255,255,0.18)',
-            border: `1px solid ${copiado ? '#34d399' : 'rgba(255,255,255,0.3)'}`,
-            color: copiado ? '#34d399' : '#ffffff',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
+          className={`${styles.variantChipCopy}${copiado ? ` ${styles.isCopied}` : ''}`}
         >
           {copiado ? <Check size={11} /> : <Copy size={11} />}
         </span>
@@ -629,7 +554,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   };
 
   const toggleClient = (ids: string[]) => {
-    preserveScroll();
     setSelectedIds(prev => {
       const next = new Set(prev);
       const allOn = ids.every(id => next.has(id));
@@ -661,11 +585,6 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
     setStep('assign');
   };
 
-  // Limpiar selección al re-buscar
-  useEffect(() => {
-    if (!searched) setSelectedIds(new Set());
-  }, [searched]);
-
   // Dedupe case-insensitive, prefiriendo una forma canónica si existe en la lista de referencia
   const dedupCI = (values: (string | null | undefined)[], canonical: readonly string[] = []): string[] => {
     const canonMap = new Map(canonical.map(c => [c.toLowerCase(), c]));
@@ -681,15 +600,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   };
 
   // Listas derivadas (case-insensitive dedupe)
-  const allAnalistasExcel = useMemo(() => dedupCI(registros.map(r => r.analista), ANALISTAS), [registros, ANALISTAS]);
-  const allEstadosExcel = useMemo(() => dedupCI(registros.map(r => r.estado)), [registros]);
-  const allTiposExcel = useMemo(() => dedupCI(registros.map(r => r.tipo_cliente), TIPO_CLIENTE_OPCIONES), [registros]);
-  const allAcuerdosExcel = useMemo(() => dedupCI(registros.map(r => r.acuerdo_precios), ACUERDOS_OPCIONES), [registros]);
   const allLocalidadesExcel = useMemo(() => dedupCI(registros.map(r => r.localidad)), [registros]);
   const allDependenciasExcel = useMemo(() => dedupCI(registros.map(r => r.dependencia)), [registros]);
   const allCuotasExcel = useMemo(() => dedupCI(registros.map(r => r.cuotas)), [registros]);
-  const allRangosExcel = useMemo(() => dedupCI(registros.map(r => r.rango_etario), RANGOS_ETARIOS), [registros]);
-  const allSexosExcel = useMemo(() => dedupCI(registros.map(r => r.sexo), SEXOS), [registros]);
 
   // Construye payload solo con campos llenos. SIN_ESPECIFICAR → null (borra el valor)
   const buildPayload = (): Record<string, unknown> => {
@@ -759,195 +672,92 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
     }
   };
 
-  const thStyle: React.CSSProperties = {
-    padding: '8px 12px', fontSize: 10, fontWeight: 700,
-    color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px',
-    textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.06)',
-  };
-  const tdStyle: React.CSSProperties = {
-    padding: '9px 12px', fontSize: 12, color: '#ccc',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
-  };
-
   return (
-    <div style={standalone ? {
-      height: 'calc(100vh - 400px)',
-      padding: '20px',
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.06)',
-      borderRadius: '10px',
-      display: 'flex', flexDirection: 'column',
-      overflow: 'hidden',
-    } : {
-      marginBottom: '28px', padding: '20px',
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.06)',
-      borderRadius: '10px',
-    }}>
+    <div className={`${styles.excelSection}${standalone ? ` ${styles.isStandalone}` : ''}`}>
       {!standalone && (
         <div
           onClick={() => setExpanded(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: expanded ? 16 : 0, cursor: 'pointer' }}
+          className={`${styles.excelSectionHeader}${expanded ? ` ${styles.isExpanded}` : ''}`}
         >
-          <Users size={18} color="#555" />
-          <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Users size={18} />
+          <h4 className={styles.excelSectionTitle}>
             Asignar Campos desde Excel
-            {expanded ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </h4>
         </div>
       )}
 
       {expanded && (() => {
         const stepBtn = (n: number, label: string, isActive: boolean, isDone: boolean, isDisabled: boolean, onClick: () => void, isLast: boolean): React.ReactNode => {
-          const textColor = isActive
-            ? '#ffffff'
-            : isDone
-              ? '#a1a1aa'
-              : '#52525b';
-          const badgeBorder = isActive
-            ? '1px solid #ffffff'
-            : isDone
-              ? '1px solid rgba(161,161,170, 0.5)'
-              : '1px solid rgba(255,255,255,0.08)';
-          const badgeBg = isActive
-            ? 'rgba(255,255,255,0.08)'
-            : 'transparent';
-
           return (
             <button
               key={n}
               onClick={onClick}
               disabled={isDisabled}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-                padding: '10px 18px',
-                background: isActive ? 'rgba(255,255,255,0.02)' : 'transparent',
-                border: 'none',
-                borderRight: isLast ? 'none' : '1px solid rgba(255,255,255,0.05)',
-                borderRadius: 0,
-                fontSize: 12,
-                fontWeight: isActive ? 700 : 500,
-                color: textColor,
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-                opacity: isDisabled ? 0.35 : 1,
-                transition: 'all 0.2s ease',
-                whiteSpace: 'nowrap',
-                position: 'relative',
-              }}
+              className={`${styles.excelStepButton}${isActive ? ` ${styles.isActive}` : ''}${isDone ? ` ${styles.isDone}` : ''}${isLast ? ` ${styles.isLast}` : ''}`}
             >
-              <span style={{
-                width: 20,
-                height: 20,
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 10,
-                fontWeight: 800,
-                border: badgeBorder,
-                background: badgeBg,
-                color: textColor,
-                transition: 'all 0.2s ease',
-              }}>
+              <span className={styles.excelStepBadge}>
                 {n}
               </span>
               <span>{label}</span>
-              {isActive && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: '10%',
-                  right: '10%',
-                  height: '2px',
-                  background: '#ffffff',
-                  borderRadius: '2px 2px 0 0',
-                }} />
-              )}
+              {isActive && <span className={styles.excelStepIndicator} />}
             </button>
           );
         };
         return (
         <>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 16,
-            background: 'rgba(255,255,255,0.01)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 8,
-            padding: '4px 12px',
-            flexWrap: 'wrap',
-            gap: 16,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div className={styles.excelSteps}>
+            <div className={styles.excelStepList}>
               {stepBtn(1, 'Pegar Excel', step === 'paste', rows.length > 0, false, () => setStep('paste'), false)}
               {stepBtn(2, rows.length > 0 ? `Columnas (${rows.length})` : 'Columnas', step === 'match', searched, rows.length === 0, () => { if (rows.length > 0) setStep('match'); }, false)}
               {stepBtn(3, 'Asignar', step === 'assign', false, !searched, () => { if (searched) setStep('assign'); }, true)}
             </div>
 
             {step === 'assign' && searched && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 'auto', flexWrap: 'wrap' }}>
+              <div className={styles.excelToolbar}>
                 {/* Fechas */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px' }}>FECHA:</span>
+                <div className={styles.excelDateFilter}>
+                  <span className={styles.excelDateLabel}>FECHA:</span>
                   <input
                     type="date"
                     value={fechaDesde}
                     onChange={e => setFechaDesde(e.target.value)}
-                    style={{ fontSize: 11, padding: '3px 6px', background: '#121212', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
+                    className={styles.excelDateInput}
                   />
-                  <span style={{ color: '#444', fontSize: 11 }}>–</span>
+                  <span className={styles.excelDateSeparator}>–</span>
                   <input
                     type="date"
                     value={fechaHasta}
                     onChange={e => setFechaHasta(e.target.value)}
-                    style={{ fontSize: 11, padding: '3px 6px', background: '#121212', color: '#ddd', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, outline: 'none' }}
+                    className={styles.excelDateInput}
                   />
                   {(fechaDesde || fechaHasta) && (
                     <button
                       onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
-                      style={{ fontSize: 9, padding: '2px 6px', background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, cursor: 'pointer' }}
+                      className={styles.inlineClear}
                     >Limpiar</button>
                   )}
                 </div>
 
                 {/* Separador */}
-                <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)' }} />
+                <div className={styles.toolbarDivider} />
 
                 {/* Filtros de completitud */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className={styles.completionFilters}>
                   {([
-                    { key: 'todos' as const, label: 'Todos', count: totalRegistros, color: '#a5b4fc', bg: 'rgba(165,180,252,0.08)' },
-                    { key: 'completos' as const, label: 'Completos', count: totalCompletos, color: '#00ff88', bg: 'rgba(74,222,128,0.08)' },
-                    { key: 'faltantes' as const, label: 'Faltantes', count: totalConFaltantes, color: '#ff3366', bg: 'rgba(248,113,113,0.08)' },
-                  ]).map(({ key, label, count, color, bg }) => {
+                    { key: 'todos' as const, label: 'Todos', count: totalRegistros },
+                    { key: 'completos' as const, label: 'Completos', count: totalCompletos },
+                    { key: 'faltantes' as const, label: 'Faltantes', count: totalConFaltantes },
+                  ]).map(({ key, label, count }) => {
                     const activo = filtroCompletitud === key;
                     return (
                       <button
                         key={key}
                         onClick={() => setFiltroCompletitud(key)}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 8,
-                          background: activo ? bg : 'transparent',
-                          border: `1px solid ${activo ? color : 'transparent'}`,
-                          color: activo ? color : '#777',
-                          borderRadius: 4, padding: '4px 10px',
-                          fontSize: 10, fontWeight: 700, cursor: 'pointer',
-                          textTransform: 'uppercase', letterSpacing: '0.3px',
-                          transition: 'all 0.15s',
-                        }}
+                        className={`${styles.completionFilter} ${styles[`completion_${key}`]}${activo ? ` ${styles.isActive}` : ''}`}
                       >
                         <span>{label}</span>
-                        <span style={{
-                          fontSize: 9, fontWeight: 900,
-                          background: activo ? color : 'rgba(255,255,255,0.06)',
-                          color: activo ? '#111111' : '#aaa',
-                          padding: '1px 6px', borderRadius: 8, minWidth: 18, textAlign: 'center',
-                        }}>{count}</span>
+                        <span className={styles.completionCount}>{count}</span>
                       </button>
                     );
                   })}
@@ -957,42 +767,29 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           </div>
 
           {step === 'paste' && (
-          <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>
+          <div className={`${styles.excelStepPanel}${standalone ? ` ${styles.isStandalone}` : ''}`}>
+            <label className={styles.excelFieldLabel}>
               Pegar celdas de Excel (CUIL + Apellido/Nombre)
             </label>
             <textarea
-              className="form-input"
               rows={18}
               placeholder="Pegá acá las celdas copiadas de Excel..."
               value={pastedText}
               onChange={e => setPastedText(e.target.value)}
-              style={{ width: '100%', fontFamily: 'monospace', fontSize: 11, resize: 'vertical', minHeight: standalone ? 0 : 380, flex: standalone ? 1 : undefined }}
+              className={`form-input ${styles.excelTextarea}${standalone ? ` ${styles.isStandalone}` : ''}`}
             />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, marginBottom: 4, flexShrink: 0 }}>
+            <div className={styles.excelActions}>
               <button
                 onClick={handleParse}
                 disabled={!pastedText.trim()}
-                style={{
-                  padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                  background: pastedText.trim() ? '#2d2f5e' : '#111111',
-                  border: `1px solid ${pastedText.trim() ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                  borderRadius: 6, cursor: pastedText.trim() ? 'pointer' : 'not-allowed',
-                  color: pastedText.trim() ? '#a5b4fc' : '#444',
-                }}
+                className={styles.excelPrimaryButton}
               >
                 Cargar
               </button>
               {pastedText && (
                 <button
                   onClick={() => setPastedText('')}
-                  style={{
-                    padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: 'transparent', color: '#888',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 6, cursor: 'pointer',
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                  }}
+                  className={styles.excelSecondaryButton}
                 >
                   <X size={12} /> Limpiar
                 </button>
@@ -1002,24 +799,19 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           )}
 
           {step === 'match' && rows.length > 0 && (
-            <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: '#555', marginBottom: 8 }}>
+            <div className={`${styles.excelStepPanel}${standalone ? ` ${styles.isStandalone}` : ''}`}>
+              <div className={styles.excelDetectedRows}>
                 {rows.length} fila{rows.length !== 1 ? 's' : ''} detectada{rows.length !== 1 ? 's' : ''}. Asigná las columnas:
               </div>
-              <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
+              <div className={styles.excelMappingFields}>
                 <div>
-                  <label style={{ fontSize: 9, color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>
+                  <label className={styles.excelFieldLabel}>
                     Columna CUIL *
                   </label>
                   <select
                     value={cuilCol ?? ''}
-                    onChange={e => { setCuilCol(e.target.value === '' ? null : Number(e.target.value)); setSearched(false); }}
-                    style={{
-                      fontSize: 12, padding: '6px 10px', borderRadius: 6,
-                      background: '#111111', color: '#ccc',
-                      border: '1px solid rgba(255,255,255,0.12)', outline: 'none',
-                      cursor: 'pointer', minWidth: 180,
-                    }}
+                    onChange={e => { setCuilCol(e.target.value === '' ? null : Number(e.target.value)); setSearched(false); setSelectedIds(new Set()); }}
+                    className={styles.excelSelect}
                   >
                     <option value="">— seleccionar —</option>
                     {Array.from({ length: colCount }, (_, i) => (
@@ -1029,12 +821,12 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 </div>
               </div>
 
-              <div style={standalone ? { flex: 1, minHeight: 0, overflowX: 'auto', overflowY: 'auto', marginBottom: 12 } : { overflowX: 'auto', marginBottom: 12 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+              <div className={`${styles.excelPreviewScroll}${standalone ? ` ${styles.isStandalone}` : ''}`}>
+                <table className={styles.excelPreviewTable}>
                   <thead>
                     <tr>
                       {Array.from({ length: colCount }, (_, i) => (
-                        <th key={i} style={thStyle}>
+                        <th key={i} className={styles.excelTableHead}>
                           Col {i + 1}{i === cuilCol ? ' (CUIL)' : ''}
                         </th>
                       ))}
@@ -1044,10 +836,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     {rows.map((row, ri) => (
                       <tr key={ri}>
                         {row.cells.map((cell, ci) => (
-                          <td key={ci} style={{
-                            ...tdStyle,
-                            background: ci === cuilCol ? 'rgba(99,102,241,0.06)' : undefined,
-                          }}>
+                          <td key={ci} className={`${styles.excelTableCell}${ci === cuilCol ? ` ${styles.isMapped}` : ''}`}>
                             {cell}
                           </td>
                         ))}
@@ -1057,31 +846,18 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 </table>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div className={styles.excelActionsCompact}>
                 <button
                   onClick={handleSearch}
                   disabled={cuilCol === null}
-                  style={{
-                    padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: cuilCol !== null ? '#2d2f5e' : '#111111',
-                    border: `1px solid ${cuilCol !== null ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: 6, cursor: cuilCol !== null ? 'pointer' : 'not-allowed',
-                    color: cuilCol !== null ? '#a5b4fc' : '#444',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                  }}
+                  className={styles.excelPrimaryButton}
                 >
                   <Search size={12} />
                   Buscar en registros
                 </button>
                 <button
                   onClick={() => { setPastedText(''); setRows([]); setCuilCol(null); setSearched(false); setStep('paste'); setSelectedIds(new Set()); setCamposExcel({ ...EMPTY_CAMPOS_EXCEL }); setClearedByReg({}); }}
-                  style={{
-                    padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: 'transparent', color: '#888',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 6, cursor: 'pointer',
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                  }}
+                  className={styles.excelSecondaryButton}
                 >
                   <X size={12} /> Limpiar
                 </button>
@@ -1090,62 +866,36 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           )}
 
           {step === 'assign' && searched && (
-            <div style={standalone ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', marginBottom: 0 } : { marginBottom: 16 }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                marginBottom: 8,
-                fontSize: 10,
-                color: '#666',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.3px',
-              }}>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '2px 8px',
-                  borderRadius: 4,
-                  background: totalSeleccionados > 0 ? 'rgba(165,180,252,0.08)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${totalSeleccionados > 0 ? 'rgba(165,180,252,0.2)' : 'rgba(255,255,255,0.04)'}`,
-                  color: totalSeleccionados > 0 ? '#a5b4fc' : '#555',
-                  fontWeight: 700,
-                }}>
+            <div className={`${styles.excelStepPanel}${standalone ? ` ${styles.isStandalone}` : ''}`}>
+              <div className={styles.excelSelectionSummary}>
+                <div className={`${styles.excelSelectionCount}${totalSeleccionados > 0 ? ` ${styles.hasSelection}` : ''}`}>
                   <span>{totalSeleccionados} seleccionados</span>
                 </div>
                 <span>•</span>
                 <span>{totalClientes} clientes en lista</span>
               </div>
-              <style>{`
-                .bulk-excel-row { transition: background 80ms ease; }
-                .bulk-excel-row:hover > td { background: rgba(99,102,241,0.10) !important; }
-                .bulk-excel-row.is-selected > td,
-                .bulk-excel-row.is-selected:hover > td { background: rgba(74,222,128,0.12) !important; }
-              `}</style>
-              <div style={standalone ? { flex: 1, minHeight: 0, overflowX: 'auto', overflowY: 'auto' } : { overflowX: 'auto', maxHeight: 'calc(100vh - 360px)', overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead style={{ position: 'sticky', top: 0, background: '#111' }}>
+              <div className={`${styles.excelDataScroll}${standalone ? ` ${styles.isStandalone}` : ''}`}>
+                <table className={styles.excelDataTable}>
+                  <thead className={styles.excelDataHead}>
                     <tr>
-                      <th style={{ ...thStyle, width: 36, textAlign: 'center' }}>
+                      <th className={`${styles.excelTableHead} ${styles.checkboxCell}`}>
                         <input
                           type="checkbox"
                           checked={allSelected}
                           ref={el => { if (el) el.indeterminate = someSelected; }}
                           onChange={toggleAll}
-                          style={{ cursor: 'pointer' }}
+                          className={styles.excelCheckbox}
                           title="Seleccionar todos"
                         />
                       </th>
-                      <th style={thStyle}>CUIL</th>
-                      <th style={thStyle}>APELLIDO Y NOMBRE</th>
-                      <th style={thStyle}>FECHA</th>
-                      <th style={thStyle}>CANTIDAD DE REGISTROS</th>
-                      <th style={thStyle}>ANALISTA ACTUAL</th>
-                      <th style={thStyle}>EMPLEADOR ACTUAL</th>
-                      <th style={thStyle}>DEPENDENCIA ACTUAL</th>
-                      <th style={thStyle}>FALTANTES</th>
+                      <th className={styles.excelTableHead}>CUIL</th>
+                      <th className={styles.excelTableHead}>APELLIDO Y NOMBRE</th>
+                      <th className={styles.excelTableHead}>FECHA</th>
+                      <th className={styles.excelTableHead}>CANTIDAD DE REGISTROS</th>
+                      <th className={styles.excelTableHead}>ANALISTA ACTUAL</th>
+                      <th className={styles.excelTableHead}>EMPLEADOR ACTUAL</th>
+                      <th className={styles.excelTableHead}>DEPENDENCIA ACTUAL</th>
+                      <th className={styles.excelTableHead}>FALTANTES</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1164,25 +914,17 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                       };
                       const renderFaltantes = (missing: string[], isSelected: boolean) => {
                         if (missing.length === 0) {
-                          return <span style={{ fontSize: 10, color: '#00ff88', fontWeight: 700 }}>✓ Completo</span>;
+                          return <span className={styles.excelComplete}>✓ Completo</span>;
                         }
                         const fixed = isSelected ? missing.filter(willFill) : [];
                         const stillMissing = isSelected ? missing.filter(f => !willFill(f)) : missing;
                         return (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                          <div className={styles.missingFields}>
                             {fixed.map(f => (
-                              <span key={f} style={{
-                                fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                background: 'rgba(74,222,128,0.12)', color: '#00ff88',
-                                border: '1px solid rgba(74,222,128,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px',
-                              }} title="Se completará al aplicar">✓ {f}</span>
+                              <span key={f} className={`${styles.missingField} ${styles.willComplete}`} title="Se completará al aplicar">✓ {f}</span>
                             ))}
                             {stillMissing.map(f => (
-                              <span key={f} style={{
-                                fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                background: 'rgba(248,113,113,0.12)', color: '#ff3366',
-                                border: '1px solid rgba(248,113,113,0.3)', textTransform: 'uppercase', letterSpacing: '0.5px',
-                              }}>{f}</span>
+                              <span key={f} className={`${styles.missingField} ${styles.stillMissing}`}>{f}</span>
                             ))}
                           </div>
                         );
@@ -1195,16 +937,16 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                         // Sin registros
                         if (mr.registros.length === 0) {
                           return [(
-                            <tr key={`${i}-empty`} className="bulk-excel-row" style={{ opacity: 0.4 }}>
-                              <td style={{ ...tdStyle, textAlign: 'center' }} />
-                              <td style={tdStyle}>{mr.cuil}</td>
-                              <td style={tdStyle}>{nombreMostrar}</td>
-                              <td style={tdStyle}>—</td>
-                              <td style={{ ...tdStyle, color: '#555' }}>Sin registros</td>
-                              <td style={tdStyle}>—</td>
-                              <td style={tdStyle}>—</td>
-                              <td style={tdStyle}>—</td>
-                              <td style={tdStyle}>—</td>
+                            <tr key={`${i}-empty`} className={`${styles.excelDataRow} ${styles.isEmpty}`}>
+                              <td className={`${styles.excelTableCell} ${styles.checkboxCell}`} />
+                              <td className={styles.excelTableCell}>{mr.cuil}</td>
+                              <td className={styles.excelTableCell}>{nombreMostrar}</td>
+                              <td className={styles.excelTableCell}>—</td>
+                              <td className={`${styles.excelTableCell} ${styles.mutedCell}`}>Sin registros</td>
+                              <td className={styles.excelTableCell}>—</td>
+                              <td className={styles.excelTableCell}>—</td>
+                              <td className={styles.excelTableCell}>—</td>
+                              <td className={styles.excelTableCell}>—</td>
                             </tr>
                           )];
                         }
@@ -1218,21 +960,21 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                         const elements: React.JSX.Element[] = [];
                         if (isMulti) {
                           elements.push(
-                            <tr key={`${i}-group`} className="bulk-excel-row" style={{ background: 'rgba(99,102,241,0.04)' }}>
-                              <td style={{ ...tdStyle, textAlign: 'center' }}>
+                            <tr key={`${i}-group`} className={`${styles.excelDataRow} ${styles.groupRow}`}>
+                              <td className={`${styles.excelTableCell} ${styles.checkboxCell}`}>
                                 <input
                                   type="checkbox"
                                   checked={groupAllSelected}
                                   ref={el => { if (el) el.indeterminate = groupSomeSelected; }}
                                   onChange={() => toggleClient(rowIds)}
-                                  style={{ cursor: 'pointer' }}
+                                  className={styles.excelCheckbox}
                                   title="Seleccionar/deseleccionar todos del cliente"
                                 />
                               </td>
-                              <td style={{ ...tdStyle, fontWeight: 700 }}>{mr.cuil}</td>
-                              <td style={{ ...tdStyle, fontWeight: 700 }}>{nombreMostrar}</td>
-                              <td style={tdStyle} colSpan={6}>
-                                <span style={{ fontSize: 10, color: '#a5b4fc', fontWeight: 700 }}>{mr.registros.length} registros — elegí cuáles modificar</span>
+                              <td className={`${styles.excelTableCell} ${styles.strongCell}`}>{mr.cuil}</td>
+                              <td className={`${styles.excelTableCell} ${styles.strongCell}`}>{nombreMostrar}</td>
+                              <td className={styles.excelTableCell} colSpan={6}>
+                                <span className={styles.groupHint}>{mr.registros.length} registros — elegí cuáles modificar</span>
                               </td>
                             </tr>
                           );
@@ -1245,29 +987,28 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                           elements.push(
                             <tr
                               key={`${i}-${reg.id}`}
-                              className={`bulk-excel-row${checked ? ' is-selected' : ''}`}
+                              className={`${styles.excelDataRow}${checked ? ` ${styles.isSelected}` : ''}`}
                               onClick={(e) => {
                                 if ((e.target as HTMLElement).closest('input')) return;
                                 toggleClient([reg.id]);
                               }}
-                              style={{ cursor: 'pointer' }}
                             >
-                              <td style={{ ...tdStyle, textAlign: 'center', paddingLeft: isMulti ? 24 : 12 }}>
+                              <td className={`${styles.excelTableCell} ${styles.checkboxCell}${isMulti ? ` ${styles.isNested}` : ''}`}>
                                 <input
                                   type="checkbox"
                                   checked={checked}
                                   onChange={() => toggleClient([reg.id])}
-                                  style={{ cursor: 'pointer' }}
+                                  className={styles.excelCheckbox}
                                 />
                               </td>
-                              <td style={tdStyle}>{isMulti ? <span style={{ color: '#555' }}>↳ #{ri + 1}</span> : mr.cuil}</td>
-                              <td style={tdStyle}>{isMulti ? '' : nombreMostrar}</td>
-                              <td style={tdStyle}>{fmtFecha(reg)}</td>
-                              <td style={{ ...tdStyle, color: '#ccc' }}>{isMulti ? '' : 1}</td>
-                              <td style={tdStyle}>{reg.analista || '—'}</td>
-                              <td style={tdStyle}>{reg.empleador || '—'}</td>
-                              <td style={tdStyle}>{reg.dependencia || '—'}</td>
-                              <td style={tdStyle}>{renderFaltantes(missing, checked)}</td>
+                              <td className={styles.excelTableCell}>{isMulti ? <span className={styles.nestedRowLabel}>↳ #{ri + 1}</span> : mr.cuil}</td>
+                              <td className={styles.excelTableCell}>{isMulti ? '' : nombreMostrar}</td>
+                              <td className={styles.excelTableCell}>{fmtFecha(reg)}</td>
+                              <td className={styles.excelTableCell}>{isMulti ? '' : 1}</td>
+                              <td className={styles.excelTableCell}>{reg.analista || '—'}</td>
+                              <td className={styles.excelTableCell}>{reg.empleador || '—'}</td>
+                              <td className={styles.excelTableCell}>{reg.dependencia || '—'}</td>
+                              <td className={styles.excelTableCell}>{renderFaltantes(missing, checked)}</td>
                             </tr>
                           );
                         });
@@ -1282,20 +1023,12 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           )}
 
           {step === 'assign' && searched && totalRegistros > 0 && !assignResult && (
-            <div style={{
-              display: 'flex', flexDirection: 'column', gap: 12,
-              padding: '14px 0 0',
-              borderTop: '1px solid rgba(255,255,255,0.08)',
-              marginTop: 12,
-              flexShrink: 0,
-            }}>
-              <div style={{ fontSize: 10, color: '#666', fontStyle: 'italic', marginBottom: 4 }}>
+            <div className={styles.excelAssignmentForm}>
+              <div className={styles.excelFormHint}>
                 Llená sólo los campos que querés modificar. Los vacíos no se tocan.
               </div>
-              <div className="bulk-fields-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, paddingBottom: 4 }}>
+              <div className={styles.excelFieldsGrid}>
                 {(() => {
-                  const labelStyle: React.CSSProperties = { fontSize: 9, color: '#888', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 };
-                  const selectStyle: React.CSSProperties = { width: '100%', fontSize: 12, padding: '6px 8px', background: '#111111', color: '#ddd', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, outline: 'none' };
                   const setField = (key: keyof CamposExcel) => (v: string) => { setCamposExcel(p => ({ ...p, [key]: v })); setConfirming(false); };
                   const selects: Array<{ key: keyof CamposExcel; label: string; opts: readonly string[] }> = [
                     { key: 'analista', label: 'Analista', opts: ANALISTAS },
@@ -1315,23 +1048,22 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     <>
                       {selects.map(f => (
                         <div key={f.key}>
-                          <label style={labelStyle}>{f.label}</label>
-                          <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} style={selectStyle}>
-                            <option value="" style={{ background: '#111111', color: '#888' }}>— no cambiar —</option>
-                            <option value={SIN_ESPECIFICAR} style={{ background: '#111111', color: '#888' }}>Sin especificar (borrar)</option>
-                            {f.opts.map(o => <option key={o} value={o} style={{ background: '#111111', color: '#ddd' }}>{o}</option>)}
+                          <label className={styles.excelFieldLabel}>{f.label}</label>
+                          <select value={camposExcel[f.key]} onChange={e => setField(f.key)(e.target.value)} className={styles.excelFieldControl}>
+                            <option value="">— no cambiar —</option>
+                            <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
+                            {f.opts.map(o => <option key={o} value={o}>{o}</option>)}
                           </select>
                         </div>
                       ))}
                       {inputs.map(f => (
                         <div key={f.key}>
-                          <label style={labelStyle}>{f.label}</label>
+                          <label className={styles.excelFieldLabel}>{f.label}</label>
                           <input
-                            className="form-input"
+                            className={`form-input ${styles.excelFieldControl}`}
                             list={`excel-dl-${f.key}`}
                             value={camposExcel[f.key]}
                             onChange={e => setField(f.key)(e.target.value)}
-                            style={{ width: '100%', fontSize: 12 }}
                           />
                           <datalist id={`excel-dl-${f.key}`}>
                             {f.list.map(v => <option key={v} value={v} />)}
@@ -1339,8 +1071,8 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                         </div>
                       ))}
                       <div>
-                        <label style={labelStyle}>Fecha</label>
-                        <input type="date" className="form-input" value={camposExcel.fecha} onChange={e => setField('fecha')(e.target.value)} style={{ width: '100%', fontSize: 12 }} />
+                        <label className={styles.excelFieldLabel}>Fecha</label>
+                        <input type="date" className={`form-input ${styles.excelFieldControl}`} value={camposExcel.fecha} onChange={e => setField('fecha')(e.target.value)} />
                       </div>
                     </>
                   );
@@ -1348,18 +1080,14 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               </div>
 
 
-              <div style={{
-                paddingTop: 8,
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-                display: 'flex', flexDirection: 'column', gap: 8,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: 11 }}>
-                  <span style={{ color: '#888' }}>
-                    <span style={{ color: '#a5b4fc', fontWeight: 700 }}>{totalSeleccionados}</span> seleccionado{totalSeleccionados !== 1 ? 's' : ''}
-                    {hayCampos && <> · <span style={{ color: '#00ff88' }}>{Object.keys(payloadPreview).length} campo{Object.keys(payloadPreview).length !== 1 ? 's' : ''}</span></>}
+              <div className={styles.excelAssignmentActions}>
+                <div className={styles.excelAssignmentSummary}>
+                  <span className={styles.excelSummaryText}>
+                    <span className={styles.excelSelectedValue}>{totalSeleccionados}</span> seleccionado{totalSeleccionados !== 1 ? 's' : ''}
+                    {hayCampos && <> · <span className={styles.excelFieldsValue}>{Object.keys(payloadPreview).length} campo{Object.keys(payloadPreview).length !== 1 ? 's' : ''}</span></>}
                   </span>
                   {hayCampos && (
-                    <span style={{ color: '#a5b4fc', fontSize: 10 }}>
+                    <span className={styles.excelFieldNames}>
                       → {Object.keys(payloadPreview).join(', ')}
                     </span>
                   )}
@@ -1369,43 +1097,26 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                 <button
                   onClick={() => { if (hayCampos && totalSeleccionados > 0) setConfirming(true); }}
                   disabled={!hayCampos || totalSeleccionados === 0}
-                  style={{
-                    alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                    background: hayCampos && totalSeleccionados > 0 ? '#2d2f5e' : '#111111',
-                    border: `1px solid ${hayCampos && totalSeleccionados > 0 ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                    borderRadius: 6, cursor: hayCampos && totalSeleccionados > 0 ? 'pointer' : 'not-allowed',
-                    color: hayCampos && totalSeleccionados > 0 ? '#a5b4fc' : '#444',
-                  }}
+                  className={styles.excelPrimaryButton}
                 >
                   Asignar a seleccionados ({totalSeleccionados} registro{totalSeleccionados !== 1 ? 's' : ''})
                 </button>
               ) : (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, color: '#ff3366', fontWeight: 600 }}>
+                <div className={styles.excelConfirmRow}>
+                  <span className={styles.excelConfirmWarning}>
                     ⚠ Se actualizarán {totalSeleccionados} registro{totalSeleccionados !== 1 ? 's' : ''}
                   </span>
                   <button
                     onClick={handleAssign}
                     disabled={assigning}
-                    style={{
-                      padding: '6px 14px', fontSize: 12, fontWeight: 700,
-                      background: assigning ? '#111111' : '#5a1a1a',
-                      border: '1px solid rgba(248,113,113,0.5)',
-                      borderRadius: 6, cursor: assigning ? 'not-allowed' : 'pointer',
-                      color: '#fff',
-                    }}
+                    className={styles.excelDangerButton}
                   >
                     {assigning ? 'Guardando...' : '⚠ Confirmar'}
                   </button>
                   <button
                     onClick={() => setConfirming(false)}
                     disabled={assigning}
-                    style={{
-                      padding: '6px 14px', fontSize: 12, fontWeight: 600,
-                      background: 'transparent',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: 6, cursor: 'pointer', color: '#666',
-                    }}
+                    className={styles.excelSecondaryButton}
                   >
                     Cancelar
                   </button>
@@ -1413,7 +1124,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
               )}
 
               {assignError && (
-                <div style={{ fontSize: 12, color: '#ff3366', padding: '8px 12px', background: 'rgba(248,113,113,0.08)', borderRadius: 6 }}>
+                <div className={styles.excelError}>
                   Error: {assignError}
                 </div>
               )}
@@ -1422,14 +1133,9 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
           )}
 
           {assignResult && (
-            <div style={{
-              padding: '10px 16px', background: 'rgba(74,222,128,0.08)',
-              border: '1px solid rgba(74,222,128,0.2)', borderRadius: 8,
-              fontSize: 12, color: '#00ff88', fontWeight: 600,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-            }}>
+            <div className={styles.excelSuccess}>
               <span>✓ {assignResult.updated} registro{assignResult.updated !== 1 ? 's' : ''} actualizado{assignResult.updated !== 1 ? 's' : ''}.</span>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className={styles.excelSuccessActions}>
                 <button
                   onClick={() => {
                     setAssignResult(null);
@@ -1437,11 +1143,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     setSelectedIds(new Set());
                     setConfirming(false);
                   }}
-                  style={{
-                    padding: '5px 12px', fontSize: 11, fontWeight: 700,
-                    background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)',
-                    borderRadius: 6, cursor: 'pointer', color: '#00ff88',
-                  }}
+                  className={`${styles.excelResultButton} ${styles.isSuccess}`}
                 >
                   Seguir con estos registros
                 </button>
@@ -1459,11 +1161,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     setConfirming(false);
                     setStep('paste');
                   }}
-                  style={{
-                    padding: '5px 12px', fontSize: 11, fontWeight: 700,
-                    background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.35)',
-                    borderRadius: 6, cursor: 'pointer', color: '#a5b4fc',
-                  }}
+                  className={`${styles.excelResultButton} ${styles.isPrimary}`}
                 >
                   Cargar otro Excel
                 </button>
@@ -1477,7 +1175,10 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
   );
 }
 
-export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'corrector' | 'bulk' | 'excel' }) {
+// `mode` es obligatorio: los tres call sites (Ajustes) siempre lo pasan. Antes
+// existía un modo 'all' por defecto que renderizaba un flujo "General / Legacy"
+// que ya nadie montaba; se eliminó junto con sus ~393 líneas de JSX muerto.
+export default function BulkModifyTab({ mode }: { mode: 'corrector' | 'bulk' | 'excel' }) {
   const [filtros, setFiltros] = useState<Filtros>(EMPTY_FILTROS);
   const [campos, setCampos] = useState<CamposAModificar>(EMPTY_CAMPOS);
   const [previewCount, setPreviewCount] = useState(0);
@@ -1491,13 +1192,9 @@ export default function BulkModifyTab({ mode = 'all' }: { mode?: 'all' | 'correc
   const { nombres: ANALISTAS } = useAnalistas();
 
   // Derivar datos de filtros directamente de registros (reactivo)
-  const allEstados = useMemo(() => Array.from(new Set(registros.map(r => r.estado).filter(Boolean))).sort(), [registros]);
   const allAnalistas = useMemo(() => Array.from(new Set(registros.map(r => r.analista).filter(Boolean))).sort(), [registros]);
-  const allAcuerdos = useMemo(() => Array.from(new Set(registros.map(r => r.acuerdo_precios).filter(Boolean))).sort() as string[], [registros]);
-  const allTipos = useMemo(() => Array.from(new Set(registros.map(r => r.tipo_cliente).filter(Boolean))).sort() as string[], [registros]);
   const allEmpleadoresList = useMemo(() => Array.from(new Set(registros.map(r => r.empleador?.trim()).filter(Boolean))).sort() as string[], [registros]);
   const allDependenciasList = useMemo(() => Array.from(new Set(registros.map(r => r.dependencia?.trim()).filter(Boolean))).sort() as string[], [registros]);
-  const allLocalidades = useMemo(() => Array.from(new Set(registros.map(r => r.localidad).filter(Boolean))).sort() as string[], [registros]);
   const allEmpleadores = useMemo(() => Array.from(new Set(registros.map(r => r.empleador).filter(Boolean))).sort() as string[], [registros]);
   const [empleadorCorreccion, setEmpleadorCorreccion] = useState<string>('');
   const [empleadoresSeleccionados, setEmpleadoresSeleccionados] = useState<string[]>([]);
@@ -1557,12 +1254,6 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
       return new Map(Object.entries(parsed) as [string, number][]);
     } catch { return new Map(); }
   });
-
-  interface VarianteEmpleador {
-    normalizado: string;
-    variantes: string[];
-    cantidad: number;
-  }
 
   const estaDescartado = useCallback((normalizado: string, cantidad: number): boolean => {
     const savedCount = gruposDescartados.get(normalizado);
@@ -1669,7 +1360,13 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   }, []);
 
   // ── Determinar si dos nombres normalizados son "similares" ───────────────
-  const sonSimilares = useCallback((a: string, b: string): boolean => {
+  // P-D: `tokenize` es un parametro opcional para que agruparFuzzy pueda pasar
+  // un cache por invocacion. Sin el, el comportamiento es el original.
+  const sonSimilares = useCallback((
+    a: string,
+    b: string,
+    tokenize: (s: string) => string[] = s => s.split(/\s+/).filter(t => t.length >= 2),
+  ): boolean => {
     if (a === b) return true;
     if (a === 'Sin dato' || b === 'Sin dato') return false;
 
@@ -1696,8 +1393,8 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     if (longer.startsWith(shorter.substring(0, minPrefixLen))) return true;
 
     // 3) Tokenizar y comparar
-    const tokensA = a.split(/\s+/).filter(t => t.length >= 2);
-    const tokensB = b.split(/\s+/).filter(t => t.length >= 2);
+    const tokensA = tokenize(a);
+    const tokensB = tokenize(b);
     
     if (tokensA.length >= 1 && tokensB.length >= 1) {
       let matched = 0;
@@ -1752,6 +1449,18 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
   }, []);
 
   // ── Helper para obtener info del maestro (normalizado) ──────────────────
+  // P-D: indice normalizado del maestro, precomputado una vez en lugar de
+  // renormalizar toda la tabla EMPLEADORES_MAESTROS en cada llamada.
+  // first-wins replica exactamente el return del bucle original.
+  const maestroPorNormalizado = useMemo(() => {
+    const idx = new Map<string, { masterName: string; tipo: string; categoria: string }>();
+    for (const [mName, mInfo] of Object.entries(EMPLEADORES_MAESTROS)) {
+      const k = normalizar(mName);
+      if (!idx.has(k)) idx.set(k, { masterName: mName, ...mInfo });
+    }
+    return idx;
+  }, [normalizar]);
+
   const getMaestroInfo = useCallback((nombre: string) => {
     const n = nombre.toUpperCase().trim();
     // Búsqueda exacta
@@ -1759,18 +1468,33 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     
     // Búsqueda por normalización básica (sin SRL/SA/Stopwords)
     const normNombre = normalizar(nombre);
-    for (const [mName, mInfo] of Object.entries(EMPLEADORES_MAESTROS)) {
-      if (normalizar(mName) === normNombre) return { masterName: mName, ...mInfo, matchType: 'fuzzy' as const };
-    }
+    const hit = maestroPorNormalizado.get(normNombre);
+    if (hit) return { ...hit, matchType: 'fuzzy' as const };
     
     // Si no está en el maestro, intentar detección automática
     const auto = detectarTipoAutomatico(nombre);
     return { ...auto, matchType: 'auto' as const, masterName: undefined as string | undefined };
-  }, [normalizar, detectarTipoAutomatico]);
+  }, [normalizar, detectarTipoAutomatico, maestroPorNormalizado]);
 
   // ── Union-Find para agrupar empleadores similares transitivamente ────────
   const agruparFuzzy = useCallback((keys: string[], variantesMap: Map<string, Set<string>>): VarianteEmpleador[] => {
+    // Sólo el Corrector consume estos grupos. El bucle de abajo es O(n²) sobre
+    // los empleadores/dependencias únicos (≈452 claves ⇒ ~102.000 comparaciones)
+    // y se invoca desde varios memos, así que en 'excel' y 'bulk' representaba
+    // ~1 s de bloqueo del main thread sin ningún consumidor.
+    if (mode !== 'corrector') return EMPTY_VARIANTES;
     const keyList = Array.from(keys);
+    // P-D: cache de tokenizacion con vida de esta invocacion (puro, sin refs).
+    // Evita retokenizar cada clave O(m) veces dentro del bucle de pares.
+    const tokenCache = new Map<string, string[]>();
+    const tokenize = (s: string): string[] => {
+      let v = tokenCache.get(s);
+      if (v === undefined) {
+        v = s.split(/\s+/).filter(t => t.length >= 2);
+        tokenCache.set(s, v);
+      }
+      return v;
+    };
     const parent = new Map<string, string>();
     const find = (x: string): string => {
       while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x)!)!); x = parent.get(x)!; }
@@ -1790,7 +1514,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
     // Comparar pares — O(n²) pero n es cantidad de empleadores únicos normalizados
     for (let i = 0; i < keyList.length; i++) {
       for (let j = i + 1; j < keyList.length; j++) {
-        if (sonSimilares(keyList[i], keyList[j])) {
+        if (sonSimilares(keyList[i], keyList[j], tokenize)) {
           union(keyList[i], keyList[j]);
         }
       }
@@ -1810,7 +1534,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
       variantes: Array.from(variantes).sort(),
       cantidad: variantes.size,
     }));
-  }, [sonSimilares]);
+  }, [sonSimilares, mode]);
 
   const variantesEmpleador = useMemo((): VarianteEmpleador[] => {
     // Paso 1: agrupar por normalización exacta
@@ -1847,7 +1571,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
       variantes: [e],
       cantidad: 1,
     })).sort((a, b) => b.normalizado.localeCompare(a.normalizado));
-  }, [allEmpleadores, busquedaEmpleador, normalizar]);
+  }, [allEmpleadores, busquedaEmpleador, normalizar, variantesEmpleador]);
 
   // Grupos con duplicados reales (más de 1 variante) — independiente de mostrarTodos
   const variantesConDuplicados = useMemo(() => {
@@ -1878,6 +1602,7 @@ const [correctorExpandido, setCorrectorExpandido] = useState(false);
 
   // Localidad corrector helpers
 const variantesLocalidadConDuplicados = useMemo(() => {
+    if (mode !== 'corrector') return EMPTY_VARIANTES;
     const lista = registros.map(r => r.localidad).filter(Boolean) as string[];
     const myMap = new Map<string, Set<string>>();
     for (const locVar of lista) {
@@ -1893,13 +1618,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         cantidad: variantes.size,
       }))
       .sort((a, b) => b.cantidad - a.cantidad);
-  }, [registros, gruposLocalidadDescartados]);
+  }, [registros, gruposLocalidadDescartados, mode]);
 
   // Todas las localidades para buscar
   const todasLasLocalidadess = useMemo(() => {
+    if (mode !== 'corrector') return EMPTY_STRINGS;
     const lista = registros.map(r => r.localidad).filter(Boolean) as string[];
     return Array.from(new Set(lista)).sort();
-  }, [registros]);
+  }, [registros, mode]);
 
   // Localidades filtradas por búsqueda
   const localidadesFiltradas = useMemo(() => {
@@ -1922,8 +1648,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
   // Dependencias corrector helpers
   const allDependencias = useMemo(() =>
-    Array.from(new Set(registros.map(r => r.dependencia).filter(Boolean) as string[])).sort(),
-    [registros]
+    // Sólo alimenta la agrupación fuzzy del Corrector.
+    mode !== 'corrector'
+      ? EMPTY_STRINGS
+      : Array.from(new Set(registros.map(r => r.dependencia).filter(Boolean) as string[])).sort(),
+    [registros, mode]
   );
 
   const variantesDependencia = useMemo((): VarianteEmpleador[] => {
@@ -2080,7 +1809,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
   useEffect(() => {
     if (!modalEmpleadoresOpen) return;
-    cargarTodosEmpleadores(true);
+    const refreshId = window.setTimeout(() => { void cargarTodosEmpleadores(true); }, 0);
+    return () => window.clearTimeout(refreshId);
   }, [registros, modalEmpleadoresOpen, cargarTodosEmpleadores]);
 
   useEffect(() => {
@@ -2168,15 +1898,18 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   // Sincronizar lista del modal reactivamente con filtros de fecha
   useEffect(() => {
     if (!showEmpleadoresHoy) return;
-    setEmpleadoresHoy(
-      registrosNuevosHoy.map(r => ({
-        id: r.id,
-        cuil: r.cuil,
-        nombre: r.nombre,
-        empleador: r.empleador || '',
-        dependencia: r.dependencia || '',
-      }))
-    );
+    const syncId = window.setTimeout(() => {
+      setEmpleadoresHoy(
+        registrosNuevosHoy.map(r => ({
+          id: r.id,
+          cuil: r.cuil,
+          nombre: r.nombre,
+          empleador: r.empleador || '',
+          dependencia: r.dependencia || '',
+        }))
+      );
+    }, 0);
+    return () => window.clearTimeout(syncId);
   }, [showEmpleadoresHoy, registrosNuevosHoy]);
 
 
@@ -2432,11 +2165,6 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     [raDestinos],
   );
 
-  // Limpiar asignaciones cuando cambia el universo (origen/filtros)
-  useEffect(() => {
-    setRaAsignaciones(new Map());
-  }, [raOrigen, raEstados, raScoreMin, raScoreMax, raFechaDesde, raFechaHasta]);
-
   const raAgregarDestino = useCallback(() => {
     const nombre = raNuevoDestino.trim();
     const cuota = Number(raNuevaCuota);
@@ -2572,17 +2300,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     if (toast) { const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }
   }, [toast]);
 
-  const toggleFilter = (field: keyof Filtros, value: string) => {
-    setFiltros(prev => {
-      const list = prev[field] as string[];
-      if (!Array.isArray(list)) return prev;
-      return { ...prev, [field]: list.includes(value) ? list.filter(v => v !== value) : [...list, value] };
-    });
-  };
 
   const previewRecords = useCallback(async () => {
     const buildQuery = () => {
-      let q = supabase.from('registros').select('id');
+      // `.order('id')` no es cosmético: esta consulta se pagina con `.range()` y
+      // sin ORDER BY el subconjunto que devuelve cada página es indefinido. Como
+      // los ids se acumulan en un Set, el síntoma no serían duplicados visibles
+      // sino filas OMITIDAS: `previewCount` quedaría por debajo del real y la
+      // modificación masiva se aplicaría a menos registros de los previstos.
+      // Aquí el orden no tiene ningún significado funcional (sólo se recogen
+      // ids), así que la PK sola alcanza y es el orden determinista más barato.
+      let q = supabase.from('registros').select('id').order('id', { ascending: true });
       q = applyChipFilter(q, 'estado', filtros.estados);
       q = applyChipFilter(q, 'analista', filtros.analistas);
       q = applyChipFilter(q, 'acuerdo_precios', filtros.acuerdoPrecios);
@@ -2690,8 +2418,12 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
     // -- Undo Backup --
     const keysToBackup = Object.keys(updates) as (keyof Registro)[];
+    // P-D: un indice por id (O(n)) en lugar de un .find por preview (O(k*n)).
+    // first-wins replica .find; ids ausentes siguen dando undefined.
+    const registrosById = new Map<string, Registro>();
+    for (const r of registros) if (!registrosById.has(r.id)) registrosById.set(r.id, r);
     const backup = Array.from(previewIds).map(id => {
-       const oldReg = registros.find(r => r.id === id);
+       const oldReg = registrosById.get(id);
        const oldUpdates: Record<string, unknown> = {};
        keysToBackup.forEach(k => {
           oldUpdates[k] = oldReg ? (oldReg[k] ?? null) : null;
@@ -2730,103 +2462,46 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     setUpdatedCount(0);
   };
 
-  const chipStyle = (isActive: boolean) => ({
-    padding: '5px 10px', borderRadius: '5px', fontSize: '10px', border: '1px solid',
-    whiteSpace: 'nowrap' as const, fontWeight: 700 as const, cursor: 'pointer', transition: 'all 0.15s',
-    background: isActive ? '#fff' : 'rgba(255,255,255,0.02)',
-    borderColor: isActive ? '#fff' : 'rgba(255,255,255,0.06)',
-    color: isActive ? '#000' : '#555',
-    textTransform: 'uppercase' as const, letterSpacing: '0.5px'
-  });
-
-  const fieldSection = (title: string, children: React.ReactNode) => (
-    <div style={{ marginBottom: '20px' }}>
-      <label style={LABEL_STYLE}>{title}</label>
-      {children}
-    </div>
-  );
-
   return (
-    <div style={{ width: '100%' }}>
+    <div className={[styles["uWidth100"]].join(' ')}>
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '12px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            background: toast.type === 'success' ? 'rgba(0, 255, 136, 0.15)' : 'rgba(239,68,68,0.15)',
-            border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-            color: toast.type === 'success' ? '#34d399' : '#ff3366',
-          }}>
+        <div className={[styles["uPositionFixed"], styles["uBottom24px"], styles["uRight24px"], styles["uZIndex9999"]].join(' ')}>
+          <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uPadding12px-18px"], styles["uBorderRadius8px"], styles["uFontSize13px"], styles["uFontWeight600"]].join(' ')} style={{ background: toast.type === 'success' ? 'rgba(0, 255, 136, 0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, color: toast.type === 'success' ? '#34d399' : '#ff3366' }}>
             {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}
             {toast.message}
           </div>
         </div>
       )}
 
-      <div className="data-card" style={{
-        background: '#111111',
-        border: '1px solid rgba(255,255,255,0.03)',
-        width: '100%',
-        minHeight: mode === 'excel' ? 'auto' : 'calc(100vh - 200px)'
-      }}>
+      <div className={`data-card ${styles.bulkRoot}${mode === 'excel' ? ` ${styles.isExcel}` : ''}`}>
         {mode === 'corrector' && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+        <div className={styles.correctorHeader}>
           <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <ShieldCheck size={20} style={{ color: '#fbbf24' }} />
+            <h3 className={styles.correctorTitle}>
+              <ShieldCheck size={20} className={styles.correctorIcon} />
               Corrector
             </h3>
-            <p style={{ fontSize: '13px', color: '#555', marginTop: '4px' }}>
+            <p className={styles.correctorSubtitle}>
               Detecta y corrige variantes de nombres para unificar la base
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className={styles.headerActions}>
             <button
               onClick={cargarEmpleadoresHoy}
               disabled={loadingEmpleadoresHoy}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '6px',
-                fontSize: '10px',
-                fontWeight: 800,
-                color: '#555',
-                textTransform: 'uppercase',
-                cursor: loadingEmpleadoresHoy ? 'not-allowed' : 'pointer',
-              }}
+              className={styles.pillButton}
             >
-              {loadingEmpleadoresHoy ? <Loader2 size={12} className="animate-spin" /> : <Users size={12} />}
+              {loadingEmpleadoresHoy ? <Loader2 size={12} /> : <Users size={12} />}
               Nuevos hoy
               {contadorNuevosHoy > 0 && (
-                <span style={{ 
-                  background: 'rgba(0, 255, 136, 0.15)', 
-                  color: '#34d399', 
-                  padding: '1px 5px', 
-                  borderRadius: 4, 
-                  fontSize: '9px',
-                  marginLeft: 4 
-                }}>
+                <span className={styles.pillCount}>
                   {contadorNuevosHoy}
                 </span>
               )}
             </button>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
-              borderRadius: '6px',
-              fontSize: '10px',
-              fontWeight: 800,
-              color: variantesConDuplicados.length > 0 ? '#ff3366' : '#555',
-              textTransform: 'uppercase',
-            }}>
+            <div
+              className={`${styles.statusPill}${variantesConDuplicados.length > 0 ? ` ${styles.isAlert}` : ''}`}
+            >
               {variantesConDuplicados.length > 0 ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
               {variantesConDuplicados.length > 0
                 ? `${variantesConDuplicados.length} variante${variantesConDuplicados.length > 1 ? 's' : ''} con duplicado${variantesConDuplicados.length > 1 ? 's' : ''}`
@@ -2834,11 +2509,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
             <button
               onClick={resetAll}
-              style={{
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                color: '#888', borderRadius: '6px', padding: '6px 12px',
-                fontSize: '10px', fontWeight: 800, cursor: 'pointer',
-              }}
+              className={styles.resetButton}
             >
               <X size={12} /> Resetear
             </button>
@@ -2847,52 +2518,36 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         )}
 
         {/* ── CORRECTOR DE EMPLEADOR ────────────────────────────────────────── */}
-        {(mode === 'all' || mode === 'corrector') && (
-          <div style={{
-          marginBottom: '28px', padding: '20px',
-          background: variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.02)',
-          border: `1px solid ${variantesConDuplicados.length > 0 ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.06)'}`,
-          borderRadius: '10px',
-        }}>
-          <div 
+        {mode === 'corrector' && (
+          <div className={`${styles.section}${variantesConDuplicados.length > 0 ? ` ${styles.isAlert}` : ''}`}>
+          <div
             onClick={() => setCorrectorExpandido(!correctorExpandido)}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorExpandido ? 16 : 0, cursor: 'pointer' }}
+            className={`${styles.sectionToggle}${correctorExpandido ? ` ${styles.isExpanded}` : ''}`}
           >
             {variantesConDuplicados.length > 0
               ? <AlertTriangle size={18} color="#ff3366" />
               : <CheckCircle size={18} color="#555" />}
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: variantesConDuplicados.length > 0 ? '#ff3366' : '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h4 className={`${styles.sectionTitle}${variantesConDuplicados.length > 0 ? ` ${styles.isAlert}` : ''}`}>
               {variantesConDuplicados.length > 0
                 ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
                 : 'Corrector de Empleador — Sin duplicados'}
-              {correctorExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+              {correctorExpandido ? <ChevronUp size={14} className={styles.chevron} /> : <ChevronDown size={14} className={styles.chevron} />}
             </h4>
-            <div 
-              style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}
+            <div
+              className={styles.sectionActions}
               onClick={(e) => e.stopPropagation()}
             >
               {gruposDescartados.size > 0 && (
                 <button
                   onClick={restaurarDescartados}
-                  style={{
-                    background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                    color: '#00d4ff', borderRadius: '4px', padding: '4px 10px',
-                    fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                    textTransform: 'uppercase', letterSpacing: '0.5px',
-                  }}
+                  className={`${styles.ghostButton} ${styles.ghostButtonInfo}`}
                 >
                   Restaurar {gruposDescartados.size} descartado{gruposDescartados.size > 1 ? 's' : ''}
                 </button>
               )}
               <button
                 onClick={() => cargarTodosEmpleadores()}
-                style={{
-                  background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)',
-                  color: '#fbbf24', borderRadius: '4px', padding: '4px 10px',
-                  fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                  textTransform: 'uppercase', letterSpacing: '0.5px',
-                  display: 'flex', alignItems: 'center', gap: 4,
-                }}
+                className={`${styles.ghostButton} ${styles.ghostButtonWarning}`}
               >
                 <Users size={10} /> Ver todos ({allEmpleadores.length})
               </button>
@@ -2902,48 +2557,46 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           {correctorExpandido && (
             <>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
+          <div className={styles.fieldGrid}>
             <div>
-              <label style={LABEL_STYLE}>
+              <label className={styles.label}>
                 Nombre correcto
               </label>
               <input
-                className="form-input"
+                className={`form-input ${styles.darkInput}`}
                 placeholder="Ej: MUNICIPALIDAD DE PARANA"
                 value={empleadorCorreccion}
                 onChange={e => setEmpleadorCorreccion(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && corregirEmpleador()}
-                style={DARK_INPUT_STYLE}
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div className={styles.actionRow}>
             <button
               onClick={corregirEmpleador}
               disabled={updating || empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim()}
-              style={corregirBtnStyle(empleadoresSeleccionados.length === 0 || !empleadorCorreccion.trim())}
+              className={styles.correctButton}
             >
               {updating ? 'CORRIGIENDO...' : `CORREGIR ${empleadoresSeleccionados.length} EMPLEADOR(ES)`}
             </button>
             <input
-              className="form-input"
+              className={`form-input ${styles.darkInputFlex}`}
               placeholder="Buscar empleador..."
               value={busquedaEmpleador}
               onChange={e => setBusquedaEmpleador(e.target.value)}
-              style={DARK_INPUT_FLEX_STYLE}
             />
           </div>
 
           {empleadoresSeleccionados.length > 0 && (
-            <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+            <div className={styles.hint}>
               Seleccionados: {empleadoresSeleccionados.length} — {empleadorCorreccion || '(sin nombre correcto)'}
             </div>
           )}
 
           {/* Lista de variantes detectadas */}
           {variantesFiltradas.length > 0 ? (
-            <div style={{ marginTop: '20px', maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
+            <div className={styles.scrollArea}>
               {variantesFiltradas.map((v, i) => {
                 // 1) Detección de duplicados dentro de este grupo
                 const keyCounts = new Map<string, number>();
@@ -2977,31 +2630,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 const tieneDuplicados = dupsSet.size > 0;
 
                 return (
-                  <div key={i} style={{
-                    marginBottom: 12, padding: '12px 14px',
-                    background: tieneDuplicados ? 'rgba(16,185,129,0.03)' : 'rgba(0,0,0,0.3)',
-                    borderRadius: '8px',
-                    border: `1px solid ${tieneDuplicados ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <div style={{ fontSize: '11px', color: tieneDuplicados ? '#34d399' : '#fbbf24', fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                  <div key={i} className={[styles["uMarginBottom12px"], styles["uPadding12px-14px"], styles["uBorderRadius8px"]].join(' ')} style={{ background: tieneDuplicados ? 'rgba(16,185,129,0.06)' : 'var(--surface-card)', border: `1px solid ${tieneDuplicados ? 'rgba(16,185,129,0.2)' : 'var(--border-subtle)'}` }}>
+                    <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uMarginBottom6px"]].join(' ')}>
+                      <div className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"], styles["uFlexWrapWrap"]].join(' ')} style={{ color: tieneDuplicados ? '#34d399' : '#fbbf24' }}>
+                        {v.normalizado} <span className={styles.mutedNote}>({v.cantidad} variantes)</span>
                         {tieneDuplicados && (
-                          <span style={{
-                            padding: '2px 7px',
-                            borderRadius: '4px',
-                            background: 'rgba(16,185,129,0.15)',
-                            border: '1px solid rgba(16,185,129,0.35)',
-                            color: '#34d399',
-                            fontSize: '9px',
-                            fontWeight: 800,
-                            letterSpacing: '0.5px',
-                          }}>
+                          <span className={[styles["uPadding2px-7px"], styles["uBorderRadius4px"], styles["uBackgroundRgba-16-185-129-0-15"], styles["uBorder1px-solid-rgba-16-185-129-0-35"], styles["uColor34d399"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uLetterSpacing0-5px"]].join(' ')}>
                             {dupsSet.size} DUPLICADOS DETECTADOS
                           </span>
                         )}
                       </div>
-                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uFlexShrink0"]].join(' ')}>
                         {tieneDuplicados && (
                           <button
                             onClick={(e) => {
@@ -3012,13 +2651,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               if (sugerido) setEmpleadorCorreccion(sugerido);
                             }}
                             title="Seleccionar todas las variantes duplicadas de este grupo"
-                            style={{
-                              background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)',
-                              color: '#34d399', borderRadius: '4px', padding: '2px 8px',
-                              fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                              textTransform: 'uppercase', letterSpacing: '0.5px',
-                              display: 'flex', alignItems: 'center', gap: 4,
-                            }}
+                            className={[styles["uBackgroundRgba-16-185-129-0-15"], styles["uBorder1px-solid-rgba-16-185-129-0-4"], styles["uColor34d399"], styles["uBorderRadius4px"], styles["uPadding2px-8px"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
                           >
                             <CheckCircle size={10} /> Elegir duplicados ({dupsSet.size})
                           </button>
@@ -3030,13 +2663,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               cargarRegistrosGrupo(v.variantes, v.normalizado);
                             }}
                             title="Ver todos los registros de este grupo"
-                            style={{
-                              background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                              color: '#00d4ff', borderRadius: '4px', padding: '2px 8px',
-                              fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                              textTransform: 'uppercase', letterSpacing: '0.5px',
-                              display: 'flex', alignItems: 'center', gap: 4,
-                            }}
+                            className={[styles["uBackgroundRgba-96-165-250-0-1"], styles["uBorder1px-solid-rgba-96-165-250-0-3"], styles["uColor00d4ff"], styles["uBorderRadius4px"], styles["uPadding2px-8px"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
                           >
                             <Users size={10} /> Ver {v.cantidad}
                           </button>
@@ -3045,20 +2672,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                           <button
                             onClick={(e) => { e.stopPropagation(); descartarGrupo(v.normalizado, v.cantidad); }}
                             title="Marcar como correcto — no es un duplicado real"
-                            style={{
-                              background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-                              color: '#34d399', borderRadius: '4px', padding: '2px 8px',
-                              fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                              textTransform: 'uppercase', letterSpacing: '0.5px',
-                              display: 'flex', alignItems: 'center', gap: 4,
-                            }}
+                            className={[styles["uBackgroundRgba-16-185-129-0-1"], styles["uBorder1px-solid-rgba-16-185-129-0-3"], styles["uColor34d399"], styles["uBorderRadius4px"], styles["uPadding2px-8px"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
                           >
                             <CheckCircle size={10} /> OK
                           </button>
                         )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    <div className={styles.chipRow}>
                       {variantesOrdenadas.map((varName, j) => (
                         <VarianteChip
                           key={j}
@@ -3076,10 +2697,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               })}
             </div>
           ) : (
-            <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+            <div className={styles.emptyState}>
               <p>{busquedaEmpleador ? 'No se encontraron resultados.' : 'No se detectaron empleadores con múltiples variantes.'}</p>
               {busquedaEmpleador && (
-                <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
+                <p className={[styles["uFontSize11px"], styles["uMarginTop8px"], styles["uColorText-muted"]].join(' ')}>
                   Intentá con otro término.
                 </p>
               )}
@@ -3091,32 +2712,22 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       )}
 
       {/* ── CORRECTOR DE LOCALIDAD ──────────────────────────────────────────── */}
-      {(mode === 'all' || mode === 'corrector') && (
-        <div style={{
-          marginBottom: '28px', padding: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-        }}>
-          <div 
+      {mode === 'corrector' && (
+        <div className={styles.section}>
+          <div
             onClick={() => setCorrectorLocalidadExpandido(!correctorLocalidadExpandido)}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorLocalidadExpandido ? 16 : 0, cursor: 'pointer' }}
+            className={`${styles.sectionToggle}${correctorLocalidadExpandido ? ` ${styles.isExpanded}` : ''}`}
           >
             <CheckCircle size={18} color="#555" />
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h4 className={styles.sectionTitle}>
               Corrector de Localidad
-              {correctorLocalidadExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+              {correctorLocalidadExpandido ? <ChevronUp size={14} className={styles.chevron} /> : <ChevronDown size={14} className={styles.chevron} />}
             </h4>
             {gruposLocalidadDescartados.size > 0 && (
-              <div style={{ marginLeft: 'auto' }} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.sectionActionsEnd} onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={restaurarDescartadosLocalidad}
-                  style={{
-                    background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-                    color: '#00d4ff', borderRadius: '4px', padding: '4px 10px',
-                    fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                    textTransform: 'uppercase', letterSpacing: '0.5px',
-                  }}
+                  className={`${styles.ghostButton} ${styles.ghostButtonInfo}`}
                 >
                   Restaurar {gruposLocalidadDescartados.size} descartado{gruposLocalidadDescartados.size > 1 ? 's' : ''}
                 </button>
@@ -3126,27 +2737,26 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
           {correctorLocalidadExpandido && (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
+              <div className={styles.fieldGrid}>
                 <div>
-                  <label style={LABEL_STYLE}>
+                  <label className={styles.label}>
                     Nombre correcto
                   </label>
                   <input
-                    className="form-input"
+                    className={`form-input ${styles.darkInput}`}
                     placeholder="Ej: PARANA"
                     value={localidadCorreccion}
                     onChange={e => setLocalidadCorreccion(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && corregirLocalidad()}
-                    style={DARK_INPUT_STYLE}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div className={styles.actionRow}>
                 <button
                   onClick={corregirLocalidad}
                   disabled={updating || localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim()}
-                  style={corregirBtnStyle(localidadesSeleccionadas.length === 0 || !localidadCorreccion.trim())}
+                  className={styles.correctButton}
                 >
                   {updating ? 'CORRIGIENDO...' : `CORREGIR ${localidadesSeleccionadas.length} LOCALIDAD(ES)`}
                 </button>
@@ -3159,65 +2769,46 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     agregarNuevaLocalidad();
                   }}
                   disabled={updating || !localidadCorreccion.trim()}
-                  style={{
-                    background: (!localidadCorreccion.trim()) ? '#333' : 'rgba(0, 255, 136, 0.15)',
-                    color: (!localidadCorreccion.trim()) ? '#666' : '#34d399',
-                    border: '1px solid rgba(16,185,129,0.3)',
-                    borderRadius: '6px', padding: '10px 24px',
-                    fontSize: '11px', fontWeight: 900, cursor: (!localidadCorreccion.trim()) ? 'not-allowed' : 'pointer',
-                    textTransform: 'uppercase', letterSpacing: '1px',
-                    flexShrink: 0,
-                  }}
+                  className={[styles["uBorder1px-solid-rgba-16-185-129-0-3"], styles["uBorderRadius6px"], styles["uPadding10px-24px"], styles["uFontSize11px"], styles["uFontWeight900"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uFlexShrink0"]].join(' ')} style={{ background: (!localidadCorreccion.trim()) ? '#333' : 'rgba(0, 255, 136, 0.15)', color: (!localidadCorreccion.trim()) ? '#666' : '#34d399', cursor: (!localidadCorreccion.trim()) ? 'not-allowed' : 'pointer' }}
                 >
                   AGREGAR NUEVA LOCALIDAD
                 </button>
                 <input
-                  className="form-input"
+                  className={`form-input ${styles.darkInputFlex}`}
                   placeholder="Buscar localidad..."
                   value={busquedaLocalidad}
                   onChange={e => setBusquedaLocalidad(e.target.value)}
-                  style={DARK_INPUT_FLEX_STYLE}
                 />
               </div>
 
               {localidadesSeleccionadas.length > 0 && (
-                <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+                <div className={styles.hint}>
                   Seleccionadas: {localidadesSeleccionadas.length} — {localidadCorreccion || '(sin nombre correcto)'}
                 </div>
               )}
 
               {/* Lista de localidades */}
               {(listaLocalidadess.length > 0 || busquedaLocalidad.trim()) ? (
-                <div style={{ marginTop: '20px', maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
+                <div className={styles.scrollArea}>
                   {listaLocalidadess.map((v, i) => (
-                    <div key={i} style={{
-                      marginBottom: 12, padding: '12px 14px',
-                      background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.04)',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>
-                          {v.normalizado} <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>
+                    <div key={i} className={[styles["uMarginBottom12px"], styles["uPadding12px-14px"], styles["uBackgroundSurface-sunken"], styles["uBorderRadius8px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                      <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uMarginBottom6px"]].join(' ')}>
+                        <div className={[styles["uFontSize11px"], styles["uColorFbbf24"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>
+                          {v.normalizado} <span className={styles.mutedNote}>({v.cantidad} variantes)</span>
                         </div>
-                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uFlexShrink0"]].join(' ')}>
                           {v.cantidad > 1 && (
                             <button
                               onClick={(e) => { e.stopPropagation(); descartarGrupoLocalidad(v.normalizado); }}
                               title="Marcar como correcto"
-                              style={{
-                                background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)',
-                                color: '#34d399', borderRadius: '4px', padding: '2px 8px',
-                                fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                                textTransform: 'uppercase', letterSpacing: '0.5px',
-                                display: 'flex', alignItems: 'center', gap: 4,
-                              }}
+                              className={[styles["uBackgroundRgba-16-185-129-0-1"], styles["uBorder1px-solid-rgba-16-185-129-0-3"], styles["uColor34d399"], styles["uBorderRadius4px"], styles["uPadding2px-8px"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
                             >
                               <CheckCircle size={10} /> OK
                             </button>
                           )}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <div className={styles.chipRow}>
                         {v.variantes.map((varName, j) => (
                           <VarianteChip
                             key={j}
@@ -3233,10 +2824,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   ))}
                 </div>
               ) : (
-                <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+                <div className={styles.emptyState}>
                   <p>{busquedaLocalidad ? 'No se encontraron resultados.' : 'No hay localidades en la base.'}</p>
                   {busquedaLocalidad && (
-                    <p style={{ fontSize: '11px', marginTop: '8px', color: '#444' }}>
+                    <p className={[styles["uFontSize11px"], styles["uMarginTop8px"], styles["uColorText-muted"]].join(' ')}>
                       Intentá con otro término.
                     </p>
                   )}
@@ -3248,77 +2839,66 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       )}
 
       {/* ── CORRECTOR DE DEPENDENCIA ──────────────────────────────────────────── */}
-      {(mode === 'all' || mode === 'corrector') && (
-        <div style={{
-          marginBottom: '28px', padding: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-        }}>
+      {mode === 'corrector' && (
+        <div className={styles.section}>
           <div
             onClick={() => setCorrectorDependenciaExpandido(!correctorDependenciaExpandido)}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: correctorDependenciaExpandido ? 16 : 0, cursor: 'pointer' }}
+            className={`${styles.sectionToggle}${correctorDependenciaExpandido ? ` ${styles.isExpanded}` : ''}`}
           >
             <CheckCircle size={18} color="#555" />
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h4 className={styles.sectionTitle}>
               Corrector de Dependencia
-              {correctorDependenciaExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+              {correctorDependenciaExpandido ? <ChevronUp size={14} className={styles.chevron} /> : <ChevronDown size={14} className={styles.chevron} />}
             </h4>
           </div>
 
           {correctorDependenciaExpandido && (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: 20 }}>
+              <div className={styles.fieldGrid}>
                 <div>
-                  <label style={LABEL_STYLE}>
+                  <label className={styles.label}>
                     Nombre correcto
                   </label>
                   <input
-                    className="form-input"
+                    className={`form-input ${styles.darkInput}`}
                     placeholder="Ej: Subsecretaría de Servicios Públicos"
                     value={dependenciaCorreccion}
                     onChange={e => setDependenciaCorreccion(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && corregirDependencia()}
-                    style={DARK_INPUT_STYLE}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div className={styles.actionRow}>
                 <button
                   onClick={corregirDependencia}
                   disabled={updating || dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim()}
-                  style={corregirBtnStyle(dependenciasSeleccionadas.length === 0 || !dependenciaCorreccion.trim())}
+                  className={styles.correctButton}
                 >
                   {updating ? 'CORRIGIENDO...' : `CORREGIR ${dependenciasSeleccionadas.length} DEPENDENCIA(S)`}
                 </button>
                 <input
-                  className="form-input"
+                  className={`form-input ${styles.darkInputFlex}`}
                   placeholder="Buscar dependencia..."
                   value={busquedaDependencia}
                   onChange={e => setBusquedaDependencia(e.target.value)}
-                  style={DARK_INPUT_FLEX_STYLE}
                 />
               </div>
 
               {dependenciasSeleccionadas.length > 0 && (
-                <div style={{ marginTop: '12px', fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>
+                <div className={styles.hint}>
                   Seleccionadas: {dependenciasSeleccionadas.length} — {dependenciaCorreccion || '(sin nombre correcto)'}
                 </div>
               )}
 
               {(listaDependencias.length > 0 || busquedaDependencia.trim()) ? (
-                <div style={{ marginTop: '20px', maxHeight: 'calc(100vh - 450px)', overflowY: 'auto' }}>
+                <div className={styles.scrollArea}>
                   {listaDependencias.map((v, i) => (
-                    <div key={i} style={{
-                      marginBottom: 12, padding: '12px 14px',
-                      background: 'rgba(0,0,0,0.3)', borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.04)',
-                    }}>
-                      <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase', marginBottom: 6 }}>
-                        {v.normalizado} {v.cantidad > 1 && <span style={{ color: '#666' }}>({v.cantidad} variantes)</span>}
+                    <div key={i} className={[styles["uMarginBottom12px"], styles["uPadding12px-14px"], styles["uBackgroundSurface-sunken"], styles["uBorderRadius8px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                      <div className={[styles["uFontSize11px"], styles["uColorFbbf24"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uMarginBottom6px"]].join(' ')}>
+                        {v.normalizado} {v.cantidad > 1 && <span className={styles.mutedNote}>({v.cantidad} variantes)</span>}
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <div className={styles.chipRow}>
                         {v.variantes.map((varName, j) => (
                           <VarianteChip
                             key={j}
@@ -3334,7 +2914,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   ))}
                 </div>
               ) : (
-                <div style={{ marginTop: '20px', padding: '20px', textAlign: 'center', color: '#555', fontSize: '13px' }}>
+                <div className={styles.emptyState}>
                   <p>{busquedaDependencia ? 'No se encontraron resultados.' : 'No hay dependencias en la base.'}</p>
                 </div>
               )}
@@ -3344,46 +2924,34 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       )}
 
       {/* ── REASIGNADOR MASIVO ────────────────────────────────────────────── */}
-      {(mode === 'all' || mode === 'corrector') && (
-        <div style={{
-          marginBottom: '28px', padding: '20px',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '10px',
-        }}>
+      {mode === 'corrector' && (
+        <div className={[styles["uMarginBottom28px"], styles["uPadding20px"], styles["uBackgroundSurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius10px"]].join(' ')}>
           <div
             onClick={() => setReasignadorExpandido(!reasignadorExpandido)}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: reasignadorExpandido ? 16 : 0, cursor: 'pointer' }}
+            className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uCursorPointer"]].join(' ')} style={{ marginBottom: reasignadorExpandido ? 16 : 0 }}
           >
             <Filter size={18} color="#555" />
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#888', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h4 className={[styles["uFontSize14px"], styles["uFontWeight800"], styles["uColorText-muted"], styles["uTextTransformUppercase"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"]].join(' ')}>
               Reasignar Empleador / Dependencia
-              {reasignadorExpandido ? <ChevronUp size={14} style={{ opacity: 0.5 }} /> : <ChevronDown size={14} style={{ opacity: 0.5 }} />}
+              {reasignadorExpandido ? <ChevronUp size={14} className={[styles["uOpacity0-5"]].join(' ')} /> : <ChevronDown size={14} className={[styles["uOpacity0-5"]].join(' ')} />}
             </h4>
           </div>
 
           {reasignadorExpandido && (
             <>
-              <div style={{ fontSize: '11px', color: '#555', marginBottom: 16, lineHeight: 1.5 }}>
+              <div className={[styles["uFontSize11px"], styles["uColorText-muted"], styles["uMarginBottom16px"], styles["uLineHeight1-5"]].join(' ')}>
                 Filtrá registros por empleador o dependencia actual y reasignalos a un nuevo empleador y/o dependencia.
               </div>
 
               {/* Toggle modo origen */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+              <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uMarginBottom12px"]].join(' ')}>
                 {([{ key: 'empleador' as const, label: 'Por empleador' }, { key: 'dependencia' as const, label: 'Por dependencia' }]).map(({ key, label }) => {
                   const activo = reasignarModo === key;
                   return (
                     <button
                       key={key}
                       onClick={() => { setReasignarModo(key); setReasignarEmpOrigen(''); setReasignarDepOrigen(''); setReasignarBusquedaOrigen(''); }}
-                      style={{
-                        background: activo ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${activo ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                        color: activo ? '#00d4ff' : '#666',
-                        borderRadius: '4px', padding: '4px 12px',
-                        fontSize: '10px', fontWeight: 800, cursor: 'pointer',
-                        textTransform: 'uppercase', letterSpacing: '0.5px',
-                      }}
+                      className={[styles["uBorderRadius4px"], styles["uPadding4px-12px"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"]].join(' ')} style={{ background: activo ? 'var(--brand-muted-soft)' : 'var(--surface-card)', border: `1px solid ${activo ? 'var(--control-border-focus)' : 'var(--border-subtle)'}`, color: activo ? 'var(--action-primary)' : 'var(--text-muted)' }}
                     >
                       {label}
                     </button>
@@ -3392,27 +2960,22 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               </div>
 
               {/* Paso 1: elegir origen */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={LABEL_STYLE}>
+              <div className={[styles["uMarginBottom16px"]].join(' ')}>
+                <label className={styles.label}>
                   1) {reasignarModo === 'empleador' ? 'Empleador origen' : 'Dependencia origen'}
                 </label>
                 <input
-                  className="form-input"
+                  className={[`form-input ${styles.darkInput}`, styles["uMarginBottom8px"]].filter(Boolean).join(' ')}
                   placeholder={reasignarModo === 'empleador' ? 'Buscar empleador...' : 'Buscar dependencia...'}
                   value={reasignarBusquedaOrigen}
                   onChange={e => setReasignarBusquedaOrigen(e.target.value)}
-                  style={{ ...DARK_INPUT_STYLE, marginBottom: 8 }}
                 />
-                <div style={{
-                  maxHeight: 180, overflowY: 'auto',
-                  background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.04)',
-                  borderRadius: 8, padding: 8,
-                }}>
+                <div className={[styles["uMaxHeight180px"], styles["uOverflowYAuto"], styles["uBackgroundSurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius8px"], styles["uPadding8px"]].join(' ')}>
                   {reasignarModo === 'empleador' ? (
                     empleadoresUnicosFiltrados.length === 0 ? (
-                      <div style={{ color: '#555', fontSize: 12, padding: 8 }}>Sin resultados.</div>
+                      <div className={[styles["uColorText-muted"], styles["uFontSize12px"], styles["uPadding8px"]].join(' ')}>Sin resultados.</div>
                     ) : (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <div className={styles.chipRow}>
                         {empleadoresUnicosFiltrados.slice(0, 200).map(emp => {
                           const sel = reasignarEmpOrigen === emp;
                           const count = registros.filter(r => (r.empleador ?? '') === emp).length;
@@ -3420,15 +2983,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             <span
                               key={emp}
                               onClick={() => setReasignarEmpOrigen(sel ? '' : emp)}
-                              style={{
-                                padding: '4px 10px', borderRadius: 4, fontSize: 11,
-                                background: sel ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.04)',
-                                border: sel ? '1px solid #00d4ff' : '1px solid rgba(255,255,255,0.06)',
-                                color: sel ? '#00d4ff' : '#888',
-                                fontWeight: 600, cursor: 'pointer',
-                              }}
+                              className={[styles["uPadding4px-10px"], styles["uBorderRadius4px"], styles["uFontSize11px"], styles["uFontWeight600"], styles["uCursorPointer"]].join(' ')} style={{ background: sel ? 'var(--brand-muted-soft)' : 'var(--surface-card)', border: sel ? '1px solid var(--control-border-focus)' : '1px solid var(--border-subtle)', color: sel ? 'var(--action-primary)' : 'var(--text-secondary)' }}
                             >
-                              {emp} <span style={{ color: sel ? '#00d4ff' : '#555' }}>({count})</span>
+                              {emp} <span style={{ color: sel ? 'var(--action-primary)' : 'var(--text-muted)' }}>({count})</span>
                             </span>
                           );
                         })}
@@ -3436,9 +2993,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     )
                   ) : (
                     dependenciasUnicasFiltradas.length === 0 ? (
-                      <div style={{ color: '#555', fontSize: 12, padding: 8 }}>Sin resultados.</div>
+                      <div className={[styles["uColorText-muted"], styles["uFontSize12px"], styles["uPadding8px"]].join(' ')}>Sin resultados.</div>
                     ) : (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      <div className={styles.chipRow}>
                         {dependenciasUnicasFiltradas.slice(0, 200).map(dep => {
                           const sel = reasignarDepOrigen === dep;
                           const matches = registros.filter(r => (r.dependencia ?? '') === dep);
@@ -3449,13 +3006,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               key={dep}
                               onClick={() => setReasignarDepOrigen(sel ? '' : dep)}
                               title={`Empleador actual: ${parentEmp}`}
-                              style={{
-                                padding: '4px 10px', borderRadius: 4, fontSize: 11,
-                                background: sel ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.04)',
-                                border: sel ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.06)',
-                                color: sel ? '#a78bfa' : '#888',
-                                fontWeight: 600, cursor: 'pointer',
-                              }}
+                              className={[styles["uPadding4px-10px"], styles["uBorderRadius4px"], styles["uFontSize11px"], styles["uFontWeight600"], styles["uCursorPointer"]].join(' ')} style={{ background: sel ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.04)', border: sel ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.06)', color: sel ? '#a78bfa' : '#888' }}
                             >
                               {dep} <span style={{ color: sel ? '#a78bfa' : '#555' }}>({count})</span>
                             </span>
@@ -3468,39 +3019,37 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               </div>
 
               {/* Paso 2: destino */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div className={[styles["uDisplayGrid"], styles["uGridTemplateColumns1fr-1fr"], styles["uGap12px"], styles["uMarginBottom16px"]].join(' ')}>
                 <div>
-                  <label style={LABEL_STYLE}>
+                  <label className={styles.label}>
                     2) Nuevo empleador
                   </label>
                   <input
-                    className="form-input"
+                    className={`form-input ${styles.darkInput}`}
                     list="reasignar-emp-list"
                     placeholder="Ej: Gobierno de la Provincia de Entre Ríos"
                     value={reasignarEmpDestino}
                     onChange={e => setReasignarEmpDestino(e.target.value)}
-                    style={DARK_INPUT_STYLE}
                   />
                   <datalist id="reasignar-emp-list">
                     {allEmpleadores.map(e => <option key={e} value={e} />)}
                   </datalist>
                 </div>
                 <div>
-                  <label style={LABEL_STYLE}>
+                  <label className={styles.label}>
                     Nueva dependencia (opcional)
                   </label>
                   <input
-                    className="form-input"
+                    className={`form-input ${styles.darkInput}`}
                     placeholder="Ej: Jefatura de Policía de Entre Ríos"
                     value={reasignarDepDestino}
                     onChange={e => setReasignarDepDestino(e.target.value)}
-                    style={DARK_INPUT_STYLE}
                   />
                 </div>
               </div>
 
               {(reasignarEmpOrigen || reasignarDepOrigen) && (
-                <div style={{ marginBottom: 12, fontSize: 11, color: '#00d4ff', fontWeight: 700 }}>
+                <div className={[styles["uMarginBottom12px"], styles["uFontSize11px"], styles["uColor00d4ff"], styles["uFontWeight700"]].join(' ')}>
                   {reasignarIds.length} registro(s) coinciden con &quot;{reasignarModo === 'empleador' ? reasignarEmpOrigen : reasignarDepOrigen}&quot;
                 </div>
               )}
@@ -3512,14 +3061,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   <button
                     onClick={reasignarMasivo}
                     disabled={disabled}
-                    style={{
-                      background: disabled ? '#333' : '#00d4ff',
-                      color: disabled ? '#666' : '#000',
-                      border: 'none', borderRadius: '6px', padding: '10px 24px',
-                      fontSize: '11px', fontWeight: 900,
-                      cursor: disabled ? 'not-allowed' : 'pointer',
-                      textTransform: 'uppercase', letterSpacing: '1px',
-                    }}
+                    className={[styles["uBorderNone"], styles["uBorderRadius6px"], styles["uPadding10px-24px"], styles["uFontSize11px"], styles["uFontWeight900"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"]].join(' ')} style={{ background: disabled ? 'var(--surface-hover)' : 'var(--action-primary)', color: disabled ? 'var(--text-muted)' : '#fff', cursor: disabled ? 'not-allowed' : 'pointer' }}
                   >
                     {updating ? 'REASIGNANDO...' : `REASIGNAR ${reasignarIds.length} REGISTRO(S)`}
                   </button>
@@ -3530,7 +3072,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         </div>
       )}
 
-      {(mode === 'all' || mode === 'excel') && (
+      {mode === 'excel' && (
         <AsignarEmpleadorSection
           registros={registros}
           allEmpleadores={allEmpleadores}
@@ -3540,530 +3082,69 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         />
       )}
 
-        {/* STEP 1: FILTROS (General / Legacy) */}
-        {mode === 'all' && step === 'filter' && (
-          <>
-            {/* Resumen de filtros activos */}
-            {(filtros.estados.length > 0 || filtros.analistas.length > 0 || filtros.scoreMin || filtros.scoreMax || filtros.acuerdoPrecios.length > 0 || filtros.fechaDesde || filtros.fechaHasta) && (
-              <div style={{
-                padding: '12px 16px', background: 'rgba(96,165,250,0.05)',
-                border: '1px solid rgba(96,165,250,0.15)', borderRadius: '8px',
-                marginBottom: '20px', display: 'flex', alignItems: 'center', gap: 8,
-                flexWrap: 'wrap',
-              }}>
-                <Filter size={14} style={{ color: '#00d4ff', flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#888', marginRight: 8 }}>Filtros activos:</span>
-                {filtros.estados.map(e => (
-                  <span key={e} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{STATUS_LABEL[e] ?? e}</span>
-                ))}
-                {(filtros.scoreMin || filtros.scoreMax) && (
-                  <span style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>
-                    Score: {filtros.scoreMin || '0'} - {filtros.scoreMax || '∞'}
-                  </span>
-                )}
-                {filtros.acuerdoPrecios.map(a => (
-                  <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(251,191,36,0.15)', borderRadius: '4px', color: '#fbbf24', fontWeight: 600 }}>{a}</span>
-                ))}
-                {filtros.analistas.map(a => (
-                  <span key={a} style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>{a}</span>
-                ))}
-                {(filtros.fechaDesde || filtros.fechaHasta) && (
-                  <span style={{ fontSize: '10px', padding: '2px 8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', color: '#ccc', fontWeight: 600 }}>
-                    Fecha: {filtros.fechaDesde || '…'} → {filtros.fechaHasta || '…'}
-                  </span>
-                )}
-              </div>
-            )}
-            {/* Sección: Filtros de selección (Estado y Analista side-by-side) */}
-            <div style={{ display: 'flex', gap: '48px', marginBottom: '24px', alignItems: 'flex-start' }}>
-              <div style={{ flex: '1 1 auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
-                  <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ESTADO (seleccioná los que querés filtrar)</label>
-                  {filtros.estados.length > 0 && (
-                    <span style={{ fontSize: '10px', color: '#00d4ff', fontWeight: 700 }}>· {filtros.estados.length} seleccionado{filtros.estados.length > 1 ? 's' : ''}</span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {allEstados.map(est => (
-                    <span key={est} onClick={() => toggleFilter('estados', est)} style={chipStyle(filtros.estados.includes(est))}>
-                      {STATUS_LABEL[est] ?? est}
-                    </span>
-                  ))}
-                  <span onClick={() => toggleFilter('estados', SIN_ESPECIFICAR)} style={chipStyle(filtros.estados.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
-                </div>
-              </div>
 
-              <div style={{ flex: '0 0 auto', minWidth: '240px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '8px' }}>
-                  <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>ANALISTA</label>
-                  {filtros.analistas.length > 0 && (
-                    <span style={{ fontSize: '10px', color: '#00d4ff', fontWeight: 700 }}>· {filtros.analistas.length} seleccionado{filtros.analistas.length > 1 ? 's' : ''}</span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {allAnalistas.map(an => (
-                    <span key={an} onClick={() => toggleFilter('analistas', an)} style={chipStyle(filtros.analistas.includes(an))}>
-                      {an}
-                    </span>
-                  ))}
-                  <span onClick={() => toggleFilter('analistas', SIN_ESPECIFICAR)} style={chipStyle(filtros.analistas.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
-                </div>
-              </div>
-            </div>
-
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-              <div>
-                <label style={LABEL_STYLE}>FECHA DESDE</label>
-                <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} />
-              </div>
-              <div>
-                <label style={LABEL_STYLE}>FECHA HASTA</label>
-                <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} />
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-              <div>
-                <label style={LABEL_STYLE}>SCORE MÍN</label>
-                <input className="form-input" type="number" placeholder="Ej: 0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))} />
-              </div>
-              <div>
-                <label style={LABEL_STYLE}>SCORE MÁX</label>
-                <input className="form-input" type="number" placeholder="Ej: 499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))} />
-              </div>
-            </div>
-
-            {/* Acuerdo de precios en filtros principales */}
-            {allAcuerdos.length > 0 && (
-              <div style={{ marginBottom: '24px' }}>
-                <label style={LABEL_STYLE}>ACUERDO DE PRECIOS</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {allAcuerdos.map(a => (
-                    <span key={a} onClick={() => toggleFilter('acuerdoPrecios', a)} style={chipStyle(filtros.acuerdoPrecios.includes(a))}>{a}</span>
-                  ))}
-                  <span onClick={() => toggleFilter('acuerdoPrecios', SIN_ESPECIFICAR)} style={chipStyle(filtros.acuerdoPrecios.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
-                </div>
-              </div>
-            )}
-
-            {/* Advanced filters toggle */}
-            <button
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'transparent', border: '1px solid rgba(255,255,255,0.06)',
-                color: '#555', borderRadius: 6, padding: '8px 14px',
-                fontSize: 11, fontWeight: 800, cursor: 'pointer',
-                textTransform: 'uppercase', marginBottom: 16, width: '100%',
-                justifyContent: 'center',
-              }}
-            >
-              {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              Filtros Avanzados
-            </button>
-
-            {showAdvancedFilters && (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                  <div>
-                    <label style={LABEL_STYLE}>MONTO MÍN</label>
-                    <input className="form-input" type="number" value={filtros.montoMin} onChange={e => setFiltros(p => ({ ...p, montoMin: e.target.value }))} />
-                  </div>
-                  <div>
-                    <label style={LABEL_STYLE}>MONTO MÁX</label>
-                    <input className="form-input" type="number" value={filtros.montoMax} onChange={e => setFiltros(p => ({ ...p, montoMax: e.target.value }))} />
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={LABEL_STYLE}>BÚSQUEDA (cualquier campo)</label>
-                  <input className="form-input" placeholder="Buscar..." value={filtros.search} onChange={e => setFiltros(p => ({ ...p, search: e.target.value }))} />
-                </div>
-
-                {/* Tipo cliente */}
-                {allTipos.length > 0 && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <label style={LABEL_STYLE}>TIPO CLIENTE</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {allTipos.map(t => (
-                        <span key={t} onClick={() => toggleFilter('tipoCliente', t)} style={chipStyle(filtros.tipoCliente.includes(t))}>{t}</span>
-                      ))}
-                      <span onClick={() => toggleFilter('tipoCliente', SIN_ESPECIFICAR)} style={chipStyle(filtros.tipoCliente.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Rango etario */}
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={LABEL_STYLE}>RANGO ETARIO</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {RANGOS_ETARIOS.map(r => (
-                      <span key={r} onClick={() => toggleFilter('rangoEtario', r)} style={chipStyle(filtros.rangoEtario.includes(r))}>{r}</span>
-                    ))}
-                    <span onClick={() => toggleFilter('rangoEtario', SIN_ESPECIFICAR)} style={chipStyle(filtros.rangoEtario.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
-                  </div>
-                </div>
-
-                {/* Sexo */}
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={LABEL_STYLE}>SEXO</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {SEXOS.map(s => (
-                      <span key={s} onClick={() => toggleFilter('sexo', s)} style={chipStyle(filtros.sexo.includes(s))}>{s}</span>
-                    ))}
-                    <span onClick={() => toggleFilter('sexo', SIN_ESPECIFICAR)} style={chipStyle(filtros.sexo.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
-                  </div>
-                </div>
-
-                {/* Localidad */}
-                {allLocalidades.length > 0 && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <label style={LABEL_STYLE}>LOCALIDAD</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {allLocalidades.map(l => (
-                        <span key={l} onClick={() => toggleFilter('localidad', l)} style={chipStyle(filtros.localidad.includes(l))}>{l}</span>
-                      ))}
-                      <span onClick={() => toggleFilter('localidad', SIN_ESPECIFICAR)} style={chipStyle(filtros.localidad.includes(SIN_ESPECIFICAR))}>Sin especificar</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Empleador */}
-                {allEmpleadores.length > 0 && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <label style={{ fontSize: '9px', color: '#444', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>EMPLEADOR</label>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {(['S.A.', 'S.R.L.'] as const).map(tipo => {
-                          const patron = tipo === 'S.A.' ? /\bS\.?A\.?\b/i : /\bS\.?R\.?L\.?\b/i;
-                          const matches = allEmpleadores.filter(e => patron.test(e));
-                          if (matches.length === 0) return null;
-                          const activo = matches.length > 0 && matches.every(m => filtros.empleador.includes(m));
-                          return (
-                            <button
-                              key={tipo}
-                              onClick={() => setFiltros(p => ({
-                                ...p,
-                                empleador: activo ? p.empleador.filter(e => !matches.includes(e)) : [...new Set([...p.empleador, ...matches])],
-                              }))}
-                              style={{
-                                background: activo ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)',
-                                border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                                color: activo ? '#fbbf24' : '#666',
-                                borderRadius: '4px', padding: '3px 8px',
-                                fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                                textTransform: 'uppercase', letterSpacing: '0.5px',
-                              }}
-                            >
-                              {tipo} ({matches.length})
-                            </button>
-                          );
-                        })}
-                        {filtros.empleador.length > 1 && (
-                          <button
-                            onClick={() => setFiltros(p => ({ ...p, empleador: [] }))}
-                            style={{
-                              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                              color: '#ff3366', borderRadius: '4px', padding: '3px 8px',
-                              fontSize: '9px', fontWeight: 800, cursor: 'pointer',
-                              textTransform: 'uppercase', letterSpacing: '0.5px',
-                            }}
-                          >
-                            ✕ Limpiar
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <select
-                      className="form-input"
-                      value={filtros.empleador.length === 1 ? filtros.empleador[0] : ''}
-                      onChange={e => setFiltros(p => ({ ...p, empleador: e.target.value ? [e.target.value] : [] }))}
-                      style={{
-                        background: '#111',
-                        color: filtros.empleador.length > 1 ? '#fbbf24' : '#ccc',
-                        border: `1px solid ${filtros.empleador.length > 1 ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                        borderRadius: '6px',
-                        padding: '10px 12px',
-                        fontSize: '13px',
-                        width: '100%',
-                        outline: 'none',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <option value="" style={{ background: '#111', color: '#666' }}>
-                        {filtros.empleador.length > 1 ? `${filtros.empleador.length} empleadores seleccionados` : 'Todos'}
-                      </option>
-                      <option value={SIN_ESPECIFICAR} style={{ background: '#111', color: '#888' }}>Sin especificar</option>
-                      {allEmpleadores.map(e => (
-                        <option key={e} value={e} style={{ background: '#111', color: '#ccc' }}>{e}</option>
-                      ))}
-                    </select>
-                    {filtros.empleador.length > 1 && (
-                      <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                        {filtros.empleador.slice(0, 6).map(e => (
-                          <span key={e} style={{
-                            fontSize: '9px', padding: '2px 7px', borderRadius: '4px',
-                            background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
-                            color: '#fbbf24', fontWeight: 700,
-                          }}>{e}</span>
-                        ))}
-                        {filtros.empleador.length > 6 && (
-                          <span style={{ fontSize: '9px', color: '#666', padding: '2px 4px' }}>
-                            +{filtros.empleador.length - 6} más
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Es RE */}
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={LABEL_STYLE}>RESUMEN EJECUTIVO</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span onClick={() => setFiltros(p => ({ ...p, esRe: p.esRe === 'si' ? '' : 'si' }))} style={chipStyle(filtros.esRe === 'si')}>Sí</span>
-                    <span onClick={() => setFiltros(p => ({ ...p, esRe: p.esRe === 'no' ? '' : 'no' }))} style={chipStyle(filtros.esRe === 'no')}>No</span>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Preview button */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
-              <button
-                onClick={previewRecords}
-                style={{
-                  background: '#fff', color: '#000', border: 'none',
-                  fontWeight: 900, padding: '12px 28px', borderRadius: '10px',
-                  fontSize: '12px', letterSpacing: '0.5px', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                }}
-              >
-                <Filter size={14} /> PREVISUALIZAR REGISTROS
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* STEP 2: CONFIRMAR (General / Legacy) */}
-        {mode === 'all' && step === 'confirm' && (
-          <>
-            <div style={{
-              padding: '16px 20px', background: 'rgba(250,204,21,0.06)',
-              border: '1px solid rgba(250,204,21,0.15)', borderRadius: '10px',
-              marginBottom: '24px', display: 'flex', alignItems: 'center', gap: 12,
-            }}>
-              <AlertTriangle size={20} style={{ color: '#facc15', flexShrink: 0 }} />
-              <div>
-                <p style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: 4 }}>
-                  {previewCount} registros serán modificados
-                </p>
-                <p style={{ fontSize: '12px', color: '#888' }}>
-                  Selecciona los campos que deseas actualizar. Solo los campos con valor se aplicarán.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              {fieldSection('Estado',
-                <select className="form-select" value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))}>
-                  <option value="">— No modificar —</option>
-                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
-                  {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
-                </select>
-              )}
-
-              {fieldSection('Analista',
-                <select className="form-select" value={campos.analista} onChange={e => setCampos(p => ({ ...p, analista: e.target.value }))}>
-                  <option value="">— No modificar —</option>
-                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
-                  {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              )}
-
-              {fieldSection('Acuerdo de Precios',
-                <select className="form-select" value={campos.acuerdo_precios} onChange={e => setCampos(p => ({ ...p, acuerdo_precios: e.target.value }))}>
-                  <option value="">— No modificar —</option>
-                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
-                  {ACUERDOS_OPCIONES.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              )}
-
-              {fieldSection('Tipo Cliente',
-                <select className="form-select" value={campos.tipo_cliente} onChange={e => setCampos(p => ({ ...p, tipo_cliente: e.target.value }))}>
-                  <option value="">— No modificar —</option>
-                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
-                  {TIPO_CLIENTE_OPCIONES.map(t => <option key={t} value={t}>{t === 'Renovacion' ? 'Renovación' : t}</option>)}
-                </select>
-              )}
-
-              {fieldSection('Cuotas',
-                <input className="form-input" placeholder="Ej: 12, 24, 36" value={campos.cuotas} onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))} />
-              )}
-
-              {fieldSection('Rango Etario',
-                <select className="form-select" value={campos.rango_etario} onChange={e => setCampos(p => ({ ...p, rango_etario: e.target.value }))}>
-                  <option value="">— No modificar —</option>
-                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
-                  {RANGOS_ETARIOS.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              )}
-
-              {fieldSection('Sexo',
-                <select className="form-select" value={campos.sexo} onChange={e => setCampos(p => ({ ...p, sexo: e.target.value }))}>
-                  <option value="">— No modificar —</option>
-                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
-                  {SEXOS.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              )}
-
-              {fieldSection('Localidad',
-                <select className="form-select" value={campos.localidad} onChange={e => setCampos(p => ({ ...p, localidad: e.target.value }))}>
-                  <option value="">— No modificar —</option>
-                  <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
-                  {registros.map(r => r.localidad).filter((l, i, arr) => l && arr.indexOf(l) === i).sort().map(l => <option key={l} value={l}>{l}</option>)}
-                </select>
-              )}
-            </div>
-
-            {fieldSection('Empleador',
-              <input className="form-input" placeholder="Nombre del empleador" value={campos.empleador} onChange={e => setCampos(p => ({ ...p, empleador: e.target.value }))} />
-            )}
-
-            {fieldSection('Resumen Ejecutivo',
-              <select className="form-select" value={campos.es_re} onChange={e => setCampos(p => ({ ...p, es_re: e.target.value }))}>
-                <option value="">— No modificar —</option>
-                <option value="si">Sí</option>
-                <option value="no">No</option>
-              </select>
-            )}
-
-            {fieldSection('Comentarios (agregar al final)',
-              <textarea className="form-input" placeholder="Texto a agregar..." value={campos.comentarios} onChange={e => setCampos(p => ({ ...p, comentarios: e.target.value }))} rows={2} style={{ resize: 'vertical' }} />
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 28 }}>
-              <button
-                onClick={() => setStep('filter')}
-                style={{
-                  background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#666', borderRadius: '8px', padding: '12px 24px',
-                  fontWeight: 700, fontSize: '12px', cursor: 'pointer',
-                }}
-              >
-                VOLVER A FILTROS
-              </button>
-              <button
-                onClick={handleUpdate}
-                disabled={updating || Object.values(campos).every(v => !v)}
-                style={{
-                  background: Object.values(campos).every(v => !v) ? '#333' : '#fff',
-                  color: Object.values(campos).every(v => !v) ? '#666' : '#000',
-                  border: 'none', fontWeight: 900, padding: '12px 32px',
-                  borderRadius: '10px', fontSize: '12px', letterSpacing: '0.5px',
-                  cursor: Object.values(campos).every(v => !v) ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                }}
-              >
-                {updating ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                {updating ? 'ACTUALIZANDO...' : 'CONFIRMAR ACTUALIZACIÓN'}
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* STEP 3: DONE (General / Legacy) */}
-        {mode === 'all' && step === 'done' && (
-          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-            <CheckCircle size={48} style={{ color: '#34d399', margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: 8 }}>
-              ¡Actualización completada!
-            </h3>
-            <p style={{ fontSize: '14px', color: '#888', marginBottom: 24 }}>
-              Se actualizaron <strong style={{ color: '#fff' }}>{updatedCount}</strong> registros correctamente.
-            </p>
-            <button
-              onClick={resetAll}
-              style={{
-                background: '#fff', color: '#000', border: 'none',
-                fontWeight: 800, padding: '12px 28px', borderRadius: '10px',
-                fontSize: '12px', cursor: 'pointer',
-              }}
-            >
-              NUEVA MODIFICACIÓN MASIVA
-            </button>
-          </div>
-        )}
 
         {/* --- NUEVO FLUJO MINIMALISTA: CALIF x SCORE (mode === 'bulk') --- */}
         {mode === 'bulk' && step === 'filter' && (
-          <div style={{ maxWidth: 1240, margin: '40px auto', display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 420px', minWidth: 0, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '40px 32px', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-               <h4 style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
-                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#00d4ff', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>1</span>
+          <div className={[styles["uMaxWidth1240px"], styles["uMargin40px-auto"], styles["uDisplayFlex"], styles["uGap24px"], styles["uAlignItemsFlex-start"], styles["uFlexWrapWrap"]].join(' ')}>
+            <div className={[styles["uFlex1-1-420px"], styles["uMinWidth0"], styles["uBackgroundSurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uPadding40px-32px"], styles["uBoxShadowShadow-sm"]].join(' ')}>
+               <h4 className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom32px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"], styles["uOpacity0-9"]].join(' ')}>
+                 <span className={[styles["uWidth20px"], styles["uHeight20px"], styles["uBorderRadius50"], styles["uBackground00d4ff"], styles["uColor000"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uFontSize10px"], styles["uFontWeight900"]].join(' ')}>1</span>
                  Definir Rango de Score
                </h4>
                
-               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
+               <div className={[styles["uDisplayGrid"], styles["uGridTemplateColumns1fr-1fr"], styles["uGap32px"], styles["uMarginBottom32px"]].join(' ')}>
                  <div>
-                   <label style={{ display: 'block', fontSize: '10px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>SCORE MÍNIMO</label>
-                   <input className="form-input" type="number" placeholder="Ej: 0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))} style={{ fontSize: 20, padding: '16px', background: '#0a0a0a', textAlign: 'center', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, outline: 'none', width: '100%' }} />
+                   <label className={[styles["uDisplayBlock"], styles["uFontSize10px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uMarginBottom12px"]].join(' ')}>SCORE MÍNIMO</label>
+                   <input className={["form-input", styles["uFontSize20px"], styles["uPadding16px"], styles["uBackgroundSurface-sunken"], styles["uTextAlignCenter"], styles["uFontWeight800"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius12px"], styles["uOutlineNone"], styles["uWidth100"]].filter(Boolean).join(' ')} type="number" placeholder="Ej: 0" value={filtros.scoreMin} onChange={e => setFiltros(p => ({ ...p, scoreMin: e.target.value }))}  />
                  </div>
                  <div>
-                   <label style={{ display: 'block', fontSize: '10px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>SCORE MÁXIMO</label>
-                   <input className="form-input" type="number" placeholder="Ej: 499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))} style={{ fontSize: 20, padding: '16px', background: '#0a0a0a', textAlign: 'center', fontWeight: 800, border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, outline: 'none', width: '100%' }} />
+                   <label className={[styles["uDisplayBlock"], styles["uFontSize10px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uMarginBottom12px"]].join(' ')}>SCORE MÁXIMO</label>
+                   <input className={["form-input", styles["uFontSize20px"], styles["uPadding16px"], styles["uBackgroundSurface-sunken"], styles["uTextAlignCenter"], styles["uFontWeight800"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius12px"], styles["uOutlineNone"], styles["uWidth100"]].filter(Boolean).join(' ')} type="number" placeholder="Ej: 499" value={filtros.scoreMax} onChange={e => setFiltros(p => ({ ...p, scoreMax: e.target.value }))}  />
                  </div>
                </div>
 
-               <div style={{ marginTop: 24, paddingBottom: 24 }}>
-                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ background: 'transparent', border: 'none', color: '#00d4ff', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+               <div className={[styles["uMarginTop24px"], styles["uPaddingBottom24px"]].join(' ')}>
+                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className={[styles["uBackgroundTransparent"], styles["uBorderNone"], styles["uColor00d4ff"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"], styles["uMargin0-auto"]].join(' ')}>
                    {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                    Filtros Avanzados (Opcional)
                  </button>
                </div>
                
                {showAdvancedFilters && (
-                  <div style={{ marginTop: 8, marginBottom: 32, paddingTop: 32, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', textAlign: 'left' }}>
+                  <div className={[styles["uMarginTop8px"], styles["uMarginBottom32px"], styles["uPaddingTop32px"], styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
+                    <div className={[styles["uDisplayGrid"], styles["uGridTemplateColumns1fr-1fr"], styles["uGap24px"], styles["uTextAlignLeft"]].join(' ')}>
                       <div>
-                        <label style={LABEL_STYLE}>Estado</label>
-                        <select className="form-select" value={filtros.estados[0] || ''} onChange={e => setFiltros(p => ({ ...p, estados: e.target.value ? [e.target.value] : [] }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                        <label className={styles.label}>Estado</label>
+                        <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={filtros.estados[0] || ''} onChange={e => setFiltros(p => ({ ...p, estados: e.target.value ? [e.target.value] : [] }))} >
                           <option value="">Todos</option>
                           {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label style={LABEL_STYLE}>Analista</label>
-                        <select className="form-select" value={filtros.analistas[0] || ''} onChange={e => setFiltros(p => ({ ...p, analistas: e.target.value ? [e.target.value] : [] }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                        <label className={styles.label}>Analista</label>
+                        <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={filtros.analistas[0] || ''} onChange={e => setFiltros(p => ({ ...p, analistas: e.target.value ? [e.target.value] : [] }))} >
                           <option value="">Todos</option>
                           {allAnalistas.map(a => <option key={a} value={a}>{a}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label style={LABEL_STYLE}>Fecha Desde</label>
-                        <input className="form-input" type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                        <label className={styles.label}>Fecha Desde</label>
+                        <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} type="date" value={filtros.fechaDesde} onChange={e => setFiltros(p => ({ ...p, fechaDesde: e.target.value }))}  />
                       </div>
                       <div>
-                        <label style={LABEL_STYLE}>Fecha Hasta</label>
-                        <input className="form-input" type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                        <label className={styles.label}>Fecha Hasta</label>
+                        <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} type="date" value={filtros.fechaHasta} onChange={e => setFiltros(p => ({ ...p, fechaHasta: e.target.value }))}  />
                       </div>
                     </div>
                   </div>
                )}
 
-               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+               <div className={[styles["uDisplayFlex"], styles["uJustifyContentCenter"], styles["uMarginTop16px"]].join(' ')}>
                  <button
                    onClick={previewRecords}
                    disabled={!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta}
-                   style={{
-                     background: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? '#222' : '#fff',
-                     color: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? '#555' : '#000',
-                     border: 'none', fontWeight: 900, padding: '16px 48px', borderRadius: '30px',
-                     fontSize: 12, letterSpacing: '0.5px', cursor: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'not-allowed' : 'pointer',
-                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                     boxShadow: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'none' : '0 4px 14px rgba(255,255,255,0.2)',
-                   }}
+                   className={[styles["uBorderNone"], styles["uFontWeight900"], styles["uPadding16px-48px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'var(--surface-hover)' : 'var(--action-primary)', color: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'var(--text-muted)' : '#fff', cursor: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'not-allowed' : 'pointer', boxShadow: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'none' : 'var(--shadow-sm)' }}
                  >
                    BUSCAR REGISTROS
                  </button>
@@ -4071,104 +3152,99 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             {/* ── REASIGNAR REGISTROS ENTRE ANALISTAS (columna al lado del filtro) ── */}
-            <div style={{ flex: '1 1 420px', minWidth: 0, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
+            <div className={[styles["uFlex1-1-420px"], styles["uMinWidth0"], styles["uBackgroundSurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uBoxShadowShadow-sm"]].join(' ')}>
               {/* Header colapsable */}
               <div
                 onClick={() => setRaExpandido(!raExpandido)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: raExpandido ? '28px 32px 0' : '24px 32px', cursor: 'pointer' }}
+                className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uCursorPointer"]].join(' ')} style={{ padding: raExpandido ? '28px 32px 0' : '24px 32px' }}
               >
                 <Users size={18} color="#34d399" />
-                <h4 style={{ flex: 1, fontSize: 13, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>
+                <h4 className={[styles["uFlex1"], styles["uFontSize13px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uOpacity0-9"]].join(' ')}>
                   Reasignar Registros entre Analistas
                 </h4>
                 {raExpandido ? <ChevronUp size={16} color="#888" /> : <ChevronDown size={16} color="#888" />}
               </div>
 
               {raExpandido && (
-                <div style={{ padding: '20px 32px 32px' }}>
-                  <p style={{ fontSize: 12, color: '#888', marginBottom: 28, lineHeight: 1.5 }}>
+                <div className={[styles["uPadding20px-32px-32px"]].join(' ')}>
+                  <p className={[styles["uFontSize12px"], styles["uColorText-muted"], styles["uMarginBottom28px"], styles["uLineHeight1-5"]].join(' ')}>
                     Elegí un analista origen, acotá por estado/score/fecha (opcional), definí cuántos registros van a cada analista destino y tildalos.
                   </p>
 
                   {/* PASO 1: Origen */}
-                  <div style={{ marginBottom: 28 }}>
-                    <h5 style={STEP_TITLE_STYLE}>{stepBadge(1)} Analista origen</h5>
+                  <div className={[styles["uMarginBottom28px"]].join(' ')}>
+                    <h5 className={styles.stepTitle}>{stepBadge(1)} Analista origen</h5>
                     <CustomSelect
                       width="100%"
-                      bg="#0a0a0a"
+                      bg="var(--surface-card)"
                       value={raOrigen}
-                      onChange={v => setRaOrigen(String(v))}
+                      onChange={v => { setRaOrigen(String(v)); setRaAsignaciones(new Map()); }}
                       options={[{ label: '— Elegir analista —', value: '' }, ...ANALISTAS.map(a => ({ label: a, value: a }))]}
                     />
                   </div>
 
                   {/* PASO 2: Filtros opcionales */}
                   {raOrigen && (
-                    <div style={{ marginBottom: 28 }}>
-                      <h5 style={STEP_TITLE_STYLE}>{stepBadge(2)} Acotar <span style={{ color: '#555', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span></h5>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                    <div className={[styles["uMarginBottom28px"]].join(' ')}>
+                      <h5 className={styles.stepTitle}>{stepBadge(2)} Acotar <span className={styles.stepOptional}>(opcional)</span></h5>
+                      <div className={[styles["uDisplayFlex"], styles["uFlexWrapWrap"], styles["uGap8px"], styles["uMarginBottom16px"]].join(' ')}>
                         {ESTADOS.map(e => {
                           const sel = raEstados.includes(e);
                           return (
                             <button
                               key={e}
-                              onClick={() => setRaEstados(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e])}
-                              style={{
-                                background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
-                                border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`,
-                                color: sel ? '#34d399' : '#888',
-                                borderRadius: 10, padding: '8px 14px', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s',
-                              }}
+                              onClick={() => { setRaEstados(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e]); setRaAsignaciones(new Map()); }}
+                              className={[styles["uBorderRadius10px"], styles["uPadding8px-14px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"]].join(' ')} style={{ background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`, color: sel ? '#34d399' : '#888' }}
                             >
                               {STATUS_LABEL[e] ?? e}
                             </button>
                           );
                         })}
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                      <div className={[styles["uDisplayGrid"], styles["uGridTemplateColumns1fr-1fr"], styles["uGap20px"]].join(' ')}>
                         <div>
-                          <label style={LABEL_STYLE}>Score mínimo</label>
-                          <input className="form-input" type="number" placeholder="0" value={raScoreMin} onChange={e => setRaScoreMin(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <label className={styles.label}>Score mínimo</label>
+                          <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"], styles["uWidth100"]].filter(Boolean).join(' ')} type="number" placeholder="0" value={raScoreMin} onChange={e => { setRaScoreMin(e.target.value); setRaAsignaciones(new Map()); }}  />
                         </div>
                         <div>
-                          <label style={LABEL_STYLE}>Score máximo</label>
-                          <input className="form-input" type="number" placeholder="∞" value={raScoreMax} onChange={e => setRaScoreMax(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <label className={styles.label}>Score máximo</label>
+                          <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"], styles["uWidth100"]].filter(Boolean).join(' ')} type="number" placeholder="∞" value={raScoreMax} onChange={e => { setRaScoreMax(e.target.value); setRaAsignaciones(new Map()); }}  />
                         </div>
                         <div>
-                          <label style={LABEL_STYLE}>Fecha desde</label>
-                          <input className="form-input" type="date" value={raFechaDesde} onChange={e => setRaFechaDesde(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <label className={styles.label}>Fecha desde</label>
+                          <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"], styles["uWidth100"]].filter(Boolean).join(' ')} type="date" value={raFechaDesde} onChange={e => { setRaFechaDesde(e.target.value); setRaAsignaciones(new Map()); }}  />
                         </div>
                         <div>
-                          <label style={LABEL_STYLE}>Fecha hasta</label>
-                          <input className="form-input" type="date" value={raFechaHasta} onChange={e => setRaFechaHasta(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                          <label className={styles.label}>Fecha hasta</label>
+                          <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"], styles["uWidth100"]].filter(Boolean).join(' ')} type="date" value={raFechaHasta} onChange={e => { setRaFechaHasta(e.target.value); setRaAsignaciones(new Map()); }}  />
                         </div>
                       </div>
-                      <div style={{ fontSize: 13, color: '#888', marginTop: 16 }}>
-                        <strong style={{ color: '#fff', fontSize: 16 }}>{raTotalDisponible}</strong> registro(s) disponibles
+                      <div className={[styles["uFontSize13px"], styles["uColorText-muted"], styles["uMarginTop16px"]].join(' ')}>
+                        <strong className={[styles["uColorText-strong"], styles["uFontSize16px"]].join(' ')}>{raTotalDisponible}</strong> registro(s) disponibles
                       </div>
                     </div>
                   )}
 
                   {/* PASO 3: Cuotas por destino */}
                   {raOrigen && raTotalDisponible > 0 && (
-                    <div style={{ marginBottom: 28 }}>
-                      <h5 style={STEP_TITLE_STYLE}>{stepBadge(3)} Cuotas por destino <span style={{ color: '#34d399', fontWeight: 800 }}>({raTotalCuotas}/{raTotalDisponible})</span></h5>
-                      <div style={{ display: 'flex', gap: 12, marginBottom: 14, alignItems: 'flex-end' }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={LABEL_STYLE}>Analista destino</label>
+                    <div className={[styles["uMarginBottom28px"]].join(' ')}>
+                      <h5 className={styles.stepTitle}>{stepBadge(3)} Cuotas por destino <span className={styles.stepProgress}>({raTotalCuotas}/{raTotalDisponible})</span></h5>
+                      <div className={[styles["uDisplayFlex"], styles["uGap12px"], styles["uMarginBottom14px"], styles["uAlignItemsFlex-end"]].join(' ')}>
+                        <div className={[styles["uFlex1"]].join(' ')}>
+                          <label className={styles.label}>Analista destino</label>
                           <CustomSelect
                             width="100%"
-                            bg="#0a0a0a"
+                            bg="var(--surface-card)"
                             value={raNuevoDestino}
                             onChange={v => setRaNuevoDestino(String(v))}
                             options={[{ label: '— Elegir —', value: '' }, ...ANALISTAS.filter(a => a !== raOrigen && !raDestinos.some(d => d.analista === a)).map(a => ({ label: a, value: a }))]}
                           />
                         </div>
-                        <div style={{ width: 120 }}>
-                          <label style={LABEL_STYLE}>Cantidad</label>
-                          <input className="form-input" type="number" placeholder="Ej: 100" value={raNuevaCuota} onChange={e => setRaNuevaCuota(e.target.value)} style={{ background: '#0a0a0a', fontSize: 12, padding: 10, width: '100%' }} />
+                        <div className={[styles["uWidth120px"]].join(' ')}>
+                          <label className={styles.label}>Cantidad</label>
+                          <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"], styles["uWidth100"]].filter(Boolean).join(' ')} type="number" placeholder="Ej: 100" value={raNuevaCuota} onChange={e => setRaNuevaCuota(e.target.value)}  />
                         </div>
-                        <button onClick={raAgregarDestino} style={{ height: 38, padding: '0 18px', borderRadius: 10, border: '1px solid rgba(52,211,153,0.4)', background: 'rgba(52,211,153,0.12)', color: '#34d399', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Agregar</button>
+                        <button onClick={raAgregarDestino} className={[styles["uHeight38px"], styles["uPadding0-18px"], styles["uBorderRadius10px"], styles["uBorder1px-solid-rgba-52-211-153-0-4"], styles["uBackgroundRgba-52-211-153-0-12"], styles["uColor34d399"], styles["uFontWeight800"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uWhiteSpaceNowrap"]].join(' ')}>+ Agregar</button>
                       </div>
 
                       {/* Reparto entre varios analistas con cantidad por cada uno */}
@@ -4179,9 +3255,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         const sumaSel = seleccionados.reduce((s, a) => s + (Number(raMultiCant[a]) || 0), 0);
                         const excede = raTotalCuotas + sumaSel > raTotalDisponible;
                         return (
-                          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed rgba(255,255,255,0.08)' }}>
-                            <label style={LABEL_STYLE}>O elegir varios y poner cantidad a cada uno</label>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: seleccionados.length > 0 ? 14 : 0 }}>
+                          <div className={[styles["uMarginTop16px"], styles["uPaddingTop16px"], styles["uBorderTop1px-dashed-rgba-255-255-255-0-08"]].join(' ')}>
+                            <label className={styles.label}>O elegir varios y poner cantidad a cada uno</label>
+                            <div className={[styles["uDisplayFlex"], styles["uFlexWrapWrap"], styles["uGap8px"]].join(' ')} style={{ marginBottom: seleccionados.length > 0 ? 14 : 0 }}>
                               {disponiblesMulti.map(a => {
                                 const sel = a in raMultiCant;
                                 return (
@@ -4192,12 +3268,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                       if (a in next) delete next[a]; else next[a] = '';
                                       return next;
                                     })}
-                                    style={{
-                                      background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
-                                      border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`,
-                                      color: sel ? '#34d399' : '#888',
-                                      borderRadius: 10, padding: '8px 14px', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s',
-                                    }}
+                                    className={[styles["uBorderRadius10px"], styles["uPadding8px-14px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"]].join(' ')} style={{ background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`, color: sel ? '#34d399' : '#888' }}
                                   >
                                     {sel ? '✓ ' : ''}{a}
                                   </button>
@@ -4205,28 +3276,27 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               })}
                             </div>
                             {seleccionados.length > 0 && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              <div className={[styles["uDisplayFlex"], styles["uFlexDirectionColumn"], styles["uGap8px"]].join(' ')}>
                                 {seleccionados.map(a => (
-                                  <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                    <span style={{ flex: 1, fontSize: 12.5, color: '#ddd', fontWeight: 700 }}>{a}</span>
+                                  <div key={a} className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap12px"]].join(' ')}>
+                                    <span className={[styles["uFlex1"], styles["uFontSize12-5px"], styles["uColorText-secondary"], styles["uFontWeight700"]].join(' ')}>{a}</span>
                                     <input
-                                      className="form-input"
+                                      className={["form-input", styles["uWidth130px"], styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')}
                                       type="number"
                                       placeholder="Cantidad"
                                       value={raMultiCant[a]}
                                       onChange={e => setRaMultiCant(prev => ({ ...prev, [a]: e.target.value }))}
-                                      style={{ width: 130, background: '#0a0a0a', fontSize: 12, padding: 10 }}
                                     />
                                   </div>
                                 ))}
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: excede ? '#f87171' : '#888' }}>
+                                <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uMarginTop6px"]].join(' ')}>
+                                  <span className={[styles["uFontSize11px"], styles["uFontWeight700"]].join(' ')} style={{ color: excede ? '#f87171' : '#888' }}>
                                     Suma: {sumaSel}{excede ? ` · supera ${raTotalDisponible}` : ` / ${raTotalDisponible}`}
                                   </span>
                                   <button
                                     onClick={raAgregarMulti}
                                     disabled={excede}
-                                    style={{ height: 38, padding: '0 18px', borderRadius: 10, border: `1px solid ${excede ? 'rgba(255,255,255,0.06)' : 'rgba(52,211,153,0.4)'}`, background: excede ? 'rgba(255,255,255,0.02)' : 'rgba(52,211,153,0.12)', color: excede ? '#555' : '#34d399', fontWeight: 800, fontSize: 12, cursor: excede ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                                    className={[styles["uHeight38px"], styles["uPadding0-18px"], styles["uBorderRadius10px"], styles["uFontWeight800"], styles["uFontSize12px"], styles["uWhiteSpaceNowrap"]].join(' ')} style={{ border: `1px solid ${excede ? 'rgba(255,255,255,0.06)' : 'rgba(52,211,153,0.4)'}`, background: excede ? 'rgba(255,255,255,0.02)' : 'rgba(52,211,153,0.12)', color: excede ? '#555' : '#34d399', cursor: excede ? 'not-allowed' : 'pointer' }}
                                   >
                                     + Agregar {seleccionados.length}
                                   </button>
@@ -4237,7 +3307,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         );
                       })()}
 
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
+                      <div className={[styles["uDisplayFlex"], styles["uFlexWrapWrap"], styles["uGap10px"], styles["uMarginTop16px"]].join(' ')}>
                         {raDestinos.map(d => {
                           const hechos = raAsignadosPorDestino[d.analista] ?? 0;
                           const completo = hechos >= d.cuota;
@@ -4246,16 +3316,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             <div
                               key={d.analista}
                               onClick={() => setRaDestinoActivo(d.analista)}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.15s',
-                                background: activo ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)',
-                                border: `1px solid ${completo ? 'rgba(52,211,153,0.6)' : activo ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                                borderRadius: 12, padding: '8px 14px',
-                              }}
+                              className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"], styles["uBorderRadius12px"], styles["uPadding8px-14px"]].join(' ')} style={{ background: activo ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${completo ? 'rgba(52,211,153,0.6)' : activo ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.08)'}` }}
                             >
-                              <span style={{ fontSize: 13, fontWeight: 800, color: completo ? '#34d399' : '#ddd' }}>{d.analista}</span>
-                              <span style={{ fontSize: 12, fontWeight: 700, color: completo ? '#34d399' : '#888' }}>{hechos}/{d.cuota}</span>
-                              <button onClick={(ev) => { ev.stopPropagation(); raQuitarDestino(d.analista); }} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                              <span className={[styles["uFontSize13px"], styles["uFontWeight800"]].join(' ')} style={{ color: completo ? '#34d399' : '#ddd' }}>{d.analista}</span>
+                              <span className={[styles["uFontSize12px"], styles["uFontWeight700"]].join(' ')} style={{ color: completo ? '#34d399' : '#888' }}>{hechos}/{d.cuota}</span>
+                              <button onClick={(ev) => { ev.stopPropagation(); raQuitarDestino(d.analista); }} className={[styles["uBackgroundNone"], styles["uBorderNone"], styles["uColorText-muted"], styles["uCursorPointer"], styles["uFontSize16px"], styles["uLineHeight1"], styles["uPadding0"]].join(' ')}>×</button>
                             </div>
                           );
                         })}
@@ -4265,30 +3330,26 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                   {/* PASO 4: Tildar registros */}
                   {raDestinos.length > 0 && (
-                    <div style={{ marginBottom: 28 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <h5 style={{ ...STEP_TITLE_STYLE, marginBottom: 0 }}>{stepBadge(4)} Tildar para <span style={{ color: '#34d399', fontWeight: 800 }}>{raDestinoActivo || '—'}</span></h5>
-                        <button onClick={raTildarPrimerosN} disabled={!raDestinoActivo} style={{ padding: '8px 14px', borderRadius: 10, border: `1px solid ${raDestinoActivo ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.06)'}`, background: raDestinoActivo ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.02)', color: raDestinoActivo ? '#34d399' : '#555', fontSize: 11, fontWeight: 800, cursor: raDestinoActivo ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap' }}>
+                    <div className={[styles["uMarginBottom28px"]].join(' ')}>
+                      <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uMarginBottom12px"]].join(' ')}>
+                        <h5 className={`${styles.stepTitle} ${styles.noMargin}`}>{stepBadge(4)} Tildar para <span className={styles.stepProgress}>{raDestinoActivo || '—'}</span></h5>
+                        <button onClick={raTildarPrimerosN} disabled={!raDestinoActivo} className={[styles["uPadding8px-14px"], styles["uBorderRadius10px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uWhiteSpaceNowrap"]].join(' ')} style={{ border: `1px solid ${raDestinoActivo ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.06)'}`, background: raDestinoActivo ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.02)', color: raDestinoActivo ? '#34d399' : '#555', cursor: raDestinoActivo ? 'pointer' : 'not-allowed' }}>
                           Tildar primeros N
                         </button>
                       </div>
-                      <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, background: '#0a0a0a' }}>
+                      <div className={[styles["uMaxHeight320px"], styles["uOverflowYAuto"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius12px"], styles["uBackgroundSurface-sunken"]].join(' ')}>
                         {raUniverso.map(r => {
                           const dest = raAsignaciones.get(r.id);
                           return (
                             <div
                               key={r.id}
                               onClick={() => raToggleFila(r.id)}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                                borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer',
-                                background: dest ? 'rgba(52,211,153,0.08)' : 'transparent',
-                              }}
+                              className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap12px"], styles["uPadding10px-14px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uCursorPointer"]].join(' ')} style={{ background: dest ? 'rgba(52,211,153,0.08)' : 'transparent' }}
                             >
-                              <input type="checkbox" readOnly checked={!!dest} style={{ accentColor: '#34d399' }} />
-                              <span style={{ flex: 1, fontSize: 12.5, color: '#ddd' }}>{r.nombre ?? r.cuil ?? r.id}</span>
-                              <span style={{ fontSize: 11, color: '#777' }}>{STATUS_LABEL[r.estado ?? ''] ?? r.estado}</span>
-                              {dest && <span style={{ fontSize: 11, fontWeight: 800, color: '#34d399' }}>→ {dest}</span>}
+                              <input type="checkbox" readOnly checked={!!dest} className={[styles["uAccentColor34d399"]].join(' ')} />
+                              <span className={[styles["uFlex1"], styles["uFontSize12-5px"], styles["uColorText-secondary"]].join(' ')}>{r.nombre ?? r.cuil ?? r.id}</span>
+                              <span className={[styles["uFontSize11px"], styles["uColorText-muted"]].join(' ')}>{STATUS_LABEL[r.estado ?? ''] ?? r.estado}</span>
+                              {dest && <span className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uColor34d399"]].join(' ')}>→ {dest}</span>}
                             </div>
                           );
                         })}
@@ -4301,16 +3362,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     <button
                       onClick={raGuardar}
                       disabled={updating || raAsignaciones.size === 0}
-                      style={{
-                        width: '100%', padding: '16px', borderRadius: 30, border: 'none',
-                        background: (updating || raAsignaciones.size === 0) ? '#222' : '#34d399',
-                        color: (updating || raAsignaciones.size === 0) ? '#555' : '#000',
-                        fontWeight: 900, fontSize: 12, letterSpacing: '0.5px',
-                        cursor: (updating || raAsignaciones.size === 0) ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        boxShadow: (updating || raAsignaciones.size === 0) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)',
-                      }}
+                      className={[styles["uWidth100"], styles["uPadding16px"], styles["uBorderRadius30px"], styles["uBorderNone"], styles["uFontWeight900"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uGap10px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (updating || raAsignaciones.size === 0) ? '#222' : '#34d399', color: (updating || raAsignaciones.size === 0) ? '#555' : '#000', cursor: (updating || raAsignaciones.size === 0) ? 'not-allowed' : 'pointer', boxShadow: (updating || raAsignaciones.size === 0) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)' }}
                     >
                       {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                       {updating ? 'REASIGNANDO...' : `REASIGNAR ${raAsignaciones.size} REGISTRO(S)`}
@@ -4323,50 +3375,43 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         )}
 
         {mode === 'bulk' && step === 'confirm' && (
-          <div style={{ maxWidth: 720, margin: '40px auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-               <h2 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-1px', color: '#fff', marginBottom: 8 }}>{previewCount}</h2>
-               <p style={{ color: '#888', fontSize: 14, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>Registros Encontrados</p>
-               <div style={{ display: 'inline-block', marginTop: 12, padding: '4px 12px', background: 'rgba(0, 212, 255, 0.1)', color: '#00d4ff', borderRadius: 20, fontSize: 11, fontWeight: 800 }}>
+          <div className={[styles["uMaxWidth720px"], styles["uMargin40px-auto"]].join(' ')}>
+            <div className={[styles["uTextAlignCenter"], styles["uMarginBottom40px"]].join(' ')}>
+               <h2 className={[styles["uFontSize32px"], styles["uFontWeight900"], styles["uLetterSpacing1px1gkox"], styles["uColorText-strong"], styles["uMarginBottom8px"]].join(' ')}>{previewCount}</h2>
+               <p className={[styles["uColorText-muted"], styles["uFontSize14px"], styles["uFontWeight600"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"]].join(' ')}>Registros Encontrados</p>
+               <div className={[styles["uDisplayInline-block"], styles["uMarginTop12px"], styles["uPadding4px-12px"], styles["uBackgroundRgba-0-212-255-0-1"], styles["uColor00d4ff"], styles["uBorderRadius20px"], styles["uFontSize11px"], styles["uFontWeight800"]].join(' ')}>
                  Score: {filtros.scoreMin || '0'} a {filtros.scoreMax || '∞'}
                </div>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '40px 32px', marginBottom: 32, boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-               <h4 style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 8, opacity: 0.9 }}>
-                 <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#34d399', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900 }}>2</span>
+            <div className={[styles["uBackgroundSurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uPadding40px-32px"], styles["uMarginBottom32px"], styles["uBoxShadowShadow-sm"]].join(' ')}>
+               <h4 className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom32px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"], styles["uOpacity0-9"]].join(' ')}>
+                 <span className={[styles["uWidth20px"], styles["uHeight20px"], styles["uBorderRadius50"], styles["uBackground34d399"], styles["uColor000"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uFontSize10px"], styles["uFontWeight900"]].join(' ')}>2</span>
                  Asignar Calificación
                </h4>
                
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+               <div className={[styles["uDisplayGrid"], styles["uGridTemplateColumnsRepeat-4-1fr"], styles["uGap16px"]].join(' ')}>
                   {ACUERDOS_OPCIONES.map(a => {
                     const isSelected = campos.acuerdo_precios === a;
                     return (
-                      <button key={a} onClick={() => setCampos(p => ({ ...p, acuerdo_precios: a }))} style={{
-                         padding: '24px 16px', borderRadius: 16, border: '1px solid',
-                         background: isSelected ? '#fff' : 'rgba(255,255,255,0.02)',
-                         color: isSelected ? '#000' : '#888',
-                         borderColor: isSelected ? '#fff' : 'rgba(255,255,255,0.06)',
-                         fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
-                         textAlign: 'center', outline: 'none'
-                      }}>
+                      <button key={a} onClick={() => setCampos(p => ({ ...p, acuerdo_precios: a }))} className={[styles["uPadding24px-16px"], styles["uBorderRadius16px"], styles["uBorder1px-solid"], styles["uFontSize13px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-2s"], styles["uTextAlignCenter"], styles["uOutlineNone"]].join(' ')} style={{ background: isSelected ? '#fff' : 'rgba(255,255,255,0.02)', color: isSelected ? '#000' : '#888', borderColor: isSelected ? '#fff' : 'rgba(255,255,255,0.06)' }}>
                         {a}
                       </button>
                     );
                   })}
                </div>
 
-               <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+               <div className={[styles["uMarginTop32px"], styles["uPaddingTop24px"], styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
+                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className={[styles["uBackgroundTransparent"], styles["uBorderNone"], styles["uColorText-muted"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"], styles["uMargin0-auto"]].join(' ')}>
                    {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                    Otras Modificaciones Masivas (Avanzado)
                  </button>
                  
                  {showAdvancedFilters && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: 32, textAlign: 'left' }}>
+                    <div className={[styles["uDisplayGrid"], styles["uGridTemplateColumns1fr-1fr"], styles["uGap20px"], styles["uMarginTop32px"], styles["uTextAlignLeft"]].join(' ')}>
                         <div>
-                          <label style={LABEL_STYLE}>Estado</label>
-                          <select className="form-select" value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                          <label className={styles.label}>Estado</label>
+                          <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))} >
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                             {ESTADOS.map(e => <option key={e} value={e}>{STATUS_LABEL[e] ?? e}</option>)}
@@ -4374,8 +3419,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         </div>
 
                         <div>
-                          <label style={LABEL_STYLE}>Analista</label>
-                          <select className="form-select" value={campos.analista} onChange={e => setCampos(p => ({ ...p, analista: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                          <label className={styles.label}>Analista</label>
+                          <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={campos.analista} onChange={e => setCampos(p => ({ ...p, analista: e.target.value }))} >
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                             {ANALISTAS.map(a => <option key={a} value={a}>{a}</option>)}
@@ -4383,8 +3428,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         </div>
                         
                         <div>
-                          <label style={LABEL_STYLE}>Tipo Cliente</label>
-                          <select className="form-select" value={campos.tipo_cliente} onChange={e => setCampos(p => ({ ...p, tipo_cliente: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }}>
+                          <label className={styles.label}>Tipo Cliente</label>
+                          <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={campos.tipo_cliente} onChange={e => setCampos(p => ({ ...p, tipo_cliente: e.target.value }))} >
                             <option value="">— No modificar —</option>
                             <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
                             {TIPO_CLIENTE_OPCIONES.map(t => <option key={t} value={t}>{t === 'Renovacion' ? 'Renovación' : t}</option>)}
@@ -4392,35 +3437,27 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         </div>
 
                         <div>
-                          <label style={LABEL_STYLE}>Cuotas</label>
-                          <input className="form-input" placeholder="Ej: 12, 24, 36" value={campos.cuotas} onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                          <label className={styles.label}>Cuotas</label>
+                          <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} placeholder="Ej: 12, 24, 36" value={campos.cuotas} onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))}  />
                         </div>
 
-                        <div style={{ gridColumn: '1 / -1' }}>
-                          <label style={LABEL_STYLE}>Empleador</label>
-                          <input className="form-input" placeholder="Nombre del empleador" value={campos.empleador} onChange={e => setCampos(p => ({ ...p, empleador: e.target.value }))} style={{ background: '#0a0a0a', fontSize: '12px', padding: '10px' }} />
+                        <div className={[styles["uGridColumn1-1"]].join(' ')}>
+                          <label className={styles.label}>Empleador</label>
+                          <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} placeholder="Nombre del empleador" value={campos.empleador} onChange={e => setCampos(p => ({ ...p, empleador: e.target.value }))}  />
                         </div>
                     </div>
                  )}
                </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-              <button onClick={() => setStep('filter')} style={{ background: 'transparent', color: '#888', border: '1px solid rgba(255,255,255,0.1)', padding: '16px 32px', borderRadius: '30px', fontSize: 12, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}>
+            <div className={[styles["uDisplayFlex"], styles["uJustifyContentCenter"], styles["uGap16px"]].join(' ')}>
+              <button onClick={() => setStep('filter')} className={[styles["uBackgroundTransparent"], styles["uColorText-muted"], styles["uBorder1px-solid-border-subtle"], styles["uPadding16px-32px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-2s"]].join(' ')}>
                 ATRÁS
               </button>
               <button
                 onClick={handleUpdate}
                 disabled={updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)}
-                style={{
-                  background: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#222' : '#34d399',
-                  color: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#555' : '#000',
-                  border: 'none', fontWeight: 900, padding: '16px 40px', borderRadius: '30px',
-                  fontSize: 12, letterSpacing: '0.5px', cursor: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'not-allowed' : 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)',
-                }}
+                className={[styles["uBorderNone"], styles["uFontWeight900"], styles["uPadding16px-40px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#222' : '#34d399', color: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#555' : '#000', cursor: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'not-allowed' : 'pointer', boxShadow: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)' }}
               >
                 {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 {updating ? 'APLICANDO...' : (campos.acuerdo_precios ? 'APLICAR CALIFICACIÓN' : 'APLICAR MODIFICACIONES')}
@@ -4430,28 +3467,22 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         )}
 
         {mode === 'bulk' && step === 'done' && (
-          <div style={{ textAlign: 'center', padding: '64px 20px', maxWidth: 600, margin: '0 auto' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(52, 211, 153, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-              <CheckCircle size={40} style={{ color: '#34d399' }} />
+          <div className={[styles["uTextAlignCenter"], styles["uPadding64px-20px"], styles["uMaxWidth600px"], styles["uMargin0-auto"]].join(' ')}>
+            <div className={[styles["uWidth80px"], styles["uHeight80px"], styles["uBorderRadius50"], styles["uBackgroundRgba-52-211-153-0-1"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uMargin0-auto-24px"]].join(' ')}>
+              <CheckCircle size={40} className={[styles["uColor34d399"]].join(' ')} />
             </div>
-            <h3 style={{ fontSize: '28px', fontWeight: 900, color: '#fff', marginBottom: 12, letterSpacing: '-0.5px' }}>
+            <h3 className={[styles["uFontSize28px"], styles["uFontWeight900"], styles["uColorText-strong"], styles["uMarginBottom12px"], styles["uLetterSpacing0-5px3s3pa"]].join(' ')}>
               ¡Actualización Exitosa!
             </h3>
-            <p style={{ fontSize: '15px', color: '#888', marginBottom: 40, lineHeight: 1.5 }}>
-              Se asignó la calificación exitosamente a <strong style={{ color: '#fff' }}>{updatedCount}</strong> registros.
+            <p className={[styles["uFontSize15px"], styles["uColorText-muted"], styles["uMarginBottom40px"], styles["uLineHeight1-5"]].join(' ')}>
+              Se asignó la calificación exitosamente a <strong className={[styles["uColorText-strong"]].join(' ')}>{updatedCount}</strong> registros.
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
+            <div className={[styles["uDisplayFlex"], styles["uJustifyContentCenter"], styles["uGap16px"]].join(' ')}>
               {undoState && (
                 <button
                   onClick={handleUndo}
                   disabled={undoing}
-                  style={{
-                    background: 'transparent', color: '#ff3366', border: '1px solid rgba(255,51,102,0.3)',
-                    fontWeight: 900, padding: '16px 32px', borderRadius: '30px',
-                    fontSize: '12px', cursor: undoing ? 'not-allowed' : 'pointer', letterSpacing: '0.5px',
-                    display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s',
-                    opacity: undoing ? 0.6 : 1,
-                  }}
+                  className={[styles["uBackgroundTransparent"], styles["uColorFf3366"], styles["uBorder1px-solid-rgba-255-51-102-0-3"], styles["uFontWeight900"], styles["uPadding16px-32px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"], styles["uTransitionAll-0-2s"]].join(' ')} style={{ cursor: undoing ? 'not-allowed' : 'pointer', opacity: undoing ? 0.6 : 1 }}
                 >
                   {undoing ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
                   {undoing ? 'RESTAURANDO...' : 'DESHACER ÚLTIMA ACCIÓN'}
@@ -4459,12 +3490,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               )}
               <button
                 onClick={resetAll}
-                style={{
-                  background: '#fff', color: '#000', border: 'none',
-                  fontWeight: 900, padding: '16px 40px', borderRadius: '30px',
-                  fontSize: '12px', cursor: 'pointer', letterSpacing: '0.5px',
-                  boxShadow: '0 4px 14px rgba(255,255,255,0.2)',
-                }}
+                className={[styles["uBackgroundSurface-card"], styles["uColor000"], styles["uBorderNone"], styles["uFontWeight900"], styles["uPadding16px-40px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uLetterSpacing0-5px"], styles["uBoxShadow0-4px-14px-rgba-255-255-255-0-2"]].join(' ')}
               >
                 NUEVA ASIGNACIÓN
               </button>
@@ -4477,88 +3503,70 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {/* MODAL DE REGISTROS DEL GRUPO */}
       {modalOpen && (
         <div
-          className="modal-overlay"
-          style={MODAL_OVERLAY_STYLE}
+          className={`modal-overlay ${styles.modalOverlay}`}
           onClick={() => setModalOpen(false)}
         >
           <div
-            style={{
-              background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12, width: '100%', maxWidth: 1200,
-              maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-            }}
+            className={[styles["uBackgroundSurface-card"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius12px"], styles["uWidth100"], styles["uMaxWidth1200px"], styles["uMaxHeight90vh"], styles["uDisplayFlex"], styles["uFlexDirectionColumn"]].join(' ')}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header del modal */}
-            <div style={{
-              padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
+            <div className={[styles["uPadding20px-24px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"]].join(' ')}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+                <h3 className={[styles["uFontSize16px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uMarginBottom4px"]].join(' ')}>
                   Registros del grupo: {modalGrupo}
                 </h3>
-                <p style={{ fontSize: 12, color: '#888' }}>
+                <p className={[styles["uFontSize12px"], styles["uColorText-muted"]].join(' ')}>
                   {modalRegistros.length} registros encontrados
                 </p>
               </div>
               <button
                 onClick={() => setModalOpen(false)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#888', borderRadius: 6, padding: '8px 12px',
-                  fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                }}
+                className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-muted"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
               >
                 <X size={14} /> Cerrar
               </button>
             </div>
 
             {/* Contenido del modal */}
-            <div style={{ padding: 24, overflow: 'auto', flex: 1 }}>
+            <div className={[styles["uPadding24px"], styles["uOverflowAuto"], styles["uFlex1"]].join(' ')}>
               {modalLoading ? (
-                <div style={{ textAlign: 'center', padding: 40 }}>
-                  <Loader2 size={32} className="animate-spin" style={{ color: '#00d4ff', margin: '0 auto 12px' }} />
-                  <p style={{ color: '#888', fontSize: 13 }}>Cargando registros...</p>
+                <div className={[styles["uTextAlignCenter"], styles["uPadding40px"]].join(' ')}>
+                  <Loader2 size={32} className={["animate-spin", styles["uColor00d4ff"], styles["uMargin0-auto-12px"]].filter(Boolean).join(' ')}  />
+                  <p className={[styles["uColorText-muted"], styles["uFontSize13px"]].join(' ')}>Cargando registros...</p>
                 </div>
               ) : modalRegistros.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                <div className={[styles["uTextAlignCenter"], styles["uPadding40px"], styles["uColorText-muted"]].join(' ')}>
                   <p>No se encontraron registros</p>
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <table className={[styles["uWidth100"], styles["uBorderCollapseCollapse"], styles["uFontSize12px"]].join(' ')}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Nombre</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Estado</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Score</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Analista</th>
+                    <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Nombre</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>CUIL</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Empleador</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Estado</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Score</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Analista</th>
                     </tr>
                   </thead>
                   <tbody>
                     {modalRegistros.map((r, idx) => (
                       <tr
                         key={r.id}
-                        style={{
-                          borderBottom: '1px solid rgba(255,255,255,0.03)',
-                          background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
-                        }}
+                        className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-03"]].join(' ')} style={{ background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}
                       >
-                        <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600 }}>{r.nombre || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace' }}>{r.cuil || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#fbbf24', fontWeight: 600 }}>{r.empleador}</td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{
-                            padding: '2px 8px', borderRadius: 4, fontSize: 10,
-                            background: 'rgba(255,255,255,0.05)', color: '#888', fontWeight: 600,
-                          }}>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorText-secondary"], styles["uFontWeight600"]].join(' ')}>{r.nombre || '-'}</td>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontFamilyMonospace"]].join(' ')}>{r.cuil || '-'}</td>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorFbbf24"], styles["uFontWeight600"]].join(' ')}>{r.empleador}</td>
+                        <td className={[styles["uPadding10px-12px"]].join(' ')}>
+                          <span className={[styles["uPadding2px-8px"], styles["uBorderRadius4px"], styles["uFontSize10px"], styles["uBackgroundSurface-hover"], styles["uColorText-muted"], styles["uFontWeight600"]].join(' ')}>
                             {STATUS_LABEL[r.estado] ?? r.estado}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#00d4ff', fontWeight: 700 }}>{r.puntaje ?? '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#888' }}>{r.analista || '-'}</td>
+                        <td className={[styles["uPadding10px-12px"], styles["uColor00d4ff"], styles["uFontWeight700"]].join(' ')}>{r.puntaje ?? '-'}</td>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorText-muted"]].join(' ')}>{r.analista || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -4572,33 +3580,24 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {/* MODAL DE TODOS LOS EMPLEADORES */}
       {modalEmpleadoresOpen && (
         <div
-          className="modal-overlay"
-          style={MODAL_OVERLAY_STYLE}
+          className={`modal-overlay ${styles.modalOverlay}`}
           onClick={() => setModalEmpleadoresOpen(false)}
         >
           <div
-            style={{
-              background: '#111111', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 12, width: '100%', maxWidth: 1200,
-              maxHeight: '92vh', display: 'flex', flexDirection: 'column',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-            }}
+            className={[styles["uBackgroundSurface-card"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius12px"], styles["uWidth100"], styles["uMaxWidth1200px"], styles["uMaxHeight92vh"], styles["uDisplayFlex"], styles["uFlexDirectionColumn"], styles["uBoxShadow0-25px-50px-12px-rgba-0-0-0-0-5"]].join(' ')}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header del modal */}
-            <div style={{
-              padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
+            <div className={[styles["uPadding20px-24px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"]].join(' ')}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', marginBottom: 4 }}>
+                <h3 className={[styles["uFontSize16px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uMarginBottom4px"]].join(' ')}>
                   Todos los Empleadores
                 </h3>
-                <p style={{ fontSize: 12, color: '#888' }}>
+                <p className={[styles["uFontSize12px"], styles["uColorText-muted"]].join(' ')}>
                   {empleadoresConConteo.filter(e => !e.esDependencia).length} empleadores · {empleadoresConConteo.filter(e => e.esDependencia).length} dependencias
                 </p>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className={[styles["uDisplayFlex"], styles["uGap8px"]].join(' ')}>
                 <button
                   onClick={() => {
                     import('xlsx').then((XLSX) => {
@@ -4615,22 +3614,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       XLSX.writeFile(wb, "Empleadores_y_Dependencias.xlsx");
                     });
                   }}
-                  style={{
-                    background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)',
-                    color: '#34d399', borderRadius: 6, padding: '8px 12px',
-                    fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                    fontWeight: 700
-                  }}
+                  className={[styles["uBackgroundRgba-52-211-153-0-11doaz"], styles["uBorder1px-solid-rgba-52-211-153-0-3"], styles["uColor34d399"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"], styles["uFontWeight700"]].join(' ')}
                 >
                   <Download size={14} /> Descargar XLSX
                 </button>
                 <button
                   onClick={() => setModalEmpleadoresOpen(false)}
-                  style={{
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#888', borderRadius: 6, padding: '8px 12px',
-                    fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                  }}
+                  className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-muted"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
                 >
                   <X size={14} /> Cerrar
                 </button>
@@ -4638,15 +3628,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             {/* Buscador + filtros tipo */}
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className={[styles["uPadding16px-24px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayFlex"], styles["uFlexDirectionColumn"], styles["uGap10px"]].join(' ')}>
               <input
-                className="form-input"
+                className={`form-input ${styles.darkInput}`}
                 placeholder="Buscar empleador..."
                 value={busquedaEmpleadorModal}
                 onChange={e => setBusquedaEmpleadorModal(e.target.value)}
-                style={DARK_INPUT_STYLE}
               />
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uFlexWrapWrap"]].join(' ')}>
                 {([
                  { key: 'todos', label: 'Todos' },
                  { key: 'gob_er', label: 'Gob. Entre Ríos' },
@@ -4664,14 +3653,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     <button
                       key={key}
                       onClick={() => setFiltroTipoModal(key)}
-                      style={{
-                        background: activo ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)',
-                        border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                        color: activo ? '#fbbf24' : '#666',
-                        borderRadius: '4px', padding: '4px 12px',
-                        fontSize: '10px', fontWeight: 800, cursor: 'pointer',
-                        textTransform: 'uppercase', letterSpacing: '0.5px',
-                      }}
+                      className={[styles["uBorderRadius4px"], styles["uPadding4px-12px"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"]].join(' ')} style={{ background: activo ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`, color: activo ? '#fbbf24' : '#666' }}
                     >
                       {label}
                     </button>
@@ -4681,11 +3663,11 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             {/* Contenido del modal */}
-            <div style={{ padding: 24, overflow: 'auto', flex: 1 }}>
+            <div className={[styles["uPadding24px"], styles["uOverflowAuto"], styles["uFlex1"]].join(' ')}>
               {empleadoresLoading ? (
-                <div style={{ textAlign: 'center', padding: 40 }}>
-                  <Loader2 size={32} className="animate-spin" style={{ color: '#00d4ff', margin: '0 auto 12px' }} />
-                  <p style={{ color: '#888', fontSize: 13 }}>Cargando empleadores...</p>
+                <div className={[styles["uTextAlignCenter"], styles["uPadding40px"]].join(' ')}>
+                  <Loader2 size={32} className={["animate-spin", styles["uColor00d4ff"], styles["uMargin0-auto-12px"]].filter(Boolean).join(' ')}  />
+                  <p className={[styles["uColorText-muted"], styles["uFontSize13px"]].join(' ')}>Cargando empleadores...</p>
                 </div>
               ) : (
                 <>
@@ -4736,26 +3718,21 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     const renderTable = (items: typeof filtered, title?: string, color?: string) => (
                       <div style={{ marginBottom: title ? 24 : 0 }}>
                         {title && (
-                          <div style={{
-                            fontSize: '10px', fontWeight: 900, color: color || '#888',
-                            textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12,
-                            paddingBottom: 6, borderBottom: `1px solid rgba(255,255,255,0.05)`,
-                            display: 'flex', alignItems: 'center', gap: 8
-                          }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: color || '#888' }} />
+                          <div className={[styles["uFontSize10px"], styles["uFontWeight900"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom12px"], styles["uPaddingBottom6px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"]].join(' ')} style={{ color: color || '#888' }}>
+                            <div className={[styles["uWidth6px"], styles["uHeight6px"], styles["uBorderRadius50"]].join(' ')} style={{ background: color || '#888' }} />
                             {title} ({items.length})
                           </div>
                         )}
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                        <div className={[styles["uOverflowXAuto"]].join(' ')}>
+                          <table className={[styles["uWidth100"], styles["uBorderCollapseCollapse"], styles["uFontSize12px"]].join(' ')}>
                             <thead>
-                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Empresa</th>
-                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Tipo</th>
-                                <th style={{ textAlign: 'left', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Categoría</th>
-                                <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Cant.</th>
-                                <th style={{ textAlign: 'center', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>%</th>
-                                <th style={{ textAlign: 'right', padding: '12px', color: '#555', fontWeight: 800, textTransform: 'uppercase' }}>Acciones</th>
+                              <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
+                                <th className={[styles["uTextAlignLeft"], styles["uPadding12px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>Empresa</th>
+                                <th className={[styles["uTextAlignLeft"], styles["uPadding12px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>Tipo</th>
+                                <th className={[styles["uTextAlignLeft"], styles["uPadding12px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>Categoría</th>
+                                <th className={[styles["uTextAlignCenter"], styles["uPadding12px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>Cant.</th>
+                                <th className={[styles["uTextAlignCenter"], styles["uPadding12px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>%</th>
+                                <th className={[styles["uTextAlignRight"], styles["uPadding12px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>Acciones</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -4765,55 +3742,39 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                 const porcentaje = totalGeneral > 0 ? ((emp.cantidad / totalGeneral) * 100).toFixed(1) : '0';
                                 
                                 return (
-                                  <tr key={idx} style={{ 
-                                    borderBottom: '1px solid rgba(255,255,255,0.02)',
-                                    background: isMaster ? 'rgba(52,211,153,0.02)' : 'transparent'
-                                  }}>
-                                    <td style={{ padding: '12px' }}>
-                                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ color: isMaster ? '#34d399' : '#ccc', fontWeight: 600 }}>{emp.nombre}</span>
+                                  <tr key={idx} className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-02"]].join(' ')} style={{ background: isMaster ? 'rgba(52,211,153,0.02)' : 'transparent' }}>
+                                    <td className={[styles["uPadding12px"]].join(' ')}>
+                                      <div className={[styles["uDisplayFlex"], styles["uFlexDirectionColumn"]].join(' ')}>
+                                        <span className={[styles["uFontWeight600"]].join(' ')} style={{ color: isMaster ? '#34d399' : '#ccc' }}>{emp.nombre}</span>
                                       </div>
                                     </td>
-                                    <td style={{ padding: '12px' }}>
-                                      <span style={{ 
-                                        padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
-                                        color: '#888', fontSize: '10px', fontWeight: 700 
-                                      }}>
+                                    <td className={[styles["uPadding12px"]].join(' ')}>
+                                      <span className={[styles["uPadding2px-8px"], styles["uBorderRadius4px"], styles["uBackgroundSurface-hover"], styles["uColorText-muted"], styles["uFontSize10px"], styles["uFontWeight700"]].join(' ')}>
                                         {emp.tipo}
                                       </span>
                                     </td>
-                                    <td style={{ padding: '12px' }}>
-                                      <span style={{ 
-                                        color: emp.categoria === 'Estado' ? '#00d4ff' : '#888',
-                                        fontSize: '11px', fontWeight: 600 
-                                      }}>
+                                    <td className={[styles["uPadding12px"]].join(' ')}>
+                                      <span className={[styles["uFontSize11px"], styles["uFontWeight600"]].join(' ')} style={{ color: emp.categoria === 'Estado' ? '#00d4ff' : '#888' }}>
                                         {emp.categoria}
                                       </span>
                                     </td>
-                                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                                      <span style={{ fontWeight: 800, color: '#555' }}>{emp.cantidad}</span>
+                                    <td className={[styles["uPadding12px"], styles["uTextAlignCenter"]].join(' ')}>
+                                      <span className={[styles["uFontWeight800"], styles["uColorText-muted"]].join(' ')}>{emp.cantidad}</span>
                                     </td>
-                                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                                      <span style={{ 
-                                        fontWeight: 800, color: '#34d399', fontSize: '11px',
-                                        background: 'rgba(52,211,153,0.1)', padding: '2px 6px', borderRadius: 4
-                                      }}>
+                                    <td className={[styles["uPadding12px"], styles["uTextAlignCenter"]].join(' ')}>
+                                      <span className={[styles["uFontWeight800"], styles["uColor34d399"], styles["uFontSize11px"], styles["uBackgroundRgba-52-211-153-0-11doaz"], styles["uPadding2px-6px"], styles["uBorderRadius4px"]].join(' ')}>
                                         {porcentaje}%
                                       </span>
                                     </td>
-                                    <td style={{ padding: '12px', textAlign: 'right' }}>
-                                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                                    <td className={[styles["uPadding12px"], styles["uTextAlignRight"]].join(' ')}>
+                                      <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uJustifyContentFlex-end"]].join(' ')}>
                                         <button
                                           onClick={() => {
                                             setEmpleadoresSeleccionados([emp.nombre]);
                                             setEmpleadorCorreccion(emp.nombre);
                                             setModalEmpleadoresOpen(false);
                                           }}
-                                          style={{
-                                            padding: '4px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)',
-                                            border: '1px solid rgba(255,255,255,0.1)', color: '#aaa',
-                                            fontSize: '10px', fontWeight: 800, cursor: 'pointer'
-                                          }}
+                                          className={[styles["uPadding4px-8px"], styles["uBorderRadius4px"], styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-primary"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uCursorPointer"]].join(' ')}
                                         >
                                           Seleccionar
                                         </button>
@@ -4830,7 +3791,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                     if (filtered.length === 0) {
                       return (
-                        <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                        <div className={[styles["uTextAlignCenter"], styles["uPadding40px"], styles["uColorText-muted"]].join(' ')}>
                           <p>No se encontraron empleadores</p>
                         </div>
                       );
@@ -4839,7 +3800,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     const empleadores = filtered.filter(e => !e.esDependencia);
                     const dependencias = filtered.filter(e => e.esDependencia);
                     return (
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div className={[styles["uDisplayFlex"], styles["uFlexDirectionColumn"]].join(' ')}>
                         {empleadores.length > 0 && renderTable(empleadores, 'Empleadores', '#00d4ff')}
                         {dependencias.length > 0 && renderTable(dependencias, 'Dependencias', '#a78bfa')}
                       </div>
@@ -4855,58 +3816,43 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       {/* MODAL DE EMPLEADORES NUEVOS DE HOY */}
       {showEmpleadoresHoy && (
         <div
-          style={MODAL_OVERLAY_STYLE}
+          className={styles.modalOverlay}
           onClick={() => setShowEmpleadoresHoy(false)}
         >
           <div
-            style={{
-              background: '#111111', border: '1px solid rgba(16,185,129,0.2)',
-              borderRadius: 12, width: '100%', maxWidth: 900,
-              maxHeight: '90vh', display: 'flex', flexDirection: 'column',
-            }}
+            className={[styles["uBackgroundSurface-card"], styles["uBorder1px-solid-rgba-16-185-129-0-2"], styles["uBorderRadius12px"], styles["uWidth100"], styles["uMaxWidth900px"], styles["uMaxHeight90vh"], styles["uDisplayFlex"], styles["uFlexDirectionColumn"]].join(' ')}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{
-              padding: '20px 24px', borderBottom: '1px solid rgba(16,185,129,0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
-            }}>
+            <div className={[styles["uPadding20px-24px"], styles["uBorderBottom1px-solid-rgba-16-185-129-0-1"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uFlexWrapWrap"], styles["uGap12px"]].join(' ')}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#34d399', marginBottom: 4 }}>
+                <h3 className={[styles["uFontSize16px"], styles["uFontWeight800"], styles["uColor34d399"], styles["uMarginBottom4px"]].join(' ')}>
                   Registros con Empleador
                 </h3>
-                <p style={{ fontSize: 12, color: '#888' }}>
+                <p className={[styles["uFontSize12px"], styles["uColorText-muted"]].join(' ')}>
                   {empleadoresHoy.length} registro{empleadoresHoy.length !== 1 ? 's' : ''} con empleador cargado
                 </p>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Desde</span>
+              <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uFlexWrapWrap"]].join(' ')}>
+                <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"]].join(' ')}>
+                  <span className={[styles["uFontSize11px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uTextTransformUppercase"]].join(' ')}>Desde</span>
                   <input
                     type="date"
                     value={fechaDesdeHoy}
                     onChange={e => setFechaDesdeHoy(e.target.value)}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                      color: '#ccc', borderRadius: 6, padding: '5px 8px', fontSize: 12,
-                      colorScheme: 'dark',
-                    }}
+                    className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-secondary"], styles["uBorderRadius6px"], styles["uPadding5px-8px"], styles["uFontSize12px"], styles["uColorSchemeDark"]].join(' ')}
                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 11, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Hasta</span>
+                <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"]].join(' ')}>
+                  <span className={[styles["uFontSize11px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uTextTransformUppercase"]].join(' ')}>Hasta</span>
                   <input
                     type="date"
                     value={fechaHastaHoy}
                     onChange={e => setFechaHastaHoy(e.target.value)}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                      color: '#ccc', borderRadius: 6, padding: '5px 8px', fontSize: 12,
-                      colorScheme: 'dark',
-                    }}
+                    className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-secondary"], styles["uBorderRadius6px"], styles["uPadding5px-8px"], styles["uFontSize12px"], styles["uColorSchemeDark"]].join(' ')}
                   />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className={[styles["uDisplayFlex"], styles["uGap8px"]].join(' ')}>
                 <button
                   onClick={async () => {
                     if (!confirm(`¿Eliminar ${empleadoresHoy.length} registros de la base de datos? Esta acción es irreversible.`)) return;
@@ -4926,87 +3872,71 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       setLoadingEmpleadoresHoy(false);
                     }
                   }}
-                  style={{
-                    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-                    color: '#ff3366', borderRadius: 6, padding: '8px 12px',
-                    fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                    fontWeight: 700,
-                  }}
+                  className={[styles["uBackgroundRgba-239-68-68-0-1"], styles["uBorder1px-solid-rgba-239-68-68-0-3"], styles["uColorFf3366"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"], styles["uFontWeight700"]].join(' ')}
                 >
                   <Trash2 size={14} /> Eliminar
                 </button>
                 <button
                   onClick={() => setShowEmpleadoresHoy(false)}
-                  style={{
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#888', borderRadius: 6, padding: '8px 12px',
-                    fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                  }}
+                  className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-muted"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
                 >
                   <X size={14} /> Cerrar
                 </button>
               </div>
             </div>
 
-            <div style={{ flex: 1, overflow: 'auto', padding: '16px 24px' }}>
+            <div className={[styles["uFlex1"], styles["uOverflowAuto"], styles["uPadding16px-24px"]].join(' ')}>
               {loadingEmpleadoresHoy ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
-                  <Loader2 size={24} className="animate-spin" style={{ color: '#34d399' }} />
+                <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uPadding40px"]].join(' ')}>
+                  <Loader2 size={24} className={["animate-spin", styles["uColor34d399"]].filter(Boolean).join(' ')}  />
                 </div>
               ) : empleadoresHoy.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>
+                <div className={[styles["uTextAlignCenter"], styles["uPadding40px"], styles["uColorText-muted"]].join(' ')}>
                   <p>No se encontraron registros creados hoy.</p>
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <table className={[styles["uWidth100"], styles["uBorderCollapseCollapse"]].join(' ')}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>CUIL</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Apellido y Nombre</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Empleador</th>
-                      <th style={{ textAlign: 'left', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Dependencia</th>
-                      <th style={{ textAlign: 'right', padding: '10px 12px', color: '#666', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Acciones</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>CUIL</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Apellido y Nombre</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Empleador</th>
+                      <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Dependencia</th>
+                      <th className={[styles["uTextAlignRight"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {empleadoresHoy.map((r, idx) => {
                       const editing = editandoHoyId === r.id;
-                      const iconBtn = (bg: string, border: string, color: string): React.CSSProperties => ({
-                        background: bg, border: `1px solid ${border}`, color, borderRadius: 6,
-                        padding: '5px 7px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
-                      });
                       return (
                       <tr
                         key={r.id}
-                        style={{
-                          borderBottom: '1px solid rgba(255,255,255,0.03)',
-                          background: editing ? 'rgba(16,185,129,0.06)' : (idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent'),
-                        }}
+                        className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-03"]].join(' ')} style={{ background: editing ? 'rgba(16,185,129,0.06)' : (idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent') }}
                       >
-                        <td style={{ padding: '10px 12px', color: '#888', fontFamily: 'monospace', fontSize: 12 }}>{r.cuil || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#ccc', fontWeight: 600, fontSize: 12 }}>{r.nombre || '-'}</td>
-                        <td style={{ padding: '10px 12px', color: '#34d399', fontWeight: 600, fontSize: 12, minWidth: 220 }}>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontFamilyMonospace"], styles["uFontSize12px"]].join(' ')}>{r.cuil || '-'}</td>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorText-secondary"], styles["uFontWeight600"], styles["uFontSize12px"]].join(' ')}>{r.nombre || '-'}</td>
+                        <td className={[styles["uPadding10px-12px"], styles["uColor34d399"], styles["uFontWeight600"], styles["uFontSize12px"], styles["uMinWidth220px"]].join(' ')}>
                           {editing
                             ? <ComboEditable value={editHoyEmpleador} onChange={setEditHoyEmpleador} options={allEmpleadoresList} placeholder="Elegí o escribí…" accent="#34d399" />
                             : (r.empleador || '-')}
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#60a5fa', fontWeight: 600, fontSize: 12, minWidth: 220 }}>
+                        <td className={[styles["uPadding10px-12px"], styles["uColor60a5fa"], styles["uFontWeight600"], styles["uFontSize12px"], styles["uMinWidth220px"]].join(' ')}>
                           {editing
                             ? <ComboEditable value={editHoyDependencia} onChange={setEditHoyDependencia} options={dependenciasParaEmpleador.length > 0 ? dependenciasParaEmpleador : allDependenciasList} placeholder="Elegí o escribí…" accent="#60a5fa" />
                             : (r.dependencia || '-')}
                         </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <td className={[styles["uPadding10px-12px"], styles["uTextAlignRight"], styles["uWhiteSpaceNowrap"]].join(' ')}>
                           {editing ? (
-                            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                              <button onClick={() => guardarEdicionHoy(r.id)} title="Guardar" style={iconBtn('rgba(16,185,129,0.12)', 'rgba(16,185,129,0.35)', '#34d399')}>
+                            <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uJustifyContentFlex-end"]].join(' ')}>
+                              <button onClick={() => guardarEdicionHoy(r.id)} title="Guardar" className={`${styles.iconAction} ${styles.iconActionSave}`}>
                                 <Save size={13} />
                               </button>
-                              <button onClick={cancelarEdicionHoy} title="Cancelar" style={iconBtn('rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)', '#888')}>
+                              <button onClick={cancelarEdicionHoy} title="Cancelar" className={`${styles.iconAction} ${styles.iconActionCancel}`}>
                                 <X size={13} />
                               </button>
                             </div>
                           ) : (
-                            <button onClick={() => iniciarEdicionHoy(r)} title="Editar" style={iconBtn('rgba(96,165,250,0.1)', 'rgba(96,165,250,0.3)', '#60a5fa')}>
+                            <button onClick={() => iniciarEdicionHoy(r)} title="Editar" className={`${styles.iconAction} ${styles.iconActionEdit}`}>
                               <Pencil size={13} />
                             </button>
                           )}

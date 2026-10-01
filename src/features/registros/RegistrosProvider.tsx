@@ -66,6 +66,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
         .from('registros')
         .select(cols, { count: 'exact' })
         .order('fecha', { ascending: false })
+        .order('id', { ascending: true })
         .range(0, PAGE - 1);
       first = res.data;
       firstErr = res.error;
@@ -78,6 +79,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
           .from('registros')
           .select(cols, { count: 'exact' })
           .order('fecha', { ascending: false })
+          .order('id', { ascending: true })
           .range(0, PAGE - 1);
         first = fallbackRes.data;
         firstErr = fallbackRes.error;
@@ -119,7 +121,12 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     try {
       results = await Promise.all(
         ranges.map(([f, t]) =>
-          supabase.from('registros').select(cols).order('fecha', { ascending: false }).range(f, t)
+          // El desempate por `id` es obligatorio: estas páginas se piden en
+          // PARALELO y cada una es una consulta independiente. Sin un orden
+          // determinista, las filas con la misma `fecha` (hasta 139 empates)
+          // pueden repartirse distinto entre páginas y producir duplicados y
+          // omisiones silenciosas.
+          supabase.from('registros').select(cols).order('fecha', { ascending: false }).order('id', { ascending: true }).range(f, t)
         )
       );
     } catch (parallelErr: any) {

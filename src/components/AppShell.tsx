@@ -5,59 +5,53 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ErrorProvider, useDataError } from '@/context/ErrorContext';
 import { RegistrosProvider } from '@/features/registros/RegistrosProvider';
+import { GestionDiariaProvider } from '@/features/gestion-diaria/GestionDiariaProvider';
 import { RecordatoriosProvider, useRecordatorios } from '@/features/recordatorios/RecordatoriosProvider';
 import { ObjetivosProvider } from '@/features/objetivos/ObjetivosProvider';
 import { HistoricoProvider } from '@/features/historico/HistoricoProvider';
 import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { FilterProvider, useFilter } from '@/context/FilterContext';
-import Sidebar from './Sidebar';
+import RecordsSidebar from './RecordsSidebar';
 import ZoomWrapper from './ZoomWrapper';
-import { Bell, X, AlertCircle, Columns, ChevronRight } from 'lucide-react';
+import { Bell, X, AlertCircle, Columns } from 'lucide-react';
 import SplitLayout from './SplitLayout';
 import { formatDate } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import styles from './AppShell.module.css';
 
 // Toast card compartido por DataErrorToast y ReminderAlertPopup
 type ToastSide = 'left' | 'right';
+type ToastTone = 'danger' | 'warning';
 function ToastCard({
-  side, accentColor, icon, iconTint, title, subtitle, body, onClose, zIndex = 1000,
+  side, tone, icon, title, subtitle, body, onClose,
 }: {
   side: ToastSide;
-  accentColor: string;
+  tone: ToastTone;
   icon: React.ReactNode;
-  iconTint: string;
   title: string;
   subtitle?: string;
   body?: string;
   onClose: () => void;
-  zIndex?: number;
 }) {
+  const toastClasses = [
+    styles.toast,
+    side === 'left' ? styles.toastLeft : styles.toastRight,
+    tone === 'danger' ? styles.toastDanger : styles.toastWarning,
+  ].join(' ');
+
   return (
-    <div style={{
-      position: 'fixed', bottom: '24px', [side]: '24px', zIndex,
-      background: 'var(--bg)', color: '#fff', padding: '14px 18px',
-      borderRadius: '12px', boxShadow: '0 8px 40px rgba(0,0,0,0.8)',
-      display: 'flex', alignItems: 'flex-start', gap: '14px', maxWidth: '420px',
-      animation: 'slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-      border: '1px solid rgba(255,255,255,0.03)',
-      borderLeft: `3px solid ${accentColor}`,
-    }}>
-      <div style={{
-        width: '32px', height: '32px', background: iconTint,
-        borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: '13px', color: '#fff' }}>{title}</div>
+    <div className={toastClasses} role="status">
+      <div className={styles.toastIcon}>{icon}</div>
+      <div className={styles.toastContent}>
+        <div className={styles.toastTitle}>{title}</div>
         {subtitle && (
-          <div style={{ fontSize: '11px', color: 'var(--fg-dim)', marginTop: '2px', fontFamily: 'monospace' }}>{subtitle}</div>
+          <div className={styles.toastSubtitle}>{subtitle}</div>
         )}
         {body && (
-          <div style={{ fontSize: '12px', color: 'var(--fg-muted)', marginTop: '4px', wordBreak: 'break-word' }}>{body}</div>
+          <div className={styles.toastBody}>{body}</div>
         )}
       </div>
-      <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', flexShrink: 0 }}>
+      <button aria-label="Cerrar aviso" className={styles.toastClose} onClick={onClose} type="button">
         <X size={16} />
       </button>
     </div>
@@ -79,14 +73,12 @@ const DataErrorToast = () => {
   return (
     <ToastCard
       side="left"
-      accentColor="var(--rojo)"
-      iconTint="rgba(220,53,69,0.1)"
-      icon={<AlertCircle size={16} style={{ color: 'var(--rojo)' }} />}
+      tone="danger"
+      icon={<AlertCircle size={16} />}
       title="Error al sincronizar datos"
       subtitle={lastError.scope}
       body={lastError.message}
       onClose={clearError}
-      zIndex={1001}
     />
   );
 };
@@ -98,9 +90,12 @@ const ReminderAlertPopup = () => {
 
   useEffect(() => {
     if (pendingReminders > 0 && !reminderAlert) {
-      setShowToast(true);
-      const t = setTimeout(() => setShowToast(false), 8000);
-      return () => clearTimeout(t);
+      const showTimer = window.setTimeout(() => setShowToast(true), 0);
+      const hideTimer = window.setTimeout(() => setShowToast(false), 8000);
+      return () => {
+        window.clearTimeout(showTimer);
+        window.clearTimeout(hideTimer);
+      };
     }
   }, [pendingReminders, reminderAlert]);
 
@@ -108,60 +103,42 @@ const ReminderAlertPopup = () => {
     const isAvisoAdmin = reminderAlert.cuil === 'ADMIN_AVISO';
     
     return (
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 2000,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
-        padding: '20px',
-      }}>
-        <motion.div 
+      <div className={styles.reminderOverlay}>
+        <motion.div
+          aria-modal="true"
+          className={`${styles.reminderDialog}${isAvisoAdmin ? ` ${styles.reminderDialogAdmin}` : ''}`}
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          style={{
-            background: 'var(--bg)', border: `1px solid ${isAvisoAdmin ? 'var(--azul)' : 'rgba(255,255,255,0.03)'}`,
-            borderRadius: '20px', padding: '36px', maxWidth: '620px', width: '100%',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-            display: 'flex', flexDirection: 'column', gap: '20px',
-            position: 'relative'
-          }}
+          role="dialog"
         >
-          <div style={{
-            width: '60px', height: '60px', 
-            background: isAvisoAdmin ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
-            borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Bell size={28} style={{ color: isAvisoAdmin ? 'var(--azul)' : 'var(--naranja)' }} />
+          <div className={`${styles.reminderIcon}${isAvisoAdmin ? ` ${styles.reminderIconAdmin}` : ''}`}>
+            <Bell size={28} />
           </div>
 
           <div>
-            <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#fff', marginBottom: '8px' }}>
+            <h3 className={styles.reminderTitle}>
               {isAvisoAdmin ? 'MENSAJE DEL ADMINISTRADOR' : 'Recordatorio Pendiente'}
             </h3>
             {!isAvisoAdmin && (
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--fg-dim)', marginBottom: '16px' }}>
+              <div className={styles.reminderMeta}>
                 {reminderAlert.nombre} | CUIL: {reminderAlert.cuil}
               </div>
             )}
-            <p style={{ 
-              fontSize: '16px', color: 'var(--fg)', lineHeight: '1.6', 
-              background: 'rgba(255,255,255,0.015)', padding: '16px', borderRadius: '12px' 
-            }}>
+            <p className={styles.reminderBody}>
               {reminderAlert.nota || 'Sin descripción adicional.'}
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-            <button 
+          <div className={styles.reminderActions}>
+            <button
               onClick={() => markReminderCompleted(reminderAlert.id)}
-              className="btn-primary"
-              style={{ flex: 1, justifyContent: 'center', height: '48px', fontSize: '14px', fontWeight: 700 }}
+              className={`btn-primary ${styles.reminderConfirm}`}
             >
               ENTENDIDO
             </button>
-            <button 
+            <button
               onClick={clearReminderAlert}
-              className="btn-secondary"
-              style={{ height: '48px', padding: '0 20px' }}
+              className={`btn-secondary ${styles.reminderCancel}`}
             >
               CERRAR
             </button>
@@ -176,9 +153,8 @@ const ReminderAlertPopup = () => {
   return (
     <ToastCard
       side="right"
-      accentColor="var(--naranja)"
-      iconTint="rgba(245,158,11,0.1)"
-      icon={<Bell size={16} style={{ color: 'var(--naranja)' }} />}
+      tone="warning"
+      icon={<Bell size={16} />}
       title="Recordatorios Pendientes"
       subtitle={`${pendingReminders} ${pendingReminders === 1 ? 'recordatorio' : 'recordatorios'} sin revisar`}
       onClose={() => setShowToast(false)}
@@ -186,8 +162,8 @@ const ReminderAlertPopup = () => {
   );
 };
 
-const shouldHideSidebar = (pathname: string, isMinimal: boolean) =>
-  isMinimal || pathname === '/analistas' || pathname === '/ajustes' || pathname.startsWith('/reportes/');
+const LEGACY_ADMIN_ZOOM_STORAGE_KEY = 'app_admin_zoom_levels_v3';
+const pageZoomStorageKey = (pathname: string) => `app_admin_page_zoom_v1:${pathname}`;
 
 function AppShellInner({ children, pathname }: { children: React.ReactNode, pathname: string }) {
   const router = useRouter();
@@ -195,50 +171,82 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const { loading, isAdmin } = useAuth();
   const isMinimal = searchParams.get('minimal') === 'true';
   const [mounted, setMounted] = useState(false);
-  const [zooms, setZooms] = useState<Record<string, number>>({});
-  const [sidebarHidden, setSidebarHidden] = useState(shouldHideSidebar(pathname, isMinimal));
+  const [currentZoom, setCurrentZoom] = useState(1);
   const { setShowFilters } = useFilter();
+  const usesRecordsShell =
+    pathname === '/registros' ||
+    pathname === '/gestion-diaria' ||
+    pathname === '/ajustes' ||
+    pathname === '/analistas' ||
+    pathname === '/duplicados' ||
+    pathname.startsWith('/reportes');
 
-  // Auto-hide sidebar when entering reports or settings
+  // Cierra el panel de filtros al cambiar de ruta.
   useEffect(() => {
     setShowFilters(false);
-    setSidebarHidden(shouldHideSidebar(pathname, isMinimal));
-  }, [pathname, setShowFilters, isMinimal]);
+  }, [pathname, setShowFilters]);
   
   useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('app_zoom_levels_v2');
-    if (saved) {
-      try {
-        setZooms(JSON.parse(saved));
-      } catch {}
-    }
+    const timer = window.setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
-  // Default zoom per route: la tabla de registros arranca en 100%, el resto en 120%.
-  const defaultZoom = pathname === '/registros' ? 1 : 1.2;
+  useEffect(() => {
+    if (loading) return;
 
-  const currentZoom = zooms[pathname] || defaultZoom;
+    const timer = window.setTimeout(() => {
+      if (!isAdmin) {
+        setCurrentZoom(1);
+        return;
+      }
+
+      const legacyZooms = localStorage.getItem(LEGACY_ADMIN_ZOOM_STORAGE_KEY);
+      if (legacyZooms) {
+        try {
+          const parsed = JSON.parse(legacyZooms) as Record<string, number>;
+          Object.entries(parsed).forEach(([route, zoom]) => {
+            const scopedKey = pageZoomStorageKey(route);
+            if (localStorage.getItem(scopedKey) === null && Number.isFinite(zoom)) {
+              localStorage.setItem(scopedKey, String(zoom));
+            }
+          });
+        } catch {
+          // El formato global anterior se descarta; cada ruta mantiene su propia clave.
+        }
+        localStorage.removeItem(LEGACY_ADMIN_ZOOM_STORAGE_KEY);
+      }
+
+      const saved = Number.parseFloat(localStorage.getItem(pageZoomStorageKey(pathname)) ?? '1');
+      setCurrentZoom(Number.isFinite(saved) ? Math.min(1.3, Math.max(0.7, saved)) : 1);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [isAdmin, loading, pathname]);
+
+  // El zoom interno arranca en 100% y es una preferencia exclusiva del administrador.
+  const defaultZoom = 1;
 
   const handleZoom = useCallback((delta: number) => {
-    setZooms(prev => {
-      const current = prev[pathname] || defaultZoom;
-      const next = Math.max(0.3, Math.min(3, current + delta));
-      const newZooms = { ...prev, [pathname]: next };
-      localStorage.setItem('app_zoom_levels_v2', JSON.stringify(newZooms));
-      return newZooms;
+    if (!isAdmin) return;
+
+    setCurrentZoom(current => {
+      const next = Math.max(0.7, Math.min(1.3, Math.round((current + delta) * 100) / 100));
+      localStorage.setItem(pageZoomStorageKey(pathname), String(next));
+      return next;
     });
-  }, [pathname, defaultZoom]);
+  }, [isAdmin, pathname]);
 
   const resetZoom = useCallback(() => {
-    setZooms(prev => {
-      const newZooms = { ...prev, [pathname]: defaultZoom };
-      localStorage.setItem('app_zoom_levels_v2', JSON.stringify(newZooms));
-      return newZooms;
-    });
-  }, [pathname, defaultZoom]);
+    if (!isAdmin) return;
+
+    setCurrentZoom(defaultZoom);
+    localStorage.setItem(pageZoomStorageKey(pathname), String(defaultZoom));
+  }, [isAdmin, pathname]);
 
   useEffect(() => {
+    if (!isAdmin) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
         if (e.key === '+' || e.key === '=') { e.preventDefault(); handleZoom(0.1); }
@@ -260,7 +268,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('wheel', handleWheel);
     };
-  }, [handleZoom, resetZoom]);
+  }, [handleZoom, isAdmin, resetZoom]);
   
   // Estados para Split View
   const [isSplitView, setIsSplitView] = useState(false);
@@ -268,13 +276,16 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const [rightPath, setRightPath] = useState('/ajustes');
 
   useEffect(() => {
-    const saved = localStorage.getItem('admin_split_view');
-    if (saved === 'true') setIsSplitView(true);
-    
-    const savedLeft = localStorage.getItem('admin_split_left');
-    const savedRight = localStorage.getItem('admin_split_right');
-    if (savedLeft) setLeftPath(savedLeft);
-    if (savedRight) setRightPath(savedRight);
+    const timer = window.setTimeout(() => {
+      const saved = localStorage.getItem('admin_split_view');
+      if (saved === 'true') setIsSplitView(true);
+
+      const savedLeft = localStorage.getItem('admin_split_left');
+      const savedRight = localStorage.getItem('admin_split_right');
+      if (savedLeft) setLeftPath(savedLeft);
+      if (savedRight) setRightPath(savedRight);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const toggleSplitView = () => {
@@ -306,173 +317,66 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
 
   if (loading || !mounted) {
     return (
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: '100vh', background: 'var(--background)',
-      }}>
-        <div className="spinner" style={{ width: 40, height: 40 }} />
+      <div className={styles.loadingScreen}>
+        <div className={`spinner ${styles.loadingSpinner}`} />
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%' }}>
+    <div className={`${styles.shell}${usesRecordsShell ? ` ${styles.recordsShell}` : ''}`} data-app-shell>
       {/* Top Banner — Full Width — Hidden in Reports/Analysts or Minimal Mode */}
-      {!isMinimal && !pathname.startsWith('/reportes') && pathname !== '/analistas' && (
-        <header style={{
-          height: '60px',
-          width: '100%',
-          background: 'rgba(12,12,12,0.95)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: 'none',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 32px',
-          zIndex: 50,
-          flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          marginBottom: '0px',
-          justifyContent: 'space-between'
-        }}>
+      {!isMinimal && !pathname.startsWith('/reportes/') && (
+        <header className={styles.topbar} data-app-topbar>
           {/* Difuminado sutil y ligero hacia abajo */}
-          <div style={{
-            position: 'absolute',
-            top: '60px',
-            left: 0,
-            right: 0,
-            height: '45px',
-            background: 'linear-gradient(180deg, rgba(12,12,12,0.7) 0%, rgba(12,12,12,0.3) 50%, rgba(12,12,12,0) 100%)',
-            pointerEvents: 'none',
-            zIndex: 49
-          }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1 }}>
+          <div className={styles.topbarFade} />
+          <div className={styles.topbarSpacer}>
             {/* Brand or other left content could go here */}
           </div>
 
-          <div style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: '8px',
-            flex: 1,
-            justifyContent: 'center'
-          }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--fg-muted)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Sistema de</span>
-            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>PROYECCIONES</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--fg-dim)', letterSpacing: '1px' }}>y</span>
-            <span style={{ fontSize: '16px', fontWeight: 900, color: '#fff', letterSpacing: '2px' }}>VENTAS</span>
+          <div className={styles.topbarTitle}>
+            <span className={styles.topbarEyebrow}>Sistema de</span>
+            <span className={styles.topbarBrand}>PROYECCIONES</span>
+            <span className={styles.topbarConjunction}>y</span>
+            <span className={styles.topbarBrand}>VENTAS</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, justifyContent: 'flex-end' }}>
+          <div className={styles.topbarActions}>
             {isAdmin && !isSplitView && (
               <button 
                 onClick={toggleSplitView}
-                style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  borderRadius: '8px',
-                  padding: '6px 12px',
-                  color: 'var(--fg-muted)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s, color 0.2s'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
+                className={styles.splitToggle}
               >
                 <Columns size={14} />
                 MODO SPLIT
               </button>
             )}
-            <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <div className={styles.topbarDate}>
               {formatDate(new Date().toISOString())}
             </div>
           </div>
         </header>
       )}
 
-      <div className="wrapper" style={{ flex: 1, overflow: 'hidden', display: 'flex' }}>
-        {showOwnSidebar && (
-          <Sidebar
-            hidden={sidebarHidden}
-            onHide={() => setSidebarHidden(true)}
-            zoom={currentZoom} 
-            onZoomIn={() => handleZoom(0.1)} 
-            onZoomOut={() => handleZoom(-0.1)} 
-            onReset={resetZoom} 
-          />
-        )}
+      <div className={styles.wrapper} data-app-wrapper>
+        {showOwnSidebar && <RecordsSidebar />}
         <main
-          className="content-wrapper"
-          style={{
-            height: '100%',
-            overflow: 'hidden',
-            position: 'relative'
-          }}
+          className={styles.content}
+          data-app-content
         >
-          {showOwnSidebar && (
-            <button
-              onClick={() => setSidebarHidden(false)}
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: 0,
-                zIndex: 300,
-                background: 'var(--bg-elev-1)',
-                borderTop: '1px solid rgba(255,255,255,0.1)',
-                borderRight: '1px solid rgba(255,255,255,0.1)',
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                borderLeft: 'none',
-                borderRadius: '0 12px 12px 0',
-                width: 28,
-                height: 56,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                cursor: 'pointer',
-                boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
-                transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                opacity: sidebarHidden ? 1 : 0,
-                pointerEvents: sidebarHidden ? 'auto' : 'none',
-                transform: sidebarHidden ? 'translateY(-50%) translateX(0)' : 'translateY(-50%) translateX(-28px)'
-              }}
-              onMouseEnter={e => {
-                if (!sidebarHidden) return;
-                e.currentTarget.style.width = '36px';
-                e.currentTarget.style.background = 'var(--bg-elev-2)';
-              }}
-              onMouseLeave={e => {
-                if (!sidebarHidden) return;
-                e.currentTarget.style.width = '28px';
-                e.currentTarget.style.background = 'var(--bg-elev-1)';
-              }}
-            >
-              <ChevronRight size={18} strokeWidth={3} />
-            </button>
-          )}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
+              className={[
+                styles.pageScroll,
+                usesRecordsShell ? styles.recordsPageScroll : '',
+                isMinimal ? styles.minimalPageScroll : '',
+                !isMinimal && (pathname.startsWith('/reportes') || pathname === '/analistas') ? styles.reportPageScroll : '',
+              ].filter(Boolean).join(' ')}
+              data-app-scroll
               key={pathname}
               initial={{ opacity: 0, x: 15 }}
               animate={{ opacity: 1, x: 0, transition: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } }}
               exit={{ opacity: 0, x: -15, transition: { duration: 0.15, ease: [0.16, 1, 0.3, 1] } }}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                overflowY: 'auto',
-                paddingTop: isMinimal ? 0 : (pathname.startsWith('/reportes') || pathname === '/analistas') ? '10px' : undefined,
-                paddingLeft: '12px',
-                paddingRight: '12px',
-                willChange: 'opacity'
-              }}
             >
               {isSplitView && isAdmin && !isMinimal ? (
                 <SplitLayout
@@ -517,6 +421,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <ErrorProvider>
     <RegistrosProvider>
+    <GestionDiariaProvider>
     <ObjetivosProvider>
     <HistoricoProvider>
     <SettingsProvider>
@@ -532,6 +437,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </SettingsProvider>
     </HistoricoProvider>
     </ObjetivosProvider>
+    </GestionDiariaProvider>
     </RegistrosProvider>
     </ErrorProvider>
   );

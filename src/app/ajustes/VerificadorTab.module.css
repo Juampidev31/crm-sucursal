@@ -1,0 +1,489 @@
+.root,
+.results {
+  display: flex;
+  flex-direction: column;
+}
+
+.root {
+  gap: 24px;
+}
+
+.results {
+  gap: 14px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.resetButton,
+.deleteSelectionButton,
+.confirmDeleteButton {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.resetButton {
+  padding: 7px 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+}
+
+.pasteArea,
+.searchInput {
+  box-sizing: border-box;
+  width: 100%;
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.pasteArea {
+  padding: 12px 14px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.helperText,
+.detectedCount,
+.moreRows {
+  margin-bottom: 0;
+  font-size: 12px;
+}
+
+.helperText {
+  margin-top: 8px;
+  color: var(--text-muted);
+}
+
+.detectedCount {
+  margin-top: 6px;
+  color: var(--text-secondary);
+}
+
+.mappingLabel {
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tableViewport {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.mappingTable,
+.resultsTable {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+
+.mappingHeadRow {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mappingHeadCell {
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--surface-sunken);
+}
+
+.mappingSelect {
+  padding: 5px 8px;
+  color: var(--text-strong);
+  font-size: 11px;
+  cursor: pointer;
+  background: var(--surface-card);
+  border: 1px solid var(--control-border);
+  border-radius: 5px;
+  outline: none;
+}
+
+.mappingBodyRow {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mappingCell {
+  padding: 8px 12px;
+  color: var(--text-secondary);
+}
+
+.moreRows {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.verifyActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.verifyButton {
+  padding: 9px 24px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--action-primary);
+  border: 0;
+  border-radius: 7px;
+}
+
+.verifyButton:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  background: var(--surface-hover);
+}
+
+.verifyHint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.duplicateBanner,
+.activeFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.duplicateBanner {
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgb(248 113 113 / 8%);
+  border: 1px solid rgb(248 113 113 / 25%);
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.duplicateBanner.isConfirming {
+  background: rgb(248 113 113 / 13%);
+  border-color: rgb(248 113 113 / 40%);
+}
+
+.duplicateSummary {
+  color: #ff3366;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.deleteSelectionButton,
+.confirmDeleteButton,
+.cancelButton {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.deleteSelectionButton {
+  color: #ff3366;
+  background: rgb(248 113 113 / 15%);
+  border: 1px solid rgb(248 113 113 / 30%);
+}
+
+.deleteSelectionButton:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  background: var(--surface-hover);
+  border-color: var(--border-subtle);
+}
+
+.confirmDeleteButton {
+  color: #fff;
+  background: rgb(248 113 113 / 30%);
+  border: 1px solid rgb(248 113 113 / 50%);
+}
+
+.confirmDeleteButton:disabled {
+  cursor: not-allowed;
+  background: var(--surface-hover);
+}
+
+.cancelButton {
+  color: var(--text-secondary);
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+}
+
+.successBanner,
+.errorBanner {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.successBanner {
+  color: #047857;
+  background: rgb(74 222 128 / 8%);
+  border: 1px solid rgb(74 222 128 / 20%);
+}
+
+.errorBanner {
+  color: #ff3366;
+  background: rgb(248 113 113 / 8%);
+  border: 1px solid rgb(248 113 113 / 25%);
+}
+
+.activeFilters {
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.activeFiltersLabel {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.statusFilterChip,
+.filterChip {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+.statusFilterChip {
+  color: var(--status-color);
+  background: var(--surface-card);
+  border: 1px solid color-mix(in srgb, var(--status-color) 27%, transparent);
+}
+
+.filterChip {
+  color: var(--text-secondary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.clearFilters {
+  padding: 3px 10px;
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+.searchInput {
+  padding: 9px 14px;
+  font-size: 13px;
+}
+
+.statusHeading {
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.selectedCount {
+  margin-left: 8px;
+  color: #00ff88;
+}
+
+.statusOptions,
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.statusOptions {
+  gap: 6px;
+}
+
+.statusButton {
+  padding: 6px 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+.statusButton.isActive {
+  color: #fff;
+  background: var(--action-primary);
+  border-color: var(--action-primary);
+}
+
+.statusTotal {
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.summary {
+  gap: 16px;
+}
+
+.summaryText {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.summaryValue {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.resultsTable {
+  table-layout: auto;
+}
+
+.resultsHead {
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.resultsHeadCell {
+  min-width: 120px;
+  padding: 10px 14px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: left;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.selectionHead {
+  width: 36px;
+  min-width: 36px;
+}
+
+.resultRow {
+  background: transparent;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.12s ease;
+}
+
+.resultRow.isDuplicate {
+  background: rgb(248 113 113 / 7%);
+}
+
+.resultRow:hover,
+.resultRow.isDuplicate:hover {
+  background: var(--surface-hover);
+}
+
+.selectionCell {
+  width: 36px;
+  padding: 9px 14px;
+  text-align: center;
+}
+
+.selectionCheckbox {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #ff3366;
+}
+
+.dataCell {
+  max-width: 200px;
+  padding: 9px 14px;
+  overflow: hidden;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusCell,
+.databaseCell {
+  padding: 9px 14px;
+  white-space: nowrap;
+}
+
+.statusLabel {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: var(--status-color);
+  font-weight: 600;
+}
+
+.diffDetail {
+  margin-left: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.databaseCell {
+  color: var(--text-primary);
+}
+
+.emptyValue {
+  color: var(--text-muted);
+}
+
+.emptyResults {
+  padding: 24px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .header {
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .verifyActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .verifyButton {
+    width: 100%;
+  }
+}

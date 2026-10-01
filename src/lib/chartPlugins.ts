@@ -1,4 +1,5 @@
 import type { Plugin } from 'chart.js';
+import { UI_FONT_FAMILY } from '@/app/fonts';
 
 /**
  * Doughnut callout plugin — draws a leader line + percentage label
@@ -45,12 +46,12 @@ export const calloutPlugin: Plugin<'doughnut'> = {
       ctx.moveTo(xLineStart, yLineStart);
       ctx.lineTo(xLineMid, yLineMid);
       ctx.lineTo(xLineEnd, yLineMid);
-      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.strokeStyle = 'rgba(71,84,103,0.28)';
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.fillStyle = '#bbb';
-      ctx.font = '600 10px "Outfit", sans-serif';
+      ctx.fillStyle = '#667085';
+      ctx.font = `600 10px ${UI_FONT_FAMILY}`;
       ctx.textAlign = isLeft ? 'right' : 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(pct, xLineEnd + (isLeft ? -4 : 4), yLineMid);
@@ -76,7 +77,7 @@ export const bgTrackPlugin: Plugin<'doughnut'> = {
     ctx.beginPath();
     ctx.arc(x, y, innerRadius + thickness / 2, 0, 2 * Math.PI);
     ctx.lineWidth = thickness;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.strokeStyle = 'rgba(71, 84, 103, 0.08)';
     ctx.stroke();
     ctx.restore();
   }

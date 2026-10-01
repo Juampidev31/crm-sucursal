@@ -1,0 +1,22 @@
+{
+  "capturedAt": "2026-09-29T22:27:24.276Z",
+  "source": "Supabase read-only resumen_mensual.experiencia_cliente.html",
+  "fixtures": [
+    {
+      "file": "historical-snapshot-2026-01.html",
+      "period": "2026-01",
+      "sourceUpdatedAt": "2026-04-25T11:37:48.727+00:00",
+      "sanitized": "Text nodes only; DOM, class, id, style and visual attributes preserved.",
+      "originalHtmlLength": 127766,
+      "fixtureHtmlLength": 127766
+    },
+    {
+      "file": "historical-snapshot-2026-06.html",
+      "period": "2026-06",
+      "sourceUpdatedAt": "2026-06-19T18:45:23.153+00:00",
+      "sanitized": "Text nodes only; DOM, class, id, style and visual attributes preserved.",
+      "originalHtmlLength": 125712,
+      "fixtureHtmlLength": 125712
+    }
+  ]
+}

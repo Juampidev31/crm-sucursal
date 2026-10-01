@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import ResumenMensualView from '../../ajustes/ResumenMensualView';
+import { SettingsProvider } from '@/features/settings/SettingsProvider';
+import { ErrorProvider } from '@/context/ErrorContext';
 
 interface DatosGraficos {
   kpiTotal: any;
@@ -68,7 +70,7 @@ const addGradients = (chart: any) => {
           const chartObj = context.chart;
           const { ctx, chartArea } = chartObj;
           if (!chartArea) return null;
-          let horizontal = chartObj.config?.options?.indexAxis === 'y';
+          const horizontal = chartObj.config?.options?.indexAxis === 'y';
           const gradient = horizontal 
             ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
             : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
@@ -136,7 +138,9 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
   const chartTicketPromedio = useMemo(() => addGradients(datos.chartTicketPromedio), [datos.chartTicketPromedio]);
 
   return (
-    <ResumenMensualView
+    <ErrorProvider>
+      <SettingsProvider>
+        <ResumenMensualView
       readOnly={true}
       selectedMes={datos.month}
       selectedAnio={datos.year}
@@ -168,6 +172,8 @@ export default function ResumenMensualInteractivo({ datos }: { datos: DatosGrafi
       distLocalidadTotal={datos.distLocalidadTotal || []}
       resumen={resumen}
       setResumen={setResumen}
-    />
+        />
+      </SettingsProvider>
+    </ErrorProvider>
   );
 }

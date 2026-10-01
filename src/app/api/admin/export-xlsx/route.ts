@@ -47,7 +47,11 @@ export async function POST(req: NextRequest) {
     let q = supabase
       .from('registros')
       .select('nombre,cuil,analista,estado,monto,fecha,puntaje,tipo_cliente,acuerdo_precios,empleador,dependencia,localidad,comentarios,created_at,es_re')
-      .order('fecha', { ascending: true });
+      // `fecha` es el orden funcional del export y se conserva. El `id` se añade
+      // sólo como desempate: al paginar con `.range()` sobre un orden no único
+      // las filas empatadas pueden repetirse u omitirse entre páginas.
+      .order('fecha', { ascending: true })
+      .order('id', { ascending: true });
     if (fechaDesde) q = q.gte('fecha', fechaDesde);
     if (fechaHasta) q = q.lte('fecha', fechaHasta);
     if (empleador?.trim()) q = q.ilike('empleador', `%${empleador.trim()}%`);
@@ -174,8 +178,9 @@ export async function POST(req: NextRequest) {
   // Aplicar estilos a las filas
   worksheet.eachRow((row, rowNumber) => {
     row.eachCell((cell, colNumber) => {
-      // Fuente Outfit, centrada
-      cell.font = { name: 'Outfit', size: 11 };
+      // La exportación replica el contrato visual: texto en Outfit y cifras en Georgia.
+      const numericCell = typeof cell.value === 'number' || cell.value instanceof Date;
+      cell.font = { name: numericCell ? 'Georgia' : 'Outfit', size: 11 };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
 
       // Formato de fecha para la primera columna

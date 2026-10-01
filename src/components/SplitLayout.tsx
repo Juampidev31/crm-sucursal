@@ -14,18 +14,8 @@ interface SplitLayoutProps {
 const AVAILABLE_ROUTES = [
   { path: '/registros', label: 'Registros' },
   { path: '/ajustes', label: 'Ajustes' },
-  { path: '/proyeccion', label: 'Proyección' },
   { path: '/analistas', label: 'Analistas' },
 ];
-
-const iconBtnStyle: React.CSSProperties = {
-  background: 'none', border: 'none', color: '#8f929d', cursor: 'pointer',
-  display: 'flex', alignItems: 'center', padding: '6px', borderRadius: '6px', transition: 'all 0.2s',
-};
-const iconBtnHover = {
-  onMouseEnter: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; },
-  onMouseLeave: (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.color = '#8f929d'; e.currentTarget.style.background = 'transparent'; },
-};
 
 const NavControl = ({ side, currentPath, onSelect, onReload }: {
   side: 'left' | 'right';
@@ -33,18 +23,9 @@ const NavControl = ({ side, currentPath, onSelect, onReload }: {
   onSelect: (side: 'left' | 'right', path: string) => void;
   onReload: (side: 'left' | 'right') => void;
 }) => (
-  <div style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '8px 16px',
-    background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), rgba(255,255,255,0.01))',
-    borderBottom: '1px solid rgba(255,255,255,0.08)',
-    justifyContent: 'space-between',
-    height: '46px'
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <div className="split-view__nav">
+    <div className="split-view__nav-group">
+      <div className="split-view__nav-icon">
         <Layout size={14} color="#8f929d" />
       </div>
       <CustomSelect
@@ -54,23 +35,21 @@ const NavControl = ({ side, currentPath, onSelect, onReload }: {
         width="160px"
       />
     </div>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div className="split-view__nav-actions">
       <button
         onClick={() => onReload(side)}
         title="Recargar panel"
-        style={iconBtnStyle}
-        {...iconBtnHover}
+        className="split-view__icon-button"
       >
         <RefreshCw size={14} />
       </button>
-      <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.1)' }} />
+      <div className="split-view__nav-divider" />
       <a
         href={currentPath}
         target="_blank"
         rel="noopener noreferrer"
         title="Abrir en pestaña nueva"
-        style={iconBtnStyle}
-        {...iconBtnHover}
+        className="split-view__icon-button"
       >
         <ExternalLink size={14} />
       </a>
@@ -127,75 +106,27 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      height: '100%', 
-      width: '100%', 
-      background: '#050505',
-      overflow: 'hidden',
-      position: 'relative'
-    }}>
+    <div className="split-view">
       {/* Overlay to prevent iframe capturing mouse events during drag */}
       {isDragging && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 50, cursor: 'col-resize' }} />
+        <div className="split-view__drag-overlay" />
       )}
 
       {/* Header del Split View */}
-      <div style={{
-        height: '44px',
-        width: '100%',
-        background: '#0a0a0a',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 16px',
-        flexShrink: 0,
-        zIndex: 20,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(167,139,250,0.05))',
-            border: '1px solid rgba(167,139,250,0.2)',
-            padding: '4px 10px',
-            borderRadius: '6px',
-            fontSize: '10px',
-            fontWeight: 900,
-            color: '#a78bfa',
-            letterSpacing: '1px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}>
+      <div className="split-view__header">
+        <div className="split-view__header-meta">
+          <div className="split-view__badge">
             <Maximize2 size={12} />
             ADMIN MULTI-VIEW PRO
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--fg-muted)', fontWeight: 600 }}>
+          <div className="split-view__ratio">
             {splitRatio.toFixed(0)}% / {(100 - splitRatio).toFixed(0)}%
           </div>
         </div>
 
         <button 
           onClick={onClose}
-          style={{
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            borderRadius: '8px',
-            padding: '6px 14px',
-            color: '#ff3366',
-            fontSize: '11px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.2s',
-            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.1)'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.color = '#ff5f5f'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.2)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ff3366'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.1)'; }}
+          className="split-view__exit"
         >
           SALIR DEL MODO SPLIT
           <X size={14} strokeWidth={2.5} />
@@ -205,82 +136,34 @@ export default function SplitLayout({ leftPath, rightPath, onClose, onPathsChang
       {/* Contenido Dividido */}
       <div 
         ref={containerRef}
-        style={{ 
-        flex: 1, 
-        display: 'flex', 
-        width: '100%', 
-        overflow: 'hidden',
-        position: 'relative'
-      }}>
+        className="split-view__content"
+        style={{ '--split-left': `${splitRatio}%`, '--split-right': `${100 - splitRatio}%` } as React.CSSProperties}
+      >
         {/* Panel Izquierdo */}
-        <div style={{ 
-          width: `${splitRatio}%`,
-          display: 'flex', 
-          flexDirection: 'column', 
-          minWidth: 0,
-          background: '#0c0c0c'
-        }}>
+        <div className="split-view__panel split-view__panel--left">
           <NavControl side="left" currentPath={leftPath} onSelect={handleSelect} onReload={reloadIframe} />
           <iframe 
             key={`left-${keyLeft}`}
             src={`${leftPath}${leftPath.includes('?') ? '&' : '?'}minimal=true`}
-            style={{ 
-              flex: 1, 
-              width: '100%', 
-              border: 'none',
-              background: '#050505',
-              boxShadow: 'inset -10px 0 20px rgba(0,0,0,0.2)'
-            }}
+            className="split-view__frame split-view__frame--left"
           />
         </div>
 
         {/* Resizer Handle */}
         <div 
           onMouseDown={startDrag}
-          style={{
-            width: '10px',
-            background: isDragging ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.02)',
-            cursor: 'col-resize',
-            zIndex: 40,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'background 0.2s',
-            borderLeft: '1px solid rgba(255,255,255,0.05)',
-            borderRight: '1px solid rgba(255,255,255,0.05)',
-          }}
-          onMouseEnter={e => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-          onMouseLeave={e => { if (!isDragging) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+          className={`split-view__resizer${isDragging ? ' is-dragging' : ''}`}
         >
-          <div style={{ 
-            width: '4px', 
-            height: '32px', 
-            background: isDragging ? '#a78bfa' : 'rgba(255,255,255,0.3)', 
-            borderRadius: '4px',
-            boxShadow: isDragging ? '0 0 8px rgba(167,139,250,0.8)' : 'none',
-            transition: 'all 0.2s'
-          }} />
+          <div className="split-view__resizer-grip" />
         </div>
 
         {/* Panel Derecho */}
-        <div style={{ 
-          width: `calc(${100 - splitRatio}% - 10px)`,
-          display: 'flex', 
-          flexDirection: 'column',
-          minWidth: 0,
-          background: '#0c0c0c'
-        }}>
+        <div className="split-view__panel split-view__panel--right">
           <NavControl side="right" currentPath={rightPath} onSelect={handleSelect} onReload={reloadIframe} />
           <iframe 
             key={`right-${keyRight}`}
             src={`${rightPath}${rightPath.includes('?') ? '&' : '?'}minimal=true`}
-            style={{ 
-              flex: 1, 
-              width: '100%', 
-              border: 'none',
-              background: '#050505',
-              boxShadow: 'inset 10px 0 20px rgba(0,0,0,0.2)'
-            }}
+            className="split-view__frame split-view__frame--right"
           />
         </div>
       </div>

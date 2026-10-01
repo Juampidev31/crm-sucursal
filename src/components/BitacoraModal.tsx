@@ -9,7 +9,8 @@ import { Registro, BitacoraNota, Recordatorio } from '@/types';
 import ModalPortal from '@/components/ModalPortal';
 import { getTagStyle } from '@/components/EtiquetasSelector';
 import { logAudit } from '@/lib/audit';
-import { X, Trash2, Loader2, AlertCircle, Bell, Clock, User, CheckCircle2, Tag, Edit3, Minus, Plus } from 'lucide-react';
+import { X, Trash2, Loader2, AlertCircle, Bell, Clock, User, Tag, Edit3, Minus, Plus } from 'lucide-react';
+import styles from './BitacoraModal.module.css';
 
 interface BitacoraModalProps {
   isOpen: boolean;
@@ -339,90 +340,38 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
     <ModalPortal>
       <div
         onClick={onClose}
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 1000,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 16,
-        }}
+        className={styles.overlay}
       >
         <motion.div
           drag
           dragMomentum={false}
-          className="modal-content"
-          style={{
-            maxWidth: 640,
-            width: '95%',
-            height: 'auto',
-            maxHeight: '92vh',
-            borderRadius: 14,
-            background: '#0d0d10',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            boxShadow: '0 24px 80px rgba(0,0,0,0.95)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            zoom: modalZoom,
-            transition: 'all 0.2s ease'
-          }}
+          className={`modal-content ${styles.modal}`}
+          style={{ '--modal-zoom': modalZoom } as React.CSSProperties}
           onClick={e => e.stopPropagation()}
         >
           {/* ── Header ── */}
-          <div style={{
-            background: 'rgba(14, 14, 18, 0.98)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            padding: '10px 16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexShrink: 0
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16 }}>📜</span>
-              <h3 style={{ fontSize: 13.5, fontWeight: 900, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+          <div className={styles.header}>
+            <div className={styles.headerTitleRow}>
+              <span className={styles.headerIcon}>📜</span>
+              <h3 className={styles.title}>
                 RECORDATORIOS Y SEGUIMIENTOS
               </h3>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className={styles.headerActions}>
               {/* Zoom Controls (- % +) */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '20px',
-                padding: '2px 4px',
-                gap: '2px'
-              }}>
+              <div className={styles.zoomControls}>
                 <button
                   type="button"
                   onClick={() => handleModalZoom(-0.05)}
                   title="Reducir tamaño (-)"
-                  style={{
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'none', border: 'none', color: '#9ca3af',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                  className={styles.zoomButton}
                 >
                   <Minus size={12} strokeWidth={2.5} />
                 </button>
                 <span
                   onClick={resetModalZoom}
                   title="Restablecer a 100%"
-                  style={{
-                    fontSize: '11px', fontWeight: 800, color: modalZoom === 1 ? '#9ca3af' : '#34d399',
-                    padding: '0 4px', cursor: 'pointer', userSelect: 'none'
-                  }}
+                  className={`${styles.zoomValue}${modalZoom !== 1 ? ` ${styles.isChanged}` : ''}`}
                 >
                   {Math.round(modalZoom * 100)}%
                 </span>
@@ -430,13 +379,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   type="button"
                   onClick={() => handleModalZoom(0.05)}
                   title="Agrandar tamaño (+)"
-                  style={{
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'none', border: 'none', color: '#9ca3af',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                  className={styles.zoomButton}
                 >
                   <Plus size={12} strokeWidth={2.5} />
                 </button>
@@ -444,9 +387,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
               <button
                 onClick={onClose}
-                style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                className={styles.closeButton}
               >
                 <X size={16} />
               </button>
@@ -455,70 +396,39 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
 
           {/* ── Body (Scrollable) ── */}
           <div
-            className="hide-scrollbar"
-            style={{
-              padding: '12px 16px',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              flex: 1,
-            }}
+            className={`hide-scrollbar ${styles.body}`}
           >
             
             {/* Banners */}
             {saveError && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 14px', borderRadius: 8,
-                background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#fca5a5', fontSize: 12, lineHeight: 1.5,
-              }}>
-                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+              <div className={styles.errorBanner}>
+                <AlertCircle size={15} />
                 <span>{saveError}</span>
               </div>
             )}
 
             {/* Selector de Recordatorio (sin título) */}
-            <div style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 10,
-              padding: 10,
-              background: 'rgba(255, 255, 255, 0.015)',
-            }}>
+            <div className={styles.sectionCard}>
               {activeReminder && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                  padding: '5px 8px', borderRadius: 6, marginBottom: 6,
-                  background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#fca5a5', fontSize: 11
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Bell size={12} style={{ color: '#ef4444' }} />
+                <div className={styles.activeReminder}>
+                  <div className={styles.inlineRow}>
+                    <Bell size={12} />
                     <span>
                       Recordatorio actual: <strong>{new Date(activeReminder.fecha_hora).toLocaleDateString('es-AR')} {new Date(activeReminder.fecha_hora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</strong>
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: 4 }}>
+                  <div className={styles.compactActions}>
                     <button
                       type="button"
                       onClick={() => handleCompletarRecordatorio(activeReminder.id)}
-                      style={{
-                        padding: '3px 6px', fontSize: 10, fontWeight: 800,
-                        background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #10b981', color: '#34d399',
-                        borderRadius: 5, cursor: 'pointer'
-                      }}
+                      className={`${styles.compactButton} ${styles.successButton}`}
                     >
                       ✅ Atendido
                     </button>
                     <button
                       type="button"
                       onClick={() => handleEliminarRecordatorio(activeReminder.id)}
-                      style={{
-                        padding: '3px 6px', fontSize: 10, fontWeight: 800,
-                        background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#fca5a5',
-                        borderRadius: 5, cursor: 'pointer'
-                      }}
+                      className={`${styles.compactButton} ${styles.dangerButton}`}
                     >
                       🗑️ Eliminar
                     </button>
@@ -526,30 +436,22 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 6, marginBottom: 6 }}>
+              <div className={styles.dateGrid}>
                 <input
                   type="date"
                   value={fecha}
                   onChange={e => setFecha(e.target.value)}
-                  style={{
-                    width: '100%', height: 30, padding: '0 8px', borderRadius: 6,
-                    background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#fff', fontSize: 11.5, outline: 'none', colorScheme: 'dark'
-                  }}
+                  className={styles.dateInput}
                 />
                 <input
                   type="time"
                   value={hora}
                   onChange={e => setHora(e.target.value)}
-                  style={{
-                    width: '100%', height: 30, padding: '0 8px', borderRadius: 6,
-                    background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
-                    color: '#fff', fontSize: 11.5, outline: 'none', colorScheme: 'dark'
-                  }}
+                  className={styles.dateInput}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
+              <div className={styles.quickDates}>
                 {[
                   { label: 'Hoy', days: 0 },
                   { label: 'Mañana', days: 1 },
@@ -563,15 +465,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                       key={label}
                       type="button"
                       onClick={() => setFecha(sel ? '' : val)}
-                      style={{
-                        width: '100%',
-                        padding: '4px 4px', fontSize: 10.5, fontWeight: 700,
-                        background: sel ? 'rgba(16,185,129,0.18)' : 'rgba(255, 255, 255, 0.04)',
-                        color: sel ? '#10b981' : '#9ca3af',
-                        border: `1px solid ${sel ? '#10b981' : 'rgba(255, 255, 255, 0.08)'}`,
-                        borderRadius: 5, cursor: 'pointer', transition: 'all 0.15s',
-                        textAlign: 'center', whiteSpace: 'nowrap'
-                      }}
+                      className={`${styles.quickDate}${sel ? ` ${styles.isSelected}` : ''}`}
                     >{label}</button>
                   );
                 })}
@@ -579,33 +473,24 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
             </div>
 
             {/* 2. Card: ETIQUETAS PERSONALIZADAS */}
-            <div style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 10,
-              padding: 10,
-              background: 'rgba(255, 255, 255, 0.015)',
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#e5e7eb', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Tag size={13} style={{ color: '#c084fc' }} />
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionTitle}>
+                <Tag size={13} className={styles.tagIcon} />
                 ETIQUETAS PERSONALIZADAS
               </div>
 
               {/* Lista actual de etiquetas */}
-              <div style={{ marginBottom: 6 }}>
+              <div className={styles.tagListBlock}>
                 {etiquetas.length === 0 ? (
-                  <span style={{ fontSize: 11, color: '#6b7280', fontStyle: 'italic' }}>Sin etiquetas asignadas a este cliente.</span>
+                  <span className={styles.emptyText}>Sin etiquetas asignadas a este cliente.</span>
                 ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                  <div className={styles.tagList}>
                     {etiquetas.map(t => {
                       const s = getTagStyle(t);
                       return (
-                        <span key={t} style={{
-                          fontSize: 10.5, fontWeight: 700, padding: '2px 6px', borderRadius: 5,
-                          background: s.bg, border: `1px solid ${s.border}`,
-                          color: s.color, display: 'inline-flex', alignItems: 'center', gap: 5
-                        }}>
+                        <span key={t} className={styles.tagBadge} style={{ '--tag-bg': s.bg, '--tag-border': s.border, '--tag-color': s.color } as React.CSSProperties}>
                           {s.label}
-                          <X size={11} style={{ cursor: 'pointer' }} onClick={() => setEtiquetas(etiquetas.filter(x => x !== t))} />
+                          <X size={11} className={styles.clickableIcon} onClick={() => setEtiquetas(etiquetas.filter(x => x !== t))} />
                         </span>
                       );
                     })}
@@ -614,56 +499,28 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
               </div>
 
               {/* Sub-box: CREAR NUEVA ETIQUETA */}
-              <div style={{
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                borderRadius: 6,
-                padding: 6,
-                background: 'rgba(0, 0, 0, 0.25)',
-              }}>
-                <div style={{ fontSize: 9.5, fontWeight: 800, color: '#9ca3af', letterSpacing: '0.4px', marginBottom: 4, textTransform: 'uppercase' }}>
+              <div className={styles.tagCreator}>
+                <div className={styles.tagCreatorTitle}>
                   CREAR NUEVA ETIQUETA
                 </div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <div className={styles.inlineRow}>
                   <input
                     value={nuevaEtiqueta}
                     onChange={e => setNuevaEtiqueta(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAgregarEtiqueta(); } }}
-                    style={{
-                      flex: 1, minWidth: 0, height: 30, padding: '0 8px',
-                      background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: 5, color: '#fff', fontSize: 11.5, outline: 'none'
-                    }}
+                    className={styles.textInput}
                   />
 
                   {/* Círculos Selector de Color */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    padding: '3px 6px',
-                    background: 'rgba(0, 0, 0, 0.4)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: 14,
-                    flexShrink: 0
-                  }}>
+                  <div className={styles.colorPicker}>
                     {TAG_COLORS.map(c => {
                       const isSel = selectedColor === c.color;
                       return (
                         <div
                           key={c.color}
                           onClick={() => setSelectedColor(c.color)}
-                          style={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: '50%',
-                            background: c.fill,
-                            border: isSel ? `2px solid ${c.color}` : `1px solid ${c.color}`,
-                            boxShadow: isSel ? `0 0 6px ${c.glow}` : 'none',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s',
-                            transform: isSel ? 'scale(1.1)' : 'scale(1)',
-                            boxSizing: 'border-box'
-                          }}
+                          className={`${styles.colorOption}${isSel ? ` ${styles.isSelected}` : ''}`}
+                          style={{ '--tag-color': c.color, '--tag-bg': c.fill, '--tag-glow': c.glow } as React.CSSProperties}
                         />
                       );
                     })}
@@ -672,14 +529,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   <button
                     type="button"
                     onClick={handleAgregarEtiqueta}
-                    style={{
-                      height: 30, padding: '0 10px', borderRadius: 5, fontSize: 10.5, fontWeight: 800,
-                      background: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.14)', color: '#fff',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
-                      whiteSpace: 'nowrap', transition: 'all 0.15s'
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.14)'; }}
+                    className={styles.addTagButton}
                   >
                     + AGREGAR
                   </button>
@@ -688,14 +538,9 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
             </div>
 
             {/* 3. Card: AÑADIR NUEVA NOTA / OBSERVACIÓN */}
-            <div style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 10,
-              padding: 10,
-              background: 'rgba(255, 255, 255, 0.015)',
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#e5e7eb', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Edit3 size={13} style={{ color: '#60a5fa' }} />
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionTitle}>
+                <Edit3 size={13} className={styles.editIcon} />
                 AÑADIR NUEVA NOTA / OBSERVACIÓN
               </div>
 
@@ -703,58 +548,39 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                 value={nota}
                 onChange={e => setNota(e.target.value)}
                 rows={2}
-                style={{
-                  width: '100%', minHeight: 46, padding: '6px 8px', borderRadius: 6,
-                  background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)',
-                  color: '#fff', fontSize: 11.5, outline: 'none', resize: 'vertical', fontFamily: 'inherit'
-                }}
+                className={styles.noteInput}
               />
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+              <div className={styles.saveRow}>
                 <button
                   onClick={handleGuardar}
                   disabled={saving || !canSave}
-                  style={{
-                    height: 28, padding: '0 14px', fontSize: 10.5, fontWeight: 900,
-                    letterSpacing: '0.4px', textTransform: 'uppercase',
-                    background: canSave && !saving ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-                    color: canSave && !saving ? '#34d399' : '#6b7280',
-                    border: `1px solid ${canSave && !saving ? '#10b981' : 'rgba(255, 255, 255, 0.08)'}`,
-                    borderRadius: 5, cursor: canSave && !saving ? 'pointer' : 'not-allowed',
-                    display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={e => { if (canSave && !saving) e.currentTarget.style.background = 'rgba(16, 185, 129, 0.22)'; }}
-                  onMouseLeave={e => { if (canSave && !saving) e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)'; }}
+                  className={styles.saveButton}
                 >
-                  {saving ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null}
+                  {saving ? <Loader2 size={12} className={styles.spinner} /> : null}
                   GUARDAR NOTA / RECORDATORIO
                 </button>
               </div>
             </div>
 
             {/* 4. Card: HISTORIAL DE NOTAS */}
-            <div style={{
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 10,
-              padding: 10,
-              background: 'rgba(255, 255, 255, 0.015)',
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#e5e7eb', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Clock size={13} style={{ color: '#9ca3af' }} />
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionTitle}>
+                <Clock size={13} />
                 HISTORIAL DE NOTAS ({notas.length})
               </div>
 
               {loadingNotas ? (
-                <div style={{ textAlign: 'center', padding: '8px 0', color: '#6b7280', fontSize: 11.5 }}>
-                  <Loader2 size={13} style={{ animation: 'spin 1s linear infinite', display: 'inline-block', marginRight: 5 }} />
+                <div className={styles.historyStatus}>
+                  <Loader2 size={13} className={styles.inlineSpinner} />
                   Cargando historial...
                 </div>
               ) : notas.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '8px 0', color: '#6b7280', fontSize: 11, fontStyle: 'italic' }}>
+                <div className={`${styles.historyStatus} ${styles.isEmpty}`}>
                   No hay notas registradas para este cliente aún.
                 </div>
               ) : (
-                <div className="hide-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 130, overflowY: 'auto', paddingRight: 4 }}>
+                <div className={`hide-scrollbar ${styles.historyList}`}>
                   {notas.map(n => {
                     const dateStr = n.created_at
                       ? new Date(n.created_at).toLocaleString('es-AR', {
@@ -764,31 +590,25 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                       : '';
                     const isOwn = user?.username === 'admin' || user?.username === n.analista;
                     return (
-                      <div key={n.id} style={{
-                        padding: '6px 8px', background: 'rgba(0, 0, 0, 0.25)',
-                        border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 6,
-                        display: 'flex', flexDirection: 'column', gap: 3,
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5 }}>
-                            <User size={11} style={{ color: '#34d399' }} />
-                            <span style={{ fontWeight: 700, color: '#fff' }}>{n.analista || 'Anónimo'}</span>
-                            <span style={{ color: 'rgba(255,255,255,0.2)' }}>•</span>
-                            <span style={{ color: '#9ca3af' }}>{dateStr}</span>
+                      <div key={n.id} className={styles.historyItem}>
+                        <div className={styles.historyHeader}>
+                          <div className={styles.historyMeta}>
+                            <User size={11} />
+                            <span className={styles.historyAuthor}>{n.analista || 'Anónimo'}</span>
+                            <span className={styles.historyBullet}>•</span>
+                            <span className={styles.historyDate}>{dateStr}</span>
                           </div>
                           {isOwn && (
                             <button
                               onClick={() => handleEliminar(n.id)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 2 }}
-                              onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                              onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                              className={styles.deleteButton}
                               title="Eliminar nota"
                             >
                               <Trash2 size={12} />
                             </button>
                           )}
                         </div>
-                        <p style={{ margin: 0, fontSize: 11.5, color: '#e5e7eb', lineHeight: 1.35, whiteSpace: 'pre-wrap' }}>
+                        <p className={styles.historyNote}>
                           {n.nota}
                         </p>
                       </div>

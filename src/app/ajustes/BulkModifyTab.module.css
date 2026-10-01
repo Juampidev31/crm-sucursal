@@ -1,0 +1,1320 @@
+/* Estilos canónicos de los flujos de modificación masiva. */
+
+.bulkRoot {
+  width: 100%;
+  min-height: calc(100vh - 200px);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.bulkRoot.isExcel {
+  min-height: auto;
+}
+
+/* ── Cabecera del corrector ─────────────────────────────────────────────── */
+.correctorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.bulkRoot .correctorTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: -0.5px;
+}
+
+.correctorIcon { color: var(--state-warning); }
+
+.correctorSubtitle {
+  margin-top: var(--space-1);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ── Controles de la cabecera ───────────────────────────────────────────── */
+.pillButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pillButton:disabled {
+  cursor: not-allowed;
+}
+
+.pillCount {
+  margin-left: var(--space-1);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: rgba(0, 255, 136, 0.15);
+  color: #34d399;
+  font-size: 9px;
+}
+
+.statusPill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+}
+
+.statusPill.isAlert {
+  color: var(--state-danger);
+  background: rgba(239,68,68,.08);
+  border-color: rgba(239,68,68,.3);
+}
+
+.resetButton {
+  padding: 6px 12px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* ── Secciones plegables ────────────────────────────────────────────────── */
+.section {
+  margin-bottom: 28px;
+  padding: var(--space-5);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.section.isAlert {
+  background: rgba(239, 68, 68, 0.04);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.sectionToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.sectionToggle.isExpanded { margin-bottom: var(--space-5); }
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.sectionTitle.isAlert {
+  color: #ff3366;
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.chevron {
+  opacity: 0.5;
+}
+
+/* Contenedor que empuja una acción al extremo derecho del toggle. */
+.sectionActionsEnd {
+  margin-left: auto;
+}
+
+/* Fila de botones bajo un formulario de sección. */
+.actionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ── Botones fantasma de sección ────────────────────────────────────────── */
+.ghostButton {
+  padding: var(--space-1) 10px;
+  border-radius: var(--radius-xs);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ghostButtonInfo {
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: #00d4ff;
+}
+
+.ghostButtonWarning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+}
+
+/* ── Campos y formulario ────────────────────────────────────────────────── */
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.darkInput {
+  width: 100%;
+  padding: 10px var(--space-3);
+  background: var(--surface-card);
+  color: var(--text-strong);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  outline: none;
+}
+
+.darkInputFlex {
+  composes: darkInput;
+  width: auto;
+  flex: 1;
+}
+
+/* ── Chips y listas ─────────────────────────────────────────────────────── */
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hint {
+  margin-top: var(--space-3);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.scrollArea {
+  margin-top: var(--space-5);
+  max-height: calc(100vh - 450px);
+  overflow-y: auto;
+}
+
+.emptyState {
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.mutedNote { color: var(--text-muted); }
+
+/* ── Primitivas compartidas del flujo masivo ───────────────────────────── */
+.comboEditable {
+  position: relative;
+}
+
+.comboEditableInput {
+  width: 100%;
+  padding: 5px 8px;
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-size: 12px;
+}
+
+.comboEditableMenu {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 2px);
+  left: 0;
+  width: 100%;
+  min-width: 220px;
+  max-height: 220px;
+  padding: var(--space-1);
+  overflow-y: auto;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgba(15,23,42,.14);
+}
+
+.comboEditableOption {
+  padding: 6px 8px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comboEditableOption:hover {
+  background: var(--surface-sunken);
+}
+
+.comboEditableOption.isSelected {
+  color: var(--combo-accent);
+  font-weight: 700;
+}
+
+.stepTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: var(--text-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.stepTitle.noMargin {
+  margin-bottom: 0;
+}
+
+.stepBadge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #fff;
+  background: var(--state-success);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.stepOptional {
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.stepProgress {
+  color: var(--state-success);
+  font-weight: 700;
+}
+
+.correctButton {
+  flex-shrink: 0;
+  padding: 10px 24px;
+  color: #fff;
+  background: var(--state-warning);
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.correctButton:disabled {
+  color: #98a2b3;
+  background: var(--surface-sunken);
+  cursor: not-allowed;
+}
+
+.variantChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all .15s ease;
+  user-select: none;
+}
+
+.variantChip.isSelected {
+  padding: 3px 8px 3px 10px;
+  color: var(--state-warning);
+  background: rgba(251,191,36,.12);
+  border-color: var(--state-warning);
+}
+
+.variantChip.isDuplicate {
+  color: var(--state-success);
+  background: rgba(16,185,129,.1);
+  border-color: rgba(52,211,153,.45);
+  font-weight: 700;
+}
+
+.variantChip.isDuplicate.isSelected {
+  color: #fff;
+  background: rgba(16,185,129,.82);
+  border-color: var(--state-success);
+  box-shadow: 0 0 10px rgba(52,211,153,.25);
+}
+
+.variantChipDot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--state-success);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 5px var(--state-success);
+}
+
+.variantChip.isDuplicate.isSelected .variantChipDot {
+  background: #fff;
+}
+
+.variantChipCopy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-1);
+  padding: 2px 4px;
+  color: inherit;
+  background: rgba(255,255,255,.18);
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.variantChipCopy.isCopied {
+  color: var(--state-success);
+  background: rgba(52,211,153,.2);
+  border-color: var(--state-success);
+}
+
+/* ── Asignación desde Excel ────────────────────────────────────────────── */
+.excelSection {
+  margin-bottom: 28px;
+  padding: var(--space-5);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.excelSection.isStandalone {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 400px);
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+.excelSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.excelSectionHeader.isExpanded { margin-bottom: var(--space-4); }
+
+.excelSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.excelSectionTitle svg { opacity: .5; }
+
+.excelSteps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--space-1) var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.excelStepList { display: flex; align-items: center; }
+
+.excelStepButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 18px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--border-subtle);
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all .2s ease;
+  white-space: nowrap;
+}
+
+.excelStepButton.isLast { border-right: 0; }
+.excelStepButton.isDone { color: var(--text-secondary); }
+.excelStepButton.isActive {
+  color: var(--text-strong);
+  background: var(--surface-card);
+  font-weight: 700;
+}
+.excelStepButton:disabled { cursor: not-allowed; opacity: .35; }
+
+.excelStepBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  transition: all .2s ease;
+}
+
+.excelStepButton.isDone .excelStepBadge { border-color: var(--text-secondary); }
+.excelStepButton.isActive .excelStepBadge {
+  background: var(--surface-hover);
+  border-color: currentColor;
+}
+
+.excelStepIndicator {
+  position: absolute;
+  right: 10%;
+  bottom: 0;
+  left: 10%;
+  height: 2px;
+  background: var(--text-strong);
+  border-radius: 2px 2px 0 0;
+}
+
+.excelToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: auto;
+}
+
+.excelDateFilter,
+.completionFilters { display: flex; align-items: center; gap: 6px; }
+
+.excelDateLabel {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+
+.excelDateInput {
+  padding: 3px 6px;
+  color: var(--text-secondary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  outline: none;
+  font-size: 11px;
+}
+
+.excelDateSeparator { color: var(--text-muted); font-size: 11px; }
+
+.inlineClear {
+  padding: 2px 6px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: 9px;
+}
+
+.toolbarDivider { width: 1px; height: 16px; background: var(--border-subtle); }
+
+.completionFilter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 10px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  transition: all .15s ease;
+}
+
+.completion_todos.isActive { color: var(--brand-muted); background: var(--brand-muted-soft); border-color: var(--brand-muted); }
+.completion_completos.isActive { color: var(--state-success); background: rgba(16,185,129,.08); border-color: var(--state-success); }
+.completion_faltantes.isActive { color: var(--state-danger); background: rgba(239,68,68,.08); border-color: var(--state-danger); }
+
+.completionCount {
+  min-width: 18px;
+  padding: 1px 6px;
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+  border-radius: var(--radius-full);
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.completionFilter.isActive .completionCount { color: #fff; }
+.completion_todos.isActive .completionCount { background: var(--brand-muted); }
+.completion_completos.isActive .completionCount { background: var(--state-success); }
+.completion_faltantes.isActive .completionCount { background: var(--state-danger); }
+
+.excelStepPanel { margin-bottom: var(--space-4); }
+.excelStepPanel.isStandalone {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.excelFieldLabel {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.excelTextarea {
+  width: 100%;
+  min-height: 380px;
+  resize: vertical;
+  font-family: var(--font-sans);
+  font-size: 11px;
+}
+.excelTextarea.isStandalone { flex: 1; min-height: 0; }
+
+.excelActions,
+.excelActionsCompact {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+}
+.excelActions { margin: 14px 0 var(--space-1); }
+
+.excelPrimaryButton,
+.excelSecondaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.excelPrimaryButton {
+  color: #fff;
+  background: var(--brand-muted);
+  border: 1px solid var(--brand-muted);
+}
+.excelPrimaryButton:disabled {
+  color: #98a2b3;
+  background: var(--surface-sunken);
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+}
+
+.excelSecondaryButton {
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+}
+
+.excelDetectedRows {
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.excelMappingFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.excelSelect {
+  min-width: 180px;
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.excelPreviewScroll {
+  margin-bottom: var(--space-3);
+  overflow-x: auto;
+}
+.excelPreviewScroll.isStandalone { flex: 1; min-height: 0; overflow-y: auto; }
+
+.excelPreviewTable { width: 100%; border-collapse: collapse; font-size: 11px; }
+.excelTableHead {
+  padding: 8px 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-align: left;
+  text-transform: uppercase;
+}
+.excelTableCell {
+  padding: 9px 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+.excelTableCell.isMapped { background: var(--brand-muted-soft); }
+
+.excelSelectionSummary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+
+.excelSelectionCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  font-weight: 700;
+}
+.excelSelectionCount.hasSelection {
+  color: var(--brand-muted);
+  background: var(--brand-muted-soft);
+  border-color: var(--brand-muted);
+}
+
+.excelDataScroll {
+  max-height: calc(100vh - 360px);
+  overflow: auto;
+}
+.excelDataScroll.isStandalone { flex: 1; min-height: 0; max-height: none; }
+.excelDataTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.excelDataHead {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  background: var(--surface-card);
+}
+
+.excelDataRow {
+  cursor: pointer;
+  transition: background 80ms ease;
+}
+.excelDataRow:hover > td { background: var(--brand-muted-soft); }
+.excelDataRow.isSelected > td,
+.excelDataRow.isSelected:hover > td { background: var(--state-success-soft); }
+.excelDataRow.isEmpty { opacity: .4; }
+.excelDataRow.groupRow { background: var(--brand-muted-soft); cursor: default; }
+
+.checkboxCell { width: 36px; text-align: center; }
+.checkboxCell.isNested { padding-left: 24px; }
+.excelCheckbox { cursor: pointer; }
+.mutedCell,
+.nestedRowLabel { color: var(--text-muted); }
+.strongCell { font-weight: 700; }
+.groupHint { color: var(--brand-muted); font-size: 10px; font-weight: 700; }
+.excelComplete { color: var(--state-success); font-size: 10px; font-weight: 700; }
+
+.missingFields { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.missingField {
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.missingField.willComplete {
+  color: var(--state-success);
+  background: var(--state-success-soft);
+  border: 1px solid var(--state-success);
+}
+.missingField.stillMissing {
+  color: var(--state-danger);
+  background: var(--state-danger-soft);
+  border: 1px solid var(--state-danger);
+}
+
+.excelAssignmentForm {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.excelFormHint {
+  margin-bottom: var(--space-1);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-style: italic;
+}
+
+.excelFieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding-bottom: var(--space-1);
+}
+
+.excelFieldControl {
+  width: 100%;
+  padding: 6px 8px;
+  color: var(--text-secondary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-size: 12px;
+}
+
+.excelAssignmentActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.excelAssignmentSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: 11px;
+}
+.excelSummaryText { color: var(--text-secondary); }
+.excelSelectedValue,
+.excelFieldNames { color: var(--brand-muted); }
+.excelSelectedValue { font-weight: 700; }
+.excelFieldsValue { color: var(--state-success); }
+.excelFieldNames { font-size: 10px; }
+
+.excelConfirmRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.excelConfirmWarning { color: var(--state-danger); font-size: 12px; font-weight: 600; }
+
+.excelDangerButton {
+  padding: 6px 14px;
+  color: #fff;
+  background: var(--state-danger);
+  border: 1px solid var(--state-danger);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+.excelDangerButton:disabled { background: var(--surface-sunken); cursor: not-allowed; }
+
+.excelError {
+  padding: 8px 12px;
+  color: var(--state-danger);
+  background: var(--state-danger-soft);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.excelSuccess {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 16px;
+  color: var(--state-success);
+  background: var(--state-success-soft);
+  border: 1px solid var(--state-success);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+}
+.excelSuccessActions { display: flex; gap: var(--space-2); }
+.excelResultButton {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+.excelResultButton.isSuccess {
+  color: var(--state-success);
+  background: var(--state-success-soft);
+  border: 1px solid var(--state-success);
+}
+.excelResultButton.isPrimary {
+  color: var(--brand-muted);
+  background: var(--brand-muted-soft);
+  border: 1px solid var(--brand-muted);
+}
+
+/* ── Overlay de modal ───────────────────────────────────────────────────── */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+}
+
+
+
+
+/* Deduplicated local style primitives migrated from JSX. */
+.filterChip {
+  padding: 5px 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+}
+
+.filterChip:hover,
+.filterChipActive {
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border-color: var(--text-strong);
+}
+
+.iconAction {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 7px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.iconActionSave {
+  color: #34d399;
+  background: rgba(16,185,129,.12);
+  border: 1px solid rgba(16,185,129,.35);
+}
+
+.iconActionCancel {
+  color: var(--text-muted);
+  background: var(--surface-hover);
+  border: 1px solid var(--border-subtle);
+}
+
+.iconActionEdit {
+  color: #60a5fa;
+  background: rgba(96,165,250,.1);
+  border: 1px solid rgba(96,165,250,.3);
+}
+
+.uMarginBottom20px { margin-bottom: 20px; }
+.uWidth100 { width: 100%; }
+.uPositionFixed { position: fixed; }
+.uBottom24px { bottom: 24px; }
+.uRight24px { right: 24px; }
+.uZIndex9999 { z-index: 9999; }
+.uDisplayFlex { display: flex; }
+.uAlignItemsCenter { align-items: center; }
+.uGap10px { gap: 10px; }
+.uPadding12px-18px { padding: 12px 18px; }
+.uBorderRadius8px { border-radius: 8px; }
+.uFontSize13px { font-size: 13px; }
+.uFontWeight600 { font-weight: 600; }
+.uMarginBottom12px { margin-bottom: 12px; }
+.uPadding12px-14px { padding: 12px 14px; }
+.uJustifyContentSpace-between { justify-content: space-between; }
+.uMarginBottom6px { margin-bottom: 6px; }
+.uFontSize11px { font-size: 11px; }
+.uFontWeight800 { font-weight: 700; }
+.uTextTransformUppercase { text-transform: uppercase; }
+.uGap6px { gap: 6px; }
+.uFlexWrapWrap { flex-wrap: wrap; }
+.uPadding2px-7px { padding: 2px 7px; }
+.uBorderRadius4px { border-radius: 4px; }
+.uBackgroundRgba-16-185-129-0-15 { background: rgba(16,185,129,0.15); }
+.uBorder1px-solid-rgba-16-185-129-0-35 { border: 1px solid rgba(16,185,129,0.35); }
+.uColor34d399 { color: #34d399; }
+.uFontSize9px { font-size: 9px; }
+.uLetterSpacing0-5px { letter-spacing: 0.5px; }
+.uFlexShrink0 { flex-shrink: 0; }
+.uBorder1px-solid-rgba-16-185-129-0-4 { border: 1px solid rgba(16,185,129,0.4); }
+.uPadding2px-8px { padding: 2px 8px; }
+.uCursorPointer { cursor: pointer; }
+.uGap4px { gap: 4px; }
+.uBackgroundRgba-96-165-250-0-1 { background: rgba(96,165,250,0.1); }
+.uBorder1px-solid-rgba-96-165-250-0-3 { border: 1px solid rgba(96,165,250,0.3); }
+.uColor00d4ff { color: #00d4ff; }
+.uBackgroundRgba-16-185-129-0-1 { background: rgba(16,185,129,0.1); }
+.uBorder1px-solid-rgba-16-185-129-0-3 { border: 1px solid rgba(16,185,129,0.3); }
+.uMarginTop8px { margin-top: 8px; }
+.uColorText-muted { color: var(--text-muted); }
+.uBorderRadius6px { border-radius: 6px; }
+.uPadding10px-24px { padding: 10px 24px; }
+.uFontWeight900 { font-weight: 700; }
+.uLetterSpacing1px { letter-spacing: 1px; }
+.uBackgroundSurface-sunken { background: var(--surface-sunken); }
+.uBorder1px-solid-border-subtle { border: 1px solid var(--border-subtle); }
+.uColorFbbf24 { color: #fbbf24; }
+.uMarginBottom28px { margin-bottom: 28px; }
+.uPadding20px { padding: 20px; }
+.uBorderRadius10px { border-radius: 10px; }
+.uFontSize14px { font-size: 14px; }
+.uGap8px { gap: 8px; }
+.uOpacity0-5 { opacity: 0.5; }
+.uMarginBottom16px { margin-bottom: 16px; }
+.uLineHeight1-5 { line-height: 1.5; }
+.uPadding4px-12px { padding: 4px 12px; }
+.uFontSize10px { font-size: 10px; }
+.uMarginBottom8px { margin-bottom: 8px; }
+.uMaxHeight180px { max-height: 180px; }
+.uOverflowYAuto { overflow-y: auto; }
+.uPadding8px { padding: 8px; }
+.uFontSize12px { font-size: 12px; }
+.uPadding4px-10px { padding: 4px 10px; }
+.uDisplayGrid { display: grid; }
+.uGridTemplateColumns1fr-1fr { grid-template-columns: 1fr 1fr; }
+.uGap12px { gap: 12px; }
+.uFontWeight700 { font-weight: 700; }
+.uBorderNone { border: none; }
+.uPadding12px-16px { padding: 12px 16px; }
+.uBackgroundRgba-96-165-250-0-05 { background: rgba(96,165,250,0.05); }
+.uBorder1px-solid-rgba-96-165-250-0-15 { border: 1px solid rgba(96,165,250,0.15); }
+.uMarginRight8px { margin-right: 8px; }
+.uBackgroundSurface-hover { background: var(--surface-hover); }
+.uColorText-secondary { color: var(--text-secondary); }
+.uBackgroundRgba-251-191-36-0-15 { background: rgba(251,191,36,0.15); }
+.uGap48px { gap: 48px; }
+.uMarginBottom24px { margin-bottom: 24px; }
+.uAlignItemsFlex-start { align-items: flex-start; }
+.uFlex1-1-auto { flex: 1 1 auto; }
+.uFlex0-0-auto { flex: 0 0 auto; }
+.uMinWidth240px { min-width: 240px; }
+.uGap16px { gap: 16px; }
+.uBackgroundTransparent { background: transparent; }
+.uPadding8px-14px { padding: 8px 14px; }
+.uJustifyContentCenter { justify-content: center; }
+.uPadding3px-8px { padding: 3px 8px; }
+.uBackgroundRgba-239-68-68-0-08 { background: rgba(239,68,68,0.08); }
+.uBorder1px-solid-rgba-239-68-68-0-2 { border: 1px solid rgba(239,68,68,0.2); }
+.uColorFf3366 { color: #ff3366; }
+.uBackgroundSurface-card { background: var(--surface-card); }
+.uPadding10px-12px { padding: 10px 12px; }
+.uOutlineNone { outline: none; }
+.uBackgroundRgba-251-191-36-0-08 { background: rgba(251,191,36,0.08); }
+.uBorder1px-solid-rgba-251-191-36-0-2 { border: 1px solid rgba(251,191,36,0.2); }
+.uPadding2px-4px { padding: 2px 4px; }
+.uJustifyContentFlex-end { justify-content: flex-end; }
+.uMarginTop24px { margin-top: 24px; }
+.uColor000 { color: #000; }
+.uPadding12px-28px { padding: 12px 28px; }
+.uPadding16px-20px { padding: 16px 20px; }
+.uBackgroundRgba-250-204-21-0-06 { background: rgba(250,204,21,0.06); }
+.uBorder1px-solid-rgba-250-204-21-0-15 { border: 1px solid rgba(250,204,21,0.15); }
+.uColorFacc15 { color: #facc15; }
+.uColorText-strong { color: var(--text-strong); }
+.uMarginBottom4px { margin-bottom: 4px; }
+.uResizeVertical { resize: vertical; }
+.uMarginTop28px { margin-top: 28px; }
+.uPadding12px-24px { padding: 12px 24px; }
+.uPadding12px-32px { padding: 12px 32px; }
+.uTextAlignCenter { text-align: center; }
+.uPadding40px-20px { padding: 40px 20px; }
+.uMargin0-auto-16px { margin: 0 auto 16px; }
+.uFontSize20px { font-size: 20px; }
+.uMaxWidth1240px { max-width: 1240px; }
+.uMargin40px-auto { margin: 40px auto; }
+.uGap24px { gap: 24px; }
+.uFlex1-1-420px { flex: 1 1 420px; }
+.uMinWidth0 { min-width: 0; }
+.uBorderRadius16px { border-radius: 16px; }
+.uPadding40px-32px { padding: 40px 32px; }
+.uBoxShadowShadow-sm { box-shadow: var(--shadow-sm); }
+.uMarginBottom32px { margin-bottom: 32px; }
+.uOpacity0-9 { opacity: 0.9; }
+.uWidth20px { width: 20px; }
+.uHeight20px { height: 20px; }
+.uBorderRadius50 { border-radius: 50%; }
+.uBackground00d4ff { background: #00d4ff; }
+.uGap32px { gap: 32px; }
+.uDisplayBlock { display: block; }
+.uPadding16px { padding: 16px; }
+.uBorderRadius12px { border-radius: 12px; }
+.uPaddingBottom24px { padding-bottom: 24px; }
+.uMargin0-auto { margin: 0 auto; }
+.uPaddingTop32px { padding-top: 32px; }
+.uBorderTop1px-solid-border-subtle { border-top: 1px solid var(--border-subtle); }
+.uTextAlignLeft { text-align: left; }
+.uPadding10px { padding: 10px; }
+.uMarginTop16px { margin-top: 16px; }
+.uPadding16px-48px { padding: 16px 48px; }
+.uBorderRadius30px { border-radius: 30px; }
+.uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1 { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.uFlex1 { flex: 1; }
+.uPadding20px-32px-32px { padding: 20px 32px 32px; }
+.uTransitionAll-0-15s { transition: all 0.15s; }
+.uGap20px { gap: 20px; }
+.uFontSize16px { font-size: 16px; }
+.uMarginBottom14px { margin-bottom: 14px; }
+.uAlignItemsFlex-end { align-items: flex-end; }
+.uWidth120px { width: 120px; }
+.uHeight38px { height: 38px; }
+.uPadding0-18px { padding: 0 18px; }
+.uBorder1px-solid-rgba-52-211-153-0-4 { border: 1px solid rgba(52,211,153,0.4); }
+.uBackgroundRgba-52-211-153-0-12 { background: rgba(52,211,153,0.12); }
+.uWhiteSpaceNowrap { white-space: nowrap; }
+.uPaddingTop16px { padding-top: 16px; }
+.uBorderTop1px-dashed-rgba-255-255-255-0-08 { border-top: 1px dashed rgba(255,255,255,0.08); }
+.uFlexDirectionColumn { flex-direction: column; }
+.uFontSize12-5px { font-size: 12.5px; }
+.uWidth130px { width: 130px; }
+.uMarginTop6px { margin-top: 6px; }
+.uBackgroundNone { background: none; }
+.uLineHeight1 { line-height: 1; }
+.uPadding0 { padding: 0; }
+.uMaxHeight320px { max-height: 320px; }
+.uPadding10px-14px { padding: 10px 14px; }
+.uBorderBottom1px-solid-border-subtle { border-bottom: 1px solid var(--border-subtle); }
+.uAccentColor34d399 { accent-color: #34d399; }
+.uMaxWidth720px { max-width: 720px; }
+.uMarginBottom40px { margin-bottom: 40px; }
+.uFontSize32px { font-size: 32px; }
+.uLetterSpacing1px1gkox { letter-spacing: -1px; }
+.uDisplayInline-block { display: inline-block; }
+.uMarginTop12px { margin-top: 12px; }
+.uBackgroundRgba-0-212-255-0-1 { background: rgba(0, 212, 255, 0.1); }
+.uBorderRadius20px { border-radius: 20px; }
+.uBackground34d399 { background: #34d399; }
+.uGridTemplateColumnsRepeat-4-1fr { grid-template-columns: repeat(4, 1fr); }
+.uPadding24px-16px { padding: 24px 16px; }
+.uBorder1px-solid { border: 1px solid; }
+.uTransitionAll-0-2s { transition: all 0.2s; }
+.uMarginTop32px { margin-top: 32px; }
+.uPaddingTop24px { padding-top: 24px; }
+.uGridColumn1-1 { grid-column: 1 / -1; }
+.uPadding16px-32px { padding: 16px 32px; }
+.uPadding16px-40px { padding: 16px 40px; }
+.uPadding64px-20px { padding: 64px 20px; }
+.uMaxWidth600px { max-width: 600px; }
+.uWidth80px { width: 80px; }
+.uHeight80px { height: 80px; }
+.uBackgroundRgba-52-211-153-0-1 { background: rgba(52, 211, 153, 0.1); }
+.uMargin0-auto-24px { margin: 0 auto 24px; }
+.uFontSize28px { font-size: 28px; }
+.uLetterSpacing0-5px3s3pa { letter-spacing: -0.5px; }
+.uFontSize15px { font-size: 15px; }
+.uBorder1px-solid-rgba-255-51-102-0-3 { border: 1px solid rgba(255,51,102,0.3); }
+.uBoxShadow0-4px-14px-rgba-255-255-255-0-2 { box-shadow: 0 4px 14px rgba(255,255,255,0.2); }
+.uMaxWidth1200px { max-width: 1200px; }
+.uMaxHeight90vh { max-height: 90vh; }
+.uPadding20px-24px { padding: 20px 24px; }
+.uPadding8px-12px { padding: 8px 12px; }
+.uPadding24px { padding: 24px; }
+.uOverflowAuto { overflow: auto; }
+.uPadding40px { padding: 40px; }
+.uMargin0-auto-12px { margin: 0 auto 12px; }
+.uBorderCollapseCollapse { border-collapse: collapse; }
+.uBorderBottom1px-solid-rgba-255-255-255-0-03 { border-bottom: 1px solid rgba(255,255,255,0.03); }
+.uFontFamilyMonospace { font-family: var(--font-sans); }
+.uMaxHeight92vh { max-height: 92vh; }
+.uBoxShadow0-25px-50px-12px-rgba-0-0-0-0-5 { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+.uBackgroundRgba-52-211-153-0-11doaz { background: rgba(52,211,153,0.1); }
+.uBorder1px-solid-rgba-52-211-153-0-3 { border: 1px solid rgba(52,211,153,0.3); }
+.uPadding16px-24px { padding: 16px 24px; }
+.uPaddingBottom6px { padding-bottom: 6px; }
+.uWidth6px { width: 6px; }
+.uHeight6px { height: 6px; }
+.uOverflowXAuto { overflow-x: auto; }
+.uPadding12px { padding: 12px; }
+.uTextAlignRight { text-align: right; }
+.uBorderBottom1px-solid-rgba-255-255-255-0-02 { border-bottom: 1px solid rgba(255,255,255,0.02); }
+.uPadding2px-6px { padding: 2px 6px; }
+.uPadding4px-8px { padding: 4px 8px; }
+.uColorText-primary { color: var(--text-primary); }
+.uBorder1px-solid-rgba-16-185-129-0-2 { border: 1px solid rgba(16,185,129,0.2); }
+.uMaxWidth900px { max-width: 900px; }
+.uBorderBottom1px-solid-rgba-16-185-129-0-1 { border-bottom: 1px solid rgba(16,185,129,0.1); }
+.uPadding5px-8px { padding: 5px 8px; }
+.uColorSchemeDark { color-scheme: dark; }
+.uBackgroundRgba-239-68-68-0-1 { background: rgba(239,68,68,0.1); }
+.uBorder1px-solid-rgba-239-68-68-0-3 { border: 1px solid rgba(239,68,68,0.3); }
+.uMinWidth220px { min-width: 220px; }
+.uColor60a5fa { color: #60a5fa; }
+
+/* ── Adaptación del corrector a pantallas angostas ──────────────────────── */
+@media (max-width: 640px) {
+  .bulkRoot {
+    min-width: 0;
+    padding: var(--space-4);
+  }
+
+  .correctorHeader {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+
+  .correctorHeader > div:first-child,
+  .correctorTitle,
+  .correctorSubtitle {
+    min-width: 0;
+  }
+
+  .headerActions {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .pillButton,
+  .statusPill,
+  .resetButton {
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .section {
+    min-width: 0;
+    padding: var(--space-4);
+  }
+
+  .sectionToggle {
+    align-items: start;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .sectionTitle {
+    align-items: start;
+    flex-wrap: wrap;
+    line-height: 1.35;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .sectionActions,
+  .sectionActionsEnd {
+    grid-column: 1 / -1;
+    margin-left: 28px;
+    min-width: 0;
+  }
+
+  .sectionActions {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .actionRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .darkInputFlex {
+    width: 100%;
+  }
+}

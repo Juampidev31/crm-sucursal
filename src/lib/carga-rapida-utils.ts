@@ -54,26 +54,6 @@ export const CARGA_ROLE_OPTIONS: { value: CargaRole; label: string }[] = [
   { value: 'localidad',       label: 'Localidad'           },
 ];
 
-export const CARGA_FIELD_LABELS: Partial<Record<keyof Registro, string>> = {
-  analista:        'Analista',
-  estado:          'Estado',
-  monto:           'Monto',
-  fecha:           'Fecha',
-  fecha_score:     'Fecha Score',
-  puntaje:         'Score',
-  es_re:           'RE',
-  comentarios:     'Comentarios',
-  tipo_cliente:    'Tipo de cliente',
-  acuerdo_precios: 'Acuerdo de precios',
-  cuotas:          'Cuotas',
-  rango_etario:    'Rango etario',
-  sexo:            'Sexo',
-  empleador:       'Empleador',
-  localidad:       'Localidad',
-};
-
-const DIFFABLE_FIELDS = Object.keys(CARGA_FIELD_LABELS) as (keyof Registro)[];
-
 export function normalizarNombre(nombre: string): string {
   return nombre.trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
 }

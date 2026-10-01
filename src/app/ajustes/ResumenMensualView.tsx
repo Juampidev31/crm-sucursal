@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import styles from './ResumenMensualView.module.css';
+import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -15,6 +16,7 @@ import MetricasTab from './MetricasTab';
 import NuevaSeccionSheets from '@/app/analistas/NuevaSeccionSheets';
 import SeccionGraficosResumen from './SeccionGraficosResumen';
 import DistBlock from '@/components/charts/DistBlock';
+import { UI_FONT_FAMILY } from '@/app/fonts';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
@@ -31,13 +33,13 @@ const labelsPlugin: any = {
       if (!meta || meta.hidden || meta.type !== 'bar') return;
 
       ctx.save();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px Outfit, system-ui, sans-serif';
+      ctx.fillStyle = '#344054';
+      ctx.font = `700 11px ${UI_FONT_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = isStacked ? 'middle' : 'bottom';
 
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 3;
+      ctx.shadowColor = 'rgba(255,255,255,0.95)';
+      ctx.shadowBlur = 4;
 
       const isPct = chart.config.options?._isPct === true;
 
@@ -112,11 +114,11 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
     tooltip: {
       backgroundColor: 'rgba(10, 10, 15, 0.95)',
       titleColor: '#ffffff',
-      titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+      titleFont: { size: 18, weight: 700, family: UI_FONT_FAMILY },
       titleAlign: 'center' as const,
       titleMarginBottom: 16,
       bodyColor: '#f1f5f9',
-      bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+      bodyFont: { size: 15, weight: 600, family: UI_FONT_FAMILY },
       bodySpacing: 10,
       borderColor: 'rgba(255,255,255,0.15)',
       borderWidth: 2,
@@ -141,7 +143,7 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
         if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
         return n;
       },
-      font: { size: 10, weight: 800 }
+      font: { size: 10, weight: 700 }
     },
   },
   scales: {
@@ -183,13 +185,12 @@ const baseChartOpts = (yLabel = '', horizontal = false, showLabels = false, show
 });
 
 const tendBadge = (pct: number | null, showLabel = true) => {
-  if (pct === null) return <span style={{ color: '#333' }}>—</span>;
-  const color = pct >= 0 ? '#34d399' : '#ff3366';
+  if (pct === null) return <span className={styles.liveStyle001}>—</span>;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
-      <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
-        <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
+    <div className={styles.liveStyle002}>
+      {showLabel && <span className={styles.liveStyle003}>vs mes anterior</span>}
+      <span className={styles.liveStyle004}>
+        <span className={`report-trend-direction ${pct >= 0 ? 'is-positive' : 'is-negative'}`}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
       </span>
     </div>
   );
@@ -198,15 +199,10 @@ const tendBadge = (pct: number | null, showLabel = true) => {
 const ManualTextarea = ({ label, value, onChange, placeholder, readOnly }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; readOnly?: boolean;
 }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 260 }}>
-    <label style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{label}</label>
+  <div className={styles.liveStyle005}>
+    <label className={styles.liveStyle006}>{label}</label>
     {readOnly ? (
-      <div style={{
-        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 8, color: value ? '#ccc' : '#333', fontFamily: "'Outfit', sans-serif", fontSize: 13,
-        padding: '12px 14px', minHeight: 88, width: '100%', boxSizing: 'border-box' as const,
-        whiteSpace: 'pre-wrap', lineHeight: 1.5
-      }}>
+      <div className={styles.liveStyle007} style={{ color: value ? '#ccc' : '#333' }}>
         {value || placeholder || '—'}
       </div>
     ) : (
@@ -215,12 +211,7 @@ const ManualTextarea = ({ label, value, onChange, placeholder, readOnly }: {
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder ?? `${label}...`}
         rows={4}
-        style={{
-          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 8, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 13,
-          padding: '12px 14px', resize: 'vertical', outline: 'none',
-          width: '100%', boxSizing: 'border-box' as const,
-        }}
+        className={styles.liveStyle008}
       />
     )}
   </div>
@@ -306,36 +297,15 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
   const sectionHeader = (id: number, title: string, icon: React.ReactNode) => {
     const isCollapsed = !!collapsedSections[id];
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: isCollapsed ? 0 : 16,
-        paddingBottom: 10,
-        borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)',
-        gap: 12
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className={styles.liveStyle009} style={{ marginBottom: isCollapsed ? 0 : 16, borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+        <div className={styles.liveStyle010}>
           {icon}
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+          <span className={styles.liveStyle011}>{title}</span>
         </div>
         {!readOnly && (
           <button
             onClick={() => toggleSection(id)}
-            style={{
-              background: isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '8px',
-              width: 28,
-              height: 28,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: isCollapsed ? '#555' : '#fff',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: isCollapsed ? 'none' : '0 0 15px rgba(255,255,255,0.05)'
-            }}
+            className={styles.liveStyle012} style={{ background: isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', color: isCollapsed ? '#555' : '#fff', boxShadow: isCollapsed ? 'none' : '0 0 15px rgba(255,255,255,0.05)' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
               e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
@@ -347,7 +317,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
               e.currentTarget.style.color = isCollapsed ? '#555' : '#fff';
             }}
           >
-            <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
+            <ChevronDown size={14} className={styles.liveStyle013} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none' }} />
           </button>
         )}
       </div>
@@ -355,131 +325,131 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
   };
 
   return (
-    <div id="resumen-reporte-body" style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: '100%' }}>
+    <div id="resumen-reporte-body" className={styles.liveStyle014}>
       {/* ── SECCIÓN 1: TABLERO ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <div className={`data-card ${styles.liveStyle015}`} >
         {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />)}
         {!collapsedSections[1] && (
           <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24, padding: '24px 32px 0 32px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
+          <div className={styles.liveStyle016}>
+            <div className={styles.liveStyle017}>
+              <div className={styles.liveStyle018}>Capital Vendido</div>
+              <div className={styles.liveStyle019}>
+                <div className={styles.liveStyle020}>{formatCurrency(kpiTotal.capital)}</div>
                 {tendBadge(kpiTotal.tendCapital)}
               </div>
-              <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+              <div className={styles.liveStyle021}>
                 Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
               </div>
               {kpiTotal.cumplCapital !== null && (
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
-                  <span style={{ color: cumplColor(kpiTotal.cumplCapital), marginRight: 4 }}>●</span>
+                <div className={styles.liveStyle022}>
+                  <span className={styles.liveStyle023} style={{ color: cumplColor(kpiTotal.cumplCapital) }}>●</span>
                   {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
                 </div>
               )}
-              <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                      <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+              <div className={styles.liveStyle024}>
+                <div className={styles.liveStyle025}>
+                  <div className={styles.liveStyle026}>Capital vs Objetivo</div>
+                  <div className={styles.liveStyle027}>
+                    <div className={styles.liveStyle028}>
+                      <div className={styles.liveStyle029} />
+                      <span className={styles.liveStyle030}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                      <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                    <div className={styles.liveStyle031}>
+                      <div className={styles.liveStyle032} />
+                      <span className={styles.liveStyle033}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                     </div>
                   </div>
                 </div>
-                <div id="chart-capital-objetivo" style={{ height: 200, position: 'relative', width: '100%' }}>
+                <div id="chart-capital-objetivo" className={styles.liveStyle034}>
                   <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
                 </div>
               </div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
+            <div className={styles.liveStyle035}>
+              <div className={styles.liveStyle036}>Operaciones</div>
+              <div className={styles.liveStyle037}>
+                <div className={styles.liveStyle038}>{kpiTotal.ops}</div>
                 {tendBadge(kpiTotal.tendOps)}
               </div>
-              <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+              <div className={styles.liveStyle039}>
                 Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
               </div>
               {kpiTotal.cumplOps !== null && (
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
-                  <span style={{ color: cumplColor(kpiTotal.cumplOps), marginRight: 4 }}>●</span>
+                <div className={styles.liveStyle040}>
+                  <span className={styles.liveStyle041} style={{ color: cumplColor(kpiTotal.cumplOps) }}>●</span>
                   {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
                 </div>
               )}
-              <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4ff' }} />
-                      <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+              <div className={styles.liveStyle042}>
+                <div className={styles.liveStyle043}>
+                  <div className={styles.liveStyle044}>Aperturas vs Renovaciones</div>
+                  <div className={styles.liveStyle045}>
+                    <div className={styles.liveStyle046}>
+                      <div className={styles.liveStyle047} />
+                      <span className={styles.liveStyle048}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                      <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                    <div className={styles.liveStyle049}>
+                      <div className={styles.liveStyle050} />
+                      <span className={styles.liveStyle051}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1, minHeight: 0 }}>
-                  <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: '#00d4ff', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
-                    <div id="chart-aperturas" style={{ height: 200, position: 'relative', width: '100%' }}>
+                <div className={styles.liveStyle052}>
+                  <div className={styles.liveStyle053}>
+                    <div className={styles.liveStyle054}>Aperturas</div>
+                    <div id="chart-aperturas" className={styles.liveStyle055}>
                       <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                     </div>
                   </div>
-                  <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                    <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
-                    <div id="chart-renovaciones" style={{ height: 200, position: 'relative', width: '100%' }}>
+                  <div className={styles.liveStyle056}>
+                    <div className={styles.liveStyle057}>Renov.</div>
+                    <div id="chart-renovaciones" className={styles.liveStyle058}>
                       <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
+            <div className={styles.liveStyle059}>
+              <div className={styles.liveStyle060}>Ticket Promedio</div>
+              <div className={styles.liveStyle061}>
+                <div className={styles.liveStyle062}>{formatCurrency(kpiTotal.ticket)}</div>
                 {tendBadge(kpiTotal.tendTicket)}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                <div style={{ fontSize: 12, color: '#555' }} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {(kpiTotal.conversionGlobal ?? 0).toFixed(1)}%</div>
+              <div className={styles.liveStyle063}>
+                <div className={styles.liveStyle064} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {(kpiTotal.conversionGlobal ?? 0).toFixed(1)}%</div>
                 {tendBadge(kpiTotal.tendConversionGlobal, false)}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                <div style={{ fontSize: 12, color: '#555' }} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
+              <div className={styles.liveStyle065}>
+                <div className={styles.liveStyle066} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
                 {tendBadge(kpiTotal.tendConversion, false)}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
+              <div className={styles.liveStyle067}>
+                <div className={styles.liveStyle068}>{kpiTotal.clientes} clientes ingresados</div>
                 {tendBadge(kpiTotal.tendClientes, false)}
               </div>
-              <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                      <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+              <div className={styles.liveStyle069}>
+                <div className={styles.liveStyle070}>
+                  <div className={styles.liveStyle071}>Análisis vs {mesAntLabel}</div>
+                  <div className={styles.liveStyle072}>
+                    <div className={styles.liveStyle073}>
+                      <div className={styles.liveStyle074} />
+                      <span className={styles.liveStyle075}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
-                      <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                    <div className={styles.liveStyle076}>
+                      <div className={styles.liveStyle077} />
+                      <span className={styles.liveStyle078}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                     </div>
                   </div>
                 </div>
-                <div id="chart-ticket-promedio" style={{ height: 200, position: 'relative', width: '100%' }}>
+                <div id="chart-ticket-promedio" className={styles.liveStyle079}>
                   <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
                 </div>
               </div>
             </div>
           </div>
-          <div style={{ padding: '0 32px 0 32px' }}>
+          <div className={styles.liveStyle080}>
             {/* ── SECCIÓN GRÁFICOS ── */}
             <SeccionGraficosResumen
               kpiTotal={kpiTotal}
@@ -493,12 +463,12 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
       </div>
 
       {/* ── SECCIÓN 2: VENTAS POR CATEGORÍA ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column', width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
-          <div style={{ flex: 1 }}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+      <div className={`data-card ${styles.liveStyle081}`} >
+        <div className={styles.liveStyle082}>
+          <div className={styles.liveStyle083}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
           {!collapsedSections[2] && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <span style={{ fontSize: 11, color: '#444', fontWeight: 600 }}>
+            <div className={styles.liveStyle084}>
+              <span className={styles.liveStyle085}>
                 {periodoSec3 === 'mensual'
                   ? (() => {
                       const isVentaLocal = (r: any) => {
@@ -510,24 +480,12 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
                     })()
                   : `TOTAL: Todos los estados (${registros.length} ops · ${formatCurrency(registros.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`}
               </span>
-              <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+              <div className={styles.liveStyle086}>
                 {(['mensual', 'total'] as const).map(p => (
                   <button
                     key={p}
                     onClick={() => setPeriodoSec3(p)}
-                    style={{
-                      padding: '4px 14px',
-                      borderRadius: 6,
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: 10,
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.8px',
-                      background: periodoSec3 === p ? '#fb923c' : 'transparent',
-                      color: periodoSec3 === p ? '#000' : '#555',
-                      transition: 'all 0.2s ease',
-                    }}
+                    className={styles.liveStyle087} style={{ background: periodoSec3 === p ? '#fb923c' : 'transparent', color: periodoSec3 === p ? '#000' : '#555' }}
                   >
                     {p === 'mensual' ? 'Mes' : 'Total'}
                   </button>
@@ -537,7 +495,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
           )}
         </div>
         {!collapsedSections[2] && (
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+          <div className={styles.liveStyle088}>
             {(() => {
               const isMensual = periodoSec3 === 'mensual';
               const fuente = isMensual ? ventasMes : registros;
@@ -564,10 +522,10 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
       </div>
 
       {/* ── SECCIÓN 3: DISTRIBUCIÓN POR ESTADO Y CATEGORÍAS ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <div className={`data-card ${styles.liveStyle089}`} >
         {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#00ff88" />)}
         {!collapsedSections[3] && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', padding: '0 24px 24px 24px' }}>
+          <div className={styles.liveStyle090}>
             <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" analistas={analistasDefault} />
             <NuevaSeccionSheets analista="PDV" />
           </div>
@@ -575,7 +533,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
       </div>
 
       {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <div className={`data-card ${styles.liveStyle091}`} >
         {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
         {!collapsedSections[4] && (
           <ManualTextarea
@@ -589,7 +547,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
       </div>
 
       {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
+      <div className={`data-card ${styles.liveStyle092}`} >
         {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
         {!collapsedSections[5] && (
           <ManualTextarea
@@ -603,16 +561,16 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
       </div>
 
       {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
+      <div className={`data-card ${styles.liveStyle093}`} >
         {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
         {!collapsedSections[6] && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+            <div className={styles.liveStyle094}>
               <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen((p: any) => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." readOnly={readOnly} />
               <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen((p: any) => ({ ...p, coordinacion_salidas: v }))} placeholder="Salidas al campo, visitas programadas..." readOnly={readOnly} />
               <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen((p: any) => ({ ...p, empresas_estrategicas: v }))} placeholder="Empresas clave contactadas o visitadas..." readOnly={readOnly} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginTop: 16 }}>
+            <div className={styles.liveStyle095}>
               <ManualTextarea label="Principales Logros" value={resumen.logros} onChange={v => setResumen((p: any) => ({ ...p, logros: v }))} placeholder="Describí los principales logros del período..." readOnly={readOnly} />
               <ManualTextarea label="Principales Desvíos / Problemas" value={resumen.desvios} onChange={v => setResumen((p: any) => ({ ...p, desvios: v }))} placeholder="Describí los desvíos o problemas detectados..." readOnly={readOnly} />
               <ManualTextarea label="Acciones Clave a Seguir" value={resumen.acciones_clave} onChange={v => setResumen((p: any) => ({ ...p, acciones_clave: v }))} placeholder="Acciones prioritarias para el próximo período..." readOnly={readOnly} />
@@ -622,7 +580,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
       </div>
 
       {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
+      <div className={`data-card ${styles.liveStyle096}`} >
         {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#b266ff" />)}
         {!collapsedSections[7] && (
           <ManualTextarea
@@ -636,28 +594,28 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
       </div>
 
       {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
+      <div className={`data-card ${styles.liveStyle097}`} >
         {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
         {!collapsedSections[8] && (
           <>
             {auditoriaData.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div className={styles.liveStyle098}>
+                <div className={styles.liveStyle099}>Actividad en Sistema</div>
+                <div className={styles.liveStyle100}>
                   {analistasDefault.map(analista => {
                     const count = auditoriaData.filter(a => a.analista === analista).length;
                     return (
-                      <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{analista}</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: '#aaa' }}>{count}</div>
-                        <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
+                      <div key={analista} className={styles.liveStyle101}>
+                        <div className={styles.liveStyle102}>{analista}</div>
+                        <div className={styles.liveStyle103}>{count}</div>
+                        <div className={styles.liveStyle104}>acciones registradas</div>
                       </div>
                     );
                   })}
                 </div>
               </div>
             )}
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <div className={styles.liveStyle105}>
               <ManualTextarea label="Dotación Actual" value={resumen.dotacion} onChange={v => setResumen((p: any) => ({ ...p, dotacion: v }))} readOnly={readOnly} />
               <ManualTextarea label="Ausentismo / Tardanzas" value={resumen.ausentismo} onChange={v => setResumen((p: any) => ({ ...p, ausentismo: v }))} readOnly={readOnly} />
               <ManualTextarea label="Capacitación Realizada" value={resumen.capacitacion} onChange={v => setResumen((p: any) => ({ ...p, capacitacion: v }))} readOnly={readOnly} />
@@ -668,25 +626,25 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
       </div>
 
       {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
-      <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
+      <div className={`data-card ${styles.liveStyle106}`} >
         {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
         {!collapsedSections[9] && (
           <>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
+            <table className={styles.liveStyle107}>
               <thead>
                 <tr>
                   {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución', ...(readOnly ? [] : [''])].map(h => (
-                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
+                    <th key={h} className={styles.liveStyle108}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {resumen.plan_acciones.map((fila, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                  <tr key={idx} className={styles.liveStyle109}>
                     {(['problema', 'accion', 'responsable'] as const).map(campo => (
-                      <td key={campo} style={{ padding: '6px 8px' }}>
+                      <td key={campo} className={styles.liveStyle110}>
                         {readOnly ? (
-                          <div style={{ color: '#ccc', fontSize: 12, padding: '7px 10px' }}>{fila[campo] || '—'}</div>
+                          <div className={styles.liveStyle111}>{fila[campo] || '—'}</div>
                         ) : (
                           <input
                             value={fila[campo]}
@@ -695,14 +653,14 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
                               setResumen((p: any) => ({ ...p, plan_acciones: updated }));
                             }}
                             placeholder={campo === 'problema' ? 'Describí el problema...' : campo === 'accion' ? 'Acción concreta...' : 'Responsable'}
-                            style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
+                            className={styles.liveStyle112}
                           />
                         )}
                       </td>
                     ))}
-                    <td style={{ padding: '6px 8px' }}>
+                    <td className={styles.liveStyle113}>
                       {readOnly ? (
-                        <div style={{ color: '#ccc', fontSize: 12, padding: '7px 10px' }}>{fila.fecha || '—'}</div>
+                        <div className={styles.liveStyle114}>{fila.fecha || '—'}</div>
                       ) : (
                         <input
                           type="date"
@@ -711,22 +669,15 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
                             const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, fecha: e.target.value } : f);
                             setResumen((p: any) => ({ ...p, plan_acciones: updated }));
                           }}
-                          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: "'Outfit', sans-serif", fontSize: 12, padding: '7px 10px', outline: 'none', colorScheme: 'dark' as const }}
+                          className={styles.liveStyle115}
                         />
                       )}
                     </td>
                     {!readOnly && (
-                      <td style={{ padding: '6px 8px' }}>
+                      <td className={styles.liveStyle116}>
                         <button
                           onClick={() => setResumen((p: any) => ({ ...p, plan_acciones: p.plan_acciones.filter((_: any, i: number) => i !== idx) }))}
-                          style={{
-                            background: 'rgba(239,68,68,0.06)',
-                            border: '1px solid rgba(239,68,68,0.12)',
-                            borderRadius: 8, color: '#ff3366',
-                            cursor: 'pointer', padding: '8px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                          }}
+                          className={styles.liveStyle117}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
                             e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)';
@@ -749,16 +700,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
             {!readOnly && (
               <button
                 onClick={() => setResumen((p: any) => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 8, color: '#666',
-                  fontFamily: "'Outfit', sans-serif", fontSize: '11px', fontWeight: 800,
-                  cursor: 'pointer', padding: '10px 18px',
-                  textTransform: 'uppercase', letterSpacing: '1px',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
+                className={styles.liveStyle118}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
                   e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';

@@ -1,21 +1,24 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import type { CSSProperties } from 'react';
 import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { useRouter } from 'next/navigation';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   LineElement, PointElement, Tooltip, Legend,
-  BarController, LineController,
+  BarController, LineController, Filler,
 } from 'chart.js';
+import type { ChartOptions, ScriptableContext } from 'chart.js';
 import { Line, Chart } from 'react-chartjs-2';
 import SelectReporte from '@/components/SelectReporte';
 import type { CobranzasData, TramoRow, MorosidadRow } from './data';
 import { Edit2, Save, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { parseNumberRobust, parsePct } from '@/lib/csv-utils';
+import styles from './Cobranzas.module.css';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController);
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, Filler);
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -34,28 +37,13 @@ function EditCell({
 }) {
   return (
     <input
+      className={styles.editInput}
       value={value === '-' ? '' : value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      style={{
-        width,
-        padding: '5px 8px',
-        fontSize: '12px',
-        fontWeight: 600,
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '6px',
-        color: '#fff',
-        textAlign: align,
-        outline: 'none',
-        fontFamily: 'inherit',
-        transition: 'border-color 0.2s',
-      }}
-      onFocus={e => e.currentTarget.style.borderColor = 'rgba(16,185,129,0.3)'}
-      onBlur={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-        if (onBlur) onBlur();
-      }}
+      style={{ '--edit-width': width } as CSSProperties}
+      data-align={align}
+      onBlur={onBlur}
     />
   );
 }
@@ -69,16 +57,16 @@ function TramoTable({
   onRowChange: (idx: number, field: keyof TramoRow, value: string) => void;
 }) {
   return (
-    <div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', flex: 1, minWidth: '280px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: '3px', height: '14px', background: color, borderRadius: '4px' }} />
-        <span style={{ fontSize: '11px', fontWeight: 800, color: '#9a9aa3', letterSpacing: '1px', textTransform: 'uppercase' }}>{titulo}</span>
+    <div className={`${styles.panel} ${styles.tramoPanel}`}>
+      <div className={`${styles.panelHeader} ${styles.tramoHeader}`}>
+        <div className={styles.tramoAccent} style={{ '--status-color': color } as CSSProperties} />
+        <span className={styles.panelTitle}>{titulo}</span>
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+      <table className={styles.tramoTable}>
         <thead>
-          <tr style={{ background: 'rgba(255,255,255,0.005)' }}>
+          <tr>
             {['Mes', 'Objetivo', 'Recupero', 'Cumpl.'].map(h => (
-              <th key={h} style={{ padding: '12px 14px', textAlign: h === 'Mes' ? 'left' : 'right', color: '#9a9aa3', fontWeight: 800, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
+              <th key={h} className={h === 'Mes' ? styles.alignLeft : styles.alignRight}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -88,43 +76,38 @@ function TramoTable({
             return (
               <tr
                 key={i}
-                className="hover-row"
-                style={{
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  transition: 'all 0.1s ease',
-                  cursor: 'default',
-                }}
+                className={styles.dataRow}
               >
-                <td style={{ padding: '10px 14px', color: '#eaeaea', fontWeight: 700 }}>
+                <td className={styles.monthCell}>
                   {editing ? r.mes || MESES[i] || `Mes ${i + 1}` : r.mes}
                 </td>
-                <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                <td className={styles.numericCell}>
                   {editing ? (
                     <EditCell value={r.objetivo} onChange={v => onRowChange(i, 'objetivo', v)} placeholder="0" />
                   ) : (
-                    <span style={{ color: '#64748b', fontWeight: 600 }}>{r.objetivo}</span>
+                    <span className={styles.secondaryValue}>{r.objetivo}</span>
                   )}
                 </td>
-                <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                <td className={styles.numericCell}>
                   {editing ? (
                     <EditCell value={r.recupero} onChange={v => onRowChange(i, 'recupero', v)} placeholder="0" />
                   ) : (
-                    <span style={{ color: '#eaeaea', fontWeight: 700 }}>{r.recupero}</span>
+                    <span className={styles.primaryValue}>{r.recupero}</span>
                   )}
                 </td>
-                <td style={{ padding: '8px 10px', textAlign: 'right' }}>
+                <td className={styles.numericCell}>
                   {editing ? (
-                    <span style={{ color: '#fff', fontWeight: 800, fontSize: '11px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ color: c }}>●</span>
+                    <span className={styles.statusBadge}>
+                      <span className={styles.statusDot} style={{ '--status-color': c } as CSSProperties}>●</span>
                       {r.cumplimiento !== '-' ? r.cumplimiento : '0%'}
                     </span>
                   ) : (
                     r.pct !== null ? (
-                      <span style={{ color: '#fff', fontWeight: 800, fontSize: '11px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '2px 7px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ color: c }}>●</span>
+                      <span className={styles.statusBadge}>
+                        <span className={styles.statusDot} style={{ '--status-color': c } as CSSProperties}>●</span>
                         {r.cumplimiento}
                       </span>
-                    ) : <span style={{ color: '#64748b' }}>—</span>
+                    ) : <span className={styles.secondaryValue}>—</span>
                   )}
                 </td>
               </tr>
@@ -142,12 +125,12 @@ const chartOpts = (yLabel: string) => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: { labels: { color: '#9a9aa3', font: { size: 10, weight: 600 }, usePointStyle: true, padding: 16 } },
-    tooltip: { backgroundColor: '#0c0c0c', titleColor: '#fff', bodyColor: '#9a9aa3', borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1 },
+    legend: { labels: { color: '#667085', font: { size: 10, weight: 600 }, usePointStyle: true, padding: 16 } },
+    tooltip: { backgroundColor: '#172033', titleColor: '#fff', bodyColor: '#d0d5dd', borderColor: '#344054', borderWidth: 1 },
   },
   scales: {
-    x: { ticks: { color: '#9a9aa3', font: { size: 10, weight: 600 } }, grid: { color: 'rgba(255,255,255,0.02)' }, border: { display: false } },
-    y: { ticks: { color: '#9a9aa3', font: { size: 10, weight: 600 }, callback: (v: number | string) => `${v}${yLabel}` }, grid: { color: 'rgba(255,255,255,0.025)' }, border: { display: false } },
+    x: { ticks: { color: '#667085', font: { size: 10, weight: 600 } }, grid: { color: '#edf1f5' }, border: { display: false } },
+    y: { ticks: { color: '#667085', font: { size: 10, weight: 600 }, callback: (v: number | string) => `${v}${yLabel}` }, grid: { color: '#edf1f5' }, border: { display: false } },
   },
 });
 
@@ -251,7 +234,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
     setData(prev => {
       const rows = [...prev.morosidad];
       const row = { ...rows[idx] };
-      let val = row[field];
+      const val = row[field];
       if (val && val !== '-' && !val.includes('%')) {
         const num = parseNumberRobust(val);
         if (!isNaN(num)) {
@@ -330,14 +313,14 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
       {
         label: `Dif. vs ${data.anioAnterior}`,
         data: data.morosidad.map(r => (r.currentPct !== null && r.anteriorPct !== null) ? Number((r.currentPct - r.anteriorPct).toFixed(2)) : 0),
-        backgroundColor: (context: any) => context.raw > 0 ? 'rgba(248, 113, 113, 0.7)' : 'rgba(52, 211, 153, 0.7)',
+        backgroundColor: (context: ScriptableContext<'bar'>) => Number(context.raw) > 0 ? 'rgba(248, 113, 113, 0.7)' : 'rgba(52, 211, 153, 0.7)',
         borderRadius: 4,
       },
       {
         label: 'Dif. vs Media Emp.',
         data: data.morosidad.map(r => (r.currentPct !== null && r.mediaPct !== null) ? Number((r.currentPct - r.mediaPct).toFixed(2)) : 0),
-        backgroundColor: (context: any) => context.raw > 0 ? 'rgba(248, 113, 113, 0.3)' : 'rgba(52, 211, 153, 0.3)',
-        borderColor: (context: any) => context.raw > 0 ? '#f87171' : '#34d399',
+        backgroundColor: (context: ScriptableContext<'bar'>) => Number(context.raw) > 0 ? 'rgba(248, 113, 113, 0.3)' : 'rgba(52, 211, 153, 0.3)',
+        borderColor: (context: ScriptableContext<'bar'>) => Number(context.raw) > 0 ? '#f87171' : '#34d399',
         borderWidth: 1,
         borderRadius: 4,
       },
@@ -347,53 +330,39 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="dashboard-container">
+    <div className={`dashboard-container ${styles.reportPage}`}>
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '12px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-            background: toast.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-            border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-            color: toast.type === 'success' ? '#34d399' : '#f87171',
-          }}>
+        <div className={styles.toastViewport}>
+          <div className={`${styles.toast}${toast.type === 'success' ? ` ${styles.isSuccess}` : ` ${styles.isError}`}`}>
             {toast.msg}
           </div>
         </div>
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className={styles.reportHeader}>
+        <div>
+          <span className={styles.eyebrow}>Inteligencia de recupero</span>
+          <h1 className={styles.title}>Reporte de Cobranzas</h1>
+          <p className={styles.subtitle}>Evolución mensual de recupero, cumplimiento por tramo y comportamiento de la morosidad.</p>
+        </div>
+        <div className={styles.headerActions}>
+          <div className={styles.editActions}>
           {editing ? (
             <>
               <button
                 onClick={saveData}
                 disabled={saving}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '8px 20px', borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #10b981, #059669)', color: '#050505', border: 'none',
-                  fontWeight: 800, fontSize: '12px', cursor: saving ? 'wait' : 'pointer',
-                  letterSpacing: '0.5px', opacity: saving ? 0.7 : 1,
-                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)',
-                  transition: 'all 0.2s',
-                }}
+                className={styles.saveButton}
               >
-                {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} />}
+                {saving ? <Loader2 size={14} className={styles.spinner} /> : <Save size={14} />}
                 {saving ? 'GUARDANDO…' : 'GUARDAR'}
               </button>
               <button
                 onClick={cancelEditing}
                 disabled={saving}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '8px 16px', borderRadius: '10px',
-                  background: 'transparent', color: '#9a9aa3', border: '1px solid rgba(255,255,255,0.06)',
-                  fontWeight: 700, fontSize: '12px', cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
+                className={styles.cancelButton}
               >
                 <X size={14} /> CANCELAR
               </button>
@@ -401,45 +370,34 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           ) : isAdmin ? (
             <button
               onClick={startEditing}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '8px 20px', borderRadius: '10px',
-                background: 'rgba(255,255,255,0.03)', color: '#9a9aa3',
-                border: '1px solid rgba(255,255,255,0.06)',
-                fontWeight: 800, fontSize: '12px', cursor: 'pointer',
-                transition: 'all 0.2s', letterSpacing: '0.3px',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = '#9a9aa3'; }}
+              className={styles.editButton}
             >
               <Edit2 size={14} /> EDITAR DATOS
             </button>
           ) : null}
-        </div>
+          </div>
         <SelectReporte
           icon="calendar"
           value={year}
           onChange={(v) => onYearChange(String(v))}
           options={years.map(y => ({ label: `AÑO ${y}`, value: y }))}
           width="140px"
+          variant="light"
         />
+        </div>
       </div>
 
       {/* Editing banner */}
       {editing && (
-        <div style={{
-          background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.15)',
-          borderRadius: '12px', padding: '14px 20px', marginBottom: '24px',
-          display: 'flex', alignItems: 'center', gap: '10px',
-          fontSize: '12px', color: '#34d399', fontWeight: 700,
-        }}>
+        <div className={styles.editingBanner}>
           <Edit2 size={14} />
           Modo edición — Modificá los valores directamente en las tablas y hacé clic en GUARDAR.
         </div>
       )}
 
       {/* Tramo Tables */}
-      <div style={{ display: 'flex', gap: '14px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div className={styles.sectionLabel}>Cumplimiento por tramo</div>
+      <div className={styles.tramoGrid}>
         <TramoTable
           titulo="Tramo 90-119"
           rows={data.tramo90}
@@ -464,34 +422,39 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
       </div>
 
       {/* Charts */}
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Cumplimiento por Tramo</h3>
-          <div style={{ height: '260px' }}>
+      <div className={styles.sectionLabel}>Evolución y comparativas</div>
+      <div className={styles.chartGrid}>
+        <div className={`data-card ${styles.panel} ${styles.chartPanel}`}>
+          <h3 className={styles.chartTitle}>Cumplimiento por Tramo</h3>
+          <div className={styles.chartCanvas}>
             {chartsLoaded ? (
-              <Chart type="bar" data={cumplData} options={chartOpts('%') as any} />
+              <Chart<'bar' | 'line', (number | null)[], string>
+                type="bar"
+                data={cumplData}
+                options={chartOpts('%') as unknown as ChartOptions<'bar' | 'line'>}
+              />
             ) : (
               <ChartShimmer />
             )}
           </div>
         </div>
 
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Morosidad Anual</h3>
-          <div style={{ height: '260px' }}>
+        <div className={`data-card ${styles.panel} ${styles.chartPanel}`}>
+          <h3 className={styles.chartTitle}>Morosidad Anual</h3>
+          <div className={styles.chartCanvas}>
             {chartsLoaded ? (
-              <Line data={moresData} options={chartOpts('%') as any} />
+              <Line data={moresData} options={chartOpts('%') as unknown as ChartOptions<'line'>} />
             ) : (
               <ChartShimmer />
             )}
           </div>
         </div>
 
-        <div className="data-card" style={{ flex: 1, minWidth: '320px', marginBottom: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-          <h3 style={{ fontSize: '10px', fontWeight: 800, color: '#9a9aa3', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '20px' }}>Variación Morosidad (+/-)</h3>
-          <div style={{ height: '260px' }}>
+        <div className={`data-card ${styles.panel} ${styles.chartPanel}`}>
+          <h3 className={styles.chartTitle}>Variación Morosidad (+/-)</h3>
+          <div className={styles.chartCanvas}>
             {chartsLoaded ? (
-              <Chart type="bar" data={variationData} options={{ ...chartOpts(' p.p.'), maintainAspectRatio: false } as any} />
+              <Chart type="bar" data={variationData} options={{ ...chartOpts(' p.p.'), maintainAspectRatio: false } as unknown as ChartOptions<'bar'>} />
             ) : (
               <ChartShimmer />
             )}
@@ -500,44 +463,37 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
       </div>
 
       {/* Morosidad Detail Table */}
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#9a9aa3', letterSpacing: '1px', textTransform: 'uppercase' }}>Detalle Morosidad</span>
+      <div className={styles.sectionLabel}>Detalle mensual</div>
+      <div className={styles.detailGrid}>
+        <div className={`${styles.panel} ${styles.detailPanel}`}>
+          <div className={`${styles.panelHeader} ${styles.detailHeader}`}>
+            <span className={styles.panelTitle}>Detalle Morosidad</span>
             {editing && (
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 700 }}>Año actual:</span>
+              <div className={styles.yearFields}>
+                <div className={styles.yearField}>
+                  <span>Año actual:</span>
                   <input
                     value={data.anioCurrent}
                     onChange={e => updateMorosidadMeta('anioCurrent', e.target.value)}
-                    style={{
-                      width: '60px', padding: '3px 6px', fontSize: '11px',
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '4px', color: '#fff', textAlign: 'center', outline: 'none',
-                    }}
+                    className={styles.yearInput}
                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 700 }}>Año anterior:</span>
+                <div className={styles.yearField}>
+                  <span>Año anterior:</span>
                   <input
                     value={data.anioAnterior}
                     onChange={e => updateMorosidadMeta('anioAnterior', e.target.value)}
-                    style={{
-                      width: '60px', padding: '3px 6px', fontSize: '11px',
-                      background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                      borderRadius: '4px', color: '#fff', textAlign: 'center', outline: 'none',
-                    }}
+                    className={styles.yearInput}
                   />
                 </div>
               </div>
             )}
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+          <table className={styles.detailTable}>
             <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.005)' }}>
+              <tr>
                 {['Mes', data.anioCurrent || 'Actual', data.anioAnterior || 'Anterior', 'Media Emp.'].map(h => (
-                  <th key={h} style={{ padding: '14px 16px', textAlign: 'center', color: '#9a9aa3', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
+                  <th key={h}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -547,40 +503,35 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
                 return (
                   <tr
                     key={i}
-                    className="hover-row"
-                    style={{
-                      borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      transition: 'all 0.1s ease',
-                      cursor: 'default',
-                    }}
+                    className={styles.dataRow}
                   >
-                    <td style={{ padding: '12px 14px', color: '#eaeaea', fontWeight: 700, textAlign: 'center' }}>
+                    <td className={styles.detailMonthCell}>
                       {r.mes || MESES[i]}
                     </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                    <td className={styles.detailValueCell}>
                       {editing ? (
                         <EditCell value={r.current} onChange={v => updateMorosidad(i, 'current', v)} onBlur={() => formatMorosidadPct(i, 'current')} placeholder="0%" width="70px" />
                       ) : (
                         r.currentPct !== null ? (
-                          <span style={{ color: '#fff', fontWeight: 800, fontSize: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', padding: '3px 9px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            <span style={{ color: c }}>●</span>
+                          <span className={`${styles.statusBadge} ${styles.largeBadge}`}>
+                            <span className={styles.statusDot} style={{ '--status-color': c } as CSSProperties}>●</span>
                             {r.current}
                           </span>
-                        ) : <span style={{ color: '#64748b' }}>—</span>
+                        ) : <span className={styles.secondaryValue}>—</span>
                       )}
                     </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                    <td className={styles.detailValueCell}>
                       {editing ? (
                         <EditCell value={r.anterior} onChange={v => updateMorosidad(i, 'anterior', v)} onBlur={() => formatMorosidadPct(i, 'anterior')} placeholder="0%" width="70px" />
                       ) : (
-                        <span style={{ color: '#9a9aa3', fontWeight: 600 }}>{r.anteriorPct !== null ? r.anterior : '—'}</span>
+                        <span className={styles.secondaryValue}>{r.anteriorPct !== null ? r.anterior : '—'}</span>
                       )}
                     </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                    <td className={styles.detailValueCell}>
                       {editing ? (
                         <EditCell value={r.mediaEmp} onChange={v => updateMorosidad(i, 'mediaEmp', v)} onBlur={() => formatMorosidadPct(i, 'mediaEmp')} placeholder="0%" width="70px" />
                       ) : (
-                        <span style={{ color: '#9a9aa3', fontWeight: 600 }}>{r.mediaPct !== null ? r.mediaEmp : '—'}</span>
+                        <span className={styles.secondaryValue}>{r.mediaPct !== null ? r.mediaEmp : '—'}</span>
                       )}
                     </td>
                   </tr>
@@ -590,13 +541,6 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           </table>
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

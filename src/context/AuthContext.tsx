@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { getSession, clearSession, SessionUser } from '@/lib/auth';
 
 interface AuthContextType {
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [simulatedAnalista, setSimulatedAnalistaState] = useState<string | null>(null);
@@ -68,7 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.removeItem('crm_simulated_analista'); } catch {}
     setSimulatedAnalistaState(null);
     setUser(null);
-  }, []);
+    router.replace('/registros');
+  }, [router]);
 
   const realIsAdmin = user?.rol === 'admin';
   const isAdmin = realIsAdmin && !simulatedAnalista;

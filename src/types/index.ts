@@ -45,6 +45,39 @@ export const bitacoraNotaSchema = z.object({
 
 export type BitacoraNota = z.infer<typeof bitacoraNotaSchema>;
 
+// ── GestionDiaria (reemplazo de Apps Script "Gestiones VICTORIA/MAGALI") ───────
+export const gestionDiariaSchema = z.object({
+  id: z.string(),
+  analista: z.string(),
+  tipo_cliente: z.string().nullish().transform(v => v ?? ''),
+  fecha: z.string().nullable(),
+  nombre: z.string().nullish().transform(v => v ?? ''),
+  cuil: z.string().nullish().transform(v => v ?? ''),
+  actividad: z.string().nullish().transform(v => v ?? ''),
+  donde_nos_conocio: z.string().nullish().transform(v => v ?? ''),
+  estado: z.string().nullish().transform(v => v ?? ''),
+  score: z.coerce.number().nullish().transform(v => v ?? null),
+  tipo_operacion: z.string().nullish().transform(v => v ?? ''),
+  monto_otorgado: z.coerce.number().nullish().transform(v => v ?? 0),
+  capital_x_venta: z.coerce.number().nullish().transform(v => v ?? null),
+  interes_x_venta: z.coerce.number().nullish().transform(v => v ?? null),
+  comentarios: z.string().nullish().transform(v => v ?? ''),
+  created_at: z.string().nullish().transform(v => v ?? undefined),
+  updated_at: z.string().nullish().transform(v => v ?? undefined),
+});
+
+export type GestionDiaria = z.infer<typeof gestionDiariaSchema>;
+
+// Opciones vigentes del formulario (fuente: dropdowns actuales del Apps Script
+// + valores limpios del histórico). Cada campo admite "agregar otro" en la UI.
+export const GESTION_DIARIA_OPCIONES = {
+  tipoCliente: ['Proyeccion 0', 'Tramo 1-29', 'Cetrogar', 'Cancelacion', 'Refinanciaciones', 'Referido', 'Jubilado', 'Centric', 'Ingreso', 'Virtual'],
+  actividad: ['Empleado Privado', 'Empleado Publico', 'Jubilado', 'Sin ingresos Fijos', 'Pensionado', 'Monotributista', 'Emp. Domestica', 'Retirado', 'Sin datos'],
+  dondeNosConocio: ['Gestion Whatsapp', 'Paso por el local', 'Centric', 'Whatsapp (No Ingreso a Suc)', 'Consulta virtual', 'Consulta en sucursal', 'Referido', 'Referido Con consulta', 'Flyers'],
+  estado: ['Aprobado', 'Rechazado', 'Falta Documentacion', 'No califica', 'Califica', 'Sueldo bajo'],
+  tipoOperacion: ['Apertura', 'Renovacion'],
+} as const;
+
 // Helper genérico: valida un array de filas contra un schema, descarta inválidas.
 export function parseRows<T>(
   schema: z.ZodType<T>,
@@ -204,14 +237,6 @@ export const historicoVentaSchema = z.object({
   ops_real: z.coerce.number(),
 });
 export type HistoricoVenta = z.infer<typeof historicoVentaSchema>;
-
-export const ESTADOS_MAP: Record<string, { monto: string; op: string }> = {
-  'derivado / rechazado cc': { monto: 'derivadoRechazadoMonto', op: 'derivadoRechazadoOp' },
-  'proyeccion': { monto: 'totalProyecciones', op: 'totalProyeccionesOp' },
-  'en seguimiento': { monto: 'enSeguimientoMonto', op: 'enSeguimientoOp' },
-  'score bajo': { monto: 'scoreBajoMonto', op: 'scoreBajoOp' },
-  'afectaciones': { monto: 'afectacionesMonto', op: 'afectacionesOp' },
-};
 
 export const CONFIG = {
   ANALISTAS_DEFAULT: ["Luciana", "Victoria", "Juan Pablo", "Yamil"],

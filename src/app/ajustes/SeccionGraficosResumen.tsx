@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import { CONFIG } from '@/types';
 import { filterByMonth, isVenta } from '@/lib/registro-stats';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
+import { UI_FONT_FAMILY } from '@/app/fonts';
 
 const labelsPlugin: any = {
   id: 'labelsPlugin',
@@ -18,7 +19,7 @@ const labelsPlugin: any = {
         const isPct = chart.config.options?._isPct === true;
         const text = isPct ? `${val.toFixed(0)}%` : val.toString();
         ctx.fillStyle = '#ffffff';
-        ctx.font = '800 11px Inter, sans-serif';
+        ctx.font = `700 11px ${UI_FONT_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText(text, element.x, element.y - 6);
@@ -59,11 +60,11 @@ const baseChartOpts = (yLabel = '', isPct = false): any => ({
   plugins: { legend: { display: false }, tooltip: {
     backgroundColor: 'rgba(10, 10, 15, 0.95)',
     titleColor: '#ffffff',
-    titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+    titleFont: { size: 18, weight: 700, family: UI_FONT_FAMILY },
     titleAlign: 'center' as const,
     titleMarginBottom: 16,
     bodyColor: '#f1f5f9',
-    bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+    bodyFont: { size: 15, weight: 600, family: UI_FONT_FAMILY },
     bodySpacing: 10,
     borderColor: 'rgba(255,255,255,0.15)',
     borderWidth: 2,
@@ -204,7 +205,7 @@ export default function SeccionGraficosResumen({
         {/* 1. Cumplimiento */}
         <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
             <div style={{ display: 'flex', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
@@ -224,7 +225,7 @@ export default function SeccionGraficosResumen({
         {/* 2. Variación */}
         <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
             <div style={{ display: 'flex', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
@@ -244,7 +245,7 @@ export default function SeccionGraficosResumen({
         {/* 3. Acuerdos */}
         <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
               Distribución de Acuerdos
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
@@ -268,7 +269,7 @@ export default function SeccionGraficosResumen({
         <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-            <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
               % Empleo Público / Privado
             </span>
           </div>

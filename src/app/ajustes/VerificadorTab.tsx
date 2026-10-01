@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import {
   parsePastedText, verificarFilas, formatDateAR, ParsedRow, ColumnMapping, ColumnRole, MatchStatus, VerificadorResult,
 } from '@/lib/verificador-utils';
+import styles from './VerificadorTab.module.css';
 
 const ROLE_OPTIONS: { value: ColumnRole; label: string }[] = [
   { value: 'ignore',          label: '— Ignorar —'      },
@@ -56,12 +57,6 @@ const parseMontoExcel = (raw: string): number => {
   return parseFloat(normalized.replace(/[$\s]/g, '')) || 0;
 };
 
-const TH_STYLE: React.CSSProperties = {
-  padding: '10px 14px', textAlign: 'left', color: '#555',
-  fontWeight: 700, fontSize: 11, letterSpacing: '0.05em',
-  whiteSpace: 'nowrap', verticalAlign: 'top', minWidth: 120,
-};
-
 export default function VerificadorTab() {
   const { registros, refresh } = useRegistros();
   const [rawText, setRawText] = useState('');
@@ -86,23 +81,18 @@ export default function VerificadorTab() {
   const handleReset = () => { setRawText(''); setRows([]); setMapping({}); setVerified(false); };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className={styles.root}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className={styles.header}>
         <div>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 }}>Verificador de Excel</h3>
-          <p style={{ fontSize: 13, color: '#666', marginTop: 3 }}>
+          <h3 className={styles.title}>Verificador de Excel</h3>
+          <p className={styles.subtitle}>
             Pegá celdas copiadas de Excel y cruzalas contra los registros cargados.
           </p>
         </div>
         {(rows.length > 0 || results) && (
-          <button onClick={handleReset} style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '7px 14px', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7,
-            color: '#777', cursor: 'pointer', fontSize: 12,
-          }}>
+          <button onClick={handleReset} className={styles.resetButton}>
             <RotateCcw size={12} /> Nueva consulta
           </button>
         )}
@@ -116,21 +106,14 @@ export default function VerificadorTab() {
             onChange={e => handlePaste(e.target.value)}
             placeholder="Copiá las celdas desde Excel y pegá aquí..."
             rows={rows.length === 0 ? 18 : 8}
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 8, color: '#e5e5e5',
-              fontFamily: 'monospace', fontSize: 12, lineHeight: 1.7,
-              padding: '12px 14px', resize: 'vertical', outline: 'none',
-            }}
+            className={styles.pasteArea}
           />
-          <p style={{ fontSize: 12, color: '#555', marginTop: 8 }}>
+          <p className={styles.helperText}>
             Copiá desde Excel incluyendo la columna de CUIL — es el campo requerido para cruzar contra la base.
             Podés incluir también Nombre, Mes e Importe en columnas separadas.
           </p>
           {rows.length > 0 && (
-            <p style={{ fontSize: 12, color: '#888', marginTop: 6 }}>
+            <p className={styles.detectedCount}>
               {rows.length} fila{rows.length !== 1 ? 's' : ''} · {colCount} columna{colCount !== 1 ? 's' : ''} detectadas
             </p>
           )}
@@ -140,24 +123,19 @@ export default function VerificadorTab() {
       {/* Column mapping */}
       {rows.length > 0 && !results && (
         <div>
-          <p style={{ fontSize: 12, fontWeight: 600, color: '#888', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <p className={styles.mappingLabel}>
             Asignar columnas
           </p>
-          <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <div className={styles.tableViewport}>
+            <table className={styles.mappingTable}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <tr className={styles.mappingHeadRow}>
                   {Array.from({ length: colCount }, (_, i) => (
-                    <th key={i} style={{ padding: '10px 12px', textAlign: 'left', background: 'rgba(255,255,255,0.02)' }}>
+                    <th key={i} className={styles.mappingHeadCell}>
                       <select
                         value={mapping[i] ?? 'ignore'}
                         onChange={e => setMapping(prev => ({ ...prev, [i]: e.target.value as ColumnRole }))}
-                        style={{
-                          background: '#111', color: '#ccc',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          borderRadius: 5, padding: '5px 8px',
-                          fontSize: 11, cursor: 'pointer', outline: 'none',
-                        }}
+                        className={styles.mappingSelect}
                       >
                         {ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
@@ -167,9 +145,9 @@ export default function VerificadorTab() {
               </thead>
               <tbody>
                 {rows.slice(0, 8).map((row, ri) => (
-                  <tr key={ri} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <tr key={ri} className={styles.mappingBodyRow}>
                     {Array.from({ length: colCount }, (_, ci) => (
-                      <td key={ci} style={{ padding: '8px 12px', color: '#888' }}>
+                      <td key={ci} className={styles.mappingCell}>
                         {row.cells[ci] ?? ''}
                       </td>
                     ))}
@@ -179,26 +157,19 @@ export default function VerificadorTab() {
             </table>
           </div>
           {rows.length > 8 && (
-            <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>... y {rows.length - 8} filas más</p>
+            <p className={styles.moreRows}>... y {rows.length - 8} filas más</p>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+          <div className={styles.verifyActions}>
             <button
               onClick={() => setVerified(true)}
               disabled={!hasCuil}
-              style={{
-                padding: '9px 24px',
-                background: hasCuil ? '#fff' : 'rgba(255,255,255,0.07)',
-                color: hasCuil ? '#000' : '#444',
-                border: 'none', borderRadius: 7,
-                fontWeight: 700, fontSize: 13,
-                cursor: hasCuil ? 'pointer' : 'not-allowed',
-              }}
+              className={styles.verifyButton}
             >
               Verificar {rows.length} fila{rows.length !== 1 ? 's' : ''}
             </button>
             {!hasCuil && (
-              <span style={{ fontSize: 12, color: '#666' }}>
+              <span className={styles.verifyHint}>
                 Asigná al menos la columna CUIL para continuar
               </span>
             )}
@@ -207,16 +178,15 @@ export default function VerificadorTab() {
       )}
 
       {/* Results */}
-      {results && <ResultsTable results={results} mapping={mapping} colCount={colCount} onDeleted={() => refresh(true)} />}
+      {results && <ResultsTable results={results} mapping={mapping} onDeleted={() => refresh(true)} />}
     </div>
   );
 }
 
 
-function ResultsTable({ results, mapping, colCount, onDeleted }: {
+function ResultsTable({ results, mapping, onDeleted }: {
   results: VerificadorResult[];
   mapping: ColumnMapping;
-  colCount: number;
   onDeleted: () => void;
 }) {
   const [selectedStatuses, setSelectedStatuses] = useState<Set<MatchStatus>>(new Set());
@@ -378,18 +348,11 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
     .filter((x): x is { role: ColumnRole; colIndex: number } => x !== null);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div className={styles.results}>
 
       {(selectedForDeletion.size > 0 || duplicateCount > 0) && !deleteResult && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-          padding: '10px 16px',
-          background: confirming ? 'rgba(248,113,113,0.13)' : 'rgba(248,113,113,0.08)',
-          border: `1px solid ${confirming ? 'rgba(248,113,113,0.4)' : 'rgba(248,113,113,0.25)'}`,
-          borderRadius: 8,
-          transition: 'all 0.15s',
-        }}>
-          <span style={{ fontSize: 12, color: '#ff3366', fontWeight: 600 }}>
+        <div className={`${styles.duplicateBanner} ${confirming ? styles.isConfirming : ''}`}>
+          <span className={styles.duplicateSummary}>
             {duplicateCount} CUIL{duplicateCount > 1 ? 's' : ''} duplicado{duplicateCount > 1 ? 's' : ''} —{' '}
             {selectedForDeletion.size} seleccionado{selectedForDeletion.size !== 1 ? 's' : ''} para eliminar
           </span>
@@ -398,16 +361,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
             <button
               onClick={() => { if (selectedForDeletion.size > 0) setConfirming(true); }}
               disabled={selectedForDeletion.size === 0}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 14px',
-                background: selectedForDeletion.size === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(248,113,113,0.15)',
-                border: `1px solid ${selectedForDeletion.size === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(248,113,113,0.3)'}`,
-                borderRadius: 6,
-                cursor: selectedForDeletion.size === 0 ? 'not-allowed' : 'pointer',
-                color: selectedForDeletion.size === 0 ? '#555' : '#ff3366',
-                fontSize: 12, fontWeight: 700,
-              }}
+              className={styles.deleteSelectionButton}
             >
               <Trash2 size={12} />
               Eliminar {selectedForDeletion.size} seleccionado{selectedForDeletion.size !== 1 ? 's' : ''}
@@ -417,15 +371,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
               <button
                 onClick={handleDeleteDuplicates}
                 disabled={deleting}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '6px 14px',
-                  background: deleting ? 'rgba(255,255,255,0.05)' : 'rgba(248,113,113,0.3)',
-                  border: '1px solid rgba(248,113,113,0.5)',
-                  borderRadius: 6,
-                  cursor: deleting ? 'not-allowed' : 'pointer',
-                  color: '#fff', fontSize: 12, fontWeight: 700,
-                }}
+                className={styles.confirmDeleteButton}
               >
                 <Trash2 size={12} />
                 {deleting ? 'Eliminando...' : '⚠ Confirmar eliminación'}
@@ -433,13 +379,7 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
               <button
                 onClick={() => setConfirming(false)}
                 disabled={deleting}
-                style={{
-                  padding: '6px 14px',
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 6, cursor: 'pointer',
-                  color: '#666', fontSize: 12, fontWeight: 600,
-                }}
+                className={styles.cancelButton}
               >
                 Cancelar
               </button>
@@ -449,72 +389,42 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
       )}
 
       {deleteResult && (
-        <div style={{
-          padding: '10px 16px',
-          background: 'rgba(74,222,128,0.08)',
-          border: '1px solid rgba(74,222,128,0.2)',
-          borderRadius: 8,
-          fontSize: 12, color: '#00ff88', fontWeight: 600,
-        }}>
+        <div className={styles.successBanner}>
           ✓ {deleteResult.deleted} registro{deleteResult.deleted > 1 ? 's' : ''} eliminado{deleteResult.deleted > 1 ? 's' : ''} correctamente.
         </div>
       )}
 
       {deleteError && (
-        <div style={{
-          padding: '10px 16px',
-          background: 'rgba(248,113,113,0.08)',
-          border: '1px solid rgba(248,113,113,0.25)',
-          borderRadius: 8,
-          fontSize: 12, color: '#ff3366', fontWeight: 600,
-        }}>
+        <div className={styles.errorBanner}>
           Error al eliminar: {deleteError}
         </div>
       )}
 
       {/* Active filters bar */}
       {hasFilters && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-          padding: '8px 14px', background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8,
-        }}>
-          <span style={{ fontSize: 11, color: '#555', fontWeight: 600 }}>Filtros activos:</span>
+        <div className={styles.activeFilters}>
+          <span className={styles.activeFiltersLabel}>Filtros activos:</span>
           {Array.from(selectedStatuses).map(s => (
-            <span key={s} onClick={() => toggleStatus(s)} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-              background: 'rgba(255,255,255,0.08)', color: STATUS_CONFIG[s].color,
-              border: `1px solid ${STATUS_CONFIG[s].color}44`, cursor: 'pointer',
-            }}>
+            <span
+              key={s}
+              onClick={() => toggleStatus(s)}
+              className={styles.statusFilterChip}
+              style={{ '--status-color': STATUS_CONFIG[s].color } as React.CSSProperties}
+            >
               {STATUS_CONFIG[s].label} ×
             </span>
           ))}
           {Object.entries(colFilters).filter(([, v]) => v).map(([k, v]) => (
-            <span key={k} onClick={() => setCol(k, '')} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-              background: 'rgba(255,255,255,0.06)', color: '#ccc',
-              border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer',
-            }}>
+            <span key={k} onClick={() => setCol(k, '')} className={styles.filterChip}>
               {v} ×
             </span>
           ))}
           {search && (
-            <span onClick={() => setSearch('')} style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-              background: 'rgba(255,255,255,0.06)', color: '#ccc',
-              border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer',
-            }}>
+            <span onClick={() => setSearch('')} className={styles.filterChip}>
               "{search}" ×
             </span>
           )}
-          <button onClick={clearAll} style={{
-            marginLeft: 'auto', padding: '3px 10px', background: 'transparent',
-            border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
-            color: '#555', cursor: 'pointer', fontSize: 11,
-          }}>Limpiar todo</button>
+          <button onClick={clearAll} className={styles.clearFilters}>Limpiar todo</button>
         </div>
       )}
 
@@ -523,31 +433,22 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
         value={search}
         onChange={e => setSearch(e.target.value)}
         placeholder="Buscar en todos los campos..."
-        style={{
-          width: '100%', boxSizing: 'border-box',
-          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 8, color: '#e5e5e5', fontSize: 13, padding: '9px 14px', outline: 'none',
-        }}
+        className={styles.searchInput}
       />
 
       {/* Estado toggle pills */}
       <div>
-        <div style={{ fontSize: 11, color: '#555', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
+        <div className={styles.statusHeading}>
           Estado (seleccioná los que querés filtrar)
-          {selectedStatuses.size > 0 && <span style={{ color: '#00ff88', marginLeft: 8 }}>· {selectedStatuses.size} seleccionado{selectedStatuses.size > 1 ? 's' : ''}</span>}
+          {selectedStatuses.size > 0 && <span className={styles.selectedCount}>· {selectedStatuses.size} seleccionado{selectedStatuses.size > 1 ? 's' : ''}</span>}
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <div className={styles.statusOptions}>
           {STATUS_OPTS.map(({ key, label }) => {
             const active = selectedStatuses.has(key);
             const count = results.filter((r, i) => r.status === key && !hiddenIndices.has(i)).length;
             return (
-              <button key={key} onClick={() => toggleStatus(key)} style={{
-                padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                background: active ? '#fff' : 'transparent',
-                color: active ? '#000' : '#666',
-                border: active ? '1px solid #fff' : '1px solid rgba(255,255,255,0.12)',
-              }}>
-                {label} <span style={{ fontWeight: 400, opacity: 0.6 }}>({count})</span>
+              <button key={key} onClick={() => toggleStatus(key)} className={`${styles.statusButton} ${active ? styles.isActive : ''}`}>
+                {label} <span className={styles.statusTotal}>({count})</span>
               </button>
             );
           })}
@@ -555,23 +456,23 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
       </div>
 
       {/* Summary bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 12, color: '#666' }}>
-          Mostrando <span style={{ color: '#fff', fontWeight: 700 }}>{visible.length}</span> de {results.length - hiddenIndices.size} filas
+      <div className={styles.summary}>
+        <span className={styles.summaryText}>
+          Mostrando <span className={styles.summaryValue}>{visible.length}</span> de {results.length - hiddenIndices.size} filas
         </span>
-        <span style={{ fontSize: 12, color: '#666' }}>
-          Total monto: <span style={{ color: '#fff', fontWeight: 700 }}>${totalMonto.toLocaleString('es-AR')}</span>
+        <span className={styles.summaryText}>
+          Total monto: <span className={styles.summaryValue}>${totalMonto.toLocaleString('es-AR')}</span>
         </span>
       </div>
 
       {/* Table */}
-      <div style={{ overflowX: 'auto', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, tableLayout: 'auto' }}>
-          <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className={styles.tableViewport}>
+        <table className={styles.resultsTable}>
+          <thead className={styles.resultsHead}>
             <tr>
-              <th style={{ ...TH_STYLE, width: 36, minWidth: 36 }} />
+              <th className={`${styles.resultsHeadCell} ${styles.selectionHead}`} />
               {orderedCols.map(({ role, colIndex }) => (
-                <th key={role} style={TH_STYLE}>
+                <th key={role} className={styles.resultsHeadCell}>
                   {ROLE_LABEL[role].toUpperCase()}
                   <FilterSelect
                     filterKey={String(colIndex)}
@@ -582,16 +483,16 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                   />
                 </th>
               ))}
-              <th style={TH_STYLE}>ESTADO</th>
-              <th style={TH_STYLE}>
+              <th className={styles.resultsHeadCell}>ESTADO</th>
+              <th className={styles.resultsHeadCell}>
                 MONTO DB
                 <FilterSelect filterKey="dbImporte" value={colFilters['dbImporte'] ?? ''} options={uniqueVals['dbImporte'] ?? []} onChange={setCol} />
               </th>
-              <th style={TH_STYLE}>
+              <th className={styles.resultsHeadCell}>
                 FECHA DB
                 <FilterSelect filterKey="dbFecha" value={colFilters['dbFecha'] ?? ''} options={uniqueVals['dbFecha'] ?? []} onChange={setCol} formatOption={formatDateAR} />
               </th>
-              <th style={TH_STYLE}>
+              <th className={styles.resultsHeadCell}>
                 ESTADO DB
                 <FilterSelect filterKey="dbEstado" value={colFilters['dbEstado'] ?? ''} options={uniqueVals['dbEstado'] ?? []} onChange={setCol} />
               </th>
@@ -601,25 +502,23 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
             {visible.map((res, idx) => {
               const resultIdx = results.indexOf(res);
               const { color, Icon } = STATUS_CONFIG[res.status];
-              const baseBg = (() => {
+              const isDuplicate = (() => {
                 if (res.status !== 'found' || cuilColIndex === undefined) return undefined;
                 const cuil = (res.row.cells[Number(cuilColIndex)] ?? '').trim();
-                return duplicateCuils.has(cuil) ? 'rgba(248,113,113,0.07)' : undefined;
+                return duplicateCuils.has(cuil);
               })();
               return (
                 <tr
                   key={idx}
-                  style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: baseBg, transition: 'background 0.12s ease' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = baseBg ?? ''; }}
+                  className={`${styles.resultRow} ${isDuplicate ? styles.isDuplicate : ''}`}
                 >
-                  <td style={{ padding: '9px 14px', textAlign: 'center', width: 36 }}>
+                  <td className={styles.selectionCell}>
                     {res.dbId && (
                       <input
                         type="checkbox"
                         checked={selectedForDeletion.has(resultIdx)}
                         onChange={() => toggleSelected(resultIdx)}
-                        style={{ cursor: 'pointer', accentColor: '#ff3366', width: 14, height: 14 }}
+                        className={styles.selectionCheckbox}
                       />
                     )}
                   </td>
@@ -627,33 +526,33 @@ function ResultsTable({ results, mapping, colCount, onDeleted }: {
                     const raw = res.row.cells[colIndex] ?? '';
                     const display = role === 'fecha' ? formatDateAR(raw) : raw;
                     return (
-                      <td key={role} style={{ padding: '9px 14px', color: '#aaa', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <td key={role} className={styles.dataCell}>
                         {display}
                       </td>
                     );
                   })}
-                  <td style={{ padding: '9px 14px', whiteSpace: 'nowrap' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color, fontWeight: 600 }}>
+                  <td className={styles.statusCell}>
+                    <span className={styles.statusLabel} style={{ '--status-color': color } as React.CSSProperties}>
                       <Icon size={12} />
                       {STATUS_CONFIG[res.status].label}
                     </span>
-                    {res.diffDetail && <span style={{ color: '#666', fontSize: 11, marginLeft: 8 }}>{res.diffDetail}</span>}
+                    {res.diffDetail && <span className={styles.diffDetail}>{res.diffDetail}</span>}
                   </td>
-                  <td style={{ padding: '9px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>
-                    {res.dbImporte != null ? `$${res.dbImporte.toLocaleString('es-AR')}` : <span style={{ color: '#444' }}>—</span>}
+                  <td className={styles.databaseCell}>
+                    {res.dbImporte != null ? `$${res.dbImporte.toLocaleString('es-AR')}` : <span className={styles.emptyValue}>—</span>}
                   </td>
-                  <td style={{ padding: '9px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>
-                    {res.dbFecha ? formatDateAR(res.dbFecha) : <span style={{ color: '#444' }}>—</span>}
+                  <td className={styles.databaseCell}>
+                    {res.dbFecha ? formatDateAR(res.dbFecha) : <span className={styles.emptyValue}>—</span>}
                   </td>
-                  <td style={{ padding: '9px 14px', color: '#aaa', whiteSpace: 'nowrap' }}>
-                    {res.dbEstado ?? <span style={{ color: '#444' }}>—</span>}
+                  <td className={styles.databaseCell}>
+                    {res.dbEstado ?? <span className={styles.emptyValue}>—</span>}
                   </td>
                 </tr>
               );
             })}
             {visible.length === 0 && (
               <tr>
-                <td colSpan={orderedCols.length + 4} style={{ padding: '24px', textAlign: 'center', color: '#555' }}>
+                <td colSpan={orderedCols.length + 4} className={styles.emptyResults}>
                   No hay resultados con los filtros aplicados
                 </td>
               </tr>

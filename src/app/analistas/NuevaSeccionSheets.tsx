@@ -30,34 +30,61 @@ const CHART_PALETTE = [
 ];
 
 
-export default function NuevaSeccionSheets({ analista }: { analista: string }) {
+interface NuevaSeccionSheetsProps {
+  analista: string;
+  /** Si la vista que lo contiene esta inactiva (p. ej. sub-tab oculta con keep-alive),
+   *  no se inician requests. Default true: consumidores existentes no cambian. */
+  active?: boolean;
+  reportAppearance?: boolean;
+}
+
+export default function NuevaSeccionSheets({ analista, active = true, reportAppearance = false }: NuevaSeccionSheetsProps) {
   const [dataSources, setDataSources] = useState<Record<string, string[][]>>({});
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inFlightRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const [viewMode, setViewMode] = useState<'mensual' | 'total'>('total');
   const [selectedMes, setSelectedMes] = useState(new Date().getMonth() + 1);
   const [selectedAnio, setSelectedAnio] = useState(new Date().getFullYear());
 
   const fetchData = useCallback(() => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     fetch('/api/nueva-seccion?t=' + Date.now(), { cache: 'no-store' })
       .then(res => res.json())
       .then(res => {
+        if (!mountedRef.current) return;
         if (res.success) {
           setDataSources(res.data);
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        if (mountedRef.current) setLoading(false);
+      })
+      .finally(() => {
+        inFlightRef.current = false;
+      });
   }, []);
 
+  // Unico punto de decision: solo refresca si la vista esta activa Y el documento visible.
+  const refreshIfVisible = useCallback(() => {
+    if (active && !document.hidden) fetchData();
+  }, [active, fetchData]);
+
   useEffect(() => {
-    fetchData();
-    intervalRef.current = setInterval(fetchData, 15_000);
+    mountedRef.current = true;
+    refreshIfVisible();
+    intervalRef.current = setInterval(refreshIfVisible, 15_000);
+    document.addEventListener('visibilitychange', refreshIfVisible);
     return () => {
+      mountedRef.current = false;
       if (intervalRef.current) clearInterval(intervalRef.current);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
     };
-  }, [fetchData]);
+  }, [refreshIfVisible]);
 
   const data = useMemo(() => {
     const key = analista.toUpperCase();
@@ -113,13 +140,13 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
   );
 
   return (
-    <div className="data-card relative z-10 w-full" style={{
+    <div className="data-card analistas-categories-card" style={{
       margin: 0,
       display: 'flex',
       flexDirection: 'column',
       minHeight: 400,
       height: '100%',
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)',
+      background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--surface-card)',
       boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
       padding: 24,
       borderRadius: 16,
@@ -127,7 +154,7 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexShrink: 0 }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Tag size={15} color="#34d399" />
-          <h2 style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#fff', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: '#fff', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
             CATEGORÍAS
           </h2>
         </div>
@@ -149,17 +176,17 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
             </>
           )}
 
-          <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+          <div className="report-period-toggle">
             {(['mensual', 'total'] as const).map(p => (
               <button
                 key={p}
                 onClick={() => setViewMode(p)}
-                style={{
+                className={viewMode === p ? 'is-active' : undefined}
+                style={reportAppearance ? { background: viewMode === p ? '#fb923c' : 'transparent' } : {
                   padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                  fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
+                  fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px',
                   background: viewMode === p ? '#fb923c' : 'transparent',
-                  color: viewMode === p ? '#000' : '#555',
-                  transition: 'all 0.2s ease',
+                  color: viewMode === p ? '#000' : '#555', transition: 'all 0.2s ease',
                 }}
               >
                 {p === 'mensual' ? 'Mes' : 'Total'}
@@ -173,11 +200,11 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
 
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', flex: 1, minHeight: 0 }}>
         {loading ? (
-          <div className="flex items-center justify-center w-full text-zinc-500 text-sm" style={{ height: '100%' }}>Cargando datos...</div>
+          <div style={{ height: '100%' }}>Cargando datos...</div>
         ) : (
           <>
-            <DistBlockSheets titulo="TIPO DE CLIENTE" icon={<FileText size={12} color="#34d399" />} datos={stats} color="#34d399" />
-            <DistBlockSheets titulo="POR DONDE NOS CONOCIO" icon={<Tag size={12} color="#60a5fa" />} datos={statsColF} color="#60a5fa" />
+            <DistBlockSheets reportAppearance={reportAppearance} titulo="TIPO DE CLIENTE" icon={<FileText size={12} color="#34d399" />} datos={stats} color="#34d399" />
+            <DistBlockSheets reportAppearance={reportAppearance} titulo="POR DONDE NOS CONOCIO" icon={<Tag size={12} color="#60a5fa" />} datos={statsColF} color="#60a5fa" />
           </>
         )}
       </div>
@@ -186,11 +213,12 @@ export default function NuevaSeccionSheets({ analista }: { analista: string }) {
 }
 
 function DistBlockSheets({ 
-  titulo, icon, datos, color
+  titulo, icon, datos, color, reportAppearance = false
 }: { 
   titulo: string; icon: React.ReactNode; 
   datos: { label: string; cantidad: number }[]; 
   color: string;
+  reportAppearance?: boolean;
 }) {
   const validData = datos.filter(d => {
     const l = d.label?.trim()?.toLowerCase();
@@ -205,7 +233,7 @@ function DistBlockSheets({
   const totalCant = validData.reduce((s, d) => s + d.cantidad, 0);
 
   return (
-    <div style={{ 
+    <div className="category-sheet-block" style={{
       flex: 1, 
       minWidth: 240, 
       display: 'flex', 
@@ -216,23 +244,19 @@ function DistBlockSheets({
       {titulo && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
           <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-          <span style={{ fontSize: 11, fontWeight: 800, color: '#555', textTransform: 'uppercase', letterSpacing: 0.8 }}>{titulo}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: 0.8 }}>{titulo}</span>
         </div>
       )}
-      <div style={{ 
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', 
+      <div className="category-sheet-panel" style={{
+        ...(!reportAppearance ? { background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--surface-card)', border: '1px solid rgba(255,255,255,0.04)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)', overflowX: 'hidden' as const, overflowY: 'hidden' as const } : {}),
         borderRadius: 10, 
-        border: '1px solid rgba(255,255,255,0.04)', 
-        boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
-        overflowX: 'hidden', 
-        overflowY: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         flex: 1, 
         minHeight: 0,
         transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
-        <div style={{ padding: '24px 0 8px 0', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+        <div className="category-sheet-chart" style={{ ...(!reportAppearance ? { padding: '24px 0 8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' } : {}), flexShrink: 0 }}>
           <ModernDoughnut
             label="Total Ops"
             value={totalCant}
@@ -252,19 +276,19 @@ function DistBlockSheets({
             }} 
           />
         </div>
-        <div style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto' }}>
+        <div className="category-sheet-list" style={{ flex: 1, overflowX: 'hidden', overflowY: 'auto' }}>
           {validData.map((d, i) => {
             const pct = totalCant > 0 ? (d.cantidad / totalCant) * 100 : 0;
             const itemColor = CHART_PALETTE[i % CHART_PALETTE.length];
             return (
-              <div key={i} style={{ padding: '9px 14px', borderBottom: 'none' }}>
+              <div key={i} className="category-sheet-row" style={reportAppearance ? undefined : { padding: '9px 14px', borderBottom: 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: itemColor, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: '#8f929d', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
+                    <span style={{ fontSize: 12, ...(!reportAppearance ? { color: '#8f929d' } : {}), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                    <span className="category-sheet-value" style={{ fontSize: 12, fontWeight: 700, ...(!reportAppearance ? { color: '#fff' } : {}), background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: itemColor, minWidth: 34, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
                   </div>
                 </div>
@@ -277,8 +301,8 @@ function DistBlockSheets({
         </div>
         
         {noEspData && (
-          <div style={{ padding: '12px 14px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.03)' }}>
-            <span style={{ fontSize: 10, color: '#666', fontStyle: 'italic' }}>* {noEspData.cantidad} sin especificar</span>
+          <div className="category-sheet-footer" style={{ padding: '12px 14px', ...(!reportAppearance ? { background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.03)' } : {}) }}>
+            <span style={{ fontSize: 10, ...(!reportAppearance ? { color: '#666' } : {}), fontStyle: 'italic' }}>* {noEspData.cantidad} sin especificar</span>
           </div>
         )}
       </div>

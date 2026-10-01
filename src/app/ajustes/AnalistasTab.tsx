@@ -6,6 +6,7 @@ import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { capitalizarTexto } from '@/lib/utils';
 import { Analista } from '@/types';
 import { Eye, EyeOff, Trash2, Plus } from 'lucide-react';
+import styles from './AnalistasTab.module.css';
 
 export default function AnalistasTab() {
   const { analistasAll, applyAnalistaChange } = useAnalistas();
@@ -60,72 +61,68 @@ export default function AnalistasTab() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className={styles.root}>
 
       {/* FORMULARIO AGREGAR */}
-      <div className="data-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)' }}>
-        <div className="data-card-header" style={{ marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>Agregar Analista</h3>
-          <p style={{ fontSize: '13px', color: 'var(--gris)' }}>
+      <div className={`data-card ${styles.card}`}>
+        <div className={`data-card-header ${styles.addHeader}`}>
+          <h3 className={styles.title}>Agregar Analista</h3>
+          <p className={styles.description}>
             Los analistas nuevos se agregan al final del listado y están visibles de inmediato.
           </p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div className={styles.formContent}>
+          <div className={styles.formRow}>
 
             {/* Nombre */}
-            <div className="form-group" style={{ flex: '1 1 200px' }}>
-              <label className="form-label" style={{ color: 'var(--gris)', fontSize: '11px', textTransform: 'uppercase' }}>
+            <div className={`form-group ${styles.nameField}`}>
+              <label className={`form-label ${styles.formLabel}`}>
                 Nombre
               </label>
               <input
-                className="form-input"
                 type="text"
                 value={nombre}
                 onChange={e => { setNombre(e.target.value); setError(null); }}
                 placeholder="Ej: Martínez"
                 onKeyDown={e => e.key === 'Enter' && agregar()}
-                style={{ background: 'rgba(255,255,255,0.02)' }}
+                className={`form-input ${styles.nameInput}`}
               />
             </div>
 
             {/* Color */}
-            <div className="form-group" style={{ flex: '0 0 auto' }}>
-              <label className="form-label" style={{ color: 'var(--gris)', fontSize: '11px', textTransform: 'uppercase' }}>
+            <div className={`form-group ${styles.compactField}`}>
+              <label className={`form-label ${styles.formLabel}`}>
                 Color
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className={styles.inlineField}>
                 <input
                   type="color"
                   value={color}
                   onChange={e => setColor(e.target.value)}
-                  style={{
-                    width: '42px', height: '38px', padding: '2px', borderRadius: '6px',
-                    border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)',
-                    cursor: 'pointer'
-                  }}
+                  className={styles.colorInput}
                 />
-                <span style={{ fontSize: '11px', color: '#555', fontFamily: 'monospace' }}>{color}</span>
+                <span className={styles.colorValue}>{color}</span>
               </div>
             </div>
 
             {/* Incentivo */}
-            <div className="form-group" style={{ flex: '0 0 auto' }}>
-              <label className="form-label" style={{ color: 'var(--gris)', fontSize: '11px', textTransform: 'uppercase' }}>
+            <div className={`form-group ${styles.compactField}`}>
+              <label className={`form-label ${styles.formLabel}`}>
                 Cobra incentivos
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '38px' }}>
+              <div className={styles.incentiveField}>
                 <input
                   type="checkbox"
                   id="incentivo-check"
                   checked={incentivo}
                   onChange={e => setIncentivo(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: color, cursor: 'pointer' }}
+                  className={styles.checkbox}
+                  style={{ '--analyst-color': color } as React.CSSProperties}
                 />
                 <label
                   htmlFor="incentivo-check"
-                  style={{ fontSize: '13px', color: incentivo ? '#fff' : 'var(--gris)', cursor: 'pointer', userSelect: 'none' }}
+                  className={`${styles.checkboxLabel} ${incentivo ? styles.isChecked : ''}`}
                 >
                   {incentivo ? 'Sí' : 'No'}
                 </label>
@@ -134,20 +131,15 @@ export default function AnalistasTab() {
 
             {/* Botón */}
             <button
-              className="btn-primary"
+              className={`btn-primary ${styles.addButton}`}
               onClick={agregar}
-              style={{ padding: '10px 20px', alignSelf: 'flex-end', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <Plus size={16} /> Agregar
             </button>
           </div>
 
           {error && (
-            <div style={{
-              padding: '10px 14px', borderRadius: '8px', fontSize: '13px',
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-              color: '#f87171'
-            }}>
+            <div className={styles.error}>
               {error}
             </div>
           )}
@@ -155,65 +147,44 @@ export default function AnalistasTab() {
       </div>
 
       {/* LISTA DE ANALISTAS */}
-      <div className="data-card" style={{ background: '#0c0c0c', border: '1px solid rgba(255,255,255,0.03)' }}>
-        <div className="data-card-header" style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff' }}>
+      <div className={`data-card ${styles.card}`}>
+        <div className={`data-card-header ${styles.listHeader}`}>
+          <h3 className={styles.title}>
             Analistas ({analistasAll.length})
           </h3>
-          <p style={{ fontSize: '13px', color: 'var(--gris)' }}>
+          <p className={styles.description}>
             Ocultá analistas para excluirlos de listados sin perder sus datos históricos.
           </p>
         </div>
 
         {analistasAll.length === 0 ? (
-          <div style={{
-            padding: '40px', textAlign: 'center', color: '#444', fontSize: '13px',
-            background: 'rgba(255,255,255,0.01)', borderRadius: '12px'
-          }}>
+          <div className={styles.emptyState}>
             No hay analistas registrados.
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className={styles.analystList}>
             {analistasAll.map(a => (
               <div
                 key={a.nombre}
-                style={{
-                  padding: '12px 16px',
-                  background: a.oculto ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${a.oculto ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.06)'}`,
-                  borderRadius: '10px',
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  opacity: a.oculto ? 0.55 : 1,
-                  transition: 'opacity 0.2s'
-                }}
+                className={`${styles.analystRow} ${a.oculto ? styles.isHidden : ''}`}
               >
                 {/* Swatch de color */}
-                <div style={{
-                  width: '28px', height: '28px', borderRadius: '6px',
-                  background: a.color, flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.1)'
-                }} />
+                <div className={styles.swatch} style={{ '--analyst-color': a.color } as React.CSSProperties} />
 
                 {/* Nombre */}
-                <span style={{ fontWeight: 700, fontSize: '14px', color: a.oculto ? '#555' : '#fff', flex: 1 }}>
+                <span className={styles.analystName}>
                   {a.nombre}
                 </span>
 
                 {/* Badges */}
-                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                <div className={styles.badges}>
                   {a.oculto && (
-                    <span style={{
-                      fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '4px',
-                      background: 'rgba(255,255,255,0.05)', color: '#555', textTransform: 'uppercase', letterSpacing: '0.4px'
-                    }}>
+                    <span className={`${styles.badge} ${styles.hiddenBadge}`}>
                       Oculto
                     </span>
                   )}
                   {!a.tiene_incentivo && (
-                    <span style={{
-                      fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '4px',
-                      background: 'rgba(251,191,36,0.08)', color: '#a16207', textTransform: 'uppercase', letterSpacing: '0.4px'
-                    }}>
+                    <span className={`${styles.badge} ${styles.noIncentiveBadge}`}>
                       Sin incentivo
                     </span>
                   )}
@@ -223,14 +194,7 @@ export default function AnalistasTab() {
                 <button
                   onClick={() => toggleOculto(a)}
                   title={a.oculto ? 'Mostrar' : 'Ocultar'}
-                  style={{
-                    background: 'none', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '6px', padding: '6px 8px', cursor: 'pointer',
-                    color: a.oculto ? 'var(--azul)' : '#555',
-                    display: 'flex', alignItems: 'center', transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = a.oculto ? 'var(--azul)' : '#555'; }}
+                  className={`${styles.iconButton} ${a.oculto ? styles.showButton : ''}`}
                 >
                   {a.oculto ? <Eye size={15} /> : <EyeOff size={15} />}
                 </button>
@@ -239,13 +203,7 @@ export default function AnalistasTab() {
                 <button
                   onClick={() => eliminar(a)}
                   title="Eliminar analista"
-                  style={{
-                    background: 'none', border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '6px', padding: '6px 8px', cursor: 'pointer',
-                    color: '#555', display: 'flex', alignItems: 'center', transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.color = '#ef4444'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#555'; }}
+                  className={`${styles.iconButton} ${styles.deleteButton}`}
                 >
                   <Trash2 size={15} />
                 </button>

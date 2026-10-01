@@ -1,0 +1,10 @@
+.root {
+  display: flex;
+  width: var(--app-zoom-size);
+  min-height: var(--app-zoom-size);
+  flex-direction: column;
+  transform: scale(var(--app-zoom));
+  transform-origin: top left;
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}

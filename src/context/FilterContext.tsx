@@ -59,8 +59,6 @@ interface FilterCtx {
   setPageSize: (val: number) => void;
   currentPage: number;
   setCurrentPage: (val: number | ((p: number) => number)) => void;
-  totalResults: number;
-  setTotalResults: (val: number) => void;
   showFilters: boolean;
   setShowFilters: (val: boolean | ((v: boolean) => boolean)) => void;
 }
@@ -72,7 +70,6 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
   const [isCreationModalOpen, setIsCreationModalOpen] = useState(false);
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
   const setFilter = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
@@ -126,7 +123,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
       filters, setFilter, toggleEstado, toggleAcuerdoPrecios, toggleEtiqueta, limpiarFiltros, hayFiltros,
       isCreationModalOpen, setIsCreationModalOpen,
       pageSize, setPageSize,
-      currentPage, setCurrentPage, totalResults, setTotalResults,
+      currentPage, setCurrentPage,
       showFilters, setShowFilters,
     }}>
       {children}

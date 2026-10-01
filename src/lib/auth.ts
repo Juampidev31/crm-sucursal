@@ -22,7 +22,3 @@ export function setSession(user: SessionUser): void {
 export function clearSession(): void {
   localStorage.removeItem(SESSION_KEY);
 }
-
-export function isAdmin(user: SessionUser | null): boolean {
-  return user?.rol === 'admin';
-}

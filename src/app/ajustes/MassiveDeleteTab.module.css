@@ -1,0 +1,149 @@
+.root {
+  background: var(--surface-card);
+  border-color: rgba(180, 35, 24, .18);
+}
+
+.dateLabel {
+  color: var(--text-primary);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.dateField {
+  position: relative;
+}
+
+.dateIcon {
+  position: absolute;
+  top: 14px;
+  left: 12px;
+  color: var(--text-muted);
+}
+
+.dateInput {
+  padding-left: 38px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.headerRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.headerIcon {
+  padding: 10px;
+  background: rgb(255 0 0 / 10%);
+  border-radius: 10px;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: #ff4444;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  padding: 24px;
+  margin-bottom: 32px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.previewAction {
+  display: flex;
+  align-items: flex-end;
+}
+
+.previewButton {
+  justify-content: center;
+  width: 100%;
+  height: 42px;
+}
+
+.result {
+  padding: 24px;
+  text-align: center;
+  border: 1px solid;
+  border-radius: 12px;
+  animation: result-in 0.3s ease;
+}
+
+.hasRecords {
+  background: rgb(255 68 68 / 5%);
+  border-color: rgb(255 68 68 / 20%);
+}
+
+.isEmpty {
+  background: rgb(74 222 128 / 5%);
+  border-color: rgb(74 222 128 / 20%);
+}
+
+.resultDanger {
+  margin-bottom: 8px;
+  color: #ff4444;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.resultIcon {
+  margin-bottom: 8px;
+}
+
+.resultDescription {
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.deleteButton {
+  padding: 12px 32px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  background: #ff4444;
+  border: 0;
+}
+
+.resultEmpty {
+  color: #047857;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.securityNote {
+  padding: 16px;
+  margin-top: 32px;
+  color: var(--text-muted);
+  font-size: 12px;
+  background: var(--surface-sunken);
+  border-radius: 8px;
+}
+
+@keyframes result-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

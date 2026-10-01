@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useMemo, memo, useEffect, useCallback } from 'react';
+import styles from './AnalistasPage.module.css';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
-import { Registro, Objetivo, CONFIG } from '@/types';
+import { CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { formatCurrency } from '@/lib/utils';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
@@ -10,7 +11,7 @@ import { calcularDiasHabilesMes } from '@/lib/dias-habiles';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, ChevronDown, Calculator, DollarSign, TrendingUp, X, Clock, Trash2 } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, Calculator, DollarSign, X, Clock, Trash2 } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -20,12 +21,14 @@ import MetricasTab from '@/app/ajustes/MetricasTab';
 import CustomSelect from '@/components/CustomSelect';
 import ModalPortal from '@/components/ModalPortal';
 import NuevaSeccionSheets from './NuevaSeccionSheets';
-import { filterByMonth, isVenta, TIPOS_ACUERDO, emptyTiposAcuerdo, matchTipoAcuerdo, normalizarEmpleador, buildDistEmpleador } from '@/lib/registro-stats';
+import { filterByMonth, isVenta, emptyTiposAcuerdo, matchTipoAcuerdo, buildDistEmpleador, distPor } from '@/lib/registro-stats';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
 import DistBlock from '@/components/charts/DistBlock';
 import ProyeccionCard from './ProyeccionCard';
+import { UI_FONT_FAMILY } from '@/app/fonts';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler);
+ChartJS.defaults.font.family = UI_FONT_FAMILY;
 
 // ─ Plugin inline: sombreado para líneas ─
 const lineShadowPlugin: any = {
@@ -54,7 +57,7 @@ const lineShadowPlugin: any = {
 const labelsPlugin: any = {
   id: 'labelsPlugin',
   afterDatasetsDraw(chart: any) {
-    const { ctx, scales } = chart;
+    const { ctx } = chart;
     const isHorizontal = chart.config.options.indexAxis === 'y';
     const isStacked = chart.config.options.scales?.x?.stacked || chart.config.options.scales?.y?.stacked;
 
@@ -63,14 +66,14 @@ const labelsPlugin: any = {
       if (!meta || meta.hidden || meta.type !== 'bar') return;
 
       ctx.save();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px Outfit, system-ui, sans-serif';
+      ctx.fillStyle = '#344054';
+      ctx.font = `700 11px ${UI_FONT_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = isStacked ? 'middle' : 'bottom';
 
       // Shadow for readability
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 3;
+      ctx.shadowColor = 'rgba(255,255,255,0.95)';
+      ctx.shadowBlur = 4;
 
       // Detección de porcentaje: solo mediante flag explícito
       const isPct = chart.config.options?._isPct === true;
@@ -133,7 +136,7 @@ const referenceLinesPlugin: any = {
         // Etiqueta opcional
         if (dataset.showLabelOnLine) {
           ctx.fillStyle = dataset.borderColor;
-          ctx.font = 'bold 9px Outfit, sans-serif';
+          ctx.font = `700 9px ${UI_FONT_FAMILY}`;
           ctx.textAlign = 'right';
           ctx.fillText(dataset.label, right - 5, yValue - 5);
         }
@@ -325,13 +328,13 @@ export default function AnalistasPage() {
   };
 
   const tendBadge = (pct: number | null, showLabel = true) => {
-    if (pct === null) return <span style={{ color: '#64748b' }}>—</span>;
-    const color = pct >= 0 ? '#34d399' : '#f87171';
+    if (pct === null) return <span className={[styles.uColor64748b].join(' ')}>—</span>;
+    const color = pct >= 0 ? 'var(--brand-muted)' : '#f87171';
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {showLabel && <span style={{ fontSize: 9, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
-        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
-          <span style={{ color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
+      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px].join(' ')}>
+        {showLabel && <span className={[styles.uFontSize9px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-5px"], styles.uWhiteSpacenowrap].join(' ')}>vs mes anterior</span>}
+        <span className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-strong"], styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uPadding2px-6px"], styles.uBorderRadius4px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap3px, styles.uMinWidth60px, styles.uJustifyContentcenter].join(' ')}>
+        <span style={{ color: color }}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
       </div>
     );
@@ -339,21 +342,11 @@ export default function AnalistasPage() {
 
   const sectionHeader = (id: number, title: string, icon: React.ReactNode, extra?: React.ReactNode) => {
     return (
-      <div 
-        style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          marginBottom: 16, 
-          paddingBottom: 10, 
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
-          gap: 12,
-          userSelect: 'none',
-        }}
+      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom16px, styles.uPaddingBottom10px, styles["uBorderBottom1px-solid-border-subtle"], styles.uGap12px, styles.uUserSelectnone].join(' ')}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap10px].join(' ')}>
           {icon}
-          <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+          <span className={[styles.uFontSize13px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px].join(' ')}>{title}</span>
           {extra}
         </div>
       </div>
@@ -692,26 +685,10 @@ export default function AnalistasPage() {
     const texto = num === 1 ? `${displayNum} día restante` : `${displayNum} días restantes`;
 
     return (
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '3px 10px',
-          borderRadius: 8,
-          background: 'rgba(96, 165, 250, 0.08)',
-          border: '1px solid rgba(96, 165, 250, 0.22)',
-          color: '#93c5fd',
-          fontSize: 11,
-          fontWeight: 800,
-          letterSpacing: '0.4px',
-          fontFamily: "'Outfit', sans-serif",
-          boxShadow: '0 0 14px rgba(59, 130, 246, 0.08)',
-          textTransform: 'none',
-        }}
+      <div className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap6px, styles["uPadding3px-10px"], styles.uBorderRadius8px, styles.uBackgrounde8f1f7, styles["uBorder1px-solid-9db7c8"], styles.uColor355f78, styles.uFontSize11px, styles.uFontWeight800, styles["uLetterSpacing0-4px"], styles.uFontFamilyUi, styles["uBoxShadow0-2px-7px-rgba-53-95-120-0-12"], styles.uTextTransformnone].join(' ')}
         title={`Días hábiles restantes: ${texto}`}
       >
-        <Clock size={12} strokeWidth={2.5} style={{ color: '#60a5fa' }} />
+        <Clock className={[styles.uColor477a98].join(' ')} size={12} strokeWidth={2.5} />
         <span>{texto}</span>
       </div>
     );
@@ -736,24 +713,16 @@ export default function AnalistasPage() {
     [registros, selectedMes, selectedAnio]
   );
 
-  const distPor = (campo: keyof Registro, fuente = ventasMes) => {
-    const map = new Map<string, { monto: number; cantidad: number }>();
-    for (const r of fuente) {
-      const val = (r[campo] as string | undefined)?.trim() || 'No especificado';
-      const prev = map.get(val) ?? { monto: 0, cantidad: 0 };
-      map.set(val, { monto: prev.monto + (Number(r.monto) || 0), cantidad: prev.cantidad + 1 });
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].cantidad - a[1].cantidad)
-      .map(([label, data]) => ({ label, ...data }));
-  };
+  // `ventasMes.filter(isVenta)` se recalculaba 5 veces seguidas sobre la misma
+  // colección (una por distribución). Se resuelve una sola vez y se comparte.
+  const ventasMesEfectivas = useMemo(() => ventasMes.filter(isVenta), [ventasMes]);
 
-  const distEmpleador = useMemo(() => buildDistEmpleador(ventasMes.filter(isVenta)), [ventasMes]);
+  const distEmpleador = useMemo(() => buildDistEmpleador(ventasMesEfectivas), [ventasMesEfectivas]);
 
-  const distCuotas = useMemo(() => distPor('cuotas', ventasMes.filter(isVenta)), [ventasMes]);
-  const distRangoEtario = useMemo(() => distPor('rango_etario', ventasMes.filter(isVenta)), [ventasMes]);
-  const distSexo = useMemo(() => distPor('sexo', ventasMes.filter(isVenta)), [ventasMes]);
-  const distLocalidad = useMemo(() => distPor('localidad', ventasMes.filter(isVenta)), [ventasMes]);
+  const distCuotas = useMemo(() => distPor('cuotas', ventasMesEfectivas), [ventasMesEfectivas]);
+  const distRangoEtario = useMemo(() => distPor('rango_etario', ventasMesEfectivas), [ventasMesEfectivas]);
+  const distSexo = useMemo(() => distPor('sexo', ventasMesEfectivas), [ventasMesEfectivas]);
+  const distLocalidad = useMemo(() => distPor('localidad', ventasMesEfectivas), [ventasMesEfectivas]);
   const distAcuerdos = useMemo(() => {
     return Object.entries(distribucionAcuerdos)
       .map(([label, data]) => ({ label, ...data }))
@@ -790,7 +759,7 @@ export default function AnalistasPage() {
     const chart = context.chart;
     const { ctx, chartArea } = chart;
     if (!chartArea) return null;
-    let horizontal = chart.config.options.indexAxis === 'y';
+    const horizontal = chart.config.options.indexAxis === 'y';
     const gradient = horizontal 
       ? ctx.createLinearGradient(chartArea.left, 0, chartArea.right, 0)
       : ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
@@ -810,16 +779,16 @@ export default function AnalistasPage() {
         display: showLegend,
         position: 'top' as const,
         align: 'end' as const,
-        labels: { color: '#666', font: { size: 10 }, usePointStyle: true, padding: 10 }
+        labels: { color: '#475467', font: { size: 10, weight: 700 }, usePointStyle: true, padding: 10 }
       },
       tooltip: {
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
         titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleFont: { size: 18, weight: 700, family: UI_FONT_FAMILY },
         titleAlign: 'center' as const,
         titleMarginBottom: 16,
         bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodyFont: { size: 15, weight: 600, family: UI_FONT_FAMILY },
         bodySpacing: 10,
         borderColor: 'rgba(255,255,255,0.15)',
         borderWidth: 2,
@@ -830,10 +799,10 @@ export default function AnalistasPage() {
       },
       datalabels: {
         display: showLabels,
-        align: stacked ? 'center' as const : 'top' as const,
+        align: stacked ? 'center' as const : (horizontal ? 'right' as const : 'top' as const),
         anchor: stacked ? 'center' as const : 'end' as const,
-        offset: stacked ? 0 : 12,
-        color: '#fff',
+        offset: stacked ? 0 : (horizontal ? 6 : 12),
+        color: '#344054',
         formatter: (v: any) => {
           if (v === 0 || v === undefined || v === null) return '';
           const n = Number(v);
@@ -844,7 +813,7 @@ export default function AnalistasPage() {
           if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
           return n;
         },
-        font: { size: 10, weight: 800 }
+        font: { size: 10, weight: 700 }
       },
     },
     categoryPercentage: 0.85,
@@ -856,14 +825,15 @@ export default function AnalistasPage() {
         ticks: {
           display: !hideXLabels,
           color: '#555', font: { size: 10 },
-          maxRotation: 0, minRotation: 0, padding: 0, autoSkip: false,
+          maxRotation: 0, minRotation: 0, padding: 0, autoSkip: horizontal, maxTicksLimit: horizontal ? 6 : undefined,
           callback: function (this: any, val: any) {
             let label = this.getLabelForValue(val);
             if (label === undefined) label = val;
             if (horizontal) {
-              const n = Number(label);
+              const n = Number(val);
               if (isNaN(n)) return label;
-              return (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : n) + yLabel;
+              const compact = n >= 1_000_000 ? `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}K` : n;
+              return yLabel.includes('$') ? `$ ${compact}` : `${compact}${yLabel}`;
             }
             return label;
           }
@@ -896,7 +866,7 @@ export default function AnalistasPage() {
     label: 'Meta 100%',
     data: Array(n).fill(100),
     horizontalReferenceValue: 100,
-    borderColor: '#f87171',
+    borderColor: '#b86b6b',
     borderWidth: 1.5,
     borderDash: [5, 4],
     pointRadius: 0,
@@ -925,8 +895,8 @@ export default function AnalistasPage() {
         {
           label: `Capital ${mesActualLabel}`,
           data: kpiCards.map(k => k.cumplCapital ?? 0),
-          backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
-          borderColor: '#10b981',
+          backgroundColor: (context: any) => getGradient(context, 'rgba(95, 146, 127, 0.08)', 'rgba(95, 146, 127, 0.82)'),
+          borderColor: '#4f8272',
           borderWidth: 0,
           borderRadius: 4, order: 1,
         },
@@ -939,7 +909,7 @@ export default function AnalistasPage() {
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-          backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          backgroundColor: (context: any) => getGradient(context, 'rgba(71, 85, 105, 0.12)', 'rgba(71, 85, 105, 0.72)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
           borderWidth: 0,
           borderRadius: 4, order: 1,
@@ -947,8 +917,8 @@ export default function AnalistasPage() {
         {
           label: `Ops ${mesActualLabel}`,
           data: kpiCards.map(k => k.cumplOps ?? 0),
-          backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
-          borderColor: '#06b6d4',
+          backgroundColor: (context: any) => getGradient(context, 'rgba(85, 120, 139, 0.08)', 'rgba(85, 120, 139, 0.82)'),
+          borderColor: '#55788b',
           borderWidth: 0,
           borderRadius: 4, order: 1,
         },
@@ -961,7 +931,7 @@ export default function AnalistasPage() {
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_operaciones ? (opsAnt / objAnt.meta_operaciones) * 100 : 0;
           }),
-          backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
+          backgroundColor: (context: any) => getGradient(context, 'rgba(71, 85, 105, 0.12)', 'rgba(71, 85, 105, 0.72)'),
           borderColor: 'rgba(255, 255, 255, 0.15)',
           borderWidth: 0,
           borderRadius: 4, order: 1, // Purpura oscuro
@@ -989,13 +959,11 @@ export default function AnalistasPage() {
 
     const objetivo = isPDV ? [kpiTotal.metaCapital || 0] : kpiPorAnalista.map(k => k.metaCapital || 0);
 
-    const cumplimiento = isPDV ? [kpiTotal.cumplCapital || 0] : kpiPorAnalista.map(k => k.cumplCapital || 0);
-
     return {
       labels,
       datasets: [
         { label: `Capital ${mesActualLabel}`, data: capitalAct, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: '#10b981', borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
+        { label: `Capital ${mesAntLabel}`, data: capitalAnt, backgroundColor: (context: any) => getGradient(context, 'rgba(71, 85, 105, 0.12)', 'rgba(71, 85, 105, 0.72)'), borderColor: '#64748b', borderWidth: 1, borderRadius: 4, order: 2, maxBarThickness: 100 },
         { 
           type: 'line' as const, label: 'Objetivo ($)', data: objetivo, borderColor: '#f87171', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, fill: false, order: 1,
           horizontalReferenceValue: isSingle ? objetivo[0] : undefined 
@@ -1026,7 +994,7 @@ export default function AnalistasPage() {
       labels,
       datasets: [
         { label: `Ticket ${mesActualLabel}`, data: ticketAct, backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'), borderColor: '#f59e0b', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Ticket ${mesAntLabel}`, data: ticketAnt, backgroundColor: (context: any) => getGradient(context, 'rgba(71, 85, 105, 0.12)', 'rgba(71, 85, 105, 0.72)'), borderColor: '#64748b', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, kpiPorAnalista, kpiTotal, allRegistros, mesPrev, anioPrev, mesActualLabel, mesAntLabel, analista]);
@@ -1045,8 +1013,8 @@ export default function AnalistasPage() {
         { 
           label: 'Variación Capital %', 
           data: capitalVar, 
-          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(45, 212, 191, 0.2)' : 'rgba(239, 68, 68, 0.1)'), 
-          borderColor: capitalVar.map(v => v >= 0 ? 'rgba(45, 212, 191, 0.5)' : 'rgba(239, 68, 68, 0.4)'),
+          backgroundColor: capitalVar.map(v => v >= 0 ? 'rgba(95, 146, 127, 0.28)' : 'rgba(184, 107, 107, 0.16)'),
+          borderColor: capitalVar.map(v => v >= 0 ? 'rgba(95, 146, 127, 0.65)' : 'rgba(184, 107, 107, 0.55)'),
           borderWidth: 1.5,
           borderRadius: 4, 
           maxBarThickness: 100 
@@ -1054,8 +1022,8 @@ export default function AnalistasPage() {
         { 
           label: 'Variación Ops %', 
           data: opsVar, 
-          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(255, 255, 255, 0.15)' : 'rgba(239, 68, 68, 0.1)'), 
-          borderColor: opsVar.map(v => v >= 0 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(239, 68, 68, 0.4)'),
+          backgroundColor: opsVar.map(v => v >= 0 ? 'rgba(96, 125, 168, 0.35)' : 'rgba(184, 107, 107, 0.2)'),
+          borderColor: opsVar.map(v => v >= 0 ? 'rgba(96, 125, 168, 0.7)' : 'rgba(184, 107, 107, 0.55)'),
           borderWidth: 1.5,
           borderRadius: 4, 
           maxBarThickness: 100 
@@ -1123,9 +1091,9 @@ export default function AnalistasPage() {
           data: realData,
           dailyData,
           borderColor: '#10b981',
-          borderWidth: 2,
-          pointBackgroundColor: '#10b981',
-          pointBorderColor: '#10b981',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#4f8272',
+          pointBorderColor: '#4f8272',
           pointRadius: 2,
           fill: false,
           tension: 0.2
@@ -1133,8 +1101,8 @@ export default function AnalistasPage() {
         {
           label: 'Ideal',
           data: idealData,
-          borderColor: '#fb923c',
-          borderWidth: 1,
+          borderColor: '#b8794f',
+          borderWidth: 2,
           borderDash: [5, 5],
           pointRadius: 0,
           fill: false,
@@ -1173,12 +1141,12 @@ export default function AnalistasPage() {
       labels,
       datasets: [
         {
-          label: 'Vendido', data: cumFor(pred), borderColor: '#10b981', borderWidth: 2,
-          pointBackgroundColor: '#10b981', pointBorderColor: '#10b981', pointRadius: 2, fill: false, tension: 0.2,
+          label: 'Vendido', data: cumFor(pred), borderColor: '#4f8272', borderWidth: 2.5,
+          pointBackgroundColor: '#4f8272', pointBorderColor: '#4f8272', pointRadius: 2, fill: false, tension: 0.2,
         },
         {
           label: 'Ideal', data: labels.map((_, i) => (meta / daysInMonth) * (i + 1)),
-          borderColor: '#fb923c', borderWidth: 1, borderDash: [5, 5], pointRadius: 0, fill: false, tension: 0,
+          borderColor: '#b8794f', borderWidth: 2, borderDash: [6, 5], pointRadius: 0, fill: false, tension: 0,
         },
       ],
     });
@@ -1196,7 +1164,7 @@ export default function AnalistasPage() {
     maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
     plugins: {
-      legend: { display: true, position: 'top' as const, labels: { color: '#ccc', font: { size: 10 }, usePointStyle: true } },
+      legend: { display: true, position: 'top' as const, labels: { color: '#475467', font: { size: 10, weight: 700 }, usePointStyle: true } },
       tooltip: {
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
         titleColor: '#fff', bodyColor: '#f1f5f9', padding: 16, cornerRadius: 12, usePointStyle: true,
@@ -1211,10 +1179,10 @@ export default function AnalistasPage() {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255,255,255,0.05)' },
-        ticks: { color: '#888', font: { size: 9 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
+        grid: { color: 'rgba(148,163,184,0.16)' },
+        ticks: { color: '#64748b', font: { size: 9, weight: 600 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
       },
-      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } },
+      y: { grid: { color: 'rgba(148,163,184,0.22)' }, ticks: { color: '#64748b', font: { size: 9, weight: 600 }, callback: (v: any) => formatCurrency(v) } },
     },
   };
 
@@ -1222,16 +1190,16 @@ export default function AnalistasPage() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: true, position: 'top' as const, labels: { color: '#ccc', font: { size: 10 } } },
+      legend: { display: true, position: 'top' as const, labels: { color: '#475467', font: { size: 10, weight: 700 }, usePointStyle: true } },
       tooltip: {
         itemSort: (a: any, b: any) => b.datasetIndex - a.datasetIndex,
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
         titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleFont: { size: 18, weight: 700, family: UI_FONT_FAMILY },
         titleAlign: 'center' as const,
         titleMarginBottom: 16,
         bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodyFont: { size: 15, weight: 600, family: UI_FONT_FAMILY },
         bodySpacing: 10,
         footerColor: (ctx: any) => {
           const tooltipItems = ctx.tooltip.dataPoints;
@@ -1243,7 +1211,7 @@ export default function AnalistasPage() {
           const pct = ((vendido / ideal) - 1) * 100;
           return pct < 0 ? '#f87171' : '#34d399';
         },
-        footerFont: { size: 16, weight: 900, family: "'Outfit', sans-serif" },
+        footerFont: { size: 16, weight: 700, family: UI_FONT_FAMILY },
         footerMarginTop: 16,
         borderColor: 'rgba(255,255,255,0.15)',
         borderWidth: 2,
@@ -1284,10 +1252,10 @@ export default function AnalistasPage() {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255,255,255,0.05)' },
-        ticks: { color: '#888', font: { size: 9 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
+        grid: { color: 'rgba(148,163,184,0.16)' },
+        ticks: { color: '#64748b', font: { size: 9, weight: 600 }, autoSkip: false, maxRotation: 0, minRotation: 0 }
       },
-      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v) } }
+      y: { grid: { color: 'rgba(148,163,184,0.22)' }, ticks: { color: '#64748b', font: { size: 9, weight: 600 }, callback: (v: any) => formatCurrency(v) } }
     },
     interaction: { mode: 'index' as const, intersect: false }
   };
@@ -1302,7 +1270,7 @@ export default function AnalistasPage() {
       labels,
       datasets: [
         { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: '#10b981', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(71, 85, 105, 0.12)', 'rgba(71, 85, 105, 0.72)'), borderColor: '#64748b', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, apertVsRenData, analista]);
@@ -1317,7 +1285,7 @@ export default function AnalistasPage() {
       labels,
       datasets: [
         { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(59, 130, 246, 0.05)', 'rgba(59, 130, 246, 0.85)'), borderColor: '#3b82f6', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
+        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(71, 85, 105, 0.12)', 'rgba(71, 85, 105, 0.72)'), borderColor: '#64748b', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
       ],
     };
   }, [chartLabels, apertVsRenData, analista]);
@@ -1338,7 +1306,7 @@ export default function AnalistasPage() {
   const chartEmpleoPublPriv = useMemo(() => {
     const { counts } = empleoPublPrivData;
     const labels = ['Público', 'Privado', 'Sin dato'];
-    const colors = ['#10b981', '#3b82f6', 'rgba(100,100,100,0.5)'];
+    const colors = ['#5f927f', '#607da8', '#8d99a8'];
     const filtered = labels.filter(l => (counts[l] ?? 0) > 0);
     return {
       labels: filtered,
@@ -1353,40 +1321,137 @@ export default function AnalistasPage() {
     };
   }, [empleoPublPrivData]);
 
-  if (loading) return <div style={{display:'flex',justifyContent:'center',padding:'40px'}}><div className="spinner"></div></div>;
+  const ExecutiveDashboard = () => {
+    const capitalAnterior = Number((chartCapitalVsObjetivo.datasets[1] as any)?.data?.[0] || 0);
+    const ticketAnterior = Number((chartTicketPromedio.datasets[1] as any)?.data?.[0] || 0);
+    const aperturaActual = apertVsRenData.total.aperturas;
+    const aperturaAnterior = apertVsRenData.ant.aperturas;
+    const renovacionActual = apertVsRenData.total.renovaciones;
+    const renovacionAnterior = apertVsRenData.ant.renovaciones;
+    const variacion = (actual: number, anterior: number) => anterior > 0 ? ((actual - anterior) / anterior) * 100 : null;
+    const aperturaVar = variacion(aperturaActual, aperturaAnterior);
+    const renovacionVar = variacion(renovacionActual, renovacionAnterior);
+    const compactMoney = (value: number) => value >= 1_000_000 ? `$ ${(value / 1_000_000).toFixed(1)}M` : formatCurrency(value);
+    const maxCapital = Math.max(10_000_000, Math.ceil(Math.max(kpiTotal.capital, capitalAnterior, kpiTotal.metaCapital, 1) / 10_000_000) * 10_000_000);
+    const maxOps = Math.max(30, Math.ceil(Math.max(aperturaActual, aperturaAnterior, renovacionActual, renovacionAnterior, 1) / 10) * 10);
+    const maxTicket = Math.max(500_000, Math.ceil(Math.max(kpiTotal.ticket, ticketAnterior, 1) / 500_000) * 500_000);
+    const capitalTicks = Array.from({ length: Math.round(maxCapital / 10_000_000) + 1 }, (_, i) => i * 10_000_000);
+    const opsTicks = Array.from({ length: Math.round(maxOps / 10) + 1 }, (_, i) => i * 10);
+    const ticketTicks = Array.from({ length: Math.round(maxTicket / 500_000) + 1 }, (_, i) => i * 500_000);
+    const width = (value: number, max: number) => `${Math.max(3, Math.min(100, (value / max) * 100))}%`;
+    const capitalMetaSuperada = (kpiTotal.cumplCapital ?? 0) > 100;
+    const productividadObjetivo = 200;
+    const productividadActual = kpiTotal.productividad ?? 0;
+    const productividadMetaSuperada = productividadActual > productividadObjetivo;
+    const productividadScaleMax = Math.max(300, Math.ceil(productividadActual / 100) * 100);
+    const productividadIdealPosition = (productividadObjetivo / productividadScaleMax) * 100;
+    const productividadBaseWidth = (Math.min(productividadActual, productividadObjetivo) / productividadScaleMax) * 100;
+    const productividadOverflowWidth = (Math.max(0, productividadActual - productividadObjetivo) / productividadScaleMax) * 100;
+    const productividadOverflowVisualWidth = productividadMetaSuperada
+      ? Math.min(100 - productividadIdealPosition, Math.max(14, productividadOverflowWidth))
+      : 0;
+    const changePill = (value: number | null) => (
+      <span className={value !== null && value >= 0 ? 'exec-change positive' : 'exec-change negative'}>
+        {value === null ? '—' : `${value >= 0 ? '↑' : '↓'} ${Math.abs(value).toFixed(1)}%`}
+      </span>
+    );
+    const miniMetric = (label: string, value: React.ReactNode, secondary?: React.ReactNode, tone = 'neutral') => (
+      <div className={`exec-mini ${tone}`}>
+        <span>{label}</span><strong>{value}</strong>{secondary && <small>{secondary}</small>}
+      </div>
+    );
+
+    return (
+      <div className="executive-dashboard">
+        <div className="exec-top-grid">
+          <section className="exec-card">
+            <div className="exec-kpi-head"><div><span>Capital vendido</span><strong>{formatCurrency(kpiTotal.capital)}</strong></div>{tendBadge(kpiTotal.tendCapital)}</div>
+            <div className="exec-inline-meta"><span className="dot green" /> Meta: {formatCurrency(kpiTotal.metaCapital)}<i /><b>{kpiTotal.cumplCapital?.toFixed(1) ?? '—'}% Cumpl.</b></div>
+            <div className="exec-goal">
+              <div className="exec-goal-label" style={{ left: `${Math.min(92, (kpiTotal.metaCapital / maxCapital) * 100)}%` }}><span>Meta</span><b>{formatCurrency(kpiTotal.metaCapital)}</b></div>
+              <div className="exec-goal-track">
+                <div className="exec-goal-fill" style={{ width: width(Math.min(kpiTotal.capital, kpiTotal.metaCapital), maxCapital) }} />
+                {capitalMetaSuperada && <div className="exec-goal-overflow" style={{ left: `${Math.min(100, (kpiTotal.metaCapital / maxCapital) * 100)}%`, width: `${Math.min(100 - ((kpiTotal.metaCapital / maxCapital) * 100), ((kpiTotal.capital - kpiTotal.metaCapital) / maxCapital) * 100)}%` }}><span>+{((kpiTotal.cumplCapital ?? 100) - 100).toFixed(1)}%</span></div>}
+                <i style={{ left: `${Math.min(100, (kpiTotal.metaCapital / maxCapital) * 100)}%` }} /><em style={{ left: width(kpiTotal.capital, maxCapital) }} />
+              </div>
+              <div className="exec-axis">{capitalTicks.map(v => <span key={v}>{v === 0 ? '0' : `${v / 1_000_000}M`}</span>)}</div>
+            </div>
+            <div className="exec-compare"><span>Comparativo mensual</span><div>
+              <article><b>{compactMoney(kpiTotal.capital)}</b><small>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</small><i className="green" /></article>
+              <article><b>{compactMoney(capitalAnterior)}</b><small>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</small><i className="slate" /></article>
+              {changePill(kpiTotal.tendCapital)}
+            </div></div>
+          </section>
+
+          <section className="exec-card">
+            <div className="exec-kpi-head"><div><span>Operaciones</span><strong>{kpiTotal.ops}</strong></div>{tendBadge(kpiTotal.tendOps)}</div>
+            <div className="exec-inline-meta"><span className="dot amber" /> Meta: {kpiTotal.metaOps}<i /><b>{kpiTotal.cumplOps?.toFixed(1) ?? '—'}% Cumpl.</b></div>
+            <div className="exec-ops-chart">
+              <div className="exec-legend"><span className="blue" />{CONFIG.MESES_NOMBRES[selectedMes - 1]}<span className="slate" />{CONFIG.MESES_NOMBRES[mesPrev - 1]}</div>
+              <div className="exec-op-row"><b>Aperturas</b><div><i className="blue" style={{ width: width(aperturaActual, maxOps) }} /><em style={{ left: width(aperturaActual, maxOps) }}>{aperturaActual}</em><i className="slate" style={{ width: width(aperturaAnterior, maxOps) }} /><em style={{ left: width(aperturaAnterior, maxOps) }}>{aperturaAnterior}</em></div>{changePill(aperturaVar)}</div>
+              <div className="exec-op-row"><b>Renovaciones</b><div><i className="blue" style={{ width: width(renovacionActual, maxOps) }} /><em style={{ left: width(renovacionActual, maxOps) }}>{renovacionActual}</em><i className="slate" style={{ width: width(renovacionAnterior, maxOps) }} /><em style={{ left: width(renovacionAnterior, maxOps) }}>{renovacionAnterior}</em></div>{changePill(renovacionVar)}</div>
+              <div className="exec-scale-axis">{opsTicks.map(v => <span key={v}>{v}</span>)}</div>
+            </div>
+          </section>
+
+          <section className="exec-card">
+            <div className="exec-kpi-head"><div><span>Ticket promedio</span><strong>{formatCurrency(kpiTotal.ticket)}</strong></div>{tendBadge(kpiTotal.tendTicket)}</div>
+            <div className="exec-inline-meta">Conversión total: {kpiTotal.conversionGlobal.toFixed(1)}%<i />Tasa de cierre: {kpiTotal.conversion.toFixed(1)}%</div>
+            <div className="exec-clients">{kpiTotal.clientes} clientes ingresados</div>
+            <div className="exec-ticket-chart">
+              <div className="exec-analysis-head"><b>Análisis vs {mesAntLabel}</b><span><i className="amber" />{CONFIG.MESES_NOMBRES[selectedMes - 1]}<i className="slate" />{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span></div>
+              <div className="exec-ticket-row"><span>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span><i className="amber" style={{ width: width(kpiTotal.ticket, maxTicket) }} /><b>{compactMoney(kpiTotal.ticket)}</b></div>
+              <div className="exec-ticket-row"><span>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span><i className="slate" style={{ width: width(ticketAnterior, maxTicket) }} /><b>{compactMoney(ticketAnterior)}</b></div>
+              <div className="exec-scale-axis ticket">{ticketTicks.map(v => <span key={v}>{v === 0 ? '0' : `${(v / 1_000_000).toFixed(v % 1_000_000 === 0 ? 0 : 1)}M`}</span>)}</div>
+            </div>
+          </section>
+        </div>
+
+        <div className="exec-summary-grid">
+          <section className="exec-card exec-sale"><span>Venta (I)</span><strong>{formatCurrency(kpiTotal.interesXVenta)}</strong><small>Total del mes</small></section>
+          <section className={`exec-card exec-productivity${productividadMetaSuperada ? ' is-over-target' : ''}`}>
+            <div><span>Productividad</span><strong>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</strong><small>vs ideal</small></div>
+            <div className="exec-product-track"><span style={{ left: `${productividadIdealPosition}%` }}>Ideal 200%</span><div><i className={productividadMetaSuperada ? 'is-target-met' : 'is-below-target'} style={{ width: `${productividadBaseWidth}%` }} />{productividadMetaSuperada && <em style={{ left: `${productividadIdealPosition}%`, width: `${productividadOverflowVisualWidth}%` }}><span>+{(productividadActual - productividadObjetivo).toFixed(2)}%</span></em>}<b style={{ left: `${productividadIdealPosition}%` }} />{productividadMetaSuperada && <strong className="exec-product-end" style={{ left: `${productividadIdealPosition + productividadOverflowVisualWidth}%` }} />}</div></div>
+            <div className="exec-product-split"><span>Apertura<strong>{kpiTotal.productividadApertura?.toFixed(2) ?? '—'}%</strong></span><span>Renovación<strong>{kpiTotal.productividadRenov?.toFixed(2) ?? '—'}%</strong></span></div>
+          </section>
+        </div>
+
+        <div className="exec-bottom-grid">
+          <section className="exec-card exec-operations"><h3>Métricas operativas</h3><div>
+            {miniMetric('Venta / día (necesario)', formatCurrency(kpiTotal.metaDiariaCapital ?? 0), <>Ritmo: {formatCurrency(kpiTotal.ventaPorDia ?? 0)}</>)}
+            {miniMetric('Ops. / día (necesario)', Math.round(kpiTotal.metaDiariaOps ?? 0), <>Ritmo: {Math.round(kpiTotal.opsPorDia ?? 0)}</>)}
+            {miniMetric('Proy. fin mes (K)', formatCurrency(kpiTotal.proyCapital ?? 0), kpiTotal.cumplProyCapital !== null ? `▲ ${kpiTotal.cumplProyCapital.toFixed(2)}%` : undefined, 'positive')}
+            {miniMetric('Proy. fin mes (Q)', Math.round(kpiTotal.proyOps ?? 0), kpiTotal.cumplProyOps !== null ? `${kpiTotal.cumplProyOps >= 100 ? '▲' : '▼'} ${kpiTotal.cumplProyOps.toFixed(2)}%` : undefined, kpiTotal.cumplProyOps !== null && kpiTotal.cumplProyOps >= 100 ? 'positive' : 'negative')}
+            {miniMetric('Falta 100% (K)', formatCurrency(kpiTotal.faltaCapital ?? 0), undefined, kpiTotal.faltaCapital === 0 ? 'positive' : 'negative')}
+            {miniMetric('Falta 100% (Q)', Math.round(kpiTotal.faltaOps ?? 0), undefined, kpiTotal.faltaOps === 0 ? 'positive' : 'negative')}
+          </div></section>
+          <section className="exec-card exec-previous"><h3>{CONFIG.MESES_NOMBRES[mesPrev - 1]} al día {kpiTotal.diaCorte}</h3>
+            {miniMetric('Ventas (K)', formatCurrency(kpiTotal.capitalAntFecha), kpiTotal.varCapitalFecha !== null ? `▲ ${Math.abs(kpiTotal.varCapitalFecha).toFixed(2)}%` : undefined, 'positive')}
+            {miniMetric('Operaciones (Q)', kpiTotal.opsAntFecha, kpiTotal.varOpsFecha !== null ? `▲ ${Math.abs(kpiTotal.varOpsFecha).toFixed(2)}%` : undefined, 'positive')}
+          </section>
+          <section className="exec-card exec-progress"><h3>Progreso vs ideal</h3><div>{chartsLoaded ? <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} /> : <ChartShimmer />}</div></section>
+        </div>
+      </div>
+    );
+  };
+  const showLegacyDashboard = selectedAnio < 0;
+
+  if (loading) return <div className={[styles.uDisplayflex, styles.uJustifyContentcenter, styles.uPadding40px].join(' ')}><div className="spinner"></div></div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 16 }}>
-      <style>{`
-        .row-hover {
-          transition: background 0.2s ease;
-        }
-        .row-hover:hover {
-          background: rgba(255,255,255,0.02);
-        }
-      `}</style>
-
+    <div className={["analistas-report", styles.page, styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uGap16px, styles.uPaddingTop16px].join(' ')}>
       {/* Toolbar Superior */}
-      <div style={{ 
-        background: 'rgba(255,255,255,0.01)',
-        border: '1px solid rgba(255,255,255,0.04)',
-        borderRadius: '16px',
-        padding: '12px 24px',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.02)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <BarChart3 size={24} color="#fff" />
-            </div>
+      <div className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius16px, styles["uPadding12px-24px"], styles["uBoxShadowshadow-md"], styles.toolbar].join(' ')}>
+        <div className={[styles.uDisplayflex, styles["uJustifyContentspace-between"], styles.uAlignItemscenter, styles.uFlexWrapwrap, styles.uGap16px, styles.toolbarInner].join(' ')}>
+            <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap16px, styles.toolbarTitle].join(' ')}>
             <div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+              <div className={[styles.uFontSize24px, styles.uFontWeight900, styles["uColortext-strong"], styles["uLetterSpacing0-5px12zy2"]].join(' ')}>
                 {analista === 'PDV' ? 'PDV' : analista.charAt(0).toUpperCase() + analista.slice(1).toLowerCase()}
               </div>
-              <div style={{ fontSize: 13, color: '#8f929d', marginTop: 2 }}>Métricas</div>
+              <div className={[styles.uFontSize13px, styles["uColortext-muted"], styles.uMarginTop2px].join(' ')}>Métricas</div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap12px, styles.filters].join(' ')}>
             <CustomSelect
               value={analista}
               onChange={val => setAnalista(String(val))}
@@ -1402,6 +1467,7 @@ export default function AnalistasPage() {
               onChange={val => setSelectedMes(Number(val))}
               options={CONFIG.MESES_NOMBRES.map((m, i) => ({ label: m, value: i + 1 }))}
               width="150px"
+              menuMaxHeight="442px"
             />
             <CustomSelect
               value={selectedAnio}
@@ -1415,22 +1481,22 @@ export default function AnalistasPage() {
 
             {analista === 'PROYECTADOS' && isAdmin ? (
               <>
-              <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+              <div className={[styles.uMarginTop16px, styles.uDisplayflex, styles.uGap10px].join(' ')}>
                 {[
                   { label: 'Situación actual', open: proyShowActual, toggle: () => setProyShowActual(v => !v) },
                   { label: 'Proyección fin de mes', open: proyShowProy, toggle: () => setProyShowProy(v => !v) },
                 ].map(({ label, open, toggle }) => (
-                  <button
+                  <button className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px, styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius8px, styles["uPadding6px-12px"], styles.uCursorpointer, styles.uFontSize11px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}
                     key={label}
                     onClick={toggle}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, background: open ? 'rgba(255,255,255,0.04)' : 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', color: open ? '#e2e8f0' : '#64748b', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.8 }}
+                    style={{ background: open ? 'rgba(255,255,255,0.04)' : 'transparent', color: open ? '#e2e8f0' : '#64748b' }}
                   >
-                    <ChevronRight size={14} style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
+                    <ChevronRight className={[styles["uTransitiontransform-0-15s"]].join(' ')} size={14} style={{ transform: open ? 'rotate(90deg)' : 'none' }} />
                     {label}
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16, alignItems: 'stretch' }}>
+              <div className={["analistas-autogrid", styles.uMarginTop12px, styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-360px-1fr"], styles.uGap16px, styles.uAlignItemsstretch].join(' ')}>
                 {(() => {
                   // Venta ideal a la fecha = meta / días del mes * día actual (misma fórmula que el gráfico "Progreso vs Ideal")
                   const daysInMonth = new Date(selectedAnio, selectedMes, 0).getDate();
@@ -1461,11 +1527,11 @@ export default function AnalistasPage() {
               </div>
 
               {/* ── Progreso vs Ideal por separado (PDV + cada analista, con su propio Ideal) ── */}
-              <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
+              <div className={["analistas-autogrid", styles.uMarginTop16px, styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-360px-1fr"], styles.uGap16px].join(' ')}>
                 {chartsProgresoSep.map(({ titulo, data }) => (
-                  <div key={titulo} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal — {titulo}</div>
-                    <div style={{ height: 240, position: 'relative', width: '100%' }}>
+                  <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-16px"], styles["uBorder1px-solid-border-subtle"]].join(' ')} key={titulo}>
+                    <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles.uMarginBottom10px].join(' ')}>Progreso vs Ideal — {titulo}</div>
+                    <div className={[styles.uHeight240px, styles.uPositionrelative, styles.uWidth100].join(' ')}>
                       {chartsLoaded ? (
                         <Line data={data} options={chartProgresoSepOptions as any} plugins={[lineShadowPlugin]} />
                       ) : (
@@ -1478,65 +1544,56 @@ export default function AnalistasPage() {
               </>
             ) : (
               <>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uGap16px].join(' ')}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 2 }}>
-              <button
+          <div className={["data-card", styles["uBackgroundlinear-gradient-180deg-rgba-255-255-255-0-"], styles["uBoxShadowshadow-md"], styles.uPositionrelative].join(' ')}>
+            <div className={[styles.uPositionabsolute, styles.uTop16px, styles.uRight16px, styles.uZIndex2].join(' ')}>
+              <button className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px, styles["uPadding6px-12px"], styles.uBorderRadius8px, styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-rgba-255-255-255-0-2"], styles["uColortext-strong"], styles["uBoxShadow0-0-10px-rgba-255-255-255-0-1"], styles.uFontSize11px, styles.uFontWeight800, styles["uLetterSpacing0-6px"], styles.uTextTransformuppercase, styles.uCursorpointer, styles.uFontFamilyUi].join(' ')}
                 type="button"
                 onClick={() => setRendimiento12MOpen(true)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '6px 12px', borderRadius: 8,
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  color: '#ffffff',
-                  boxShadow: '0 0 10px rgba(255,255,255,0.1)',
-                  fontSize: 11, fontWeight: 800, letterSpacing: '0.6px',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  fontFamily: "'Outfit', sans-serif",
-                }}
               >
-                <TrendingUp size={13} /> Rendimiento Histórico
+                Rendimiento Histórico
               </button>
             </div>
-            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#60a5fa" />, badgeDiasRestantes)}
+            {sectionHeader(1, '1. Tablero', null, badgeDiasRestantes)}
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
+                <ExecutiveDashboard />
+                {showLegacyDashboard && (
+                <>
+                <div className={["analistas-autogrid", styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-320px-1fr"], styles.uGap16px, styles.uMarginBottom16px].join(' ')}>
+                <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding16px-20px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                  <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>Capital Vendido</div>
+                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom4px].join(' ')}>
+                    <div className={[styles.uFontSize22px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.capital)}</div>
                     {tendBadge(kpiTotal.tendCapital)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
+                  <div className={[styles.uFontSize12px, styles["uColortext-muted"], styles.uMarginBottom2px].join(' ')}>
                     Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
                   </div>
                   {kpiTotal.cumplCapital !== null && (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
-                      <span style={{ color: cumplColor(kpiTotal.cumplCapital), marginRight: 4 }}>●</span>
+                    <div className={[styles.uFontSize12px, styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>
+                      <span className={[styles.uMarginRight4px].join(' ')} style={{ color: cumplColor(kpiTotal.cumplCapital) }}>●</span>
                       {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
                     </div>
                   )}
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                  <div className={[styles.uMarginTop14px, styles.uPaddingTop12px, styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
+                    <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom12px].join(' ')}>
+                      <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>Capital vs Objetivo</div>
+                      <div className={[styles.uDisplayflex, styles.uGap10px].join(' ')}>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-96-165-250-0-8"]].join(' ')} />
+                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-30-58-138-0-9"]].join(' ')} />
+                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
-                    <div id="chart-capital-objetivo" style={{ height: 180 }}>
+                    <div className={[styles.uHeight135px].join(' ')} id="chart-capital-objetivo">
                       {chartsLoaded ? (
                         (() => {
-                          const opts = baseChartOpts('$', false, true, false, false, analista !== 'PDV');
+                          const opts = baseChartOpts('$', true, true, false, false, analista !== 'PDV');
                           return <Bar data={chartCapitalVsObjetivo as any} options={opts} plugins={[labelsPlugin, referenceLinesPlugin]} />;
                         })()
                       ) : (
@@ -1545,51 +1602,51 @@ export default function AnalistasPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{kpiTotal.ops}</div>
+                <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding16px-20px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                  <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>Operaciones</div>
+                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom4px].join(' ')}>
+                    <div className={[styles.uFontSize22px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{kpiTotal.ops}</div>
                     {tendBadge(kpiTotal.tendOps)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#8f929d', marginBottom: 2 }}>
+                  <div className={[styles.uFontSize12px, styles["uColortext-muted"], styles.uMarginBottom2px].join(' ')}>
                     Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
                   </div>
                   {kpiTotal.cumplOps !== null && (
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
-                      <span style={{ color: cumplColor(kpiTotal.cumplOps), marginRight: 4 }}>●</span>
+                    <div className={[styles.uFontSize12px, styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>
+                      <span className={[styles.uMarginRight4px].join(' ')} style={{ color: cumplColor(kpiTotal.cumplOps) }}>●</span>
                       {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
                     </div>
                   )}
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#60a5fa' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                  <div className={[styles.uMarginTop14px, styles.uPaddingTop12px, styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
+                    <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom12px].join(' ')}>
+                      <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>Aperturas vs Renovaciones</div>
+                      <div className={[styles.uDisplayflex, styles.uGap10px].join(' ')}>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles.uBackground60a5fa].join(' ')} />
+                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-30-58-138-0-9"]].join(' ')} />
+                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: '#60a5fa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
-                        <div id="chart-aperturas" style={{ height: 180, position: 'relative', width: '100%' }}>
+                    <div className={[styles.uDisplaygrid, styles["uGridTemplateColumns1fr-1fr"], styles.uGap16px].join(' ')}>
+                      <div className={[styles.uMinWidth0].join(' ')}>
+                        <div className={[styles.uFontSize9px, styles.uFontWeight800, styles.uColor60a5fa, styles.uTextAligncenter, styles.uMarginBottom6px, styles.uTextTransformuppercase].join(' ')}>Aperturas</div>
+                        <div className={[styles.uHeight135px, styles.uPositionrelative, styles.uWidth100].join(' ')} id="chart-aperturas">
                           {chartsLoaded ? (
-                            <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                            <Bar data={chartAperturas} options={baseChartOpts(' ops', true, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                           ) : (
                             <ChartShimmer />
                           )}
                         </div>
                       </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
-                        <div id="chart-renovaciones" style={{ height: 180, position: 'relative', width: '100%' }}>
+                      <div className={[styles.uMinWidth0].join(' ')}>
+                        <div className={[styles.uFontSize9px, styles.uFontWeight800, styles.uColora78bfa, styles.uTextAligncenter, styles.uMarginBottom6px, styles.uTextTransformuppercase].join(' ')}>Renov.</div>
+                        <div className={[styles.uHeight135px, styles.uPositionrelative, styles.uWidth100].join(' ')} id="chart-renovaciones">
                           {chartsLoaded ? (
-                            <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                            <Bar data={chartRenovaciones} options={baseChartOpts(' ops', true, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                           ) : (
                             <ChartShimmer />
                           )}
@@ -1598,41 +1655,41 @@ export default function AnalistasPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
+                <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding16px-20px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                  <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>Ticket Promedio</div>
+                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom4px].join(' ')}>
+                    <div className={[styles.uFontSize22px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.ticket)}</div>
                     {tendBadge(kpiTotal.tendTicket)}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#8f929d' }} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {kpiTotal.conversionGlobal.toFixed(1)}%</div>
+                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginTop6px].join(' ')}>
+                    <div className={[styles.uFontSize12px, styles["uColortext-muted"]].join(' ')} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {kpiTotal.conversionGlobal.toFixed(1)}%</div>
                     {tendBadge(kpiTotal.tendConversionGlobal, false)}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#8f929d' }} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
+                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginTop6px].join(' ')}>
+                    <div className={[styles.uFontSize12px, styles["uColortext-muted"]].join(' ')} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
                     {tendBadge(kpiTotal.tendConversion, false)}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 11, color: '#8f929d' }}>{kpiTotal.clientes} clientes ingresados</div>
+                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginTop6px].join(' ')}>
+                    <div className={[styles.uFontSize11px, styles["uColortext-muted"]].join(' ')}>{kpiTotal.clientes} clientes ingresados</div>
                     {tendBadge(kpiTotal.tendClientes, false)}
                   </div>
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                  <div className={[styles.uMarginTop14px, styles.uPaddingTop12px, styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
+                    <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom12px].join(' ')}>
+                      <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>Análisis vs {mesAntLabel}</div>
+                      <div className={[styles.uDisplayflex, styles.uGap10px].join(' ')}>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-52-211-153-0-8"]].join(' ')} />
+                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#8f929d', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-6-78-59-0-9"]].join(' ')} />
+                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                         </div>
                       </div>
                     </div>
-                    <div id="chart-ticket-promedio" style={{ height: 180 }}>
+                    <div className={[styles.uHeight135px].join(' ')} id="chart-ticket-promedio">
                       {chartsLoaded ? (
-                        <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
+                        <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', true, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                       ) : (
                         <ChartShimmer />
                       )}
@@ -1642,56 +1699,37 @@ export default function AnalistasPage() {
               </div>
 
                 {/* ── FILA: (I) x Venta / Productividad / Comisión ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 16 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>(I) x Venta</div>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.interesXVenta)}</div>
+                <div className={["analistas-summary-row", styles.uDisplaygrid, styles.uGap16px, styles.uMarginBottom16px].join(' ')}>
+                  <div className={[styles["uBackgroundlinear-gradient-135deg-ffffff-0-f8fafc-100"], styles.uBorderRadius12px, styles["uPadding16px-20px"], styles["uBorder1px-solid-cbd7e5"], styles["uBoxShadow0-8px-24px-rgba-15-23-42-0-06"]].join(' ')}>
+                    <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>(I) x Venta</div>
+                    <div className={[styles.uFontSize22px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.interesXVenta)}</div>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Productividad</div>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: kpiTotal.productividad === null ? '#fff' : (kpiTotal.productividad >= 200 ? '#34d399' : '#f87171') }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
+                  <div className={["analistas-productivity", styles["uBackgroundlinear-gradient-135deg-ffffff-0-f8fafc-100"], styles.uBorderRadius12px, styles["uPadding16px-20px"], styles["uBorder1px-solid-cbd7e5"], styles["uBoxShadow0-8px-24px-rgba-15-23-42-0-06"]].join(' ')}>
+                    <div className="analistas-productivity-main">
+                      <div>
+                        <div className={[styles.uFontSize10px, styles.uFontWeight800, styles.uColor667085, styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>Productividad</div>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
+                          <div className={[styles.uFontSize28px, styles.uLineHeight1, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.productividad === null ? '#344054' : (kpiTotal.productividad >= 200 ? '#059669' : '#ef4444') }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
+                          <span className={[styles.uFontSize10px, styles.uColor667085, styles.uFontWeight700].join(' ')}>general</span>
+                        </div>
+                      </div>
+                      <div className="analistas-productivity-track" aria-label="Productividad respecto del ideal de 100%">
+                        <span>Ideal 100%</span>
+                        <div><i /><b /></div>
+                      </div>
+                    </div>
                     {(kpiTotal.productividadApertura !== null || kpiTotal.productividadRenov !== null) && (
-                      <div style={{ 
-                        marginTop: 10, 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(2, 1fr)', 
-                        gap: 8, 
-                        fontFamily: "'Outfit', sans-serif" 
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
-                          padding: '5px 6px',
-                          borderRadius: 6,
-                          textAlign: 'center',
-                          whiteSpace: 'nowrap',
-                          minWidth: 0,
-                        }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Apertura</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                      <div className={[styles.uMarginTop14px, styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-2-1fr"], styles.uGap8px, styles.uFontFamilyUi].join(' ')}>
+                        <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles["uAlignItemsflex-start"], styles.uJustifyContentcenter, styles.uGap5px, styles.uBackgroundf8fafc, styles["uBorder1px-solid-dbe3ee"], styles["uPadding9px-10px"], styles.uBorderRadius8px, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
+                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles.uColor667085, styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Apertura</span>
+                          <span className={[styles.uFontSize28px, styles.uLineHeight1, styles.uFontWeight900, styles.uColor344054, styles.uFontFamilyUi].join(' ')}>
                             {kpiTotal.productividadApertura !== null ? `${kpiTotal.productividadApertura.toFixed(2)}%` : '—'}
                           </span>
                         </div>
 
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
-                          padding: '5px 6px',
-                          borderRadius: 6,
-                          textAlign: 'center',
-                          whiteSpace: 'nowrap',
-                          minWidth: 0,
-                        }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Renovación</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                        <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles["uAlignItemsflex-start"], styles.uJustifyContentcenter, styles.uGap5px, styles.uBackgroundf8fafc, styles["uBorder1px-solid-dbe3ee"], styles["uPadding9px-10px"], styles.uBorderRadius8px, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
+                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles.uColor667085, styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Renovación</span>
+                          <span className={[styles.uFontSize28px, styles.uLineHeight1, styles.uFontWeight900, styles.uColor344054, styles.uFontFamilyUi].join(' ')}>
                             {kpiTotal.productividadRenov !== null ? `${kpiTotal.productividadRenov.toFixed(2)}%` : '—'}
                           </span>
                         </div>
@@ -1699,140 +1737,50 @@ export default function AnalistasPage() {
                     )}
                   </div>
                   {analistaIndividualKpi && (
-                    <div 
+                    <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding16px-20px"], styles["uBorder1px-solid-border-subtle"], styles.uCursorpointer, styles["uTransitionall-0-2s-ease"], styles.uPositionrelative, styles.incentiveCard].join(' ')}
                       onClick={() => setIncentivosModalOpen(true)}
-                      style={{ 
-                        background: 'rgba(255,255,255,0.02)', 
-                        borderRadius: 10, 
-                        padding: '16px 20px', 
-                        border: '1px solid rgba(255,255,255,0.04)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        position: 'relative'
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)';
-                      }}
                       title="Hacé clic para ver el detalle de incentivos y escalas"
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase' as const, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Calculator size={13} style={{ color: '#10b981' }} />
+                      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom8px].join(' ')}>
+                        <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px].join(' ')}>
+                          <Calculator className={[styles.uColor10b981].join(' ')} size={13} />
                           <span>Comisión Estimada</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px].join(' ')}>
                           {analistaIndividualKpi.topeKQAplicado && (
-                            <span style={{
-                              fontSize: 9, fontWeight: 800, padding: '2px 5px', borderRadius: 4,
-                              background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)',
-                              textTransform: 'uppercase', letterSpacing: '0.5px'
-                            }}>
+                            <span className={[styles.uFontSize9px, styles.uFontWeight800, styles["uPadding2px-5px"], styles.uBorderRadius4px, styles["uBackgroundrgba-251-191-36-0-15"], styles.uColorfbbf24, styles["uBorder1px-solid-rgba-251-191-36-0-3"], styles.uTextTransformuppercase, styles["uLetterSpacing0-5px"]].join(' ')}>
                               TOPE K+Q
                             </span>
                           )}
-                          <button
+                          <button className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap5px, styles["uPadding3px-9px"], styles.uBorderRadius6px, styles.uFontSize10px, styles.uFontWeight800, styles["uBackgroundrgba-16-185-129-0-12"], styles["uBorder1px-solid-rgba-16-185-129-0-35"], styles.uColor10b981, styles.uCursorpointer, styles.uTextTransformuppercase, styles["uLetterSpacing0-5px"], styles["uBoxShadow0-0-10px-rgba-16-185-129-0-15"], styles["uTransitionall-0-15s-ease"], styles.detailButton].join(' ')}
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               setIncentivosModalOpen(true);
                             }}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 5,
-                              padding: '3px 9px',
-                              borderRadius: 6,
-                              fontSize: 10,
-                              fontWeight: 800,
-                              background: 'rgba(16, 185, 129, 0.12)',
-                              border: '1px solid rgba(16, 185, 129, 0.35)',
-                              color: '#10b981',
-                              cursor: 'pointer',
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px',
-                              boxShadow: '0 0 10px rgba(16, 185, 129, 0.15)',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onMouseEnter={e => {
-                              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.25)';
-                              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.6)';
-                              e.currentTarget.style.transform = 'translateY(-1px)';
-                            }}
-                            onMouseLeave={e => {
-                              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.12)';
-                              e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-                              e.currentTarget.style.transform = 'translateY(0)';
-                            }}
                           >
                             <span>Ver Detalle</span>
-                            <span style={{ fontSize: 11 }}>↗</span>
+                            <span className={[styles.uFontSize11px].join(' ')}>↗</span>
                           </button>
                         </div>
                       </div>
-                      <div style={{ fontSize: 22, fontWeight: 900, color: '#10b981' }}>
+                      <div className={[styles.uFontSize22px, styles.uFontWeight900, styles.uColor10b981].join(' ')}>
                         {formatCurrency(analistaIndividualKpi.incentivoTotal)}
                       </div>
-                      <div style={{ 
-                        marginTop: 10, 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(3, 1fr)', 
-                        gap: 8, 
-                        fontFamily: "'Outfit', sans-serif"
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
-                          padding: '5px 6px',
-                          borderRadius: 6,
-                          textAlign: 'center',
-                          whiteSpace: 'nowrap',
-                          minWidth: 0,
-                        }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Cap</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>{formatCurrency(analistaIndividualKpi.incentivoCap)}</span>
+                      <div className={[styles.uMarginTop10px, styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-3-1fr"], styles.uGap8px, styles.uFontFamilyUi].join(' ')}>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uGap6px, styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uPadding5px-6px"], styles.uBorderRadius6px, styles.uTextAligncenter, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
+                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Cap</span>
+                          <span className={[styles["uFontSize11-5px"], styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>{formatCurrency(analistaIndividualKpi.incentivoCap)}</span>
                         </div>
 
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
-                          padding: '5px 6px',
-                          borderRadius: 6,
-                          textAlign: 'center',
-                          whiteSpace: 'nowrap',
-                          minWidth: 0,
-                        }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Ops</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>{formatCurrency(analistaIndividualKpi.incentivoOps)}</span>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uGap6px, styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uPadding5px-6px"], styles.uBorderRadius6px, styles.uTextAligncenter, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
+                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Ops</span>
+                          <span className={[styles["uFontSize11-5px"], styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>{formatCurrency(analistaIndividualKpi.incentivoOps)}</span>
                         </div>
 
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6,
-                          background: 'rgba(255, 255, 255, 0.03)',
-                          border: '1px solid rgba(255, 255, 255, 0.07)',
-                          padding: '5px 6px',
-                          borderRadius: 6,
-                          textAlign: 'center',
-                          whiteSpace: 'nowrap',
-                          minWidth: 0,
-                        }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Cob</span>
-                          <span style={{ fontSize: 11.5, fontWeight: 800, color: '#fff' }}>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uGap6px, styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uPadding5px-6px"], styles.uBorderRadius6px, styles.uTextAligncenter, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
+                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Cob</span>
+                          <span className={[styles["uFontSize11-5px"], styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>
                             {formatCurrency((analistaIndividualKpi.incentivoCobTr90 || 0) + (analistaIndividualKpi.incentivoCobTr120 || 0) + (analistaIndividualKpi.incentivoCobRefin || 0))}
                           </span>
                         </div>
@@ -1842,47 +1790,47 @@ export default function AnalistasPage() {
                 </div>
 
                 {/* ── BLOQUE DE PROYECCIÓN ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16, marginTop: 0, alignItems: 'stretch' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div className={["analistas-autogrid", styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-400px-1fr"], styles.uGap16px, styles.uMarginTop0, styles.uAlignItemsstretch].join(' ')}>
+                  <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-20px"], styles["uBorder1px-solid-border-subtle"], styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uJustifyContentcenter].join(' ')}>
                     {kpiTotal.esMesActual && !kpiTotal.tieneDiasAdmin ? (
-                      <div style={{ fontSize: 11, color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
+                      <div className={[styles.uFontSize11px, styles["uColortext-muted"], styles.uFontStyleitalic, styles.uTextAligncenter].join(' ')}>
                         Cargá días hábiles en Ajustes para ver proyección
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', gap: 32, flex: 1 }}>
-                       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 2, justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', gap: 32 }}>
-                          <div style={{ flex: 1 }}>
+                      <div className={[styles.uDisplayflex, styles.uGap32px, styles.uFlex1].join(' ')}>
+                       <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uGap16px, styles.uFlex2, styles["uJustifyContentspace-between"]].join(' ')}>
+                        <div className={[styles.uDisplayflex, styles.uGap32px].join(' ')}>
+                          <div className={[styles.uFlex1].join(' ')}>
                             {kpiTotal.metaDiariaCapital !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Venta / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.metaDiariaCapital)}</div>
-                                {kpiTotal.ventaPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {formatCurrency(kpiTotal.ventaPorDia)}</div>}
+                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Venta / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.metaDiariaCapital)}</div>
+                                {kpiTotal.ventaPorDia !== null && <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uFontWeight700, styles.uMarginTop4px].join(' ')}>RITMO: {formatCurrency(kpiTotal.ventaPorDia)}</div>}
                               </>
                             )}
                           </div>
-                          <div style={{ flex: 1 }}>
+                          <div className={[styles.uFlex1].join(' ')}>
                             {kpiTotal.metaDiariaOps !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ops. / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{Math.round(kpiTotal.metaDiariaOps)}</div>
-                                {kpiTotal.opsPorDia !== null && <div style={{ fontSize: 10, color: '#555', fontWeight: 700, marginTop: 4 }}>RITMO: {Math.round(kpiTotal.opsPorDia)}</div>}
+                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Ops. / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
+                                <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{Math.round(kpiTotal.metaDiariaOps)}</div>
+                                {kpiTotal.opsPorDia !== null && <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uFontWeight700, styles.uMarginTop4px].join(' ')}>RITMO: {Math.round(kpiTotal.opsPorDia)}</div>}
                               </>
                             )}
                           </div>
                         </div>
                         
-                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+                        <div className={[styles.uHeight1px, styles["uBackgroundsurface-sunken"]].join(' ')} />
 
-                        <div style={{ display: 'flex', gap: 32 }}>
-                          <div style={{ flex: 1 }}>
+                        <div className={[styles.uDisplayflex, styles.uGap32px].join(' ')}>
+                          <div className={[styles.uFlex1].join(' ')}>
                             {kpiTotal.proyCapital !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                                  <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.proyCapital >= kpiTotal.metaCapital ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.proyCapital)}</div>
+                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>{kpiTotal.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
+                                <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
+                                  <div className={[styles.uFontSize20px, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.proyCapital >= kpiTotal.metaCapital ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.proyCapital)}</div>
                                   {kpiTotal.cumplProyCapital !== null && (
-                                    <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.cumplProyCapital >= 100 ? '#10b981' : '#f87171' }}>
+                                    <span className={[styles.uFontSize12px, styles.uFontWeight800].join(' ')} style={{ color: kpiTotal.cumplProyCapital >= 100 ? '#10b981' : '#f87171' }}>
                                       ({kpiTotal.cumplProyCapital.toFixed(2)}%)
                                     </span>
                                   )}
@@ -1890,14 +1838,14 @@ export default function AnalistasPage() {
                               </>
                             )}
                           </div>
-                          <div style={{ flex: 1 }}>
+                          <div className={[styles.uFlex1].join(' ')}>
                             {kpiTotal.proyOps !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                                  <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.proyOps)}</div>
+                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
+                                <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
+                                  <div className={[styles.uFontSize20px, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.proyOps)}</div>
                                   {kpiTotal.cumplProyOps !== null && (
-                                    <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.cumplProyOps >= 100 ? '#10b981' : '#f87171' }}>
+                                    <span className={[styles.uFontSize12px, styles.uFontWeight800].join(' ')} style={{ color: kpiTotal.cumplProyOps >= 100 ? '#10b981' : '#f87171' }}>
                                       ({kpiTotal.cumplProyOps.toFixed(2)}%)
                                     </span>
                                   )}
@@ -1907,22 +1855,22 @@ export default function AnalistasPage() {
                           </div>
                         </div>
 
-                        <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)' }} />
+                        <div className={[styles.uHeight1px, styles["uBackgroundsurface-sunken"]].join(' ')} />
 
-                        <div style={{ display: 'flex', gap: 32 }}>
-                          <div style={{ flex: 1 }}>
+                        <div className={[styles.uDisplayflex, styles.uGap32px].join(' ')}>
+                          <div className={[styles.uFlex1].join(' ')}>
                             {kpiTotal.faltaCapital !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (K)</div>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.faltaCapital)}</div>
+                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Falta 100% (K)</div>
+                                <div className={[styles.uFontSize20px, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.faltaCapital)}</div>
                               </>
                             )}
                           </div>
-                          <div style={{ flex: 1 }}>
+                          <div className={[styles.uFlex1].join(' ')}>
                             {kpiTotal.faltaOps !== null && (
                               <>
-                                <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Falta 100% (Q)</div>
-                                <div style={{ fontSize: 20, fontWeight: 900, color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.faltaOps || 0)}</div>
+                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Falta 100% (Q)</div>
+                                <div className={[styles.uFontSize20px, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.faltaOps || 0)}</div>
                               </>
                             )}
                           </div>
@@ -1930,29 +1878,29 @@ export default function AnalistasPage() {
 
                        </div>
 
-                       <div style={{ width: 1, background: 'rgba(255,255,255,0.06)', alignSelf: 'stretch' }} />
+                       <div className={[styles.uWidth1px, styles["uBackgroundrgba-255-255-255-0-06"], styles.uAlignSelfstretch].join(' ')} />
 
-                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 20 }}>
-                         <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+                       <div className={[styles.uFlex1, styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uJustifyContentcenter, styles.uGap20px].join(' ')}>
+                         <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px].join(' ')}>
                            {CONFIG.MESES_NOMBRES[mesPrev - 1]} al día {kpiTotal.diaCorte}
                          </div>
                          <div>
-                           <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Ventas (K)</div>
-                           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                             <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{formatCurrency(kpiTotal.capitalAntFecha)}</div>
+                           <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Ventas (K)</div>
+                           <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
+                             <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.capitalAntFecha)}</div>
                              {kpiTotal.varCapitalFecha !== null && (
-                               <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.varCapitalFecha >= 0 ? '#10b981' : '#f87171' }}>
+                               <span className={[styles.uFontSize12px, styles.uFontWeight800].join(' ')} style={{ color: kpiTotal.varCapitalFecha >= 0 ? '#10b981' : '#f87171' }}>
                                  {kpiTotal.varCapitalFecha >= 0 ? '▲' : '▼'} {Math.abs(kpiTotal.varCapitalFecha).toFixed(2)}%
                                </span>
                              )}
                            </div>
                          </div>
                          <div>
-                           <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 6 }}>Operaciones (Q)</div>
-                           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                             <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{kpiTotal.opsAntFecha}</div>
+                           <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Operaciones (Q)</div>
+                           <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
+                             <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{kpiTotal.opsAntFecha}</div>
                              {kpiTotal.varOpsFecha !== null && (
-                               <span style={{ fontSize: 12, fontWeight: 800, color: kpiTotal.varOpsFecha >= 0 ? '#10b981' : '#f87171' }}>
+                               <span className={[styles.uFontSize12px, styles.uFontWeight800].join(' ')} style={{ color: kpiTotal.varOpsFecha >= 0 ? '#10b981' : '#f87171' }}>
                                  {kpiTotal.varOpsFecha >= 0 ? '▲' : '▼'} {Math.abs(kpiTotal.varOpsFecha).toFixed(2)}%
                                </span>
                              )}
@@ -1963,9 +1911,9 @@ export default function AnalistasPage() {
                     )}
                   </div>
 
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8, marginBottom: 10 }}>Progreso vs Ideal</div>
-                    <div style={{ height: 320, position: 'relative', width: '100%' }}>
+                  <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-16px"], styles["uBorder1px-solid-border-subtle"], styles.uDisplayflex, styles.uFlexDirectioncolumn].join(' ')}>
+                    <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles.uMarginBottom10px].join(' ')}>Progreso vs Ideal</div>
+                    <div className={[styles.uHeight320px, styles.uPositionrelative, styles.uWidth100].join(' ')}>
                       {chartsLoaded ? (
                         <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} />
                       ) : (
@@ -1975,30 +1923,32 @@ export default function AnalistasPage() {
                   </div>
                 </div>
                 </>
+                )}
+                </>
               </div>
 
           {/* ── SECCIÓN 2: GRÁFICOS ── */}
-          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
+          <div className={["data-card", styles["uBackgroundlinear-gradient-180deg-rgba-255-255-255-0-"], styles["uBoxShadowshadow-md"]].join(' ')}>
             {sectionHeader(2, '2. Gráficos', <BarChart3 size={15} color="#a78bfa" />)}
               <>
-                <div style={{ marginBottom: 28 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                <div className={[styles.uMarginBottom28px].join(' ')}>
+                  <div className={["analistas-autogrid", styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-280px-1fr"], styles.uGap16px].join(' ')}>
                     {/* 1. Cumplimiento */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
+                    <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-16px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom10px].join(' ')}>
+                        <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>% Cumplimiento — Actual vs {mesAntLabel}</div>
+                        <div className={[styles.uDisplayflex, styles.uGap10px].join(' ')}>
+                          <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                            <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-96-165-250-0-8"]].join(' ')} />
+                            <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
+                          <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                            <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-30-58-138-0-9"]].join(' ')} />
+                            <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
                           </div>
                         </div>
                       </div>
-                      <div id="chart-cumplimiento" style={{ height: 280 }}>
+                      <div className={[styles.uHeight224px].join(' ')} id="chart-cumplimiento">
                         {chartsLoaded ? (
                           <Bar data={chartCumplimiento as any} options={baseChartOpts('%', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                         ) : (
@@ -2008,21 +1958,21 @@ export default function AnalistasPage() {
                     </div>
 
                     {/* 2. Variación */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Positivo</span>
+                    <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-16px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom10px].join(' ')}>
+                        <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>Variación % vs {mesAntLabel}</div>
+                        <div className={[styles.uDisplayflex, styles.uGap10px].join(' ')}>
+                          <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                            <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-52-211-153-0-7"]].join(' ')} />
+                            <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>Positivo</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(248,113,113,0.7)' }} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Negativo</span>
+                          <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
+                            <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-248-113-113-0-7"]].join(' ')} />
+                            <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>Negativo</span>
                           </div>
                         </div>
                       </div>
-                      <div id="chart-variacion" style={{ height: 280 }}>
+                      <div className={[styles.uHeight224px].join(' ')} id="chart-variacion">
                         {chartsLoaded ? (
                           <Bar data={chartVariacion} options={baseChartOpts('%', false, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
                         ) : (
@@ -2033,33 +1983,23 @@ export default function AnalistasPage() {
 
                     {/* 3. Embudo */}
                     {/* 3. Acuerdos por Analista */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+                    <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-16px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom10px].join(' ')}>
+                        <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>
                           Distribución de Acuerdos
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div className="report-period-toggle">
                           <button
                             onClick={() => setPeriodoAcuerdos('mensual')}
-                            style={{
-                              padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
-                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                              background: periodoAcuerdos === 'mensual' ? '#fb923c' : 'transparent',
-                              color: periodoAcuerdos === 'mensual' ? '#000' : '#666',
-                              transition: 'all 0.2s ease',
-                            }}
+                            className={[periodoAcuerdos === 'mensual' ? 'is-active' : undefined, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize9px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
+                            style={{ background: periodoAcuerdos === 'mensual' ? '#fb923c' : 'transparent', color: periodoAcuerdos === 'mensual' ? '#000' : '#666' }}
                           >
                             MES
                           </button>
                           <button
                             onClick={() => setPeriodoAcuerdos('total')}
-                            style={{
-                              padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
-                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                              background: periodoAcuerdos === 'total' ? '#fb923c' : 'transparent',
-                              color: periodoAcuerdos === 'total' ? '#000' : '#666',
-                              transition: 'all 0.2s ease',
-                            }}
+                            className={[periodoAcuerdos === 'total' ? 'is-active' : undefined, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize9px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
+                            style={{ background: periodoAcuerdos === 'total' ? '#fb923c' : 'transparent', color: periodoAcuerdos === 'total' ? '#000' : '#666' }}
                           >
                             TOTAL
                           </button>
@@ -2069,7 +2009,7 @@ export default function AnalistasPage() {
                         const regs = periodoAcuerdos === 'mensual' ? ventasMes.filter(isVenta) : registros;
                         
                         const categories = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica'];
-                        const bgColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+                        const bgColors = ['#5f927f', '#607da8', '#b98944', '#b86b6b'];
                         const displayLabels = categories;
                         
                         const displayData = categories.map(cat => {
@@ -2097,57 +2037,47 @@ export default function AnalistasPage() {
                         };
 
                         return chartsLoaded ? (
-                          <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <ModernDoughnut data={chartData} label="Acuerdos" value={`${total} Ops`} padding={36} height="220px" width="220px" labelSize={8} valueSize={15} />
-                            <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                          <div className={[styles.uHeight224px, styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uAlignItemscenter, styles.uJustifyContentcenter].join(' ')}>
+                            <ModernDoughnut data={chartData} label="Acuerdos" value={`${total} Ops`} padding={32} height="174px" width="210px" labelSize={8} valueSize={15} />
+                            <div className={["report-chart-legend", styles.uDisplayflex, styles.uFlexWrapwrap, styles.uJustifyContentcenter].join(' ')}>
                               {displayLabels.map((l, i) => {
                                 const pct = total > 0 ? (displayData[i] / total * 100).toFixed(1) : '0';
                                 return (
-                                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: bgColors[i] }} />
-                                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px].join(' ')} key={l}>
+                                    <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50].join(' ')} style={{ background: bgColors[i] }} />
+                                    <span className={[styles.uFontSize9px, styles["uColortext-muted"], styles.uFontWeight700, styles.uTextTransformuppercase].join(' ')}>{l} ({pct}%)</span>
                                   </div>
                                 );
                               })}
                             </div>
                           </div>
                         ) : (
-                          <ChartShimmer style={{ height: 280 }} />
+                          <div className={styles.uHeight224px}><ChartShimmer /></div>
                         );
                       })()}
                     </div>
 
                     {/* 4. Empleo */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-                          <span style={{ fontSize: 10, fontWeight: 800, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
+                    <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-16px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom10px].join(' ')}>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px].join(' ')}>
+                          <div className={[styles.uWidth3px, styles.uHeight12px, styles.uBackground34d399, styles.uBorderRadius2px].join(' ')} />
+                          <span className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>
                             % Empleo Público / Privado
                           </span>
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div className="report-period-toggle">
                           <button
                             onClick={() => setPeriodoEmpleo('mensual')}
-                            style={{
-                              padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
-                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                              background: periodoEmpleo === 'mensual' ? '#fb923c' : 'transparent',
-                              color: periodoEmpleo === 'mensual' ? '#000' : '#666',
-                              transition: 'all 0.2s ease',
-                            }}
+                            className={[periodoEmpleo === 'mensual' ? 'is-active' : undefined, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize9px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
+                            style={{ background: periodoEmpleo === 'mensual' ? '#fb923c' : 'transparent', color: periodoEmpleo === 'mensual' ? '#000' : '#666' }}
                           >
                             MES
                           </button>
                           <button
                             onClick={() => setPeriodoEmpleo('total')}
-                            style={{
-                              padding: '2px 8px', borderRadius: 4, border: 'none', cursor: 'pointer',
-                              fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                              background: periodoEmpleo === 'total' ? '#fb923c' : 'transparent',
-                              color: periodoEmpleo === 'total' ? '#000' : '#666',
-                              transition: 'all 0.2s ease',
-                            }}
+                            className={[periodoEmpleo === 'total' ? 'is-active' : undefined, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize9px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
+                            style={{ background: periodoEmpleo === 'total' ? '#fb923c' : 'transparent', color: periodoEmpleo === 'total' ? '#000' : '#666' }}
                           >
                             TOTAL
                           </button>
@@ -2158,23 +2088,23 @@ export default function AnalistasPage() {
                         const total = counts.reduce((s, v) => s + v, 0);
                         
                         return chartsLoaded ? (
-                          <div style={{ height: 280, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <ModernDoughnut data={chartEmpleoPublPriv} label="Total" value={`${total} Ops`} padding={36} height="220px" width="220px" labelSize={8} valueSize={15} />
-                            <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+                          <div className={[styles.uHeight224px, styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uAlignItemscenter, styles.uJustifyContentcenter].join(' ')}>
+                            <ModernDoughnut data={chartEmpleoPublPriv} label="Total" value={`${total} Ops`} padding={32} height="174px" width="210px" labelSize={8} valueSize={15} />
+                            <div className={["report-chart-legend", styles.uDisplayflex, styles.uFlexWrapwrap, styles.uJustifyContentcenter].join(' ')}>
                               {chartEmpleoPublPriv.labels.map((l, i) => {
                                 const val = counts[i];
                                 const pct = total > 0 ? (val / total * 100).toFixed(1) : '0';
                                 return (
-                                  <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
-                                    <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
+                                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px].join(' ')} key={l}>
+                                    <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50].join(' ')} style={{ background: (chartEmpleoPublPriv.datasets[0].backgroundColor as string[])[i] }} />
+                                    <span className={[styles.uFontSize9px, styles["uColortext-muted"], styles.uFontWeight700, styles.uTextTransformuppercase].join(' ')}>{l} ({pct}%)</span>
                                   </div>
                                 );
                               })}
                             </div>
                           </div>
                         ) : (
-                          <ChartShimmer style={{ height: 280 }} />
+                          <div className={styles.uHeight224px}><ChartShimmer /></div>
                         );
                       })()}
                     </div>
@@ -2184,11 +2114,11 @@ export default function AnalistasPage() {
           </div>
 
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
-          <div className="data-card" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
-              <div style={{ flex: 1 }}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <span style={{ fontSize: 11, color: '#444', fontWeight: 600 }}>
+          <div className={["data-card", styles["uBackgroundlinear-gradient-180deg-rgba-255-255-255-0-"], styles["uBoxShadowshadow-md"]].join(' ')}>
+            <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px, styles.uMarginBottom0].join(' ')}>
+              <div className={[styles.uFlex1].join(' ')}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+              <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap12px, styles.uMarginBottom20px].join(' ')}>
+                <span className={[styles.uFontSize11px, styles["uColortext-muted"], styles.uFontWeight600].join(' ')}>
                   {periodoSec3 === 'mensual'
                     ? (() => {
                         const v = ventasMes.filter(isVenta);
@@ -2196,18 +2126,13 @@ export default function AnalistasPage() {
                       })()
                     : `TOTAL: Todos los estados (${registros.length} ops · ${formatCurrency(registros.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`}
                 </span>
-                <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+                <div className="report-period-toggle">
                   {(['mensual', 'total'] as const).map(p => (
                     <button
                       key={p}
                       onClick={() => setPeriodoSec3(p)}
-                      style={{
-                        padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                        fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px',
-                        background: periodoSec3 === p ? '#fb923c' : 'transparent',
-                        color: periodoSec3 === p ? '#000' : '#555',
-                        transition: 'all 0.2s ease',
-                      }}
+                      className={[periodoSec3 === p ? 'is-active' : undefined, styles["uPadding4px-14px"], styles.uBorderRadius6px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize10px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
+                      style={{ background: periodoSec3 === p ? '#fb923c' : 'transparent', color: periodoSec3 === p ? '#000' : '#555' }}
                     >
                       {p === 'mensual' ? 'Mes' : 'Total'}
                     </button>
@@ -2215,7 +2140,7 @@ export default function AnalistasPage() {
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+            <div className={[styles.uDisplayflex, styles.uGap16px, styles.uFlexWrapwrap, styles.uMarginBottom16px].join(' ')}>
               {(() => {
                 const isMensual = periodoSec3 === 'mensual';
                 const fuente = isMensual ? ventasMes : registros;
@@ -2228,12 +2153,12 @@ export default function AnalistasPage() {
                 const lo = isMensual ? distLocalidad : distLocalidadTotal;
                 return (
                   <>
-                    <DistBlock theme="elevated" titulo="Acuerdo" icon={<PieChart size={12} color="#f97316" />} datos={ac} color="#f97316" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={cu} color="#60a5fa" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={re} color="#34d399" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={sx} color="#f472b6" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={em} color="#fbbf24" totalMes={base} />
-                    <DistBlock theme="elevated" titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={lo} color="#a78bfa" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Acuerdo" icon={<PieChart size={12} color="#a66f4b" />} datos={ac} color="#a66f4b" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Cuotas" icon={<BarChart3 size={12} color="#6f88a8" />} datos={cu} color="#6f88a8" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Rango Etario" icon={<Users size={12} color="#668e80" />} datos={re} color="#668e80" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Sexo" icon={<Users size={12} color="#9a7185" />} datos={sx} color="#9a7185" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Empleador" icon={<Shield size={12} color="#aa8a4f" />} datos={em} color="#aa8a4f" totalMes={base} />
+                    <DistBlock theme="elevated" titulo="Localidad" icon={<FileText size={12} color="#83799a" />} datos={lo} color="#83799a" totalMes={base} />
                   </>
                 );
               })()}
@@ -2241,33 +2166,33 @@ export default function AnalistasPage() {
           </div>
 
           {/* ── SECCIÓN 4 Y SHEETS: GRID ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24, marginBottom: 32 }}>
-            <div className="data-card" style={{ margin: 0, height: '100%', background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--bg-elev-1)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.05)', gap: 12, userSelect: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className={["analistas-autogrid", styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-400px-1fr"], styles.uGap24px, styles.uMarginBottom32px].join(' ')}>
+            <div className={["data-card", styles.uMargin0, styles.uHeight100, styles["uBackgroundlinear-gradient-180deg-rgba-255-255-255-0-"], styles["uBoxShadowshadow-md"]].join(' ')}>
+              <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom16px, styles.uPaddingBottom10px, styles["uBorderBottom1px-solid-border-subtle"], styles.uGap12px, styles.uUserSelectnone].join(' ')}>
+                <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px].join(' ')}>
                   <PieChart size={15} color="#4ade80" />
-                  <span style={{ fontSize: 13, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1px' }}>4. Distribucion por Estado</span>
+                  <span className={[styles.uFontSize13px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px].join(' ')}>4. Distribucion por Estado</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap10px].join(' ')}>
                   <CustomSelect
                     value={sec4Mes}
                     onChange={val => setSec4Mes(String(val))}
                     options={[{ label: 'Todos', value: '' }, ...CONFIG.MESES_NOMBRES.map((m, i) => ({ label: m, value: String(i + 1).padStart(2, '0') }))]}
                     width="140px"
-                    bg="#1a1a1a"
+                    bg="#ffffff"
                   />
                   <CustomSelect
                     value={sec4Anio}
                     onChange={val => setSec4Anio(Number(val))}
                     options={[2024, 2025, 2026].map(y => ({ label: String(y), value: y }))}
                     width="100px"
-                    bg="#1a1a1a"
+                    bg="#ffffff"
                   />
                 </div>
               </div>
-              <MetricasTab hideSelector mesStr={sec4Mes} anioNum={sec4Anio} registros={registros} analista={analista} analistas={analistasDefault} />
+              <MetricasTab hideSelector reportAppearance mesStr={sec4Mes} anioNum={sec4Anio} registros={registros} analista={analista} analistas={analistasDefault} />
             </div>
-            <NuevaSeccionSheets analista={analista} />
+            <NuevaSeccionSheets reportAppearance analista={analista} />
           </div>
 
 
@@ -2275,48 +2200,26 @@ export default function AnalistasPage() {
 
       {rendimiento12MOpen && (
         <ModalPortal>
-        <div
+        <div className={[styles.uPositionfixed, styles.uInset0, styles.uZIndex9999, styles["uBackgroundrgba-0-0-0-0-65"], styles["uBackdropFilterblur-4px"], styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uPadding24px].join(' ')}
           onClick={() => setRendimiento12MOpen(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 24,
-          }}
         >
-          <div
+          <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius18px, styles.uPadding24px, styles["uWidthmin-1480px-100"], styles.uMaxHeight90vh, styles.uOverflowauto, styles["uBoxShadowshadow-md"]].join(' ')}
             onClick={e => e.stopPropagation()}
-            style={{
-              background: '#111111',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 18,
-              padding: 24,
-              width: 'min(1480px, 100%)',
-              maxHeight: '90vh',
-              overflow: 'auto',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
-            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#aaa', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+            <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom18px, styles.uGap12px].join(' ')}>
+              <div className={[styles.uFontSize12px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing1-5px"]].join(' ')}>
                 Rendimiento por Año {analista !== 'PDV' && `— ${analista}`}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px].join(' ')}>
                 {isAdmin && (
-                  <div style={{ display: 'flex', gap: 4, marginRight: 16, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 8 }}>
+                  <div className={[styles.uDisplayflex, styles.uGap4px, styles.uMarginRight16px, styles["uBackgroundsurface-sunken"], styles.uPadding4px, styles.uBorderRadius8px].join(' ')}>
                     {['OBJETIVO', 'ALCANCE', 'VAR.', 'CUMPL.'].map(col => {
                       const isHidden = hiddenCols.includes(col);
                       return (
-                        <button
+                        <button className={[styles.uBordernone, styles.uBorderRadius6px, styles["uPadding4px-8px"], styles.uFontSize10px, styles.uFontWeight800, styles.uCursorpointer, styles["uTransitionall-0-2s"]].join(' ')}
                           key={col}
                           onClick={() => setHiddenCols(prev => isHidden ? prev.filter(c => c !== col) : [...prev, col])}
-                          style={{
-                            background: isHidden ? 'transparent' : 'rgba(255,255,255,0.1)',
-                            color: isHidden ? '#555' : '#aaa',
-                            border: 'none', borderRadius: 6, padding: '4px 8px',
-                            fontSize: 10, fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s',
-                            textDecoration: isHidden ? 'line-through' : 'none'
-                          }}
+                          style={{ background: isHidden ? 'transparent' : 'rgba(255,255,255,0.1)', color: isHidden ? '#555' : '#aaa', textDecoration: isHidden ? 'line-through' : 'none' }}
                           title={isHidden ? `Mostrar columna ${col}` : `Ocultar columna ${col}`}
                         >
                           {col}
@@ -2338,7 +2241,7 @@ export default function AnalistasPage() {
                   />
                 )}
 
-                <button
+                <button className={[styles.uBackgroundtransparent, styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles.uBorderRadius8px, styles.uWidth32px, styles.uHeight32px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles["uColortext-muted"], styles.uCursorpointer].join(' ')}
                   type="button"
                   onClick={() => {
                     if (anioRendimiento === 'TODOS') return;
@@ -2347,12 +2250,6 @@ export default function AnalistasPage() {
                     if (next !== undefined) setAnioRendimiento(next);
                   }}
                   disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) >= aniosDisponiblesRendimiento.length - 1}
-                  style={{
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 8, width: 32, height: 32,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#aaa', cursor: 'pointer',
-                  }}
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -2365,7 +2262,7 @@ export default function AnalistasPage() {
                   ]}
                   width="120px"
                 />
-                <button
+                <button className={[styles.uBackgroundtransparent, styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles.uBorderRadius8px, styles.uWidth32px, styles.uHeight32px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles["uColortext-muted"], styles.uCursorpointer].join(' ')}
                   type="button"
                   onClick={() => {
                     if (anioRendimiento === 'TODOS') return;
@@ -2374,24 +2271,12 @@ export default function AnalistasPage() {
                     if (prev !== undefined) setAnioRendimiento(prev);
                   }}
                   disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) <= 0}
-                  style={{
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 8, width: 32, height: 32,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#aaa', cursor: 'pointer',
-                  }}
                 >
                   <ChevronRight size={16} />
                 </button>
-                <button
+                <button className={[styles.uBackgroundtransparent, styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles.uBorderRadius8px, styles.uWidth32px, styles.uHeight32px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles["uColortext-muted"], styles.uCursorpointer, styles.uMarginLeft8px].join(' ')}
                   type="button"
                   onClick={() => setRendimiento12MOpen(false)}
-                  style={{
-                    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 8, width: 32, height: 32,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#aaa', cursor: 'pointer', marginLeft: 8,
-                  }}
                 >
                   <X size={16} />
                 </button>
@@ -2399,17 +2284,17 @@ export default function AnalistasPage() {
             </div>
 
             {anioRendimiento === 'TODOS' && mesRendimiento === 'TODOS' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uGap32px].join(' ')}>
                 {aniosDisponiblesRendimiento.slice().sort((a,b) => b - a).map(anio => {
                   const bucketsYear = mesesAnioKQ.filter(b => b.anio === anio);
                   if (bucketsYear.length === 0) return null;
                   return (
                     <div key={anio}>
-                      <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 4, height: 16, background: '#a78bfa', borderRadius: 4 }} />
+                      <div className={[styles.uFontSize16px, styles.uFontWeight900, styles["uColortext-strong"], styles.uMarginBottom12px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px].join(' ')}>
+                        <div className={[styles.uWidth4px, styles.uHeight16px, styles.uBackgrounda78bfa, styles.uBorderRadius4px].join(' ')} />
                         AÑO {anio}
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div className={[styles.uDisplaygrid, styles["uGridTemplateColumns1fr-1fr"], styles.uGap16px].join(' ')}>
                         <Mini12Table
                           label="CAPITAL"
                           total={formatCurrency(bucketsYear.reduce((s, b) => s + b.monto, 0))}
@@ -2434,7 +2319,7 @@ export default function AnalistasPage() {
                 })}
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className={[styles.uDisplaygrid, styles["uGridTemplateColumns1fr-1fr"], styles.uGap16px].join(' ')}>
                 <Mini12Table
                   label="CAPITAL"
                   total={formatCurrency(mesesAnioKQ.reduce((s, b) => s + b.monto, 0))}
@@ -2463,76 +2348,48 @@ export default function AnalistasPage() {
       {/* ── MODAL: CÁLCULO DE INCENTIVOS ── */}
       {incentivosModalOpen && (
         <ModalPortal>
-        <div
+        <div className={[styles.uPositionfixed, styles.uInset0, styles.uZIndex9999, styles["uBackgroundrgba-0-0-0-0-7"], styles["uBackdropFilterblur-6px"], styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uPadding24px].join(' ')}
           onClick={() => setIncentivosModalOpen(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 24,
-          }}
         >
-          <div
+          <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius18px, styles.uPadding28px, styles["uWidthmin-1280px-100"], styles.uMaxHeight90vh, styles.uOverflowauto, styles["uBoxShadowshadow-md"], styles.uFontFamilyUi].join(' ')}
             onClick={e => e.stopPropagation()}
-            style={{
-              background: '#111111',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 18,
-              padding: 28,
-              width: 'min(1280px, 100%)',
-              maxHeight: '90vh',
-              overflow: 'auto',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
-              fontFamily: "'Outfit', sans-serif",
-            }}
           >
             {/* Header del Modal */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 14, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+            <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom24px, styles.uPaddingBottom14px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
+              <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap12px].join(' ')}>
+                <div className={[styles.uWidth36px, styles.uHeight36px, styles.uBorderRadius10px, styles["uBackgroundrgba-16-185-129-0-12"], styles["uBorder1px-solid-rgba-16-185-129-0-25"], styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uColor10b981].join(' ')}>
                   <Calculator size={18} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-0.3px' }}>
+                  <div className={[styles.uFontSize18px, styles.uFontWeight900, styles["uColortext-strong"], styles["uLetterSpacing0-3px"]].join(' ')}>
                     Cálculo de Incentivos — {analista}
                   </div>
-                  <div style={{ fontSize: 12, color: '#8f929d', marginTop: 2 }}>
+                  <div className={[styles.uFontSize12px, styles["uColortext-muted"], styles.uMarginTop2px].join(' ')}>
                     Escalas de liquidación e ingreso manual de cobranzas
                   </div>
                 </div>
               </div>
 
-              <button
+              <button className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius8px, styles.uWidth32px, styles.uHeight32px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles["uColortext-muted"], styles.uCursorpointer, styles["uTransitionall-0-2s-ease"], styles.closeButton].join(' ')}
                 type="button"
                 onClick={() => setIncentivosModalOpen(false)}
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 8,
-                  width: 32, height: 32,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#aaa', cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#aaa'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
               >
                 <X size={16} />
               </button>
             </div>
 
             {/* Escalas: 3 Columnas */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20, marginBottom: 28 }}>
+            <div className={["analistas-autogrid", styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-300px-1fr"], styles.uGap20px, styles.uMarginBottom28px].join(' ')}>
               {/* Reglas de Capital */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#a78bfa', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+              <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius12px, styles.uPadding18px, styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                <div className={[styles.uFontSize11px, styles.uFontWeight800, styles.uColora78bfa, styles.uTextTransformuppercase, styles.uMarginBottom12px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px, styles["uLetterSpacing0-8px"]].join(' ')}>
                   <Target size={14} /> Escala de Incentivos - Capital
                 </div>
-                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                <table className={[styles.uWidth100, styles.uFontSize13px, styles.uBorderCollapsecollapse].join(' ')}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
-                      <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>COEFICIENTE</th>
+                    <tr className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-1"]].join(' ')}>
+                      <th className={[styles.uTextAlignleft, styles["uPadding10px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>ALCANCE</th>
+                      <th className={[styles.uTextAlignright, styles["uPadding10px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>COEFICIENTE</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2542,29 +2399,29 @@ export default function AnalistasPage() {
                       { a: '110% < 120%', c: '0.37%' },
                       { a: '>= 120%', c: '0.45%' },
                     ].map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
-                        <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
+                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} key={i}>
+                        <td className={[styles["uPadding10px-4px"], styles["uColortext-muted"]].join(' ')}>{r.a}</td>
+                        <td className={[styles["uPadding10px-4px"], styles.uTextAlignright, styles["uColortext-strong"], styles.uFontWeight800].join(' ')}>{r.c}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic', lineHeight: 1.5 }}>
+                <div className={[styles.uMarginTop12px, styles.uFontSize11px, styles["uColortext-muted"], styles.uFontStyleitalic, styles["uLineHeight1-5"]].join(' ')}>
                   * El tope máximo para Ventas (K + Q) es de $200,000.<br/>
                   * El tope máximo para Cobranzas es de $50,000 (Tope total: $250,000).
                 </div>
               </div>
 
               {/* Reglas de Operaciones */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#34d399', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+              <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius12px, styles.uPadding18px, styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                <div className={[styles.uFontSize11px, styles.uFontWeight800, styles.uColor34d399, styles.uTextTransformuppercase, styles.uMarginBottom12px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px, styles["uLetterSpacing0-8px"]].join(' ')}>
                   <Activity size={14} /> Escala de Incentivos - Operaciones
                 </div>
-                <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+                <table className={[styles.uWidth100, styles.uFontSize13px, styles.uBorderCollapsecollapse].join(' ')}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ textAlign: 'left', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
-                      <th style={{ textAlign: 'right', padding: '10px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>COEFICIENTE</th>
+                    <tr className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-1"]].join(' ')}>
+                      <th className={[styles.uTextAlignleft, styles["uPadding10px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>ALCANCE</th>
+                      <th className={[styles.uTextAlignright, styles["uPadding10px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>COEFICIENTE</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2572,29 +2429,29 @@ export default function AnalistasPage() {
                       { a: '80% y 99.99%', c: '20%' },
                       { a: '>= 100%', c: '30%' },
                     ].map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '10px 4px', color: '#bbb' }}>{r.a}</td>
-                        <td style={{ padding: '10px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.c}</td>
+                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} key={i}>
+                        <td className={[styles["uPadding10px-4px"], styles["uColortext-muted"]].join(' ')}>{r.a}</td>
+                        <td className={[styles["uPadding10px-4px"], styles.uTextAlignright, styles["uColortext-strong"], styles.uFontWeight800].join(' ')}>{r.c}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                <div style={{ marginTop: 12, fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>
+                <div className={[styles.uMarginTop12px, styles.uFontSize11px, styles["uColortext-muted"], styles.uFontStyleitalic].join(' ')}>
                   * Requiere alcance mínimo de 75% en Capital.
                 </div>
               </div>
 
               {/* Reglas de Cobranzas */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 18, border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, letterSpacing: '0.8px' }}>
+              <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius12px, styles.uPadding18px, styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                <div className={[styles.uFontSize11px, styles.uFontWeight800, styles.uColorfb923c, styles.uTextTransformuppercase, styles.uMarginBottom12px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px, styles["uLetterSpacing0-8px"]].join(' ')}>
                   <DollarSign size={14} /> Escala de Incentivos - Cobranzas
                 </div>
-                <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                <table className={[styles.uWidth100, styles.uFontSize12px, styles.uBorderCollapsecollapse].join(' ')}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>CONCEPTO</th>
-                      <th style={{ textAlign: 'left', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>ALCANCE</th>
-                      <th style={{ textAlign: 'right', padding: '8px 4px', color: '#aaa', fontSize: 11, fontWeight: 800 }}>PREMIO</th>
+                    <tr className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-1"]].join(' ')}>
+                      <th className={[styles.uTextAlignleft, styles["uPadding8px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>CONCEPTO</th>
+                      <th className={[styles.uTextAlignleft, styles["uPadding8px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>ALCANCE</th>
+                      <th className={[styles.uTextAlignright, styles["uPadding8px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>PREMIO</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2606,18 +2463,18 @@ export default function AnalistasPage() {
                       { n: 'REFINANCIACION', a: '90% - 109.99%', p: '$12.643' },
                       { n: 'REFINANCIACION', a: '>= 110%', p: '$16.667' },
                     ].map((r, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '8px 4px', color: '#aaa', fontSize: 11 }}>{r.n}</td>
-                        <td style={{ padding: '8px 4px', color: '#bbb' }}>{r.a}</td>
-                        <td style={{ padding: '8px 4px', textAlign: 'right', color: '#fff', fontWeight: 800 }}>{r.p}</td>
+                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} key={i}>
+                        <td className={[styles["uPadding8px-4px"], styles["uColortext-muted"], styles.uFontSize11px].join(' ')}>{r.n}</td>
+                        <td className={[styles["uPadding8px-4px"], styles["uColortext-muted"]].join(' ')}>{r.a}</td>
+                        <td className={[styles["uPadding8px-4px"], styles.uTextAlignright, styles["uColortext-strong"], styles.uFontWeight800].join(' ')}>{r.p}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
 
-                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#fb923c', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                <div className={[styles.uMarginTop16px, styles.uPaddingTop16px, styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
+                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom8px].join(' ')}>
+                    <div className={[styles.uFontSize10px, styles.uFontWeight800, styles.uColorfb923c, styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>
                       Ingreso Manual de Cumplimiento (%)
                     </div>
                     {Boolean(
@@ -2625,59 +2482,40 @@ export default function AnalistasPage() {
                       (currentCobranzas.pctTr120 !== undefined && currentCobranzas.pctTr120 !== '') ||
                       (currentCobranzas.pctRefin !== undefined && currentCobranzas.pctRefin !== '')
                     ) && (
-                      <button
+                      <button className={[styles["uBackgroundrgba-239-68-68-0-1"], styles["uBorder1px-solid-rgba-239-68-68-0-25"], styles.uColorf87171, styles.uFontSize10px, styles.uFontWeight700, styles.uCursorpointer, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px, styles["uTransitionall-0-15s-ease"], styles.clearButton].join(' ')}
                         type="button"
                         onClick={handleClearManualCob}
-                        style={{
-                          background: 'rgba(239, 68, 68, 0.1)',
-                          border: '1px solid rgba(239, 68, 68, 0.25)',
-                          color: '#f87171',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          transition: 'all 0.15s ease',
-                        }}
                         title="Borrar porcentajes guardados de cobranzas"
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
                       >
                         <Trash2 size={11} /> Borrar
                       </button>
                     )}
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  <div className={[styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-3-1fr"], styles.uGap8px].join(' ')}>
                     <div>
-                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 90</div>
-                      <input 
+                      <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uMarginBottom4px].join(' ')}>TR 90</div>
+                      <input className={[styles.uWidth100, styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius4px, styles["uPadding6px-10px"], styles.uFontSize13px, styles["uColortext-strong"], styles.uOutlinenone].join(' ')}
                         type="number" 
                         value={currentCobranzas.pctTr90 ?? ''} 
                         onChange={(e) => handleManualCobChange('pctTr90', e.target.value)}
-                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                         placeholder="0%"
                       />
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>TR 120</div>
-                      <input 
+                      <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uMarginBottom4px].join(' ')}>TR 120</div>
+                      <input className={[styles.uWidth100, styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius4px, styles["uPadding6px-10px"], styles.uFontSize13px, styles["uColortext-strong"], styles.uOutlinenone].join(' ')}
                         type="number" 
                         value={currentCobranzas.pctTr120 ?? ''} 
                         onChange={(e) => handleManualCobChange('pctTr120', e.target.value)}
-                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                         placeholder="0%"
                       />
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: '#aaa', marginBottom: 4 }}>REFIN</div>
-                      <input 
+                      <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uMarginBottom4px].join(' ')}>REFIN</div>
+                      <input className={[styles.uWidth100, styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius4px, styles["uPadding6px-10px"], styles.uFontSize13px, styles["uColortext-strong"], styles.uOutlinenone].join(' ')}
                         type="number" 
                         value={currentCobranzas.pctRefin ?? ''} 
                         onChange={(e) => handleManualCobChange('pctRefin', e.target.value)}
-                        style={{ width: '100%', background: '#111111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 4, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
                         placeholder="0%"
                       />
                     </div>
@@ -2687,46 +2525,37 @@ export default function AnalistasPage() {
             </div>
 
             {/* Tabla de resultados por Analista */}
-            <div style={{ overflowX: 'auto', background: 'rgba(255,255,255,0.01)', borderRadius: 14, border: '1px solid rgba(255,255,255,0.04)', padding: 6 }}>
-              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+            <div className={[styles.uOverflowXauto, styles["uBackgroundsurface-sunken"], styles.uBorderRadius14px, styles["uBorder1px-solid-border-subtle"], styles.uPadding6px].join(' ')}>
+              <table className={[styles.uWidth100, styles.uBorderCollapseseparate, styles.uBorderSpacing0].join(' ')}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Analista</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Vendido (K)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Cumpl. (K)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (K)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Cumpl. (Q)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (Q)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 800, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Incent. (Cob)</th>
-                    <th style={{ textAlign: 'right', padding: '14px 14px', fontSize: 11, fontWeight: 900, color: '#8f929d', textTransform: 'uppercase', letterSpacing: 1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Total Final</th>
+                    <th className={[styles.uTextAlignleft, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Analista</th>
+                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Vendido (K)</th>
+                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Cumpl. (K)</th>
+                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Incent. (K)</th>
+                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Cumpl. (Q)</th>
+                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Incent. (Q)</th>
+                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Incent. (Cob)</th>
+                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight900, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Total Final</th>
                   </tr>
                 </thead>
                 <tbody>
                   {kpiCards.filter(k => k.analista === 'PDV' || cobraIncentivo(k.analista)).map((k, idx) => (
                     <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                      <td style={{ padding: '16px 14px', fontSize: 13, fontWeight: 800, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className={[styles["uPadding16px-14px"], styles.uFontSize13px, styles.uFontWeight800, styles["uColortext-strong"], styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
                         {k.analista === 'PDV' ? 'TOTAL GENERAL' : (analista === 'PDV' ? k.analista.toUpperCase() : 'INDIVIDUAL')}
                       </td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#eee', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.capital)}</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{k.cumplCapital?.toFixed(1)}%</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.incentivoCap)}</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171', fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{k.cumplOps?.toFixed(1)}%</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency(k.incentivoOps)}</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
-                      <td style={{ padding: '16px 14px', textAlign: 'right', fontSize: 15, color: '#10b981', fontWeight: 900, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
+                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles["uColortext-strong"], styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>{formatCurrency(k.capital)}</td>
+                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles.uFontWeight800, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} style={{ color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171' }}>{k.cumplCapital?.toFixed(1)}%</td>
+                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles["uColortext-strong"], styles.uFontWeight700, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>{formatCurrency(k.incentivoCap)}</td>
+                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles.uFontWeight800, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} style={{ color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171' }}>{k.cumplOps?.toFixed(1)}%</td>
+                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles["uColortext-strong"], styles.uFontWeight700, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>{formatCurrency(k.incentivoOps)}</td>
+                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles["uColortext-strong"], styles.uFontWeight700, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
+                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize15px, styles.uColor10b981, styles.uFontWeight900, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
+                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentflex-end"], styles.uGap8px].join(' ')}>
                           {k.topeKQAplicado && (
-                            <span
+                            <span className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap4px, styles["uPadding3px-8px"], styles.uBorderRadius6px, styles.uFontSize10px, styles.uFontWeight800, styles["uBackgroundrgba-251-191-36-0-15"], styles.uColorfbbf24, styles["uBorder1px-solid-rgba-251-191-36-0-35"], styles.uTextTransformuppercase, styles["uLetterSpacing0-5px"]].join(' ')}
                               title={`Tope $250.000 aplicado. Excedente sin pagar: ${formatCurrency(k.topeKQExcedente || 0)}`}
-                              style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 4,
-                                padding: '3px 8px', borderRadius: 6,
-                                fontSize: 10, fontWeight: 800,
-                                background: 'rgba(251,191,36,0.15)',
-                                color: '#fbbf24',
-                                border: '1px solid rgba(251,191,36,0.35)',
-                                textTransform: 'uppercase', letterSpacing: '0.5px',
-                              }}
                             >
                               TOPE
                             </span>
@@ -2767,35 +2596,19 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
     if (pct >= 75)  return '#fbbf24';
     return '#f87171';
   };
-  const th: React.CSSProperties = {
-    padding: '10px 12px', fontSize: 10, fontWeight: 800,
-    color: '#666', textTransform: 'uppercase', letterSpacing: '1px',
-    borderBottom: '1px solid rgba(255,255,255,0.06)', textAlign: 'left',
-  };
-  const td: React.CSSProperties = {
-    padding: '11px 12px', fontSize: 13, color: '#ccc',
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
-  };
-
   return (
-    <div style={{
-      background: '#111111',
-      border: '1px solid rgba(255,255,255,0.05)',
-      borderRadius: 14,
-      padding: '20px 22px',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      <div style={{ fontSize: 11, color: '#555', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 16 }}>{total}</div>
+    <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius14px, styles["uPadding20px-22px"], styles.uDisplayflex, styles.uFlexDirectioncolumn].join(' ')}>
+      <div className={[styles.uFontSize11px, styles["uColortext-muted"], styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing1-5px"], styles.uMarginBottom6px].join(' ')}>{label}</div>
+      <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"], styles["uLineHeight1-1"], styles.uMarginBottom16px].join(' ')}>{total}</div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table className={[styles.uWidth100, styles.uBorderCollapsecollapse].join(' ')}>
         <thead>
           <tr>
-            <th style={th}>MES</th>
-            {!hiddenCols.includes('OBJETIVO') && <th style={{ ...th, textAlign: 'center' }}>OBJETIVO</th>}
-            {!hiddenCols.includes('ALCANCE') && <th style={{ ...th, textAlign: 'center' }}>ALCANCE</th>}
-            {!hiddenCols.includes('VAR.') && <th style={{ ...th, textAlign: 'center' }}>VAR.</th>}
-            {!hiddenCols.includes('CUMPL.') && <th style={{ ...th, textAlign: 'right' }}>CUMPL.</th>}
+            <th className={styles.miniTableHead}>MES</th>
+            {!hiddenCols.includes('OBJETIVO') && <th className={`${styles.miniTableHead} ${styles.textCenter}`}>OBJETIVO</th>}
+            {!hiddenCols.includes('ALCANCE') && <th className={`${styles.miniTableHead} ${styles.textCenter}`}>ALCANCE</th>}
+            {!hiddenCols.includes('VAR.') && <th className={`${styles.miniTableHead} ${styles.textCenter}`}>VAR.</th>}
+            {!hiddenCols.includes('CUMPL.') && <th className={`${styles.miniTableHead} ${styles.textRight}`}>CUMPL.</th>}
           </tr>
         </thead>
         <tbody>
@@ -2809,43 +2622,26 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
             const varBg = variacion === null ? 'transparent' : Math.abs(variacion) < 0.5 ? 'rgba(255,255,255,0.04)' : variacion > 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
             return (
               <tr key={b.key}>
-                <td style={{ ...td, color: '#8f929d', fontWeight: 600 }}>{b.label}</td>
-                {!hiddenCols.includes('OBJETIVO') && <td style={{ ...td, textAlign: 'center', color: '#8f929d' }}>{meta > 0 ? fmt(meta) : '—'}</td>}
-                {!hiddenCols.includes('ALCANCE') && <td style={{ ...td, textAlign: 'center', color: '#fff', fontWeight: 700 }}>{fmt(v)}</td>}
-                {!hiddenCols.includes('VAR.') && <td style={{ ...td, textAlign: 'center' }}>
+                <td className={`${styles.miniTableCell} ${styles.miniTableMuted}`}>{b.label}</td>
+                {!hiddenCols.includes('OBJETIVO') && <td className={`${styles.miniTableCell} ${styles.miniTableMuted} ${styles.textCenter}`}>{meta > 0 ? fmt(meta) : '—'}</td>}
+                {!hiddenCols.includes('ALCANCE') && <td className={`${styles.miniTableCell} ${styles.miniTableValue} ${styles.textCenter}`}>{fmt(v)}</td>}
+                {!hiddenCols.includes('VAR.') && <td className={`${styles.miniTableCell} ${styles.textCenter}`}>
                   {variacion !== null ? (
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                      padding: '3px 8px', borderRadius: 6,
-                      fontSize: 11, fontWeight: 700,
-                      color: varColor, background: varBg,
-                    }}>
+                    <span className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap4px, styles["uPadding3px-8px"], styles.uBorderRadius6px, styles.uFontSize11px, styles.uFontWeight700].join(' ')} style={{ color: varColor, background: varBg }}>
                       {Math.abs(variacion) < 0.5 ? '—' : variacion > 0 ? '▲' : '▼'} {variacion >= 0 ? '+' : ''}{variacion.toFixed(1)}%
                     </span>
                   ) : (
-                    <span style={{ color: '#444' }}>—</span>
+                    <span className={[styles["uColortext-muted"]].join(' ')}>—</span>
                   )}
                 </td>}
-                {!hiddenCols.includes('CUMPL.') && <td style={{ ...td, textAlign: 'right' }}>
+                {!hiddenCols.includes('CUMPL.') && <td className={`${styles.miniTableCell} ${styles.textRight}`}>
                   {pct !== null ? (
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '4px 10px',
-                      borderRadius: 8,
-                      fontSize: 11, fontWeight: 700,
-                      color: '#e5e5e5',
-                      background: '#141414',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                    }}>
-                      <span style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: dotColor(pct),
-                        boxShadow: `0 0 6px ${dotColor(pct)}`,
-                      }} />
+                    <span className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap6px, styles["uPadding4px-10px"], styles.uBorderRadius8px, styles.uFontSize11px, styles.uFontWeight700, styles.uColore5e5e5, styles.uBackground141414, styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                      <span className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50].join(' ')} style={{ background: dotColor(pct), boxShadow: `0 0 6px ${dotColor(pct)}` }} />
                       {pct.toFixed(2)}%
                     </span>
                   ) : (
-                    <span style={{ color: '#444' }}>—</span>
+                    <span className={[styles["uColortext-muted"]].join(' ')}>—</span>
                   )}
                 </td>}
               </tr>

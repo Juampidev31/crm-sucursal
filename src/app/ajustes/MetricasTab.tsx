@@ -45,9 +45,11 @@ interface Props {
   mesStr?: string;
   anioNum?: number;
   analistas?: string[];
+  /** Usa la apariencia clara del reporte de Analistas sin depender de overrides !important. */
+  reportAppearance?: boolean;
 }
 
-export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAnio, registros: manualRegs, analista: propAnalista, hideSelector, mesStr, anioNum, analistas: propAnalistas }: Props) {
+export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAnio, registros: manualRegs, analista: propAnalista, hideSelector, mesStr, anioNum, analistas: propAnalistas, reportAppearance = false }: Props) {
   const [internalMes, setInternalMes] = useState(propMes ? String(propMes).padStart(2, '0') : mesActual);
   const [internalAnio, setInternalAnio] = useState(propAnio || new Date().getFullYear());
 
@@ -165,7 +167,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
         </div>
       )}
 
-      <div style={{ 
+      <div className={views.length === 1 ? undefined : 'analistas-autogrid'} style={{
         display: 'grid', 
         gridTemplateColumns: views.length === 1 ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', 
         gap: '32px',
@@ -175,20 +177,22 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
           const isSingle = views.length === 1;
 
           return (
-            <div key={view.id} style={{ 
-              background: 'rgba(255,255,255,0.01)', 
-              borderRadius: '28px', 
-              border: '1px solid rgba(255,255,255,0.03)',
-              padding: isSingle ? '24px' : '32px',
+            <div key={view.id} className="metricas-state-view" style={{
+              ...(!reportAppearance ? {
+                background: 'rgba(255,255,255,0.01)',
+                borderRadius: '28px',
+                border: '1px solid rgba(255,255,255,0.03)',
+                padding: isSingle ? '24px' : '32px',
+                gap: isSingle ? '24px' : '32px',
+              } : {}),
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'stretch',
-              gap: isSingle ? '24px' : '32px',
               transition: 'transform 0.3s ease, border-color 0.3s ease',
               width: '100%'
             }}
             >
-              <div style={{ textAlign: 'center', width: '100%' }}>
+              <div className="metricas-state-chart" style={{ textAlign: 'center', width: '100%' }}>
                 <ModernDoughnut
                   data={view.data.doughnutData}
                   label="VENTAS"
@@ -198,6 +202,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                   clip={false}
                   height="280px"
                   width="280px"
+                  valueSize={view.data.totalMonto >= 100_000_000 ? 12 : 14}
                 />
                 <div style={{ marginTop: '20px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                   {view.data.totalOps} OPERACIONES TOTALES
@@ -206,27 +211,26 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
 
 
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+              <div className="metricas-state-list" style={{ display: 'flex', flexDirection: 'column', ...(!reportAppearance ? { gap: '12px' } : {}), width: '100%' }}>
                 {view.data.stats.filter(s => s.ops > 0).map(s => {
                   const pct = view.data.totalMonto > 0 ? (s.monto / view.data.totalMonto * 100).toFixed(0) : '0';
                   const tick = s.ops > 0 ? s.monto / s.ops : 0;
                   
                   return (
-                    <div key={s.key} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '14px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px',
-                      border: '1px solid rgba(255,255,255,0.01)',
+                    <div key={s.key} className="metricas-state-row" style={{
+                      ...(!reportAppearance ? { display: 'flex', padding: '14px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.01)' } : {}),
+                      justifyContent: 'space-between', alignItems: 'center',
                     }}>
-                      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      <div className="metricas-state-name" style={{ display: 'flex', ...(!reportAppearance ? { gap: '16px' } : {}), alignItems: 'center' }}>
                         <div style={{ width: '4px', height: '24px', background: s.color, borderRadius: '4px' }} />
                         <div>
-                          <div style={{ fontWeight: 800, fontSize: '13px', color: '#eee' }}>{s.label}</div>
-                          <div style={{ fontSize: '10px', color: '#555', fontWeight: 700 }}>{s.ops} OPERACIONES · {pct}%</div>
+                          <div style={{ fontWeight: 700, ...(!reportAppearance ? { fontSize: '13px', color: '#eee' } : {}) }}>{s.label}</div>
+                          <div style={{ ...(!reportAppearance ? { fontSize: '10px', color: '#555' } : {}), fontWeight: 700 }}>{s.ops} OPERACIONES · {pct}%</div>
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 900, fontSize: '15px', color: '#fff' }}>{formatCurrency(s.monto)}</div>
-                        {isSingle && <div style={{ fontSize: '9px', color: '#444', fontWeight: 800 }}>TICKET: {formatCurrency(tick)}</div>}
+                      <div className="metricas-state-value" style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 700, ...(!reportAppearance ? { fontSize: '15px', color: '#fff' } : {}) }}>{formatCurrency(s.monto)}</div>
+                        {isSingle && <div style={{ ...(!reportAppearance ? { fontSize: '9px', color: '#444' } : {}), fontWeight: 700 }}>TICKET: {formatCurrency(tick)}</div>}
                       </div>
                     </div>
                   );
@@ -245,4 +249,3 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
     </div>
   );
 }
-

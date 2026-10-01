@@ -2,8 +2,9 @@
 
 import React, { memo } from 'react';
 import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, type ChartData } from 'chart.js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, type ChartData, type ChartOptions, type TooltipItem } from 'chart.js';
 import { calloutPlugin, bgTrackPlugin, glowPlugin } from '@/lib/chartPlugins';
+import { UI_FONT_FAMILY } from '@/app/fonts';
 
 // Auto-registro: el componente es autosuficiente, no depende de que el padre registre ArcElement.
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -15,15 +16,23 @@ interface ModernDoughnutProps {
   /** Valor grande del centro, ya formateado por el caller */
   value: React.ReactNode;
   /** Texto del tooltip por ítem; default: solo el valor crudo */
-  tooltipLabel?: (ctx: any) => string;
+  tooltipLabel?: (ctx: TooltipItem<'doughnut'>) => string;
   padding?: number;
-  clip?: boolean;
+  clip?: false | number;
   height?: string;
   width?: string;
   margin?: string;
   labelSize?: number;
   valueSize?: number;
 }
+
+type ModernDoughnutStyle = React.CSSProperties & {
+  '--modern-doughnut-height': string;
+  '--modern-doughnut-width': string;
+  '--modern-doughnut-margin': string;
+  '--modern-doughnut-label-size': string;
+  '--modern-doughnut-value-size': string;
+};
 
 // Unificación de las 4 copias divergentes (refactor cross-file de charts, fase 2):
 // analistas (padding 36, 220×220, fuentes 8/15), SeccionGraficosResumen (30, 100%),
@@ -35,7 +44,7 @@ const ModernDoughnut = memo(function ModernDoughnut({
   height = '100%', width = '100%', margin = '0 auto',
   labelSize = 10, valueSize = 18,
 }: ModernDoughnutProps) {
-  const options: any = {
+  const options: ChartOptions<'doughnut'> = {
     ...(clip !== undefined ? { clip } : {}),
     layout: { padding },
     cutout: '88%',
@@ -44,11 +53,11 @@ const ModernDoughnut = memo(function ModernDoughnut({
       tooltip: {
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
         titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 900, family: "'Outfit', sans-serif" },
+        titleFont: { size: 18, weight: 700, family: UI_FONT_FAMILY },
         titleAlign: 'center' as const,
         titleMarginBottom: 16,
         bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: "'Outfit', sans-serif" },
+        bodyFont: { size: 15, weight: 600, family: UI_FONT_FAMILY },
         bodySpacing: 10,
         borderColor: 'rgba(255,255,255,0.15)',
         borderWidth: 2,
@@ -69,15 +78,20 @@ const ModernDoughnut = memo(function ModernDoughnut({
   };
 
   return (
-    <div style={{ position: 'relative', height, width, margin }}>
+    <div
+      className="modern-doughnut"
+      style={{
+        '--modern-doughnut-height': height,
+        '--modern-doughnut-width': width,
+        '--modern-doughnut-margin': margin,
+        '--modern-doughnut-label-size': `${labelSize}px`,
+        '--modern-doughnut-value-size': `${valueSize}px`,
+      } as ModernDoughnutStyle}
+    >
       <Doughnut data={data} options={options} plugins={[calloutPlugin, bgTrackPlugin, glowPlugin]} />
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)', textAlign: 'center',
-        width: '100%', pointerEvents: 'none'
-      }}>
-        <div style={{ fontSize: labelSize, color: '#555', fontWeight: 800, letterSpacing: '1px', marginBottom: '2px', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontSize: valueSize, fontWeight: 900, color: '#fff', letterSpacing: '-0.5px' }}>
+      <div className="modern-doughnut__center">
+        <div className="modern-doughnut__label">{label}</div>
+        <div className="modern-doughnut__value">
           {value}
         </div>
       </div>

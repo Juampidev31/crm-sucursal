@@ -157,6 +157,40 @@ CREATE TRIGGER trigger_registros_updated_at
   EXECUTE FUNCTION update_updated_at();
 
 -- ============================================
+-- TABLA: gestion_diaria (Ingreso Diario Ventas — Victoria/Magali)
+-- Reemplazo del sistema Google Apps Script + Sheets "Gestiones VICTORIA/MAGALI"
+-- ============================================
+CREATE TABLE IF NOT EXISTS gestion_diaria (
+  id                  UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  analista            TEXT NOT NULL,
+  tipo_cliente        TEXT NOT NULL DEFAULT '',
+  fecha               DATE,
+  nombre              TEXT NOT NULL DEFAULT '',
+  cuil                TEXT NOT NULL DEFAULT '',
+  actividad           TEXT DEFAULT '',
+  donde_nos_conocio   TEXT DEFAULT '',
+  estado              TEXT DEFAULT '',
+  score               INTEGER,
+  tipo_operacion      TEXT DEFAULT '',
+  monto_otorgado      NUMERIC(15,2) DEFAULT 0,
+  capital_x_venta     NUMERIC(15,2),
+  interes_x_venta     NUMERIC(15,2),
+  comentarios         TEXT DEFAULT '',
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_gestion_diaria_analista ON gestion_diaria (analista);
+CREATE INDEX IF NOT EXISTS idx_gestion_diaria_fecha ON gestion_diaria (fecha DESC);
+CREATE INDEX IF NOT EXISTS idx_gestion_diaria_cuil ON gestion_diaria (cuil);
+CREATE INDEX IF NOT EXISTS idx_gestion_diaria_estado ON gestion_diaria (estado);
+
+CREATE TRIGGER trigger_gestion_diaria_updated_at
+  BEFORE UPDATE ON gestion_diaria
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at();
+
+-- ============================================
 -- ROW LEVEL SECURITY (opcional, habilitar si necesario)
 -- ============================================
 -- ALTER TABLE registros ENABLE ROW LEVEL SECURITY;

@@ -1,0 +1,1226 @@
+'use client';
+
+import React, { useEffect, useMemo, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useGestionDiaria } from '@/features/gestion-diaria/GestionDiariaProvider';
+import { useAnalistas } from '@/features/settings/SettingsProvider';
+import { GestionDiaria, GESTION_DIARIA_OPCIONES } from '@/types';
+import { formatCurrency, formatDate, sanitizarCuil } from '@/lib/utils';
+import { PremiumSelect } from '@/components/PremiumSelect';
+import { CorporateDatePicker } from '@/components/CorporateDatePicker';
+import ModalPortal from '@/components/ModalPortal';
+import { ClipboardList, Mail, Megaphone, MessageSquare, Pencil, Plus, RefreshCw, Search, TableProperties, Trash2 } from 'lucide-react';
+
+type GestionTab = 'ingresos' | 'flyers' | 'emails';
+
+const SHEETS = {
+  Victoria: '1GVPFJrrX4j0AM3vd4meGWtd6O-IS67Ljx7l_3Enyb_I',
+  Magali: '1WUz03tOW-pYVop-cfXYxUlX0wnCxToHUX9V3hU6NGFc',
+} as const;
+
+const SHEET_TABS = {
+  ingresos: { gid: '1686263284', label: 'Ingreso diario ventas' },
+  flyers: { gid: '2080980149', label: 'Flyers' },
+  emails: { gid: '1110496106', label: 'Emails enviados' },
+} as const;
+
+type SheetAnalyst = keyof typeof SHEETS;
+
+interface GoogleSheetCell { v?: unknown; f?: string }
+interface GoogleSheetResponse {
+  status?: string;
+  errors?: Array<{ detailed_message?: string; message?: string }>;
+  table?: {
+    cols?: Array<{ id?: string; label?: string }>;
+    rows?: Array<{ c?: Array<GoogleSheetCell | null> }>;
+  };
+}
+
+interface SheetTableData {
+  columns: string[];
+  rows: string[][];
+}
+
+interface CommercialEntry {
+  id: string;
+  createdAt: string;
+  values: CommercialEntryForm;
+}
+
+interface CommercialEntriesState {
+  entries: CommercialEntry[];
+  sheetOverrides: Record<string, CommercialEntryForm>;
+  deletedSheetRows: string[];
+}
+
+interface CommercialRow {
+  values: string[];
+  entryId?: string;
+  sheetKey?: string;
+}
+
+interface CommercialEntryForm {
+  fecha: string;
+  turno: string;
+  enMano: string;
+  casasEdificios: string;
+  autos: string;
+  comerciosEntidades: string;
+  bancosCajeros: string;
+  nombre: string;
+  email: string;
+}
+
+interface IncomeSheetRow {
+  id: string;
+  databaseId?: string;
+  tipoCliente: string;
+  fecha: string;
+  nombre: string;
+  cuil: string;
+  actividad: string;
+  estado: string;
+  score: string;
+  tipoOperacion: string;
+  montoOtorgado: string;
+  interesVenta: string;
+  comentarios: string;
+}
+
+interface PersistedSheetChanges {
+  overrides: Record<string, IncomeSheetRow>;
+  deletedIds: string[];
+}
+
+function normalizeLookupValue(value: unknown): string {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase();
+}
+
+function commercialEntriesKey(analyst: string, tab: Exclude<GestionTab, 'ingresos'>): string {
+  return `gestion_comercial_${normalizeLookupValue(analyst)}_${tab}`;
+}
+
+function commercialEntriesLocalKey(analyst: string, tab: Exclude<GestionTab, 'ingresos'>): string {
+  return `gestion-comercial-entries:${normalizeLookupValue(analyst)}:${tab}`;
+}
+
+function readLocalCommercialEntries(analyst: string, tab: Exclude<GestionTab, 'ingresos'>): CommercialEntriesState {
+  try {
+    const raw = window.localStorage.getItem(commercialEntriesLocalKey(analyst, tab));
+    if (!raw) return { entries: [], sheetOverrides: {}, deletedSheetRows: [] };
+    const parsed = JSON.parse(raw) as Partial<CommercialEntriesState>;
+    return {
+      entries: Array.isArray(parsed.entries) ? parsed.entries : [],
+      sheetOverrides: parsed.sheetOverrides && typeof parsed.sheetOverrides === 'object' ? parsed.sheetOverrides : {},
+      deletedSheetRows: Array.isArray(parsed.deletedSheetRows) ? parsed.deletedSheetRows : [],
+    };
+  } catch {
+    return { entries: [], sheetOverrides: {}, deletedSheetRows: [] };
+  }
+}
+
+function createCommercialForm(): CommercialEntryForm {
+  return {
+    fecha: new Date().toISOString().slice(0, 10),
+    turno: 'Mañana',
+    enMano: '',
+    casasEdificios: '',
+    autos: '',
+    comerciosEntidades: '',
+    bancosCajeros: '',
+    nombre: '',
+    email: '',
+  };
+}
+
+function commercialEntryRow(entry: CommercialEntry, columns: string[], tab: Exclude<GestionTab, 'ingresos'>): string[] {
+  const numericValue = (key: keyof CommercialEntryForm) => Number(entry.values[key] || 0);
+  const total = tab === 'flyers'
+    ? numericValue('enMano') + numericValue('casasEdificios') + numericValue('autos') + numericValue('comerciosEntidades') + numericValue('bancosCajeros')
+    : 0;
+
+  return columns.map(column => {
+    const normalized = normalizeLookupValue(column);
+    if (normalized === 'fecha' || normalized === 'fechagestion') return entry.values.fecha || '';
+    if (normalized === 'turno') return entry.values.turno || '';
+    if (normalized === 'enmano') return entry.values.enMano || '0';
+    if (normalized === 'casasedificios') return entry.values.casasEdificios || '0';
+    if (normalized === 'autos') return entry.values.autos || '0';
+    if (normalized === 'comerciosentidades') return entry.values.comerciosEntidades || '0';
+    if (normalized === 'bancoscajeros') return entry.values.bancosCajeros || '0';
+    if (normalized === 'totaldelturno' || normalized === 'totalturno' || normalized === 'totaldia') return String(total);
+    if (normalized === 'apellidoynombre' || normalized === 'nombre') return entry.values.nombre || '';
+    if (normalized === 'email' || normalized === 'correo') return entry.values.email || '';
+    return '';
+  });
+}
+
+function commercialSheetRowKey(values: string[]): string {
+  return values.map(value => normalizeLookupValue(value)).join('|');
+}
+
+function commercialRowToForm(values: string[], columns: string[]): CommercialEntryForm {
+  const form = createCommercialForm();
+  columns.forEach((column, index) => {
+    const value = values[index] ?? '';
+    const normalized = normalizeLookupValue(column);
+    if (normalized === 'fecha' || normalized === 'fechagestion') form.fecha = value;
+    else if (normalized === 'turno') form.turno = value || 'Mañana';
+    else if (normalized === 'enmano') form.enMano = value;
+    else if (normalized === 'casasedificios') form.casasEdificios = value;
+    else if (normalized === 'autos') form.autos = value;
+    else if (normalized === 'comerciosentidades') form.comerciosEntidades = value;
+    else if (normalized === 'bancoscajeros') form.bancosCajeros = value;
+    else if (normalized === 'apellidoynombre' || normalized === 'nombre') form.nombre = value;
+    else if (normalized === 'email' || normalized === 'correo') form.email = value;
+  });
+  return form;
+}
+
+function commercialColumnClass(column: string, columnIndex: number): string {
+  const normalized = normalizeLookupValue(column);
+  const numericColumns = new Set([
+    'fecha', 'fechagestion', 'enmano', 'casasedificios', 'autos',
+    'comerciosentidades', 'bancoscajeros', 'totaldelturno', 'totalturno',
+    'totaldia', 'score',
+  ]);
+  return [
+    columnIndex === 0 ? 'daily-sheet-primary-cell' : '',
+    numericColumns.has(normalized) ? 'daily-sheet-number-cell' : 'daily-sheet-text-cell',
+    normalized === 'score' ? 'daily-score-cell' : '',
+  ].filter(Boolean).join(' ');
+}
+
+function buildIncomeRows(data: SheetTableData): IncomeSheetRow[] {
+  const headerIndex = new Map(data.columns.map((column, index) => [normalizeLookupValue(column), index]));
+  const indexOf = (...labels: string[]) => labels.map(label => headerIndex.get(normalizeLookupValue(label))).find(index => index != null) ?? -1;
+  const indexes = {
+    fecha: indexOf('FECHA'),
+    tipoCliente: indexOf('TIPO DE CLIENTE', 'TIPO CLIENTE'),
+    nombre: indexOf('APELLIDO Y NOMBRE', 'NOMBRE'),
+    cuil: indexOf('CUIL'),
+    actividad: indexOf('ACTIVIDAD'),
+    estado: indexOf('ESTADO'),
+    score: indexOf('SCORE'),
+    tipoOperacion: indexOf('APERTURA/RENOVACION', 'AP/REN'),
+    montoOtorgado: indexOf('MONTO OTORGADO'),
+    interesVenta: indexOf('(I) X VENTA', 'I X VENTA'),
+    comentarios: indexOf('COMENTARIOS'),
+  };
+  const cell = (row: string[], index: number) => index >= 0 ? row[index] : '';
+  return data.rows
+    .map((row, index) => ({
+      id: `${index}-${cell(row, indexes.cuil)}-${cell(row, indexes.fecha)}`,
+      tipoCliente: cell(row, indexes.tipoCliente),
+      fecha: cell(row, indexes.fecha),
+      nombre: cell(row, indexes.nombre),
+      cuil: cell(row, indexes.cuil),
+      actividad: cell(row, indexes.actividad),
+      estado: cell(row, indexes.estado),
+      score: cell(row, indexes.score),
+      tipoOperacion: cell(row, indexes.tipoOperacion),
+      montoOtorgado: cell(row, indexes.montoOtorgado),
+      interesVenta: cell(row, indexes.interesVenta),
+      comentarios: cell(row, indexes.comentarios),
+    }))
+    .sort((left, right) => right.fecha.localeCompare(left.fecha));
+}
+
+function databaseRowToIncomeRow(row: GestionDiaria): IncomeSheetRow {
+  return {
+    id: `database-${row.id}`,
+    databaseId: row.id,
+    tipoCliente: row.tipo_cliente,
+    fecha: row.fecha ?? '',
+    nombre: row.nombre,
+    cuil: row.cuil,
+    actividad: row.actividad,
+    estado: row.estado,
+    score: row.score == null ? '' : String(row.score),
+    tipoOperacion: row.tipo_operacion,
+    montoOtorgado: row.monto_otorgado ? formatCurrency(row.monto_otorgado) : '',
+    interesVenta: row.interes_x_venta == null ? '' : formatCurrency(row.interes_x_venta),
+    comentarios: row.comentarios,
+  };
+}
+
+function incomeRowIdentity(row: IncomeSheetRow): string {
+  return [row.cuil, row.fecha, row.nombre].map(normalizeLookupValue).join('|');
+}
+
+function sheetChangesStorageKey(analyst: string): string {
+  return `gestion-diaria-sheet-changes:${analyst}`;
+}
+
+function DailyScore({ value }: { value: string }) {
+  const normalized = value.replace(/[^\d,-]/g, '').replace(',', '.');
+  if (!normalized) return <span className="daily-numeric daily-numeric--empty">—</span>;
+
+  const score = Number(normalized);
+  if (!Number.isFinite(score)) return <span className="daily-numeric">{value}</span>;
+
+  const tone = score > 700 ? 'alta' : score >= 550 ? 'media' : 'baja';
+  return (
+    <span className="daily-score">
+      <span className={`daily-score-dot is-${tone}`} aria-hidden="true" />
+      <strong>{value}</strong>
+    </span>
+  );
+}
+
+function readPersistedSheetChanges(analyst: string): PersistedSheetChanges {
+  if (typeof window === 'undefined' || !analyst) return { overrides: {}, deletedIds: [] };
+  try {
+    const stored = window.localStorage.getItem(sheetChangesStorageKey(analyst));
+    return stored ? JSON.parse(stored) as PersistedSheetChanges : { overrides: {}, deletedIds: [] };
+  } catch {
+    return { overrides: {}, deletedIds: [] };
+  }
+}
+
+function incomeRowToForm(row: IncomeSheetRow): Partial<GestionDiaria> {
+  const numberFromText = (value: string) => {
+    const parsed = Number(value.replace(/[^\d,-]/g, '').replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+  return {
+    tipo_cliente: row.tipoCliente,
+    fecha: row.fecha,
+    nombre: row.nombre,
+    cuil: row.cuil,
+    actividad: row.actividad,
+    donde_nos_conocio: '',
+    estado: row.estado,
+    score: numberFromText(row.score),
+    tipo_operacion: row.tipoOperacion,
+    monto_otorgado: numberFromText(row.montoOtorgado),
+    interes_x_venta: numberFromText(row.interesVenta),
+    comentarios: row.comentarios,
+  };
+}
+
+function sheetCellText(cell: GoogleSheetCell | null | undefined): string {
+  if (!cell) return '';
+  if (cell.v == null) return '';
+  const raw = String(cell.v);
+  const date = raw.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})\)$/);
+  if (date) return `${date[1]}-${String(Number(date[2]) + 1).padStart(2, '0')}-${date[3].padStart(2, '0')}`;
+  if (cell.f != null) return cell.f;
+  return raw;
+}
+
+function loadGoogleSheet(sheetId: string, gid: string): Promise<SheetTableData> {
+  return new Promise((resolve, reject) => {
+    const callbackName = `__gestionSheet_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement('script');
+    const timeout = window.setTimeout(() => finish(new Error('La hoja tardó demasiado en responder.')), 15000);
+    const callbacks = window as unknown as Record<string, unknown>;
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      script.remove();
+      delete callbacks[callbackName];
+    }
+
+    function finish(error?: Error, data?: SheetTableData) {
+      cleanup();
+      if (error) reject(error);
+      else if (data) resolve(data);
+    }
+
+    callbacks[callbackName] = (response: GoogleSheetResponse) => {
+      if (response.status === 'error' || !response.table) {
+        const message = response.errors?.[0]?.detailed_message || response.errors?.[0]?.message || 'No se pudo leer la hoja.';
+        finish(new Error(message));
+        return;
+      }
+      const sourceRows = response.table.rows ?? [];
+      const columnCount = Math.max(response.table.cols?.length ?? 0, ...sourceRows.map(row => row.c?.length ?? 0), 0);
+      const columns = Array.from({ length: columnCount }, (_, index) => (
+        response.table?.cols?.[index]?.label?.trim() || `Columna ${index + 1}`
+      ));
+      const rows = sourceRows
+        .map(row => Array.from({ length: columnCount }, (_, index) => sheetCellText(row.c?.[index])))
+        .filter(row => row.some(Boolean));
+      finish(undefined, { columns, rows });
+    };
+
+    script.onerror = () => finish(new Error('No se pudo conectar con Google Sheets.'));
+    script.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&tqx=out:json;responseHandler:${callbackName}`;
+    document.head.appendChild(script);
+  });
+}
+
+const initialForm: Partial<GestionDiaria> = {
+  tipo_cliente: '', fecha: '', nombre: '', cuil: '', actividad: '',
+  donde_nos_conocio: '', estado: '', score: undefined, tipo_operacion: '',
+  monto_otorgado: undefined, capital_x_venta: undefined, interes_x_venta: undefined,
+  comentarios: '',
+};
+
+export default function GestionDiariaClient({ analistaInicial }: { analistaInicial: string }) {
+  const { registros, applyChange, pushChange } = useGestionDiaria();
+  const { nombres: analistaNombres } = useAnalistas();
+  const [analista, setAnalista] = useState(analistaInicial);
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [tipoCliente, setTipoCliente] = useState('');
+  const [busqueda, setBusqueda] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState<Partial<GestionDiaria>>(initialForm);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<GestionTab>('ingresos');
+  const selectedAnalista = analista || analistaNombres[0] || '';
+  const [incomeRows, setIncomeRows] = useState<IncomeSheetRow[]>([]);
+  const [incomeLoading, setIncomeLoading] = useState(true);
+  const [incomeError, setIncomeError] = useState('');
+  const [sheetOverrides, setSheetOverrides] = useState<Record<string, IncomeSheetRow>>(() => readPersistedSheetChanges(analistaInicial).overrides);
+  const [deletedSheetIds, setDeletedSheetIds] = useState<string[]>(() => readPersistedSheetChanges(analistaInicial).deletedIds);
+  const [editingSheetTarget, setEditingSheetTarget] = useState<IncomeSheetRow | null>(null);
+  const [commentsTarget, setCommentsTarget] = useState<IncomeSheetRow | null>(null);
+  const [commentsDraft, setCommentsDraft] = useState('');
+  const [commentsSaving, setCommentsSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<IncomeSheetRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    const sheetId = SHEETS[selectedAnalista as SheetAnalyst];
+    if (!sheetId) return () => { active = false; };
+    loadGoogleSheet(sheetId, SHEET_TABS.ingresos.gid)
+      .then(data => { if (active) setIncomeRows(buildIncomeRows(data)); })
+      .catch(reason => {
+        if (!active) return;
+        setIncomeRows([]);
+        setIncomeError(reason instanceof Error ? reason.message : 'No se pudo cargar la hoja.');
+      })
+      .finally(() => { if (active) setIncomeLoading(false); });
+    return () => { active = false; };
+  }, [selectedAnalista]);
+
+  const persistSheetChanges = (overrides: Record<string, IncomeSheetRow>, deletedIds: string[]) => {
+    window.localStorage.setItem(sheetChangesStorageKey(selectedAnalista), JSON.stringify({ overrides, deletedIds } satisfies PersistedSheetChanges));
+  };
+
+  const visibleIncomeRows = useMemo(() => {
+    const effectiveSheetRows = incomeRows
+      .filter(row => !deletedSheetIds.includes(row.id))
+      .map(row => sheetOverrides[row.id] ?? row);
+    const sheetIdentities = new Set(effectiveSheetRows.map(incomeRowIdentity));
+    const analystRows = registros.filter(row => row.analista === selectedAnalista);
+    const createdAtCounts = new Map<string, number>();
+
+    analystRows.forEach(row => {
+      if (!row.created_at) return;
+      createdAtCounts.set(row.created_at, (createdAtCounts.get(row.created_at) ?? 0) + 1);
+    });
+
+    const applicationRows = analystRows
+      .filter(row => !row.created_at || (createdAtCounts.get(row.created_at) ?? 0) < 10)
+      .map(databaseRowToIncomeRow)
+      .filter(row => !sheetIdentities.has(incomeRowIdentity(row)));
+
+    return [...applicationRows, ...effectiveSheetRows].sort((left, right) => right.fecha.localeCompare(left.fecha));
+  }, [deletedSheetIds, incomeRows, registros, selectedAnalista, sheetOverrides]);
+
+  const filtrados = useMemo(() => {
+    return visibleIncomeRows.filter(r => {
+      if (fechaDesde && (!r.fecha || r.fecha < fechaDesde)) return false;
+      if (fechaHasta && (!r.fecha || r.fecha > fechaHasta)) return false;
+      if (tipoCliente && r.tipoCliente !== tipoCliente) return false;
+      if (busqueda) {
+        const q = busqueda.toLowerCase();
+        if (!r.nombre.toLowerCase().includes(q) && !r.cuil.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [visibleIncomeRows, fechaDesde, fechaHasta, tipoCliente, busqueda]);
+
+  const tipoClienteOptions = useMemo(() => Array.from(new Set([
+    ...GESTION_DIARIA_OPCIONES.tipoCliente,
+    ...visibleIncomeRows.map(row => row.tipoCliente).filter(Boolean),
+  ])).sort((left, right) => left.localeCompare(right, 'es')), [visibleIncomeRows]);
+
+  const cambiarAnalista = (value: string) => {
+    const persisted = readPersistedSheetChanges(value);
+    setIncomeRows([]);
+    setIncomeError('');
+    setIncomeLoading(true);
+    setSheetOverrides(persisted.overrides);
+    setDeletedSheetIds(persisted.deletedIds);
+    setAnalista(value);
+  };
+
+  const abrirNuevo = () => {
+    setActionError('');
+    setEditingSheetTarget(null);
+    setForm({ ...initialForm, fecha: new Date().toISOString().slice(0, 10) });
+    setModalOpen(true);
+  };
+
+  const findDatabaseRow = (row: IncomeSheetRow) => (
+    row.databaseId ? registros.find(registro => registro.id === row.databaseId) ?? null : null
+  );
+
+  const abrirEdicion = (row: IncomeSheetRow) => {
+    const registro = findDatabaseRow(row);
+    setActionError('');
+    setEditingSheetTarget(registro ? null : row);
+    setForm(registro ? { ...registro } : incomeRowToForm(row));
+    setModalOpen(true);
+  };
+
+  const abrirComentarios = (row: IncomeSheetRow) => {
+    const registro = findDatabaseRow(row);
+    setActionError('');
+    setCommentsTarget(row);
+    setCommentsDraft(registro?.comentarios ?? row.comentarios);
+  };
+
+  const abrirEliminar = (row: IncomeSheetRow) => {
+    setActionError('');
+    setDeleteTarget(row);
+  };
+
+  const guardar = async () => {
+    const faltantes = [
+      !form.tipo_cliente && 'Tipo de cliente',
+      !form.fecha && 'Fecha',
+      !form.nombre?.trim() && 'Apellido y nombre',
+      !form.cuil?.trim() && 'CUIL',
+    ].filter(Boolean) as string[];
+    if (faltantes.length > 0) {
+      setActionError(`Completá los campos obligatorios: ${faltantes.join(', ')}.`);
+      return;
+    }
+    setActionError('');
+    setSaving(true);
+    if (editingSheetTarget) {
+      const updated: IncomeSheetRow = {
+        ...editingSheetTarget,
+        tipoCliente: form.tipo_cliente ?? '',
+        fecha: form.fecha ?? '',
+        nombre: form.nombre ?? '',
+        cuil: form.cuil ?? '',
+        actividad: form.actividad ?? '',
+        estado: form.estado ?? '',
+        score: form.score == null ? '' : String(form.score),
+        tipoOperacion: form.tipo_operacion ?? '',
+        montoOtorgado: form.monto_otorgado == null ? '' : formatCurrency(form.monto_otorgado),
+        interesVenta: form.interes_x_venta == null ? '' : formatCurrency(form.interes_x_venta),
+        comentarios: form.comentarios ?? '',
+      };
+      const overrides = { ...sheetOverrides, [editingSheetTarget.id]: updated };
+      setSheetOverrides(overrides);
+      persistSheetChanges(overrides, deletedSheetIds);
+      setEditingSheetTarget(null);
+      setSaving(false);
+      setModalOpen(false);
+      return;
+    }
+    const payload = { ...form, analista: selectedAnalista };
+    if (form.id) {
+      const { data, error } = await supabase.from('gestion_diaria').update(payload).eq('id', form.id).select().single();
+      setSaving(false);
+      if (error) { setActionError('No se pudo actualizar el registro.'); return; }
+      applyChange('UPDATE', data as GestionDiaria);
+      pushChange('UPDATE', data as GestionDiaria);
+    } else {
+      const insertPayload = { ...payload };
+      delete insertPayload.id;
+      const { data, error } = await supabase.from('gestion_diaria').insert(insertPayload).select().single();
+      setSaving(false);
+      if (error) { setActionError('No se pudo guardar el registro.'); return; }
+      applyChange('INSERT', data as GestionDiaria);
+      pushChange('INSERT', data as GestionDiaria);
+    }
+    setModalOpen(false);
+  };
+
+  const guardarComentarios = async () => {
+    if (!commentsTarget) return;
+    setActionError('');
+    setCommentsSaving(true);
+    if (!commentsTarget.databaseId) {
+      const updated = { ...commentsTarget, comentarios: commentsDraft };
+      const overrides = { ...sheetOverrides, [commentsTarget.id]: updated };
+      setSheetOverrides(overrides);
+      persistSheetChanges(overrides, deletedSheetIds);
+      setCommentsSaving(false);
+      setCommentsTarget(null);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('gestion_diaria')
+      .update({ comentarios: commentsDraft })
+      .eq('id', commentsTarget.databaseId)
+      .select()
+      .single();
+    setCommentsSaving(false);
+    if (error) { setActionError('No se pudieron guardar los comentarios.'); return; }
+    applyChange('UPDATE', data as GestionDiaria);
+    pushChange('UPDATE', data as GestionDiaria);
+    setCommentsTarget(null);
+  };
+
+  const eliminarRegistro = async () => {
+    if (!deleteTarget) return;
+    setActionError('');
+    setDeleting(true);
+    if (!deleteTarget.databaseId) {
+      const deletedIds = Array.from(new Set([...deletedSheetIds, deleteTarget.id]));
+      setDeletedSheetIds(deletedIds);
+      persistSheetChanges(sheetOverrides, deletedIds);
+      setDeleting(false);
+      setDeleteTarget(null);
+      return;
+    }
+    const registro = findDatabaseRow(deleteTarget);
+    if (!registro) { setDeleting(false); setActionError('No se encontró el registro.'); return; }
+    const { error } = await supabase.from('gestion_diaria').delete().eq('id', deleteTarget.databaseId);
+    setDeleting(false);
+    if (error) { setActionError('No se pudo eliminar el registro.'); return; }
+    applyChange('DELETE', registro);
+    pushChange('DELETE', registro);
+    setDeleteTarget(null);
+  };
+
+  return (
+    <div className="daily-management-page">
+      <section className="daily-management-card">
+      <div className="daily-management-header">
+        <div className="daily-management-title">
+          <span className="daily-management-title__icon"><ClipboardList size={18} /></span>
+          <div><h2>Gestión diaria</h2><p>Seguimiento operativo y rendimiento comercial</p></div>
+        </div>
+        <div className="daily-management-analyst">
+          <span>Analista</span>
+          <PremiumSelect value={selectedAnalista} onChange={cambiarAnalista} options={analistaNombres} placeholder="Analista" />
+        </div>
+      </div>
+
+      <div className="daily-tabs" role="tablist" aria-label="Secciones de gestión diaria">
+        <button type="button" role="tab" aria-selected={activeTab === 'ingresos'} className={`daily-tab ${activeTab === 'ingresos' ? 'is-active' : ''}`} onClick={() => setActiveTab('ingresos')}>
+          <TableProperties size={15} /> Ingreso diario ventas
+        </button>
+        <button type="button" role="tab" aria-selected={activeTab === 'flyers'} className={`daily-tab ${activeTab === 'flyers' ? 'is-active' : ''}`} onClick={() => setActiveTab('flyers')}>
+          <Megaphone size={15} /> Flyers
+        </button>
+        <button type="button" role="tab" aria-selected={activeTab === 'emails'} className={`daily-tab ${activeTab === 'emails' ? 'is-active' : ''}`} onClick={() => setActiveTab('emails')}>
+          <Mail size={15} /> Emails enviados
+        </button>
+      </div>
+
+      {activeTab === 'ingresos' ? <>
+      <div className="daily-toolbar">
+        <div className="daily-search">
+          <Search className="daily-search__icon" size={14} />
+          <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar cliente o CUIL..." className="form-input" />
+        </div>
+        <CorporateDatePicker value={fechaDesde} onChange={setFechaDesde} placeholder="Desde" compact />
+        <CorporateDatePicker value={fechaHasta} onChange={setFechaHasta} placeholder="Hasta" compact />
+        <div className="daily-type-filter">
+          <PremiumSelect value={tipoCliente} onChange={setTipoCliente} options={tipoClienteOptions} placeholder="Tipo de cliente" isSearchable />
+        </div>
+        <button onClick={abrirNuevo} className="btn-primary daily-add-button">
+          <Plus size={16} /> Agregar registro
+        </button>
+      </div>
+
+      {incomeLoading ? <p className="daily-sheet-state">Cargando registros desde Google Sheets...</p> : incomeError ? (
+        <div className="daily-sheet-state is-error"><strong>No pudimos cargar la hoja.</strong><span>{incomeError}</span></div>
+      ) : (
+        <div className="daily-table-wrap">
+          <table className="daily-table">
+            <thead>
+              <tr>
+                <th>Tipo cliente</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>CUIL</th>
+                <th>Actividad</th>
+                <th>Estado</th>
+                <th>Score</th>
+                <th>Comentarios</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtrados.map(r => (
+                <tr key={r.id}>
+                  <td>{r.tipoCliente}</td>
+                  <td className="daily-numeric">{r.fecha ? formatDate(r.fecha) : <span className="daily-date-missing">Sin fecha</span>}</td>
+                  <td className="daily-client-name">{r.nombre}</td>
+                  <td className="daily-numeric">{r.cuil}</td>
+                  <td>{r.actividad}</td>
+                  <td className="daily-state-name">{r.estado}</td>
+                  <td className="daily-score-cell"><DailyScore value={r.score} /></td>
+                  <td>{r.comentarios}</td>
+                  <td>
+                    <div className="daily-row-actions">
+                      <button type="button" onClick={() => abrirComentarios(r)} aria-label={`Comentarios de ${r.nombre}`} title="Comentarios"><MessageSquare size={15} /></button>
+                      <button type="button" onClick={() => abrirEdicion(r)} aria-label={`Editar ${r.nombre}`} title="Editar"><Pencil size={15} /></button>
+                      <button type="button" className="is-delete" onClick={() => abrirEliminar(r)} aria-label={`Eliminar ${r.nombre}`} title="Eliminar"><Trash2 size={15} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtrados.length === 0 && (
+            <p className="daily-empty-state">Sin registros para los filtros actuales.</p>
+          )}
+        </div>
+      )}
+      </> : (
+        <SheetTabTable key={`${selectedAnalista}-${activeTab}`} analyst={selectedAnalista} tab={activeTab} />
+      )}
+
+      {modalOpen && (
+        <GestionDiariaModal
+          form={form}
+          setForm={setForm}
+          onCancel={() => setModalOpen(false)}
+          onSave={guardar}
+          saving={saving}
+          error={actionError}
+        />
+      )}
+      {commentsTarget && (
+        <DailyCommentsModal
+          registro={commentsTarget}
+          value={commentsDraft}
+          onChange={setCommentsDraft}
+          onCancel={() => { setCommentsTarget(null); setActionError(''); }}
+          onSave={guardarComentarios}
+          saving={commentsSaving}
+          error={actionError}
+        />
+      )}
+      {deleteTarget && (
+        <DailyDeleteModal
+          label={deleteTarget.nombre}
+          onCancel={() => { setDeleteTarget(null); setActionError(''); }}
+          onConfirm={eliminarRegistro}
+          deleting={deleting}
+          error={actionError}
+        />
+      )}
+      </section>
+    </div>
+  );
+}
+
+function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<GestionTab, 'ingresos'> }) {
+  const [data, setData] = useState<SheetTableData | null>(null);
+  const [entries, setEntries] = useState<CommercialEntry[]>([]);
+  const [sheetOverrides, setSheetOverrides] = useState<Record<string, CommercialEntryForm>>({});
+  const [deletedSheetRows, setDeletedSheetRows] = useState<string[]>([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [query, setQuery] = useState('');
+  const [entryModalOpen, setEntryModalOpen] = useState(false);
+  const [entryForm, setEntryForm] = useState<CommercialEntryForm>(createCommercialForm);
+  const [entrySaving, setEntrySaving] = useState(false);
+  const [entryError, setEntryError] = useState('');
+  const [editingTarget, setEditingTarget] = useState<{ kind: 'entry'; id: string } | { kind: 'sheet'; key: string } | null>(null);
+  const [deleteRowTarget, setDeleteRowTarget] = useState<CommercialRow | null>(null);
+  const [rowDeleting, setRowDeleting] = useState(false);
+  const sheetId = SHEETS[analyst as SheetAnalyst];
+  const config = SHEET_TABS[tab];
+
+  useEffect(() => {
+    let active = true;
+    if (!sheetId) return () => { active = false; };
+    loadGoogleSheet(sheetId, config.gid)
+      .then(result => { if (active) setData(result); })
+      .catch(reason => { if (active) setError(reason instanceof Error ? reason.message : 'No se pudo cargar la hoja.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [analyst, config.gid, reloadKey, sheetId]);
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from('configuracion')
+      .select('valor_json')
+      .eq('clave', commercialEntriesKey(analyst, tab))
+      .maybeSingle()
+      .then(({ data: stored, error: storageError }) => {
+        if (!active) return;
+        const payload = stored?.valor_json as Partial<CommercialEntriesState> | null;
+        if (!storageError && Array.isArray(payload?.entries)) {
+          setEntries(payload.entries);
+          setSheetOverrides(payload.sheetOverrides && typeof payload.sheetOverrides === 'object' ? payload.sheetOverrides : {});
+          setDeletedSheetRows(Array.isArray(payload.deletedSheetRows) ? payload.deletedSheetRows : []);
+          window.localStorage.setItem(commercialEntriesLocalKey(analyst, tab), JSON.stringify({
+            entries: payload.entries,
+            sheetOverrides: payload.sheetOverrides ?? {},
+            deletedSheetRows: payload.deletedSheetRows ?? [],
+          }));
+          return;
+        }
+        const localState = readLocalCommercialEntries(analyst, tab);
+        setEntries(localState.entries);
+        setSheetOverrides(localState.sheetOverrides);
+        setDeletedSheetRows(localState.deletedSheetRows);
+      });
+    return () => { active = false; };
+  }, [analyst, tab]);
+
+  const reload = () => {
+    setLoading(true);
+    setError('');
+    setReloadKey(key => key + 1);
+  };
+
+  const visibleRows = useMemo(() => {
+    if (!data) return [] as CommercialRow[];
+    const sheetRowOccurrences = new Map<string, number>();
+    const rows: CommercialRow[] = [
+      ...entries.map(entry => ({ values: commercialEntryRow(entry, data.columns, tab), entryId: entry.id })),
+      ...data.rows.flatMap(values => {
+        const baseKey = commercialSheetRowKey(values);
+        const occurrence = sheetRowOccurrences.get(baseKey) ?? 0;
+        sheetRowOccurrences.set(baseKey, occurrence + 1);
+        const sheetKey = `${baseKey}::${occurrence}`;
+        if (deletedSheetRows.includes(sheetKey)) return [];
+        const override = sheetOverrides[sheetKey];
+        const displayedValues = override
+          ? commercialEntryRow({ id: sheetKey, createdAt: '', values: override }, data.columns, tab)
+          : values;
+        return [{ values: displayedValues, sheetKey }];
+      }),
+    ];
+    const normalized = query.trim().toLocaleLowerCase('es');
+    if (!normalized) return rows;
+    return rows.filter(row => row.values.some(cell => cell.toLocaleLowerCase('es').includes(normalized)));
+  }, [data, deletedSheetRows, entries, query, sheetOverrides, tab]);
+
+  const persistEntries = async (
+    nextEntries: CommercialEntry[],
+    nextOverrides = sheetOverrides,
+    nextDeletedSheetRows = deletedSheetRows,
+  ) => {
+    const payload: CommercialEntriesState = {
+      entries: nextEntries,
+      sheetOverrides: nextOverrides,
+      deletedSheetRows: nextDeletedSheetRows,
+    };
+    const { error: persistError } = await supabase
+      .from('configuracion')
+      .upsert({ clave: commercialEntriesKey(analyst, tab), valor_json: payload }, { onConflict: 'clave' });
+    if (persistError) throw new Error(persistError.message);
+    window.localStorage.setItem(commercialEntriesLocalKey(analyst, tab), JSON.stringify(payload));
+    setEntries(nextEntries);
+    setSheetOverrides(nextOverrides);
+    setDeletedSheetRows(nextDeletedSheetRows);
+  };
+
+  const saveEntry = async () => {
+    setEntryError('');
+    if (!entryForm.fecha) {
+      setEntryError('Ingresá una fecha.');
+      return;
+    }
+    if (tab === 'emails' && (!entryForm.nombre.trim() || !/^\S+@\S+\.\S+$/.test(entryForm.email.trim()))) {
+      setEntryError('Ingresá nombre y un email válido.');
+      return;
+    }
+    setEntrySaving(true);
+    try {
+      if (editingTarget?.kind === 'entry') {
+        await persistEntries(entries.map(entry => entry.id === editingTarget.id ? { ...entry, values: { ...entryForm } } : entry));
+      } else if (editingTarget?.kind === 'sheet') {
+        await persistEntries(entries, { ...sheetOverrides, [editingTarget.key]: { ...entryForm } });
+      } else {
+        const entry: CommercialEntry = {
+          id: window.crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+          values: { ...entryForm },
+        };
+        await persistEntries([entry, ...entries]);
+      }
+      setEntryModalOpen(false);
+      setEditingTarget(null);
+      setEntryForm(createCommercialForm());
+    } catch (reason) {
+      setEntryError(reason instanceof Error ? reason.message : 'No se pudo guardar el registro.');
+    } finally {
+      setEntrySaving(false);
+    }
+  };
+
+  const deleteEntry = async (entryId: string) => {
+    setEntryError('');
+    try {
+      await persistEntries(entries.filter(entry => entry.id !== entryId));
+    } catch (reason) {
+      setEntryError(reason instanceof Error ? reason.message : 'No se pudo eliminar el registro.');
+    }
+  };
+
+  const editRow = (row: CommercialRow) => {
+    if (!data) return;
+    setEntryForm(commercialRowToForm(row.values, data.columns));
+    setEditingTarget(row.entryId
+      ? { kind: 'entry', id: row.entryId }
+      : { kind: 'sheet', key: row.sheetKey! });
+    setEntryError('');
+    setEntryModalOpen(true);
+  };
+
+  const deleteRow = async () => {
+    if (!deleteRowTarget) return;
+    const row = deleteRowTarget;
+    setRowDeleting(true);
+    if (row.entryId) {
+      await deleteEntry(row.entryId);
+      setRowDeleting(false);
+      setDeleteRowTarget(null);
+      return;
+    }
+    if (!row.sheetKey) {
+      setRowDeleting(false);
+      return;
+    }
+    setEntryError('');
+    try {
+      const nextOverrides = { ...sheetOverrides };
+      delete nextOverrides[row.sheetKey];
+      await persistEntries(entries, nextOverrides, [...deletedSheetRows, row.sheetKey]);
+      setDeleteRowTarget(null);
+    } catch (reason) {
+      setEntryError(reason instanceof Error ? reason.message : 'No se pudo eliminar el registro.');
+    } finally {
+      setRowDeleting(false);
+    }
+  };
+
+  const deleteRowLabel = (row: CommercialRow) => {
+    if (!data) return 'la fila seleccionada';
+    const nameIndex = data.columns.findIndex(column => ['apellidoynombre', 'nombre'].includes(normalizeLookupValue(column)));
+    const dateIndex = data.columns.findIndex(column => ['fecha', 'fechagestion'].includes(normalizeLookupValue(column)));
+    const name = nameIndex >= 0 ? row.values[nameIndex] : '';
+    const date = dateIndex >= 0 ? row.values[dateIndex] : '';
+    return name || (date ? `${config.label.toLowerCase()} del ${date}` : 'la fila seleccionada');
+  };
+
+  if (!sheetId) return (
+    <div className="daily-sheet-state is-error" role="tabpanel">
+      <strong>Sheet no configurado</strong>
+      <span>Todavía no hay un Sheet configurado para {analyst || 'este analista'}.</span>
+    </div>
+  );
+
+  return (
+    <div className="daily-sheet-section" role="tabpanel">
+      <div className="daily-sheet-toolbar">
+        <div>
+          <strong>Listado de {config.label.toLowerCase()}</strong>
+          <span>{data ? `${visibleRows.length} visibles de ${data.rows.length}` : `Sincronizando datos de ${analyst}`}</span>
+        </div>
+        <div className="daily-sheet-actions">
+          <label className="daily-sheet-search">
+            <Search size={14} />
+            <input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Buscar en ${config.label.toLowerCase()}...`} />
+          </label>
+          <button type="button" className="daily-sheet-add" onClick={() => { setEditingTarget(null); setEntryForm(createCommercialForm()); setEntryError(''); setEntryModalOpen(true); }}>
+            <Plus size={14} /> Cargar {tab === 'flyers' ? 'flyers' : 'email'}
+          </button>
+          <button type="button" className="daily-sheet-refresh" onClick={reload} disabled={loading}>
+            <RefreshCw size={14} className={loading ? 'is-spinning' : ''} /> Actualizar
+          </button>
+        </div>
+      </div>
+
+      {loading && <div className="daily-sheet-state"><RefreshCw size={20} className="is-spinning" /><span>Cargando {config.label.toLowerCase()}...</span></div>}
+      {!loading && error && (
+        <div className="daily-sheet-state is-error">
+          <strong>No pudimos cargar esta pestaña.</strong>
+          <span>{error}</span>
+          <button type="button" onClick={reload}>Reintentar</button>
+        </div>
+      )}
+      {!loading && !error && data && (
+        <div className="daily-table-wrap daily-sheet-table-wrap">
+          <table className="daily-table daily-sheet-table">
+            <thead><tr>{data.columns.map((column, index) => <th key={`${column}-${index}`}>{column}</th>)}<th>Acciones</th></tr></thead>
+            <tbody>
+              {visibleRows.map((row, rowIndex) => (
+                <tr key={row.entryId ?? row.sheetKey ?? `sheet-${rowIndex}`}>
+                  {data.columns.map((column, columnIndex) => (
+                    <td className={commercialColumnClass(column, columnIndex)} key={columnIndex}>
+                      {normalizeLookupValue(column) === 'score'
+                        ? <DailyScore value={row.values[columnIndex]} />
+                        : <span>{row.values[columnIndex]}</span>}
+                    </td>
+                  ))}
+                  <td>
+                    <div className="daily-row-actions">
+                      <button type="button" onClick={() => editRow(row)} aria-label="Editar registro" title="Editar"><Pencil size={14} /></button>
+                      <button type="button" className="is-delete" onClick={() => { setEntryError(''); setDeleteRowTarget(row); }} aria-label="Eliminar registro" title="Eliminar"><Trash2 size={14} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {visibleRows.length === 0 && <div className="daily-sheet-state"><span>Sin resultados para la búsqueda actual.</span></div>}
+        </div>
+      )}
+      {entryError && !entryModalOpen && <div className="daily-action-error">{entryError}</div>}
+      {entryModalOpen && (
+        <CommercialEntryModal
+          tab={tab}
+          editing={editingTarget !== null}
+          form={entryForm}
+          setForm={setEntryForm}
+          onCancel={() => setEntryModalOpen(false)}
+          onSave={saveEntry}
+          saving={entrySaving}
+          error={entryError}
+        />
+      )}
+      {deleteRowTarget && (
+        <DailyDeleteModal
+          label={deleteRowLabel(deleteRowTarget)}
+          onCancel={() => { setDeleteRowTarget(null); setEntryError(''); }}
+          onConfirm={deleteRow}
+          deleting={rowDeleting}
+          error={entryError}
+        />
+      )}
+    </div>
+  );
+}
+
+function CommercialEntryModal({ tab, editing, form, setForm, onCancel, onSave, saving, error }: {
+  tab: Exclude<GestionTab, 'ingresos'>;
+  editing: boolean;
+  form: CommercialEntryForm;
+  setForm: React.Dispatch<React.SetStateAction<CommercialEntryForm>>;
+  onCancel: () => void;
+  onSave: () => void;
+  saving: boolean;
+  error: string;
+}) {
+  const set = (field: keyof CommercialEntryForm, value: string) => setForm(current => ({ ...current, [field]: value }));
+  const flyerFields: Array<{ field: keyof CommercialEntryForm; label: string }> = [
+    { field: 'enMano', label: 'En mano' },
+    { field: 'casasEdificios', label: 'Casas / edificios' },
+    { field: 'autos', label: 'Autos' },
+    { field: 'comerciosEntidades', label: 'Comercios / entidades' },
+    { field: 'bancosCajeros', label: 'Bancos / cajeros' },
+  ];
+  const total = flyerFields.reduce((sum, item) => sum + Number(form[item.field] || 0), 0);
+
+  return (
+    <ModalPortal>
+      <div className="modal-overlay" onClick={onCancel}>
+        <form className="modal-content daily-modal commercial-entry-modal" onSubmit={event => { event.preventDefault(); onSave(); }} onClick={event => event.stopPropagation()}>
+          <div className="modal-header daily-modal__header">
+            <div>
+              <h3>{editing ? `Editar ${tab === 'flyers' ? 'flyers' : 'email enviado'}` : (tab === 'flyers' ? 'Cargar flyers' : 'Registrar email enviado')}</h3>
+              <p>{editing ? 'Actualizá los datos del registro seleccionado.' : 'El registro queda guardado y aparece inmediatamente en el listado.'}</p>
+            </div>
+            <button type="button" className="btn-icon" onClick={onCancel} aria-label="Cerrar">×</button>
+          </div>
+          <div className="modal-body daily-modal__body">
+            <div className="daily-modal__grid">
+              <div>
+                <label className="form-label" htmlFor="commercial-date">Fecha *</label>
+                <input id="commercial-date" className="form-input" type="date" value={form.fecha} onChange={event => set('fecha', event.target.value)} required />
+              </div>
+              {tab === 'flyers' ? (
+                <>
+                  <div>
+                    <label className="form-label" htmlFor="commercial-shift">Turno *</label>
+                    <select id="commercial-shift" className="form-input" value={form.turno} onChange={event => set('turno', event.target.value)}>
+                      <option>Mañana</option>
+                      <option>Tarde</option>
+                    </select>
+                  </div>
+                  {flyerFields.map(item => (
+                    <div key={item.field}>
+                      <label className="form-label" htmlFor={`commercial-${item.field}`}>{item.label}</label>
+                      <input id={`commercial-${item.field}`} className="form-input" type="number" min="0" step="1" value={form[item.field]} onChange={event => set(item.field, event.target.value)} placeholder="0" />
+                    </div>
+                  ))}
+                  <div className="commercial-entry-total"><span>Total del turno</span><strong>{total}</strong></div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="form-label" htmlFor="commercial-name">Apellido y nombre *</label>
+                    <input id="commercial-name" className="form-input" value={form.nombre} onChange={event => set('nombre', event.target.value)} required />
+                  </div>
+                  <div>
+                    <label className="form-label" htmlFor="commercial-email">Email *</label>
+                    <input id="commercial-email" className="form-input" type="email" value={form.email} onChange={event => set('email', event.target.value)} required />
+                  </div>
+                </>
+              )}
+            </div>
+            {error && <div className="daily-action-error">{error}</div>}
+          </div>
+          <div className="modal-footer daily-modal__footer">
+            <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving}>Cancelar</button>
+            <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</button>
+          </div>
+        </form>
+      </div>
+    </ModalPortal>
+  );
+}
+
+function GestionDiariaModal({ form, setForm, onCancel, onSave, saving, error }: {
+  form: Partial<GestionDiaria>;
+  setForm: React.Dispatch<React.SetStateAction<Partial<GestionDiaria>>>;
+  onCancel: () => void;
+  onSave: () => void;
+  saving: boolean;
+  error: string;
+}) {
+  const set = <K extends keyof GestionDiaria>(field: K, value: GestionDiaria[K]) => setForm(prev => ({ ...prev, [field]: value }));
+  return (
+    <ModalPortal>
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-content daily-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header daily-modal__header">
+          <div><h3>{form.id || form.nombre ? 'Editar registro' : 'Agregar registro'}</h3><p>Completá la información de la gestión comercial</p></div>
+          <button type="button" className="btn-icon" onClick={onCancel} aria-label="Cerrar">×</button>
+        </div>
+        <div className="modal-body daily-modal__body">
+        <div className="daily-modal__grid">
+          <div>
+            <label className="form-label">Tipo de cliente *</label>
+            <PremiumSelect value={form.tipo_cliente || ''} onChange={v => set('tipo_cliente', v)} options={[...GESTION_DIARIA_OPCIONES.tipoCliente]} isSearchable />
+          </div>
+          <div>
+            <label className="form-label">Fecha *</label>
+            <CorporateDatePicker value={form.fecha || ''} onChange={v => set('fecha', v)} />
+          </div>
+          <div>
+            <label className="form-label">Apellido y nombre *</label>
+            <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', e.target.value)} />
+          </div>
+          <div>
+            <label className="form-label">CUIL *</label>
+            <input className="form-input" value={form.cuil || ''} onChange={e => set('cuil', sanitizarCuil(e.target.value))} />
+          </div>
+          <div>
+            <label className="form-label">Actividad</label>
+            <PremiumSelect value={form.actividad || ''} onChange={v => set('actividad', v)} options={[...GESTION_DIARIA_OPCIONES.actividad]} isSearchable />
+          </div>
+          <div>
+            <label className="form-label">Dónde nos conoció</label>
+            <PremiumSelect value={form.donde_nos_conocio || ''} onChange={v => set('donde_nos_conocio', v)} options={[...GESTION_DIARIA_OPCIONES.dondeNosConocio]} isSearchable />
+          </div>
+          <div>
+            <label className="form-label">Estado *</label>
+            <PremiumSelect value={form.estado || ''} onChange={v => set('estado', v)} options={[...GESTION_DIARIA_OPCIONES.estado]} />
+          </div>
+          <div>
+            <label className="form-label">Score</label>
+            <input type="number" className="form-input" value={form.score ?? ''} onChange={e => set('score', e.target.value ? Number(e.target.value) : null)} />
+          </div>
+          <div>
+            <label className="form-label">Apertura/Renovación</label>
+            <PremiumSelect value={form.tipo_operacion || ''} onChange={v => set('tipo_operacion', v)} options={[...GESTION_DIARIA_OPCIONES.tipoOperacion]} />
+          </div>
+          <div>
+            <label className="form-label">Capital x venta</label>
+            <input type="number" className="form-input" value={form.capital_x_venta ?? ''} onChange={e => set('capital_x_venta', e.target.value ? Number(e.target.value) : null)} />
+          </div>
+          <div>
+            <label className="form-label">Interés x venta</label>
+            <input type="number" className="form-input" value={form.interes_x_venta ?? ''} onChange={e => set('interes_x_venta', e.target.value ? Number(e.target.value) : null)} />
+          </div>
+          <div>
+            <label className="form-label">Monto otorgado</label>
+            <input type="number" className="form-input" value={form.monto_otorgado ?? ''} onChange={e => set('monto_otorgado', e.target.value ? Number(e.target.value) : 0)} />
+          </div>
+          <div className="daily-modal__full">
+            <label className="form-label">Comentarios</label>
+            <textarea className="form-input" value={form.comentarios || ''} onChange={e => set('comentarios', e.target.value)} rows={3} />
+          </div>
+        </div>
+        </div>
+        {error && <p className="daily-action-error" role="alert">{error}</p>}
+        <div className="modal-footer daily-modal__footer">
+          <button className="btn-secondary" onClick={onCancel}>Cancelar</button>
+          <button className="btn-primary" onClick={onSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+        </div>
+      </div>
+    </div>
+    </ModalPortal>
+  );
+}
+
+function DailyCommentsModal({ registro, value, onChange, onCancel, onSave, saving, error }: {
+  registro: IncomeSheetRow;
+  value: string;
+  onChange: (value: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
+  saving: boolean;
+  error: string;
+}) {
+  return (
+    <ModalPortal>
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-content daily-action-modal" onClick={event => event.stopPropagation()}>
+        <div className="modal-header daily-modal__header">
+          <div><h3>Comentarios</h3><p>{registro.nombre}</p></div>
+          <button type="button" className="btn-icon" onClick={onCancel} aria-label="Cerrar">×</button>
+        </div>
+        <div className="modal-body">
+          <label className="form-label" htmlFor="daily-comments">Seguimiento y observaciones</label>
+          <textarea id="daily-comments" className="form-input daily-comments-input" value={value} onChange={event => onChange(event.target.value)} rows={7} autoFocus placeholder="Sin comentarios..." />
+          {error && <p className="daily-action-error" role="alert">{error}</p>}
+        </div>
+        <div className="modal-footer daily-modal__footer">
+          <button type="button" className="btn-secondary" onClick={onCancel}>Cancelar</button>
+          <button type="button" className="btn-primary" onClick={onSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar comentarios'}</button>
+        </div>
+      </div>
+    </div>
+    </ModalPortal>
+  );
+}
+
+function DailyDeleteModal({ label, onCancel, onConfirm, deleting, error }: {
+  label: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+  deleting: boolean;
+  error: string;
+}) {
+  return (
+    <ModalPortal>
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-content daily-action-modal" onClick={event => event.stopPropagation()}>
+        <div className="modal-header daily-modal__header">
+          <div><h3>Eliminar registro</h3><p>Esta acción no se puede deshacer</p></div>
+          <button type="button" className="btn-icon" onClick={onCancel} aria-label="Cerrar">×</button>
+        </div>
+        <div className="modal-body daily-delete-copy">
+          <p>¿Querés eliminar el registro de <strong>{label}</strong>?</p>
+          {error && <p className="daily-action-error" role="alert">{error}</p>}
+        </div>
+        <div className="modal-footer daily-modal__footer">
+          <button type="button" className="btn-secondary" onClick={onCancel}>Cancelar</button>
+          <button type="button" className="btn-danger" onClick={onConfirm} disabled={deleting}>{deleting ? 'Eliminando...' : 'Eliminar'}</button>
+        </div>
+      </div>
+    </div>
+    </ModalPortal>
+  );
+}

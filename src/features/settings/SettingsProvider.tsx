@@ -26,6 +26,8 @@ interface SettingsCtx {
   permisosConfig: PermisoRol[];
   analistas: Analista[];
   feriados: Feriado[];
+  /** `false` hasta que termina el primer fetch. Distingue "cargando" de "cargado y vacío". */
+  settingsLoaded: boolean;
   diasTranscurridosAuto: number;
   diasHabilesMesAuto: number;
   mutateAlertasConfig: (mapper: (prev: AlertaConfig[]) => AlertaConfig[]) => void;
@@ -54,6 +56,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [permisosConfig, setPermisosConfig] = useState<PermisoRol[]>([]);
   const [analistas, setAnalistas] = useState<Analista[]>([]);
   const [feriados, setFeriados] = useState<Feriado[]>([]);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   const fetchSettings = useCallback(async () => {
     const [alertasR, diasR, permisosR, analistasR, feriadosData] = await Promise.all([
@@ -104,6 +107,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     else if (!permisosR.error) validateAndSet<PermisoRol>('permisos_roles', permisoRolSchema, permisosR.data, setPermisosConfig);
     if (analistasR.error && analistasR.error.code !== '42P01') reportError('refresh:analistas', analistasR.error);
     else if (!analistasR.error) validateAndSet<Analista>('analistas', analistaSchema, analistasR.data, setAnalistas);
+
+    // Marca el fin del primer fetch. Los consumidores que persisten configuración necesitan
+    // distinguir "todavía cargando" de "cargado y vacío": un array vacío es un estado real
+    // (tabla sin filas o error de lectura), no una invitación a guardar valores por defecto.
+    setSettingsLoaded(true);
   }, [reportError]);
 
   const fetchRef = useRef(fetchSettings);
@@ -243,7 +251,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
     if (updates.length > 0) {
       for (const u of updates) {
-        await supabase.from('dias_habiles_config').upsert(u, { onConflict: 'analista' });
+        // Sin chequear `error` el bucle seguía y además se aplicaba el cambio al contexto
+        // local, dejando en pantalla valores que nunca se persistieron.
+        const { error } = await supabase.from('dias_habiles_config').upsert(u, { onConflict: 'analista' });
+        if (error) throw error;
         applyDiasConfigChange('UPDATE', u);
       }
     }
@@ -281,11 +292,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<SettingsCtx>(() => ({
     alertasConfig, diasConfig, permisosConfig, analistas,
-    feriados, diasTranscurridosAuto, diasHabilesMesAuto,
+    feriados, settingsLoaded, diasTranscurridosAuto, diasHabilesMesAuto,
     mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange,
     saveFeriados, syncDiasTranscurridos,
     hasPermiso,
-  }), [alertasConfig, diasConfig, permisosConfig, analistas, feriados, diasTranscurridosAuto, diasHabilesMesAuto, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange, saveFeriados, syncDiasTranscurridos, hasPermiso]);
+  }), [alertasConfig, diasConfig, permisosConfig, analistas, feriados, settingsLoaded, diasTranscurridosAuto, diasHabilesMesAuto, mutateAlertasConfig, pushAlertasConfigChange, applyDiasConfigChange, applyPermisoConfigChange, applyAnalistaChange, saveFeriados, syncDiasTranscurridos, hasPermiso]);
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
