@@ -1193,6 +1193,9 @@ export default function BulkModifyTab({ mode }: { mode: 'corrector' | 'bulk' | '
 
   // Derivar datos de filtros directamente de registros (reactivo)
   const allAnalistas = useMemo(() => Array.from(new Set(registros.map(r => r.analista).filter(Boolean))).sort(), [registros]);
+  // Mismas opciones que en 19f881e (únicas y ordenadas), pero con Set en lugar del
+  // `arr.indexOf()` dentro de un filter, que era O(n²) sobre todos los registros.
+  const localidadesDisponibles = useMemo(() => Array.from(new Set(registros.map(r => r.localidad).filter(Boolean))).sort() as string[], [registros]);
   const allEmpleadoresList = useMemo(() => Array.from(new Set(registros.map(r => r.empleador?.trim()).filter(Boolean))).sort() as string[], [registros]);
   const allDependenciasList = useMemo(() => Array.from(new Set(registros.map(r => r.dependencia?.trim()).filter(Boolean))).sort() as string[], [registros]);
   const allEmpleadores = useMemo(() => Array.from(new Set(registros.map(r => r.empleador).filter(Boolean))).sort() as string[], [registros]);
@@ -3444,6 +3447,50 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                         <div className={[styles["uGridColumn1-1"]].join(' ')}>
                           <label className={styles.label}>Empleador</label>
                           <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} placeholder="Nombre del empleador" value={campos.empleador} onChange={e => setCampos(p => ({ ...p, empleador: e.target.value }))}  />
+                        </div>
+
+                        {/* Los cinco controles siguientes quedaron sin UI en la migración de estilos,
+                            aunque el writer nunca dejó de aplicar sus campos. Se restauran con la
+                            semántica exacta de 19f881e: '' = no modificar, SIN_ESPECIFICAR = borrar. */}
+                        <div>
+                          <label className={styles.label}>Rango Etario</label>
+                          <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={campos.rango_etario} onChange={e => setCampos(p => ({ ...p, rango_etario: e.target.value }))} >
+                            <option value="">— No modificar —</option>
+                            <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
+                            {RANGOS_ETARIOS.map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className={styles.label}>Sexo</label>
+                          <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={campos.sexo} onChange={e => setCampos(p => ({ ...p, sexo: e.target.value }))} >
+                            <option value="">— No modificar —</option>
+                            <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
+                            {SEXOS.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className={styles.label}>Localidad</label>
+                          <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={campos.localidad} onChange={e => setCampos(p => ({ ...p, localidad: e.target.value }))} >
+                            <option value="">— No modificar —</option>
+                            <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
+                            {localidadesDisponibles.map(l => <option key={l} value={l}>{l}</option>)}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className={styles.label}>Resumen Ejecutivo</label>
+                          <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={campos.es_re} onChange={e => setCampos(p => ({ ...p, es_re: e.target.value }))} >
+                            <option value="">— No modificar —</option>
+                            <option value="si">Sí</option>
+                            <option value="no">No</option>
+                          </select>
+                        </div>
+
+                        <div className={[styles["uGridColumn1-1"]].join(' ')}>
+                          <label className={styles.label}>Comentarios (agregar al final)</label>
+                          <textarea className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} placeholder="Texto a agregar..." value={campos.comentarios} onChange={e => setCampos(p => ({ ...p, comentarios: e.target.value }))} rows={2} style={{ resize: 'vertical' }} />
                         </div>
                     </div>
                  )}
