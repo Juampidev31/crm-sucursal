@@ -1185,6 +1185,13 @@ export default function BulkModifyTab({ mode }: { mode: 'corrector' | 'bulk' | '
   const [previewIds, setPreviewIds] = useState<Set<string>>(new Set());
   const [step, setStep] = useState<'filter' | 'confirm' | 'done'>('filter');
   const [updating, setUpdating] = useState(false);
+  // Un campo cuenta como modificacion cuando tiene valor, con la MISMA semantica que
+  // aplicarModificaciones: '' = no modificar, SIN_ESPECIFICAR = borrado explicito,
+  // es_re 'si'/'no' = valor explicito (incluido false). Se deriva de EMPTY_CAMPOS para
+  // que agregar un campo editable no vuelva a dejar el guard desincronizado.
+  const hayCamposAModificar = (Object.keys(EMPTY_CAMPOS) as (keyof CamposAModificar)[])
+    .some((k) => !!campos[k]);
+  const aplicarDisabled = updating || previewCount === 0 || !hayCamposAModificar;
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -3503,8 +3510,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
               </button>
               <button
                 onClick={handleUpdate}
-                disabled={updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)}
-                className={[styles["uBorderNone"], styles["uFontWeight900"], styles["uPadding16px-40px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#222' : '#34d399', color: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? '#555' : '#000', cursor: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'not-allowed' : 'pointer', boxShadow: (updating || previewCount === 0 || (!campos.acuerdo_precios && !campos.estado && !campos.analista && !campos.tipo_cliente && !campos.cuotas && !campos.empleador)) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)' }}
+                disabled={aplicarDisabled}
+                className={[styles["uBorderNone"], styles["uFontWeight900"], styles["uPadding16px-40px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (aplicarDisabled) ? '#222' : '#34d399', color: (aplicarDisabled) ? '#555' : '#000', cursor: (aplicarDisabled) ? 'not-allowed' : 'pointer', boxShadow: (aplicarDisabled) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)' }}
               >
                 {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 {updating ? 'APLICANDO...' : (campos.acuerdo_precios ? 'APLICAR CALIFICACIÓN' : 'APLICAR MODIFICACIONES')}

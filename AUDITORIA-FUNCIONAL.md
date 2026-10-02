@@ -2137,6 +2137,272 @@ ambigüedad en lugar de resolverla.
 
 No se abren más refactors por tamaño.
 
+---
+
+# ADENDA — Regresiones de migración detectadas por diff contra el último push
+
+Motivo: la auditoría comparó **comportamiento contra el código actual**, nunca **la UI actual
+contra la del último push**. Eso dejó pasar pérdidas de columnas y controles. Este barrido
+corrige ese punto ciego.
+
+## BUG-07 (CORREGIDO) — columna `Calif.` perdida en `/registros`
+
+| | Columnas |
+|---|---|
+| Push `19f881e` | `Cliente \| CUIL · Gestión · Fecha · Score · Monto · **Calif.** · **Tipo / Acuerdo** · Acciones` (8) |
+| Antes del fix | `Cliente \| CUIL · Gestión · Fecha · Score · Monto · Estado / Tipo · Acciones` (7) |
+
+La migración colapsó dos campos independientes en una celda:
+
+```js
+const estado = reg.tipo_cliente || (reg.estado ? capitalizado : '—');
+```
+
+Con `||`, el **estado desaparece** cuando hay `tipo_cliente`.
+
+**Impacto medido: 6096 de 7013 registros (86,9 %)** tienen ambos campos → en todos ellos el
+estado era invisible. La cabecera decía "Estado / Tipo" mostrando sólo el Tipo.
+
+### Corrección
+
+Se restauraron las dos columnas del push, reutilizando el idioma CSS actual
+(`.status-badge`, ya usado por Ajustes y Duplicados) en lugar de recrear estilos legacy.
+Se mantuvo el rótulo `Calif.` tal como estaba — restaurar, no redefinir producto.
+
+| Verificación | Resultado |
+|---|---|
+| Columnas | **8** |
+| Alineación header/body | **8 = 8** |
+| Fila ejemplo | Calif. `Derivado / Aprobado Cc` · Tipo/Acuerdo `Apertura` + `RIESGO MEDIO` |
+| Los 3 valores simultáneos | ✅ |
+| Desktop | ✅ |
+| 390 px | ✅ Calif. visible, Acciones accesible, scroll horizontal OK, sin overflow de página |
+| `tsc` / lint / `diff --check` | 0 · 8 (baseline) · limpio |
+| Writes | **0** |
+
+Commit: `9a65a2f` — `fix(registros): restaurar columna Calif y Tipo/Acuerdo`
+
+## Inventario del barrido
+
+### A. Regresiones reales
+
+| Ruta | Elemento perdido | Antes (`19f881e`) | Ahora | Impacto |
+|---|---|---|---|---|
+| `/registros` | columna `Calif.` | estado en columna propia | fusionado con `\|\|` | 86,9 % de registros sin estado visible — **CORREGIDO** |
+| `/ajustes` → Datos masivos | **5 controles de edición masiva** | 11 `fieldSection`: acuerdo_precios, analista, **comentarios**, cuotas, empleador, **es_re**, estado, **localidad**, **rango_etario**, **sexo**, tipo_cliente | sólo 6 controles | **ABIERTO** |
+
+**Detalle de la segunda.** El camino de escritura está **intacto** —`updates.*` sigue aplicando
+los 11 campos— pero sólo 6 tienen control de UI (`setCampos` cayó de 25 a 14 llamadas, todas
+entre las líneas 3397-3446). Sin control: `comentarios`, `es_re`, `localidad`, `rango_etario`,
+`sexo`. Es el mismo patrón que el alta de registros y el selector de page size: **la capacidad
+existe y es inalcanzable**.
+
+El caso de `comentarios` es el más visible: el viejo tenía
+`fieldSection('Comentarios (agregar al final)', <textarea placeholder="Texto a agregar..."/>)`,
+que permitía **anexar texto a los comentarios de un lote**. Hoy no hay forma de usarlo.
+
+### B. Falsos positivos — sólo diferencia visual o de nombre
+
+| Cadena | Veredicto |
+|---|---|
+| `RIESGO BAJO` / `RIESGO MEDIO` en mayúsculas | el valor se renderiza crudo y el `text-transform` lo hace en CSS |
+| `Ej: 3434538564 (10 dígitos)` | placeholder acortado a `Ej: 3434538564` |
+| `Recordatorio & Seguimiento` | renombrado a `RECORDATORIOS Y SEGUIMIENTOS` |
+| `Outfitpretación del Período` | **el nuevo lo arregla**: dice `Interpretación del Período`. La cadena vieja estaba corrompida por un find/replace del nombre de fuente (`Inter` → `Outfit`). Mejora, no regresión |
+
+### C. Features movidas
+
+| Elemento | Antes | Ahora |
+|---|---|---|
+| Campo de **hora** del recordatorio (`type="time"`) | `registros/page.tsx:1726` | `BitacoraModal.tsx:447` ✅ |
+| `Nota`, `Restablecer a 100%`, `Recordatorio creado` | `registros/page.tsx` | `BitacoraModal.tsx` ✅ |
+| `Agregar otro...` | `registros/page.tsx` | `PremiumSelect.tsx` ✅ |
+| `Final mes (K/Q)` | `analistas/page.tsx` | `ProyeccionCard.tsx` ✅ |
+| `Acuerdo de Precios`, `Resumen Ejecutivo` | `BulkModifyTab` | `ExportXlsxModal.tsx`, `ComparativaAnalistasTab` ✅ |
+
+### D. Verificados como presentes
+
+Zoom del modal de edición (`crm_modal_edit_zoom_level_v1`), modal de teléfono
+(`phoneOverlay` + validación "El teléfono es obligatorio"), cabeceras de Analistas, Duplicados,
+Cobranzas y el shell (RecordsSidebar / AccountActions): **sin pérdidas**.
+
+### E. Requieren decisión
+
+Ninguna más allá de si se restauran los 5 controles de edición masiva.
+
+**No se corrigió nada fuera de la columna `Calif.`**, conforme a la autorización.
+
+## BUG-08 (CORREGIDO) — 5 controles de edición masiva perdidos
+
+`src/app/ajustes/BulkModifyTab.tsx` · Ajustes → Reportes → **Calif. x SCORE** → *Otras
+Modificaciones Masivas (Avanzado)*
+
+### Controles restaurados
+
+| Campo | Antes | Después | Semántica (idéntica a `19f881e`) |
+|---|---|---|---|
+| `rango_etario` | sin control | `<select>` | `''` = no modificar · `SIN_ESPECIFICAR` = borrar · 6 rangos |
+| `sexo` | sin control | `<select>` | ídem · 3 opciones |
+| `localidad` | sin control | `<select>` | ídem · localidades únicas de `registros` |
+| `es_re` | sin control | `<select>` «Resumen Ejecutivo» | `''` = no modificar · `'si'` → `true` · `'no'` → `false` |
+| `comentarios` | sin control | `<textarea rows=2>` | `''` = no modificar |
+
+Se usó el idioma visual actual (`styles.label`, `form-select`/`form-input`,
+`uBackgroundSurface-sunken`), **no** el JSX legacy. No se tocó la lógica de escritura.
+
+`localidadesDisponibles` se calcula con `Set` en lugar del `arr.indexOf()` dentro de un `filter`
+del original — **misma lista** (únicas, ordenadas) sin el O(n²) sobre 7013 registros, siguiendo
+el patrón que el archivo ya usa para `allAnalistas` y `allEmpleadoresList`.
+
+### Paridad writer ↔ UI
+
+| | Antes | Después |
+|---|---|---|
+| `updates.*` (campos aplicables) | 11 | 11 |
+| `setCampos` (capacidades accesibles) | **6** | **11** |
+
+### Certificación del payload — write interceptado, 0 escrituras reales
+
+Seleccionando **sólo** los 5 restaurados + una calificación (el guard preexistente obliga):
+
+```json
+{
+  "acuerdo_precios": "Premium",
+  "comentarios": "nota de auditoria",
+  "es_re": true,
+  "localidad": "Aldea Brasilera",
+  "rango_etario": "46-55",
+  "sexo": "Femenino"
+}
+```
+
+- Los 5 campos llegan con su valor ✅
+- `es_re: 'si'` → boolean `true` ✅ (la conversión del writer se conserva)
+- Los 5 **no** seleccionados (`estado`, `analista`, `tipo_cliente`, `cuotas`, `empleador`)
+  están **ausentes** del payload → no sobrescriben ✅
+- 3 `PATCH registros` bloqueados, **ninguno alcanzó Supabase**
+
+### Dos discrepancias preexistentes detectadas, NO corregidas
+
+Ambas existen **igual** en `19f881e`, por lo que no son regresiones de la migración y
+corregirlas sería redefinir comportamiento:
+
+1. **La etiqueta «Comentarios (agregar al final)» no describe lo que hace.** El writer es
+   `updates.comentarios = campos.comentarios` — un **reemplazo**, no un anexado. La línea es
+   byte a byte idéntica a la del último push (`:2683`). No se inventó un append.
+2. **El guard del botón Aplicar sólo contempla 6 campos:**
+   ```js
+   disabled={… || (!campos.acuerdo_precios && !campos.estado && !campos.analista &&
+                   !campos.tipo_cliente && !campos.cuotas && !campos.empleador)}
+   ```
+   Seleccionar únicamente alguno de los 5 restaurados deja el botón deshabilitado. La condición
+   es idéntica en `19f881e`. → **corregido como BUG-09**, abajo.
+
+### Validación
+
+`tsc --noEmit` **exit 0** · lint del archivo **sin problemas** · `git diff --check` limpio ·
+Desktop ✅ · **390 px**: los 5 controles presentes, **0 fuera del viewport**, sin overflow ·
+**writes reales: 0**
+
+Commit: `12cc338` — `fix(ajustes): restaurar controles de edición masiva`
+
+## BUG-09 (CORREGIDO) — el guard de `Aplicar` sólo contemplaba 6 de 11 campos
+
+`src/app/ajustes/BulkModifyTab.tsx` · continuación directa de BUG-08.
+
+Restaurar los 5 controles no alcanzó: el botón **Aplicar** seguía evaluando únicamente los 6
+campos antiguos, así que seleccionar sólo `comentarios`, `es_re`, `localidad`, `rango_etario` o
+`sexo` lo dejaba **deshabilitado**. La restauración funcional estaba incompleta.
+
+### Causa raíz
+
+La condición de 6 campos estaba **duplicada 5 veces** en el mismo elemento — una en `disabled` y
+cuatro dentro del `style` inline (`background`, `color`, `cursor`, `boxShadow`). Esa duplicación
+es *por qué* se desincronizó: al agregarse campos al writer, nadie actualizó las 5 copias.
+
+### Fix
+
+Una sola derivación, tomada de `EMPTY_CAMPOS` para que agregar un campo editable no pueda volver
+a desincronizar el guard:
+
+```ts
+const hayCamposAModificar = (Object.keys(EMPTY_CAMPOS) as (keyof CamposAModificar)[])
+  .some((k) => !!campos[k]);
+const aplicarDisabled = updating || previewCount === 0 || !hayCamposAModificar;
+```
+
+Los 5 usos pasan a referenciar `aplicarDisabled`. **9 inserciones, 2 borrados**; no se tocó la
+lógica de escritura.
+
+### Semántica — idéntica a la del writer, no `Boolean()` ingenuo
+
+Los 11 campos de `CamposAModificar` son **`string`**, incluido `es_re` (`'' | 'si' | 'no'`). Por
+eso la verdad del string refleja exactamente lo que hace `handleUpdate`:
+
+| Valor UI | Writer | Guard |
+|---|---|---|
+| `''` | no modifica | no cuenta |
+| `SIN_ESPECIFICAR` | `null` (borrado explícito) | **cuenta** |
+| `es_re: 'no'` | `es_re = false` | **cuenta** |
+| `'   '` (sólo espacios) | aplica (truthy) | **cuenta** |
+
+No se usó `.trim()` justamente para no divergir del writer, que evalúa truthiness cruda.
+
+### Tests individuales en navegador — payload interceptado
+
+| Caso | Aplicar habilita | Vuelve a deshabilitar al limpiar | Payload | |
+|---|---|---|---|---|
+| sólo `comentarios` | ✅ | ✅ | `{"comentarios":"nota de auditoria"}` | **PASS** |
+| sólo `es_re` = Sí | ✅ | ✅ | `{"es_re":true}` | **PASS** |
+| sólo `es_re` = No | ✅ | ✅ | `{"es_re":false}` | **PASS** |
+| sólo `localidad` | ✅ | ✅ | `{"localidad":"Aldea Brasilera"}` | **PASS** |
+| sólo `rango_etario` | ✅ | ✅ | `{"rango_etario":"46-55"}` | **PASS** |
+| sólo `sexo` | ✅ | ✅ | `{"sexo":"Femenino"}` | **PASS** |
+
+Cada payload contiene **exactamente el campo elegido y ningún otro**. `es_re = No` produciendo
+`{"es_re":false}` es el caso crítico: un `false` explícito cuenta como modificación válida.
+
+Sin regresión en los 6 originales (`estado`, `analista`, `tipo_cliente`, `cuotas`, `empleador`,
+`acuerdo_precios`) ni en `SIN_ESPECIFICAR`. Guard base con los 11 campos vacíos: **deshabilitado**.
+
+### Writes reales: 0 — en qué se apoya la afirmación
+
+6 `PATCH /rest/v1/registros` interceptados (+1 probe), **0 salieron del navegador**. El
+interceptor devuelve una `Response` sintética **antes** de llamar a `origFetch`, así que la
+petición nunca se construye ni se despacha; el toast de éxito de la app proviene de ese 200
+sintético.
+
+Que el interceptor esté **en el mismo camino de código que usa supabase-js** se verificó
+empíricamente: el `GET /rest/v1/registros` de la propia búsqueda quedó registrado por el wrapper.
+Además el set de preview se redujo de 3840 a **5 registros** antes de cualquier clic en Aplicar,
+para minimizar el radio de impacto.
+
+**Limitación declarada:** no se obtuvo una relectura independiente contra la DB. El flujo no
+expone en su UI ningún filtro por `comentarios` ni por `localidad`, y el array de `registros` no
+resultó alcanzable por fiber en `/registros`. La afirmación de 0 writes se apoya en la
+construcción del interceptor más la prueba de camino, no en un `SELECT` de verificación.
+
+### BULK-COMENTARIOS — discrepancia funcional preexistente, requiere decisión
+
+**ABIERTA.** La UI dice «Comentarios (agregar al final)» pero el writer **reemplaza**
+(`updates.comentarios = campos.comentarios`). Idéntico en `19f881e`. No se decidió entre
+(A) cambiar la etiqueta a «Reemplazar comentarios» o (B) cambiar el writer para anexar —
+es una definición de producto, no un bug de migración.
+
+### Cambios paralelos ajenos — fuera de este commit
+
+El árbol de trabajo contiene trabajo de terceros en curso (menú de acciones: `MoreHorizontal`,
+estado `actionMenu`, posicionamiento, manejo de Escape y su CSS) en `src/app/registros/page.tsx`,
+`src/app/gestion-diaria/GestionDiariaClient.tsx` y `src/app/globals.css`. **No fueron tocados,
+ni stageados, ni reformateados, ni incluidos en ningún commit.** Se verificó que no afectan la
+columna `Calif.` ni `.records-calif-badge`.
+
+### Validación
+
+`tsc --noEmit` **exit 0** · lint del archivo **sin problemas** · diff confinado a
+`BulkModifyTab.tsx` · navegador: 6/6 casos PASS · **writes reales: 0**
+
+
 ## G. Network
 
 _Pendiente — Fase 13._
