@@ -1,178 +1,167 @@
-.liveStyle015 {
+.page {
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  padding-top: 32px;
+  gap: 16px;
+  padding-top: 0;
 }
 
-.liveStyle016 {
+.toolbar {
   background: var(--surface-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 24px;
-  padding: 24px 32px;
+  border-radius: 14px;
+  padding: 14px 20px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  box-shadow: var(--shadow-md);
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
 }
 
-.liveStyle017 {
+.toolbarTop {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 24px;
-}
-
-.liveStyle018 {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.liveStyle019 {
-  width: 48px;
-  height: 48px;
-  background: var(--surface-sunken);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-subtle);
-}
-
-.liveStyle020 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-strong);
-  letter-spacing: -1px;
-  margin: 0;
-}
-
-.liveStyle021 {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-top: 4px;
-}
-
-.liveStyle022 {
-  display: flex;
   gap: 16px;
-  align-items: center;
 }
 
-.liveStyle023 {
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.titleIcon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  color: var(--action-primary);
+  background: var(--brand-muted-soft);
+  border: 1px solid var(--control-border);
+  border-radius: 11px;
+}
+
+.pageTitle {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+}
+
+.pageSubtitle {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.toolbarActions {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  border-radius: 12px;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
 
-.liveStyle024 {
+.secondaryButton,
+.primaryButton {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 24px;
-  border-radius: 12px;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 9px;
   border: 1px solid var(--border-subtle);
-  background: var(--surface-sunken);
-  color: var(--text-strong);
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
+  transition: background .18s ease, border-color .18s ease;
 }
 
-.liveStyle025 {
+.secondaryButton {
+  color: var(--text-secondary);
+  background: var(--surface-card);
+}
+
+.secondaryButton:hover { color: var(--action-primary); background: var(--button-neutral-hover); border-color: var(--button-neutral-hover-border); }
+
+.primaryButton {
+  color: #fff;
+  background: var(--action-primary);
+  border-color: var(--action-primary);
+}
+
+.primaryButton:disabled { cursor: not-allowed; opacity: .65; }
+
+.toolbarDivider {
   height: 1px;
-  background: var(--surface-hover);
+  background: var(--border-subtle);
 }
 
-.liveStyle026 {
+.periodRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 30px;
+  gap: 16px;
 }
 
-.liveStyle027 {
+.periodGroup {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 14px;
 }
 
-.liveStyle028 {
-  font-size: 11px;
-  color: var(--text-secondary);
+.periodLabel {
+  color: var(--text-muted);
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: .55px;
 }
 
-.liveStyle029 {
+.periodControl {
   display: flex;
   align-items: center;
   background: var(--surface-sunken);
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 4px;
 }
 
-.liveStyle030 {
+.periodOptions {
   display: flex;
-  gap: 4px;
+  gap: 2px;
 }
 
-.liveStyle031 {
-  padding: 6px 14px;
-  border-radius: 8px;
+.periodButton {
+  min-height: 28px;
+  padding: 0 10px;
+  color: var(--text-muted);
+  background: transparent;
+  border-radius: 7px;
   border: none;
   font-family: var(--font-sans);
   font-size: 10px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-transform: uppercase;
 }
 
-.liveStyle032 {
+.periodButton:hover { color: var(--action-primary); background: var(--button-neutral-hover); border-color: var(--button-neutral-hover-border); }
+
+.periodButton.isSelected {
+  color: var(--action-primary);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-xs);
+}
+
+.periodDivider {
   width: 1px;
   height: 20px;
-  background: var(--surface-hover);
-  margin: 0 12px;
-}
-
-.liveStyle033 {
-  display: flex;
-  gap: 4px;
-}
-
-.liveStyle034 {
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: none;
-  font-family: var(--font-sans);
-  font-size: 10px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  text-transform: uppercase;
+  background: var(--border-subtle);
+  margin: 0 8px;
 }
 
 .liveStyle035 {

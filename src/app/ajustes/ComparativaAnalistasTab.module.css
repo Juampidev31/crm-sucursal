@@ -110,6 +110,8 @@
   text-transform: uppercase;
 }
 
+.sectionTitle > svg { color: var(--action-primary); }
+
 .metricsGrid,
 .chartsGrid,
 .distributionGrid {
@@ -175,11 +177,11 @@
 }
 
 .warningValue {
-  color: #d97706;
+  color: #805f32;
 }
 
 .successValue {
-  color: #059669;
+  color: #33705c;
 }
 
 .chartsGrid {
@@ -315,6 +317,11 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
+.performanceTable th + th,
+.performanceTable td + td {
+  border-left: 1px solid rgba(49, 91, 125, .06);
+}
+
 .performanceTable th {
   color: var(--text-muted);
   background: var(--surface-sunken);
@@ -395,27 +402,27 @@
 
 .totalRow {
   color: var(--text-strong);
-  background: #ecfdf5;
+  background: var(--brand-muted-soft);
   cursor: pointer;
   font-weight: 750;
 }
 
 .totalRow td {
   border-bottom: 0;
-  border-top: 2px solid #a7f3d0;
+  border-top: 1px solid var(--control-border);
 }
 
 .totalRow td:first-child {
-  background: #ecfdf5;
+  background: var(--brand-muted-soft);
 }
 
 .totalRow:hover,
 .totalRow:hover td:first-child {
-  background: #d1fae5;
+  background: #e7eef5;
 }
 
 .totalValue {
-  color: #047857;
+  color: var(--action-primary);
   font-weight: 700;
 }
 

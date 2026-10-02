@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL, parsePastedNumber } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, User, ArrowUpDown, List, Grid2X2, Rows3 } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, User, ArrowUpDown, List, Grid2X2, Rows3, MoreHorizontal } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
 import { useAuth } from '@/context/AuthContext';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
@@ -1392,6 +1392,7 @@ export default function RegistrosPage() {
   const [whatsappTarget, setWhatsappTarget] = useState<Registro | null>(null);
   const [comentariosTarget, setComentariosTarget] = useState<Registro | null>(null);
   const [bitacoraTarget, setBitacoraTarget] = useState<Registro | null>(null);
+  const [actionMenu, setActionMenu] = useState<{ registro: Registro; top: number; left: number } | null>(null);
   const [recordatorios, setRecordatorios] = useState<Recordatorio[]>([]);
 
   // Fetch recordatorios
@@ -1453,6 +1454,10 @@ export default function RegistrosPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (actionMenu) {
+          setActionMenu(null);
+          return;
+        }
         if (modalOpen) {
           return;
         }
@@ -1469,7 +1474,7 @@ export default function RegistrosPage() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hayFiltros, limpiarFiltros, filtersPanelOpen, modalOpen, showInlineFilters]);
+  }, [actionMenu, hayFiltros, limpiarFiltros, filtersPanelOpen, modalOpen, showInlineFilters]);
 
 
 
@@ -1727,6 +1732,23 @@ export default function RegistrosPage() {
     }
   }, [registros, applyRegistroChange, pushRegistroChange, showToast, refresh]);
 
+  const openActionMenu = useCallback((reg: Registro, event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 196;
+    const hasBitacora = canPerform('ver_bitacora', reg.analista);
+    const hasComentarios = canPerform('ver_comentarios', reg.analista) && !!reg.comentarios?.trim();
+    const hasDelete = canPerform('eliminar_registros', reg.analista);
+    const visibleActions = 2 + Number(hasBitacora) + Number(hasComentarios) + Number(hasDelete);
+    const menuHeight = visibleActions * 36 + 10 + (hasDelete ? 4 : 0);
+    const gap = 6;
+    const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+    const top = rect.bottom + menuHeight + gap <= window.innerHeight
+      ? rect.bottom + gap
+      : Math.max(8, rect.top - menuHeight - gap);
+
+    setActionMenu(prev => prev?.registro.id === reg.id ? null : { registro: reg, top, left });
+  }, [canPerform]);
+
   // Render de una fila de la tabla. Se reutiliza en la tabla principal y en el panel de fijados.
   const renderFila = useCallback((reg: Registro) => {
     const isVencidoOIngresoHoy = vencidoOIngresoHoyIds.has(reg.id);
@@ -1856,51 +1878,25 @@ export default function RegistrosPage() {
         {/* Acciones */}
         <td className="records-cell records-cell--actions">
           <div className="records-actions">
-            <div className="records-actions__group">
-              <button
-                onClick={() => handleToggleFijado(reg)}
-                className={`records-action-icon${reg.fijado ? ' is-active' : ''}`}
-                aria-label={reg.fijado ? 'Desfijar' : 'Fijar arriba'}
-              ><Pin size={16} fill={reg.fijado ? 'currentColor' : 'none'} /></button>
-              <button
-                onClick={() => handleWhatsApp(reg)}
-                className="records-action-icon"
-                aria-label={reg.telefono ? 'Abrir WhatsApp' : 'Agregar teléfono'}
-                title={reg.telefono ? 'Abrir WhatsApp' : 'Agregar teléfono'}
-              ><WhatsAppIcon size={16} /></button>
-              {canPerform('ver_bitacora', reg.analista) && (
-                <button
-                  onClick={() => setBitacoraTarget(reg)}
-                  className={`records-action-icon${isVencidoOIngresoHoy ? ' has-alert' : ''}`}
-                  aria-label="Recordatorio y seguimiento"
-                ><Bell size={16} /></button>
-              )}
-              {canPerform('ver_comentarios', reg.analista) && reg.comentarios && reg.comentarios.trim() !== '' && (
-                <button
-                  onClick={() => setComentariosTarget(reg)}
-                  className="records-action-icon"
-                  aria-label="Ver comentarios"
-                ><MessageSquare size={16} /></button>
-              )}
-            </div>
             {canPerform('editar_registros', reg.analista) && (
               <button
                 onClick={() => openEdit(reg)}
                 className="records-action-edit"
               ><Edit2 size={16} /><span>Editar</span></button>
             )}
-            {canPerform('eliminar_registros', reg.analista) && (
-              <button
-                onClick={() => setDeleteTarget(reg)}
-                className="records-action-delete"
-                aria-label="Eliminar"
-              ><Trash2 size={16} /></button>
-            )}
+            <button
+              type="button"
+              onClick={(event) => openActionMenu(reg, event)}
+              className={`records-action-more${actionMenu?.registro.id === reg.id ? ' is-active' : ''}`}
+              aria-label={`Más acciones para ${reg.nombre}`}
+              aria-haspopup="menu"
+              aria-expanded={actionMenu?.registro.id === reg.id}
+            ><MoreHorizontal size={18} /></button>
           </div>
         </td>
       </tr>
     );
-  }, [vencidoOIngresoHoyIds, proximoIds, canPerform, handleToggleFijado, handleWhatsApp, openEdit, showToast]);
+  }, [vencidoOIngresoHoyIds, proximoIds, canPerform, openEdit, openActionMenu, actionMenu, showToast]);
 
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
 
@@ -2430,6 +2426,89 @@ export default function RegistrosPage() {
           </div>
         )}
       </div>
+
+      {actionMenu && (
+        <ModalPortal>
+          <div className="records-action-menu-layer" onClick={() => setActionMenu(null)}>
+            <div
+              className="records-action-menu"
+              role="menu"
+              aria-label={`Acciones para ${actionMenu.registro.nombre}`}
+              style={{ top: actionMenu.top, left: actionMenu.left }}
+              onClick={event => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  const reg = actionMenu.registro;
+                  setActionMenu(null);
+                  void handleToggleFijado(reg);
+                }}
+              >
+                <Pin size={15} fill={actionMenu.registro.fijado ? 'currentColor' : 'none'} />
+                <span>{actionMenu.registro.fijado ? 'Desfijar registro' : 'Fijar arriba'}</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  const reg = actionMenu.registro;
+                  setActionMenu(null);
+                  handleWhatsApp(reg);
+                }}
+              >
+                <WhatsAppIcon size={15} />
+                <span>{actionMenu.registro.telefono ? 'Abrir WhatsApp' : 'Agregar teléfono'}</span>
+              </button>
+              {canPerform('ver_bitacora', actionMenu.registro.analista) && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={vencidoOIngresoHoyIds.has(actionMenu.registro.id) ? 'has-alert' : ''}
+                  onClick={() => {
+                    const reg = actionMenu.registro;
+                    setActionMenu(null);
+                    setBitacoraTarget(reg);
+                  }}
+                >
+                  <Bell size={15} />
+                  <span>Recordatorio y seguimiento</span>
+                </button>
+              )}
+              {canPerform('ver_comentarios', actionMenu.registro.analista) && actionMenu.registro.comentarios?.trim() && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    const reg = actionMenu.registro;
+                    setActionMenu(null);
+                    setComentariosTarget(reg);
+                  }}
+                >
+                  <MessageSquare size={15} />
+                  <span>Ver comentarios</span>
+                </button>
+              )}
+              {canPerform('eliminar_registros', actionMenu.registro.analista) && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="is-danger"
+                  onClick={() => {
+                    const reg = actionMenu.registro;
+                    setActionMenu(null);
+                    setDeleteTarget(reg);
+                  }}
+                >
+                  <Trash2 size={15} />
+                  <span>Eliminar registro</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </ModalPortal>
+      )}
 
       {/* Modals */}
       <RegistroModal

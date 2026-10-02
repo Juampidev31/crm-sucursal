@@ -5,7 +5,12 @@
 }
 
 .root {
-  gap: 24px;
+  gap: 16px;
+  padding: 20px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
 }
 
 .results {
@@ -16,12 +21,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.titleGroup { display: flex; align-items: center; gap: 14px; }
+
+.titleIcon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  color: var(--action-primary);
+  background: var(--brand-muted-soft);
+  border: 1px solid var(--control-border);
+  border-radius: 11px;
 }
 
 .title {
   margin: 0;
   color: var(--text-strong);
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 700;
 }
 
@@ -61,11 +83,19 @@
 }
 
 .pasteArea {
+  min-height: 280px;
+  max-height: 440px;
   padding: 12px 14px;
   font-family: var(--font-sans);
   font-size: 12px;
   line-height: 1.7;
   resize: vertical;
+}
+
+@media (max-width: 720px) {
+  .root { padding: 14px; }
+  .header { align-items: flex-start; }
+  .pasteArea { min-height: 220px; }
 }
 
 .helperText,

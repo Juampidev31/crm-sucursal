@@ -217,7 +217,7 @@
 .iconButton:hover {
   color: var(--action-primary);
   border-color: var(--control-border-focus);
-  background: var(--surface-hover);
+  background: var(--button-neutral-hover);
 }
 
 .showButton {
@@ -225,8 +225,9 @@
 }
 
 .deleteButton:hover {
-  color: #ef4444;
-  border-color: rgb(239 68 68 / 30%);
+  color: #b42318;
+  background: #fff0f1;
+  border-color: rgb(180 35 24 / 30%);
 }
 
 @media (max-width: 560px) {

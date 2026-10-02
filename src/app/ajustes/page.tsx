@@ -856,46 +856,47 @@ export default function AjustesPage() {
 
           {/* TAB: PERMISOS */}
           {activeTab === 'configuracion' && configSubTab === 'permisos' && isAdmin && (
-            <div className={["data-card", styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-              <div className={["data-card-header", styles["uMarginBottom24px"]].join(' ')}>
-                <h3 className={[styles["uFontSize18px"], styles["uFontWeight800"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Roles y Permisos</h3>
-                <p className={[styles["uFontSize13px"], styles["uColortext-primary"], styles["uMarginTop4px"]].join(' ')}>
-                  Habilitá o deshabilitá funciones específicas de forma general o para cada analista en tiempo real.
-                </p>
+            <div className={`data-card ${styles.rolesPage}`}>
+              <div className={styles.rolesHeader}>
+                <div className={styles.rolesHeaderIcon}><Shield size={20} /></div>
+                <div>
+                  <h3 className={styles.rolesTitle}>Roles y Permisos</h3>
+                  <p className={styles.rolesSubtitle}>
+                    Habilitá o deshabilitá funciones de forma general o para cada analista.
+                  </p>
+                </div>
               </div>
 
               {/* Selector de Ámbito: General vs. Analistas Individuales */}
-              <div className={[styles["uMarginBottom24px"]].join(' ')}>
-                <div className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uColortext-muted"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"], styles["uMarginBottom10px"]].join(' ')}>
-                  Seleccionar Ámbito de Configuración
+              <div className={styles.scopeSection}>
+                <div className={styles.scopeLabel}>
+                  Ámbito de configuración
                 </div>
-                <div className={[styles["uDisplayflex"], styles["uGap8px"], styles["uFlexWrapwrap"], styles["uAlignItemscenter"]].join(' ')}>
-                  <button className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap8px"], styles["uPadding8px-16px"], styles["uBorderRadius10px"], styles["uFontSize13px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s-ease"]].join(' ')}
+                <div className={styles.scopeList}>
+                  <button className={`${styles.scopeButton} ${permisoScope === 'general' ? styles.scopeButtonActive : ''}`}
                     type="button"
                     onClick={() => setPermisoScope('general')}
-                    style={{ background: permisoScope === 'general' ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: permisoScope === 'general' ? 'var(--action-primary)' : 'var(--text-muted)', border: `1px solid ${permisoScope === 'general' ? 'var(--control-border-focus)' : 'var(--border-subtle)'}`, boxShadow: permisoScope === 'general' ? 'var(--shadow-xs)' : 'none' }}
                   >
                     <Users size={15} />
                     <span>Rol General: Analista (Por Defecto)</span>
                   </button>
 
-                  <div className={[styles["uWidth1px"], styles["uHeight24px"], styles["uBackgroundrgba-255-255-255-0-08"], styles["uMargin0-4px"]].join(' ')} />
+                  <div className={styles.scopeDivider} />
 
                   {analistasDefault.map(analista => {
                     const isSelected = permisoScope === analista;
                     const customCount = LISTA_PERMISOS_ROLES.filter(p => !!getPermisoOverride(ctxPermisos, p.id, analista)).length;
 
                     return (
-                      <button className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap8px"], styles["uPadding8px-14px"], styles["uBorderRadius10px"], styles["uFontSize13px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s-ease"]].join(' ')}
+                      <button className={`${styles.scopeButton} ${isSelected ? styles.scopeButtonActive : ''}`}
                         key={analista}
                         type="button"
                         onClick={() => setPermisoScope(analista)}
-                        style={{ background: isSelected ? 'rgba(96, 125, 168, 0.12)' : 'var(--surface-card)', color: isSelected ? '#4f678c' : 'var(--text-muted)', border: `1px solid ${isSelected ? '#9aabc1' : 'var(--border-subtle)'}`, boxShadow: isSelected ? 'var(--shadow-xs)' : 'none' }}
                       >
                         <User size={14} />
                         <span>{analista}</span>
                         {customCount > 0 && (
-                          <span className={[styles["uFontSize10px"], styles["uFontWeight800"], styles["uPadding1px-6px"], styles["uBorderRadius8px"]].join(' ')} style={{ background: isSelected ? '#4f678c' : 'var(--brand-muted-soft)', color: isSelected ? '#fff' : 'var(--action-primary)', border: `1px solid ${isSelected ? '#4f678c' : 'var(--control-border)'}` }}>
+                          <span className={styles.scopeCount}>
                             {customCount} pers.
                           </span>
                         )}
@@ -913,16 +914,16 @@ export default function AjustesPage() {
                   : LISTA_PERMISOS_ROLES.filter(p => !!getPermisoOverride(ctxPermisos, p.id, permisoScope)).length;
 
                 return (
-                  <div className={[styles["uBackgroundsurface-sunken"], styles["uPadding24px"], styles["uBorderRadius14px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
+                  <div className={styles.permissionsPanel}>
                     <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uMarginBottom20px"], styles["uFlexWrapwrap"], styles["uGap12px"]].join(' ')}>
                       <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap10px"]].join(' ')}>
                         {isGeneral ? (
-                          <div className={[styles["uWidth36px"], styles["uHeight36px"], styles["uBorderRadius10px"], styles["uBackgroundrgba-0-212-255-0-1"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"]].join(' ')}>
-                            <Shield size={18} color="#315b7d" />
+                          <div className={styles.permissionsPanelIcon}>
+                            <Shield size={18} />
                           </div>
                         ) : (
-                          <div className={[styles["uWidth36px"], styles["uHeight36px"], styles["uBorderRadius10px"], styles["uBackgroundrgba-168-85-247-0-1"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"]].join(' ')}>
-                            <User size={18} color="#c084fc" />
+                          <div className={styles.permissionsPanelIcon}>
+                            <User size={18} />
                           </div>
                         )}
                         <div>
@@ -931,11 +932,11 @@ export default function AjustesPage() {
                               {isGeneral ? 'Rol General: Analista (Por Defecto)' : `Permisos Individuales: ${permisoScope}`}
                             </h4>
                             {isGeneral ? (
-                              <span className={[styles["uFontSize11px"], styles["uFontWeight700"], styles["uPadding2px-8px"], styles["uBorderRadius6px"], styles["uBackgroundrgba-0-212-255-0-1"], styles["uColor00d4ff"], styles["uBorder1px-solid-rgba-0-212-255-0-2"]].join(' ')}>
+                              <span className={styles.permissionBadge}>
                                 Base Global
                               </span>
                             ) : customCount > 0 ? (
-                              <span className={[styles["uFontSize11px"], styles["uFontWeight700"], styles["uPadding2px-8px"], styles["uBorderRadius6px"], styles["uBackgroundrgba-168-85-247-0-15"], styles["uColorc084fc"], styles["uBorder1px-solid-rgba-168-85-247-0-3"]].join(' ')}>
+                              <span className={styles.permissionBadge}>
                                 {customCount} personalizada(s)
                               </span>
                             ) : (
@@ -974,9 +975,8 @@ export default function AjustesPage() {
                         const isSaving = savingPermisos.has(`${targetRol}-${p.id}`) || savingPermisos.has(`${permisoScope}-${p.id}`);
 
                         return (
-                          <div className={[styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uJustifyContentspace-between"], styles["uPadding16px"], styles["uBorderRadius10px"], styles["uGap12px"], styles["uTransitionall-0-2s-ease"]].join(' ')}
+                          <div className={`${styles.permissionCard} ${isCustom ? styles.permissionCardCustom : ''}`}
                             key={p.id}
-                            style={{ background: isCustom ? 'rgba(96, 125, 168, 0.08)' : 'var(--surface-card)', border: `1px solid ${isCustom ? '#bdc9d8' : 'var(--border-subtle)'}` }}
                           >
                             <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemsflex-start"], styles["uGap12px"]].join(' ')}>
                               <div className={[styles["uFlex1"]].join(' ')}>
@@ -984,7 +984,7 @@ export default function AjustesPage() {
                                   <div className={[styles["uFontSize13-5px"], styles["uFontWeight700"], styles["uColortext-strong"]].join(' ')}>{p.label}</div>
                                   {!isGeneral && (
                                     isCustom ? (
-                                      <span className={[styles["uFontSize10px"], styles["uFontWeight800"], styles["uPadding2px-7px"], styles["uBorderRadius6px"], styles["uBackgroundrgba-168-85-247-0-18"], styles["uColorc084fc"], styles["uBorder1px-solid-rgba-168-85-247-0-35"], styles["uDisplayinline-flex"], styles["uAlignItemscenter"], styles["uGap4px"]].join(' ')}>
+                                      <span className={styles.permissionBadge}>
                                         Personalizado
                                       </span>
                                     ) : (
@@ -999,11 +999,10 @@ export default function AjustesPage() {
                                 </div>
                               </div>
 
-                              <button className={[styles["uPadding7px-14px"], styles["uBorderRadius20px"], styles["uFontSize11-5px"], styles["uFontWeight800"], styles["uTransitionall-0-2s"], styles["uMinWidth95px"], styles["uTextAligncenter"]].join(' ')}
+                              <button className={`${styles.permissionToggle} ${isActive ? styles.permissionToggleActive : styles.permissionToggleInactive}`}
                                 type="button"
                                 onClick={() => togglePermiso(targetRol, p.id, isActive)}
                                 disabled={isSaving}
-                                style={{ background: isActive ? 'var(--state-success-soft)' : 'var(--state-danger-soft)', border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.35)' : 'rgba(180, 35, 24, 0.28)'}`, color: isActive ? '#047857' : '#b42318', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.6 : 1 }}
                               >
                                 {isSaving ? '...' : isActive ? 'Activado' : 'Desactivado'}
                               </button>
@@ -1161,19 +1160,19 @@ export default function AjustesPage() {
             />
           )}
           {activeTab === 'datos-masivos' && datosSubTab === 'duplicados' && (
-            <div className={[styles["uWidth100"], styles["uMargin0-auto"], styles["uPadding20px-0-60px"]].join(' ')}>
-              <div className={[styles["uTextAligncenter"], styles["uMarginBottom40px"]].join(' ')}>
-                <div className={[styles["uWidth64px"], styles["uHeight64px"], styles["uBorderRadius50"], styles["uBackgroundrgba-0-212-255-0-111zoi"], styles["uColor00d4ff"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"], styles["uMargin0-auto-20px"]].join(' ')}>
-                  <Copy size={28} />
+            <div className={styles.duplicatesPage}>
+              <div className={styles.duplicatesHeader}>
+                <div className={styles.duplicatesHeaderIcon}>
+                  <Copy size={20} />
                 </div>
-                <h2 className={[styles["uFontSize28px"], styles["uFontWeight900"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Detección de Duplicados</h2>
-                <p className={[styles["uColortext-muted"], styles["uFontSize13px"], styles["uMarginTop8px"], styles["uFontWeight600"], styles["uLetterSpacing0-5px1llh9"], styles["uTextTransformuppercase"]].join(' ')}>
-                  {duplicados.length} Grupos Potenciales Encontrados
-                </p>
+                <div>
+                  <h2 className={styles.duplicatesTitle}>Detección de Duplicados</h2>
+                  <p className={styles.duplicatesSubtitle}>{duplicados.length} grupos potenciales encontrados</p>
+                </div>
               </div>
 
               {/* Minimalist Filters */}
-              <div className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uPadding24px"], styles["uMarginBottom32px"], styles["uBoxShadow0-8px-32px-rgba-0-0-0-0-1"]].join(' ')}>
+              <div className={styles.duplicatesFilters}>
                 <div className={[styles["uDisplaygrid"], styles["uGridTemplateColumnsrepeat-auto-fit-minmax-200px-1fr"], styles["uGap24px"]].join(' ')}>
                   <div>
                     <label className={[styles["uDisplayblock"], styles["uFontSize9px"], styles["uColortext-muted"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom12px"]].join(' ')}>Filtrar por Estados</label>
@@ -1208,10 +1207,10 @@ export default function AjustesPage() {
 
               {/* Duplicados List */}
               {duplicados.length === 0 ? (
-                 <div className={[styles["uTextAligncenter"], styles["uPadding60px-0"]].join(' ')}>
-                    <CheckCircle className={[styles["uColor34d399"], styles["uMargin0-auto-16px"], styles["uOpacity0-8"]].join(' ')} size={48} />
-                    <p className={[styles["uColor34d399"], styles["uFontSize14px"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing1px"]].join(' ')}>Pool Limpio</p>
-                    <p className={[styles["uColortext-muted"], styles["uFontSize12px"], styles["uMarginTop8px"]].join(' ')}>No se encontraron registros duplicados con estos filtros.</p>
+                 <div className={styles.duplicatesEmpty}>
+                    <CheckCircle size={34} />
+                    <p>Sin duplicados</p>
+                    <span>No se encontraron registros duplicados con estos filtros.</span>
                  </div>
               ) : (
                  <div className={[styles["uDisplaygrid"], styles["uGridTemplateColumnsrepeat-auto-fill-minmax-450px-1fr"], styles["uGap24px"]].join(' ')}>
@@ -1252,21 +1251,21 @@ export default function AjustesPage() {
               )}
 
               {/* Variantes de Empleador */}
-              <div className={[styles["uMarginTop80px"], styles["uTextAligncenter"], styles["uMarginBottom40px"]].join(' ')}>
-                <div className={[styles["uWidth64px"], styles["uHeight64px"], styles["uBorderRadius50"], styles["uBackgroundrgba-251-191-36-0-1"], styles["uColorfbbf24"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"], styles["uMargin0-auto-20px"]].join(' ')}>
-                  <Users size={28} />
+              <div className={styles.duplicatesSectionHeader}>
+                <div className={styles.duplicatesHeaderIcon}>
+                  <Users size={20} />
                 </div>
-                <h2 className={[styles["uFontSize28px"], styles["uFontWeight900"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Variantes de Empleador</h2>
-                <p className={[styles["uColortext-muted"], styles["uFontSize13px"], styles["uMarginTop8px"], styles["uFontWeight600"], styles["uLetterSpacing0-5px1llh9"], styles["uTextTransformuppercase"]].join(' ')}>
-                  {variantesEmpleador.length} Grupos con Discrepancias
-                </p>
+                <div>
+                  <h2 className={styles.duplicatesTitle}>Variantes de Empleador</h2>
+                  <p className={styles.duplicatesSubtitle}>{variantesEmpleador.length} grupos con discrepancias</p>
+                </div>
               </div>
 
               {variantesEmpleador.length === 0 ? (
-                 <div className={[styles["uTextAligncenter"], styles["uPadding60px-0"]].join(' ')}>
-                    <CheckCircle className={[styles["uColor34d399"], styles["uMargin0-auto-16px"], styles["uOpacity0-8"]].join(' ')} size={48} />
-                    <p className={[styles["uColor34d399"], styles["uFontSize14px"], styles["uFontWeight800"], styles["uTextTransformuppercase"], styles["uLetterSpacing1px"]].join(' ')}>Completamente Normalizado</p>
-                    <p className={[styles["uColortext-muted"], styles["uFontSize12px"], styles["uMarginTop8px"]].join(' ')}>No se encontraron empleadores con múltiples formas de escritura.</p>
+                 <div className={styles.duplicatesEmpty}>
+                    <CheckCircle size={34} />
+                    <p>Empleadores normalizados</p>
+                    <span>No se encontraron empleadores con múltiples formas de escritura.</span>
                  </div>
               ) : (
                  <div className={[styles["uDisplaygrid"], styles["uGridTemplateColumnsrepeat-auto-fill-minmax-400px-1fr"], styles["uGap16px"]].join(' ')}>

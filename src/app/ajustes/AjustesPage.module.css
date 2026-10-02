@@ -34,7 +34,7 @@
   cursor: pointer;
 }
 
-.sectionTab:hover { color: var(--action-primary); background: var(--surface-hover); }
+.sectionTab:hover { color: var(--action-primary); background: var(--button-neutral-hover); }
 .sectionTabActive { color: var(--text-strong); background: var(--surface-card); box-shadow: var(--shadow-xs); font-weight: 700; }
 
 .subTabBar {
@@ -61,8 +61,206 @@
   cursor: pointer;
 }
 
-.subTab:hover { color: var(--action-primary); background: var(--surface-hover); }
+.subTab:hover { color: var(--action-primary); background: var(--button-neutral-hover); }
 .subTabActive { color: var(--action-primary); border-bottom-color: var(--action-primary); }
+
+/* Roles y permisos comparte la misma cabecera y jerarquía que los reportes. */
+.rolesPage {
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.rolesHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.rolesHeaderIcon,
+.permissionsPanelIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--action-primary);
+  background: var(--brand-muted-soft);
+  border: 1px solid var(--control-border);
+}
+
+.rolesHeaderIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+}
+
+.rolesTitle {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+}
+
+.rolesSubtitle {
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.scopeSection { padding: 18px 20px; }
+
+.scopeLabel {
+  margin-bottom: 9px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .55px;
+  text-transform: uppercase;
+}
+
+.scopeList {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.scopeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  color: var(--text-muted);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scopeButton:hover { color: var(--action-primary); background: var(--button-neutral-hover); border-color: var(--button-neutral-hover-border); }
+
+.scopeButtonActive {
+  color: var(--action-primary);
+  background: var(--brand-muted-soft);
+  border-color: var(--control-border-focus);
+  box-shadow: var(--shadow-xs);
+}
+
+.scopeCount,
+.permissionBadge {
+  padding: 2px 7px;
+  color: var(--action-primary);
+  background: var(--brand-muted-soft);
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.scopeDivider { width: 1px; height: 24px; margin: 0 3px; background: var(--border-subtle); }
+
+.permissionsPanel {
+  margin: 0 20px 20px;
+  padding: 20px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+
+.permissionsPanelIcon { width: 36px; height: 36px; border-radius: 9px; }
+
+.permissionCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.permissionCardCustom { background: var(--brand-muted-soft); border-color: var(--control-border); }
+
+.permissionToggle {
+  min-width: 94px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+
+.permissionToggle:disabled { cursor: not-allowed; opacity: .6; }
+.permissionToggleActive { color: #33705c; background: #edf7f3; border: 1px solid #cce5db; }
+.permissionToggleInactive { color: #9b4f59; background: #fbf1f2; border: 1px solid #efd3d6; }
+
+/* Duplicados mantiene la misma estructura visual que el resto de Datos masivos. */
+.duplicatesPage { width: 100%; padding-bottom: 36px; }
+
+.duplicatesHeader,
+.duplicatesSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.duplicatesHeader { margin-bottom: 16px; }
+.duplicatesSectionHeader { margin: 28px 0 16px; }
+
+.duplicatesHeaderIcon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  color: var(--action-primary);
+  background: var(--brand-muted-soft);
+  border: 1px solid var(--control-border);
+  border-radius: 11px;
+}
+
+.duplicatesTitle { margin: 0; color: var(--text-strong); font-size: 21px; font-weight: 700; letter-spacing: -.3px; }
+.duplicatesSubtitle { margin: 3px 0 0; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+
+.duplicatesFilters {
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.duplicatesEmpty {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 44px 20px;
+  color: var(--action-primary);
+  background: var(--surface-card);
+  border: 1px dashed var(--control-border);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.duplicatesEmpty p { margin: 0; color: var(--text-strong); font-size: 14px; font-weight: 700; }
+.duplicatesEmpty span { color: var(--text-muted); font-size: 12px; }
 
 @media (max-width:640px) {
   .alertCard { min-width:0; padding:18px 14px; }
@@ -84,7 +282,6 @@
 .uDisplayinline-flex { display:inline-flex; }
 .uAlignItemscenter { align-items:center; }
 .uGap6px { gap:6px; }
-.uPadding6px-14px { padding:6px 14px; }
 .uBorderRadius6px { border-radius:6px; }
 .uFontSize12px { font-size:12px; }
 .uCursorpointer { cursor:pointer; }
@@ -108,9 +305,6 @@
 .uBackgroundtransparent { background:transparent; }
 .uPadding10px-16px { padding:10px 16px; }
 .uBordernone { border:none; }
-.uTransitionall-0-2s-cubic-bezier-0-4-0-0-2-1 { transition:all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-.uFlex1-0-160px { flex:1 0 160px; }
-.uMaxWidth200px { max-width:200px; }
 .uWhiteSpacenowrap { white-space:nowrap; }
 .uMinHeight400px { min-height:400px; }
 .uWidth100 { width:100%; }
@@ -145,29 +339,12 @@
 .uTextTransformuppercase { text-transform:uppercase; }
 .uLetterSpacing0-5px1llh9 { letter-spacing:0.5px; }
 .uMarginRight6px { margin-right:6px; }
-.uMarginBottom10px { margin-bottom:10px; }
-.uPadding8px-16px { padding:8px 16px; }
 .uBorderRadius10px { border-radius:10px; }
-.uTransitionall-0-2s-ease { transition:all 0.2s ease; }
-.uWidth1px { width:1px; }
-.uBackgroundrgba-255-255-255-0-08 { background:var(--border-subtle); }
-.uMargin0-4px { margin:0 4px; }
 .uPadding8px-14px { padding:8px 14px; }
 .uFontSize10px { font-size:10px; }
-.uPadding1px-6px { padding:1px 6px; }
 .uBorderRadius8px { border-radius:8px; }
-.uBorderRadius14px { border-radius:14px; }
-.uWidth36px { width:36px; }
-.uHeight36px { height:36px; }
-.uBackgroundrgba-0-212-255-0-1 { background:rgba(0, 212, 255, 0.1); }
-.uBackgroundrgba-168-85-247-0-1 { background:rgba(168, 85, 247, 0.1); }
 .uLetterSpacing0-3px { letter-spacing:-0.3px; }
 .uPadding2px-8px { padding:2px 8px; }
-.uColor00d4ff { color:#00d4ff; }
-.uBorder1px-solid-rgba-0-212-255-0-2 { border:1px solid rgba(0, 212, 255, 0.2); }
-.uBackgroundrgba-168-85-247-0-15 { background:rgba(168, 85, 247, 0.15); }
-.uColorc084fc { color:#c084fc; }
-.uBorder1px-solid-rgba-168-85-247-0-3 { border:1px solid rgba(168, 85, 247, 0.3); }
 .uMarginTop3px { margin-top:3px; }
 .uBackgroundrgba-248-113-113-0-08 { background:rgba(248, 113, 113, 0.08); }
 .uBorder1px-solid-rgba-248-113-113-0-25 { border:1px solid rgba(248, 113, 113, 0.25); }
@@ -182,12 +359,8 @@
 .uAlignItemsflex-start { align-items:flex-start; }
 .uFontSize13-5px { font-size:13.5px; }
 .uPadding2px-7px { padding:2px 7px; }
-.uBackgroundrgba-168-85-247-0-18 { background:rgba(168, 85, 247, 0.18); }
-.uBorder1px-solid-rgba-168-85-247-0-35 { border:1px solid rgba(168, 85, 247, 0.35); }
 .uLineHeight1-4 { line-height:1.4; }
-.uPadding7px-14px { padding:7px 14px; }
 .uBorderRadius20px { border-radius:20px; }
-.uMinWidth95px { min-width:95px; }
 .uJustifyContentflex-end { justify-content:flex-end; }
 .uPaddingTop4px { padding-top:4px; }
 .uBorderTop1px-solid-border-subtle { border-top:1px solid var(--border-subtle); }
@@ -208,19 +381,9 @@
 .uPadding8px-4px { padding:8px 4px; }
 .uWidth80px { width:80px; }
 .uBorderBottom1-5px-solid-rgba-255-255-255-0-15 { border-bottom:1.5px solid rgba(255,255,255,0.15); }
-.uMargin0-auto { margin:0 auto; }
-.uPadding20px-0-60px { padding:20px 0 60px; }
-.uMarginBottom40px { margin-bottom:40px; }
-.uWidth64px { width:64px; }
-.uHeight64px { height:64px; }
 .uBorderRadius50 { border-radius:50%; }
-.uBackgroundrgba-0-212-255-0-111zoi { background:rgba(0,212,255,0.1); }
-.uMargin0-auto-20px { margin:0 auto 20px; }
-.uFontSize28px { font-size:28px; }
 .uFontWeight900 { font-weight:700; }
-.uMarginTop8px { margin-top:8px; }
 .uBorderRadius16px { border-radius:16px; }
-.uBoxShadow0-8px-32px-rgba-0-0-0-0-1 { box-shadow:0 8px 32px rgba(0,0,0,0.1); }
 .uGridTemplateColumnsrepeat-auto-fit-minmax-200px-1fr { grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); }
 .uGap24px { gap:24px; }
 .uDisplayblock { display:block; }
@@ -230,9 +393,7 @@
 .uColorccc { color:var(--text-secondary); }
 .uPadding10px { padding:10px; }
 .uOutlinenone { outline:none; }
-.uPadding60px-0 { padding:60px 0; }
 .uColor34d399 { color:#34d399; }
-.uMargin0-auto-16px { margin:0 auto 16px; }
 .uGridTemplateColumnsrepeat-auto-fill-minmax-450px-1fr { grid-template-columns:repeat(auto-fill, minmax(450px, 1fr)); }
 .uBoxShadowshadow-md { box-shadow:var(--shadow-md); }
 .uMarginBottom4px { margin-bottom:4px; }
@@ -245,7 +406,6 @@
 .uFontWeight500 { font-weight:500; }
 .uTextAlignright { text-align:right; }
 .uFlexShrink0 { flex-shrink:0; }
-.uMarginTop80px { margin-top:80px; }
 .uBackgroundrgba-251-191-36-0-1 { background:rgba(251,191,36,0.1); }
 .uColorfbbf24 { color:#fbbf24; }
 .uGridTemplateColumnsrepeat-auto-fill-minmax-400px-1fr { grid-template-columns:repeat(auto-fill, minmax(400px, 1fr)); }

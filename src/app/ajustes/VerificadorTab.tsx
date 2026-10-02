@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
-import { CheckCircle2, AlertCircle, XCircle, RotateCcw, Trash2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, RotateCcw, Trash2, FileSearch } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
 import { supabase } from '@/lib/supabase';
 import {
@@ -85,11 +85,14 @@ export default function VerificadorTab() {
 
       {/* Header */}
       <div className={styles.header}>
-        <div>
-          <h3 className={styles.title}>Verificador de Excel</h3>
-          <p className={styles.subtitle}>
-            Pegá celdas copiadas de Excel y cruzalas contra los registros cargados.
-          </p>
+        <div className={styles.titleGroup}>
+          <div className={styles.titleIcon}><FileSearch size={20} /></div>
+          <div>
+            <h3 className={styles.title}>Verificador de Excel</h3>
+            <p className={styles.subtitle}>
+              Pegá celdas copiadas de Excel y cruzalas contra los registros cargados.
+            </p>
+          </div>
         </div>
         {(rows.length > 0 || results) && (
           <button onClick={handleReset} className={styles.resetButton}>

@@ -38,14 +38,14 @@ const labelsPlugin: any = {
       if (!meta || meta.hidden || meta.type !== 'bar') return;
 
       ctx.save();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#314158';
       ctx.font = `700 11px ${UI_FONT_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = isStacked ? 'middle' : 'bottom';
 
       // Shadow for readability
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 3;
+      ctx.shadowColor = 'rgba(255,255,255,0.9)';
+      ctx.shadowBlur = 2;
 
       // Detección de porcentaje: solo mediante flag explícito
       const isPct = chart.config.options?._isPct === true;
@@ -555,25 +555,15 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const sectionHeader = (id: number, title: string, icon: React.ReactNode, extra?: React.ReactNode) => {
     const isCollapsed = !!collapsedSections[id];
     return (
-      <div data-snapshot-fragment style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isCollapsed ? 0 : 16, paddingBottom: 10, borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)', gap: 12 }}>
+      <div data-snapshot-fragment style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isCollapsed ? 0 : 16, paddingBottom: isCollapsed ? 0 : 10, borderBottom: isCollapsed ? 'none' : '1px solid #dde5ee', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {icon}
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#aaa', textTransform: 'uppercase' as const, letterSpacing: '1px' }}>{title}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#314158', textTransform: 'uppercase' as const, letterSpacing: '0.65px' }}>{title}</span>
           {extra}
         </div>
         <button 
           onClick={() => toggleSection(id)}
-          style={{ background: isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isCollapsed ? '#555' : '#fff', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: isCollapsed ? 'none' : '0 0 15px rgba(255,255,255,0.05)' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)';
-            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-            e.currentTarget.style.color = isCollapsed ? '#555' : '#fff';
-          }}
+          style={{ background: isCollapsed ? '#ffffff' : '#edf3f8', border: '1px solid #d7e0e9', borderRadius: '8px', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#315b7d', transition: 'background 0.18s ease' }}
         >
           <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
         </button>
@@ -1488,43 +1478,31 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   };
 
   return (
-    <div className={styles.liveStyle015}>
+    <div className={styles.page}>
 
       {/* Toolbar Superior: Control de Reporte */}
-      <div className={styles.liveStyle016}>
+      <div className={styles.toolbar}>
         {/* Fila 1: Título y Acciones */}
-        <div className={styles.liveStyle017}>
-          <div className={styles.liveStyle018}>
-            <div className={styles.liveStyle019}>
-              <BarChart3 size={24} color="#fff" />
+        <div className={styles.toolbarTop}>
+          <div className={styles.titleGroup}>
+            <div className={styles.titleIcon}>
+              <BarChart3 size={20} />
             </div>
             <div>
-              <h1 className={styles.liveStyle020}>
+              <h1 className={styles.pageTitle}>
                 Resumen Mensual
               </h1>
-              <div className={styles.liveStyle021}>
-                Panel de Gestión Estratégica
+              <div className={styles.pageSubtitle}>
+                Panel de gestión estratégica
               </div>
             </div>
           </div>
 
-          <div className={styles.liveStyle022}>
+          <div className={styles.toolbarActions}>
             
             <button
               onClick={handleGenerarLink}
-              className={styles.liveStyle023}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              className={styles.secondaryButton}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
               Generar Link
@@ -1532,21 +1510,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             <button
               onClick={handleGuardar}
               disabled={saving}
-              className={styles.liveStyle024} style={{ opacity: saving ? 0.7 : 1 }}
-              onMouseEnter={(e) => {
-                if (!saving) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.5)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              className={styles.primaryButton}
             >
               <Save size={16} strokeWidth={2.5} />
               {saving ? 'Guardando...' : `Guardar Resumen`}
@@ -1555,51 +1519,27 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         </div>
 
         {/* Divisor interno */}
-        <div className={styles.liveStyle025} />
+        <div className={styles.toolbarDivider} />
 
         {/* Fila 2: Selectores de Período */}
-        <div className={styles.liveStyle026}>
-          <div className={styles.liveStyle027}>
-            <div className={styles.liveStyle028}>
-              Seleccionar Período:
+        <div className={styles.periodRow}>
+          <div className={styles.periodGroup}>
+            <div className={styles.periodLabel}>
+              Seleccionar período
             </div>
-            <div className={styles.liveStyle029}>
-              <div className={styles.liveStyle030}>
+            <div className={styles.periodControl}>
+              <div className={styles.periodOptions}>
                 {CONFIG.MESES_NOMBRES.map((nombre, i) => (
-                  <button key={i} onClick={() => setSelectedMes(i + 1)} className={styles.liveStyle031} style={{ background: selectedMes === i + 1 ? '#fff' : 'transparent', color: selectedMes === i + 1 ? '#000' : '#444', fontWeight: selectedMes === i + 1 ? 900 : 700 }}
-                  onMouseEnter={(e) => {
-                    if (selectedMes !== i + 1) {
-                      e.currentTarget.style.color = '#888';
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedMes !== i + 1) {
-                      e.currentTarget.style.color = '#444';
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
+                  <button key={i} onClick={() => setSelectedMes(i + 1)} className={`${styles.periodButton} ${selectedMes === i + 1 ? styles.isSelected : ''}`}
                   >{nombre.slice(0, 3)}</button>
                 ))}
               </div>
               
-              <div className={styles.liveStyle032} />
+              <div className={styles.periodDivider} />
               
-              <div className={styles.liveStyle033}>
+              <div className={styles.periodOptions}>
                 {[now.getFullYear() - 1, now.getFullYear()].map(y => (
-                  <button key={y} onClick={() => setSelectedAnio(y)} className={styles.liveStyle034} style={{ background: selectedAnio === y ? '#fff' : 'transparent', color: selectedAnio === y ? '#000' : '#444', fontWeight: selectedAnio === y ? 900 : 700 }}
-                  onMouseEnter={(e) => {
-                    if (selectedAnio !== y) {
-                      e.currentTarget.style.color = '#888';
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedAnio !== y) {
-                      e.currentTarget.style.color = '#444';
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
+                  <button key={y} onClick={() => setSelectedAnio(y)} className={`${styles.periodButton} ${selectedAnio === y ? styles.isSelected : ''}`}
                   >{y}</button>
                 ))}
               </div>
@@ -1661,8 +1601,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         // actualizar antes el pipeline de snapshot. Guardado por tests/snapshot-boundary.test.mjs.
         <div id="resumen-reporte-body" className="snapshot-producer" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#00d4ff" />, badgeDiasRestantes)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#315b7d" />, badgeDiasRestantes)}
             {!collapsedSections[1] && (
               <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24, padding: '24px 32px 0 32px' }}>
@@ -1797,9 +1737,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 2: VENTAS POR CATEGORÍA ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
-              <div style={{ flex: 1 }}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+              <div style={{ flex: 1 }}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#315b7d" />)}</div>
               {!collapsedSections[2] && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
                   <span style={{ fontSize: 11, color: '#444', fontWeight: 600 }}>
@@ -1864,8 +1804,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 3: DISTRIBUCIÓN POR ESTADO Y CATEGORÍAS ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#00ff88" />)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#315b7d" />)}
             {!collapsedSections[3] && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', padding: '0 24px 24px 24px' }}>
                 <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" analistas={nombres} />
@@ -1875,8 +1815,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#34d399" />)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#315b7d" />)}
             {!collapsedSections[4] && (
               <ManualTextarea
                 label="Interpretación del Período"
@@ -1888,8 +1828,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#818cf8" />)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#315b7d" />)}
             {!collapsedSections[5] && (
               <ManualTextarea
                 label="Cumplimiento de Procedimientos / Tiempos / Stock"
@@ -1901,8 +1841,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#34d399" />)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#315b7d" />)}
             {!collapsedSections[6] && (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
@@ -1920,8 +1860,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#b266ff" />)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#315b7d" />)}
             {!collapsedSections[7] && (
               <ManualTextarea
                 label="Reclamos y Satisfacción"
@@ -1933,8 +1873,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#fbbf24" />)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#315b7d" />)}
             {!collapsedSections[8] && (
               <>
                 {auditoriaData.length > 0 && (
@@ -1965,8 +1905,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#fb923c" />)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#315b7d" />)}
             {!collapsedSections[9] && (
               <>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
@@ -2065,8 +2005,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 10: VENTA DIARIA PURA ── */}
-          <div className="data-card" style={{ background: '#111111', display: 'flex', flexDirection: 'column' }}>
-            {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#00d4ff" />)}
+          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+            {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#315b7d" />)}
 
             {!collapsedSections[10] && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '0 24px 24px 24px' }}>
@@ -2110,7 +2050,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                 </div>
 
                 {/* Mapa de Actividad (Diseño Screenshot) */}
-                <div style={{ background: '#111111', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ background: '#ffffff', borderRadius: 12, padding: '24px', border: '1px solid #dde5ee', display: 'flex', flexDirection: 'column' }}>
                   
                   {/* Header */}
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>

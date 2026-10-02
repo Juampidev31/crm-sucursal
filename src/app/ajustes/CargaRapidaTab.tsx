@@ -101,11 +101,14 @@ export default function CargaRapidaTab() {
 
       {/* Header */}
       <div className={styles.header}>
-        <div>
-          <h3 className={styles.title}>Carga Rápida</h3>
-          <p className={styles.subtitle}>
-            Pegá datos tabulados, mapeá las columnas y cargá o actualizá registros masivamente.
-          </p>
+        <div className={styles.titleGroup}>
+          <div className={styles.titleIcon}><Upload size={20} /></div>
+          <div>
+            <h3 className={styles.title}>Carga Rápida</h3>
+            <p className={styles.subtitle}>
+              Pegá datos tabulados, mapeá las columnas y cargá o actualizá registros masivamente.
+            </p>
+          </div>
         </div>
         {rows.length > 0 && (
           <button onClick={handleReset} className={styles.clearButton}>

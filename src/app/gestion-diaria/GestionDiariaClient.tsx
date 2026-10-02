@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useGestionDiaria } from '@/features/gestion-diaria/GestionDiariaProvider';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
@@ -9,7 +9,7 @@ import { formatCurrency, formatDate, sanitizarCuil } from '@/lib/utils';
 import { PremiumSelect } from '@/components/PremiumSelect';
 import { CorporateDatePicker } from '@/components/CorporateDatePicker';
 import ModalPortal from '@/components/ModalPortal';
-import { ClipboardList, Mail, Megaphone, MessageSquare, Pencil, Plus, RefreshCw, Search, TableProperties, Trash2 } from 'lucide-react';
+import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Search, TableProperties, Trash2 } from 'lucide-react';
 
 type GestionTab = 'ingresos' | 'flyers' | 'emails';
 
@@ -362,6 +362,102 @@ const initialForm: Partial<GestionDiaria> = {
   comentarios: '',
 };
 
+function CompactDailyActions({
+  label,
+  onEdit,
+  onDelete,
+  onComments,
+}: {
+  label: string;
+  onEdit: () => void;
+  onDelete: () => void;
+  onComments?: () => void;
+}) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    if (!menuPosition) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) setMenuPosition(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuPosition(null);
+    };
+    const closeOnViewportChange = () => setMenuPosition(null);
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    window.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('resize', closeOnViewportChange);
+    window.addEventListener('scroll', closeOnViewportChange, true);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick);
+      window.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('resize', closeOnViewportChange);
+      window.removeEventListener('scroll', closeOnViewportChange, true);
+    };
+  }, [menuPosition]);
+
+  const toggleMenu = () => {
+    if (menuPosition) {
+      setMenuPosition(null);
+      return;
+    }
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const menuWidth = 190;
+    const menuHeight = (onComments ? 2 : 1) * 36 + 10;
+    const gap = 6;
+    const left = Math.min(Math.max(8, rect.right - menuWidth), window.innerWidth - menuWidth - 8);
+    const top = rect.bottom + menuHeight + gap <= window.innerHeight
+      ? rect.bottom + gap
+      : Math.max(8, rect.top - menuHeight - gap);
+    setMenuPosition({ top, left });
+  };
+
+  return (
+    <div className="daily-row-actions">
+      <button type="button" className="daily-action-edit" onClick={onEdit} aria-label={`Editar ${label}`}>
+        <Pencil size={14} /><span>Editar</span>
+      </button>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`daily-action-more${menuPosition ? ' is-active' : ''}`}
+        onClick={toggleMenu}
+        aria-label={`Más acciones para ${label}`}
+        aria-haspopup="menu"
+        aria-expanded={!!menuPosition}
+      >
+        <MoreHorizontal size={18} />
+      </button>
+      {menuPosition && (
+        <ModalPortal>
+          <div
+            ref={menuRef}
+            className="daily-action-menu"
+            role="menu"
+            aria-label={`Acciones para ${label}`}
+            style={{ top: menuPosition.top, left: menuPosition.left }}
+          >
+            {onComments && (
+              <button type="button" role="menuitem" onClick={() => { setMenuPosition(null); onComments(); }}>
+                <MessageSquare size={15} /><span>Comentarios</span>
+              </button>
+            )}
+            <button type="button" role="menuitem" className="is-danger" onClick={() => { setMenuPosition(null); onDelete(); }}>
+              <Trash2 size={15} /><span>Eliminar registro</span>
+            </button>
+          </div>
+        </ModalPortal>
+      )}
+    </div>
+  );
+}
+
 export default function GestionDiariaClient({ analistaInicial }: { analistaInicial: string }) {
   const { registros, applyChange, pushChange } = useGestionDiaria();
   const { nombres: analistaNombres } = useAnalistas();
@@ -662,11 +758,12 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
                   <td className="daily-score-cell"><DailyScore value={r.score} /></td>
                   <td>{r.comentarios}</td>
                   <td>
-                    <div className="daily-row-actions">
-                      <button type="button" onClick={() => abrirComentarios(r)} aria-label={`Comentarios de ${r.nombre}`} title="Comentarios"><MessageSquare size={15} /></button>
-                      <button type="button" onClick={() => abrirEdicion(r)} aria-label={`Editar ${r.nombre}`} title="Editar"><Pencil size={15} /></button>
-                      <button type="button" className="is-delete" onClick={() => abrirEliminar(r)} aria-label={`Eliminar ${r.nombre}`} title="Eliminar"><Trash2 size={15} /></button>
-                    </div>
+                    <CompactDailyActions
+                      label={r.nombre}
+                      onEdit={() => abrirEdicion(r)}
+                      onComments={() => abrirComentarios(r)}
+                      onDelete={() => abrirEliminar(r)}
+                    />
                   </td>
                 </tr>
               ))}
@@ -963,10 +1060,11 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
                     </td>
                   ))}
                   <td>
-                    <div className="daily-row-actions">
-                      <button type="button" onClick={() => editRow(row)} aria-label="Editar registro" title="Editar"><Pencil size={14} /></button>
-                      <button type="button" className="is-delete" onClick={() => { setEntryError(''); setDeleteRowTarget(row); }} aria-label="Eliminar registro" title="Eliminar"><Trash2 size={14} /></button>
-                    </div>
+                    <CompactDailyActions
+                      label={deleteRowLabel(row)}
+                      onEdit={() => editRow(row)}
+                      onDelete={() => { setEntryError(''); setDeleteRowTarget(row); }}
+                    />
                   </td>
                 </tr>
               ))}

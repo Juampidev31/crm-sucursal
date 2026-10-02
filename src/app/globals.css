@@ -115,6 +115,9 @@
   --button-primary-hover: #274b68;
   --button-danger: #b42318;
   --button-danger-hover: #912018;
+  --button-neutral-hover: #e7eef4;
+  --button-neutral-hover-border: #9fb2c2;
+  --button-hover-tint: color-mix(in srgb, currentColor 9%, transparent);
   --card-radius: 12px;
   --shadow-surface: 0 7px 18px rgba(15, 23, 42, .055);
   --shadow-elevated: 0 12px 32px rgba(15, 23, 42, .14);
@@ -491,6 +494,23 @@ a {
   transform: translateY(0);
 }
 
+/*
+  Interacción común para todos los botones de la aplicación.
+  El tinte usa el color del propio control: los botones neutros se rellenan
+  suavemente y los primarios/destructivos conservan su semántica visual.
+*/
+button:not(:disabled) {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: .18s;
+  transition-timing-function: ease;
+}
+
+button:not(:disabled):hover {
+  box-shadow:
+    inset 0 0 0 999px var(--button-hover-tint),
+    0 2px 7px rgba(15, 23, 42, .08);
+}
+
 :is(.btn-primary, .btn-secondary, .btn-danger, .btn-icon):focus-visible {
   outline: 0;
   box-shadow: var(--control-focus-ring);
@@ -797,6 +817,8 @@ iframe::-webkit-scrollbar {
 .business-days__button { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; color: var(--text-secondary); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 8px; cursor: pointer; font-size: 12px; }
 .business-days__button.is-primary { padding-inline: 16px; color: #fff; background: var(--action-primary); border-color: var(--action-primary); font-weight: 600; }
 .business-days__button.is-muted { color: var(--text-muted); border-color: var(--border-subtle); }
+.business-days__button:hover:not(:disabled), .business-days__save-button:hover:not(:disabled), .business-days__official-button:hover:not(:disabled), .business-days__edit-button:hover:not(:disabled) { color: var(--action-primary); background: var(--button-neutral-hover); border-color: var(--button-neutral-hover-border); }
+.business-days__button.is-primary:hover:not(:disabled), .business-days__edit-button.is-save:hover:not(:disabled) { color: #fff; background: var(--button-primary-hover); border-color: var(--button-primary-hover); }
 .business-days__button:disabled, .business-days__save-button:disabled, .business-days__add-button:disabled, .business-days__edit-button:disabled { cursor: default; opacity: .55; }
 .business-days__rules { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 16px; padding-top: 12px; color: var(--text-muted); border-top: 1px solid var(--border-subtle); font-size: 11px; }
 .business-days__rules strong { color: var(--text-secondary); }
@@ -850,11 +872,11 @@ iframe::-webkit-scrollbar {
 .business-days__holiday-actions { display: flex; align-items: center; gap: 4px; }
 .business-days__icon-button { display: flex; align-items: center; padding: 4px; background: none; border: 0; border-radius: 4px; cursor: pointer; }
 .business-days__icon-button.is-restore { color: #f59e0b; }
-.business-days__icon-button.is-restore:hover { color: #fbbf24; }
+.business-days__icon-button.is-restore:hover { color: #b45309; background: #fff5dd; }
 .business-days__icon-button.is-edit { color: var(--text-muted); }
-.business-days__icon-button.is-edit:hover { color: #60a5fa; }
+.business-days__icon-button.is-edit:hover { color: var(--action-primary); background: var(--button-neutral-hover); }
 .business-days__icon-button.is-delete { color: var(--text-muted); }
-.business-days__icon-button.is-delete:hover { color: #ef4444; }
+.business-days__icon-button.is-delete:hover { color: #b42318; background: #fff0f1; }
 @media (max-width: 720px) {
   .business-days__panel { padding: 16px; }
   .business-days__controls, .business-days__controls > * { width: 100%; }
@@ -1287,6 +1309,10 @@ iframe::-webkit-scrollbar {
 .records-data-table { width: 100%; min-width: 1040px; border-collapse: separate; border-spacing: 0; table-layout: auto; }
 .records-data-table thead tr { background: #f5f7f9; }
 .records-data-table th { height: 43px; padding: 9px 11px; border-bottom: 1px solid #dfe5ec; color: #56647d; font-size: 9px; font-weight: 700; letter-spacing: .45px; text-align: center; text-transform: uppercase; white-space: nowrap; }
+.records-data-table th:not(:last-child), .records-data-table td:not(:last-child) {
+  border-right: 1px solid #f1f4f7;
+  box-shadow: inset -4px 0 5px -5px rgba(15, 23, 42, .08);
+}
 .records-data-table th:first-child { border-top-left-radius: 16px; text-align: left; }
 .records-data-table th:last-child { border-top-right-radius: 16px; }
 .records-data-table tbody tr { background: var(--surface-card); }
@@ -1328,13 +1354,19 @@ iframe::-webkit-scrollbar {
 .records-state-type.is-media .records-state-type__secondary { color: #60778a; }
 .records-state-type.is-baja .records-state-type__secondary { color: #8f5660; }
 .records-score-dot.is-alta { background: #315b7d; }.records-score-dot.is-media { background: #71879a; }.records-score-dot.is-baja { background: #9b6068; }
-.records-data-table th:last-child, .records-data-table td:last-child { min-width: 250px; }
+.records-data-table th:last-child, .records-data-table td:last-child { min-width: 155px; }
 .records-actions { display: flex; align-items: center; justify-content: center; gap: 7px; }
 .records-actions button { flex: 0 0 auto; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
-.records-actions__group { height: 32px; display: inline-flex; align-items: stretch; overflow: hidden; border: 1px solid #d8e1e9; border-radius: 9px; background: #fff; box-shadow: 0 2px 5px rgba(15,23,42,.025); }
-.records-action-icon { width: 34px; border: 0; border-right: 1px solid #e1e7ed; border-radius: 0; background: #fff; color: #5d6e85; }.records-action-icon:last-child { border-right: 0; }.records-action-icon:hover { color: var(--action-primary); background: #eaf0f5; }.records-action-icon.is-active { color: var(--action-primary); background: #e7eef4; }.records-action-icon.has-alert { color: #9b4f59; background: #fbf1f2; }
 .records-action-edit { min-width: 76px; gap: 6px; padding: 0 11px; border: 1px solid #d4dde6; background: #f7f9fb; color: #31435a; font: 700 10px var(--font-sans); }.records-action-edit:hover { border-color: #9fb1c1; color: #fff; background: var(--action-primary); }
-.records-action-delete { width: 34px; border: 1px solid #ebc9cd; background: #fcf1f2; color: #b24e59; }.records-action-delete:hover { border-color: #dba7ad; background: #f8e3e5; color: #9c3f4a; }
+.records-action-more { width: 34px; border: 1px solid #d4dde6; background: #fff; color: #5d6e85; }
+.records-action-more:hover, .records-action-more.is-active { border-color: #9fb1c1; color: var(--action-primary); background: #edf3f7; }
+.records-action-menu-layer { position: fixed; inset: 0; z-index: 600; }
+.records-action-menu { position: fixed; width: 196px; padding: 5px; overflow: hidden; border: 1px solid #d8e1e9; border-radius: 10px; background: #fff; box-shadow: 0 14px 35px rgba(15,23,42,.16); }
+.records-action-menu button { width: 100%; height: 36px; display: flex; align-items: center; gap: 9px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: #40516a; font: 600 11px var(--font-sans); text-align: left; cursor: pointer; }
+.records-action-menu button:hover { color: #24364e; background: #f1f5f8; }
+.records-action-menu button.has-alert { color: #9b4f59; background: #fbf1f2; }
+.records-action-menu button.is-danger { margin-top: 4px; border-top: 1px solid #edf1f5; border-radius: 0 0 7px 7px; color: #b24e59; }
+.records-action-menu button.is-danger:hover { background: #fcf1f2; color: #9c3f4a; }
 .records-reference-page .hover-row,
 .records-reference-page .hover-row td { transition: background-color .15s ease, border-color .15s ease; transform: none; }
 .records-reference-page .hover-row:hover { position: static; z-index: auto; transform: none; }
@@ -1530,9 +1562,9 @@ textarea:focus {
 .btn-secondary:hover,
 .btn-icon:hover,
 .btn-pagination:hover:not(:disabled) {
-  color: #2457d6;
-  background: #f6f8fc;
-  border-color: #b8c8e8;
+  color: var(--action-primary);
+  background: var(--button-neutral-hover);
+  border-color: var(--button-neutral-hover-border);
 }
 
 .toast-container > div,
@@ -2034,6 +2066,10 @@ textarea:focus {
   text-transform: uppercase;
   white-space: nowrap;
 }
+.daily-table th:not(:last-child), .daily-table td:not(:last-child) {
+  border-right: 1px solid #f1f4f7;
+  box-shadow: inset -4px 0 5px -5px rgba(15, 23, 42, .08);
+}
 .daily-table td {
   max-width: 260px;
   height: 49px;
@@ -2046,6 +2082,7 @@ textarea:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.daily-table th:last-child, .daily-table td:last-child { min-width: 145px; text-align: center; }
 .daily-table tbody tr { cursor: pointer; }
 .daily-table tbody tr:hover td { background: #f6f9fb; }
 .daily-client-name, .daily-state-name { color: #1c2942; font-weight: 700; }
@@ -2061,30 +2098,30 @@ textarea:focus {
 .daily-empty-state { padding: 24px; color: var(--text-muted); text-align: center; }
 .daily-date-missing { color: #9b6068; font-size: 9px; font-weight: 700; }
 .daily-row-actions {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  overflow: hidden;
-  background: var(--surface-card);
-  border: 1px solid #d5dee7;
-  border-radius: 8px;
+  justify-content: center;
+  gap: 7px;
 }
 .daily-row-actions button {
-  width: 32px;
-  height: 30px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #52667d;
-  background: transparent;
-  border: 0;
-  border-right: 1px solid #e1e7ed;
+  flex: 0 0 auto;
+  border-radius: 8px;
   cursor: pointer;
-  transition: color .15s ease, background-color .15s ease;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease;
 }
-.daily-row-actions button:last-child { border-right: 0; }
-.daily-row-actions button:hover { color: var(--action-primary); background: #eaf0f5; }
-.daily-row-actions button.is-delete { color: #ad5962; }
-.daily-row-actions button.is-delete:hover { color: #963f49; background: #faecee; }
+.daily-action-edit { min-width: 76px; gap: 6px; padding: 0 11px; border: 1px solid #d4dde6; background: #f7f9fb; color: #31435a; font: 700 10px var(--font-sans); }
+.daily-action-edit:hover { border-color: #9fb1c1; color: #fff; background: var(--action-primary); }
+.daily-action-more { width: 34px; border: 1px solid #d4dde6; background: #fff; color: #5d6e85; }
+.daily-action-more:hover, .daily-action-more.is-active { border-color: #9fb1c1; color: var(--action-primary); background: #edf3f7; }
+.daily-action-menu { position: fixed; z-index: 610; width: 190px; padding: 5px; overflow: hidden; border: 1px solid #d8e1e9; border-radius: 10px; background: #fff; box-shadow: 0 14px 35px rgba(15,23,42,.16); }
+.daily-action-menu button { width: 100%; height: 36px; display: flex; align-items: center; gap: 9px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: #40516a; font: 600 11px var(--font-sans); text-align: left; cursor: pointer; }
+.daily-action-menu button:hover { color: #24364e; background: #f1f5f8; }
+.daily-action-menu button.is-danger { margin-top: 4px; border-top: 1px solid #edf1f5; border-radius: 0 0 7px 7px; color: #b24e59; }
+.daily-action-menu button.is-danger:hover { color: #9c3f4a; background: #fcf1f2; }
 .daily-readonly-source {
   display: inline-flex;
   align-items: center;
@@ -2186,7 +2223,7 @@ textarea:focus {
 .daily-sheet-table tbody tr:hover td { background: #f2f6f9; }
 .daily-sheet-primary-cell,.daily-sheet-text-cell:first-child { color:#1c2942; font-weight:700; }
 .daily-sheet-number-cell,.daily-sheet-number-cell span,.daily-sheet-table .daily-score strong { color:#263550; font-family:Georgia,'Times New Roman',serif; font-variant-numeric:tabular-nums; font-weight:700; }
-.daily-sheet-table th:last-child,.daily-sheet-table td:last-child { width:90px; min-width:90px; text-align:center; }
+.daily-sheet-table th:last-child,.daily-sheet-table td:last-child { width:145px; min-width:145px; text-align:center; }
 .is-spinning { animation: daily-spin .8s linear infinite; }
 @keyframes daily-spin { to { transform: rotate(360deg); } }
 

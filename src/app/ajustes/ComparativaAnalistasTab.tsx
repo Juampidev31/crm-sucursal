@@ -24,7 +24,7 @@ import { UI_FONT_FAMILY } from '@/app/fonts';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, ArcElement);
 
-// ── Plugin inline: data labels on bars (idéntico a analistas/page.tsx) ────
+// ── Etiquetas de datos legibles sobre el tema claro ─────────────────────
 const labelsPlugin: any = {
   id: 'comparativaLabelsPlugin',
   afterDatasetsDraw(chart: any) {
@@ -37,12 +37,12 @@ const labelsPlugin: any = {
       if (!meta || meta.hidden || meta.type !== 'bar') return;
 
       ctx.save();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#314158';
       ctx.font = `700 11px ${UI_FONT_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = isStacked ? 'middle' : 'bottom';
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 3;
+      ctx.shadowColor = 'rgba(255,255,255,0.9)';
+      ctx.shadowBlur = 2;
 
       const isPct = chart.config.options?._isPct === true;
 
@@ -138,7 +138,7 @@ export default function ComparativaAnalistasTab() {
   }, [analistasAll]);
 
   // Paleta estética de gráficos coherente con analistas/page.tsx
-  const palette = ['#60a5fa', '#34d399', '#fbbf24', '#f472b6', '#a78bfa', '#38bdf8', '#fb923c'];
+  const palette = ['#315b7d', '#5f7e98', '#7894aa', '#91aabd', '#4d708c', '#6d899f', '#a4b7c6'];
 
   // Métricas por analista y Total PDV
   const filas = useMemo(() => {
@@ -249,7 +249,7 @@ export default function ComparativaAnalistasTab() {
         titleAlign: 'center' as const,
         bodyColor: '#f1f5f9',
         bodyFont: { size: 12, weight: 600, family: UI_FONT_FAMILY },
-        borderColor: 'rgba(255,255,255,0.12)',
+        borderColor: '#d7e0e9',
         borderWidth: 1,
         padding: 12,
         cornerRadius: 10,
@@ -265,12 +265,12 @@ export default function ComparativaAnalistasTab() {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: '#8f929d', font: { size: 11, weight: 700, family: UI_FONT_FAMILY } },
+        ticks: { color: '#66758a', font: { size: 11, weight: 700, family: UI_FONT_FAMILY } },
       },
       y: {
-        grid: { color: 'rgba(255,255,255,0.04)' },
+        grid: { color: 'rgba(49,91,125,0.08)' },
         ticks: {
-          color: '#555', font: { size: 10, family: UI_FONT_FAMILY },
+          color: '#7a8798', font: { size: 10, family: UI_FONT_FAMILY },
           callback: (v: any) => {
             if (yLabel === '$') {
               if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
@@ -473,7 +473,7 @@ export default function ComparativaAnalistasTab() {
       </div>
 
       <section className={`data-card ${styles.reportCard}`}>
-        {sectionHeader('1. Tablero de Rendimiento', <BarChart3 size={15} color="#60a5fa" />)}
+        {sectionHeader('1. Tablero de Rendimiento', <BarChart3 size={15} />)}
         <div className={styles.metricsGrid}>
           <article className={styles.metricCard}>
             <span className={styles.metricLabel}>Capital Vendido (PDV)</span>
@@ -503,7 +503,7 @@ export default function ComparativaAnalistasTab() {
       </section>
 
       <section className={`data-card ${styles.reportCard}`}>
-        {sectionHeader('2. Gráficos Comparativos', <BarChart3 size={15} color="#a78bfa" />)}
+        {sectionHeader('2. Gráficos Comparativos', <BarChart3 size={15} />)}
         <div className={styles.chartsGrid}>
           <article className={styles.chartCard}>
             <div className={styles.chartHeader}><span>Capital Vendido vs Meta ($)</span><div className={styles.chartLegend}><span><i className={styles.soldDot} />Vendido</span><span><i className={styles.targetLine} />Meta</span></div></div>
@@ -530,7 +530,7 @@ export default function ComparativaAnalistasTab() {
 
       <section className={`data-card ${styles.reportCard}`}>
         <div className={styles.tableSectionHeader}>
-          <div className={styles.sectionTitle}><Users size={15} color="#38bdf8" /><span>3. Rendimiento por Analista</span></div>
+          <div className={styles.sectionTitle}><Users size={15} /><span>3. Rendimiento por Analista</span></div>
           {selectedAnalista && <button onClick={() => setSelectedAnalista(null)} className={styles.resetButton}>Restablecer a PDV</button>}
         </div>
         <div className={styles.tableViewport}>
@@ -577,7 +577,7 @@ export default function ComparativaAnalistasTab() {
 
       <section className={`data-card ${styles.reportCard}`}>
         <div className={`${styles.sectionHeader} ${styles.compositionHeader}`}>
-          <div className={styles.sectionTitle}><Tag size={15} color="#fb923c" /><span>4. Composición de Cartera — <strong>{targetAnalista === 'PDV' ? 'PDV (General)' : targetAnalista}</strong></span></div>
+          <div className={styles.sectionTitle}><Tag size={15} /><span>4. Composición de Cartera — <strong>{targetAnalista === 'PDV' ? 'PDV (General)' : targetAnalista}</strong></span></div>
           <div className={styles.compositionActions}>
             <span className={styles.operationCount}>{fuenteRegistros.length} ops · {formatCurrency(totalBase)}</span>
             <div className={styles.modeToggle}>

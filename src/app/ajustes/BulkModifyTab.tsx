@@ -8,11 +8,12 @@ import { Registro } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 import CustomSelect from '@/components/CustomSelect';
+import ModalPortal from '@/components/ModalPortal';
 import { getSession } from '@/lib/auth';
 import {
   Users, AlertTriangle, Save, X, Filter, CheckCircle,
   Search, ChevronDown, ChevronUp, Loader2, Trash2, ShieldCheck, Download, Pencil,
-  Copy, Check
+  Copy, Check, FileSpreadsheet
 } from 'lucide-react';
 import { parsePastedText, normalizeCuil, ParsedRow } from '@/lib/verificador-utils';
 import styles from './BulkModifyTab.module.css';
@@ -2483,7 +2484,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         </div>
       )}
 
-      <div className={`data-card ${styles.bulkRoot}${mode === 'excel' ? ` ${styles.isExcel}` : ''}`}>
+      <div className={`data-card ${styles.bulkRoot}${mode === 'excel' ? ` ${styles.isExcel}` : ''}${mode === 'bulk' ? ` ${styles.isBulk}` : ''}`}>
         {mode === 'corrector' && (
         <div className={styles.correctorHeader}>
           <div>
@@ -2640,17 +2641,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 const tieneDuplicados = dupsSet.size > 0;
 
                 return (
-                  <div key={i} className={[styles["uMarginBottom12px"], styles["uPadding12px-14px"], styles["uBorderRadius8px"]].join(' ')} style={{ background: tieneDuplicados ? 'rgba(16,185,129,0.06)' : 'var(--surface-card)', border: `1px solid ${tieneDuplicados ? 'rgba(16,185,129,0.2)' : 'var(--border-subtle)'}` }}>
-                    <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uMarginBottom6px"]].join(' ')}>
-                      <div className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"], styles["uFlexWrapWrap"]].join(' ')} style={{ color: tieneDuplicados ? '#34d399' : '#fbbf24' }}>
+                  <div key={i} className={`${styles.variantGroup} ${tieneDuplicados ? styles.hasDuplicates : ''}`}>
+                    <div className={styles.variantGroupHeader}>
+                      <div className={styles.variantGroupTitle}>
                         {v.normalizado} <span className={styles.mutedNote}>({v.cantidad} variantes)</span>
                         {tieneDuplicados && (
-                          <span className={[styles["uPadding2px-7px"], styles["uBorderRadius4px"], styles["uBackgroundRgba-16-185-129-0-15"], styles["uBorder1px-solid-rgba-16-185-129-0-35"], styles["uColor34d399"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uLetterSpacing0-5px"]].join(' ')}>
+                          <span className={styles.duplicateBadge}>
                             {dupsSet.size} DUPLICADOS DETECTADOS
                           </span>
                         )}
                       </div>
-                      <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uFlexShrink0"]].join(' ')}>
+                      <div className={styles.variantGroupActions}>
                         {tieneDuplicados && (
                           <button
                             onClick={(e) => {
@@ -2661,7 +2662,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               if (sugerido) setEmpleadorCorreccion(sugerido);
                             }}
                             title="Seleccionar todas las variantes duplicadas de este grupo"
-                            className={[styles["uBackgroundRgba-16-185-129-0-15"], styles["uBorder1px-solid-rgba-16-185-129-0-4"], styles["uColor34d399"], styles["uBorderRadius4px"], styles["uPadding2px-8px"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
+                            className={`${styles.variantAction} ${styles.isPrimary}`}
                           >
                             <CheckCircle size={10} /> Elegir duplicados ({dupsSet.size})
                           </button>
@@ -2673,7 +2674,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               cargarRegistrosGrupo(v.variantes, v.normalizado);
                             }}
                             title="Ver todos los registros de este grupo"
-                            className={[styles["uBackgroundRgba-96-165-250-0-1"], styles["uBorder1px-solid-rgba-96-165-250-0-3"], styles["uColor00d4ff"], styles["uBorderRadius4px"], styles["uPadding2px-8px"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
+                            className={styles.variantAction}
                           >
                             <Users size={10} /> Ver {v.cantidad}
                           </button>
@@ -2682,7 +2683,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                           <button
                             onClick={(e) => { e.stopPropagation(); descartarGrupo(v.normalizado, v.cantidad); }}
                             title="Marcar como correcto — no es un duplicado real"
-                            className={[styles["uBackgroundRgba-16-185-129-0-1"], styles["uBorder1px-solid-rgba-16-185-129-0-3"], styles["uColor34d399"], styles["uBorderRadius4px"], styles["uPadding2px-8px"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
+                            className={styles.variantAction}
                           >
                             <CheckCircle size={10} /> OK
                           </button>
@@ -3083,23 +3084,41 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       )}
 
       {mode === 'excel' && (
-        <AsignarEmpleadorSection
-          registros={registros}
-          allEmpleadores={allEmpleadores}
-          mutateRegistros={mutateRegistros}
-          pushBulkUpdateIds={pushBulkUpdateIds}
-          standalone={mode === 'excel'}
-        />
+        <div className={styles.excelWorkspace}>
+          <div className={styles.excelPageHeader}>
+            <div className={styles.excelPageIcon}><FileSpreadsheet size={20} /></div>
+            <div>
+              <h2 className={styles.excelPageTitle}>Asignar desde Excel</h2>
+              <p className={styles.excelPageSubtitle}>Pegá una tabla, revisá las columnas y asigná los registros en pocos pasos.</p>
+            </div>
+          </div>
+          <AsignarEmpleadorSection
+            registros={registros}
+            allEmpleadores={allEmpleadores}
+            mutateRegistros={mutateRegistros}
+            pushBulkUpdateIds={pushBulkUpdateIds}
+            standalone={mode === 'excel'}
+          />
+        </div>
       )}
 
 
 
         {/* --- NUEVO FLUJO MINIMALISTA: CALIF x SCORE (mode === 'bulk') --- */}
         {mode === 'bulk' && step === 'filter' && (
-          <div className={[styles["uMaxWidth1240px"], styles["uMargin40px-auto"], styles["uDisplayFlex"], styles["uGap24px"], styles["uAlignItemsFlex-start"], styles["uFlexWrapWrap"]].join(' ')}>
-            <div className={[styles["uFlex1-1-420px"], styles["uMinWidth0"], styles["uBackgroundSurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uPadding40px-32px"], styles["uBoxShadowShadow-sm"]].join(' ')}>
-               <h4 className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom32px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"], styles["uOpacity0-9"]].join(' ')}>
-                 <span className={[styles["uWidth20px"], styles["uHeight20px"], styles["uBorderRadius50"], styles["uBackground00d4ff"], styles["uColor000"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uFontSize10px"], styles["uFontWeight900"]].join(' ')}>1</span>
+          <div className={styles.scoreWorkspace}>
+            <div className={styles.scorePageHeader}>
+              <div className={styles.scorePageIcon}><Filter size={20} /></div>
+              <div>
+                <h2 className={styles.scorePageTitle}>Calificación por Score</h2>
+                <p className={styles.scorePageSubtitle}>Filtrá registros por puntaje o redistribuilos entre analistas.</p>
+              </div>
+            </div>
+
+            <div className={styles.scoreGrid}>
+            <div className={styles.scoreCard}>
+               <h4 className={styles.scoreCardTitle}>
+                 <span className={styles.scoreStepBadge}>1</span>
                  Definir Rango de Score
                </h4>
                
@@ -3115,7 +3134,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                </div>
 
                <div className={[styles["uMarginTop24px"], styles["uPaddingBottom24px"]].join(' ')}>
-                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className={[styles["uBackgroundTransparent"], styles["uBorderNone"], styles["uColor00d4ff"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"], styles["uMargin0-auto"]].join(' ')}>
+                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className={styles.scoreAdvancedButton}>
                    {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                    Filtros Avanzados (Opcional)
                  </button>
@@ -3154,7 +3173,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                  <button
                    onClick={previewRecords}
                    disabled={!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta}
-                   className={[styles["uBorderNone"], styles["uFontWeight900"], styles["uPadding16px-48px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'var(--surface-hover)' : 'var(--action-primary)', color: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'var(--text-muted)' : '#fff', cursor: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'not-allowed' : 'pointer', boxShadow: (!filtros.scoreMin && !filtros.scoreMax && filtros.estados.length === 0 && filtros.analistas.length === 0 && !filtros.fechaDesde && !filtros.fechaHasta) ? 'none' : 'var(--shadow-sm)' }}
+                   className={styles.scoreSearchButton}
                  >
                    BUSCAR REGISTROS
                  </button>
@@ -3162,13 +3181,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             {/* ── REASIGNAR REGISTROS ENTRE ANALISTAS (columna al lado del filtro) ── */}
-            <div className={[styles["uFlex1-1-420px"], styles["uMinWidth0"], styles["uBackgroundSurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uBoxShadowShadow-sm"]].join(' ')}>
+            <div className={`${styles.scoreCard} ${styles.scoreReassignCard}`}>
               {/* Header colapsable */}
               <div
                 onClick={() => setRaExpandido(!raExpandido)}
-                className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uCursorPointer"]].join(' ')} style={{ padding: raExpandido ? '28px 32px 0' : '24px 32px' }}
+                className={styles.scoreReassignHeader}
               >
-                <Users size={18} color="#34d399" />
+                <Users size={18} />
                 <h4 className={[styles["uFlex1"], styles["uFontSize13px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uOpacity0-9"]].join(' ')}>
                   Reasignar Registros entre Analistas
                 </h4>
@@ -3381,6 +3400,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 </div>
               )}
             </div>
+            </div>
           </div>
         )}
 
@@ -3556,34 +3576,35 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
       {/* MODAL DE REGISTROS DEL GRUPO */}
       {modalOpen && (
+        <ModalPortal>
         <div
           className={`modal-overlay ${styles.modalOverlay}`}
           onClick={() => setModalOpen(false)}
         >
           <div
-            className={[styles["uBackgroundSurface-card"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius12px"], styles["uWidth100"], styles["uMaxWidth1200px"], styles["uMaxHeight90vh"], styles["uDisplayFlex"], styles["uFlexDirectionColumn"]].join(' ')}
+            className={styles.employerModal}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header del modal */}
-            <div className={[styles["uPadding20px-24px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"]].join(' ')}>
+            <div className={styles.employerModalHeader}>
               <div>
-                <h3 className={[styles["uFontSize16px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uMarginBottom4px"]].join(' ')}>
+                <h3 className={styles.employerModalTitle}>
                   Registros del grupo: {modalGrupo}
                 </h3>
-                <p className={[styles["uFontSize12px"], styles["uColorText-muted"]].join(' ')}>
+                <p className={styles.employerModalSubtitle}>
                   {modalRegistros.length} registros encontrados
                 </p>
               </div>
               <button
                 onClick={() => setModalOpen(false)}
-                className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-muted"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
+                className={styles.employerModalButton}
               >
                 <X size={14} /> Cerrar
               </button>
             </div>
 
             {/* Contenido del modal */}
-            <div className={[styles["uPadding24px"], styles["uOverflowAuto"], styles["uFlex1"]].join(' ')}>
+            <div className={styles.employerModalContent}>
               {modalLoading ? (
                 <div className={[styles["uTextAlignCenter"], styles["uPadding40px"]].join(' ')}>
                   <Loader2 size={32} className={["animate-spin", styles["uColor00d4ff"], styles["uMargin0-auto-12px"]].filter(Boolean).join(' ')}  />
@@ -3594,7 +3615,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   <p>No se encontraron registros</p>
                 </div>
               ) : (
-                <table className={[styles["uWidth100"], styles["uBorderCollapseCollapse"], styles["uFontSize12px"]].join(' ')}>
+                <table className={styles.employerTable}>
                   <thead>
                     <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
                       <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>Nombre</th>
@@ -3606,20 +3627,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     </tr>
                   </thead>
                   <tbody>
-                    {modalRegistros.map((r, idx) => (
-                      <tr
-                        key={r.id}
-                        className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-03"]].join(' ')} style={{ background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}
-                      >
+                    {modalRegistros.map((r) => (
+                      <tr key={r.id}>
                         <td className={[styles["uPadding10px-12px"], styles["uColorText-secondary"], styles["uFontWeight600"]].join(' ')}>{r.nombre || '-'}</td>
                         <td className={[styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontFamilyMonospace"]].join(' ')}>{r.cuil || '-'}</td>
-                        <td className={[styles["uPadding10px-12px"], styles["uColorFbbf24"], styles["uFontWeight600"]].join(' ')}>{r.empleador}</td>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorText-secondary"], styles["uFontWeight600"]].join(' ')}>{r.empleador}</td>
                         <td className={[styles["uPadding10px-12px"]].join(' ')}>
                           <span className={[styles["uPadding2px-8px"], styles["uBorderRadius4px"], styles["uFontSize10px"], styles["uBackgroundSurface-hover"], styles["uColorText-muted"], styles["uFontWeight600"]].join(' ')}>
                             {STATUS_LABEL[r.estado] ?? r.estado}
                           </span>
                         </td>
-                        <td className={[styles["uPadding10px-12px"], styles["uColor00d4ff"], styles["uFontWeight700"]].join(' ')}>{r.puntaje ?? '-'}</td>
+                        <td className={`${styles["uPadding10px-12px"]} ${styles.scoreValue}`}>{r.puntaje ?? '-'}</td>
                         <td className={[styles["uPadding10px-12px"], styles["uColorText-muted"]].join(' ')}>{r.analista || '-'}</td>
                       </tr>
                     ))}
@@ -3629,29 +3647,31 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* MODAL DE TODOS LOS EMPLEADORES */}
       {modalEmpleadoresOpen && (
+        <ModalPortal>
         <div
           className={`modal-overlay ${styles.modalOverlay}`}
           onClick={() => setModalEmpleadoresOpen(false)}
         >
           <div
-            className={[styles["uBackgroundSurface-card"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius12px"], styles["uWidth100"], styles["uMaxWidth1200px"], styles["uMaxHeight92vh"], styles["uDisplayFlex"], styles["uFlexDirectionColumn"], styles["uBoxShadow0-25px-50px-12px-rgba-0-0-0-0-5"]].join(' ')}
+            className={styles.employerModal}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header del modal */}
-            <div className={[styles["uPadding20px-24px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"]].join(' ')}>
+            <div className={styles.employerModalHeader}>
               <div>
-                <h3 className={[styles["uFontSize16px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uMarginBottom4px"]].join(' ')}>
+                <h3 className={styles.employerModalTitle}>
                   Todos los Empleadores
                 </h3>
-                <p className={[styles["uFontSize12px"], styles["uColorText-muted"]].join(' ')}>
+                <p className={styles.employerModalSubtitle}>
                   {empleadoresConConteo.filter(e => !e.esDependencia).length} empleadores · {empleadoresConConteo.filter(e => e.esDependencia).length} dependencias
                 </p>
               </div>
-              <div className={[styles["uDisplayFlex"], styles["uGap8px"]].join(' ')}>
+              <div className={styles.employerModalActions}>
                 <button
                   onClick={() => {
                     import('xlsx').then((XLSX) => {
@@ -3668,13 +3688,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       XLSX.writeFile(wb, "Empleadores_y_Dependencias.xlsx");
                     });
                   }}
-                  className={[styles["uBackgroundRgba-52-211-153-0-11doaz"], styles["uBorder1px-solid-rgba-52-211-153-0-3"], styles["uColor34d399"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"], styles["uFontWeight700"]].join(' ')}
+                  className={`${styles.employerModalButton} ${styles.isPrimary}`}
                 >
                   <Download size={14} /> Descargar XLSX
                 </button>
                 <button
                   onClick={() => setModalEmpleadoresOpen(false)}
-                  className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-muted"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
+                  className={styles.employerModalButton}
                 >
                   <X size={14} /> Cerrar
                 </button>
@@ -3682,14 +3702,14 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             {/* Buscador + filtros tipo */}
-            <div className={[styles["uPadding16px-24px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayFlex"], styles["uFlexDirectionColumn"], styles["uGap10px"]].join(' ')}>
+            <div className={styles.employerModalFilters}>
               <input
                 className={`form-input ${styles.darkInput}`}
                 placeholder="Buscar empleador..."
                 value={busquedaEmpleadorModal}
                 onChange={e => setBusquedaEmpleadorModal(e.target.value)}
               />
-              <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uFlexWrapWrap"]].join(' ')}>
+              <div className={styles.employerFilterRow}>
                 {([
                  { key: 'todos', label: 'Todos' },
                  { key: 'gob_er', label: 'Gob. Entre Ríos' },
@@ -3707,7 +3727,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     <button
                       key={key}
                       onClick={() => setFiltroTipoModal(key)}
-                      className={[styles["uBorderRadius4px"], styles["uPadding4px-12px"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"]].join(' ')} style={{ background: activo ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)', border: `1px solid ${activo ? 'rgba(251,191,36,0.4)' : 'rgba(255,255,255,0.1)'}`, color: activo ? '#fbbf24' : '#666' }}
+                      className={`${styles.employerFilterButton} ${activo ? styles.isActive : ''}`}
                     >
                       {label}
                     </button>
@@ -3717,7 +3737,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
 
             {/* Contenido del modal */}
-            <div className={[styles["uPadding24px"], styles["uOverflowAuto"], styles["uFlex1"]].join(' ')}>
+            <div className={styles.employerModalContent}>
               {empleadoresLoading ? (
                 <div className={[styles["uTextAlignCenter"], styles["uPadding40px"]].join(' ')}>
                   <Loader2 size={32} className={["animate-spin", styles["uColor00d4ff"], styles["uMargin0-auto-12px"]].filter(Boolean).join(' ')}  />
@@ -3769,16 +3789,16 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     else if (filtroTipoModal === 'se') filtered = filtered.filter(matchSE);
                     else if (filtroTipoModal === 'fisica') filtered = filtered.filter(matchFisica);
 
-                    const renderTable = (items: typeof filtered, title?: string, color?: string) => (
+                    const renderTable = (items: typeof filtered, title?: string) => (
                       <div style={{ marginBottom: title ? 24 : 0 }}>
                         {title && (
-                          <div className={[styles["uFontSize10px"], styles["uFontWeight900"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom12px"], styles["uPaddingBottom6px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"]].join(' ')} style={{ color: color || '#888' }}>
-                            <div className={[styles["uWidth6px"], styles["uHeight6px"], styles["uBorderRadius50"]].join(' ')} style={{ background: color || '#888' }} />
+                          <div className={styles.employerSectionTitle}>
+                            <div />
                             {title} ({items.length})
                           </div>
                         )}
                         <div className={[styles["uOverflowXAuto"]].join(' ')}>
-                          <table className={[styles["uWidth100"], styles["uBorderCollapseCollapse"], styles["uFontSize12px"]].join(' ')}>
+                          <table className={styles.employerTable}>
                             <thead>
                               <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
                                 <th className={[styles["uTextAlignLeft"], styles["uPadding12px"], styles["uColorText-muted"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>Empresa</th>
@@ -3796,10 +3816,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                 const porcentaje = totalGeneral > 0 ? ((emp.cantidad / totalGeneral) * 100).toFixed(1) : '0';
                                 
                                 return (
-                                  <tr key={idx} className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-02"]].join(' ')} style={{ background: isMaster ? 'rgba(52,211,153,0.02)' : 'transparent' }}>
+                                  <tr key={idx} className={isMaster ? styles.isMaster : ''}>
                                     <td className={[styles["uPadding12px"]].join(' ')}>
                                       <div className={[styles["uDisplayFlex"], styles["uFlexDirectionColumn"]].join(' ')}>
-                                        <span className={[styles["uFontWeight600"]].join(' ')} style={{ color: isMaster ? '#34d399' : '#ccc' }}>{emp.nombre}</span>
+                                        <span className={styles.employerName}>{emp.nombre}</span>
                                       </div>
                                     </td>
                                     <td className={[styles["uPadding12px"]].join(' ')}>
@@ -3808,7 +3828,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                       </span>
                                     </td>
                                     <td className={[styles["uPadding12px"]].join(' ')}>
-                                      <span className={[styles["uFontSize11px"], styles["uFontWeight600"]].join(' ')} style={{ color: emp.categoria === 'Estado' ? '#00d4ff' : '#888' }}>
+                                      <span className={`${styles.employerCategory} ${emp.categoria === 'Estado' ? styles.isState : ''}`}>
                                         {emp.categoria}
                                       </span>
                                     </td>
@@ -3816,7 +3836,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                       <span className={[styles["uFontWeight800"], styles["uColorText-muted"]].join(' ')}>{emp.cantidad}</span>
                                     </td>
                                     <td className={[styles["uPadding12px"], styles["uTextAlignCenter"]].join(' ')}>
-                                      <span className={[styles["uFontWeight800"], styles["uColor34d399"], styles["uFontSize11px"], styles["uBackgroundRgba-52-211-153-0-11doaz"], styles["uPadding2px-6px"], styles["uBorderRadius4px"]].join(' ')}>
+                                      <span className={styles.employerPercentage}>
                                         {porcentaje}%
                                       </span>
                                     </td>
@@ -3828,7 +3848,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                             setEmpleadorCorreccion(emp.nombre);
                                             setModalEmpleadoresOpen(false);
                                           }}
-                                          className={[styles["uPadding4px-8px"], styles["uBorderRadius4px"], styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-primary"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uCursorPointer"]].join(' ')}
+                                          className={styles.employerSelectButton}
                                         >
                                           Seleccionar
                                         </button>
@@ -3855,8 +3875,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     const dependencias = filtered.filter(e => e.esDependencia);
                     return (
                       <div className={[styles["uDisplayFlex"], styles["uFlexDirectionColumn"]].join(' ')}>
-                        {empleadores.length > 0 && renderTable(empleadores, 'Empleadores', '#00d4ff')}
-                        {dependencias.length > 0 && renderTable(dependencias, 'Dependencias', '#a78bfa')}
+                        {empleadores.length > 0 && renderTable(empleadores, 'Empleadores')}
+                        {dependencias.length > 0 && renderTable(dependencias, 'Dependencias')}
                       </div>
                     );
                   })()}
@@ -3865,48 +3885,50 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* MODAL DE EMPLEADORES NUEVOS DE HOY */}
       {showEmpleadoresHoy && (
+        <ModalPortal>
         <div
           className={styles.modalOverlay}
           onClick={() => setShowEmpleadoresHoy(false)}
         >
           <div
-            className={[styles["uBackgroundSurface-card"], styles["uBorder1px-solid-rgba-16-185-129-0-2"], styles["uBorderRadius12px"], styles["uWidth100"], styles["uMaxWidth900px"], styles["uMaxHeight90vh"], styles["uDisplayFlex"], styles["uFlexDirectionColumn"]].join(' ')}
+            className={`${styles.employerModal} ${styles.todayModal}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={[styles["uPadding20px-24px"], styles["uBorderBottom1px-solid-rgba-16-185-129-0-1"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uFlexWrapWrap"], styles["uGap12px"]].join(' ')}>
+            <div className={`${styles.employerModalHeader} ${styles.todayModalHeader}`}>
               <div>
-                <h3 className={[styles["uFontSize16px"], styles["uFontWeight800"], styles["uColor34d399"], styles["uMarginBottom4px"]].join(' ')}>
+                <h3 className={styles.employerModalTitle}>
                   Registros con Empleador
                 </h3>
-                <p className={[styles["uFontSize12px"], styles["uColorText-muted"]].join(' ')}>
+                <p className={styles.employerModalSubtitle}>
                   {empleadoresHoy.length} registro{empleadoresHoy.length !== 1 ? 's' : ''} con empleador cargado
                 </p>
               </div>
-              <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uFlexWrapWrap"]].join(' ')}>
-                <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"]].join(' ')}>
-                  <span className={[styles["uFontSize11px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uTextTransformUppercase"]].join(' ')}>Desde</span>
+              <div className={styles.todayDateFilters}>
+                <label className={styles.todayDateField}>
+                  <span>Desde</span>
                   <input
                     type="date"
                     value={fechaDesdeHoy}
                     onChange={e => setFechaDesdeHoy(e.target.value)}
-                    className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-secondary"], styles["uBorderRadius6px"], styles["uPadding5px-8px"], styles["uFontSize12px"], styles["uColorSchemeDark"]].join(' ')}
+                    className={styles.todayDateInput}
                   />
-                </div>
-                <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"]].join(' ')}>
-                  <span className={[styles["uFontSize11px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uTextTransformUppercase"]].join(' ')}>Hasta</span>
+                </label>
+                <label className={styles.todayDateField}>
+                  <span>Hasta</span>
                   <input
                     type="date"
                     value={fechaHastaHoy}
                     onChange={e => setFechaHastaHoy(e.target.value)}
-                    className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-secondary"], styles["uBorderRadius6px"], styles["uPadding5px-8px"], styles["uFontSize12px"], styles["uColorSchemeDark"]].join(' ')}
+                    className={styles.todayDateInput}
                   />
-                </div>
+                </label>
               </div>
-              <div className={[styles["uDisplayFlex"], styles["uGap8px"]].join(' ')}>
+              <div className={styles.employerModalActions}>
                 <button
                   onClick={async () => {
                     if (!confirm(`¿Eliminar ${empleadoresHoy.length} registros de la base de datos? Esta acción es irreversible.`)) return;
@@ -3926,20 +3948,20 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                       setLoadingEmpleadoresHoy(false);
                     }
                   }}
-                  className={[styles["uBackgroundRgba-239-68-68-0-1"], styles["uBorder1px-solid-rgba-239-68-68-0-3"], styles["uColorFf3366"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"], styles["uFontWeight700"]].join(' ')}
+                  className={`${styles.employerModalButton} ${styles.isDanger}`}
                 >
                   <Trash2 size={14} /> Eliminar
                 </button>
                 <button
                   onClick={() => setShowEmpleadoresHoy(false)}
-                  className={[styles["uBackgroundSurface-hover"], styles["uBorder1px-solid-border-subtle"], styles["uColorText-muted"], styles["uBorderRadius6px"], styles["uPadding8px-12px"], styles["uFontSize12px"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
+                  className={styles.employerModalButton}
                 >
                   <X size={14} /> Cerrar
                 </button>
               </div>
             </div>
 
-            <div className={[styles["uFlex1"], styles["uOverflowAuto"], styles["uPadding16px-24px"]].join(' ')}>
+            <div className={styles.employerModalContent}>
               {loadingEmpleadoresHoy ? (
                 <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uPadding40px"]].join(' ')}>
                   <Loader2 size={24} className={["animate-spin", styles["uColor34d399"]].filter(Boolean).join(' ')}  />
@@ -3949,7 +3971,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   <p>No se encontraron registros creados hoy.</p>
                 </div>
               ) : (
-                <table className={[styles["uWidth100"], styles["uBorderCollapseCollapse"]].join(' ')}>
+                <table className={styles.employerTable}>
                   <thead>
                     <tr>
                       <th className={[styles["uTextAlignLeft"], styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontWeight700"], styles["uFontSize10px"], styles["uTextTransformUppercase"]].join(' ')}>CUIL</th>
@@ -3960,21 +3982,21 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     </tr>
                   </thead>
                   <tbody>
-                    {empleadoresHoy.map((r, idx) => {
+                    {empleadoresHoy.map((r) => {
                       const editing = editandoHoyId === r.id;
                       return (
                       <tr
                         key={r.id}
-                        className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-03"]].join(' ')} style={{ background: editing ? 'rgba(16,185,129,0.06)' : (idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent') }}
+                        className={editing ? styles.isEditing : ''}
                       >
                         <td className={[styles["uPadding10px-12px"], styles["uColorText-muted"], styles["uFontFamilyMonospace"], styles["uFontSize12px"]].join(' ')}>{r.cuil || '-'}</td>
                         <td className={[styles["uPadding10px-12px"], styles["uColorText-secondary"], styles["uFontWeight600"], styles["uFontSize12px"]].join(' ')}>{r.nombre || '-'}</td>
-                        <td className={[styles["uPadding10px-12px"], styles["uColor34d399"], styles["uFontWeight600"], styles["uFontSize12px"], styles["uMinWidth220px"]].join(' ')}>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorText-secondary"], styles["uFontWeight600"], styles["uFontSize12px"], styles["uMinWidth220px"]].join(' ')}>
                           {editing
                             ? <ComboEditable value={editHoyEmpleador} onChange={setEditHoyEmpleador} options={allEmpleadoresList} placeholder="Elegí o escribí…" accent="#34d399" />
                             : (r.empleador || '-')}
                         </td>
-                        <td className={[styles["uPadding10px-12px"], styles["uColor60a5fa"], styles["uFontWeight600"], styles["uFontSize12px"], styles["uMinWidth220px"]].join(' ')}>
+                        <td className={[styles["uPadding10px-12px"], styles["uColorText-secondary"], styles["uFontWeight600"], styles["uFontSize12px"], styles["uMinWidth220px"]].join(' ')}>
                           {editing
                             ? <ComboEditable value={editHoyDependencia} onChange={setEditHoyDependencia} options={dependenciasParaEmpleador.length > 0 ? dependenciasParaEmpleador : allDependenciasList} placeholder="Elegí o escribí…" accent="#60a5fa" />
                             : (r.dependencia || '-')}
@@ -4004,6 +4026,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );
