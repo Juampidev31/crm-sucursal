@@ -37,7 +37,7 @@ const lineShadowPlugin: any = {
     const { ctx } = chart;
     ctx.save();
     if (args.index === 0) {
-      ctx.shadowColor = 'rgba(16, 185, 129, 0.4)';
+      ctx.shadowColor = 'rgba(49, 95, 130, 0.28)';
       ctx.shadowBlur = 12;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 4;
@@ -1090,10 +1090,10 @@ export default function AnalistasPage() {
           label: 'Vendido',
           data: realData,
           dailyData,
-          borderColor: '#10b981',
+          borderColor: '#315f82',
           borderWidth: 2.5,
-          pointBackgroundColor: '#4f8272',
-          pointBorderColor: '#4f8272',
+          pointBackgroundColor: '#315f82',
+          pointBorderColor: '#315f82',
           pointRadius: 2,
           fill: false,
           tension: 0.2
@@ -1101,7 +1101,7 @@ export default function AnalistasPage() {
         {
           label: 'Ideal',
           data: idealData,
-          borderColor: '#b8794f',
+          borderColor: '#8da1b1',
           borderWidth: 2,
           borderDash: [5, 5],
           pointRadius: 0,
@@ -1141,12 +1141,12 @@ export default function AnalistasPage() {
       labels,
       datasets: [
         {
-          label: 'Vendido', data: cumFor(pred), borderColor: '#4f8272', borderWidth: 2.5,
-          pointBackgroundColor: '#4f8272', pointBorderColor: '#4f8272', pointRadius: 2, fill: false, tension: 0.2,
+          label: 'Vendido', data: cumFor(pred), borderColor: '#315f82', borderWidth: 2.5,
+          pointBackgroundColor: '#315f82', pointBorderColor: '#315f82', pointRadius: 2, fill: false, tension: 0.2,
         },
         {
           label: 'Ideal', data: labels.map((_, i) => (meta / daysInMonth) * (i + 1)),
-          borderColor: '#b8794f', borderWidth: 2, borderDash: [6, 5], pointRadius: 0, fill: false, tension: 0,
+          borderColor: '#8da1b1', borderWidth: 2, borderDash: [6, 5], pointRadius: 0, fill: false, tension: 0,
         },
       ],
     });
@@ -1444,6 +1444,7 @@ export default function AnalistasPage() {
       <div className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius16px, styles["uPadding12px-24px"], styles["uBoxShadowshadow-md"], styles.toolbar].join(' ')}>
         <div className={[styles.uDisplayflex, styles["uJustifyContentspace-between"], styles.uAlignItemscenter, styles.uFlexWrapwrap, styles.uGap16px, styles.toolbarInner].join(' ')}>
             <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap16px, styles.toolbarTitle].join(' ')}>
+            <span className={styles.toolbarIcon} aria-hidden="true"><BarChart3 size={19} strokeWidth={2} /></span>
             <div>
               <div className={[styles.uFontSize24px, styles.uFontWeight900, styles["uColortext-strong"], styles["uLetterSpacing0-5px12zy2"]].join(' ')}>
                 {analista === 'PDV' ? 'PDV' : analista.charAt(0).toUpperCase() + analista.slice(1).toLowerCase()}
@@ -1486,10 +1487,9 @@ export default function AnalistasPage() {
                   { label: 'Situación actual', open: proyShowActual, toggle: () => setProyShowActual(v => !v) },
                   { label: 'Proyección fin de mes', open: proyShowProy, toggle: () => setProyShowProy(v => !v) },
                 ].map(({ label, open, toggle }) => (
-                  <button className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px, styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius8px, styles["uPadding6px-12px"], styles.uCursorpointer, styles.uFontSize11px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}
+                  <button className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px, styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius8px, styles["uPadding6px-12px"], styles.uCursorpointer, styles.uFontSize11px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles.projectionToggle, open ? styles.projectionToggleActive : ''].filter(Boolean).join(' ')}
                     key={label}
                     onClick={toggle}
-                    style={{ background: open ? 'rgba(255,255,255,0.04)' : 'transparent', color: open ? '#e2e8f0' : '#64748b' }}
                   >
                     <ChevronRight className={[styles["uTransitiontransform-0-15s"]].join(' ')} size={14} style={{ transform: open ? 'rotate(90deg)' : 'none' }} />
                     {label}
@@ -1529,7 +1529,7 @@ export default function AnalistasPage() {
               {/* ── Progreso vs Ideal por separado (PDV + cada analista, con su propio Ideal) ── */}
               <div className={["analistas-autogrid", styles.uMarginTop16px, styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-360px-1fr"], styles.uGap16px].join(' ')}>
                 {chartsProgresoSep.map(({ titulo, data }) => (
-                  <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-16px"], styles["uBorder1px-solid-border-subtle"]].join(' ')} key={titulo}>
+                  <div className={styles.projectionChartCard} key={titulo}>
                     <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles.uMarginBottom10px].join(' ')}>Progreso vs Ideal — {titulo}</div>
                     <div className={[styles.uHeight240px, styles.uPositionrelative, styles.uWidth100].join(' ')}>
                       {chartsLoaded ? (

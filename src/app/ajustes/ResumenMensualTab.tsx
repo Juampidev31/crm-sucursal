@@ -1553,12 +1553,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         <div className={styles.liveStyle035}>
           <div className={styles.liveStyle036}>
             <div className={styles.liveStyle037}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ff88" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
             </div>
             <div className={styles.liveStyle038}>
-              <span className={styles.liveStyle039}>
-                Link Público del Reporte Generado
-              </span>
+              <span className={styles.liveStyle039}>Enlace público listo</span>
               <a href={publicLink} target="_blank" rel="noopener noreferrer" className={styles.liveStyle040}>
                 {publicLink}
               </a>
@@ -1575,14 +1573,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   setPublicLink('');
                 }, 2000);
               }}
-              className={styles.liveStyle042} style={{ background: copied ? 'rgba(16, 185, 129, 0.2)' : '#00ff88', color: copied ? '#00ff88' : '#000', boxShadow: copied ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.3)' }}
+              className={`${styles.liveStyle042} ${copied ? styles.linkCopied : ''}`}
             >
               {copied ? (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               ) : (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
               )}
-              {copied ? 'Copiado' : 'Copiar Link'}
+              {copied ? 'Copiado' : 'Copiar enlace'}
             </button>
           </div>
         </div>

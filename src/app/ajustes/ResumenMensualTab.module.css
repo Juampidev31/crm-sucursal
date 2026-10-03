@@ -165,32 +165,35 @@
 }
 
 .liveStyle035 {
-  background: rgba(16, 185, 129, 0.05);
-  border: 1px solid rgba(0, 255, 136, 0.15);
-  border-radius: 16px;
-  padding: 24px 32px;
+  background: #fff;
+  border: 1px solid #d8e3ea;
+  border-radius: 13px;
+  padding: 12px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  animation: fadeInDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  margin-top: -16px;
-  box-shadow: var(--shadow-md);
+  gap: 16px;
+  animation: fadeInDown .22s ease-out;
+  margin-top: -6px;
+  box-shadow: 0 7px 20px rgba(28, 49, 72, .055);
 }
 
 .liveStyle036 {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 11px;
   flex: 1;
   overflow: hidden;
 }
 
 .liveStyle037 {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(16, 185, 129, 0.1);
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  color: #315f82;
+  border-radius: 10px;
+  background: #edf4f8;
+  border: 1px solid #d2e0e9;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,22 +202,26 @@
 .liveStyle038 {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   overflow: hidden;
 }
 
 .liveStyle039 {
-  font-size: 10px;
-  color: #00ff88;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
+  font-size: 11px;
+  color: #52647a;
+  font-weight: 750;
+  letter-spacing: .15px;
 }
 
 .liveStyle040 {
-  font-size: 15px;
-  color: var(--text-strong);
-  font-weight: 700;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 7px;
+  color: #27384c;
+  background: #f5f7f9;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 650;
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -227,17 +234,29 @@
 }
 
 .liveStyle042 {
-  padding: 12px 28px;
-  border-radius: 12px;
-  border: none;
+  min-height: 36px;
+  padding: 8px 14px;
+  color: #fff;
+  background: #315f82;
+  border-radius: 9px;
+  border: 1px solid #315f82;
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: all 0.3s ease;
+  box-shadow: 0 5px 13px rgba(49, 95, 130, .18);
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+.liveStyle042:hover { background: #284f6d; box-shadow: 0 7px 16px rgba(49, 95, 130, .22); transform: translateY(-1px); }
+.liveStyle042.linkCopied { color: #397363; background: #eaf3f0; border-color: #c9ddd6; box-shadow: none; }
+
+@media (max-width: 720px) {
+  .liveStyle035 { align-items: stretch; flex-direction: column; }
+  .liveStyle041 { justify-content: flex-end; }
+  .liveStyle042 { justify-content: center; }
 }
 
 .liveStyle043 {

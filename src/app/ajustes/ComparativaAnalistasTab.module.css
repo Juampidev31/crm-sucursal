@@ -1,7 +1,10 @@
 .root {
+  --compare-navy: #315f82;
+  --compare-teal: #397363;
+  --compare-slate: #8da1b1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .loading {
@@ -16,14 +19,14 @@
 
 .toolbar,
 .reportCard {
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(145deg, #fff 0%, #fbfcfd 100%);
+  border: 1px solid #dce5ec;
+  box-shadow: 0 10px 28px rgba(28, 49, 72, .06);
 }
 
 .toolbar {
   padding: 14px 20px;
-  border-radius: 14px;
+  border-radius: 18px;
 }
 
 .toolbarContent,
@@ -62,10 +65,10 @@
   place-items: center;
   width: 42px;
   height: 42px;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  border-radius: 11px;
+  color: var(--compare-navy);
+  background: #edf4f8;
+  border: 1px solid #d2e0e9;
+  border-radius: 12px;
 }
 
 .pageTitle {
@@ -91,14 +94,15 @@
 .reportCard {
   overflow: hidden;
   padding: 0;
-  border-radius: 14px;
+  border-radius: 16px;
 }
 
 .sectionHeader,
 .tableSectionHeader {
   min-height: 49px;
   padding: 0 18px;
-  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(90deg, #fbfcfd 0%, #fff 68%);
+  border-bottom: 1px solid #e2e9ef;
 }
 
 .sectionTitle {
@@ -110,7 +114,7 @@
   text-transform: uppercase;
 }
 
-.sectionTitle > svg { color: var(--action-primary); }
+.sectionTitle > svg { color: var(--compare-navy); }
 
 .metricsGrid,
 .chartsGrid,
@@ -126,16 +130,37 @@
 
 .metricCard,
 .chartCard {
-  background: var(--surface-sunken);
-  border: 1px solid var(--border-subtle);
-  border-radius: 11px;
+  background: #fff;
+  border: 1px solid #dfe7ed;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(28, 49, 72, .045);
 }
 
 .metricCard {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 15px;
+  padding: 17px 16px 16px;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.metricCard::before {
+  position: absolute;
+  top: -1px;
+  right: 16px;
+  left: 16px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--compare-navy), #7892a4);
+  border-radius: 0 0 3px 3px;
+  content: '';
+  opacity: .78;
+}
+
+.metricCard:hover {
+  border-color: #cbd9e3;
+  box-shadow: 0 9px 22px rgba(28, 49, 72, .075);
+  transform: translateY(-1px);
 }
 
 .metricLabel {
@@ -177,11 +202,11 @@
 }
 
 .warningValue {
-  color: #805f32;
+  color: #6f604e;
 }
 
 .successValue {
-  color: #33705c;
+  color: var(--compare-teal);
 }
 
 .chartsGrid {
@@ -190,7 +215,7 @@
 
 .chartCard {
   min-width: 0;
-  padding: 14px;
+  padding: 16px;
 }
 
 .chartHeader {
@@ -230,11 +255,11 @@
 }
 
 .soldDot {
-  background: #10b981;
+  background: var(--compare-teal);
 }
 
 .opsDot {
-  background: #60a5fa;
+  background: var(--compare-navy);
 }
 
 .targetLine,
@@ -245,11 +270,11 @@
 }
 
 .targetLine {
-  border-color: #f87171;
+  border-color: var(--compare-slate);
 }
 
 .opsTargetLine {
-  border-color: #fb923c;
+  border-color: #9aa9b6;
 }
 
 .chart {
@@ -281,9 +306,9 @@
 
 .resetButton {
   padding: 6px 10px;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  color: var(--compare-navy);
+  background: #edf4f8;
+  border: 1px solid #c8d9e4;
   border-radius: 7px;
   cursor: pointer;
   font: inherit;
@@ -292,7 +317,7 @@
 }
 
 .resetButton:hover {
-  background: #dbeafe;
+  background: #e3edf3;
 }
 
 .tableViewport {
@@ -360,7 +385,7 @@
 
 .analystRow.isSelected,
 .analystRow.isSelected td:first-child {
-  background: #eff6ff;
+  background: #eef4f7;
 }
 
 .analystRow.isSelected {
@@ -377,7 +402,7 @@
   width: 8px;
   height: 8px;
   margin-right: 7px;
-  background: var(--analyst-color, #10b981);
+  background: var(--analyst-color, var(--compare-navy));
   border-radius: 50%;
 }
 
@@ -396,7 +421,7 @@
 }
 
 .opsCell {
-  color: #2563eb;
+  color: var(--compare-navy);
   font-weight: 700;
 }
 
@@ -427,7 +452,7 @@
 }
 
 .totalOps {
-  color: #1d4ed8;
+  color: var(--compare-navy);
   font-weight: 700;
 }
 
@@ -480,8 +505,8 @@
 }
 
 .modeToggle button.isActive {
-  color: #9a3412;
-  background: #ffedd5;
+  color: #fff;
+  background: var(--compare-navy);
 }
 
 .distributionGrid {

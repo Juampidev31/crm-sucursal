@@ -1,10 +1,10 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import { supabase } from '@/lib/supabase';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, BarChart3 } from 'lucide-react';
 import styles from './ResumenMensualPublico.module.css';
 import ResumenMensualInteractivo from './ResumenMensualInteractivo';
-import { detectResumenSnapshotVersion, parseStoredResumenSnapshot, wrapResumenSnapshot } from '@/lib/resumenSnapshot';
+import { detectResumenSnapshotVersion, parseStoredResumenSnapshot, RESUMEN_SNAPSHOT_VERSION, wrapResumenSnapshot } from '@/lib/resumenSnapshot';
 
 type DatosGraficos = React.ComponentProps<typeof ResumenMensualInteractivo>['datos'];
 
@@ -58,6 +58,11 @@ async function fetchSnapshot(anio: number, mes: number, snapshotPreview?: string
     const html = detectResumenSnapshotVersion(parsed.html) ? parsed.html : wrapResumenSnapshot(parsed.html);
     return { html };
   }
+  const storedVersion = parsed.snapshotVersion ?? (parsed.html ? detectResumenSnapshotVersion(parsed.html) : undefined);
+  // Los reportes nuevos ya contienen la composición visual vigente (incluidos los
+  // gráficos convertidos a imagen). Priorizarlos evita volver a renderizar la vista
+  // interactiva histórica, que conservaba el diseño y las series anteriores.
+  if (parsed.html && storedVersion && storedVersion >= RESUMEN_SNAPSHOT_VERSION) return { html: parsed.html };
   if (parsed.datos) return { datos: parsed.datos, html: parsed.html };
   if (parsed.html) return { html: parsed.html };
 
@@ -73,13 +78,19 @@ export default async function ResumenMensualPublico({ searchParams }: { searchPa
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div>
-          <div className={styles.brand}>
-            Sistema de Proyecciones y Ventas
+        <div className={styles.headerInner}>
+          <div className={styles.headingGroup}>
+            <div className={styles.reportIcon}><BarChart3 size={20} /></div>
+            <div>
+              <div className={styles.brand}>
+                Sistema de Proyecciones y Ventas
+              </div>
+              <h1 className={styles.title}>
+                Resumen Mensual
+              </h1>
+            </div>
           </div>
-          <h1 className={styles.title}>
-            Resumen Mensual — {MESES_NOMBRES[mes - 1]} {anio}
-          </h1>
+          <div className={styles.periodBadge}>{MESES_NOMBRES[mes - 1]} {anio}</div>
         </div>
       </header>
 

@@ -1,6 +1,6 @@
 /* GENERATED AJUSTES INLINE PRIMITIVES */
 .resetAllButton:hover { background:rgba(248,113,113,.15); }
-.inheritButton:hover { color:#fff; }
+.inheritButton:hover { color:#315f82; }
 .auditTable { width:100%; min-width:900px; margin-bottom:0; table-layout:fixed; }
 .auditTable th:nth-child(1) { width:150px; }
 .auditTable th:nth-child(2) { width:110px; }
@@ -223,27 +223,49 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 12px;
-  padding: 15px;
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #dbe4ec;
+  border-radius: 13px;
+  box-shadow: 0 5px 16px rgba(28,49,72,.045);
 }
 
-.permissionCardCustom { background: var(--brand-muted-soft); border-color: var(--control-border); }
+.permissionCardCustom { background: linear-gradient(180deg,#fff 0%,#f7fafc 100%); border-color: #b9ccd9; box-shadow: inset 3px 0 0 #315f82, 0 7px 18px rgba(28,49,72,.055); }
 
 .permissionToggle {
-  min-width: 94px;
-  padding: 7px 12px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
+  min-width: 110px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 750;
   text-align: center;
   cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, color .18s ease, background-color .18s ease, border-color .18s ease;
 }
 
+.permissionToggle::before { content: ''; width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: currentColor; opacity: .78; }
+.permissionToggle:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(28,49,72,.1); }
+
 .permissionToggle:disabled { cursor: not-allowed; opacity: .6; }
-.permissionToggleActive { color: #33705c; background: #edf7f3; border: 1px solid #cce5db; }
-.permissionToggleInactive { color: #9b4f59; background: #fbf1f2; border: 1px solid #efd3d6; }
+.permissionToggleActive { color: #fff; background: #315f82; border: 1px solid #315f82; box-shadow: 0 5px 13px rgba(49,95,130,.18); }
+.permissionToggleInactive { color: #63738a; background: #f3f6f8; border: 1px solid #d8e1e9; }
+
+.inheritButton {
+  min-height: 28px;
+  padding: 0 9px;
+  color: #63738a !important;
+  background: #fff !important;
+  border: 1px solid #dbe4ec !important;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.inheritButton:hover { color: #315f82 !important; background: #edf4f8 !important; border-color: #b9ccd9 !important; }
 
 /* Duplicados mantiene la misma estructura visual que el resto de Datos masivos. */
 .duplicatesPage { width: 100%; padding-bottom: 36px; }

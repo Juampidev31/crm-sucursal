@@ -5,7 +5,7 @@ import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { formatCurrency } from '@/lib/utils';
-import { filterByMonth, isVenta, emptyTiposAcuerdo, matchTipoAcuerdo, buildDistEmpleador, cumplColor } from '@/lib/registro-stats';
+import { filterByMonth, isVenta, emptyTiposAcuerdo, matchTipoAcuerdo, buildDistEmpleador } from '@/lib/registro-stats';
 import { tasaCierrePct, conversionTotalPct } from '@/lib/kpi-cierre';
 import { CONFIG } from '@/types';
 import CustomSelect from '@/components/CustomSelect';
@@ -94,10 +94,18 @@ const getGradient = (context: any, colorStart: string, colorEnd: string) => {
 
 const now = new Date();
 
+const COMPARISON_PALETTE = ['#315f82', '#6f879b', '#5f8177', '#83768f', '#8f7d68', '#7892a4', '#73847f'];
+const comparisonStatusColor = (value: number | null) => {
+  if (value === null) return '#7b8998';
+  if (value >= 100) return '#397363';
+  if (value >= 75) return '#7b6a52';
+  return '#9b4f59';
+};
+
 export default function ComparativaAnalistasTab() {
   const { registros, loading: loadingRegs } = useRegistros();
   const { objetivos } = useObjetivos();
-  const { nombres, analistasAll } = useAnalistas();
+  const { nombres } = useAnalistas();
 
   const [selectedAnio, setSelectedAnio] = useState<number | 'TODOS'>(now.getFullYear());
   const [selectedMes, setSelectedMes] = useState<number | 'TODOS'>(now.getMonth() + 1);
@@ -133,12 +141,9 @@ export default function ComparativaAnalistasTab() {
   // Color map
   const colorMap = useMemo(() => {
     const map = new Map<string, string>();
-    analistasAll.forEach(a => map.set(a.nombre, a.color || '#3b82f6'));
+    analistasActivos.forEach((nombre, index) => map.set(nombre, COMPARISON_PALETTE[index % COMPARISON_PALETTE.length]));
     return map;
-  }, [analistasAll]);
-
-  // Paleta estética de gráficos coherente con analistas/page.tsx
-  const palette = ['#315b7d', '#5f7e98', '#7894aa', '#91aabd', '#4d708c', '#6d899f', '#a4b7c6'];
+  }, [analistasActivos]);
 
   // Métricas por analista y Total PDV
   const filas = useMemo(() => {
@@ -175,7 +180,7 @@ export default function ComparativaAnalistasTab() {
 
       return {
         analista,
-        color: colorMap.get(analista) || palette[idx % palette.length],
+        color: colorMap.get(analista) || COMPARISON_PALETTE[idx % COMPARISON_PALETTE.length],
         ingresados: regsA.length,
         ventasQ,
         capitalK,
@@ -207,7 +212,7 @@ export default function ComparativaAnalistasTab() {
 
     const total = {
       analista: 'PDV',
-      color: '#10b981',
+      color: '#315f82',
       ingresados: regsPeriodo.length,
       ventasQ: totalVentasQ,
       capitalK: totalCapitalK,
@@ -297,8 +302,8 @@ export default function ComparativaAnalistasTab() {
           type: 'bar' as const,
           label: 'Capital Vendido',
           data: capitales,
-          backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
-          borderColor: '#10b981',
+          backgroundColor: (context: any) => getGradient(context, 'rgba(57, 115, 99, 0.08)', 'rgba(57, 115, 99, 0.82)'),
+          borderColor: '#397363',
           borderWidth: 0,
           borderRadius: 4,
           order: 2,
@@ -308,11 +313,11 @@ export default function ComparativaAnalistasTab() {
           type: 'line' as const,
           label: 'Meta Capital',
           data: metas,
-          borderColor: '#f87171',
+          borderColor: '#8da1b1',
           borderWidth: 2,
           borderDash: [5, 4],
           pointRadius: 4,
-          pointBackgroundColor: '#f87171',
+          pointBackgroundColor: '#8da1b1',
           fill: false,
           order: 1,
         },
@@ -333,8 +338,8 @@ export default function ComparativaAnalistasTab() {
           type: 'bar' as const,
           label: 'Operaciones Cerradas',
           data: ops,
-          backgroundColor: (context: any) => getGradient(context, 'rgba(96, 165, 250, 0.05)', 'rgba(96, 165, 250, 0.85)'),
-          borderColor: '#60a5fa',
+          backgroundColor: (context: any) => getGradient(context, 'rgba(49, 95, 130, 0.08)', 'rgba(49, 95, 130, 0.84)'),
+          borderColor: '#315f82',
           borderWidth: 0,
           borderRadius: 4,
           order: 2,
@@ -344,11 +349,11 @@ export default function ComparativaAnalistasTab() {
           type: 'line' as const,
           label: 'Meta Operaciones',
           data: metas,
-          borderColor: '#fb923c',
+          borderColor: '#9aa9b6',
           borderWidth: 2,
           borderDash: [5, 4],
           pointRadius: 4,
-          pointBackgroundColor: '#fb923c',
+          pointBackgroundColor: '#9aa9b6',
           fill: false,
           order: 1,
         },
@@ -479,19 +484,19 @@ export default function ComparativaAnalistasTab() {
             <span className={styles.metricLabel}>Capital Vendido (PDV)</span>
             <strong className={styles.metricValue}>{formatCurrency(filas.total.capitalK)}</strong>
             <span className={styles.metricMeta}>Meta: {filas.total.metaCapital > 0 ? formatCurrency(filas.total.metaCapital) : '—'}</span>
-            {filas.total.cumplCapital !== null && <span className={styles.metricResult}><i style={{ '--metric-color': cumplColor(filas.total.cumplCapital) } as React.CSSProperties}>●</i>{filas.total.cumplCapital.toFixed(1)}% Cumplimiento</span>}
+            {filas.total.cumplCapital !== null && <span className={styles.metricResult}><i style={{ '--metric-color': comparisonStatusColor(filas.total.cumplCapital) } as React.CSSProperties}>●</i>{filas.total.cumplCapital.toFixed(1)}% Cumplimiento</span>}
           </article>
           <article className={styles.metricCard}>
             <span className={styles.metricLabel}>Operaciones Cerradas</span>
             <strong className={styles.metricValue}>{filas.total.ventasQ} ops</strong>
             <span className={styles.metricMeta}>Meta: {filas.total.metaOps > 0 ? `${filas.total.metaOps} ops` : '—'}</span>
-            {filas.total.cumplOps !== null && <span className={styles.metricResult}><i style={{ '--metric-color': cumplColor(filas.total.cumplOps) } as React.CSSProperties}>●</i>{filas.total.cumplOps.toFixed(1)}% Cumplimiento</span>}
+            {filas.total.cumplOps !== null && <span className={styles.metricResult}><i style={{ '--metric-color': comparisonStatusColor(filas.total.cumplOps) } as React.CSSProperties}>●</i>{filas.total.cumplOps.toFixed(1)}% Cumplimiento</span>}
           </article>
           <article className={styles.metricCard}>
             <span className={styles.metricLabel}>Líder en Ventas</span>
             <strong className={`${styles.metricValue} ${styles.warningValue}`}>{liderCapital?.analista ?? '—'}</strong>
             <span className={styles.metricMeta}>{liderCapital ? formatCurrency(liderCapital.capitalK) : '$0'}</span>
-            {liderCapital?.cumplCapital != null && <span className={styles.metricResult}><i style={{ '--metric-color': cumplColor(liderCapital.cumplCapital) } as React.CSSProperties}>●</i>{liderCapital.cumplCapital.toFixed(1)}% de su meta</span>}
+            {liderCapital?.cumplCapital != null && <span className={styles.metricResult}><i style={{ '--metric-color': comparisonStatusColor(liderCapital.cumplCapital) } as React.CSSProperties}>●</i>{liderCapital.cumplCapital.toFixed(1)}% de su meta</span>}
           </article>
           <article className={styles.metricCard}>
             <span className={styles.metricLabel}>Mayor Efectividad de Cierre</span>
@@ -545,13 +550,13 @@ export default function ComparativaAnalistasTab() {
                     <td>{k.ingresados}</td>
                     <td className={styles.strongCell}>{formatCurrency(k.capitalK)}</td>
                     <td className={styles.mutedCell}>{k.metaCapital > 0 ? formatCurrency(k.metaCapital) : '—'}</td>
-                    <td className={styles.metricCell} style={{ '--metric-color': cumplColor(k.cumplCapital) } as React.CSSProperties}>{k.cumplCapital !== null ? `${k.cumplCapital.toFixed(1)}%` : '—'}</td>
+                    <td className={styles.metricCell} style={{ '--metric-color': comparisonStatusColor(k.cumplCapital) } as React.CSSProperties}>{k.cumplCapital !== null ? `${k.cumplCapital.toFixed(1)}%` : '—'}</td>
                     <td className={styles.opsCell}>{k.ventasQ}</td>
                     <td className={styles.mutedCell}>{k.metaOps > 0 ? k.metaOps : '—'}</td>
-                    <td className={styles.metricCell} style={{ '--metric-color': cumplColor(k.cumplOps) } as React.CSSProperties}>{k.cumplOps !== null ? `${k.cumplOps.toFixed(1)}%` : '—'}</td>
+                    <td className={styles.metricCell} style={{ '--metric-color': comparisonStatusColor(k.cumplOps) } as React.CSSProperties}>{k.cumplOps !== null ? `${k.cumplOps.toFixed(1)}%` : '—'}</td>
                     <td className={styles.strongCell}>{formatCurrency(k.ticket)}</td>
-                    <td className={styles.metricCell} style={{ '--metric-color': cumplColor(k.tasaCierre) } as React.CSSProperties}>{k.tasaCierre !== null ? `${k.tasaCierre.toFixed(1)}%` : '—'}</td>
-                    <td className={styles.metricCell} style={{ '--metric-color': cumplColor(k.conversionTotal) } as React.CSSProperties}>{k.conversionTotal !== null ? `${k.conversionTotal.toFixed(1)}%` : '—'}</td>
+                    <td className={styles.metricCell} style={{ '--metric-color': comparisonStatusColor(k.tasaCierre) } as React.CSSProperties}>{k.tasaCierre !== null ? `${k.tasaCierre.toFixed(1)}%` : '—'}</td>
+                    <td className={styles.metricCell} style={{ '--metric-color': comparisonStatusColor(k.conversionTotal) } as React.CSSProperties}>{k.conversionTotal !== null ? `${k.conversionTotal.toFixed(1)}%` : '—'}</td>
                     <td className={styles.mutedCell}>{k.pctRenov.toFixed(0)}%</td>
                   </tr>
                 );
@@ -561,13 +566,13 @@ export default function ComparativaAnalistasTab() {
                 <td>{filas.total.ingresados}</td>
                 <td className={styles.totalValue}>{formatCurrency(filas.total.capitalK)}</td>
                 <td className={styles.mutedCell}>{filas.total.metaCapital > 0 ? formatCurrency(filas.total.metaCapital) : '—'}</td>
-                <td className={styles.metricCell} style={{ '--metric-color': cumplColor(filas.total.cumplCapital) } as React.CSSProperties}>{filas.total.cumplCapital !== null ? `${filas.total.cumplCapital.toFixed(1)}%` : '—'}</td>
+                <td className={styles.metricCell} style={{ '--metric-color': comparisonStatusColor(filas.total.cumplCapital) } as React.CSSProperties}>{filas.total.cumplCapital !== null ? `${filas.total.cumplCapital.toFixed(1)}%` : '—'}</td>
                 <td className={styles.totalOps}>{filas.total.ventasQ}</td>
                 <td className={styles.mutedCell}>{filas.total.metaOps > 0 ? filas.total.metaOps : '—'}</td>
-                <td className={styles.metricCell} style={{ '--metric-color': cumplColor(filas.total.cumplOps) } as React.CSSProperties}>{filas.total.cumplOps !== null ? `${filas.total.cumplOps.toFixed(1)}%` : '—'}</td>
+                <td className={styles.metricCell} style={{ '--metric-color': comparisonStatusColor(filas.total.cumplOps) } as React.CSSProperties}>{filas.total.cumplOps !== null ? `${filas.total.cumplOps.toFixed(1)}%` : '—'}</td>
                 <td>{formatCurrency(filas.total.ticket)}</td>
-                <td className={styles.metricCell} style={{ '--metric-color': cumplColor(filas.total.tasaCierre) } as React.CSSProperties}>{filas.total.tasaCierre !== null ? `${filas.total.tasaCierre.toFixed(1)}%` : '—'}</td>
-                <td className={styles.metricCell} style={{ '--metric-color': cumplColor(filas.total.conversionTotal) } as React.CSSProperties}>{filas.total.conversionTotal !== null ? `${filas.total.conversionTotal.toFixed(1)}%` : '—'}</td>
+                <td className={styles.metricCell} style={{ '--metric-color': comparisonStatusColor(filas.total.tasaCierre) } as React.CSSProperties}>{filas.total.tasaCierre !== null ? `${filas.total.tasaCierre.toFixed(1)}%` : '—'}</td>
+                <td className={styles.metricCell} style={{ '--metric-color': comparisonStatusColor(filas.total.conversionTotal) } as React.CSSProperties}>{filas.total.conversionTotal !== null ? `${filas.total.conversionTotal.toFixed(1)}%` : '—'}</td>
                 <td>{filas.total.pctRenov.toFixed(0)}%</td>
               </tr>
             </tbody>
@@ -587,11 +592,11 @@ export default function ComparativaAnalistasTab() {
           </div>
         </div>
         <div className={styles.distributionGrid}>
-          <DistBlock titulo="Acuerdo de Precios" icon={<PieChart size={12} color="#f97316" />} datos={distAcuerdo} color="#f97316" totalMes={totalBase} theme="elevated" />
-          <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#60a5fa" />} datos={distCuotas} color="#60a5fa" totalMes={totalBase} theme="elevated" />
-          <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={distRango} color="#34d399" totalMes={totalBase} theme="elevated" />
-          <DistBlock titulo="Sexo" icon={<Users size={12} color="#f472b6" />} datos={distSexo} color="#f472b6" totalMes={totalBase} theme="elevated" />
-          <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={distEmpleador} color="#fbbf24" totalMes={totalBase} theme="elevated" />
+          <DistBlock titulo="Acuerdo de Precios" icon={<PieChart size={12} color="#567d96" />} datos={distAcuerdo} color="#567d96" totalMes={totalBase} theme="elevated" />
+          <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#7390a4" />} datos={distCuotas} color="#7390a4" totalMes={totalBase} theme="elevated" />
+          <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#5f8177" />} datos={distRango} color="#5f8177" totalMes={totalBase} theme="elevated" />
+          <DistBlock titulo="Sexo" icon={<Users size={12} color="#83768f" />} datos={distSexo} color="#83768f" totalMes={totalBase} theme="elevated" />
+          <DistBlock titulo="Empleador" icon={<Shield size={12} color="#8f7d68" />} datos={distEmpleador} color="#8f7d68" totalMes={totalBase} theme="elevated" />
         </div>
       </section>
     </div>
