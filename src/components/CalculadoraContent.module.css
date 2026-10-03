@@ -1,0 +1,61 @@
+.calculatorContent { display: grid; gap: 19px; color: #1d2a42; }
+.toolbar { min-height: 50px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 1px 3px 15px; border-bottom: 1px solid #e2e8ef; }
+.toolbar > div { display: grid; gap: 3px; }
+.toolbar strong { color: #23324b; font-size: 12px; font-weight: 760; }
+.toolbar span { color: #7c899c; font-size: 9px; }
+.toolbar button { height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid #d5dfe8; border-radius: 8px; color: #52647b; background: #fff; font-size: 9px; font-weight: 750; cursor: pointer; }
+.toolbar button:hover:not(:disabled) { border-color: #9db0bf; color: #315f82; background: #f0f5f8; }
+.toolbar button:disabled { opacity: .42; cursor: default; }
+.workspace { display: grid; gap: 18px; }
+.groups { min-width: 0; display: grid; gap: 17px; }
+.group { min-width: 0; padding: 17px; border: 1px solid #dce4ec; border-radius: 14px; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.035); }
+.groupHeader { display: flex; align-items: center; gap: 11px; margin-bottom: 15px; }
+.groupIcon { flex: 0 0 31px; width: 31px; height: 31px; display: grid; place-items: center; border: 1px solid #d4e1ea; border-radius: 9px; color: #315f82; background: #eaf2f7; }
+.collectionsIcon { color: #4d6978; background: #edf2f4; }
+.groupHeader > div { min-width: 0; display: grid; gap: 2px; }
+.groupHeader h3 { margin: 0; color: #21304a; font-size: 11px; font-weight: 780; }
+.groupHeader p { margin: 0; color: #8792a3; font-size: 8px; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.collectionFields { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.metricCard { min-width: 0; padding: 12px; border: 1px solid #e0e6ed; border-radius: 11px; background: #f8fafb; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease; }
+.metricCard:hover { border-color: #bac9d5; background: #fff; box-shadow: 0 5px 13px rgba(25,48,70,.055); }
+.metricCardActive { border-color: #b9d1c7; background: #f7fbf9; }
+.metricHeader { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.metricHeader label { flex: 0 0 auto; color: #43536a; font-size: 8px; font-weight: 800; letter-spacing: .35px; text-transform: uppercase; white-space: nowrap; }
+.metricHeader span { min-width: 0; overflow: hidden; color: #8a96a8; font-size: 7px; font-weight: 650; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.metricBody { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.percentageField { flex: 0 0 70px; height: 34px; display: flex; align-items: center; border: 1px solid #cad6e1; border-radius: 8px; background: #fff; overflow: hidden; }
+.percentageField:focus-within { border-color: #7f9db3; box-shadow: 0 0 0 3px rgba(49,95,130,.09); }
+.percentageField input { width: 48px; min-width: 0; height: 100%; padding: 0 0 0 9px; border: 0; outline: 0; color: #1f2e47; background: transparent; font: 750 13px var(--font-sans); text-align: center; font-variant-numeric: tabular-nums; }
+.percentageField input::-webkit-inner-spin-button { margin: 0; }
+.percentageField > span { color: #8795a8; font-size: 9px; font-weight: 750; }
+.metricBody output { min-width: 0; display: grid; gap: 2px; text-align: right; }
+.metricBody output small { color: #98a2b1; font-size: 6px; font-weight: 800; letter-spacing: .45px; text-transform: uppercase; }
+.metricBody output strong { overflow: hidden; color: #8a97a8; font-size: 10px; font-weight: 780; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.metricBody output.incentiveActive strong { color: #2d7b5d; }
+.summaryCard { min-width: 0; display: grid; grid-template-columns: 185px minmax(260px,1fr) minmax(230px,.85fr); align-items: center; gap: 22px; padding: 17px 19px; border: 1px solid #ccd9e3; border-radius: 14px; color: #fff; background: linear-gradient(145deg,#203d57 0%,#315f82 58%,#3e6f8f 100%); box-shadow: 0 12px 28px rgba(27,59,84,.18); }
+.summaryHeading { display: flex; align-items: center; gap: 10px; padding-right: 20px; border-right: 1px solid rgba(255,255,255,.16); }
+.summaryHeading > span { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; background: rgba(255,255,255,.1); }
+.summaryHeading > div { display: grid; gap: 2px; }
+.summaryHeading small { color: #cbd9e3; font-size: 7px; font-weight: 750; letter-spacing: .5px; text-transform: uppercase; }
+.summaryHeading strong { font-size: 11px; font-weight: 760; }
+.summaryRows { display: grid; gap: 11px; padding-right: 22px; border-right: 1px solid rgba(255,255,255,.16); }
+.summaryRows > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.summaryRows span, .summaryRows label { color: #d4e0e8; font-size: 8px; font-weight: 650; }
+.summaryRows strong { font-size: 10px; font-weight: 760; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.summaryRows .commissionValue { color: #a9e4c8; }
+.salaryRow { min-width: 0; }
+.salaryField { width: 145px; height: 31px; display: flex; align-items: center; gap: 5px; padding: 0 9px; border: 1px solid rgba(255,255,255,.24); border-radius: 8px; background: rgba(255,255,255,.1); transition: border-color .16s ease, background .16s ease, box-shadow .16s ease; }
+.salaryField:focus-within { border-color: rgba(255,255,255,.7); background: rgba(255,255,255,.16); box-shadow: 0 0 0 3px rgba(255,255,255,.08); }
+.salaryField > span { color: #dbe7ee; font-size: 10px; font-weight: 750; }
+.salaryField input { min-width: 0; width: 100%; height: 100%; padding: 0; border: 0; outline: 0; color: #fff; background: transparent; font: 760 10px var(--font-sans); text-align: right; font-variant-numeric: tabular-nums; }
+.salaryField input::-webkit-inner-spin-button { margin: 0; }
+.totalBlock { display: grid; gap: 4px; }
+.totalBlock small { color: #c8d6e0; font-size: 7px; font-weight: 800; letter-spacing: .55px; text-transform: uppercase; }
+.totalBlock strong { font-family: Georgia,'Times New Roman',serif; font-size: 22px; letter-spacing: -.35px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.totalBlock span { color: #bdd0dc; font-size: 7px; font-weight: 650; }
+@media (max-width: 760px) {
+  .summaryCard { grid-template-columns: 1fr; gap: 14px; }
+  .summaryHeading, .summaryRows { padding-right: 0; padding-bottom: 13px; border-right: 0; border-bottom: 1px solid rgba(255,255,255,.16); }
+}
+@media (max-width: 560px) { .toolbar { align-items: flex-start; } .fields, .collectionFields { grid-template-columns: 1fr; } }

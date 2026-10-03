@@ -22,7 +22,7 @@ import { TagBadge } from '@/components/EtiquetasSelector';
 import { getLocalidadesByCP, getCPByLocalidad, addCustomMapping } from '@/lib/codigos-postales';
 import { useSearchParams } from 'next/navigation';
 import { PremiumSelect } from '@/components/PremiumSelect';
-import { CorporateDatePicker } from '@/components/CorporateDatePicker';
+import { CorporateDateRangePicker } from '@/components/CorporateDateRangePicker';
 import styles from './RegistrosPage.module.css';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -2152,13 +2152,13 @@ export default function RegistrosPage() {
         <div className="records-toolbar">
           <label className="records-search"><Search size={18} /><input value={filters.search} onChange={e => setFilter('search', e.target.value)} placeholder="Buscar cliente, CUIL o gestor..." /></label>
           <button type="button" className={`records-toolbar-btn${hayFiltros || filtersPanelOpen ? ' is-active' : ''}`} onClick={() => setFiltersPanelOpen(open => !open)} aria-expanded={filtersPanelOpen}><SlidersHorizontal size={17} /> Filtros <ChevronDown size={14} /></button>
-          <CorporateDatePicker
+          <CorporateDateRangePicker
             compact
-            value={filters.fechaDesde === filters.fechaHasta ? filters.fechaDesde : ''}
-            placeholder={`Hoy, ${formatDate(new Date().toISOString())}`}
-            onChange={value => {
-              setFilter('fechaDesde', value);
-              setFilter('fechaHasta', value);
+            fromValue={filters.fechaDesde}
+            toValue={filters.fechaHasta}
+            onChange={({ from, to }) => {
+              setFilter('fechaDesde', from);
+              setFilter('fechaHasta', to);
             }}
           />
           <span className="records-toolbar-spacer" />
@@ -2219,13 +2219,16 @@ export default function RegistrosPage() {
               <span>Estado</span>
               <CustomSelect width="100%" value={filters.estados[0] || ''} onChange={value => setFilter('estados', value ? [String(value)] : [])} options={[{ value: '', label: 'Todos los estados' }, ...ESTADOS.map(estado => ({ value: estado, label: capitalizarTexto(estado) }))]} />
             </div>
-            <div className="records-filter-field">
-              <span>Desde</span>
-              <CorporateDatePicker value={filters.fechaDesde} onChange={value => setFilter('fechaDesde', value)} placeholder="Desde" />
-            </div>
-            <div className="records-filter-field">
-              <span>Hasta</span>
-              <CorporateDatePicker value={filters.fechaHasta} onChange={value => setFilter('fechaHasta', value)} placeholder="Hasta" />
+            <div className="records-filter-field is-date-range">
+              <span>Período</span>
+              <CorporateDateRangePicker
+                fromValue={filters.fechaDesde}
+                toValue={filters.fechaHasta}
+                onChange={({ from, to }) => {
+                  setFilter('fechaDesde', from);
+                  setFilter('fechaHasta', to);
+                }}
+              />
             </div>
             <label className="records-filter-field">
               <span>Score mínimo</span>

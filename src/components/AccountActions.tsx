@@ -102,7 +102,10 @@ export default function AccountActions() {
           <div className={styles.overlay} onClick={() => setShowCalculadora(false)}>
             <div className={styles.calculatorPanel} onClick={e => e.stopPropagation()}>
               <div className={styles.calculatorHeader}>
-                <span className={styles.calculatorTitle}>Calculadora</span>
+                <div className={styles.calculatorHeading}>
+                  <span className={styles.calculatorHeadingIcon}><Calculator size={18} /></span>
+                  <div><span className={styles.calculatorTitle}>Calculadora de incentivos</span><small>Proyección de sueldo y comisiones</small></div>
+                </div>
                 <button type="button" onClick={() => setShowCalculadora(false)} aria-label="Cerrar" className={styles.calculatorClose}>
                   <X size={18} />
                 </button>

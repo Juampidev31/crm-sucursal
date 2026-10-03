@@ -84,6 +84,13 @@
 
 .reportCard[data-accent="blue"] .reportAction { color: var(--action-primary); }
 
+.reportCard[data-accent="slate"] .reportIcon {
+  color: #526b7e;
+  background: #eef2f5;
+}
+
+.reportCard[data-accent="slate"] .reportAction { color: #526b7e; }
+
 .reportTitle {
   margin: 0 0 12px;
   color: var(--text-strong);

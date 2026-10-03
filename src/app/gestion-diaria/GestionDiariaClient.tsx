@@ -8,37 +8,42 @@ import { GestionDiaria, GESTION_DIARIA_OPCIONES } from '@/types';
 import { formatCurrency, formatDate, formatearCuil, sanitizarCuil } from '@/lib/utils';
 import { PremiumSelect } from '@/components/PremiumSelect';
 import { CorporateDatePicker } from '@/components/CorporateDatePicker';
+import { CorporateDateRangePicker } from '@/components/CorporateDateRangePicker';
 import ModalPortal from '@/components/ModalPortal';
-import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, TableProperties, Trash2 } from 'lucide-react';
+import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, TableProperties, Trash2, X } from 'lucide-react';
+import {
+  buildIncomeRows,
+  databaseRowToIncomeRow,
+  GESTION_SHEETS as SHEETS,
+  GESTION_SHEET_TABS as SHEET_TABS,
+  incomeRowIdentity,
+  loadGoogleSheet,
+  normalizeGestionValue as normalizeLookupValue,
+  readPersistedSheetChanges,
+  sheetChangesStorageKey,
+  type GestionSheetAnalyst as SheetAnalyst,
+  type IncomeSheetRow,
+  type PersistedSheetChanges,
+  type SheetTableData,
+} from '@/lib/gestion-diaria-sheets';
 
 type GestionTab = 'ingresos' | 'flyers' | 'emails';
 
-const SHEETS = {
-  Victoria: '1GVPFJrrX4j0AM3vd4meGWtd6O-IS67Ljx7l_3Enyb_I',
-  Magali: '1WUz03tOW-pYVop-cfXYxUlX0wnCxToHUX9V3hU6NGFc',
-} as const;
-
-const SHEET_TABS = {
-  ingresos: { gid: '1686263284', label: 'Ingreso diario ventas' },
-  flyers: { gid: '2080980149', label: 'Flyers' },
-  emails: { gid: '1110496106', label: 'Emails enviados' },
-} as const;
-
-type SheetAnalyst = keyof typeof SHEETS;
-
-interface GoogleSheetCell { v?: unknown; f?: string }
-interface GoogleSheetResponse {
-  status?: string;
-  errors?: Array<{ detailed_message?: string; message?: string }>;
-  table?: {
-    cols?: Array<{ id?: string; label?: string }>;
-    rows?: Array<{ c?: Array<GoogleSheetCell | null> }>;
-  };
+function mergeFilterOptions(configured: readonly string[], values: string[]): string[] {
+  const unique = new Map<string, string>();
+  [...configured, ...values].forEach(value => {
+    const cleanValue = value.trim();
+    const key = normalizeLookupValue(cleanValue);
+    if (key && !unique.has(key)) unique.set(key, cleanValue);
+  });
+  return Array.from(unique.values()).sort((left, right) => left.localeCompare(right, 'es'));
 }
 
-interface SheetTableData {
-  columns: string[];
-  rows: string[][];
+function scoreFromText(value: string): number | null {
+  const normalized = value.replace(/[^\d,-]/g, '').replace(',', '.');
+  if (!normalized) return null;
+  const score = Number(normalized);
+  return Number.isFinite(score) ? score : null;
 }
 
 interface CommercialEntry {
@@ -69,35 +74,6 @@ interface CommercialEntryForm {
   bancosCajeros: string;
   nombre: string;
   email: string;
-}
-
-interface IncomeSheetRow {
-  id: string;
-  databaseId?: string;
-  tipoCliente: string;
-  fecha: string;
-  nombre: string;
-  cuil: string;
-  actividad: string;
-  estado: string;
-  score: string;
-  tipoOperacion: string;
-  montoOtorgado: string;
-  interesVenta: string;
-  comentarios: string;
-}
-
-interface PersistedSheetChanges {
-  overrides: Record<string, IncomeSheetRow>;
-  deletedIds: string[];
-}
-
-function normalizeLookupValue(value: unknown): string {
-  return String(value ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .toLowerCase();
 }
 
 function commercialEntriesKey(analyst: string, tab: Exclude<GestionTab, 'ingresos'>): string {
@@ -193,67 +169,6 @@ function commercialColumnClass(column: string, columnIndex: number): string {
     numericColumns.has(normalized) ? 'daily-sheet-number-cell' : 'daily-sheet-text-cell',
     normalized === 'score' ? 'daily-score-cell' : '',
   ].filter(Boolean).join(' ');
-}
-
-function buildIncomeRows(data: SheetTableData): IncomeSheetRow[] {
-  const headerIndex = new Map(data.columns.map((column, index) => [normalizeLookupValue(column), index]));
-  const indexOf = (...labels: string[]) => labels.map(label => headerIndex.get(normalizeLookupValue(label))).find(index => index != null) ?? -1;
-  const indexes = {
-    fecha: indexOf('FECHA'),
-    tipoCliente: indexOf('TIPO DE CLIENTE', 'TIPO CLIENTE'),
-    nombre: indexOf('APELLIDO Y NOMBRE', 'NOMBRE'),
-    cuil: indexOf('CUIL'),
-    actividad: indexOf('ACTIVIDAD'),
-    estado: indexOf('ESTADO'),
-    score: indexOf('SCORE'),
-    tipoOperacion: indexOf('APERTURA/RENOVACION', 'AP/REN'),
-    montoOtorgado: indexOf('MONTO OTORGADO'),
-    interesVenta: indexOf('(I) X VENTA', 'I X VENTA'),
-    comentarios: indexOf('COMENTARIOS'),
-  };
-  const cell = (row: string[], index: number) => index >= 0 ? row[index] : '';
-  return data.rows
-    .map((row, index) => ({
-      id: `${index}-${cell(row, indexes.cuil)}-${cell(row, indexes.fecha)}`,
-      tipoCliente: cell(row, indexes.tipoCliente),
-      fecha: cell(row, indexes.fecha),
-      nombre: cell(row, indexes.nombre),
-      cuil: cell(row, indexes.cuil),
-      actividad: cell(row, indexes.actividad),
-      estado: cell(row, indexes.estado),
-      score: cell(row, indexes.score),
-      tipoOperacion: cell(row, indexes.tipoOperacion),
-      montoOtorgado: cell(row, indexes.montoOtorgado),
-      interesVenta: cell(row, indexes.interesVenta),
-      comentarios: cell(row, indexes.comentarios),
-    }))
-    .sort((left, right) => right.fecha.localeCompare(left.fecha));
-}
-
-function databaseRowToIncomeRow(row: GestionDiaria): IncomeSheetRow {
-  return {
-    id: `database-${row.id}`,
-    databaseId: row.id,
-    tipoCliente: row.tipo_cliente,
-    fecha: row.fecha ?? '',
-    nombre: row.nombre,
-    cuil: row.cuil,
-    actividad: row.actividad,
-    estado: row.estado,
-    score: row.score == null ? '' : String(row.score),
-    tipoOperacion: row.tipo_operacion,
-    montoOtorgado: row.monto_otorgado ? formatCurrency(row.monto_otorgado) : '',
-    interesVenta: row.interes_x_venta == null ? '' : formatCurrency(row.interes_x_venta),
-    comentarios: row.comentarios,
-  };
-}
-
-function incomeRowIdentity(row: IncomeSheetRow): string {
-  return [row.cuil, row.fecha, row.nombre].map(normalizeLookupValue).join('|');
-}
-
-function sheetChangesStorageKey(analyst: string): string {
-  return `gestion-diaria-sheet-changes:${analyst}`;
 }
 
 function DailyScore({ value }: { value: string }) {
@@ -374,16 +289,6 @@ function DailyPagination({
   );
 }
 
-function readPersistedSheetChanges(analyst: string): PersistedSheetChanges {
-  if (typeof window === 'undefined' || !analyst) return { overrides: {}, deletedIds: [] };
-  try {
-    const stored = window.localStorage.getItem(sheetChangesStorageKey(analyst));
-    return stored ? JSON.parse(stored) as PersistedSheetChanges : { overrides: {}, deletedIds: [] };
-  } catch {
-    return { overrides: {}, deletedIds: [] };
-  }
-}
-
 function incomeRowToForm(row: IncomeSheetRow): Partial<GestionDiaria> {
   const numberFromText = (value: string) => {
     const parsed = Number(value.replace(/[^\d,-]/g, '').replace(',', '.'));
@@ -403,58 +308,6 @@ function incomeRowToForm(row: IncomeSheetRow): Partial<GestionDiaria> {
     interes_x_venta: numberFromText(row.interesVenta),
     comentarios: row.comentarios,
   };
-}
-
-function sheetCellText(cell: GoogleSheetCell | null | undefined): string {
-  if (!cell) return '';
-  if (cell.v == null) return '';
-  const raw = String(cell.v);
-  const date = raw.match(/^Date\((\d{4}),(\d{1,2}),(\d{1,2})\)$/);
-  if (date) return `${date[1]}-${String(Number(date[2]) + 1).padStart(2, '0')}-${date[3].padStart(2, '0')}`;
-  if (cell.f != null) return cell.f;
-  return raw;
-}
-
-function loadGoogleSheet(sheetId: string, gid: string): Promise<SheetTableData> {
-  return new Promise((resolve, reject) => {
-    const callbackName = `__gestionSheet_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    const script = document.createElement('script');
-    const timeout = window.setTimeout(() => finish(new Error('La hoja tardó demasiado en responder.')), 15000);
-    const callbacks = window as unknown as Record<string, unknown>;
-
-    function cleanup() {
-      window.clearTimeout(timeout);
-      script.remove();
-      delete callbacks[callbackName];
-    }
-
-    function finish(error?: Error, data?: SheetTableData) {
-      cleanup();
-      if (error) reject(error);
-      else if (data) resolve(data);
-    }
-
-    callbacks[callbackName] = (response: GoogleSheetResponse) => {
-      if (response.status === 'error' || !response.table) {
-        const message = response.errors?.[0]?.detailed_message || response.errors?.[0]?.message || 'No se pudo leer la hoja.';
-        finish(new Error(message));
-        return;
-      }
-      const sourceRows = response.table.rows ?? [];
-      const columnCount = Math.max(response.table.cols?.length ?? 0, ...sourceRows.map(row => row.c?.length ?? 0), 0);
-      const columns = Array.from({ length: columnCount }, (_, index) => (
-        response.table?.cols?.[index]?.label?.trim() || `Columna ${index + 1}`
-      ));
-      const rows = sourceRows
-        .map(row => Array.from({ length: columnCount }, (_, index) => sheetCellText(row.c?.[index])))
-        .filter(row => row.some(Boolean));
-      finish(undefined, { columns, rows });
-    };
-
-    script.onerror = () => finish(new Error('No se pudo conectar con Google Sheets.'));
-    script.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&tqx=out:json;responseHandler:${callbackName}`;
-    document.head.appendChild(script);
-  });
 }
 
 const initialForm: Partial<GestionDiaria> = {
@@ -567,6 +420,10 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [tipoCliente, setTipoCliente] = useState('');
+  const [actividad, setActividad] = useState('');
+  const [estado, setEstado] = useState('');
+  const [scoreMinimo, setScoreMinimo] = useState('');
+  const [scoreMaximo, setScoreMaximo] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<Partial<GestionDiaria>>(initialForm);
@@ -645,13 +502,21 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
       if (fechaDesde && (!r.fecha || r.fecha < fechaDesde)) return false;
       if (fechaHasta && (!r.fecha || r.fecha > fechaHasta)) return false;
       if (tipoCliente && r.tipoCliente !== tipoCliente) return false;
+      if (actividad && r.actividad !== actividad) return false;
+      if (estado && r.estado !== estado) return false;
+      if (scoreMinimo || scoreMaximo) {
+        const score = scoreFromText(r.score);
+        if (score === null) return false;
+        if (scoreMinimo && score < Number(scoreMinimo)) return false;
+        if (scoreMaximo && score > Number(scoreMaximo)) return false;
+      }
       if (busqueda) {
         const q = busqueda.toLowerCase();
         if (!r.nombre.toLowerCase().includes(q) && !r.cuil.includes(q)) return false;
       }
       return true;
     });
-  }, [visibleIncomeRows, fechaDesde, fechaHasta, tipoCliente, busqueda]);
+  }, [visibleIncomeRows, fechaDesde, fechaHasta, tipoCliente, actividad, estado, scoreMinimo, scoreMaximo, busqueda]);
 
   const incomeTotalPages = Math.max(1, Math.ceil(filtrados.length / incomePageSize));
   const safeIncomePage = Math.min(incomePage, incomeTotalPages);
@@ -660,10 +525,33 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
     return filtrados.slice(start, start + incomePageSize);
   }, [filtrados, incomePageSize, safeIncomePage]);
 
-  const tipoClienteOptions = useMemo(() => Array.from(new Set([
-    ...GESTION_DIARIA_OPCIONES.tipoCliente,
-    ...visibleIncomeRows.map(row => row.tipoCliente).filter(Boolean),
-  ])).sort((left, right) => left.localeCompare(right, 'es')), [visibleIncomeRows]);
+  const tipoClienteOptions = useMemo(
+    () => mergeFilterOptions(GESTION_DIARIA_OPCIONES.tipoCliente, visibleIncomeRows.map(row => row.tipoCliente)),
+    [visibleIncomeRows],
+  );
+  const actividadOptions = useMemo(
+    () => mergeFilterOptions(GESTION_DIARIA_OPCIONES.actividad, visibleIncomeRows.map(row => row.actividad)),
+    [visibleIncomeRows],
+  );
+  const estadoOptions = useMemo(
+    () => mergeFilterOptions(GESTION_DIARIA_OPCIONES.estado, visibleIncomeRows.map(row => row.estado)),
+    [visibleIncomeRows],
+  );
+  const hasActiveFilters = Boolean(
+    busqueda || fechaDesde || fechaHasta || tipoCliente || actividad || estado || scoreMinimo || scoreMaximo,
+  );
+
+  const clearIncomeFilters = () => {
+    setBusqueda('');
+    setFechaDesde('');
+    setFechaHasta('');
+    setTipoCliente('');
+    setActividad('');
+    setEstado('');
+    setScoreMinimo('');
+    setScoreMaximo('');
+    setIncomePage(1);
+  };
 
   const cambiarAnalista = (value: string) => {
     const persisted = readPersistedSheetChanges(value);
@@ -838,18 +726,74 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
 
       {activeTab === 'ingresos' ? <>
       <div className="daily-toolbar">
-        <div className="daily-search">
-          <Search className="daily-search__icon" size={14} />
-          <input value={busqueda} onChange={e => { setBusqueda(e.target.value); setIncomePage(1); }} placeholder="Buscar cliente o CUIL..." className="form-input" />
+        <div className="daily-toolbar-primary">
+          <div className="daily-search">
+            <Search className="daily-search__icon" size={14} />
+            <input value={busqueda} onChange={e => { setBusqueda(e.target.value); setIncomePage(1); }} placeholder="Buscar cliente o CUIL..." className="form-input" />
+          </div>
+          <CorporateDateRangePicker
+            fromValue={fechaDesde}
+            toValue={fechaHasta}
+            onChange={({ from, to }) => {
+              setFechaDesde(from);
+              setFechaHasta(to);
+              setIncomePage(1);
+            }}
+            compact
+          />
+          <button onClick={abrirNuevo} className="btn-primary daily-add-button">
+            <Plus size={16} /> Agregar registro
+          </button>
         </div>
-        <CorporateDatePicker value={fechaDesde} onChange={value => { setFechaDesde(value); setIncomePage(1); }} placeholder="Desde" compact />
-        <CorporateDatePicker value={fechaHasta} onChange={value => { setFechaHasta(value); setIncomePage(1); }} placeholder="Hasta" compact />
-        <div className="daily-type-filter">
-          <PremiumSelect value={tipoCliente} onChange={value => { setTipoCliente(value); setIncomePage(1); }} options={tipoClienteOptions} placeholder="Tipo de cliente" isSearchable />
+        <div className="daily-filter-bar">
+          <div className="daily-filter-control">
+            <span>Tipo de cliente</span>
+            <PremiumSelect value={tipoCliente} onChange={value => { setTipoCliente(value); setIncomePage(1); }} options={tipoClienteOptions} placeholder="Todos" isSearchable />
+          </div>
+          <div className="daily-filter-control">
+            <span>Actividad</span>
+            <PremiumSelect value={actividad} onChange={value => { setActividad(value); setIncomePage(1); }} options={actividadOptions} placeholder="Todas" isSearchable />
+          </div>
+          <div className="daily-filter-control">
+            <span>Estado</span>
+            <PremiumSelect value={estado} onChange={value => { setEstado(value); setIncomePage(1); }} options={estadoOptions} placeholder="Todos" />
+          </div>
+          <div className="daily-filter-control daily-score-control">
+            <span>Score</span>
+            <div className="daily-score-filter" aria-label="Filtrar por score">
+              <input
+                type="number"
+                min="0"
+                max="999"
+                inputMode="numeric"
+                value={scoreMinimo}
+                onChange={event => { setScoreMinimo(event.target.value); setIncomePage(1); }}
+                placeholder="Mínimo"
+                aria-label="Score mínimo"
+              />
+              <span aria-hidden="true">—</span>
+              <input
+                type="number"
+                min="0"
+                max="999"
+                inputMode="numeric"
+                value={scoreMaximo}
+                onChange={event => { setScoreMaximo(event.target.value); setIncomePage(1); }}
+                placeholder="Máximo"
+                aria-label="Score máximo"
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            className="daily-clear-filters"
+            onClick={clearIncomeFilters}
+            disabled={!hasActiveFilters}
+            title="Limpiar todos los filtros"
+          >
+            <X size={13} /> Limpiar
+          </button>
         </div>
-        <button onClick={abrirNuevo} className="btn-primary daily-add-button">
-          <Plus size={16} /> Agregar registro
-        </button>
       </div>
 
       {incomeLoading ? <DailyLoadingState kind="ingresos" label="Ingreso diario de ventas" /> : incomeError ? (

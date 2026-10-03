@@ -1,9 +1,13 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import { CreditCard, ChevronRight, UsersRound } from 'lucide-react';
+import { BarChart3, CreditCard, ChevronRight, UsersRound } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import styles from './ReportesPage.module.css';
 
 export default function ReportesHubPage() {
+  const { isAdmin } = useAuth();
   const reports = [
     {
       id: 'analistas',
@@ -23,6 +27,15 @@ export default function ReportesHubPage() {
       stats: 'Actualizado hoy',
       accent: 'green',
     },
+    ...(isAdmin ? [{
+      id: 'gestion-diaria',
+      title: 'Gestión Diaria Mensual',
+      desc: 'Métricas y cantidades por tipo de cliente, actividad, estado y rangos de score.',
+      icon: BarChart3,
+      path: '/reportes/gestion-diaria',
+      stats: 'Solo administración',
+      accent: 'slate',
+    }] : []),
   ];
 
   return (
