@@ -2110,12 +2110,12 @@ textarea:focus {
 }
 
 .daily-management-header {
-  min-height: 68px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 12px 16px;
+  padding: 8px 14px;
   border-bottom: 1px solid #dfe6ee;
 }
 
@@ -2127,9 +2127,9 @@ textarea:focus {
 }
 
 .daily-management-title__icon {
-  flex: 0 0 34px;
-  width: 34px;
-  height: 34px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   color: var(--action-primary);
@@ -2147,7 +2147,7 @@ textarea:focus {
 }
 
 .daily-management-title p {
-  margin: 5px 0 0;
+  margin: 2px 0 0;
   color: #76849a;
   font-size: var(--type-control);
   line-height: var(--line-body);
@@ -2168,7 +2168,7 @@ textarea:focus {
 }
 
 .daily-tabs {
-  min-height: 48px;
+  min-height: 40px;
   display: flex;
   align-items: stretch;
   gap: 5px;
@@ -2182,7 +2182,7 @@ textarea:focus {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 0 15px;
+  padding: 0 13px;
   color: #6a788d;
   background: transparent;
   border: 0;
@@ -2220,11 +2220,11 @@ textarea:focus {
 
 .daily-toolbar-primary {
   min-width: 0;
-  min-height: 62px;
+  min-height: 52px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 7px 14px;
 }
 
 .daily-search {
@@ -2239,14 +2239,14 @@ textarea:focus {
 
 .daily-search__icon {
   position: absolute;
-  top: 12px;
+  top: 11px;
   left: 10px;
   opacity: .5;
 }
 
 .daily-search .form-input {
   width: 100%;
-  height: 40px;
+  height: 36px;
   padding-left: 32px;
   border-radius: 8px;
 }
@@ -2254,19 +2254,19 @@ textarea:focus {
 .daily-filter-bar {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(145px, 1fr)) minmax(195px, 1.15fr) auto;
+  grid-template-columns: repeat(3, minmax(145px, 1fr)) minmax(195px, 1.15fr);
   align-items: end;
   gap: 10px;
-  padding: 10px 14px 12px;
+  padding: 7px 14px 9px;
   background: #f7f9fb;
   border-top: 1px solid #edf1f4;
 }
 .daily-filter-control { min-width: 0; display: grid; gap: 5px; }
 .daily-filter-control > span { color: #6d7c91; font-size: 7px; font-weight: 800; letter-spacing: .45px; text-transform: uppercase; }
-.daily-filter-control .premium-select-trigger { height: 38px; min-height: 38px; background: #fff; }
+.daily-filter-control .premium-select-trigger { height: 34px; min-height: 34px; background: #fff; }
 .daily-score-filter {
   min-width: 0;
-  height: 38px;
+  height: 34px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
@@ -2294,6 +2294,24 @@ textarea:focus {
 .daily-score-filter input::placeholder { color: #8794a7; opacity: 1; }
 .daily-score-filter input::-webkit-inner-spin-button { margin: 0; }
 .daily-score-filter > span { color: #99a6b6; font-size: 10px; }
+.daily-filter-toggle {
+  flex: 0 0 auto;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  color: #40536b;
+  background: #f7f9fb;
+  border: 1px solid #d6e0e9;
+  border-radius: 8px;
+  font: 750 9px var(--font-sans);
+  cursor: pointer;
+}
+.daily-filter-toggle:hover, .daily-filter-toggle.is-open { color: #315b7d; background: #edf3f7; border-color: #b9cad7; }
+.daily-filter-toggle.has-filters { color: #315b7d; border-color: #9db6c8; }
+.daily-filter-toggle > span { min-width: 17px; height: 17px; display: grid; place-items: center; color: #fff; background: #315b7d; border-radius: 999px; font-size: 8px; }
 .daily-clear-filters {
   height: 38px;
   display: inline-flex;
@@ -2311,9 +2329,10 @@ textarea:focus {
 }
 .daily-clear-filters:hover:not(:disabled) { color: #a93643; background: #fdebed; border-color: #e6aab1; }
 .daily-clear-filters:disabled { color: #d77982; background: #fff7f7; border-color: #f0cdd1; cursor: default; opacity: 1; }
+.daily-clear-filters--compact { height: 36px; }
 .daily-add-button {
   flex: 0 0 auto;
-  height: 40px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   gap: 7px;

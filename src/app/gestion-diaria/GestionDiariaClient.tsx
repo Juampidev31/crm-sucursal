@@ -10,7 +10,7 @@ import { PremiumSelect } from '@/components/PremiumSelect';
 import { CorporateDatePicker } from '@/components/CorporateDatePicker';
 import { CorporateDateRangePicker } from '@/components/CorporateDateRangePicker';
 import ModalPortal from '@/components/ModalPortal';
-import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, TableProperties, Trash2, X } from 'lucide-react';
+import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, SlidersHorizontal, TableProperties, Trash2, X } from 'lucide-react';
 import {
   buildIncomeRows,
   databaseRowToIncomeRow,
@@ -425,6 +425,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
   const [scoreMinimo, setScoreMinimo] = useState('');
   const [scoreMaximo, setScoreMaximo] = useState('');
   const [busqueda, setBusqueda] = useState('');
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<Partial<GestionDiaria>>(initialForm);
   const [saving, setSaving] = useState(false);
@@ -540,6 +541,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
   const hasActiveFilters = Boolean(
     busqueda || fechaDesde || fechaHasta || tipoCliente || actividad || estado || scoreMinimo || scoreMaximo,
   );
+  const advancedFilterCount = [tipoCliente, actividad, estado, scoreMinimo || scoreMaximo].filter(Boolean).length;
 
   const clearIncomeFilters = () => {
     setBusqueda('');
@@ -551,6 +553,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
     setScoreMinimo('');
     setScoreMaximo('');
     setIncomePage(1);
+    setFiltersExpanded(false);
   };
 
   const cambiarAnalista = (value: string) => {
@@ -741,11 +744,32 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
             }}
             compact
           />
+          <button
+            type="button"
+            className={`daily-filter-toggle${filtersExpanded ? ' is-open' : ''}${advancedFilterCount ? ' has-filters' : ''}`}
+            onClick={() => setFiltersExpanded(current => !current)}
+            aria-expanded={filtersExpanded}
+            aria-controls="daily-advanced-filters"
+          >
+            <SlidersHorizontal size={14} />
+            Filtros
+            {advancedFilterCount > 0 && <span>{advancedFilterCount}</span>}
+          </button>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className="daily-clear-filters daily-clear-filters--compact"
+              onClick={clearIncomeFilters}
+              title="Limpiar todos los filtros"
+            >
+              <X size={13} /> Limpiar
+            </button>
+          )}
           <button onClick={abrirNuevo} className="btn-primary daily-add-button">
             <Plus size={16} /> Agregar registro
           </button>
         </div>
-        <div className="daily-filter-bar">
+        {filtersExpanded && <div className="daily-filter-bar" id="daily-advanced-filters">
           <div className="daily-filter-control">
             <span>Tipo de cliente</span>
             <PremiumSelect value={tipoCliente} onChange={value => { setTipoCliente(value); setIncomePage(1); }} options={tipoClienteOptions} placeholder="Todos" isSearchable />
@@ -784,16 +808,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
               />
             </div>
           </div>
-          <button
-            type="button"
-            className="daily-clear-filters"
-            onClick={clearIncomeFilters}
-            disabled={!hasActiveFilters}
-            title="Limpiar todos los filtros"
-          >
-            <X size={13} /> Limpiar
-          </button>
-        </div>
+        </div>}
       </div>
 
       {incomeLoading ? <DailyLoadingState kind="ingresos" label="Ingreso diario de ventas" /> : incomeError ? (
