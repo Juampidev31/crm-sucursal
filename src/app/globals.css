@@ -711,6 +711,10 @@ iframe::-webkit-scrollbar {
 .premium-select-chevron.is-open { transform: rotate(180deg); }
 .premium-select-dropdown { position: absolute; z-index: 9999; top: calc(100% + 4px); right: 0; left: 0; overflow: hidden; background: var(--surface-card); border: 1px solid var(--control-border); border-radius: var(--control-radius); box-shadow: 0 12px 32px rgba(15,23,42,.14); animation: selectFade .2s ease-out; }
 .premium-select-dropdown.opens-upward { top: auto; bottom: calc(100% + 4px); }
+/* Portaleado sobre <body>: las coordenadas llegan inline y son contra la
+   pantalla, así que se anulan los anclajes relativos al trigger. */
+.premium-select-dropdown.is-portaled { position: fixed; right: auto; bottom: auto; z-index: 10050; }
+.premium-select-dropdown.is-portaled.opens-upward { top: auto; bottom: auto; }
 .premium-select-search { padding: 8px; background: var(--surface-card); border-bottom: 1px solid var(--border-subtle); }
 .premium-select-search__field { position: relative; }
 .premium-select-search__field > svg { position: absolute; top: 50%; left: 10px; color: var(--text-muted); transform: translateY(-50%); }
@@ -1924,7 +1928,11 @@ textarea:focus {
   z-index: 10010;
 }
 
-.modal-content .premium-select-dropdown {
+/* El panel del select abierto dentro de un modal ya no es descendiente de
+   .modal-content (se dibuja en un portal), así que lleva la clase .is-in-modal
+   para conservar su aspecto. */
+.modal-content .premium-select-dropdown,
+.premium-select-dropdown.is-in-modal {
   overflow: hidden;
   isolation: isolate;
   background: #f4f7fa;
@@ -1934,16 +1942,24 @@ textarea:focus {
 }
 
 .modal-content .premium-select-dropdown > div,
-.modal-content .premium-select-dropdown > div > div { border-color: #e1e7ee; }
-.modal-content .premium-select-dropdown input { color: #22324a; background: #f8fafc; }
+.modal-content .premium-select-dropdown > div > div,
+.premium-select-dropdown.is-in-modal > div,
+.premium-select-dropdown.is-in-modal > div > div { border-color: #e1e7ee; }
+.modal-content .premium-select-dropdown input,
+.premium-select-dropdown.is-in-modal input { color: #22324a; background: #f8fafc; }
 .modal-content .premium-select-option,
-.modal-content .premium-select-empty-option {
+.modal-content .premium-select-empty-option,
+.premium-select-dropdown.is-in-modal .premium-select-option,
+.premium-select-dropdown.is-in-modal .premium-select-empty-option {
   color: #344054;
   background: #ffffff;
 }
-.modal-content .premium-select-option:hover { color: #315b7d; background: #f0f4f7; }
-.modal-content .premium-select-option.is-selected { color: #315b7d; background: #eaf0f5; }
-.modal-content .premium-select-add {
+.modal-content .premium-select-option:hover,
+.premium-select-dropdown.is-in-modal .premium-select-option:hover { color: #315b7d; background: #f0f4f7; }
+.modal-content .premium-select-option.is-selected,
+.premium-select-dropdown.is-in-modal .premium-select-option.is-selected { color: #315b7d; background: #eaf0f5; }
+.modal-content .premium-select-add,
+.premium-select-dropdown.is-in-modal .premium-select-add {
   color: #315b7d;
   background: #eef3f7;
   border-top-color: #d7e0e8;
