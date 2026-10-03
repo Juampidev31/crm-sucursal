@@ -165,6 +165,12 @@ const ReminderAlertPopup = () => {
 const LEGACY_ADMIN_ZOOM_STORAGE_KEY = 'app_admin_zoom_levels_v3';
 const pageZoomStorageKey = (pathname: string) => `app_admin_page_zoom_v1:${pathname}`;
 
+// Límites del zoom interno del admin (el que reemplaza al nativo con Ctrl+rueda).
+// El piso se mantiene en 0.7: por debajo el layout se rompía en 1366x768, que es
+// el motivo por el que existe el interceptor.
+const ADMIN_ZOOM_MIN = 0.7;
+const ADMIN_ZOOM_MAX = 2;
+
 function AppShellInner({ children, pathname }: { children: React.ReactNode, pathname: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -220,7 +226,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       }
 
       const saved = Number.parseFloat(localStorage.getItem(pageZoomStorageKey(pathname)) ?? '1');
-      setCurrentZoom(Number.isFinite(saved) ? Math.min(1.3, Math.max(0.7, saved)) : 1);
+      setCurrentZoom(Number.isFinite(saved) ? Math.min(ADMIN_ZOOM_MAX, Math.max(ADMIN_ZOOM_MIN, saved)) : 1);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [isAdmin, loading, pathname]);
@@ -232,7 +238,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     if (!isAdmin) return;
 
     setCurrentZoom(current => {
-      const next = Math.max(0.7, Math.min(1.3, Math.round((current + delta) * 100) / 100));
+      const next = Math.max(ADMIN_ZOOM_MIN, Math.min(ADMIN_ZOOM_MAX, Math.round((current + delta) * 100) / 100));
       localStorage.setItem(pageZoomStorageKey(pathname), String(next));
       return next;
     });
