@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { CONFIG } from '@/types';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import { cumplColor } from '@/lib/registro-stats';
 import { Plus, Trash2, BarChart3, Users, TrendingUp, Activity, Shield, Target, FileText, Briefcase, PieChart, Tag, ChevronDown } from 'lucide-react';
 import MetricasTab from './MetricasTab';
@@ -526,8 +526,8 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
         {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#00ff88" />)}
         {!collapsedSections[3] && (
           <div className={styles.liveStyle090}>
-            <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" analistas={analistasDefault} />
-            <NuevaSeccionSheets analista="PDV" />
+            <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" analistas={analistasDefault} hideSelector reportAppearance />
+            <NuevaSeccionSheets analista="PDV" reportAppearance />
           </div>
         )}
       </div>
@@ -660,7 +660,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
                     ))}
                     <td className={styles.liveStyle113}>
                       {readOnly ? (
-                        <div className={styles.liveStyle114}>{fila.fecha || '—'}</div>
+                        <div className={styles.liveStyle114}>{fila.fecha ? formatDate(fila.fecha) : '—'}</div>
                       ) : (
                         <input
                           type="date"

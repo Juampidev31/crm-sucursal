@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useGestionDiaria } from '@/features/gestion-diaria/GestionDiariaProvider';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { GestionDiaria, GESTION_DIARIA_OPCIONES } from '@/types';
-import { formatCurrency, formatDate, sanitizarCuil } from '@/lib/utils';
+import { formatCurrency, formatDate, formatearCuil, sanitizarCuil } from '@/lib/utils';
 import { PremiumSelect } from '@/components/PremiumSelect';
 import { CorporateDatePicker } from '@/components/CorporateDatePicker';
 import ModalPortal from '@/components/ModalPortal';
@@ -269,6 +269,38 @@ function DailyScore({ value }: { value: string }) {
       <span className={`daily-score-dot is-${tone}`} aria-hidden="true" />
       <strong>{value}</strong>
     </span>
+  );
+}
+
+function DailyLoadingState({ kind, label }: { kind: GestionTab; label: string }) {
+  const Icon = kind === 'emails' ? Mail : kind === 'flyers' ? Megaphone : TableProperties;
+
+  return (
+    <div className={`daily-loading daily-loading--${kind}`} role="status" aria-live="polite">
+      <div className="daily-loading__content">
+        <div className="daily-loading__visual" aria-hidden="true">
+          <span className="daily-loading__orbit daily-loading__orbit--outer" />
+          <span className="daily-loading__orbit daily-loading__orbit--inner" />
+          <span className="daily-loading__icon"><Icon size={22} strokeWidth={1.8} /></span>
+          <span className="daily-loading__spark daily-loading__spark--one" />
+          <span className="daily-loading__spark daily-loading__spark--two" />
+          <span className="daily-loading__spark daily-loading__spark--three" />
+        </div>
+        <div className="daily-loading__copy">
+          <strong>Preparando {label.toLowerCase()}</strong>
+          <span>Sincronizando la información más reciente</span>
+        </div>
+        <div className="daily-loading__progress" aria-hidden="true"><span /></div>
+      </div>
+      <div className="daily-loading__preview" aria-hidden="true">
+        {[0, 1, 2].map(row => (
+          <div className="daily-loading__row" key={row}>
+            <span /><span /><span /><span />
+          </div>
+        ))}
+      </div>
+      <span className="sr-only">Cargando {label.toLowerCase()}.</span>
+    </div>
   );
 }
 
@@ -728,7 +760,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
         </button>
       </div>
 
-      {incomeLoading ? <p className="daily-sheet-state">Cargando registros desde Google Sheets...</p> : incomeError ? (
+      {incomeLoading ? <DailyLoadingState kind="ingresos" label="Ingreso diario de ventas" /> : incomeError ? (
         <div className="daily-sheet-state is-error"><strong>No pudimos cargar la hoja.</strong><span>{incomeError}</span></div>
       ) : (
         <div className="daily-table-wrap">
@@ -737,8 +769,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
               <tr>
                 <th>Tipo cliente</th>
                 <th>Fecha</th>
-                <th>Cliente</th>
-                <th>CUIL</th>
+                <th>Cliente | CUIL</th>
                 <th>Actividad</th>
                 <th>Estado</th>
                 <th>Score</th>
@@ -751,10 +782,21 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
                 <tr key={r.id}>
                   <td>{r.tipoCliente}</td>
                   <td className="daily-numeric">{r.fecha ? formatDate(r.fecha) : <span className="daily-date-missing">Sin fecha</span>}</td>
-                  <td className="daily-client-name">{r.nombre}</td>
-                  <td className="daily-numeric">{r.cuil}</td>
+                  <td className="daily-client-cell">
+                    <div className="records-client">
+                      <div className="records-client__identity">
+                        <span className="records-client__name">{r.nombre}</span>
+                        {r.cuil && (
+                          <>
+                            <span className="records-client__separator">|</span>
+                            <span className="cuil-text">{formatearCuil(r.cuil)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </td>
                   <td>{r.actividad}</td>
-                  <td className="daily-state-name">{r.estado}</td>
+                  <td className="daily-state-cell"><span className="status-badge table-calif-badge daily-state-badge">{r.estado}</span></td>
                   <td className="daily-score-cell"><DailyScore value={r.score} /></td>
                   <td>{r.comentarios}</td>
                   <td>
@@ -1006,7 +1048,7 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
     const dateIndex = data.columns.findIndex(column => ['fecha', 'fechagestion'].includes(normalizeLookupValue(column)));
     const name = nameIndex >= 0 ? row.values[nameIndex] : '';
     const date = dateIndex >= 0 ? row.values[dateIndex] : '';
-    return name || (date ? `${config.label.toLowerCase()} del ${date}` : 'la fila seleccionada');
+    return name || (date ? `${config.label.toLowerCase()} del ${formatDate(date)}` : 'la fila seleccionada');
   };
 
   if (!sheetId) return (
@@ -1037,7 +1079,7 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
         </div>
       </div>
 
-      {loading && <div className="daily-sheet-state"><RefreshCw size={20} className="is-spinning" /><span>Cargando {config.label.toLowerCase()}...</span></div>}
+      {loading && <DailyLoadingState kind={tab} label={config.label} />}
       {!loading && error && (
         <div className="daily-sheet-state is-error">
           <strong>No pudimos cargar esta pestaña.</strong>
@@ -1052,13 +1094,19 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
             <tbody>
               {visibleRows.map((row, rowIndex) => (
                 <tr key={row.entryId ?? row.sheetKey ?? `sheet-${rowIndex}`}>
-                  {data.columns.map((column, columnIndex) => (
-                    <td className={commercialColumnClass(column, columnIndex)} key={columnIndex}>
-                      {normalizeLookupValue(column) === 'score'
-                        ? <DailyScore value={row.values[columnIndex]} />
-                        : <span>{row.values[columnIndex]}</span>}
-                    </td>
-                  ))}
+                  {data.columns.map((column, columnIndex) => {
+                    const normalizedColumn = normalizeLookupValue(column);
+                    const value = row.values[columnIndex];
+                    return (
+                      <td className={commercialColumnClass(column, columnIndex)} key={columnIndex}>
+                        {normalizedColumn === 'score'
+                          ? <DailyScore value={value} />
+                          : normalizedColumn.startsWith('fecha')
+                            ? <span>{value ? formatDate(value) : '—'}</span>
+                            : <span>{value}</span>}
+                      </td>
+                    );
+                  })}
                   <td>
                     <CompactDailyActions
                       label={deleteRowLabel(row)}

@@ -1,288 +1,119 @@
 import React, { useMemo } from 'react';
-import { Bar } from 'react-chartjs-2';
-import { Users } from 'lucide-react';
 import { CONFIG } from '@/types';
 import { filterByMonth, isVenta } from '@/lib/registro-stats';
-import ModernDoughnut from '@/components/charts/ModernDoughnut';
-import { UI_FONT_FAMILY } from '@/app/fonts';
 
-const labelsPlugin: any = {
-  id: 'labelsPlugin',
-  afterDatasetsDraw(chart: any) {
-    const { ctx } = chart;
-    chart.data.datasets.forEach((ds: any, dsIdx: number) => {
-      const meta = chart.getDatasetMeta(dsIdx);
-      if (meta.hidden) return;
-      meta.data.forEach((element: any, index: number) => {
-        const val = ds.data[index];
-        if (!val) return;
-        const isPct = chart.config.options?._isPct === true;
-        const text = isPct ? `${val.toFixed(0)}%` : val.toString();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `700 11px ${UI_FONT_FAMILY}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(text, element.x, element.y - 6);
-      });
-    });
-  }
-};
+type DistributionItem = { label: string; value: number; color: string };
 
-const referenceLinesPlugin: any = {
-  id: 'referenceLinesPlugin',
-  beforeDraw(chart: any) {
-    const { ctx, chartArea, scales } = chart;
-    const yAxis = scales.y;
-    if (!yAxis) return;
-    const isPct = chart.config.options?._isPct === true;
-    if (isPct) {
-      const y100 = yAxis.getPixelForValue(100);
-      if (y100 >= chartArea.top && y100 <= chartArea.bottom) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.setLineDash([5, 5]);
-        ctx.moveTo(chartArea.left, y100);
-        ctx.lineTo(chartArea.right, y100);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-  }
-};
+const clampPct = (value: number) => Math.max(0, Math.min(100, value));
 
-const baseChartOpts = (yLabel = '', isPct = false): any => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  _isPct: isPct,
-  layout: { padding: { bottom: 0 } },
-  plugins: { legend: { display: false }, tooltip: {
-    backgroundColor: 'rgba(10, 10, 15, 0.95)',
-    titleColor: '#ffffff',
-    titleFont: { size: 18, weight: 700, family: UI_FONT_FAMILY },
-    titleAlign: 'center' as const,
-    titleMarginBottom: 16,
-    bodyColor: '#f1f5f9',
-    bodyFont: { size: 15, weight: 600, family: UI_FONT_FAMILY },
-    bodySpacing: 10,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 2,
-    padding: 24,
-    cornerRadius: 16,
-    boxPadding: 8,
-    usePointStyle: true,
-  } },
-  scales: {
-    x: { display: false },
-    y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#666', font: { size: 9 }, callback: (v: any) => v + yLabel }, border: { display: false }, beginAtZero: true }
-  }
-});
+function ProgressMetric({ label, value, color }: { label: string; value: number; color: string }) {
+  const safeValue = Number.isFinite(value) ? value : 0;
+  return (
+    <div className="monthly-insight-metric">
+      <div className="monthly-insight-metric__head">
+        <span>{label}</span>
+        <strong>{safeValue.toFixed(1)}%</strong>
+      </div>
+      <div className="monthly-insight-track"><span style={{ width: `${clampPct(safeValue)}%`, background: color }} /></div>
+    </div>
+  );
+}
 
-const getGradient = (context: any, color1: string, color2: string) => {
-  const chart = context.chart;
-  const { ctx, chartArea } = chart;
-  if (!chartArea) return null;
-  const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-  gradient.addColorStop(0, color1);
-  gradient.addColorStop(1, color2);
-  return gradient;
-};
+function VariationMetric({ label, value }: { label: string; value: number | null | undefined }) {
+  const safeValue = value ?? 0;
+  const positive = safeValue >= 0;
+  return (
+    <div className="monthly-variation-item">
+      <span>{label}</span>
+      <strong className={positive ? 'is-positive' : 'is-negative'}>{positive ? '▲' : '▼'} {Math.abs(safeValue).toFixed(1)}%</strong>
+      <small>vs. mes anterior</small>
+    </div>
+  );
+}
 
-const DoughnutLegend = ({ data, total }: { data: { labels: string[]; datasets: { data: unknown[]; backgroundColor: string[] }[] }; total: number }) => (
-  <div style={{ paddingTop: 12, display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-    {data.labels.map((l, i) => {
-      const val = data.datasets[0].data[i] as number;
-      const pct = total > 0 ? (val / total * 100).toFixed(1) : '0';
-      return (
-        <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: data.datasets[0].backgroundColor[i] }} />
-          <span style={{ fontSize: 9, color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>{l} ({pct}%)</span>
-        </div>
-      );
-    })}
-  </div>
-);
+function DistributionList({ items }: { items: DistributionItem[] }) {
+  const total = items.reduce((sum, item) => sum + item.value, 0);
+  return (
+    <div className="monthly-distribution-list">
+      {items.map(item => {
+        const percentage = total > 0 ? (item.value / total) * 100 : 0;
+        return (
+          <div className="monthly-distribution-row" key={item.label}>
+            <div className="monthly-distribution-row__head">
+              <span><i style={{ background: item.color }} />{item.label}</span>
+              <b>{item.value} <small>{percentage.toFixed(0)}%</small></b>
+            </div>
+            <div className="monthly-insight-track"><span style={{ width: `${percentage}%`, background: item.color }} /></div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-export default function SeccionGraficosResumen({
-  kpiTotal, selectedMes, selectedAnio, allRegistros
-}: {
-  kpiTotal: any, selectedMes: number, selectedAnio: number, allRegistros: any[]
+export default function SeccionGraficosResumen({ kpiTotal, selectedMes, selectedAnio, allRegistros }: {
+  kpiTotal: any;
+  selectedMes: number;
+  selectedAnio: number;
+  allRegistros: any[];
 }) {
   const mesPrev = selectedMes === 1 ? 12 : selectedMes - 1;
-
-  const mesActualLabel = CONFIG.MESES_NOMBRES[selectedMes - 1];
   const mesAntLabel = CONFIG.MESES_NOMBRES[mesPrev - 1];
 
-  const chartCumplimiento = useMemo(() => {
-    return {
-      labels: [''],
-      datasets: [
-        { label: `Capital ${mesActualLabel}`, data: [kpiTotal.cumplCapital || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Capital ${mesAntLabel}`, data: [kpiTotal.cumplCapitalAnt || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Ops ${mesActualLabel}`, data: [kpiTotal.cumplOps || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-        { label: `Ops ${mesAntLabel}`, data: [kpiTotal.cumplOpsAnt || 0], backgroundColor: (c: any) => getGradient(c, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'), borderWidth: 0, borderRadius: 4, order: 2, maxBarThickness: 100 },
-      ],
-    };
-  }, [kpiTotal, mesActualLabel, mesAntLabel]);
-
-  const chartVariacion = useMemo(() => {
-    return {
-      labels: [''],
-      datasets: [
-        { 
-          label: 'Variación Capital %', 
-          data: [kpiTotal.tendCapital ?? 0], 
-          backgroundColor: (kpiTotal.tendCapital >= 0) ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)', 
-          borderColor: (kpiTotal.tendCapital >= 0) ? 'rgba(52,211,153,0.5)' : 'rgba(248,113,113,0.5)', 
-          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 
-        },
-        { 
-          label: 'Variación Ops %', 
-          data: [kpiTotal.tendOps ?? 0], 
-          backgroundColor: (kpiTotal.tendOps >= 0) ? 'rgba(167,139,250,0.15)' : 'rgba(248,113,113,0.15)', 
-          borderColor: (kpiTotal.tendOps >= 0) ? 'rgba(167,139,250,0.5)' : 'rgba(248,113,113,0.5)', 
-          borderWidth: 1.5, borderRadius: 4, maxBarThickness: 100 
-        },
-      ],
-    };
-  }, [kpiTotal]);
-
-  const { chartAcuerdosData, chartAcuerdosTotal } = useMemo(() => {
-    const sourceRegs = filterByMonth(allRegistros, selectedMes, selectedAnio).filter(isVenta);
-    const categories = ['PREMIUM', 'Riesgo MEDIO', 'Riesgo BAJO', 'No califica'];
-    const displayData = categories.map(cat => {
-      return sourceRegs.filter(r => {
-          const ac = (r.acuerdo_precios || '').toLowerCase();
-          if (cat === 'PREMIUM') return ac.includes('premium');
-          if (cat === 'Riesgo MEDIO') return ac.includes('medio');
-          if (cat === 'Riesgo BAJO') return ac.includes('bajo');
-          if (cat === 'No califica') return ac.includes('no califica') || ac === 'n/c';
-          return false;
-      }).length;
-    });
-    return {
-      chartAcuerdosData: {
-        labels: categories,
-        datasets: [{
-          data: displayData,
-          backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
-          borderWidth: 0, hoverOffset: 10, borderRadius: 4, spacing: 4
-        }]
-      },
-      chartAcuerdosTotal: displayData.reduce((a, b) => a + b, 0)
-    };
-  }, [allRegistros, selectedMes, selectedAnio]);
-
-  const { chartEmpleoData, chartEmpleoTotal } = useMemo(() => {
-    const PUBLICO = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
+  const { acuerdos, empleos } = useMemo(() => {
     const ventas = filterByMonth(allRegistros, selectedMes, selectedAnio).filter(isVenta);
-    const classify = (r: any) => {
-      const e = (r.empleador ?? '').toLowerCase();
-      return PUBLICO.some(k => e.includes(k)) ? 'Público' : e.trim() === '' || e === 'sin dato' ? 'Sin dato' : 'Privado';
-    };
-    const counts: Record<string, number> = { 'Público': 0, 'Privado': 0, 'Sin dato': 0 };
-    ventas.forEach(r => counts[classify(r)]++);
-    
-    const labels = ['Público', 'Privado', 'Sin dato'];
-    
-    return {
-      chartEmpleoData: {
-        labels: labels,
-        datasets: [{
-          data: labels.map(l => counts[l] ?? 0),
-          backgroundColor: labels.map(l => l === 'Público' ? '#10b981' : l === 'Privado' ? '#3b82f6' : 'rgba(255,255,255,0.15)'),
-          borderWidth: 0, hoverOffset: 10, borderRadius: 4, spacing: 4
-        }],
-      },
-      chartEmpleoTotal: labels.reduce((a, b) => a + (counts[b] ?? 0), 0)
-    };
+    const publicKeywords = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
+    const agreementItems: DistributionItem[] = [
+      { label: 'Premium', value: 0, color: '#4f8272' },
+      { label: 'Riesgo medio', value: 0, color: '#607da8' },
+      { label: 'Riesgo bajo', value: 0, color: '#bd893e' },
+      { label: 'No califica', value: 0, color: '#a85d68' },
+    ];
+    const employmentItems: DistributionItem[] = [
+      { label: 'Público', value: 0, color: '#4f8272' },
+      { label: 'Privado', value: 0, color: '#607da8' },
+      { label: 'Sin dato', value: 0, color: '#99aab8' },
+    ];
+
+    for (const registro of ventas) {
+      const acuerdo = String(registro.acuerdo_precios ?? '').toLowerCase();
+      if (acuerdo.includes('premium')) agreementItems[0].value++;
+      else if (acuerdo.includes('medio')) agreementItems[1].value++;
+      else if (acuerdo.includes('bajo')) agreementItems[2].value++;
+      else if (acuerdo.includes('no califica') || acuerdo === 'n/c') agreementItems[3].value++;
+
+      const empleador = String(registro.empleador ?? '').toLowerCase().trim();
+      if (!empleador || empleador === 'sin dato') employmentItems[2].value++;
+      else if (publicKeywords.some(keyword => empleador.includes(keyword))) employmentItems[0].value++;
+      else employmentItems[1].value++;
+    }
+    return { acuerdos: agreementItems, empleos: employmentItems };
   }, [allRegistros, selectedMes, selectedAnio]);
 
   return (
-    <div style={{ marginBottom: 0 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-        {/* 1. Cumplimiento */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>% Cumplimiento — Actual vs {mesAntLabel}</div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesActualLabel}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>{mesAntLabel}</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ height: 180 }}>
-            <Bar data={chartCumplimiento as any} options={baseChartOpts('%', true)} plugins={[labelsPlugin, referenceLinesPlugin]} />
-          </div>
+    <div className="monthly-insight-grid">
+      <section className="monthly-insight-card">
+        <header><div><span className="monthly-insight-eyebrow">Objetivos</span><h3>Cumplimiento del mes</h3></div><span className="monthly-insight-period">vs. {mesAntLabel}</span></header>
+        <div className="monthly-insight-body">
+          <ProgressMetric label="Capital" value={kpiTotal.cumplCapital ?? 0} color="#4f8272" />
+          <ProgressMetric label="Operaciones" value={kpiTotal.cumplOps ?? 0} color="#607da8" />
         </div>
-
-        {/* 2. Variación */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Variación % vs {mesAntLabel}</div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.7)' }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Capital</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(167,139,250,0.7)' }} />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Operaciones</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ height: 180 }}>
-            <Bar data={chartVariacion as any} options={baseChartOpts('%', true)} plugins={[labelsPlugin, referenceLinesPlugin]} />
-          </div>
+      </section>
+      <section className="monthly-insight-card">
+        <header><div><span className="monthly-insight-eyebrow">Evolución</span><h3>Variación mensual</h3></div></header>
+        <div className="monthly-variation-grid">
+          <VariationMetric label="Capital" value={kpiTotal.tendCapital} />
+          <VariationMetric label="Operaciones" value={kpiTotal.tendOps} />
         </div>
-
-        {/* 3. Acuerdos */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
-              Distribución de Acuerdos
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-                <Users size={12} color="#666" />
-                <span style={{ fontSize: 9, fontWeight: 700, color: '#666' }}>
-                  {kpiTotal.ops} TOTAL
-                </span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-            <div style={{ height: 200, width: '100%', margin: 'auto 0' }}>
-              <ModernDoughnut data={chartAcuerdosData} label="Acuerdos" padding={30}
-                value={<>{chartAcuerdosTotal}<span style={{ fontSize: '12px', color: '#888', fontWeight: 700, marginLeft: '2px' }}>{' Ops'}</span></>}
-                tooltipLabel={(ctx) => ` ${ctx.label}: ${ctx.raw} Ops`} />
-            </div>
-            <DoughnutLegend data={chartAcuerdosData} total={chartAcuerdosTotal} />
-          </div>
-        </div>
-
-        {/* 4. Empleo */}
-        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <div style={{ width: 3, height: 12, background: '#34d399', borderRadius: 2 }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>
-              % Empleo Público / Privado
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-            <div style={{ height: 200, width: '100%', margin: 'auto 0' }}>
-              <ModernDoughnut data={chartEmpleoData} label="Total" padding={30}
-                value={<>{chartEmpleoTotal}<span style={{ fontSize: '12px', color: '#888', fontWeight: 700, marginLeft: '2px' }}>{' Ops'}</span></>}
-                tooltipLabel={(ctx) => ` ${ctx.label}: ${ctx.raw} Ops`} />
-            </div>
-            <DoughnutLegend data={chartEmpleoData} total={chartEmpleoTotal} />
-          </div>
-        </div>
-      </div>
+      </section>
+      <section className="monthly-insight-card">
+        <header><div><span className="monthly-insight-eyebrow">Composición</span><h3>Acuerdos</h3></div><strong className="monthly-insight-total">{acuerdos.reduce((sum, item) => sum + item.value, 0)} ops</strong></header>
+        <DistributionList items={acuerdos} />
+      </section>
+      <section className="monthly-insight-card">
+        <header><div><span className="monthly-insight-eyebrow">Cartera</span><h3>Tipo de empleo</h3></div><strong className="monthly-insight-total">{empleos.reduce((sum, item) => sum + item.value, 0)} ops</strong></header>
+        <DistributionList items={empleos} />
+      </section>
     </div>
   );
 }

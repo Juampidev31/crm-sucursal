@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useState } from 'react';
+import { getRequestErrorMessage, isTransientRequestAbort } from '@/lib/request-errors';
 
 export interface DataErrorState {
   scope: string;
@@ -22,6 +23,13 @@ export function ErrorProvider({ children }: { children: React.ReactNode }) {
   const [lastError, setLastError] = useState<DataErrorState | null>(null);
 
   const reportError = useCallback((scope: string, err: unknown) => {
+    // Una petición reemplazada o cancelada por el lock compartido de Supabase
+    // no es un error de datos y no debe activar el overlay de desarrollo.
+    if (isTransientRequestAbort(err)) {
+      console.warn(`[ErrorContext/${scope}] solicitud cancelada: ${getRequestErrorMessage(err)}`);
+      return;
+    }
+
     const e = (err && typeof err === 'object') ? err as {
       message?: string; details?: string; hint?: string; code?: string;
     } : null;

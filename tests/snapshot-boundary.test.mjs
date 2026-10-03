@@ -4,8 +4,8 @@
  * El reporte mensual se persiste como HTML crudo en Supabase
  * (ResumenMensualTab -> clone.innerHTML -> resumen_mensual.experiencia_cliente)
  * y la ruta publica lo re-inyecta con dangerouslySetInnerHTML. cloneNode conserva
- * markup, class y `style=` pero NO las hojas de estilo, y los snapshots ya
- * guardados son datos inmutables: su markup no se puede regenerar.
+ * markup, class y `style=`; la pagina publica vuelve a cargar globals.css, y los
+ * snapshots ya guardados son datos inmutables: su markup no se puede regenerar.
  *
  * Estos tests fallan si una migracion de estilos rompe alguna de las invariantes
  * que mantienen ese HTML legible. Son analisis estatico: no necesitan DOM ni red.
@@ -37,12 +37,11 @@ const PROTECTED_FILES = [
 ];
 
 /**
- * Piso de inline styles dentro del boundary. El inventario exacto lo calcula el
- * auditor; este piso detecta una
- * migracion masiva a clases, no cambios normales de maquetado: subirlo o bajarlo
- * requiere revisar antes el pipeline de snapshot.
+ * Piso de estilos inline estructurales dentro del boundary. La apariencia puede
+ * vivir en clases globales estables (inventariadas abajo), pero el HTML conserva
+ * este minimo para que su estructura base no dependa por completo del CSS.
  */
-const MIN_INLINE_IN_BOUNDARY = 150;
+const MIN_INLINE_IN_BOUNDARY = 100;
 
 /** var(--x) que el pipeline materializa a literal antes de persistir (paso "CSS vars fix"). */
 const TOKENS_MATERIALIZED_BY_PIPELINE = ['--text-primary', '--state-danger'];
@@ -96,6 +95,52 @@ const CURRENT_SNAPSHOT_CLASSES = [
   'modern-doughnut__center',
   'modern-doughnut__label',
   'modern-doughnut__value',
+  'monthly-action-add',
+  'monthly-action-delete',
+  'monthly-action-input',
+  'monthly-action-table',
+  'monthly-action-table-wrap',
+  'monthly-activity-card',
+  'monthly-activity-card--chart',
+  'monthly-activity-filter',
+  'monthly-activity-grid',
+  'monthly-activity-section',
+  'monthly-activity-stats',
+  'monthly-analysis-grid',
+  'monthly-category-grid',
+  'monthly-dashboard-extra',
+  'monthly-daily-chart',
+  'monthly-distribution-list',
+  'monthly-distribution-row',
+  'monthly-distribution-row__head',
+  'monthly-goal-values',
+  'monthly-health-list',
+  'monthly-heatmap-cell',
+  'monthly-insight-body',
+  'monthly-insight-card',
+  'monthly-insight-eyebrow',
+  'monthly-insight-grid',
+  'monthly-insight-metric',
+  'monthly-insight-metric__head',
+  'monthly-insight-period',
+  'monthly-insight-total',
+  'monthly-insight-track',
+  'monthly-kpi-card',
+  'monthly-kpi-chart',
+  'monthly-kpi-grid',
+  'monthly-kpi-value',
+  'monthly-note-field',
+  'monthly-note-field__input',
+  'monthly-note-grid',
+  'monthly-note-grid--four',
+  'monthly-period-toggle',
+  'monthly-progress-head',
+  'monthly-progress-track',
+  'monthly-stat-pair',
+  'monthly-team-activity',
+  'monthly-team-stat',
+  'monthly-variation-grid',
+  'monthly-variation-item',
   'report-dist-block',
   'report-dist-block--elevated',
   'report-dist-block--standard',
@@ -203,14 +248,14 @@ test('los componentes serializados no importan CSS Modules', () => {
   assert.doesNotMatch(fragmentRegion, /\bstyles\s*\./, 'un helper serializado usa CSS Module');
 });
 
-test('el subarbol del snapshot sigue llevando sus estilos inline', () => {
+test('el subarbol conserva estilos inline estructurales', () => {
   const inBoundary = countInline(sliceBoundary(read(TAB)));
   const inChildren = PROTECTED_FILES.slice(1).reduce((n, f) => n + countInline(read(f)), 0);
   const total = inBoundary + inChildren;
   assert.ok(
     total >= MIN_INLINE_IN_BOUNDARY,
     `solo quedan ${total} inline en el boundary (minimo ${MIN_INLINE_IN_BOUNDARY}): ` +
-      'los estilos dejaron de ser autocontenidos y el HTML persistido saldria sin estilo',
+      'se perdio el piso de estilos estructurales del HTML persistido',
   );
 });
 

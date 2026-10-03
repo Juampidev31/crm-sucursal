@@ -13,7 +13,7 @@ import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { FilterProvider, useFilter } from '@/context/FilterContext';
 import RecordsSidebar from './RecordsSidebar';
 import ZoomWrapper from './ZoomWrapper';
-import { Bell, X, AlertCircle, Columns } from 'lucide-react';
+import { Bell, X, AlertCircle, Columns, CalendarDays, ChartColumnIncreasing, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import SplitLayout from './SplitLayout';
 import { formatDate } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -172,6 +172,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const isMinimal = searchParams.get('minimal') === 'true';
   const [mounted, setMounted] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(1);
+  const [isSidebarHidden, setIsSidebarHidden] = useState(true);
   const { setShowFilters } = useFilter();
   const usesRecordsShell =
     pathname === '/registros' ||
@@ -313,7 +314,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     return () => window.removeEventListener('keydown', handleGlobalEscape);
   }, [pathname, router]);
 
-  const showOwnSidebar = !isSplitView || isMinimal;
+  const showOwnSidebar = !isSplitView && !isMinimal;
 
   if (loading || !mounted) {
     return (
@@ -324,7 +325,18 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   }
 
   return (
-    <div className={`${styles.shell}${usesRecordsShell ? ` ${styles.recordsShell}` : ''}`} data-app-shell>
+    <div
+      className={[
+        styles.shell,
+        usesRecordsShell ? styles.recordsShell : '',
+        pathname === '/registros' ? styles.recordsListShell : '',
+        isSidebarHidden ? styles.sidebarHidden : '',
+        isMinimal ? styles.minimalShell : '',
+        isSplitView && !isMinimal ? styles.splitShell : '',
+      ].filter(Boolean).join(' ')}
+      data-app-shell
+      data-minimal-mode={isMinimal ? 'true' : undefined}
+    >
       {/* Top Banner — Full Width — Hidden in Reports/Analysts or Minimal Mode */}
       {!isMinimal && !pathname.startsWith('/reportes/') && (
         <header className={styles.topbar} data-app-topbar>
@@ -335,13 +347,32 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
           </div>
 
           <div className={styles.topbarTitle}>
-            <span className={styles.topbarEyebrow}>Sistema de</span>
-            <span className={styles.topbarBrand}>PROYECCIONES</span>
-            <span className={styles.topbarConjunction}>y</span>
-            <span className={styles.topbarBrand}>VENTAS</span>
+            <span className={styles.topbarMark} aria-hidden="true">
+              <ChartColumnIncreasing size={18} strokeWidth={2} />
+            </span>
+            <span className={styles.topbarWordmark}>
+              <span className={styles.topbarEyebrow}>Sistema de gestión comercial</span>
+              <span className={styles.topbarBrandLine}>
+                <span className={styles.topbarBrand}>Proyecciones</span>
+                <span className={styles.topbarConjunction}>y</span>
+                <span className={styles.topbarBrand}>Ventas</span>
+              </span>
+            </span>
           </div>
 
           <div className={styles.topbarActions}>
+            {usesRecordsShell && !isSplitView && (
+              <button
+                type="button"
+                className={styles.sidebarToggle}
+                onClick={() => setIsSidebarHidden(hidden => !hidden)}
+                aria-pressed={isSidebarHidden}
+                title={isSidebarHidden ? 'Mostrar menú lateral' : 'Ocultar menú lateral'}
+              >
+                {isSidebarHidden ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+                <span>{isSidebarHidden ? 'MOSTRAR MENÚ' : 'OCULTAR MENÚ'}</span>
+              </button>
+            )}
             {isAdmin && !isSplitView && (
               <button 
                 onClick={toggleSplitView}
@@ -352,14 +383,15 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
               </button>
             )}
             <div className={styles.topbarDate}>
-              {formatDate(new Date().toISOString())}
+              <CalendarDays size={14} strokeWidth={2} aria-hidden="true" />
+              <span>{formatDate(new Date().toISOString())}</span>
             </div>
           </div>
         </header>
       )}
 
       <div className={styles.wrapper} data-app-wrapper>
-        {showOwnSidebar && <RecordsSidebar />}
+        {showOwnSidebar && !isSidebarHidden && <RecordsSidebar />}
         <main
           className={styles.content}
           data-app-content
@@ -369,7 +401,9 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
               className={[
                 styles.pageScroll,
                 usesRecordsShell ? styles.recordsPageScroll : '',
+                pathname === '/registros' ? styles.recordsListPageScroll : '',
                 isMinimal ? styles.minimalPageScroll : '',
+                isSplitView && !isMinimal ? styles.splitPageScroll : '',
                 !isMinimal && (pathname.startsWith('/reportes') || pathname === '/analistas') ? styles.reportPageScroll : '',
               ].filter(Boolean).join(' ')}
               data-app-scroll

@@ -5,10 +5,9 @@ import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
-import { useAuth } from '@/context/AuthContext';
-import { FilterContext } from '@/context/FilterContext';
 import { Recordatorio } from '@/types';
 import { validateBroadcast } from '@/lib/broadcast-utils';
+import { getRequestErrorMessage, isTransientRequestAbort } from '@/lib/request-errors';
 
 export interface ReminderAlertData {
   id: string;
@@ -46,21 +45,27 @@ const recordatorioChangeSchema = z.object({
 
 export function RecordatoriosProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();
-  const { user } = useAuth();
-  const filterCtx = React.useContext(FilterContext); // Acceso directo para evitar ciclos si useFilter tiene dependencias
   const [pendingReminders, setPendingReminders] = useState(0);
   const [reminderAlert, setReminderAlert] = useState<ReminderAlertData | null>(null);
   const shownIds = useRef(new Set<string>());
+  const countInFlight = useRef(false);
+  const dueInFlight = useRef(false);
+  // Los iframes del Modo Split consumen los estados compartidos visuales, pero
+  // no deben duplicar polling, realtime ni consultas de recordatorios.
+  const remindersEnabled = typeof window === 'undefined'
+    || new URLSearchParams(window.location.search).get('minimal') !== 'true';
 
   const fetchCount = useCallback(async () => {
+    if (!remindersEnabled || countInFlight.current) return;
+    countInFlight.current = true;
     try {
       const { count, error } = await supabase
         .from('recordatorios')
         .select('id', { count: 'exact', head: true })
         .eq('mostrado', false);
       if (error) {
-        if (error.message?.includes('fetch')) {
-          console.warn('[RecordatoriosProvider] Error de red en fetchCount:', error.message);
+        if (isTransientRequestAbort(error)) {
+          console.warn('[RecordatoriosProvider] Consulta cancelada en fetchCount:', getRequestErrorMessage(error));
           return;
         }
         reportError('recordatorios:count', error);
@@ -68,12 +73,17 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
       }
       setPendingReminders(count || 0);
     } catch (err) {
-      console.warn('[RecordatoriosProvider] Error inesperado en fetchCount:', err);
+      if (!isTransientRequestAbort(err)) {
+        console.warn('[RecordatoriosProvider] Error inesperado en fetchCount:', err);
+      }
+    } finally {
+      countInFlight.current = false;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportError, user, filterCtx?.filters.analista]);
+  }, [remindersEnabled, reportError]);
 
   const checkDueReminders = useCallback(async () => {
+    if (!remindersEnabled || dueInFlight.current) return;
+    dueInFlight.current = true;
     try {
       const now = new Date().toISOString();
       const { data, error } = await supabase
@@ -84,8 +94,8 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
         .order('fecha_hora', { ascending: true });
 
       if (error) {
-        if (error.message?.includes('fetch')) {
-          console.warn('[RecordatoriosProvider] Error de red en checkDueReminders:', error.message);
+        if (isTransientRequestAbort(error)) {
+          console.warn('[RecordatoriosProvider] Consulta cancelada en checkDueReminders:', getRequestErrorMessage(error));
           return;
         }
         reportError('checkDueReminders', error);
@@ -107,9 +117,18 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
         });
       }
     } catch (err) {
-      console.warn('[RecordatoriosProvider] Error inesperado en checkDueReminders:', err);
+      if (!isTransientRequestAbort(err)) {
+        console.warn('[RecordatoriosProvider] Error inesperado en checkDueReminders:', err);
+      }
+    } finally {
+      dueInFlight.current = false;
     }
-  }, [reportError, user, filterCtx?.filters.analista]);
+  }, [remindersEnabled, reportError]);
+
+  const refreshReminders = useCallback(async () => {
+    await fetchCount();
+    await checkDueReminders();
+  }, [fetchCount, checkDueReminders]);
 
   const clearReminderAlert = useCallback(() => setReminderAlert(null), []);
 
@@ -153,8 +172,8 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
       if (!rec) return;
       setReminderAlert(rec);
     },
-    bulk_refresh: () => { fetchCount(); },
-  });
+    bulk_refresh: () => { void fetchCount(); },
+  }, remindersEnabled);
 
   const forceShowPopup = useCallback((recordatorio: ReminderAlertData) => {
     broadcastRef.current?.send({
@@ -179,28 +198,27 @@ export function RecordatoriosProvider({ children }: { children: React.ReactNode 
 
   // Fetch inicial + Supabase Realtime Postgres Changes + polling cada 30s
   useEffect(() => {
-    fetchCount();
-    checkDueReminders();
+    if (!remindersEnabled) return;
+
+    const initialRefresh = window.setTimeout(() => { void refreshReminders(); }, 0);
 
     const channel = supabase
       .channel('recordatorios_realtime_provider')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'recordatorios' },
-        () => {
-          fetchCount();
-          checkDueReminders();
-        }
+        () => { void refreshReminders(); }
       )
       .subscribe();
 
-    const interval = setInterval(() => checkDueReminders(), 30_000);
+    const interval = setInterval(() => { void checkDueReminders(); }, 30_000);
 
     return () => {
+      window.clearTimeout(initialRefresh);
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [fetchCount, checkDueReminders]);
+  }, [checkDueReminders, refreshReminders, remindersEnabled]);
 
   const value = useMemo<RecordatoriosCtx>(() => ({
     pendingReminders, reminderAlert,

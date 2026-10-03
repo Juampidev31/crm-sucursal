@@ -24,6 +24,7 @@ import { UI_FONT_FAMILY } from '@/app/fonts';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement);
 
+const REPORT_ANALYST_PALETTE = ['#315b7d', '#4f8275', '#6d6f91', '#8a704b'];
 
 // ── Plugin inline: data labels on bars ───────────────────────────────────
 const labelsPlugin: any = {
@@ -172,19 +173,14 @@ const now = new Date();
 const ManualTextarea = ({ label, value, onChange, placeholder }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) => (
-  <div data-snapshot-fragment style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 260 }}>
-    <label style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase' as const, letterSpacing: 0.5 }}>{label}</label>
+  <div data-snapshot-fragment className="monthly-note-field">
+    <label>{label}</label>
     <textarea
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder ?? `${label}...`}
       rows={4}
-      style={{
-        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-        borderRadius: 8, color: '#ccc', fontFamily: UI_FONT_FAMILY, fontSize: 13,
-        padding: '12px 14px', resize: 'vertical', outline: 'none',
-        width: '100%', boxSizing: 'border-box' as const,
-      }}
+      className="monthly-note-field__input"
     />
   </div>
 );
@@ -221,7 +217,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   // ── Analistas dinámicos ───────────────────────────────────────────────────
   const { analistas, nombres } = useAnalistas();
   const ANALISTA_COLORES = useMemo(
-    () => analistas.map(a => ({ nombre: a.nombre, color: a.color, bg: hexToRgba(a.color, 0.1) })),
+    () => analistas.map((a, index) => {
+      const color = REPORT_ANALYST_PALETTE[index % REPORT_ANALYST_PALETTE.length];
+      return { nombre: a.nombre, color, bg: hexToRgba(color, 0.1) };
+    }),
     [analistas],
   );
   const FILTROS_ACTIVIDAD = useMemo(
@@ -540,12 +539,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     else onSuccess(`Resumen de ${CONFIG.MESES_NOMBRES[selectedMes - 1]} ${selectedAnio} guardado`);
   };
 
-  const tendBadge = (pct: number | null, showLabel = true) => {
+  const tendBadge = (pct: number | null, showLabel = false) => {
     if (pct === null) return <span data-snapshot-fragment style={{ color: '#333' }}>—</span>;
     return (
-      <div data-snapshot-fragment style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div data-snapshot-fragment title="Variación vs mes anterior" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
         {showLabel && <span style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#263550', background: '#f4f7fa', border: '1px solid #d9e2ea', padding: '2px 6px', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
           <span className={`report-trend-direction ${pct >= 0 ? 'is-positive' : 'is-negative'}`}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
       </div>
@@ -844,29 +843,29 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: horizontal ? 'y' as const : 'x' as const,
-    layout: { padding: { top: showLabels ? 50 : 20, bottom: 0 } },
+    layout: { padding: { top: showLabels ? 30 : 12, bottom: 0 } },
     _isPct: yLabel.includes('%'), // Flag explícito para el plugin
     plugins: {
       legend: {
         display: showLegend,
         position: 'top' as const,
         align: 'end' as const,
-        labels: { color: '#666', font: { size: 10 }, usePointStyle: true, padding: 10 }
+        labels: { color: '#667085', font: { size: 10, family: UI_FONT_FAMILY }, usePointStyle: true, padding: 10 }
       },
       tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        backgroundColor: 'rgba(23, 32, 51, 0.96)',
         titleColor: '#ffffff',
-        titleFont: { size: 18, weight: 700, family: UI_FONT_FAMILY },
+        titleFont: { size: 13, weight: 700, family: UI_FONT_FAMILY },
         titleAlign: 'center' as const,
-        titleMarginBottom: 16,
+        titleMarginBottom: 8,
         bodyColor: '#f1f5f9',
-        bodyFont: { size: 15, weight: 600, family: UI_FONT_FAMILY },
-        bodySpacing: 10,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
-        padding: 24,
-        cornerRadius: 16,
-        boxPadding: 8,
+        bodyFont: { size: 12, weight: 600, family: UI_FONT_FAMILY },
+        bodySpacing: 6,
+        borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 9,
+        boxPadding: 5,
         usePointStyle: true,
       },
       datalabels: {
@@ -894,7 +893,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       x: {
         stacked,
         ticks: {
-          color: '#555', font: { size: 10 },
+          color: '#667085', font: { size: 9, family: UI_FONT_FAMILY },
           maxRotation: 0, minRotation: 0, padding: 0, autoSkip: false,
           callback: function (this: any, val: any) {
             let label = this.getLabelForValue(val);
@@ -912,18 +911,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       y: {
         stacked,
         ticks: {
-          color: '#555', font: { size: 10 },
+          color: '#667085', font: { size: 9, family: UI_FONT_FAMILY },
           precision: yLabel.includes('ops') || yLabel.includes('reg') ? 0 : undefined,
           callback: function (this: any, val: any) {
             const n = Number(val);
             if (isNaN(n)) return val;
             if (horizontal) return val; // Generalmente labels de analistas
             if (yLabel.includes('%')) return n.toFixed(0) + '%';
+            if (yLabel.includes('$') && n >= 1_000_000) return '$ ' + (n / 1_000_000).toFixed(0) + 'M';
+            if (yLabel.includes('$') && n >= 1000) return '$ ' + (n / 1000).toFixed(0) + 'K';
             if (n >= 1000) return n.toLocaleString('es-AR') + yLabel;
             return n + yLabel;
           }
         },
-        grid: { color: 'rgba(255,255,255,0.06)' }, border: { display: false }, beginAtZero: true,
+        grid: { color: 'rgba(49,91,125,0.08)' }, border: { display: false }, beginAtZero: true,
       },
     },
   });
@@ -951,8 +952,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           label: `Capital ${mesActualLabel}`,
           data: kpiPorAnalista.map(k => k.cumplCapital ?? 0),
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
-          borderColor: '#10b981',
+          backgroundColor: 'rgba(49, 91, 125, .78)',
+          borderColor: '#315b7d',
           borderWidth: 0,
           order: 1,
         },
@@ -964,8 +965,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             const objAnt = objetivos.find(o => o.analista === k.analista && o.mes === mesPrev - 1 && o.anio === anioPrev);
             return objAnt?.meta_ventas ? (capitalAnt / objAnt.meta_ventas) * 100 : 0;
           }),
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
-          borderColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(153, 170, 184, .55)',
+          borderColor: '#99aab8',
           borderWidth: 0,
           order: 1,
         },
@@ -1047,7 +1048,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           order: 1, 
           maxBarThickness: 120 
         },
-        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#ff3366', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointBackgroundColor: '#ff3366', fill: false, order: 0, horizontalReferenceValue: objetivo[0] },
+        { type: 'line' as const, label: 'Objetivo', data: objetivo, borderColor: '#b05260', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointBackgroundColor: '#b05260', fill: false, order: 0, horizontalReferenceValue: objetivo[0] },
       ],
     };
   }, [kpiTotal, ventasMesAnt, mesActualLabel, mesAntLabel]);
@@ -1067,15 +1068,15 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           label: `Ticket ${mesActualLabel}`,
           data: [kpiTotal.ticket],
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(245, 158, 11, 0.05)', 'rgba(245, 158, 11, 0.85)'),
-          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(189, 137, 62, .72)',
+          borderColor: '#bd893e',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 120 
         },
         { 
           label: `Ticket ${mesAntLabel}`, 
           data: ticketAnt, 
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
-          borderColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(153, 170, 184, .55)',
+          borderColor: '#99aab8',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 120 
         },
       ],
@@ -1134,15 +1135,15 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           label: `Actual`,
           data: [apertVsRenData.total.aperturas],
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'),
-          borderColor: '#10b981',
+          backgroundColor: 'rgba(82, 145, 124, .72)',
+          borderColor: '#528f7c',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 120
         },
         {
           label: `Anterior`,
           data: [apertVsRenData.ant.aperturas],
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
-          borderColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(153, 170, 184, .55)',
+          borderColor: '#99aab8',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 120 
         },
       ],
@@ -1157,15 +1158,15 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         {
           label: `Actual`,
           data: [apertVsRenData.total.renovaciones],
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(6, 182, 212, 0.05)', 'rgba(6, 182, 212, 0.85)'),
-          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(96, 125, 168, .72)',
+          borderColor: '#607da8',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 120
         },
         {
           label: `Anterior`,
           data: [apertVsRenData.ant.renovaciones],
-                    backgroundColor: (context: any) => getGradient(context, 'rgba(255, 255, 255, 0.0)', 'rgba(255, 255, 255, 0.15)'),
-          borderColor: 'rgba(255, 255, 255, 0.15)',
+          backgroundColor: 'rgba(153, 170, 184, .55)',
+          borderColor: '#99aab8',
           borderWidth: 0, borderRadius: 4, maxBarThickness: 120 
         },
       ],
@@ -1352,9 +1353,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
       return dayRegs.reduce((s, r) => s + (Number(r.monto) || 0), 0);
     });
 
-    let color = '#10b981';
-    let bgColor = 'rgba(16, 185, 129, 0.1)';
-    if (filtroActividad === 'PDV') { color = '#10b981'; bgColor = 'rgba(16, 185, 129, 0.1)'; }
+    let color = '#315b7d';
+    let bgColor = 'rgba(49, 91, 125, 0.1)';
     const matchAnalista = ANALISTA_COLORES.find(a => a.nombre === filtroActividad);
     if (matchAnalista) { color = matchAnalista.color; bgColor = matchAnalista.bg; }
 
@@ -1383,16 +1383,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     plugins: {
       legend: { 
         display: filtroActividad === 'Comparativa',
-        labels: { color: '#fff', font: { family: UI_FONT_FAMILY } }
+        labels: { color: '#667085', boxWidth: 10, boxHeight: 10, font: { size: 10, weight: 700, family: UI_FONT_FAMILY } }
       },
       tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
+        backgroundColor: 'rgba(24, 38, 58, 0.96)',
         titleColor: '#ffffff',
-        titleFont: { size: 14, weight: 700, family: UI_FONT_FAMILY },
+        titleFont: { size: 12, weight: 700, family: UI_FONT_FAMILY },
         bodyColor: '#fff',
-        bodyFont: { size: 16, weight: 700, family: UI_FONT_FAMILY },
-        padding: 16,
-        cornerRadius: 12,
+        bodyFont: { size: 12, weight: 700, family: UI_FONT_FAMILY },
+        padding: 12,
+        cornerRadius: 9,
         callbacks: {
           title: (items: any[]) => `Día ${items[0].label}`,
           label: (ctx: any) => {
@@ -1406,15 +1406,15 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     scales: {
       x: { 
         offset: false,
-        grid: { color: 'rgba(255,255,255,0.05)' }, 
-        ticks: { color: '#888', font: { size: 9 } } 
+        grid: { color: 'rgba(49,91,125,0.08)' },
+        ticks: { color: '#667085', font: { size: 9 } }
       },
       y: { 
         beginAtZero: true,
         min: 0,
         grace: 0,
-        grid: { color: 'rgba(255,255,255,0.05)' }, 
-        ticks: { color: '#888', font: { size: 9 }, callback: (v: any) => formatCurrency(v), padding: 0 } 
+        grid: { color: 'rgba(49,91,125,0.08)' },
+        ticks: { color: '#667085', font: { size: 9 }, callback: (v: any) => formatCurrency(v), padding: 0 }
       }
     },
     interaction: { mode: 'index' as const, intersect: false }
@@ -1605,11 +1605,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#315b7d" />, badgeDiasRestantes)}
             {!collapsedSections[1] && (
               <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24, padding: '24px 32px 0 32px' }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <div className="monthly-kpi-grid">
+                <div className="monthly-kpi-card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{formatCurrency(kpiTotal.capital)}</div>
+                    <div className="monthly-kpi-value">{formatCurrency(kpiTotal.capital)}</div>
                     {tendBadge(kpiTotal.tendCapital)}
                   </div>
                   <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
@@ -1621,29 +1621,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
                 </div>
               )}
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Capital vs Objetivo</div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(96,165,250,0.8)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div id="chart-capital-objetivo" style={{ height: 200, position: 'relative', width: '100%' }}>
-                      <Bar data={chartCapitalVsObjetivo as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin, referenceLinesPlugin]} />
-                    </div>
+                  <div className="monthly-kpi-chart">
+                    <div className="monthly-progress-head"><span>Avance del objetivo</span><strong>{(kpiTotal.cumplCapital ?? 0).toFixed(1)}%</strong></div>
+                    <div className="monthly-progress-track"><span style={{ width: `${Math.min(kpiTotal.cumplCapital ?? 0, 100)}%` }} /></div>
+                    <div className="monthly-goal-values"><span>Vendido <b>{formatCurrency(kpiTotal.capital)}</b></span><span>Objetivo <b>{formatCurrency(kpiTotal.metaCapital)}</b></span></div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div className="monthly-kpi-card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{kpiTotal.ops}</div>
+                    <div className="monthly-kpi-value">{kpiTotal.ops}</div>
                     {tendBadge(kpiTotal.tendOps)}
                   </div>
                   <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
@@ -1655,75 +1642,29 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
                 </div>
               )}
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Aperturas vs Renovaciones</div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00d4ff' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(30, 58, 138, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, flex: 1, minHeight: 0 }}>
-                      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: '#00d4ff', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Aperturas</div>
-                        <div id="chart-aperturas" style={{ height: 200, position: 'relative', width: '100%' }}>
-                          <Bar data={chartAperturas} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-                        </div>
-                      </div>
-                      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: '#a78bfa', textAlign: 'center', marginBottom: 6, textTransform: 'uppercase' }}>Renov.</div>
-                        <div id="chart-renovaciones" style={{ height: 200, position: 'relative', width: '100%' }}>
-                          <Bar data={chartRenovaciones} options={baseChartOpts(' ops', false, true, false, false)} plugins={[labelsPlugin]} />
-                        </div>
-                      </div>
+                  <div className="monthly-kpi-chart">
+                    <div className="monthly-stat-pair">
+                      <div><span>Aperturas</span><strong>{apertVsRenData.total.aperturas}</strong><small>Anterior: {apertVsRenData.ant.aperturas}</small></div>
+                      <div><span>Renovaciones</span><strong>{apertVsRenData.total.renovaciones}</strong><small>Anterior: {apertVsRenData.ant.renovaciones}</small></div>
                     </div>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 10, padding: '16px 20px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div className="monthly-kpi-card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{formatCurrency(kpiTotal.ticket)}</div>
+                    <div className="monthly-kpi-value">{formatCurrency(kpiTotal.ticket)}</div>
                     {tendBadge(kpiTotal.tendTicket)}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#555' }} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {(kpiTotal.conversionGlobal ?? 0).toFixed(1)}%</div>
-                    {tendBadge(kpiTotal.tendConversionGlobal, false)}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 12, color: '#555' }} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
-                    {tendBadge(kpiTotal.tendConversion, false)}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <div style={{ fontSize: 11, color: '#444' }}>{kpiTotal.clientes} clientes ingresados</div>
-                    {tendBadge(kpiTotal.tendClientes, false)}
-                  </div>
-                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#666', textTransform: 'uppercase' as const, letterSpacing: 0.8 }}>Análisis vs {mesAntLabel}</div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(52,211,153,0.8)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(6, 78, 59, 0.9)' }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, color: '#555', textTransform: 'uppercase' }}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div id="chart-ticket-promedio" style={{ height: 200, position: 'relative', width: '100%' }}>
-                      <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', false, true, false)} plugins={[labelsPlugin]} />
+                  <div className="monthly-kpi-chart">
+                    <div className="monthly-health-list">
+                      <div><span>Conversión total</span><strong>{kpiTotal.conversionGlobal.toFixed(1)}%</strong></div>
+                      <div><span>Tasa de cierre</span><strong>{kpiTotal.conversion.toFixed(1)}%</strong></div>
+                      <div><span>Clientes ingresados</span><strong>{kpiTotal.clientes}</strong></div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div style={{ padding: '0 32px 24px 32px' }}>
+              <div className="monthly-dashboard-extra">
                 {/* ── SECCIÓN GRÁFICOS ── */}
                 <SeccionGraficosResumen 
                   kpiTotal={kpiTotal} 
@@ -1750,7 +1691,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         })()
                       : `TOTAL: Todos los estados (${registros.length} ops · ${formatCurrency(registros.reduce((s, r) => s + (Number(r.monto) || 0), 0))})`}
                   </span>
-                  <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 8, padding: 3 }}>
+                  <div className="monthly-period-toggle">
                     {(['mensual', 'total'] as const).map(p => (
                       <button
                         key={p}
@@ -1764,8 +1705,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                           fontWeight: 700,
                           textTransform: 'uppercase',
                           letterSpacing: '0.8px',
-                          background: periodoSec3 === p ? '#fb923c' : 'transparent',
-                          color: periodoSec3 === p ? '#000' : '#555',
+                          background: periodoSec3 === p ? '#315b7d' : 'transparent',
+                          color: periodoSec3 === p ? '#fff' : '#667085',
                           transition: 'all 0.2s ease',
                         }}
                       >
@@ -1777,7 +1718,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
               )}
             </div>
             {!collapsedSections[2] && (
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
+              <div className="monthly-category-grid">
                 {(() => {
                   const isMensual = periodoSec3 === 'mensual';
                   const fuente = isMensual ? ventasMes : registros;
@@ -1790,12 +1731,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   const lo = isMensual ? distLocalidad : distLocalidadTotal;
                   return (
                     <>
-                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#ffaa00" />} datos={ac} color="#ffaa00" totalMes={base} />
-                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#00d4ff" />} datos={cu} color="#00d4ff" totalMes={base} />
-                      <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#34d399" />} datos={re} color="#34d399" totalMes={base} />
-                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#b266ff" />} datos={sx} color="#b266ff" totalMes={base} />
-                      <DistBlock titulo="Empleador" icon={<Shield size={12} color="#fbbf24" />} datos={em} color="#fbbf24" totalMes={base} />
-                      <DistBlock titulo="Localidad" icon={<FileText size={12} color="#a78bfa" />} datos={lo} color="#a78bfa" totalMes={base} />
+                      <DistBlock titulo="Acuerdo" icon={<PieChart size={12} color="#315b7d" />} datos={ac} color="#315b7d" totalMes={base} />
+                      <DistBlock titulo="Cuotas" icon={<BarChart3 size={12} color="#4f708c" />} datos={cu} color="#4f708c" totalMes={base} />
+                      <DistBlock titulo="Rango Etario" icon={<Users size={12} color="#4f8275" />} datos={re} color="#4f8275" totalMes={base} />
+                      <DistBlock titulo="Sexo" icon={<Users size={12} color="#6d6f91" />} datos={sx} color="#6d6f91" totalMes={base} />
+                      <DistBlock titulo="Empleador" icon={<Shield size={12} color="#8a704b" />} datos={em} color="#8a704b" totalMes={base} />
+                      <DistBlock titulo="Localidad" icon={<FileText size={12} color="#607d8b" />} datos={lo} color="#607d8b" totalMes={base} />
                     </>
                   );
                 })()}
@@ -1807,9 +1748,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#315b7d" />)}
             {!collapsedSections[3] && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', padding: '0 24px 24px 24px' }}>
-                <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" analistas={nombres} />
-                <NuevaSeccionSheets analista="PDV" active={active} />
+              <div className="monthly-analysis-grid analistas-report">
+                <MetricasTab selectedMes={selectedMes} selectedAnio={selectedAnio} registros={registros} analista="PDV" analistas={nombres} hideSelector reportAppearance />
+                <NuevaSeccionSheets analista="PDV" active={active} reportAppearance />
               </div>
             )}
           </div>
@@ -1845,12 +1786,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#315b7d" />)}
             {!collapsedSections[6] && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+                <div className="monthly-note-grid">
                   <ManualTextarea label="Gestiones Realizadas" value={resumen.gestiones_realizadas} onChange={v => setResumen(p => ({ ...p, gestiones_realizadas: v }))} placeholder="Visitas, llamados, coordinaciones del período..." />
                   <ManualTextarea label="Coordinación de Salidas" value={resumen.coordinacion_salidas} onChange={v => setResumen(p => ({ ...p, coordinacion_salidas: v }))} placeholder="Salidas al campo, visitas programadas..." />
                   <ManualTextarea label="Empresas Estratégicas" value={resumen.empresas_estrategicas} onChange={v => setResumen(p => ({ ...p, empresas_estrategicas: v }))} placeholder="Empresas clave contactadas o visitadas..." />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginTop: 16 }}>
+                <div className="monthly-note-grid" style={{ marginTop: 14 }}>
                   <ManualTextarea label="Principales Logros" value={resumen.logros} onChange={v => setResumen(p => ({ ...p, logros: v }))} placeholder="Describí los principales logros del período..." />
                   <ManualTextarea label="Principales Desvíos / Problemas" value={resumen.desvios} onChange={v => setResumen(p => ({ ...p, desvios: v }))} placeholder="Describí los desvíos o problemas detectados..." />
                   <ManualTextarea label="Acciones Clave a Seguir" value={resumen.acciones_clave} onChange={v => setResumen(p => ({ ...p, acciones_clave: v }))} placeholder="Acciones prioritarias para el próximo período..." />
@@ -1880,21 +1821,21 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                 {auditoriaData.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <div className="monthly-team-activity">
                       {nombres.map(analista => {
                         const count = auditoriaData.filter(a => a.analista === analista).length;
                         return (
-                          <div key={analista} style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 8, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{analista}</div>
-                            <div style={{ fontSize: 18, fontWeight: 700, color: '#aaa' }}>{count}</div>
-                            <div style={{ fontSize: 10, color: '#333', marginTop: 2 }}>acciones registradas</div>
+                          <div key={analista} className="monthly-team-stat">
+                            <div>{analista}</div>
+                            <strong>{count}</strong>
+                            <small>acciones registradas</small>
                           </div>
                         );
                       })}
                     </div>
                   </div>
                 )}
-                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <div className="monthly-note-grid monthly-note-grid--four">
                   <ManualTextarea label="Dotación Actual" value={resumen.dotacion} onChange={v => setResumen(p => ({ ...p, dotacion: v }))} />
                   <ManualTextarea label="Ausentismo / Tardanzas" value={resumen.ausentismo} onChange={v => setResumen(p => ({ ...p, ausentismo: v }))} />
                   <ManualTextarea label="Capacitación Realizada" value={resumen.capacitacion} onChange={v => setResumen(p => ({ ...p, capacitacion: v }))} />
@@ -1909,19 +1850,20 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#315b7d" />)}
             {!collapsedSections[9] && (
               <>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 12 }}>
+                <div className="monthly-action-table-wrap">
+                <table className="monthly-action-table">
                   <thead>
                     <tr>
                       {['Problema Detectado', 'Acción Concreta', 'Responsable', 'Fecha Ejecución', ''].map(h => (
-                        <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#444', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: 0.5, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{h}</th>
+                        <th key={h}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {resumen.plan_acciones.map((fila, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                      <tr key={idx}>
                         {(['problema', 'accion', 'responsable'] as const).map(campo => (
-                          <td key={campo} style={{ padding: '6px 8px' }}>
+                          <td key={campo}>
                             <input
                               value={fila[campo]}
                               onChange={e => {
@@ -1929,11 +1871,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                                 setResumen(p => ({ ...p, plan_acciones: updated }));
                               }}
                               placeholder={campo === 'problema' ? 'Describí el problema...' : campo === 'accion' ? 'Acción concreta...' : 'Responsable'}
-                              style={{ width: '100%', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: UI_FONT_FAMILY, fontSize: 12, padding: '7px 10px', outline: 'none', boxSizing: 'border-box' as const }}
+                              className="monthly-action-input"
                             />
                           </td>
                         ))}
-                        <td style={{ padding: '6px 8px' }}>
+                        <td>
                           <input
                             type="date"
                             value={fila.fecha}
@@ -1941,30 +1883,13 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                               const updated = resumen.plan_acciones.map((f, i) => i === idx ? { ...f, fecha: e.target.value } : f);
                               setResumen(p => ({ ...p, plan_acciones: updated }));
                             }}
-                            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 6, color: '#ccc', fontFamily: UI_FONT_FAMILY, fontSize: 12, padding: '7px 10px', outline: 'none', colorScheme: 'dark' as const }}
+                            className="monthly-action-input"
                           />
                         </td>
-                        <td style={{ padding: '6px 8px' }}>
+                        <td>
                           <button
                             onClick={() => setResumen(p => ({ ...p, plan_acciones: p.plan_acciones.filter((_, i) => i !== idx) }))}
-                            style={{ 
-                              background: 'rgba(239,68,68,0.06)', 
-                              border: '1px solid rgba(239,68,68,0.12)', 
-                              borderRadius: 8, color: '#ff3366', 
-                              cursor: 'pointer', padding: '8px', 
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
-                              e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)';
-                              e.currentTarget.style.transform = 'scale(1.05)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'rgba(239,68,68,0.06)';
-                              e.currentTarget.style.borderColor = 'rgba(239,68,68,0.12)';
-                              e.currentTarget.style.transform = 'scale(1)';
-                            }}
+                            className="monthly-action-delete"
                           >
                             <Trash2 size={13} strokeWidth={2.5} />
                           </button>
@@ -1973,30 +1898,10 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <button
                   onClick={() => setResumen(p => ({ ...p, plan_acciones: [...p.plan_acciones, { problema: '', accion: '', responsable: '', fecha: '' }] }))}
-                  style={{ 
-                    display: 'flex', alignItems: 'center', gap: 8, 
-                    background: 'rgba(255,255,255,0.03)', 
-                    border: '1px solid rgba(255,255,255,0.08)', 
-                    borderRadius: 8, color: '#666', 
-                    fontFamily: UI_FONT_FAMILY, fontSize: '11px', fontWeight: 700,
-                    cursor: 'pointer', padding: '10px 18px',
-                    textTransform: 'uppercase', letterSpacing: '1px',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
-                    e.currentTarget.style.color = '#fff';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                    e.currentTarget.style.color = '#666';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
+                  className="monthly-action-add"
                 >
                   <Plus size={14} strokeWidth={2.5} /> Agregar fila
                 </button>
@@ -2009,9 +1914,9 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
             {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#315b7d" />)}
 
             {!collapsedSections[10] && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '0 24px 24px 24px' }}>
+              <div className="monthly-activity-section">
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', padding: 3, borderRadius: 8 }}>
+                  <div className="monthly-activity-filter">
                     {FILTROS_ACTIVIDAD.map(f => (
                     <button
                       key={f}
@@ -2025,8 +1930,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.8px',
-                        background: filtroActividad === f ? '#fff' : 'transparent',
-                        color: filtroActividad === f ? '#000' : '#555',
+                        background: filtroActividad === f ? '#315b7d' : 'transparent',
+                        color: filtroActividad === f ? '#fff' : '#667085',
                         transition: 'all 0.2s ease',
                         fontFamily: UI_FONT_FAMILY
                       }}
@@ -2037,27 +1942,27 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+                <div className="monthly-activity-grid">
                   
                   {/* Gráfico de Líneas */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: '24px', border: '1px solid rgba(255,255,255,0.04)', display: 'flex', flexDirection: 'column' }}>
+                  <div className="monthly-activity-card monthly-activity-card--chart">
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>
                     Venta Diaria {filtroActividad === 'PDV' ? 'Pura (Total PDV)' : `— ${filtroActividad}`}
                   </div>
-                  <div style={{ flex: 1, position: 'relative', width: '100%' }}>
+                  <div className="monthly-daily-chart">
                     <Line data={chartVentaDiaria} options={chartVentaDiariaOptions as any} />
                   </div>
                 </div>
 
                 {/* Mapa de Actividad (Diseño Screenshot) */}
-                <div style={{ background: '#ffffff', borderRadius: 12, padding: '24px', border: '1px solid #dde5ee', display: 'flex', flexDirection: 'column' }}>
+                <div className="monthly-activity-card">
                   
                   {/* Header */}
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
                     <div style={{ width: 3, height: 16, background: '#10b981', marginRight: 8, borderRadius: 2 }} />
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>MAPA DE ACTIVIDAD</div>
-                      <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>Ventas por día — mes actual</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#263550', textTransform: 'uppercase', letterSpacing: 0.5 }}>Mapa de actividad</div>
+                      <div style={{ fontSize: 11, color: '#667085', marginTop: 2 }}>Ventas por día — mes actual</div>
                     </div>
                   </div>
 
@@ -2067,34 +1972,34 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                     <div style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6, marginBottom: 4 }}>
                       <div />
                       {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
-                        <div key={d} style={{ fontSize: 10, color: '#555', textAlign: 'center', fontWeight: 700 }}>{d}</div>
+                        <div key={d} style={{ fontSize: 10, color: '#667085', textAlign: 'center', fontWeight: 700 }}>{d}</div>
                       ))}
-                      <div style={{ fontSize: 10, color: '#555', textAlign: 'right', fontWeight: 700 }}>TOTAL</div>
+                      <div style={{ fontSize: 10, color: '#667085', textAlign: 'right', fontWeight: 700 }}>TOTAL</div>
                     </div>
 
                     {/* Semanas */}
                     {heatmapData.weeks.map((week, wIdx) => (
                       <div key={wIdx} style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6 }}>
                         {/* Label de semana */}
-                        <div style={{ fontSize: 10, color: '#444', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontSize: 10, color: '#667085', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           S{wIdx + 1}
                         </div>
                         
                         {/* Días (solo Lun a Sáb = índices 0 a 5) */}
                         {week.slice(0, 6).map((day, dIdx) => {
                           if (day === null) {
-                            return <div key={dIdx} style={{ background: '#131514', borderRadius: 4, height: 50 }} />;
+                            return <div key={dIdx} className="monthly-heatmap-cell is-empty" />;
                           }
                           
                           const val = heatmapData.data[day - 1];
                           const isFuture = day > (selectedMes === (now.getMonth() + 1) && selectedAnio === now.getFullYear() ? now.getDate() : heatmapData.daysInMonth);
                           
                           if (isFuture) {
-                            return <div key={dIdx} style={{ background: '#131514', borderRadius: 4, height: 50, border: '1px solid rgba(255,255,255,0.02)' }} />;
+                            return <div key={dIdx} className="monthly-heatmap-cell is-empty" />;
                           }
 
                           const intensity = val === 0 ? 0 : Math.max(0.15, val / heatmapData.maxVal);
-                          const bg = val === 0 ? '#151917' : `rgba(22, 163, 74, ${intensity})`;
+                          const bg = val === 0 ? '#f1f4f7' : `rgba(79, 130, 114, ${Math.max(.2, intensity)})`;
                           const textColor = val === 0 ? 'transparent' : '#fff';
                           
                           return (
@@ -2103,15 +2008,15 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                               title={`Día ${day}: ${formatCurrency(val)}`}
                               style={{
                                 background: bg,
-                                borderRadius: 4,
-                                height: 50,
+                                borderRadius: 6,
+                                height: 44,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontSize: 11,
                                 fontWeight: 700,
                                 color: textColor,
-                                boxShadow: val > 0 ? `inset 0 0 0 1px rgba(255,255,255,0.1)` : 'none',
+                                boxShadow: val > 0 ? `inset 0 0 0 1px rgba(49,91,125,.08)` : 'none',
                                 transition: 'transform 0.2s',
                                 cursor: 'pointer'
                               }}
@@ -2124,7 +2029,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         })}
 
                         {/* Total de la Semana */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 12, fontWeight: 700, color: '#fff' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 12, fontWeight: 700, color: '#263550' }}>
                           {formatK(heatmapData.weekTotals[wIdx]) || '$0K'}
                         </div>
                       </div>
@@ -2132,14 +2037,14 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   </div>
 
                   {/* Stats Footer */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 32, marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="monthly-activity-stats">
                     <div>
-                      <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>DÍA MÁS ACTIVO</div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{heatmapData.diaMasActivo}</div>
+                      <div style={{ fontSize: 10, color: '#667085', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>DÍA MÁS ACTIVO</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#263550' }}>{heatmapData.diaMasActivo}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: '#555', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>TOTAL PERÍODO</div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{formatCurrency(heatmapData.totalPeriodo)}</div>
+                      <div style={{ fontSize: 10, color: '#667085', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>TOTAL PERÍODO</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#263550' }}>{formatCurrency(heatmapData.totalPeriodo)}</div>
                     </div>
                   </div>
                 </div>

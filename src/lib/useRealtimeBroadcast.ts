@@ -13,7 +13,7 @@ type EventMap = Record<string, BroadcastHandler>;
 //   los handlers se leen vía ref, así siempre corre la versión actual
 // - Retorna un ref al canal, útil para enviar broadcasts salientes
 //   (p.ej. `ref.current?.send({ type: 'broadcast', event, payload })`)
-export function useRealtimeBroadcast(channelName: string, events: EventMap) {
+export function useRealtimeBroadcast(channelName: string, events: EventMap, enabled = true) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const eventsRef = useRef<EventMap>(events);
   useEffect(() => { eventsRef.current = events; });
@@ -24,6 +24,11 @@ export function useRealtimeBroadcast(channelName: string, events: EventMap) {
   const initialEventNames = useRef<string[]>(Object.keys(events));
 
   useEffect(() => {
+    if (!enabled) {
+      channelRef.current = null;
+      return;
+    }
+
     let bc = supabase.channel(channelName, { config: { broadcast: { self: false } } });
     for (const event of initialEventNames.current) {
       bc = bc.on('broadcast', { event }, ({ payload }) => {
@@ -36,7 +41,7 @@ export function useRealtimeBroadcast(channelName: string, events: EventMap) {
       supabase.removeChannel(bc);
       channelRef.current = null;
     };
-  }, [channelName]);
+  }, [channelName, enabled]);
 
   return channelRef;
 }

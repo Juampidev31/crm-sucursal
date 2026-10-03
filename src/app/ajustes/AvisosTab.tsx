@@ -266,7 +266,7 @@ export default function AvisosTab() {
                     <span className={styles.analystBadge}>
                       {h.analista}
                     </span>
-                    <span className={styles.historyDate}>{new Date(h.creado_en || '').toLocaleString()}</span>
+                    <span className={styles.historyDate}>{formatDateTime(h.creado_en ?? null)}</span>
                   </div>
                   <p className={styles.historyNote}>{h.nota}</p>
                 </div>

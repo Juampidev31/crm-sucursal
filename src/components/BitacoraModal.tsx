@@ -9,6 +9,7 @@ import { Registro, BitacoraNota, Recordatorio } from '@/types';
 import ModalPortal from '@/components/ModalPortal';
 import { getTagStyle } from '@/components/EtiquetasSelector';
 import { logAudit } from '@/lib/audit';
+import { formatDate, formatDateTime } from '@/lib/utils';
 import { X, Trash2, Loader2, AlertCircle, Bell, Clock, User, Tag, Edit3, Minus, Plus } from 'lucide-react';
 import styles from './BitacoraModal.module.css';
 
@@ -311,7 +312,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
           analista: registro.analista,
           accion: 'Recordatorio creado',
           campo_modificado: 'Recordatorio',
-          valor_nuevo: `${registro.nombre} | ${fecha} ${hora}${nota.trim() ? ' | ' + nota.trim() : ''}`,
+          valor_nuevo: `${registro.nombre} | ${formatDate(fecha)} ${hora}${nota.trim() ? ' | ' + nota.trim() : ''}`,
         });
         pushRecordatorioChange('INSERT', recData as Recordatorio);
         okRec = true;
@@ -414,7 +415,7 @@ export default function BitacoraModal({ isOpen, onClose, registro, onSavedEtique
                   <div className={styles.inlineRow}>
                     <Bell size={12} />
                     <span>
-                      Recordatorio actual: <strong>{new Date(activeReminder.fecha_hora).toLocaleDateString('es-AR')} {new Date(activeReminder.fecha_hora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</strong>
+                      Recordatorio actual: <strong>{formatDateTime(activeReminder.fecha_hora)}</strong>
                     </span>
                   </div>
                   <div className={styles.compactActions}>

@@ -7,8 +7,8 @@ import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 import { useDataError } from '@/context/ErrorContext';
 import { Registro, parseRegistros, registroSchema } from '@/types';
 import { validateBroadcast } from '@/lib/broadcast-utils';
-
-type ChangeType = 'INSERT' | 'UPDATE' | 'DELETE';
+import { getRequestErrorMessage, isTransientRequestAbort } from '@/lib/request-errors';
+import { aplicarCambiosRegistros, type CambioRegistro, type ChangeType } from './realtime-batch';
 
 type RegistroPatch = Partial<Registro>;
 type FieldKey = keyof Registro;
@@ -33,6 +33,14 @@ const registroChangeSchema = z.object({ type: changeType, registro: registroSche
 // Cap de seguridad aumentado para cargar todo.
 const REGISTROS_SAFETY_LIMIT = 50000;
 
+// Agrupado de eventos realtime. Una modificación masiva de N filas vuelve como
+// N eventos `postgres_changes` sueltos (uno por fila) a TODAS las pestañas,
+// incluida la que hizo el cambio. Aplicarlos de a uno costaba un commit de
+// React por evento: medido con 406 filas, ~50 s de main thread bloqueado.
+// Se acumulan en una ventana corta y se aplican en un único setState.
+const REALTIME_FLUSH_MS = 120;       // ventana de agrupado tras el último evento
+const REALTIME_FLUSH_MAX_MS = 600;   // tope: nunca retrasar un cambio más que esto
+
 export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const { reportError } = useDataError();
   const [registros, setRegistros] = useState<Registro[]>([]);
@@ -40,7 +48,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   const refreshIdRef = useRef(0);
 
   const refresh = useCallback(async (silent = false) => {
-    let cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,etiquetas,fijado,created_at,updated_at';
+    let cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,autorizacion_cc,cuotas,rango_etario,sexo,empleador,dependencia,localidad,etiquetas,fijado,created_at,updated_at';
     const PAGE = 1000;
     const myId = ++refreshIdRef.current;
 
@@ -57,8 +65,8 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Chunk #1: bloqueamos el render hasta tenerlo (≈1 round-trip).
-    let first: any = null;
-    let firstErr: any = null;
+    let first: unknown[] | null = null;
+    let firstErr: unknown = null;
     let count: number | null = null;
 
     try {
@@ -74,7 +82,7 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
 
       // Fallback de seguridad si la columna 'etiquetas' aún no fue creada en la BD de Supabase
       if (firstErr && (firstErr as { code?: string }).code === '42703') {
-        cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,cuotas,rango_etario,sexo,empleador,dependencia,localidad,fijado,created_at,updated_at';
+        cols = 'id,cuil,nombre,puntaje,es_re,analista,fecha,fecha_score,monto,interes,estado,comentarios,telefono,tipo_cliente,acuerdo_precios,autorizacion_cc,cuotas,rango_etario,sexo,empleador,dependencia,localidad,fijado,created_at,updated_at';
         const fallbackRes = await supabase
           .from('registros')
           .select(cols, { count: 'exact' })
@@ -84,15 +92,15 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
         first = fallbackRes.data;
         firstErr = fallbackRes.error;
       }
-    } catch (networkErr: any) {
+    } catch (networkErr: unknown) {
       firstErr = networkErr;
     }
 
     if (refreshIdRef.current !== myId) return; // refresh nuevo invalidó este
 
     if (firstErr) {
-      const errMsg = (firstErr as { message?: string })?.message || String(firstErr);
-      if (errMsg.includes('fetch') || errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('abort')) {
+      const errMsg = getRequestErrorMessage(firstErr);
+      if (isTransientRequestAbort(firstErr)) {
         console.warn('[RegistrosProvider] Error de red transitorio en refresh:', errMsg);
       } else {
         reportError('refresh:registros', firstErr as { message: string });
@@ -117,7 +125,13 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
       ranges.push([from, Math.min(from + PAGE - 1, lastIdx)]);
     }
 
-    let results: any[] = [];
+    const fetchRange = (from: number, to: number) => supabase
+      .from('registros')
+      .select(cols)
+      .order('fecha', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to);
+    let results: Awaited<ReturnType<typeof fetchRange>>[] = [];
     try {
       results = await Promise.all(
         ranges.map(([f, t]) =>
@@ -126,11 +140,11 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
           // determinista, las filas con la misma `fecha` (hasta 139 empates)
           // pueden repartirse distinto entre páginas y producir duplicados y
           // omisiones silenciosas.
-          supabase.from('registros').select(cols).order('fecha', { ascending: false }).order('id', { ascending: true }).range(f, t)
+          fetchRange(f, t)
         )
       );
-    } catch (parallelErr: any) {
-      console.warn('[RegistrosProvider] Error de red en chunks paralelos:', parallelErr?.message || parallelErr);
+    } catch (parallelErr: unknown) {
+      console.warn('[RegistrosProvider] Error de red en chunks paralelos:', getRequestErrorMessage(parallelErr));
       return;
     }
 
@@ -142,8 +156,8 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
       const chunk = res?.data;
       const err = res?.error;
       if (err) {
-        const msg = (err as { message?: string })?.message || String(err);
-        if (msg.includes('fetch') || msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('abort')) {
+        const msg = getRequestErrorMessage(err);
+        if (isTransientRequestAbort(err)) {
           console.warn('[RegistrosProvider] Error de red en chunk:', msg);
         } else {
           reportError('refresh:registros', err as { message: string });
@@ -166,7 +180,8 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   }, [reportError]);
 
   useEffect(() => {
-    refresh();
+    const timer = window.setTimeout(() => { void refresh(); }, 0);
+    return () => window.clearTimeout(timer);
   }, [refresh]);
 
   const mutateRegistros = useCallback((mapper: (prev: Registro[]) => Registro[]) => {
@@ -174,23 +189,41 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const applyRegistroChange = useCallback((type: ChangeType, reg: Registro) => {
-    setRegistros(prev => {
-      if (type === 'DELETE') return prev.filter(r => r.id !== reg.id);
-
-      const exists = prev.findIndex(r => r.id === reg.id);
-      if (exists >= 0) {
-        const next = [...prev];
-        next[exists] = reg;
-        return next;
-      }
-
-      return [reg, ...prev];
-    });
+    setRegistros(prev => aplicarCambiosRegistros(prev, [{ type, registro: reg }]));
   }, []);
 
   // ── Realtime: detecta cambios externos (móvil, otra app) ─────────────────
-  const applyChangeRef = useRef(applyRegistroChange);
-  useEffect(() => { applyChangeRef.current = applyRegistroChange; }, [applyRegistroChange]);
+  const pendientesRef = useRef<CambioRegistro[]>([]);
+  const flushTimerRef = useRef<number | null>(null);
+  const flushTopeRef = useRef(0);
+
+  const vaciarPendientes = useCallback(() => {
+    flushTimerRef.current = null;
+    const lote = pendientesRef.current;
+    if (lote.length === 0) return;
+    pendientesRef.current = [];
+    // `aplicarCambiosRegistros` devuelve `prev` si el lote no cambia nada —el
+    // caso normal cuando el cambio lo hizo esta pestaña y ya se aplicó local—
+    // y entonces React ni siquiera re-renderiza.
+    setRegistros(prev => aplicarCambiosRegistros(prev, lote));
+  }, []);
+
+  const encolarCambio = useCallback((type: ChangeType, registro: Registro) => {
+    pendientesRef.current.push({ type, registro });
+    const ahora = Date.now();
+    if (flushTimerRef.current === null) {
+      flushTopeRef.current = ahora + REALTIME_FLUSH_MAX_MS;
+    } else {
+      // Durante una ráfaga reprogramamos para agrupar más, pero sin pasarnos
+      // del tope: así un goteo continuo igual se ve como máximo cada 600 ms.
+      if (ahora + REALTIME_FLUSH_MS >= flushTopeRef.current) return;
+      window.clearTimeout(flushTimerRef.current);
+    }
+    flushTimerRef.current = window.setTimeout(vaciarPendientes, REALTIME_FLUSH_MS);
+  }, [vaciarPendientes]);
+
+  const encolarRef = useRef(encolarCambio);
+  useEffect(() => { encolarRef.current = encolarCambio; }, [encolarCambio]);
 
   useEffect(() => {
     const channel = supabase
@@ -201,18 +234,24 @@ export function RegistrosProvider({ children }: { children: React.ReactNode }) {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const parsed = registroSchema.safeParse(payload.new);
-            if (parsed.success) applyChangeRef.current('INSERT', parsed.data);
+            if (parsed.success) encolarRef.current('INSERT', parsed.data);
           } else if (payload.eventType === 'UPDATE') {
             const parsed = registroSchema.safeParse(payload.new);
-            if (parsed.success) applyChangeRef.current('UPDATE', parsed.data);
+            if (parsed.success) encolarRef.current('UPDATE', parsed.data);
           } else if (payload.eventType === 'DELETE') {
             const parsed = registroSchema.safeParse(payload.old);
-            if (parsed.success) applyChangeRef.current('DELETE', parsed.data);
+            if (parsed.success) encolarRef.current('DELETE', parsed.data);
           }
         }
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+      if (flushTimerRef.current !== null) {
+        window.clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+    };
   }, []);
 
   const channelRef = useRealtimeBroadcast('registros-updates', {

@@ -76,11 +76,12 @@
 .phoneSubtitle { margin:0; color:#64748b; font-size:13px; line-height:1.4; }
 .phoneClose { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border:1px solid #dbe4ee; border-radius:10px; color:#53627a; background:#f8fafc; cursor:pointer; transition:border-color .18s,background .18s,color .18s; }
 .phoneClose:hover { border-color:#cbd5e1; color:#172033; background:#eef2f7; }
-.compactModalHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:20px 24px; border:1px solid rgba(255,255,255,.12); border-bottom-color:rgba(255,255,255,.06); border-radius:16px 16px 0 0; background:rgba(14,14,18,.96); backdrop-filter:blur(20px); }
-.compactModalTitle { display:flex; align-items:center; gap:8px; margin:0 0 6px; color:#fff; font-size:13px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
-.compactModalSubtitle { margin:0; color:var(--text-muted); font-size:12px; line-height:1.4; }
-.compactModalStrong { color:#fff; font-weight:700; }
-.compactModalClose { flex-shrink:0; padding:6px; border-radius:50%; color:var(--text-primary); background:rgba(255,255,255,.03); }
+.compactModalHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:20px 24px; border-bottom:1px solid #dce4ec; background:linear-gradient(180deg,#fbfcfe 0%,#f6f8fb 100%); }
+.compactModalTitle { display:flex; align-items:center; gap:8px; margin:0 0 5px; color:#1d2d44; font-size:13px; font-weight:750; letter-spacing:.4px; text-transform:uppercase; }
+.compactModalSubtitle { margin:0; color:#68778d; font-size:12px; line-height:1.45; }
+.compactModalStrong { color:#1d2d44; font-weight:700; }
+.compactModalClose { display:grid; width:36px; height:36px; flex:0 0 36px; padding:0; place-items:center; border:1px solid #d8e1ea; border-radius:9px; color:#63738a; background:#fff; cursor:pointer; transition:background .18s,border-color .18s,color .18s; }
+.compactModalClose:hover { border-color:#b8c6d3; color:#1f3e59; background:#edf2f6; }
 .phoneBody { padding:22px 24px 24px; background:#fff; }
 .phoneContact { display:flex; align-items:baseline; gap:10px; margin-bottom:18px; padding:12px 14px; border:1px solid #e2e8f0; border-radius:10px; color:#1e293b; background:#f8fafc; font-size:13px; }
 .phoneContactLabel { color:#64748b; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
@@ -108,18 +109,20 @@
   .phoneSend { grid-column:1 / -1; grid-row:1; }
 }
 .duplicateOverlay { z-index:1100; }
-.duplicateModal { max-width:480px; }
-.duplicateTitleWarning { color:#f59e0b; }
-.duplicateTitleBlocked { color:var(--state-danger); }
-.duplicateSubtitleBlocked { color:#fca5a5; }
-.duplicateBody { padding:20px 28px; }
+.duplicateModal { max-width:520px; }
+.duplicateTitleWarning { color:#b7791f; }
+.duplicateTitleBlocked { color:#b42334; }
+.duplicateSubtitleBlocked { color:#8f5660; }
+.duplicateBody { padding:24px; }
 .duplicateMessage { display:flex; align-items:flex-start; gap:14px; }
-.duplicateMessage > svg { flex-shrink:0; margin-top:2px; }
-.duplicateName { margin:0 0 6px; color:#fff; font-size:14px; font-weight:700; }
-.duplicateMeta { margin:0 0 10px; color:var(--text-primary); font-size:13px; }
-.duplicateDescription { margin:0; color:var(--text-primary); font-size:13px; line-height:1.6; }
-.duplicateCancel { padding:10px 20px; border:1px solid rgba(255,255,255,.1); border-radius:10px; color:var(--text-primary); background:transparent; font-size:13px; font-weight:700; }
-.duplicatePrimary { padding:10px 24px; border:0; border-radius:10px; color:#000; background:#fff; font-size:13px; font-weight:700; }
+.duplicateMessage > svg { width:36px; height:36px; flex:0 0 36px; margin:0; padding:8px; border-radius:10px; background:#fff7e8; }
+.duplicateMessage > svg.duplicateTitleBlocked { background:#fff0f1; }
+.duplicateName { margin:0 0 5px; color:#1d2d44; font-size:15px; font-weight:700; }
+.duplicateMeta { margin:0 0 12px; color:#68778d; font-size:12.5px; }
+.duplicateDescription { max-width:390px; margin:0; color:#47576e; font-size:13px; line-height:1.55; }
+.duplicateFooter { gap:10px; }
+.duplicateCancel { min-height:40px; padding:0 20px; border-radius:8px; font-size:13px; font-weight:700; }
+.duplicatePrimary { min-height:40px; padding:0 22px; border-radius:8px; font-size:13px; font-weight:700; }
 .duplicatePrimaryStrong { font-weight:700; }
 .commentsModal { max-width:620px; }
 .commentsIcon { color:#315b7d; }
@@ -180,6 +183,21 @@
 .fieldLabelTransparent { color:transparent; user-select:none; }
 .fieldRequired { margin-left:4px; color:var(--state-danger); }
 .fieldError { margin-left:6px; color:var(--state-danger); font-weight:400; }
+.fieldAviso { margin-left:6px; color:var(--state-warning); font-weight:400; }
+/* Acción del footer del modal, en la fila de CANCELAR / GUARDAR: hereda
+   .btn-secondary y sólo agrega el estado activo. */
+.autorizacionCC { display:flex; align-items:center; gap:5px; white-space:nowrap; }
+/* El selector baja de `.modal-content .btn-secondary` (globals.css), así que el
+   estado activo necesita ganarle en especificidad. */
+:global(.modal-content) .autorizacionCC.autorizacionCCOn {
+  border-color:var(--state-warning);
+  background:rgba(255, 170, 0, 0.14);
+}
+:global(.modal-content) .autorizacionCC.autorizacionCCOn:hover {
+  border-color:var(--state-warning);
+  background:rgba(255, 170, 0, 0.22);
+}
+.autorizacionCCOn svg { color:var(--state-warning); }
 .fieldInline { display:flex; gap:8px; }
 .fieldGrow { flex:1; }
 .fieldIconButton { display:flex; align-items:center; justify-content:center; width:40px; height:40px; border:1px solid var(--border-subtle); border-radius:8px; background:var(--surface-sunken); }
@@ -237,7 +255,7 @@
 .summaryHealthRing { position:relative; display:flex; flex-shrink:0; align-items:center; justify-content:center; width:68px; height:68px; }
 .summaryHealthSvg { transform:rotate(-90deg); }
 .summaryHealthProgress { transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1); }
-.summaryHealthValueWrap { position:absolute; display:flex; align-items:center; justify-content:center; }
+.summaryHealthValueWrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .summaryHealthValue { color:#172033; font-size:16px; font-weight:700; line-height:1; }
 .summaryInfo { z-index:1; flex:1; }
 .summaryHeadingRow { display:flex; align-items:center; gap:12px; margin-bottom:6px; }

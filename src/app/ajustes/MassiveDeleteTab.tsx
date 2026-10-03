@@ -78,7 +78,7 @@ export default function MassiveDeleteTab() {
       logAudit({
         accion: 'ELIMINACION_MASIVA_FECHA',
         campo_modificado: 'registros',
-        valor_anterior: `Rango: ${fechaDesde} a ${fechaHasta}`,
+        valor_anterior: `Rango: ${formatDate(fechaDesde)} a ${formatDate(fechaHasta)}`,
         valor_nuevo: `Eliminados: ${count} registros`,
       });
 

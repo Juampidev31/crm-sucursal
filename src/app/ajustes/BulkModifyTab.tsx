@@ -16,6 +16,7 @@ import {
   Copy, Check, FileSpreadsheet
 } from 'lucide-react';
 import { parsePastedText, normalizeCuil, ParsedRow } from '@/lib/verificador-utils';
+import { ACUERDOS } from '@/lib/acuerdo-precios';
 import styles from './BulkModifyTab.module.css';
 
 // Combo editable buscable: al hacer foco muestra TODAS las opciones; filtra al tipear
@@ -183,7 +184,6 @@ interface RegistroVariante {
   analista: string;
 }
 
-const ACUERDOS_OPCIONES = ['Riesgo Bajo', 'Riesgo Medio', 'Premium', 'No califica'];
 function esGobiernoProvincialBulk(s?: string) {
   if (!s) return false;
   const u = s.toUpperCase();
@@ -1035,7 +1035,7 @@ function AsignarEmpleadorSection({ registros, allEmpleadores, mutateRegistros, p
                     { key: 'analista', label: 'Analista', opts: ANALISTAS },
                     { key: 'estado', label: 'Estado', opts: ESTADOS },
                     { key: 'tipo_cliente', label: 'Tipo Cliente', opts: TIPO_CLIENTE_OPCIONES },
-                    { key: 'acuerdo_precios', label: 'Acuerdo Precios', opts: ACUERDOS_OPCIONES },
+                    { key: 'acuerdo_precios', label: 'Acuerdo Precios', opts: ACUERDOS },
                     { key: 'rango_etario', label: 'Rango Etario', opts: RANGOS_ETARIOS },
                     { key: 'sexo', label: 'Sexo', opts: SEXOS },
                   ];
@@ -1196,7 +1196,7 @@ export default function BulkModifyTab({ mode }: { mode: 'corrector' | 'bulk' | '
   const [updatedCount, setUpdatedCount] = useState(0);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const { registros, mutateRegistros, pushBulkRefresh, refresh, pushRegistroChange, pushBulkUpdateIds, pushBulkPatchByField } = useRegistros();
+  const { registros, mutateRegistros, pushBulkRefresh, pushRegistroChange, pushBulkUpdateIds, pushBulkPatchByField } = useRegistros();
   const { nombres: ANALISTAS } = useAnalistas();
 
   // Derivar datos de filtros directamente de registros (reactivo)
@@ -2259,36 +2259,50 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     const CHUNK = 500;
     let actualizados = 0;
     let errores = 0;
-    for (const [analista, ids] of Object.entries(grupos)) {
-      for (let i = 0; i < ids.length; i += CHUNK) {
-        const slice = ids.slice(i, i + CHUNK);
-        const { error } = await supabase.from('registros').update({ analista }).in('id', slice);
-        if (error) { errores += slice.length; continue; }
-        actualizados += slice.length;
-        const sliceSet = new Set(slice);
-        mutateRegistros(prev => prev.map(r => (sliceSet.has(r.id) ? { ...r, analista } : r)));
-        pushBulkUpdateIds(slice, { analista });
 
-        // Auditoría: una fila por registro reasignado (insert en bloque, sin broadcast por fila)
-        const auditRows = slice.map(id => {
-          const reg = infoById.get(id);
-          return {
-            accion: 'Reasignación',
-            campo_modificado: 'Analista',
-            valor_anterior: raOrigen,
-            valor_nuevo: analista,
-            analista,
-            id_analista: idAnalista,
-            id_registro: id,
-            nombre: reg?.nombre ?? '',
-            cuil: reg?.cuil ?? '',
-            fecha_hora: ahora,
-          };
-        });
-        supabase.from('auditoria').insert(auditRows).then(({ error: auditErr }) => {
-          if (auditErr) console.error('[Auditoría] Error al registrar reasignación:', auditErr.message);
-        });
-      }
+    // Un lote por (analista destino, chunk de 500). Son independientes entre
+    // sí, así que salen todos juntos en vez de encadenarse.
+    const lotes: Array<{ analista: string; slice: string[] }> = [];
+    for (const [analista, ids] of Object.entries(grupos)) {
+      for (let i = 0; i < ids.length; i += CHUNK) lotes.push({ analista, slice: ids.slice(i, i + CHUNK) });
+    }
+    const resultados = await Promise.all(lotes.map(l =>
+      supabase.from('registros').update({ analista: l.analista }).in('id', l.slice).then(({ error }) => ({ ...l, error }))
+    ));
+
+    // Un solo re-render con todos los cambios aplicados, en vez de uno por lote.
+    const destinoPorId = new Map<string, string>();
+    for (const { analista, slice, error } of resultados) {
+      if (error) { errores += slice.length; continue; }
+      actualizados += slice.length;
+      for (const id of slice) destinoPorId.set(id, analista);
+      pushBulkUpdateIds(slice, { analista });
+
+      // Auditoría: una fila por registro reasignado (insert en bloque, sin broadcast por fila)
+      const auditRows = slice.map(id => {
+        const reg = infoById.get(id);
+        return {
+          accion: 'Reasignación',
+          campo_modificado: 'Analista',
+          valor_anterior: raOrigen,
+          valor_nuevo: analista,
+          analista,
+          id_analista: idAnalista,
+          id_registro: id,
+          nombre: reg?.nombre ?? '',
+          cuil: reg?.cuil ?? '',
+          fecha_hora: ahora,
+        };
+      });
+      supabase.from('auditoria').insert(auditRows).then(({ error: auditErr }) => {
+        if (auditErr) console.error('[Auditoría] Error al registrar reasignación:', auditErr.message);
+      });
+    }
+    if (destinoPorId.size > 0) {
+      mutateRegistros(prev => prev.map(r => {
+        const destino = destinoPorId.get(r.id);
+        return destino ? { ...r, analista: destino } : r;
+      }));
     }
     setUpdating(false);
 
@@ -2313,7 +2327,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
 
   const previewRecords = useCallback(async () => {
-    const buildQuery = () => {
+    const buildQuery = (conCount = false) => {
       // `.order('id')` no es cosmético: esta consulta se pagina con `.range()` y
       // sin ORDER BY el subconjunto que devuelve cada página es indefinido. Como
       // los ids se acumulan en un Set, el síntoma no serían duplicados visibles
@@ -2321,7 +2335,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       // modificación masiva se aplicaría a menos registros de los previstos.
       // Aquí el orden no tiene ningún significado funcional (sólo se recogen
       // ids), así que la PK sola alcanza y es el orden determinista más barato.
-      let q = supabase.from('registros').select('id').order('id', { ascending: true });
+      let q = supabase
+        .from('registros')
+        .select('id', conCount ? { count: 'exact' } : undefined)
+        .order('id', { ascending: true });
       q = applyChipFilter(q, 'estado', filtros.estados);
       q = applyChipFilter(q, 'analista', filtros.analistas);
       q = applyChipFilter(q, 'acuerdo_precios', filtros.acuerdoPrecios);
@@ -2345,20 +2362,34 @@ const variantesLocalidadConDuplicados = useMemo(() => {
       return q;
     };
 
-    // Paginar para superar el límite de 1000 filas de Supabase
+    // Paginar para superar el límite de 1000 filas de Supabase. La primera
+    // página trae el total, así que el resto se pide en PARALELO en vez de
+    // encadenar un viaje por página. El `.order('id')` de arriba es lo que
+    // hace que las páginas paralelas no se pisen ni se omitan entre sí.
     const PAGE = 1000;
     const ids = new Set<string>();
-    let from = 0;
-    while (true) {
-      const { data, error } = await buildQuery().range(from, from + PAGE - 1);
-      if (error) {
-        setToast({ message: `Error: ${error.message}`, type: 'error' });
-        return;
+
+    const primera = await buildQuery(true).range(0, PAGE - 1);
+    if (primera.error) {
+      setToast({ message: `Error: ${primera.error.message}`, type: 'error' });
+      return;
+    }
+    for (const r of primera.data ?? []) ids.add(r.id);
+
+    const total = primera.count ?? (primera.data?.length ?? 0);
+    if (total > PAGE) {
+      const rangos: Array<[number, number]> = [];
+      for (let from = PAGE; from < total; from += PAGE) {
+        rangos.push([from, Math.min(from + PAGE, total) - 1]);
       }
-      if (!data || data.length === 0) break;
-      for (const r of data) ids.add(r.id);
-      if (data.length < PAGE) break;
-      from += PAGE;
+      const paginas = await Promise.all(rangos.map(([f, t]) => buildQuery().range(f, t)));
+      for (const pagina of paginas) {
+        if (pagina.error) {
+          setToast({ message: `Error: ${pagina.error.message}`, type: 'error' });
+          return;
+        }
+        for (const r of pagina.data ?? []) ids.add(r.id);
+      }
     }
 
     setPreviewIds(ids);
@@ -2382,22 +2413,49 @@ const variantesLocalidadConDuplicados = useMemo(() => {
     }
 
     let restored = 0;
+    let failed = 0;
+    const restoredPatches = new Map<string, Partial<Registro>>();
+    const broadcastBatches: { ids: string[]; patch: Partial<Registro> }[] = [];
     const BATCH_SIZE = 500;
+    const tareas: Array<{ batch: string[]; patch: Partial<Registro>; updates: Record<string, unknown> }> = [];
     for (const group of Object.values(groups)) {
+       const patch = group.updates as Partial<Registro>;
        for (let i = 0; i < group.ids.length; i += BATCH_SIZE) {
-          const batch = group.ids.slice(i, i + BATCH_SIZE);
-          const { error } = await supabase.from('registros').update(group.updates).in('id', batch);
-          if (!error) restored += batch.length;
+          tareas.push({ batch: group.ids.slice(i, i + BATCH_SIZE), patch, updates: group.updates });
        }
+    }
+    const resultadosUndo = await Promise.all(tareas.map(t =>
+      supabase.from('registros').update(t.updates).in('id', t.batch).then(({ error }) => ({ ...t, error }))
+    ));
+    for (const { batch, patch, error } of resultadosUndo) {
+       if (error) {
+         failed += batch.length;
+         continue;
+       }
+       restored += batch.length;
+       batch.forEach(id => restoredPatches.set(id, patch));
+       broadcastBatches.push({ ids: batch, patch });
+    }
+
+    if (restoredPatches.size > 0) {
+      mutateRegistros(prev => prev.map(registro => {
+        const patch = restoredPatches.get(registro.id);
+        return patch ? { ...registro, ...patch } : registro;
+      }));
+      broadcastBatches.forEach(({ ids, patch }) => pushBulkUpdateIds(ids, patch));
     }
 
     setUndoing(false);
-    setUndoState(null);
-    setUpdatedCount(0);
-    refresh(true);
-    pushBulkRefresh();
-    setToast({ message: `Se restauraron ${restored} registros a su estado anterior.`, type: 'success' });
-    setStep('filter');
+    if (failed === 0) {
+      setUndoState(null);
+      setUpdatedCount(0);
+      setToast({ message: `Se restauraron ${restored} registros a su estado anterior.`, type: 'success' });
+      setStep('filter');
+    } else {
+      setUndoState(current => current?.filter(item => !restoredPatches.has(item.id)) ?? null);
+      setUpdatedCount(failed);
+      setToast({ message: `Se restauraron ${restored} registros; ${failed} no pudieron restaurarse.`, type: 'error' });
+    }
   };
 
   const handleUpdate = async () => {
@@ -2441,27 +2499,37 @@ const variantesLocalidadConDuplicados = useMemo(() => {
        });
        return { id, updates: oldUpdates };
     });
-    setUndoState(backup);
-
     // Usar update masivo con .in() en lugar de uno por uno
     const idArray = Array.from(previewIds);
-    // Supabase tiene límite de ~2000 IDs en un .in(), hacer en batches
+    const updatedIds: string[] = [];
+    // Supabase tiene límite de ~2000 IDs en un .in(), hacer en batches.
+    // Los lotes son independientes entre sí, así que van en paralelo: en serie
+    // cada uno sumaba ~0,85 s de ida y vuelta al anterior.
     const BATCH_SIZE = 500;
-    for (let i = 0; i < idArray.length; i += BATCH_SIZE) {
-      const batch = idArray.slice(i, i + BATCH_SIZE);
-      const { error } = await supabase
-        .from('registros')
-        .update(updates)
-        .in('id', batch);
-      if (!error) updated += batch.length;
+    const batches: string[][] = [];
+    for (let i = 0; i < idArray.length; i += BATCH_SIZE) batches.push(idArray.slice(i, i + BATCH_SIZE));
+    const resultados = await Promise.all(batches.map(batch =>
+      supabase.from('registros').update(updates).in('id', batch).then(({ error }) => ({ batch, error }))
+    ));
+    for (const { batch, error } of resultados) {
+      if (!error) {
+        updated += batch.length;
+        updatedIds.push(...batch);
+      }
+    }
+
+    const localPatch = updates as Partial<Registro>;
+    const updatedSet = new Set(updatedIds);
+    if (updatedIds.length > 0) {
+      mutateRegistros(prev => prev.map(registro => updatedSet.has(registro.id) ? { ...registro, ...localPatch } : registro));
+      pushBulkUpdateIds(updatedIds, localPatch);
     }
 
     setUpdating(false);
     setUpdatedCount(updated);
+    const completedBackup = backup.filter(item => updatedSet.has(item.id));
+    setUndoState(completedBackup.length > 0 ? completedBackup : null);
     setStep('done');
-    // Actualizar estado local y notificar a otros tabs
-    refresh(true);
-    pushBulkRefresh();
   };
 
   const resetAll = () => {
@@ -3405,40 +3473,46 @@ const variantesLocalidadConDuplicados = useMemo(() => {
         )}
 
         {mode === 'bulk' && step === 'confirm' && (
-          <div className={[styles["uMaxWidth720px"], styles["uMargin40px-auto"]].join(' ')}>
-            <div className={[styles["uTextAlignCenter"], styles["uMarginBottom40px"]].join(' ')}>
-               <h2 className={[styles["uFontSize32px"], styles["uFontWeight900"], styles["uLetterSpacing1px1gkox"], styles["uColorText-strong"], styles["uMarginBottom8px"]].join(' ')}>{previewCount}</h2>
-               <p className={[styles["uColorText-muted"], styles["uFontSize14px"], styles["uFontWeight600"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"]].join(' ')}>Registros Encontrados</p>
-               <div className={[styles["uDisplayInline-block"], styles["uMarginTop12px"], styles["uPadding4px-12px"], styles["uBackgroundRgba-0-212-255-0-1"], styles["uColor00d4ff"], styles["uBorderRadius20px"], styles["uFontSize11px"], styles["uFontWeight800"]].join(' ')}>
-                 Score: {filtros.scoreMin || '0'} a {filtros.scoreMax || '∞'}
-               </div>
+          <div className={styles.scoreConfirm}>
+            <div className={styles.scoreResultSummary}>
+              <div className={styles.scoreResultMetric}>
+                <strong className={styles.scoreResultCount}>{previewCount}</strong>
+                <span className={styles.scoreResultLabel}>Registros encontrados</span>
+              </div>
+              <div className={styles.scoreResultRange}>
+                Score: {filtros.scoreMin || '0'} a {filtros.scoreMax || '∞'}
+              </div>
             </div>
 
-            <div className={[styles["uBackgroundSurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius16px"], styles["uPadding40px-32px"], styles["uMarginBottom32px"], styles["uBoxShadowShadow-sm"]].join(' ')}>
-               <h4 className={[styles["uFontSize11px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uMarginBottom32px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"], styles["uOpacity0-9"]].join(' ')}>
-                 <span className={[styles["uWidth20px"], styles["uHeight20px"], styles["uBorderRadius50"], styles["uBackground34d399"], styles["uColor000"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uFontSize10px"], styles["uFontWeight900"]].join(' ')}>2</span>
-                 Asignar Calificación
-               </h4>
+            <div className={styles.scoreAssignmentCard}>
+              <h4 className={styles.scoreCardTitle}>
+                <span className={styles.scoreStepBadge}>2</span>
+                Asignar calificación
+              </h4>
                
-               <div className={[styles["uDisplayGrid"], styles["uGridTemplateColumnsRepeat-4-1fr"], styles["uGap16px"]].join(' ')}>
-                  {ACUERDOS_OPCIONES.map(a => {
+               <div className={styles.scoreChoiceGrid}>
+                  {ACUERDOS.map(a => {
                     const isSelected = campos.acuerdo_precios === a;
                     return (
-                      <button key={a} onClick={() => setCampos(p => ({ ...p, acuerdo_precios: a }))} className={[styles["uPadding24px-16px"], styles["uBorderRadius16px"], styles["uBorder1px-solid"], styles["uFontSize13px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-2s"], styles["uTextAlignCenter"], styles["uOutlineNone"]].join(' ')} style={{ background: isSelected ? '#fff' : 'rgba(255,255,255,0.02)', color: isSelected ? '#000' : '#888', borderColor: isSelected ? '#fff' : 'rgba(255,255,255,0.06)' }}>
+                      <button
+                        key={a}
+                        onClick={() => setCampos(p => ({ ...p, acuerdo_precios: a }))}
+                        className={`${styles.scoreChoiceButton}${isSelected ? ` ${styles.isSelected}` : ''}`}
+                      >
                         {a}
                       </button>
                     );
                   })}
                </div>
 
-               <div className={[styles["uMarginTop32px"], styles["uPaddingTop24px"], styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
-                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className={[styles["uBackgroundTransparent"], styles["uBorderNone"], styles["uColorText-muted"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uTextTransformUppercase"], styles["uCursorPointer"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap6px"], styles["uMargin0-auto"]].join(' ')}>
+               <div className={styles.scoreAdvancedSection}>
+                 <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)} className={styles.scoreAdvancedToggle}>
                    {showAdvancedFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                   Otras Modificaciones Masivas (Avanzado)
+                   Otras modificaciones masivas
                  </button>
                  
                  {showAdvancedFilters && (
-                    <div className={[styles["uDisplayGrid"], styles["uGridTemplateColumns1fr-1fr"], styles["uGap20px"], styles["uMarginTop32px"], styles["uTextAlignLeft"]].join(' ')}>
+                    <div className={styles.scoreAdvancedGrid}>
                         <div>
                           <label className={styles.label}>Estado</label>
                           <select className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} value={campos.estado} onChange={e => setCampos(p => ({ ...p, estado: e.target.value }))} >
@@ -3524,17 +3598,17 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                </div>
             </div>
 
-            <div className={[styles["uDisplayFlex"], styles["uJustifyContentCenter"], styles["uGap16px"]].join(' ')}>
-              <button onClick={() => setStep('filter')} className={[styles["uBackgroundTransparent"], styles["uColorText-muted"], styles["uBorder1px-solid-border-subtle"], styles["uPadding16px-32px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-2s"]].join(' ')}>
-                ATRÁS
+            <div className={styles.scoreConfirmActions}>
+              <button onClick={() => setStep('filter')} className={styles.scoreBackButton}>
+                Atrás
               </button>
               <button
                 onClick={handleUpdate}
                 disabled={aplicarDisabled}
-                className={[styles["uBorderNone"], styles["uFontWeight900"], styles["uPadding16px-40px"], styles["uBorderRadius30px"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (aplicarDisabled) ? '#222' : '#34d399', color: (aplicarDisabled) ? '#555' : '#000', cursor: (aplicarDisabled) ? 'not-allowed' : 'pointer', boxShadow: (aplicarDisabled) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)' }}
+                className={styles.scoreApplyButton}
               >
                 {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                {updating ? 'APLICANDO...' : (campos.acuerdo_precios ? 'APLICAR CALIFICACIÓN' : 'APLICAR MODIFICACIONES')}
+                {updating ? 'Aplicando…' : (campos.acuerdo_precios ? 'Aplicar calificación' : 'Aplicar modificaciones')}
               </button>
             </div>
           </div>

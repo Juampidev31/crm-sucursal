@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import CustomSelect from '@/components/CustomSelect';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 import ModalPortal from '@/components/ModalPortal';
+import { formatDate } from '@/lib/utils';
 import styles from './ExportXlsxModal.module.css';
 
 const ESTADOS = [
@@ -232,7 +233,7 @@ export function ExportXlsxModal({ open, onClose }: Props) {
                         <td>{r.cuil || '—'}</td>
                         <td>{r.analista || '—'}</td>
                         <td>{r.estado || '—'}</td>
-                        <td>{r.fecha || '—'}</td>
+                        <td>{r.fecha ? formatDate(r.fecha) : '—'}</td>
                         <td title={r.empleador}>{r.empleador || '—'}</td>
                         <td title={r.dependencia}>{r.dependencia || '—'}</td>
                       </tr>

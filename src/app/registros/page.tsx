@@ -14,6 +14,8 @@ import { useFilter, ESTADOS } from '@/context/FilterContext';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { logAudit } from '@/lib/audit';
 import { corregirTildes } from '@/lib/correccion-tildes';
+import { ACUERDOS, acuerdoSugeridoPorScore, validarAcuerdoVsScore } from '@/lib/acuerdo-precios';
+import { requiereChequeoDuplicado } from '@/lib/duplicados';
 import ModalPortal from '@/components/ModalPortal';
 import BitacoraModal from '@/components/BitacoraModal';
 import { TagBadge } from '@/components/EtiquetasSelector';
@@ -275,6 +277,10 @@ function requiereDependencia(empleador?: string): boolean {
 function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, string> {
   const errs: Record<string, string> = {};
 
+  // Autorización especial de CC: la operación se autorizó por fuera de las
+  // condiciones habituales, así que no se valida nada y se puede guardar igual.
+  if (form.autorizacion_cc) return errs;
+
   // Regla de Score bajo: sólo permitido para scores de 0 a 549.
   // No debe permitir guardar si el score está en 550 a 600 (Riesgo MEDIO), 601 a 700 (Riesgo BAJO), o +700 (PREMIUM)
   if ((form.estado || '').trim().toLowerCase() === 'score bajo') {
@@ -286,19 +292,11 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
     }
   }
 
-  // Validación de Score vs Acuerdo de precios
-  if (form.puntaje !== undefined && form.puntaje !== null && String(form.puntaje).trim() !== '' && form.acuerdo_precios) {
-    const score = Number(form.puntaje);
-    const acuerdo = form.acuerdo_precios;
-    if (score <= 549 && acuerdo !== 'No califica') {
-      errs.acuerdo_precios = 'Debe ser No califica (0-549)';
-    } else if (score >= 550 && score <= 600 && acuerdo !== 'Riesgo Medio') {
-      errs.acuerdo_precios = 'Debe ser Riesgo MEDIO (550-600)';
-    } else if (score >= 601 && score <= 700 && acuerdo !== 'Riesgo Bajo') {
-      errs.acuerdo_precios = 'Debe ser Riesgo BAJO (601-700)';
-    } else if (score > 700 && acuerdo !== 'Premium') {
-      errs.acuerdo_precios = 'Debe ser PREMIUM (+700)';
-    }
+  // Validación de Score vs Acuerdo de precios. Con autorización especial de CC
+  // el aviso no bloquea: el combo del formulario lo muestra igual.
+  if (form.puntaje !== undefined && form.puntaje !== null && String(form.puntaje).trim() !== '') {
+    const aviso = validarAcuerdoVsScore(Number(form.puntaje), form.acuerdo_precios ?? '', form.autorizacion_cc ?? false);
+    if (aviso?.bloquea) errs.acuerdo_precios = aviso.mensaje;
   }
 
   if (isAdmin) return errs;
@@ -356,7 +354,7 @@ function validarForm(form: Partial<Registro>, isAdmin: boolean): Record<string, 
 
 // ── Field wrapper ─────────────────────────────────────────────────────────────
 
-const Field = memo(function Field({ label, error, children, transparentLabel }: { label: string; error?: string; children: React.ReactNode; transparentLabel?: boolean }) {
+const Field = memo(function Field({ label, error, aviso, children, transparentLabel }: { label: string; error?: string; aviso?: string; children: React.ReactNode; transparentLabel?: boolean }) {
   const isRequired = label.includes('*');
   const cleanLabel = label.replace('*', '').trim();
 
@@ -366,6 +364,7 @@ const Field = memo(function Field({ label, error, children, transparentLabel }: 
         {cleanLabel || '—'}
         {isRequired && <span className={`form-label__required ${styles.fieldRequired}`}>*</span>}
         {error && <span className={`form-label__error ${styles.fieldError}`}>— {error}</span>}
+        {!error && aviso && <span className={styles.fieldAviso}>— {aviso}</span>}
       </label>
       {children}
     </div>
@@ -593,13 +592,11 @@ const RegistroModal = memo(function RegistroModal({
     setForm(prev => {
       const next = { ...prev, [field]: value };
 
-      // Auto-actualizar acuerdo_precios según el score
-      if (field === 'puntaje' && value !== undefined && value !== '') {
+      // Auto-actualizar acuerdo_precios según el score. Con autorización
+      // especial de CC el acuerdo lo elige la persona y no se pisa.
+      if (field === 'puntaje' && value !== undefined && value !== '' && !next.autorizacion_cc) {
         const score = Number(value);
-        if (score <= 549) next.acuerdo_precios = 'No califica';
-        else if (score <= 600) next.acuerdo_precios = 'Riesgo Medio';
-        else if (score <= 700) next.acuerdo_precios = 'Riesgo Bajo';
-        else next.acuerdo_precios = 'Premium';
+        next.acuerdo_precios = acuerdoSugeridoPorScore(score) || undefined;
 
         // Si el estado actual es 'score bajo' y el nuevo puntaje es >= 550,
         // no corresponde dejarlo como 'score bajo' porque el estado cambia.
@@ -645,6 +642,13 @@ const RegistroModal = memo(function RegistroModal({
 
   // Venta / Aprobado CC exigen los campos demográficos completos e Interés
   const esVentaOAprobado = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
+
+  // Aviso no bloqueante del acuerdo vs score (el bloqueante va por `errors`).
+  const avisoAcuerdo = useMemo(() => {
+    if (form.puntaje === undefined || form.puntaje === null || String(form.puntaje).trim() === '') return undefined;
+    const aviso = validarAcuerdoVsScore(Number(form.puntaje), form.acuerdo_precios ?? '', form.autorizacion_cc ?? false);
+    return aviso && !aviso.bloquea ? aviso.mensaje : undefined;
+  }, [form.puntaje, form.acuerdo_precios, form.autorizacion_cc]);
   const requiereInteres = form.estado === 'venta' || form.estado === 'derivado / aprobado cc';
   // Venta / Aprobado CC / Proyección exigen Teléfono
   const requiereTelefono = form.estado === 'venta' || form.estado === 'derivado / aprobado cc' || form.estado === 'proyeccion';
@@ -653,7 +657,7 @@ const RegistroModal = memo(function RegistroModal({
     const errs = validarForm(form, isAdmin);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
-    if (!bypassDupCheck) {
+    if (!bypassDupCheck && requiereChequeoDuplicado(editingId, form, initialData)) {
       const cuil = form.cuil?.trim() ?? '';
       const nombre = form.nombre?.trim() ?? '';
       let q1 = supabase.from('registros').select('id,nombre,cuil,estado').eq('cuil', cuil);
@@ -870,11 +874,11 @@ const RegistroModal = memo(function RegistroModal({
                   placeholder="— Sin especificar —"
                 />
               </Field>
-              <Field label={`Acuerdo de precios${esVentaOAprobado ? ' *' : ''}`} error={errors.acuerdo_precios}>
+              <Field label={`Acuerdo de precios${esVentaOAprobado ? ' *' : ''}`} error={errors.acuerdo_precios} aviso={avisoAcuerdo}>
                 <PremiumSelect
                   value={form.acuerdo_precios || ''}
                   onChange={val => set('acuerdo_precios', val)}
-                  options={['Riesgo Bajo', 'Riesgo Medio', 'Premium', 'No califica']}
+                  options={[...ACUERDOS]}
                   placeholder="— Sin especificar —"
                 />
               </Field>
@@ -1148,6 +1152,18 @@ const RegistroModal = memo(function RegistroModal({
                 Registro creado con fecha {initialData.created_at ? new Date(initialData.created_at).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR')} y hora {initialData.created_at ? new Date(initialData.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
+            <button
+              type="button"
+              className={`btn-secondary modal-btn-cancel ${styles.editCancel} ${styles.autorizacionCC}${form.autorizacion_cc ? ` ${styles.autorizacionCCOn}` : ''}`}
+              onClick={() => set('autorizacion_cc', !form.autorizacion_cc)}
+              aria-pressed={!!form.autorizacion_cc}
+              title="Permite guardar aunque el registro no cumpla las condiciones"
+            >
+              {form.autorizacion_cc
+                ? <CheckCircle2 size={13} strokeWidth={2.5} />
+                : <AlertTriangle size={13} strokeWidth={2.5} />}
+              AUTORIZACIÓN ESPECIAL
+            </button>
             <button className={`btn-secondary modal-btn-cancel ${styles.editCancel}`} onClick={onClose}>CANCELAR</button>
             <button className={`btn-primary modal-btn-save ${styles.editSave}`} onClick={() => guardar()} disabled={saving}>
               <Save size={13} strokeWidth={2.5} />{saving ? 'GUARDANDO…' : 'GUARDAR'}
@@ -1179,7 +1195,7 @@ const RegistroModal = memo(function RegistroModal({
                 {dupBlocked ? 'Ya existe un registro activo para este cliente' : 'Ya existe un registro con este CUIL o nombre'}
               </p>
             </div>
-            {!dupBlocked && <button className={`btn-icon ${styles.compactModalClose}`} onClick={() => setShowDupModal(false)}><X size={18} /></button>}
+            {!dupBlocked && <button type="button" aria-label="Cerrar" className={`btn-icon ${styles.compactModalClose}`} onClick={() => setShowDupModal(false)}><X size={18} /></button>}
           </div>
             <div className={`modal-body ${styles.duplicateBody}`}>
               <div className={styles.duplicateMessage}>
@@ -1196,12 +1212,12 @@ const RegistroModal = memo(function RegistroModal({
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className={`modal-footer ${styles.duplicateFooter}`}>
               {dupBlocked
-                ? <button className={`btn-primary ${styles.duplicatePrimary}`} onClick={() => setShowDupModal(false)}>ENTENDIDO</button>
+                ? <button className={`btn-primary ${styles.duplicatePrimary}`} onClick={() => setShowDupModal(false)}>Entendido</button>
                 : <>
-                  <button className={`btn-secondary ${styles.duplicateCancel}`} onClick={() => setShowDupModal(false)}>CANCELAR</button>
-                  <button className={`btn-primary ${styles.duplicatePrimary} ${styles.duplicatePrimaryStrong}`} onClick={() => { setShowDupModal(false); guardar(true); }}>GUARDAR DE TODAS FORMAS</button>
+                  <button className={`btn-secondary ${styles.duplicateCancel}`} onClick={() => setShowDupModal(false)}>Cancelar</button>
+                  <button className={`btn-primary ${styles.duplicatePrimary} ${styles.duplicatePrimaryStrong}`} onClick={() => { setShowDupModal(false); guardar(true); }}>Guardar de todas formas</button>
                 </>
               }
             </div>
@@ -1853,7 +1869,7 @@ export default function RegistrosPage() {
             invisible en los registros que tienen ambos campos. */}
         <td className="records-cell records-cell--center">
           {reg.estado ? (
-            <span className="status-badge records-calif-badge">
+            <span className="status-badge table-calif-badge">
               {reg.estado.toLowerCase().replace(/(^|\s|\/)([a-záéíóúñ])/g, (_m, p1, p2) => `${p1}${p2.toUpperCase()}`)}
             </span>
           ) : (
@@ -2001,7 +2017,7 @@ export default function RegistrosPage() {
             {/* Health Ring */}
             <div className={styles.summaryHealthRing}>
               <svg width="68" height="68" className={styles.summaryHealthSvg}>
-                <circle cx="34" cy="34" r={r} fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+                <circle cx="34" cy="34" r={r} fill="transparent" stroke="#e8edf3" strokeWidth="6" />
                 <circle className={styles.summaryHealthProgress} cx="34" cy="34" r={r} fill="transparent" stroke="currentColor" strokeWidth="6" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
               </svg>
               <div className={styles.summaryHealthValueWrap}>
@@ -2222,6 +2238,7 @@ export default function RegistrosPage() {
             )}
           </div>
         ) : (
+          <>
           <div className="records-table-scroll">
             {hayFiltros && isRevisionState && (
               <div className={styles.revisionFilters}>
@@ -2360,8 +2377,9 @@ export default function RegistrosPage() {
                 })}
               </div>
             )}
+          </div>
 
-            {/* Paginación: Primera, Anterior, Página, Siguiente, Última */}
+            {/* Footer fijo de la tabla: no participa del scroll de las filas. */}
             {activeTab === 'registros' && filteredRegistros.length > pageSize && (
               <div className="records-pagination">
                 {/* Info de registros */}
@@ -2423,7 +2441,7 @@ export default function RegistrosPage() {
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 

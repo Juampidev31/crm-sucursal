@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { parseCSV } from '@/lib/csv-utils';
 
+// gid 1686263284 = pestaña "Ingreso Diario Ventas" de cada planilla.
 const SHEETS = {
   'LUCIANA': 'https://docs.google.com/spreadsheets/d/1Ieo3UsHNuL8dvvErbaM6X4wqT8JSuuAW9oDSUV5N87A/export?format=csv&gid=1686263284',
-  'VICTORIA': 'https://docs.google.com/spreadsheets/d/1GVPFJrrX4j0AM3vd4meGWtd6O-IS67Ljx7l_3Enyb_I/export?format=csv&gid=1686263284'
+  'VICTORIA': 'https://docs.google.com/spreadsheets/d/1GVPFJrrX4j0AM3vd4meGWtd6O-IS67Ljx7l_3Enyb_I/export?format=csv&gid=1686263284',
+  'MAGALI': 'https://docs.google.com/spreadsheets/d/1WUz03tOW-pYVop-cfXYxUlX0wnCxToHUX9V3hU6NGFc/export?format=csv&gid=1686263284'
 };
 
 export const dynamic = 'force-dynamic';

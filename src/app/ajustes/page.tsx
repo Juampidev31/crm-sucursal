@@ -87,24 +87,24 @@ function SubTabBar<T extends string>({ tabs, active, onSelect }: {
 const fmtFechasISO = (v: any) => String(v ?? '').replace(/\d{4}-\d{2}-\d{2}/g, (m) => formatDate(m));
 
 const renderDetalleAudit = (reg: any) => {
-  if (reg.accion === 'Creación') return <span className={[styles["uColortext-muted"]].join(' ')}>Nuevo registro</span>;
-  if (reg.accion === 'Eliminación') return <span className={[styles["uColortext-muted"]].join(' ')}>Registro eliminado</span>;
+  if (reg.accion === 'Creación') return <span className={styles.auditDetailEmpty}>Nuevo registro</span>;
+  if (reg.accion === 'Eliminación') return <span className={styles.auditDetailEmpty}>Registro eliminado</span>;
   if (reg.valor_anterior || reg.valor_nuevo) {
     const campos = String(reg.campo_modificado || '').split(',').map((s: string) => s.trim()).filter(Boolean);
     const anteriores = String(reg.valor_anterior || '').split('|').map((s: string) => s.trim());
     const nuevos = String(reg.valor_nuevo || '').split('|').map((s: string) => s.trim());
 
     return (
-      <div className={[styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uGap4px"], styles["uFontSize11px"]].join(' ')}>
+      <div className={styles.auditDetail}>
         {campos.map((campo, idx) => {
           const ant = fmtFechasISO(anteriores[idx] ?? '');
           const nue = fmtFechasISO(nuevos[idx] ?? '');
           return (
-            <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap6px"], styles["uFlexWrapwrap"]].join(' ')} key={idx}>
-              <span className={[styles["uColortext-muted"], styles["uFontWeight600"]].join(' ')}>{campo}:</span>
-              {ant && <span className={[styles["uColorff3366"]].join(' ')}>{ant}</span>}
-              {ant && nue && <ArrowRight size={10} color="#666" />}
-              {nue && <span className={[styles["uColor22c55e"]].join(' ')}>{nue}</span>}
+            <div className={styles.auditChange} key={idx}>
+              <span className={styles.auditChangeLabel}>{campo}</span>
+              {ant && <span className={styles.auditValueOld} title={ant}>{ant}</span>}
+              {ant && nue && <ArrowRight className={styles.auditChangeArrow} size={10} />}
+              {nue && <span className={styles.auditValueNew} title={nue}>{nue}</span>}
             </div>
           );
         })}
@@ -117,29 +117,29 @@ const renderDetalleAudit = (reg: any) => {
 // Detalle desglosado campo por campo (usado en el modal de historial).
 // campo_modificado viene como "Campo1, Campo2" y los valores como "v1 | v2".
 const renderCamposAudit = (reg: any) => {
-  if (reg.accion === 'Creación') return <span className={[styles["uColortext-muted"], styles["uFontSize15px"]].join(' ')}>Nuevo registro</span>;
-  if (reg.accion === 'Eliminación') return <span className={[styles["uColortext-muted"], styles["uFontSize15px"]].join(' ')}>Registro eliminado</span>;
+  if (reg.accion === 'Creación') return <span className={styles.auditDetailEmpty}>Nuevo registro</span>;
+  if (reg.accion === 'Eliminación') return <span className={styles.auditDetailEmpty}>Registro eliminado</span>;
 
   const campos = String(reg.campo_modificado || '').split(',').map((s: string) => s.trim()).filter(Boolean);
   const anteriores = String(reg.valor_anterior || '').split('|').map((s: string) => s.trim());
   const nuevos = String(reg.valor_nuevo || '').split('|').map((s: string) => s.trim());
 
-  if (campos.length === 0) return <span className={[styles["uColortext-muted"], styles["uFontSize15px"]].join(' ')}>—</span>;
+  if (campos.length === 0) return <span className={styles.auditDetailEmpty}>—</span>;
 
   // Si el valor es una fecha ISO (YYYY-MM-DD) la muestra como DD/MM/AAAA.
   const fmtVal = (v: string) => (/^\d{4}-\d{2}-\d{2}/.test(v) ? formatDate(v) : v);
 
   return (
-    <div className={[styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uGap10px"]].join(' ')}>
+    <div className={styles.auditHistoryFields}>
       {campos.map((campo, idx) => {
         const ant = fmtVal(anteriores[idx] ?? '');
         const nue = fmtVal(nuevos[idx] ?? '');
         return (
-          <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap10px"], styles["uFontSize15px"], styles["uFlexWrapwrap"]].join(' ')} key={idx}>
-            <span className={[styles["uColortext-muted"], styles["uFontWeight700"], styles["uMinWidth100px"]].join(' ')}>{campo}:</span>
-            {ant && <span className={[styles["uColorff3366"]].join(' ')}>{ant}</span>}
-            {ant && nue && <ArrowRight size={15} color="#666" />}
-            {nue && <span className={[styles["uColor22c55e"], styles["uFontWeight600"]].join(' ')}>{nue}</span>}
+          <div className={styles.auditHistoryChange} key={idx}>
+            <span className={styles.auditHistoryLabel}>{campo}</span>
+            {ant && <span className={`${styles.auditHistoryValue} ${styles.auditHistoryValueOld}`}>{ant}</span>}
+            {ant && nue && <ArrowRight className={styles.auditChangeArrow} size={13} />}
+            {nue && <span className={`${styles.auditHistoryValue} ${styles.auditHistoryValueNew}`}>{nue}</span>}
           </div>
         );
       })}
@@ -1335,10 +1335,10 @@ export default function AjustesPage() {
             };
 
             const accionColor = (accion: string) => {
-              if (accion === 'Creación') return { bg: 'rgba(34,197,94,0.08)', color: '#22c55e', border: 'rgba(34,197,94,0.15)' };
-              if (accion === 'Eliminación') return { bg: 'rgba(239,68,68,0.08)', color: '#ff3366', border: 'rgba(239,68,68,0.15)' };
-              if (accion?.includes('Recordatorio')) return { bg: 'rgba(168,85,247,0.08)', color: '#a855f7', border: 'rgba(168,85,247,0.15)' };
-              return { bg: 'rgba(251,191,36,0.08)', color: '#fbbf24', border: 'rgba(251,191,36,0.15)' };
+              if (accion === 'Creación') return { bg: '#edf7f3', color: '#356b59', border: '#cde8dd' };
+              if (accion === 'Eliminación') return { bg: '#fbf1f2', color: '#9b4f59', border: '#efcfd3' };
+              if (accion?.includes('Recordatorio')) return { bg: '#f3f0f7', color: '#6d5f86', border: '#ddd4e9' };
+              return { bg: '#f6f3ed', color: '#7e6945', border: '#e5dac8' };
             };
 
             // — filtering —
@@ -1486,7 +1486,7 @@ export default function AjustesPage() {
                   ) : (
                     <>
                       <div className={[styles["uOverflowXauto"]].join(' ')}>
-                        <table className={["data-table", styles["uMarginBottom0"], styles["uTableLayoutfixed"], styles["uMinWidth1200px"]].join(' ')}>
+                        <table className={["data-table", styles.auditTable].join(' ')}>
                           <thead>
                             <tr className={[styles["uBackgroundsurface-sunken"]].join(' ')}>
                               <th className={[styles["uTextAlignleft"], styles["uFontSize10px"], styles["uFontWeight800"], styles["uColortext-muted"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"], styles["uPadding12px-16px"], styles["uWidth160px"]].join(' ')}>Fecha / Hora</th>
@@ -1501,30 +1501,30 @@ export default function AjustesPage() {
                               const rowKey = reg.id ?? `${reg.fecha_hora}-${idx}`;
                               const ac = accionColor(reg.accion);
                               return (
-                                <tr className={[styles["uBorderBottom1px-solid-border-subtle"], styles.auditRow].join(' ')}
+                                <tr className={styles.auditRow}
                                   key={rowKey}
                                 >
-                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
+                                  <td>
                                     <div className={[styles["uFontSize12px"], styles["uColoreaeaea"], styles["uWhiteSpacenowrap"], styles["uFontWeight600"]].join(' ')}>{relativeTime(reg.fecha_hora)}</div>
                                     <div className={[styles["uFontSize10px"], styles["uColortext-muted"], styles["uMarginTop2px"], styles["uWhiteSpacenowrap"]].join(' ')}>{formatDateTime(reg.fecha_hora)}</div>
                                   </td>
-                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
+                                  <td>
                                     <span className={[styles["uFontSize12px"], styles["uColorccc"], styles["uFontWeight600"], styles["uWhiteSpacenowrap"], styles["uTextOverflowellipsis"], styles["uOverflowhidden"], styles["uDisplayblock"]].join(' ')}>{reg.analista || reg.id_analista || '—'}</span>
                                   </td>
-                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
-                                    <span className={[styles["uDisplayinline-flex"], styles["uAlignItemscenter"], styles["uGap6px"], styles["uFontSize11px"], styles["uFontWeight700"], styles["uWhiteSpacenowrap"]].join(' ')} style={{ color: ac.color }}>
+                                  <td>
+                                    <span className={styles.auditAction} style={{ color: ac.color, backgroundColor: ac.bg, borderColor: ac.border }}>
                                       {accionIcon(reg.accion)}
                                       {reg.accion}
                                     </span>
                                   </td>
-                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
+                                  <td>
                                     <div className={[styles["uFontSize12px"], styles["uColoreaeaea"], styles["uFontWeight600"], styles["uWhiteSpacenowrap"], styles["uTextOverflowellipsis"], styles["uOverflowhidden"]].join(' ')}>{reg.nombre || '—'}</div>
                                     <div className={[styles["uFontSize10px"], styles["uColortext-muted"], styles["uMarginTop2px"], styles["uWhiteSpacenowrap"], styles["uFontFamilymonospace"]].join(' ')}>{reg.cuil || '—'}</div>
                                   </td>
-                                  <td className={[styles["uPadding12px-16px"], styles["uVerticalAlignmiddle"], styles["uOverflowhidden"]].join(' ')}>
+                                  <td>
                                     {renderDetalleAudit(reg)}
                                     {reg.isGroup && reg.subRecords?.length > 1 && (
-                                      <button className={[styles["uMarginTop6px"], styles["uDisplayinline-flex"], styles["uAlignItemscenter"], styles["uGap4px"], styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles["uColortext-muted"], styles["uPadding4px-8px"], styles["uBorderRadius4px"], styles["uFontSize10px"], styles["uFontWeight700"], styles["uCursorpointer"], styles["uTransitionall-0-2s"], styles.historyButton].join(' ')}
+                                      <button className={styles.historyButton}
                                         onClick={() => setAuditGroupModal({ title: `Historial de ${reg.nombre || 'Registro'}`, records: reg.subRecords })}
                                       >
                                         <History size={10} /> Ver historial completo ({reg.subRecords.length})
@@ -1625,29 +1625,27 @@ export default function AjustesPage() {
 
       {/* MODAL HISTORIAL DE CAMBIOS — Portal al body para evitar stacking context */}
       {auditGroupModal && typeof document !== 'undefined' && ReactDOM.createPortal(
-        <div className={[styles["uPositionfixed"], styles["uTop0"], styles["uLeft0"], styles["uRight0"], styles["uBottom0"], styles["uBackgroundrgba-0-0-0-0-6"], styles["uBackdropFilterblur-5px"], styles["uZIndex99999"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"], styles["uPadding20px"], styles["uAnimationfadeIn-0-2s-ease-out"]].join(' ')}>
-          <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles["uBorderRadius12px"], styles["uWidth100"], styles["uMaxWidth880px"], styles["uMaxHeight90vh"], styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uBoxShadowshadow-md"], styles["uAnimationslideInUp-0-2s-ease-out"]].join(' ')}>
-            <div className={[styles["uPadding20px-24px"], styles["uBorderBottom1px-solid-border-subtle"], styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"]].join(' ')}>
+        <div className={styles.auditModalBackdrop}>
+          <div className={styles.auditModal}>
+            <div className={styles.auditModalHeader}>
               <div>
-                <h3 className={[styles["uFontSize21px"], styles["uFontWeight800"], styles["uColortext-strong"]].join(' ')}>{auditGroupModal.title}</h3>
-                <p className={[styles["uFontSize13px"], styles["uColortext-muted"], styles["uMarginTop4px"]].join(' ')}>{auditGroupModal.records.length} modificaciones registradas</p>
+                <h3>{auditGroupModal.title}</h3>
+                <p>{auditGroupModal.records.length} modificaciones registradas</p>
               </div>
-              <button className={[styles["uBackgroundsurface-sunken"], styles["uBordernone"], styles["uColortext-muted"], styles["uCursorpointer"], styles["uPadding6px"], styles["uBorderRadius50"], styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uJustifyContentcenter"], styles["uTransitionall-0-2s"], styles.modalCloseButton].join(' ')} onClick={() => setAuditGroupModal(null)}>
+              <button className={styles.auditModalClose} onClick={() => setAuditGroupModal(null)} aria-label="Cerrar historial">
                 <X size={16} />
               </button>
             </div>
-            <div className={[styles["uPadding24px"], styles["uOverflowYauto"], styles["uFlex1"], styles["uDisplayflex"], styles["uFlexDirectioncolumn"], styles["uGap12px"]].join(' ')}>
+            <div className={styles.auditModalBody}>
               {auditGroupModal.records.map((r, i) => (
-                <div className={[styles["uBackgroundsurface-sunken"], styles["uPadding20px-24px"], styles["uBorderRadius8px"], styles["uBorder1px-solid-border-subtle"]].join(' ')} key={i}>
-                  <div className={[styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uMarginBottom16px"], styles["uPaddingBottom14px"], styles["uBorderBottom1px-dashed-border-subtle"]].join(' ')}>
-                    <span className={[styles["uFontSize14px"], styles["uColortext-muted"], styles["uFontWeight600"]].join(' ')}>{formatDateTime(r.fecha_hora)}</span>
-                    <span className={[styles["uFontSize14px"], styles["uColoreaeaea"], styles["uFontWeight700"], styles["uBackgroundsurface-sunken"], styles["uPadding5px-12px"], styles["uBorderRadius4px"]].join(' ')}>
+                <div className={styles.auditHistoryCard} key={i}>
+                  <div className={styles.auditHistoryMeta}>
+                    <span>{formatDateTime(r.fecha_hora)}</span>
+                    <strong>
                       {r.analista || r.id_analista}
-                    </span>
+                    </strong>
                   </div>
-                  <div className={[styles["uPaddingLeft4px"]].join(' ')}>
-                    {renderCamposAudit(r)}
-                  </div>
+                  {renderCamposAudit(r)}
                 </div>
               ))}
             </div>

@@ -20,6 +20,9 @@ export const registroSchema = z.object({
   fijado: z.boolean().nullish().transform(v => v ?? false),
   tipo_cliente: z.string().nullish().transform(v => v ?? undefined),
   acuerdo_precios: z.string().nullish().transform(v => v ?? undefined),
+  // Autorización especial de CC: habilita un acuerdo de precios que no se
+  // corresponde con el score (la validación pasa a advertencia).
+  autorizacion_cc: z.boolean().nullish().transform(v => v ?? false),
   cuotas: z.string().nullish().transform(v => v ?? undefined),
   rango_etario: z.string().nullish().transform(v => v ?? undefined),
   sexo: z.string().nullish().transform(v => v ?? undefined),

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { FileText, Tag } from 'lucide-react';
 import ModernDoughnut from '@/components/charts/ModernDoughnut';
 import CustomSelect from '@/components/CustomSelect';
+import { contarColumna } from '@/lib/sheet-stats';
 
 const MESES = [
   { value: 1, label: 'Enero' }, { value: 2, label: 'Febrero' }, { value: 3, label: 'Marzo' },
@@ -11,22 +12,9 @@ const MESES = [
   { value: 10, label: 'Octubre' }, { value: 11, label: 'Noviembre' }, { value: 12, label: 'Diciembre' }
 ];
 
-const countColumn = (rows: string[][], colIdx: number) => {
-  const counts: Record<string, number> = {};
-  for (let i = 1; i < rows.length; i++) {
-    const val = rows[i][colIdx]?.trim() || 'No especificado';
-    counts[val] = (counts[val] || 0) + 1;
-  }
-  return Object.entries(counts)
-    .map(([label, cantidad]) => ({ label, cantidad }))
-    .sort((a, b) => b.cantidad - a.cantidad);
-};
-
 const CHART_PALETTE = [
-  '#34d399', '#60a5fa', '#a78bfa', '#f472b6', '#fb923c', 
-  '#facc15', '#2dd4bf', '#fb7185', '#818cf8', '#4ade80',
-  '#c084fc', '#38bdf8', '#f87171', '#a3e635', '#e879f9',
-  '#fde047', '#3b82f6', '#10b981', '#ec4899', '#8b5cf6'
+  '#315b7d', '#4f708c', '#4f8275', '#6d6f91', '#8a704b',
+  '#607d8b', '#71849a', '#7b6e83', '#56786f', '#7f7568'
 ];
 
 
@@ -130,12 +118,12 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
   }, [data, viewMode, selectedMes, selectedAnio]);
 
   const stats = useMemo(
-    () => (!filteredData || filteredData.length <= 1) ? [] : countColumn(filteredData, 0),
+    () => (!filteredData || filteredData.length <= 1) ? [] : contarColumna(filteredData, 0),
     [filteredData]
   );
 
   const statsColF = useMemo(
-    () => (!filteredData || filteredData.length <= 1) ? [] : countColumn(filteredData, 5),
+    () => (!filteredData || filteredData.length <= 1) ? [] : contarColumna(filteredData, 5),
     [filteredData]
   );
 
@@ -144,17 +132,17 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
       margin: 0,
       display: 'flex',
       flexDirection: 'column',
-      minHeight: 400,
+      minHeight: reportAppearance ? 0 : 400,
       height: '100%',
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--surface-card)',
-      boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
-      padding: 24,
-      borderRadius: 16,
+      background: reportAppearance ? '#fff' : 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--surface-card)',
+      boxShadow: reportAppearance ? 'none' : '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+      padding: reportAppearance ? 16 : 24,
+      borderRadius: reportAppearance ? 12 : 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexShrink: 0 }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Tag size={15} color="#34d399" />
-          <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: '#fff', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
+          <Tag size={15} color="#315b7d" />
+          <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: reportAppearance ? '#263550' : '#fff', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
             CATEGORÍAS
           </h2>
         </div>
@@ -182,7 +170,7 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
                 key={p}
                 onClick={() => setViewMode(p)}
                 className={viewMode === p ? 'is-active' : undefined}
-                style={reportAppearance ? { background: viewMode === p ? '#fb923c' : 'transparent' } : {
+                style={reportAppearance ? { background: viewMode === p ? '#315b7d' : 'transparent', color: viewMode === p ? '#fff' : '#667085' } : {
                   padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
                   fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px',
                   background: viewMode === p ? '#fb923c' : 'transparent',
@@ -194,7 +182,7 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
             ))}
           </div>
 
-          <span style={{ fontSize: 11, color: '#444', minWidth: 40, textAlign: 'right' }}>{filteredData ? filteredData.length - 1 : 0} ops</span>
+          <span style={{ fontSize: 11, color: reportAppearance ? '#667085' : '#444', minWidth: 40, textAlign: 'right' }}>{filteredData ? Math.max(filteredData.length - 1, 0) : 0} ops</span>
         </div>
       </div>
 
@@ -203,8 +191,8 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
           <div style={{ height: '100%' }}>Cargando datos...</div>
         ) : (
           <>
-            <DistBlockSheets reportAppearance={reportAppearance} titulo="TIPO DE CLIENTE" icon={<FileText size={12} color="#34d399" />} datos={stats} color="#34d399" />
-            <DistBlockSheets reportAppearance={reportAppearance} titulo="POR DONDE NOS CONOCIO" icon={<Tag size={12} color="#60a5fa" />} datos={statsColF} color="#60a5fa" />
+            <DistBlockSheets reportAppearance={reportAppearance} titulo="TIPO DE CLIENTE" icon={<FileText size={12} color="#4f8275" />} datos={stats} color="#4f8275" />
+            <DistBlockSheets reportAppearance={reportAppearance} titulo="POR DONDE NOS CONOCIO" icon={<Tag size={12} color="#4f708c" />} datos={statsColF} color="#4f708c" />
           </>
         )}
       </div>
@@ -260,9 +248,9 @@ function DistBlockSheets({
           <ModernDoughnut
             label="Total Ops"
             value={totalCant}
-            tooltipLabel={(ctx) => ` ${ctx.label}: ${ctx.raw} ops`}
-            padding={60}
-            height="250px"
+            tooltipLabel={(ctx) => ` ${ctx.raw} ops`}
+            padding={reportAppearance ? 42 : 60}
+            height={reportAppearance ? "180px" : "250px"}
             margin="0 auto 16px auto"
             data={{
               labels: validData.map(d => d.label?.trim()),
@@ -292,7 +280,7 @@ function DistBlockSheets({
                     <span style={{ fontSize: 11, fontWeight: 700, color: itemColor, minWidth: 34, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
                   </div>
                 </div>
-                <div style={{ height: 2, background: 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: 2, background: reportAppearance ? '#e7edf2' : 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: itemColor, opacity: 0.8, borderRadius: 2 }} />
                 </div>
               </div>

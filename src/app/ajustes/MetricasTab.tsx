@@ -9,13 +9,13 @@ import ModernDoughnut from '@/components/charts/ModernDoughnut';
 import CustomSelect from '@/components/CustomSelect';
 
 const CHART_COLORS = {
-  venta: 'rgba(74, 222, 128, 0.8)',
-  proyeccion: 'rgba(255, 255, 255, 0.7)',
-  'en seguimiento': 'rgba(255, 255, 255, 0.4)',
-  'score bajo': 'rgba(248, 113, 113, 0.8)',
-  afectaciones: 'rgba(251, 146, 60, 0.8)',
-  'derivado / aprobado cc': 'rgba(96, 165, 250, 0.8)',
-  'derivado / rechazado cc': 'rgba(244, 63, 94, 0.8)'
+  venta: '#4f8275',
+  proyeccion: '#607d8b',
+  'en seguimiento': '#315b7d',
+  'score bajo': '#9b5f68',
+  afectaciones: '#9a7a50',
+  'derivado / aprobado cc': '#5b6f93',
+  'derivado / rechazado cc': '#8b6879'
 };
 
 const MESES = [
@@ -197,11 +197,11 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                   data={view.data.doughnutData}
                   label="VENTAS"
                   value={formatCurrency(view.data.totalMonto)}
-                  tooltipLabel={(ctx) => ` ${ctx.label}: ${formatCurrency(Number(ctx.raw))}`}
-                  padding={70}
+                  tooltipLabel={(ctx) => ` ${formatCurrency(Number(ctx.raw))}`}
+                  padding={reportAppearance ? 46 : 70}
                   clip={false}
-                  height="280px"
-                  width="280px"
+                  height={reportAppearance ? "190px" : "280px"}
+                  width={reportAppearance ? "210px" : "280px"}
                   valueSize={view.data.totalMonto >= 100_000_000 ? 12 : 14}
                 />
                 <div style={{ marginTop: '20px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>

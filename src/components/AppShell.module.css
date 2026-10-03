@@ -18,17 +18,27 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 60px;
+  height: 72px;
   padding: 0 32px;
-  background: rgba(255, 255, 255, .96);
-  border-bottom: 1px solid var(--border-subtle);
-  box-shadow: 0 6px 24px rgba(28, 39, 60, .06);
+  background: #eef2f6;
+  border: 0;
+  box-shadow: none;
   backdrop-filter: blur(16px);
+}
+
+.topbar::before {
+  content: '';
+  position: absolute;
+  inset: 8px 12px;
+  border: 1px solid rgba(207, 218, 229, .88);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 8px 24px rgba(28, 49, 72, .07);
 }
 
 .topbarFade {
   position: absolute;
-  top: 60px;
+  top: 72px;
   right: 0;
   left: 0;
   z-index: 49;
@@ -40,6 +50,8 @@
 .topbarSpacer,
 .topbarActions,
 .topbarTitle {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex: 1 1 0;
   align-items: center;
@@ -48,25 +60,60 @@
 .topbarSpacer,
 .topbarActions { gap: 24px; }
 .topbarActions { justify-content: flex-end; }
-.topbarTitle { justify-content: center; gap: 8px; min-width: 0; }
-.topbarEyebrow { color: var(--text-primary); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
-.topbarBrand { color: var(--text-strong); font-size: 16px; font-weight: 700; letter-spacing: 2px; }
-.topbarConjunction { color: var(--text-muted); font-size: 12px; font-weight: 700; letter-spacing: 1px; }
-.topbarDate { color: var(--text-primary); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+.topbarTitle { justify-content: center; gap: 10px; min-width: 0; }
+.topbarMark { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; border: 1px solid #d5e1e9; border-radius: 50%; color: #315f82; background: #edf4f8; box-shadow: 0 4px 12px rgba(43, 91, 125, .1); }
+.topbarWordmark { min-width: 0; display: grid; gap: 1px; }
+.topbarBrandLine { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.topbarEyebrow { color: #7b8799; font-size: 8px; font-weight: 700; letter-spacing: 1.25px; text-transform: uppercase; }
+.topbarBrand { color: var(--text-strong); font-size: 15px; font-weight: 750; letter-spacing: .55px; }
+.topbarConjunction { color: #8a96a7; font-size: 11px; font-weight: 600; }
+.topbarDate { min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 11px; border: 1px solid #e0e7ee; border-radius: 11px; color: #5f6e83; background: #f7f9fb; font-size: 9px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; white-space: nowrap; }
 
 .splitToggle {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  min-height: 36px;
+  padding: 0 13px;
   color: var(--text-primary);
   background: rgba(255, 255, 255, .02);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: 11px;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color .2s, color .2s, border-color .2s;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .035);
+  transition: transform .2s ease, box-shadow .2s ease, background-color .2s, color .2s, border-color .2s;
+}
+
+.sidebarToggle {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid #dce4ed;
+  border-radius: 11px;
+  color: #526279;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .035);
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, background-color .2s, color .2s, border-color .2s;
+}
+
+.sidebarToggle:hover,
+.sidebarToggle:focus-visible,
+.sidebarToggle[aria-pressed='true'] {
+  color: #244f70;
+  background: #edf4f8;
+  border-color: #b9cad7;
+  box-shadow: 0 6px 14px rgba(36, 79, 112, .1);
+  outline: 0;
+  transform: translateY(-1px);
 }
 
 .splitToggle:hover,
@@ -74,6 +121,8 @@
   color: var(--text-strong);
   background: var(--surface-hover);
   border-color: #b8c8e8;
+  box-shadow: 0 6px 14px rgba(36, 79, 112, .11);
+  transform: translateY(-1px);
 }
 
 .wrapper {
@@ -113,29 +162,43 @@
 }
 
 .reportPageScroll { padding-top: 10px; }
-.minimalPageScroll { padding-top: 0; }
+.minimalPageScroll { padding: 8px; }
+.splitPageScroll { padding: 0; overflow: hidden; }
 
 .recordsShell .topbar {
-  padding: 0 28px 0 120px;
-  background: var(--surface-card);
+  padding: 0 26px 0 112px;
+  background: #eef2f6;
   border: 0;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, .028);
+  box-shadow: none;
 }
 
 .recordsShell .topbarFade { display: none; }
-.recordsShell .topbar span { color: #5f6b85; }
+.recordsShell .topbar .topbarEyebrow,
+.recordsShell .topbar .topbarConjunction { color: #758297; }
 .recordsShell .topbar .topbarBrand { color: #14213d; }
+.recordsShell .topbar .topbarMark { color: #315f82; }
 .recordsShell .topbar button { color: #253451; background: var(--surface-card); border-color: #dce4ed; }
-.recordsShell .wrapper { height: auto; }
-.recordsShell .content { margin-left: 92px; background: #eef2f6; }
+.recordsShell .wrapper { height: auto; background: #eef2f6; }
+.recordsShell .content { margin-left: 0; background: #eef2f6; }
+.recordsShell.minimalShell .content,
+.recordsShell.splitShell .content { margin-left: 0; }
+.minimalShell .content { padding: 0; }
 .recordsPageScroll {
-  padding: 14px 12px;
+  padding: 14px 12px 14px 108px;
   overflow-x: hidden;
   overflow-y: scroll;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: #8398aa #e7edf3;
 }
+
+.recordsListPageScroll { overflow: hidden; }
+.recordsListPageScroll :global(.records-reference-page) { height: 100%; min-height: 0; overflow: hidden; }
+.recordsListPageScroll :global(.records-table-card) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.recordsListPageScroll :global(.records-table-scroll) { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.recordsListPageScroll :global(.records-pagination) { flex: 0 0 auto; }
+.recordsListShell :global(.records-sidebar) { bottom: 76px; }
+.sidebarHidden .recordsPageScroll { padding-left: 12px; }
 
 .recordsPageScroll::-webkit-scrollbar { width: 10px; }
 .recordsPageScroll::-webkit-scrollbar-track { margin: 8px 0; border-radius: 8px; background: #e7edf3; }
@@ -287,34 +350,44 @@
 
 @media (max-width: 1024px) {
   .content { padding: 16px; }
+  .sidebarToggle span { display: none; }
+  .sidebarToggle { width: 36px; padding: 0; }
 }
 
 @media (max-width: 600px) {
-  .topbar { padding: 0 12px; }
+  .topbar { height: 64px; padding: 0 18px; }
+  .topbar::before { inset: 6px; border-radius: 15px; }
   .topbarSpacer,
   .topbarActions,
   .topbarEyebrow,
   .topbarConjunction { display: none; }
-  .topbarTitle { justify-content: flex-start; gap: 5px; }
-  .topbarBrand { font-size: 12px; letter-spacing: .8px; }
-  .recordsShell .topbar { padding: 0 12px; }
+  .topbarTitle { justify-content: flex-start; gap: 8px; }
+  .topbarMark { width: 32px; height: 32px; flex-basis: 32px; border-radius: 10px; }
+  .topbarBrand { font-size: 12px; letter-spacing: .3px; }
+  .topbarWordmark { gap: 0; }
+  .recordsShell .topbar { padding: 0 18px; }
 }
 
 @media (max-width: 560px) {
   .recordsShell .content { width: 100%; margin-left: 0; }
-  .recordsPageScroll { padding-bottom: 86px; }
+  .recordsPageScroll { padding-right: 12px; padding-bottom: 86px; padding-left: 12px; }
 
   .recordsShell :global(.records-sidebar) {
     inset: auto 0 0;
     flex-direction: row;
     width: 100%;
     height: 72px;
+    gap: 0;
     overflow-x: auto;
     overflow-y: hidden;
+    background: #fff;
+    border-radius: 0;
     border-top: 1px solid #dfe6ee;
     border-right: 0;
     box-shadow: 0 -4px 14px rgba(15, 23, 42, .06);
   }
+
+  .recordsListShell :global(.records-sidebar) { bottom: 0; }
 
   .recordsShell :global(.records-sidebar-main),
   .recordsShell :global(.records-sidebar-bottom) {
@@ -322,6 +395,11 @@
     flex-direction: row;
     gap: 4px;
     padding: 5px 6px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .recordsShell :global(.records-sidebar-bottom) {
