@@ -9,7 +9,7 @@ import { formatCurrency, formatDate, formatearCuil, sanitizarCuil } from '@/lib/
 import { PremiumSelect } from '@/components/PremiumSelect';
 import { CorporateDatePicker } from '@/components/CorporateDatePicker';
 import ModalPortal from '@/components/ModalPortal';
-import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Search, TableProperties, Trash2 } from 'lucide-react';
+import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, TableProperties, Trash2 } from 'lucide-react';
 
 type GestionTab = 'ingresos' | 'flyers' | 'emails';
 
@@ -304,6 +304,76 @@ function DailyLoadingState({ kind, label }: { kind: GestionTab; label: string })
   );
 }
 
+const DAILY_PAGE_SIZES = [25, 50, 100, 200] as const;
+
+function DailyPagination({
+  total,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  itemLabel = 'registros',
+}: {
+  total: number;
+  page: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  itemLabel?: string;
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const rangeStart = total === 0 ? 0 : ((page - 1) * pageSize) + 1;
+  const rangeEnd = Math.min(page * pageSize, total);
+
+  const changePage = (nextPage: number) => {
+    onPageChange(Math.min(totalPages, Math.max(1, nextPage)));
+  };
+
+  const cyclePageSize = () => {
+    const currentIndex = DAILY_PAGE_SIZES.findIndex(size => size === pageSize);
+    const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % DAILY_PAGE_SIZES.length;
+    onPageSizeChange(DAILY_PAGE_SIZES[nextIndex]);
+  };
+
+  return (
+    <div className="records-pagination daily-pagination" aria-label={`Paginación de ${itemLabel}`}>
+      <div className="daily-pagination__meta">
+        <span className="records-pagination__text">
+          Mostrando {rangeStart}–{rangeEnd} de {total} {itemLabel}
+        </span>
+        <button
+          type="button"
+          className="daily-page-size"
+          onClick={cyclePageSize}
+          title="Cambiar cantidad de filas por página"
+          aria-label={`Mostrar ${pageSize} filas por página. Cambiar cantidad`}
+        >
+          <Rows3 size={14} /> {pageSize}
+        </button>
+      </div>
+      <div className="records-pagination__controls">
+        <button type="button" className="btn-pagination" onClick={() => changePage(1)} disabled={page === 1}>Primera</button>
+        <button type="button" className="btn-pagination" onClick={() => changePage(page - 1)} disabled={page === 1}>← Anterior</button>
+        <div className="records-pagination__page">
+          Página
+          <input
+            className="pagination-input"
+            type="number"
+            min={1}
+            max={totalPages}
+            value={page}
+            onChange={event => changePage(Number(event.target.value) || 1)}
+            aria-label="Página actual"
+          />
+          de {totalPages}
+        </div>
+        <button type="button" className="btn-pagination" onClick={() => changePage(page + 1)} disabled={page === totalPages}>Siguiente →</button>
+        <button type="button" className="btn-pagination" onClick={() => changePage(totalPages)} disabled={page === totalPages}>Última</button>
+      </div>
+    </div>
+  );
+}
+
 function readPersistedSheetChanges(analyst: string): PersistedSheetChanges {
   if (typeof window === 'undefined' || !analyst) return { overrides: {}, deletedIds: [] };
   try {
@@ -502,6 +572,8 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
   const [form, setForm] = useState<Partial<GestionDiaria>>(initialForm);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<GestionTab>('ingresos');
+  const [incomePage, setIncomePage] = useState(1);
+  const [incomePageSize, setIncomePageSize] = useState(50);
   const selectedAnalista = analista || analistaNombres[0] || '';
   const [incomeRows, setIncomeRows] = useState<IncomeSheetRow[]>([]);
   const [incomeLoading, setIncomeLoading] = useState(true);
@@ -581,6 +653,13 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
     });
   }, [visibleIncomeRows, fechaDesde, fechaHasta, tipoCliente, busqueda]);
 
+  const incomeTotalPages = Math.max(1, Math.ceil(filtrados.length / incomePageSize));
+  const safeIncomePage = Math.min(incomePage, incomeTotalPages);
+  const paginatedIncomeRows = useMemo(() => {
+    const start = (safeIncomePage - 1) * incomePageSize;
+    return filtrados.slice(start, start + incomePageSize);
+  }, [filtrados, incomePageSize, safeIncomePage]);
+
   const tipoClienteOptions = useMemo(() => Array.from(new Set([
     ...GESTION_DIARIA_OPCIONES.tipoCliente,
     ...visibleIncomeRows.map(row => row.tipoCliente).filter(Boolean),
@@ -593,6 +672,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
     setIncomeLoading(true);
     setSheetOverrides(persisted.overrides);
     setDeletedSheetIds(persisted.deletedIds);
+    setIncomePage(1);
     setAnalista(value);
   };
 
@@ -760,12 +840,12 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
       <div className="daily-toolbar">
         <div className="daily-search">
           <Search className="daily-search__icon" size={14} />
-          <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar cliente o CUIL..." className="form-input" />
+          <input value={busqueda} onChange={e => { setBusqueda(e.target.value); setIncomePage(1); }} placeholder="Buscar cliente o CUIL..." className="form-input" />
         </div>
-        <CorporateDatePicker value={fechaDesde} onChange={setFechaDesde} placeholder="Desde" compact />
-        <CorporateDatePicker value={fechaHasta} onChange={setFechaHasta} placeholder="Hasta" compact />
+        <CorporateDatePicker value={fechaDesde} onChange={value => { setFechaDesde(value); setIncomePage(1); }} placeholder="Desde" compact />
+        <CorporateDatePicker value={fechaHasta} onChange={value => { setFechaHasta(value); setIncomePage(1); }} placeholder="Hasta" compact />
         <div className="daily-type-filter">
-          <PremiumSelect value={tipoCliente} onChange={setTipoCliente} options={tipoClienteOptions} placeholder="Tipo de cliente" isSearchable />
+          <PremiumSelect value={tipoCliente} onChange={value => { setTipoCliente(value); setIncomePage(1); }} options={tipoClienteOptions} placeholder="Tipo de cliente" isSearchable />
         </div>
         <button onClick={abrirNuevo} className="btn-primary daily-add-button">
           <Plus size={16} /> Agregar registro
@@ -775,8 +855,9 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
       {incomeLoading ? <DailyLoadingState kind="ingresos" label="Ingreso diario de ventas" /> : incomeError ? (
         <div className="daily-sheet-state is-error"><strong>No pudimos cargar la hoja.</strong><span>{incomeError}</span></div>
       ) : (
-        <div className="daily-table-wrap">
-          <table className="daily-table">
+        <div className="daily-table-shell">
+          <div className="daily-table-wrap">
+            <table className="daily-table">
             <thead>
               <tr>
                 <th>Tipo cliente</th>
@@ -790,7 +871,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
               </tr>
             </thead>
             <tbody>
-              {filtrados.map(r => (
+              {paginatedIncomeRows.map(r => (
                 <tr key={r.id}>
                   <td>{r.tipoCliente}</td>
                   <td className="daily-numeric">{r.fecha ? formatDate(r.fecha) : <span className="daily-date-missing">Sin fecha</span>}</td>
@@ -822,10 +903,18 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
                 </tr>
               ))}
             </tbody>
-          </table>
-          {filtrados.length === 0 && (
-            <p className="daily-empty-state">Sin registros para los filtros actuales.</p>
-          )}
+            </table>
+            {filtrados.length === 0 && (
+              <p className="daily-empty-state">Sin registros para los filtros actuales.</p>
+            )}
+          </div>
+          <DailyPagination
+            total={filtrados.length}
+            page={safeIncomePage}
+            pageSize={incomePageSize}
+            onPageChange={setIncomePage}
+            onPageSizeChange={value => { setIncomePageSize(value); setIncomePage(1); }}
+          />
         </div>
       )}
       </> : (
@@ -876,6 +965,8 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const [entryModalOpen, setEntryModalOpen] = useState(false);
   const [entryForm, setEntryForm] = useState<CommercialEntryForm>(createCommercialForm);
   const [entrySaving, setEntrySaving] = useState(false);
@@ -953,6 +1044,13 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
     if (!normalized) return rows;
     return rows.filter(row => row.values.some(cell => cell.toLocaleLowerCase('es').includes(normalized)));
   }, [data, deletedSheetRows, entries, query, sheetOverrides, tab]);
+
+  const totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paginatedRows = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return visibleRows.slice(start, start + pageSize);
+  }, [pageSize, safePage, visibleRows]);
 
   const persistEntries = async (
     nextEntries: CommercialEntry[],
@@ -1080,7 +1178,7 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
         <div className="daily-sheet-actions">
           <label className="daily-sheet-search">
             <Search size={14} />
-            <input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Buscar en ${config.label.toLowerCase()}...`} />
+            <input value={query} onChange={event => { setQuery(event.target.value); setPage(1); }} placeholder={`Buscar en ${config.label.toLowerCase()}...`} />
           </label>
           <button type="button" className="daily-sheet-add" onClick={() => { setEditingTarget(null); setEntryForm(createCommercialForm()); setEntryError(''); setEntryModalOpen(true); }}>
             <Plus size={14} /> Cargar {tab === 'flyers' ? 'flyers' : 'email'}
@@ -1100,11 +1198,12 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
         </div>
       )}
       {!loading && !error && data && (
-        <div className="daily-table-wrap daily-sheet-table-wrap">
-          <table className="daily-table daily-sheet-table">
+        <div className="daily-table-shell">
+          <div className="daily-table-wrap daily-sheet-table-wrap">
+            <table className="daily-table daily-sheet-table">
             <thead><tr>{data.columns.map((column, index) => <th key={`${column}-${index}`}>{column}</th>)}<th>Acciones</th></tr></thead>
             <tbody>
-              {visibleRows.map((row, rowIndex) => (
+              {paginatedRows.map((row, rowIndex) => (
                 <tr key={row.entryId ?? row.sheetKey ?? `sheet-${rowIndex}`}>
                   {data.columns.map((column, columnIndex) => {
                     const normalizedColumn = normalizeLookupValue(column);
@@ -1129,8 +1228,17 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
                 </tr>
               ))}
             </tbody>
-          </table>
-          {visibleRows.length === 0 && <div className="daily-sheet-state"><span>Sin resultados para la búsqueda actual.</span></div>}
+            </table>
+            {visibleRows.length === 0 && <div className="daily-sheet-state"><span>Sin resultados para la búsqueda actual.</span></div>}
+          </div>
+          <DailyPagination
+            total={visibleRows.length}
+            page={safePage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={value => { setPageSize(value); setPage(1); }}
+            itemLabel={tab === 'flyers' ? 'flyers' : 'emails'}
+          />
         </div>
       )}
       {entryError && !entryModalOpen && <div className="daily-action-error">{entryError}</div>}

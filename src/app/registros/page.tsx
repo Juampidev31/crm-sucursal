@@ -1129,7 +1129,8 @@ const RegistroModal = memo(function RegistroModal({
                   className={`modal-check-action ${styles.editCheckAction} ${form.es_re ? styles.editCheckSuccess : ''}`}
                 >
                   <input type="checkbox" checked={!!form.es_re} onChange={e => set('es_re', e.target.checked)} className={styles.visuallyHidden} />
-                  Resumen Ejecutivo (RE)
+                  {form.es_re ? <CheckCircle2 size={15} strokeWidth={2.5} /> : <FileText size={15} />}
+                  <span>Resumen Ejecutivo (RE)</span>
                 </label>
               </Field>
               <Field label="Recordatorio">
@@ -1137,7 +1138,8 @@ const RegistroModal = memo(function RegistroModal({
                   className={`modal-check-action ${styles.editCheckAction} ${agendarRecordatorio ? styles.editCheckWarning : ''}`}
                 >
                   <input type="checkbox" checked={agendarRecordatorio} onChange={e => setAgendarRecordatorio(e.target.checked)} className={styles.visuallyHidden} />
-                  Agendar Recordatorio
+                  {agendarRecordatorio ? <CheckCircle2 size={15} strokeWidth={2.5} /> : <Bell size={15} />}
+                  <span>Agendar Recordatorio</span>
                 </label>
               </Field>
             </div>

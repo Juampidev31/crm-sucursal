@@ -428,6 +428,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
                 styles.pageScroll,
                 usesRecordsShell ? styles.recordsPageScroll : '',
                 pathname === '/registros' ? styles.recordsListPageScroll : '',
+                pathname === '/gestion-diaria' ? styles.dailyListPageScroll : '',
                 isMinimal ? styles.minimalPageScroll : '',
                 isSplitView && !isMinimal ? styles.splitPageScroll : '',
                 !isMinimal && (pathname.startsWith('/reportes') || pathname === '/analistas') ? styles.reportPageScroll : '',
