@@ -517,6 +517,18 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
   const [actionError, setActionError] = useState('');
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('crm:page-zoom-scope', {
+        detail: {
+          pathname: '/gestion-diaria',
+          scope: `analista:${selectedAnalista || 'sin-analista'}:hoja:${activeTab}`,
+        },
+      }));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, selectedAnalista]);
+
+  useEffect(() => {
     let active = true;
     const sheetId = SHEETS[selectedAnalista as SheetAnalyst];
     if (!sheetId) return () => { active = false; };

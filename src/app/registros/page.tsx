@@ -1651,6 +1651,15 @@ export default function RegistrosPage() {
     if (activeTab === 'fijados' && registrosFijados.length === 0) setActiveTab('registros');
   }, [activeTab, registrosFijados.length]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('crm:page-zoom-scope', {
+        detail: { pathname: '/registros', scope: `seccion:${activeTab}:vista:${viewMode}` },
+      }));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, viewMode]);
+
 
   const openEdit = useCallback((reg: Registro) => {
     setEditingId(reg.id);

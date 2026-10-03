@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { ErrorProvider, useDataError } from '@/context/ErrorContext';
@@ -163,7 +163,8 @@ const ReminderAlertPopup = () => {
 };
 
 const LEGACY_ADMIN_ZOOM_STORAGE_KEY = 'app_admin_zoom_levels_v3';
-const pageZoomStorageKey = (pathname: string) => `app_admin_page_zoom_v1:${pathname}`;
+const PAGE_ZOOM_SCOPE_EVENT = 'crm:page-zoom-scope';
+const pageZoomStorageKey = (screen: string) => `app_admin_page_zoom_v1:${screen}`;
 
 // Límites del zoom interno del admin (el que reemplaza al nativo con Ctrl+rueda).
 // El piso se mantiene en 0.7: por debajo el layout se rompía en 1366x768, que es
@@ -178,6 +179,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const isMinimal = searchParams.get('minimal') === 'true';
   const [mounted, setMounted] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(1);
+  const [declaredZoomScope, setDeclaredZoomScope] = useState<{ pathname: string; scope: string }>({ pathname: '', scope: '' });
   const [isSidebarHidden, setIsSidebarHidden] = useState(true);
   const { setShowFilters } = useFilter();
   const usesRecordsShell =
@@ -187,6 +189,24 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
     pathname === '/analistas' ||
     pathname === '/duplicados' ||
     pathname.startsWith('/reportes');
+
+  const queryZoomScope = useMemo(() => {
+    const entries = Array.from(searchParams.entries())
+      .filter(([key]) => key !== 'minimal')
+      .sort(([a], [b]) => a.localeCompare(b));
+    return entries.length > 0 ? `?${new URLSearchParams(entries).toString()}` : '';
+  }, [searchParams]);
+  const screenZoomScope = `${pathname}${queryZoomScope}${declaredZoomScope.pathname === pathname && declaredZoomScope.scope ? `#${declaredZoomScope.scope}` : ''}`;
+
+  useEffect(() => {
+    const handleScopeChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ pathname?: string; scope?: string }>).detail;
+      if (!detail?.scope) return;
+      setDeclaredZoomScope({ pathname: detail.pathname || window.location.pathname, scope: detail.scope });
+    };
+    window.addEventListener(PAGE_ZOOM_SCOPE_EVENT, handleScopeChange);
+    return () => window.removeEventListener(PAGE_ZOOM_SCOPE_EVENT, handleScopeChange);
+  }, []);
 
   // Cierra el panel de filtros al cambiar de ruta.
   useEffect(() => {
@@ -225,11 +245,11 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
         localStorage.removeItem(LEGACY_ADMIN_ZOOM_STORAGE_KEY);
       }
 
-      const saved = Number.parseFloat(localStorage.getItem(pageZoomStorageKey(pathname)) ?? '1');
+      const saved = Number.parseFloat(localStorage.getItem(pageZoomStorageKey(screenZoomScope)) ?? '1');
       setCurrentZoom(Number.isFinite(saved) ? Math.min(ADMIN_ZOOM_MAX, Math.max(ADMIN_ZOOM_MIN, saved)) : 1);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [isAdmin, loading, pathname]);
+  }, [isAdmin, loading, screenZoomScope]);
 
   // El zoom interno arranca en 100% y es una preferencia exclusiva del administrador.
   const defaultZoom = 1;
@@ -239,17 +259,17 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
 
     setCurrentZoom(current => {
       const next = Math.max(ADMIN_ZOOM_MIN, Math.min(ADMIN_ZOOM_MAX, Math.round((current + delta) * 100) / 100));
-      localStorage.setItem(pageZoomStorageKey(pathname), String(next));
+      localStorage.setItem(pageZoomStorageKey(screenZoomScope), String(next));
       return next;
     });
-  }, [isAdmin, pathname]);
+  }, [isAdmin, screenZoomScope]);
 
   const resetZoom = useCallback(() => {
     if (!isAdmin) return;
 
     setCurrentZoom(defaultZoom);
-    localStorage.setItem(pageZoomStorageKey(pathname), String(defaultZoom));
-  }, [isAdmin, pathname]);
+    localStorage.setItem(pageZoomStorageKey(screenZoomScope), String(defaultZoom));
+  }, [isAdmin, screenZoomScope]);
 
   useEffect(() => {
     if (!isAdmin) return;

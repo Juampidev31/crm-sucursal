@@ -170,6 +170,22 @@ export default function AjustesPage() {
   const [actividadSubTab, setActividadSubTab] = useState<ActividadSubTab>('auditoria');
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => new Set());
 
+  useEffect(() => {
+    const subTab = activeTab === 'configuracion'
+      ? configSubTab
+      : activeTab === 'reportes'
+        ? reportesSubTab
+        : activeTab === 'datos-masivos'
+          ? datosSubTab
+          : actividadSubTab;
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('crm:page-zoom-scope', {
+        detail: { pathname: '/ajustes', scope: `${activeTab}:${subTab}` },
+      }));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, configSubTab, reportesSubTab, datosSubTab, actividadSubTab]);
+
   // Keep-alive: visibilidad y montaje persistente de las tabs pesadas (componentes dinamicos)
   const heavyVisibility = useMemo(() => ({
     'comparativa-tab': activeTab === 'reportes' && reportesSubTab === 'comparativa',

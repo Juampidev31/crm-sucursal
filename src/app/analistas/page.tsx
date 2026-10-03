@@ -173,6 +173,15 @@ export default function AnalistasPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('crm:page-zoom-scope', {
+        detail: { pathname: '/analistas', scope: `vista:${analista}` },
+      }));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [analista]);
+
   const chartsLoaded = useDeferredMount();
   const esVistaGlobal = analista === 'PDV' || analista === 'PROYECTADOS';
 
