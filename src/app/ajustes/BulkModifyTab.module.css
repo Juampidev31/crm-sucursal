@@ -54,6 +54,37 @@
   color: var(--text-muted);
 }
 
+.toastContainer {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9999;
+}
+
+.toastMessage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 1px solid;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(24, 42, 62, .14);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.toastSuccess {
+  color: #2f6f59;
+  background: #edf6f2;
+  border-color: #c8ded5;
+}
+
+.toastError {
+  color: #a33f4b;
+  background: #fbf0f1;
+  border-color: #edcbd0;
+}
+
 .headerActions {
   display: flex;
   align-items: center;
@@ -179,6 +210,65 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+
+.localityIcon { color: var(--action-primary); }
+
+.localityAddButton {
+  flex-shrink: 0;
+  padding: 10px 24px;
+  color: var(--action-primary);
+  background: var(--brand-muted-soft);
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .65px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.localityAddButton:hover:not(:disabled) {
+  color: #fff;
+  background: var(--action-primary);
+  border-color: var(--action-primary);
+}
+
+.localityAddButton:disabled {
+  color: #98a2b3;
+  background: var(--surface-sunken);
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+}
+
+.localityGroupTitle {
+  color: #40566f;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .35px;
+  text-transform: uppercase;
+}
+
+.localityApproveButton {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  color: var(--action-primary);
+  background: var(--brand-muted-soft);
+  border: 1px solid var(--control-border);
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .45px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.localityApproveButton:hover {
+  color: #fff;
+  background: var(--action-primary);
+  border-color: var(--action-primary);
 }
 
 /* ── Botones fantasma de sección ────────────────────────────────────────── */

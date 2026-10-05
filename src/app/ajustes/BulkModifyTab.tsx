@@ -2544,8 +2544,8 @@ const variantesLocalidadConDuplicados = useMemo(() => {
   return (
     <div className={[styles["uWidth100"]].join(' ')}>
       {toast && (
-        <div className={[styles["uPositionFixed"], styles["uBottom24px"], styles["uRight24px"], styles["uZIndex9999"]].join(' ')}>
-          <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uPadding12px-18px"], styles["uBorderRadius8px"], styles["uFontSize13px"], styles["uFontWeight600"]].join(' ')} style={{ background: toast.type === 'success' ? 'rgba(0, 255, 136, 0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, color: toast.type === 'success' ? '#34d399' : '#ff3366' }}>
+        <div className={styles.toastContainer}>
+          <div className={`${styles.toastMessage} ${toast.type === 'success' ? styles.toastSuccess : styles.toastError}`}>
             {toast.type === 'success' ? <CheckCircle size={15} /> : <AlertTriangle size={15} />}
             {toast.message}
           </div>
@@ -2797,7 +2797,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             onClick={() => setCorrectorLocalidadExpandido(!correctorLocalidadExpandido)}
             className={`${styles.sectionToggle}${correctorLocalidadExpandido ? ` ${styles.isExpanded}` : ''}`}
           >
-            <CheckCircle size={18} color="#555" />
+            <CheckCircle size={18} className={styles.localityIcon} />
             <h4 className={styles.sectionTitle}>
               Corrector de Localidad
               {correctorLocalidadExpandido ? <ChevronUp size={14} className={styles.chevron} /> : <ChevronDown size={14} className={styles.chevron} />}
@@ -2848,7 +2848,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     agregarNuevaLocalidad();
                   }}
                   disabled={updating || !localidadCorreccion.trim()}
-                  className={[styles["uBorder1px-solid-rgba-16-185-129-0-3"], styles["uBorderRadius6px"], styles["uPadding10px-24px"], styles["uFontSize11px"], styles["uFontWeight900"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uFlexShrink0"]].join(' ')} style={{ background: (!localidadCorreccion.trim()) ? '#333' : 'rgba(0, 255, 136, 0.15)', color: (!localidadCorreccion.trim()) ? '#666' : '#34d399', cursor: (!localidadCorreccion.trim()) ? 'not-allowed' : 'pointer' }}
+                  className={styles.localityAddButton}
                 >
                   AGREGAR NUEVA LOCALIDAD
                 </button>
@@ -2872,7 +2872,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                   {listaLocalidadess.map((v, i) => (
                     <div key={i} className={[styles["uMarginBottom12px"], styles["uPadding12px-14px"], styles["uBackgroundSurface-sunken"], styles["uBorderRadius8px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
                       <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uMarginBottom6px"]].join(' ')}>
-                        <div className={[styles["uFontSize11px"], styles["uColorFbbf24"], styles["uFontWeight800"], styles["uTextTransformUppercase"]].join(' ')}>
+                        <div className={styles.localityGroupTitle}>
                           {v.normalizado} <span className={styles.mutedNote}>({v.cantidad} variantes)</span>
                         </div>
                         <div className={[styles["uDisplayFlex"], styles["uGap6px"], styles["uFlexShrink0"]].join(' ')}>
@@ -2880,7 +2880,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             <button
                               onClick={(e) => { e.stopPropagation(); descartarGrupoLocalidad(v.normalizado); }}
                               title="Marcar como correcto"
-                              className={[styles["uBackgroundRgba-16-185-129-0-1"], styles["uBorder1px-solid-rgba-16-185-129-0-3"], styles["uColor34d399"], styles["uBorderRadius4px"], styles["uPadding2px-8px"], styles["uFontSize9px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTextTransformUppercase"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap4px"]].join(' ')}
+                              className={styles.localityApproveButton}
                             >
                               <CheckCircle size={10} /> OK
                             </button>
