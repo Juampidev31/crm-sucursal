@@ -6,10 +6,9 @@ import ReactDOM from 'react-dom';
 import { supabase } from '@/lib/supabase';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
-import { useHistorico } from '@/features/historico/HistoricoProvider';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useToast } from '@/hooks/useToast';
-import { AlertaConfig, CONFIG, HistoricoVenta, LISTA_PERMISOS_ROLES, getPermisoOverride } from '@/types';
+import { AlertaConfig, CONFIG, LISTA_PERMISOS_ROLES, getPermisoOverride } from '@/types';
 import { formatCurrency, displayAnalista, formatDateTime, formatDate } from '@/lib/utils';
 import CustomSelect from '@/components/CustomSelect';
 import {
@@ -20,6 +19,7 @@ import {
   ChevronLeft, ChevronRight, Upload, X, TrendingUp
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import HistoricoObjetivosTab, { type HistoricoObjetivosRow } from './HistoricoObjetivosTab';
 
 const TabFallback = () => (
   <div className={[styles["uPadding24px"], styles["uColortext-primary"], styles["uFontSize13px"], styles.uFontFamilyUi].join(' ')}>
@@ -42,9 +42,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
 import { fetchAllRows } from '@/lib/supabase-paginate';
-import { normalizarNombreKey } from '@/lib/registro-stats';
-
-type HistRow = { capital_real: string; ops_real: string; meta_ventas: string; meta_operaciones: string };
+import { isVenta, normalizarNombreKey } from '@/lib/registro-stats';
 
 type ActiveTab = 'configuracion' | 'reportes' | 'datos-masivos' | 'actividad';
 type ConfigSubTab = 'alertas' | 'dias' | 'permisos' | 'analistas';
@@ -52,15 +50,8 @@ type ReportesSubTab = 'historico' | 'comparativa' | 'resumen-mensual' | 'calif-s
 type DatosSubTab = 'modificacion-masiva' | 'asignar-excel' | 'verificador' | 'carga-rapida' | 'duplicados' | 'eliminacion-masiva';
 type ActividadSubTab = 'auditoria' | 'reasignados' | 'avisos';
 
-const EMPTY_HIST_ROWS = (): HistRow[] =>
+const EMPTY_HIST_ROWS = (): HistoricoObjetivosRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
-
-const parsePaste = (e: React.ClipboardEvent<HTMLInputElement>, onChange: (v: string) => void) => {
-  e.preventDefault();
-  const raw = e.clipboardData.getData('text').replace(/\./g, '').replace(/,/g, '.').trim();
-  const num = parseFloat(raw);
-  if (!isNaN(num)) onChange(String(num));
-};
 
 // Barra de sub-tabs compartida por las 4 secciones
 function SubTabBar<T extends string>({ tabs, active, onSelect }: {
@@ -158,7 +149,6 @@ export default function AjustesPage() {
   } = useSettings();
   const { nombres: analistasDefault } = useAnalistas();
   const { objetivos: ctxObjetivos, mutateObjetivos: setCtxObjetivos, pushObjetivosChange } = useObjetivos();
-  const { mutateHistoricoVentas: setCtxHistorico, pushHistoricoChange } = useHistorico();
 
   const router = useRouter();
   const { setFilter, limpiarFiltros, toggleEstado } = useFilter();
@@ -226,9 +216,9 @@ export default function AjustesPage() {
   });
   const [permisoScope, setPermisoScope] = useState<string>('general');
 
-  const [histAnalista, setHistAnalista] = useState('');
-  const [histAnio, setHistAnio] = useState(new Date().getFullYear() - 1);
-  const [histRows, setHistRows] = useState<HistRow[]>(EMPTY_HIST_ROWS());
+  const [histAnalista, setHistAnalista] = useState('PDV');
+  const [histAnio, setHistAnio] = useState(() => new Date().getFullYear());
+  const [histRows, setHistRows] = useState<HistoricoObjetivosRow[]>(EMPTY_HIST_ROWS());
   const [savingHist, setSavingHist] = useState(false);
   const { toast, showSuccess, showError } = useToast(3000);
 
@@ -374,19 +364,30 @@ export default function AjustesPage() {
   };
 
   const loadHistorico = useCallback(async (anal: string, anio: number) => {
-    const [{ data: hist }, { data: objs }] = await Promise.all([
-      supabase.from('historico_ventas').select('*').eq('analista', anal).eq('anio', anio),
-      supabase.from('objetivos').select('*').eq('analista', anal).eq('anio', anio),
-    ]);
+    const { data: objs } = await supabase
+      .from('objetivos')
+      .select('*')
+      .eq('analista', anal)
+      .eq('anio', anio);
     const rows = EMPTY_HIST_ROWS();
-    if (hist) {
-      hist.forEach((h: any) => {
-        if (h.mes >= 0 && h.mes <= 11) {
-          rows[h.mes].capital_real = h.capital_real > 0 ? String(h.capital_real) : '';
-          rows[h.mes].ops_real = h.ops_real > 0 ? String(h.ops_real) : '';
-        }
-      });
-    }
+    const selectedAnalystKey = normalizarNombreKey(anal);
+    const monthlyResults = Array.from({ length: 12 }, () => ({ capital: 0, operations: 0 }));
+
+    ctxRegistros.forEach(registro => {
+      if (registro.fecha?.slice(0, 4) !== String(anio) || !isVenta(registro)) return;
+      if (anal !== 'PDV' && normalizarNombreKey(registro.analista) !== selectedAnalystKey) return;
+
+      const monthIndex = Number(registro.fecha.slice(5, 7)) - 1;
+      if (monthIndex < 0 || monthIndex > 11) return;
+      monthlyResults[monthIndex].capital += Number(registro.monto) || 0;
+      monthlyResults[monthIndex].operations += 1;
+    });
+
+    monthlyResults.forEach((result, monthIndex) => {
+      rows[monthIndex].capital_real = result.capital > 0 ? String(result.capital) : '';
+      rows[monthIndex].ops_real = result.operations > 0 ? String(result.operations) : '';
+    });
+
     if (objs) {
       objs.forEach((o: any) => {
         if (o.mes >= 0 && o.mes <= 11) {
@@ -396,7 +397,7 @@ export default function AjustesPage() {
       });
     }
     setHistRows(rows);
-  }, []);
+  }, [ctxRegistros]);
 
   useEffect(() => {
     if (activeTab === 'reportes' && reportesSubTab === 'historico') loadHistorico(histAnalista, histAnio);
@@ -516,13 +517,6 @@ export default function AjustesPage() {
   const saveHistorico = async () => {
     setSavingHist(true);
     try {
-      const upserts = histRows
-        .map((row, mesIdx) => ({
-          analista: histAnalista, anio: histAnio, mes: mesIdx,
-          capital_real: Number(row.capital_real) || 0, ops_real: Number(row.ops_real) || 0,
-        }))
-        .filter(r => r.capital_real > 0 || r.ops_real > 0);
-
       const objUpserts = histRows
         .map((row, mesIdx) => ({
           analista: histAnalista, anio: histAnio, mes: mesIdx,
@@ -530,23 +524,12 @@ export default function AjustesPage() {
         }))
         .filter(r => r.meta_ventas > 0 || r.meta_operaciones > 0);
 
-      const zeroMonths = histRows
-        .map((_, mesIdx) => mesIdx)
-        .filter(mesIdx => !Number(histRows[mesIdx].capital_real) && !Number(histRows[mesIdx].ops_real));
-
       const zeroObjMonths = histRows
         .map((_, mesIdx) => mesIdx)
         .filter(mesIdx => !Number(histRows[mesIdx].meta_ventas) && !Number(histRows[mesIdx].meta_operaciones));
 
-      // 4 operaciones en paralelo (1 query c/u, en vez de hasta 26 secuenciales)
+      // Los resultados se calculan desde registros; aquí sólo se persisten objetivos.
       const ops: PromiseLike<any>[] = [];
-      if (upserts.length > 0) {
-        ops.push(supabase.from('historico_ventas').upsert(upserts, { onConflict: 'analista,anio,mes' }));
-      }
-      if (zeroMonths.length > 0) {
-        ops.push(supabase.from('historico_ventas').delete()
-          .eq('analista', histAnalista).eq('anio', histAnio).in('mes', zeroMonths));
-      }
       if (objUpserts.length > 0) {
         ops.push(supabase.from('objetivos').upsert(objUpserts, { onConflict: 'analista,mes,anio' }));
       }
@@ -558,14 +541,7 @@ export default function AjustesPage() {
       const firstErr = results.find((r: any) => r?.error)?.error;
       if (firstErr) throw firstErr;
 
-      // Actualizar contextos
-      if (upserts.length > 0) {
-        setCtxHistorico((prev: HistoricoVenta[]) => {
-          const filtered = prev.filter(h => !(h.analista === histAnalista && h.anio === histAnio));
-          return [...filtered, ...upserts.map(u => ({ ...u, id: undefined }))] as HistoricoVenta[];
-        });
-        upserts.forEach(u => pushHistoricoChange('UPDATE', { ...u, id: undefined }));
-      }
+      // Actualizar el contexto de objetivos.
       if (objUpserts.length > 0) {
         setCtxObjetivos(prev => {
           const filtered = prev.filter(o => !(o.analista === histAnalista && o.anio === histAnio));
@@ -583,7 +559,7 @@ export default function AjustesPage() {
         } as any));
       }
 
-      showSuccess(`Histórico guardado para ${histAnalista}`);
+      showSuccess(`Objetivos guardados para ${histAnalista}`);
     } catch (err: any) { showError(`Error: ${err.message}`); }
     setSavingHist(false);
   };
@@ -1060,104 +1036,17 @@ export default function AjustesPage() {
             />
           )}
           {activeTab === 'reportes' && reportesSubTab === 'historico' && (
-            <div className={["data-card", styles["uBackgroundsurface-card"]].join(' ')}>
-              <div className={["data-card-header", styles["uDisplayflex"], styles["uJustifyContentspace-between"], styles["uAlignItemscenter"], styles["uMarginBottom32px"]].join(' ')}>
-                <div>
-                  <h3 className={[styles["uFontSize18px"], styles["uFontWeight800"], styles["uColortext-strong"], styles["uLetterSpacing0-5px"]].join(' ')}>Histórico y Objetivos</h3>
-                  <p className={[styles["uFontSize13px"], styles["uColortext-primary"], styles["uMarginTop4px"]].join(' ')}>Control de objetivos y resultados por analista y año</p>
-                </div>
-                <button className="btn-primary" onClick={saveHistorico} disabled={savingHist}>
-                  <Save size={14} /> {savingHist ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
-              </div>
-
-              {/* Selectors */}
-              <div className={[styles["uDisplayflex"], styles["uGap32px"], styles["uMarginBottom32px"], styles["uPadding24px"], styles["uBackgroundsurface-sunken"], styles["uBorderRadius12px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                <div className={[styles["uFlex1"]].join(' ')}>
-                  <label className={["form-label", styles["uColortext-primary"], styles["uMarginBottom12px"], styles["uFontSize11px"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>Seleccionar Analista</label>
-                  <div className={[styles["uDisplayflex"], styles["uGap8px"], styles["uFlexWrapwrap"]].join(' ')}>
-                    {['PDV', ...analistasDefault].map(a => (
-                      <button className={[styles["uPadding10px-20px"], styles["uBorderRadius6px"], styles["uBorder1px-solid"], styles.uFontFamilyUi, styles["uFontSize12px"], styles["uFontWeight600"], styles["uCursorpointer"], styles["uTransitionall-0-2s"]].join(' ')} key={a} onClick={() => setHistAnalista(a)} style={{ borderColor: histAnalista === a ? 'var(--control-border-focus)' : 'var(--border-subtle)', background: histAnalista === a ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: histAnalista === a ? 'var(--action-primary)' : 'var(--text-primary)' }}>{a}</button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className={["form-label", styles["uColortext-primary"], styles["uMarginBottom12px"], styles["uFontSize11px"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>Año</label>
-                  <div className={[styles["uDisplayflex"], styles["uGap8px"], styles["uFlexWrapwrap"]].join(' ')}>
-                    {Array.from({ length: new Date().getFullYear() - 2021 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                      <button className={[styles["uPadding10px-16px"], styles["uBorderRadius6px"], styles["uBorder1px-solid"], styles.uFontFamilyUi, styles["uFontSize12px"], styles["uFontWeight600"], styles["uCursorpointer"], styles["uTransitionall-0-2s"]].join(' ')} key={y} onClick={() => setHistAnio(y)} style={{ borderColor: histAnio === y ? 'var(--control-border-focus)' : 'var(--border-subtle)', background: histAnio === y ? 'var(--brand-muted-soft)' : 'var(--surface-card)', color: histAnio === y ? 'var(--action-primary)' : 'var(--text-primary)' }}>{y}</button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className={[styles["uOverflowXauto"]].join(' ')}>
-                <table className={["data-table", styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                  <thead>
-                    <tr>
-                      <th className={[styles["uColortext-primary"], styles["uWidth120px"], styles["uFontSize11px"]].join(' ')}>MES</th>
-                      <th className={[styles["uColortext-primary"], styles["uOpacity0-8"], styles["uFontSize11px"]].join(' ')}>METAS CAPITAL ($)</th>
-                      <th className={[styles["uColortext-primary"], styles["uOpacity0-8"], styles["uFontSize11px"]].join(' ')}>METAS OPS</th>
-                      <th className={[styles["uColortext-strong"], styles["uOpacity0-9"], styles["uFontSize11px"]].join(' ')}>REAL CAPITAL ($)</th>
-                      <th className={[styles["uColortext-strong"], styles["uOpacity0-9"], styles["uFontSize11px"]].join(' ')}>REAL OPS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {CONFIG.MESES_NOMBRES.map((mes, idx) => (
-                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"], styles["uHeight54px"]].join(' ')} key={idx}>
-                        <td className={[styles["uFontWeight800"], styles["uFontSize12px"], styles["uColortext-primary"], styles["uTextTransformuppercase"], styles["uLetterSpacing0-5px1llh9"]].join(' ')}>{mes}</td>
-                        <td>
-                          <input
-                            className={["form-input", styles["uWidth140px"], styles["uBackgroundsurface-sunken"], styles["uBordernone"], styles["uBorderBottom1-5px-solid-rgba-255-255-255-0-1"], styles["uBorderRadius0"], styles["uPadding8px-4px"]].join(' ')} type="number"
-                            placeholder="-"
-                            value={histRows[idx].meta_ventas}
-                            onChange={e => setHistRows(prev => {
-                              const next = [...prev]; next[idx] = { ...next[idx], meta_ventas: e.target.value }; return next;
-                            })}
-                            onPaste={e => parsePaste(e, v => setHistRows(prev => {
-                              const next = [...prev]; next[idx] = { ...next[idx], meta_ventas: v }; return next;
-                            }))}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className={["form-input", styles["uWidth80px"], styles["uBackgroundtransparent"], styles["uBordernone"], styles["uBorderBottom1px-solid-border-subtle"], styles["uBorderRadius0"], styles["uTextAligncenter"]].join(' ')} type="number"
-                            placeholder="-"
-                            value={histRows[idx].meta_operaciones}
-                            onChange={e => setHistRows(prev => {
-                              const next = [...prev]; next[idx] = { ...next[idx], meta_operaciones: e.target.value }; return next;
-                            })}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className={["form-input", styles["uWidth140px"], styles["uBackgroundsurface-sunken"], styles["uBordernone"], styles["uBorderBottom1-5px-solid-rgba-255-255-255-0-15"], styles["uBorderRadius0"], styles["uPadding8px-4px"]].join(' ')} type="number"
-                            placeholder="-"
-                            value={histRows[idx].capital_real}
-                            onChange={e => setHistRows(prev => {
-                              const next = [...prev]; next[idx] = { ...next[idx], capital_real: e.target.value }; return next;
-                            })}
-                            onPaste={e => parsePaste(e, v => setHistRows(prev => {
-                              const next = [...prev]; next[idx] = { ...next[idx], capital_real: v }; return next;
-                            }))}
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className={["form-input", styles["uWidth100px"], styles["uBackgroundsurface-sunken"], styles["uBordernone"], styles["uBorderBottom1-5px-solid-rgba-255-255-255-0-15"], styles["uBorderRadius0"], styles["uTextAligncenter"], styles["uPadding8px-4px"]].join(' ')} type="number"
-                            placeholder="-"
-                            value={histRows[idx].ops_real}
-                            onChange={e => setHistRows(prev => {
-                              const next = [...prev]; next[idx] = { ...next[idx], ops_real: e.target.value }; return next;
-                            })}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <HistoricoObjetivosTab
+              analysts={analistasDefault}
+              analyst={histAnalista}
+              year={histAnio}
+              rows={histRows}
+              saving={savingHist}
+              onAnalystChange={setHistAnalista}
+              onYearChange={setHistAnio}
+              setRows={setHistRows}
+              onSave={saveHistorico}
+            />
           )}
 
           {/* TAB: DUPLICADOS */}
