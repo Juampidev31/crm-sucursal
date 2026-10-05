@@ -1160,7 +1160,7 @@ iframe::-webkit-scrollbar {
 .exec-goal-label { position: absolute; top: 0; transform: translateX(-50%); display: grid; color: var(--text-secondary); font-size: 9px; }
 .exec-goal-label b { color: #101828; font-size: 8px; }
 .exec-goal-track { height: 14px; border-radius: 4px; background: #eef2f6; position: relative; }
-.exec-goal-fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px 0 0 4px; background: linear-gradient(90deg,#86a8bb,#315f82); }
+.exec-goal-fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px 0 0 4px; background: linear-gradient(90deg,#6e9d90,#397363); }
 .exec-goal-overflow { position: absolute; inset-block: 0; display: grid; place-items: center; border-radius: 0 4px 4px 0; background: linear-gradient(90deg,#567f9b,#315f82); color: #fff; font: 700 9px var(--font-sans); white-space: nowrap; }
 .exec-goal-track > i { position: absolute; z-index: 2; top: -7px; bottom: -7px; border-left: 2px dashed #334155; }
 .exec-goal-track > em { position: absolute; top: -2px; bottom: -2px; width: 4px; transform: translateX(-100%); border-radius: 3px; background: #244f70; }
