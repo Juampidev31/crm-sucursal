@@ -2204,26 +2204,31 @@ export default function AnalistasPage() {
 
       {rendimiento12MOpen && (
         <ModalPortal>
-        <div className={[styles.uPositionfixed, styles.uInset0, styles.uZIndex9999, styles["uBackgroundrgba-0-0-0-0-65"], styles["uBackdropFilterblur-4px"], styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uPadding24px].join(' ')}
+        <div className={styles.historyOverlay}
           onClick={() => setRendimiento12MOpen(false)}
         >
-          <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius18px, styles.uPadding24px, styles["uWidthmin-1480px-100"], styles.uMaxHeight90vh, styles.uOverflowauto, styles["uBoxShadowshadow-md"]].join(' ')}
+          <div className={styles.historyModal}
             onClick={e => e.stopPropagation()}
           >
-            <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom18px, styles.uGap12px].join(' ')}>
-              <div className={[styles.uFontSize12px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing1-5px"]].join(' ')}>
-                Rendimiento por Año {analista !== 'PDV' && `— ${analista}`}
+            <header className={styles.historyHeader}>
+              <div className={styles.historyIdentity}>
+                <span className={styles.historyIcon}><Clock size={18} /></span>
+                <div>
+                  <p className={styles.historyEyebrow}>Análisis consolidado</p>
+                  <h2 className={styles.historyTitle}>Rendimiento histórico</h2>
+                  <span className={styles.historySubtitle}>{analista === 'PDV' ? 'Vista general del equipo' : analista}</span>
+                </div>
               </div>
-              <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px].join(' ')}>
+              <div className={styles.historyControls}>
                 {isAdmin && (
-                  <div className={[styles.uDisplayflex, styles.uGap4px, styles.uMarginRight16px, styles["uBackgroundsurface-sunken"], styles.uPadding4px, styles.uBorderRadius8px].join(' ')}>
+                  <div className={styles.historyColumns} aria-label="Columnas visibles">
                     {['OBJETIVO', 'ALCANCE', 'VAR.', 'CUMPL.'].map(col => {
                       const isHidden = hiddenCols.includes(col);
                       return (
-                        <button className={[styles.uBordernone, styles.uBorderRadius6px, styles["uPadding4px-8px"], styles.uFontSize10px, styles.uFontWeight800, styles.uCursorpointer, styles["uTransitionall-0-2s"]].join(' ')}
+                        <button className={`${styles.historyColumnButton} ${isHidden ? styles.historyColumnButtonHidden : styles.historyColumnButtonActive}`}
                           key={col}
                           onClick={() => setHiddenCols(prev => isHidden ? prev.filter(c => c !== col) : [...prev, col])}
-                          style={{ background: isHidden ? 'transparent' : 'rgba(255,255,255,0.1)', color: isHidden ? '#555' : '#aaa', textDecoration: isHidden ? 'line-through' : 'none' }}
+                          aria-pressed={!isHidden}
                           title={isHidden ? `Mostrar columna ${col}` : `Ocultar columna ${col}`}
                         >
                           {col}
@@ -2233,72 +2238,78 @@ export default function AnalistasPage() {
                   </div>
                 )}
                 {isAdmin && (
-                  <CustomSelect
-                    value={mesRendimiento}
-                    onChange={raw => {
-                      const val = raw === 'TODOS' ? 'TODOS' : Number(raw);
-                      setMesRendimiento(val);
-                      if (val !== 'TODOS') setAnioRendimiento('TODOS');
-                    }}
-                    options={[{ label: 'Todos los Meses', value: 'TODOS' }, ...CONFIG.MESES_NOMBRES.map((m: string, i: number) => ({ label: m, value: i }))]}
-                    width="150px"
-                  />
+                  <div className={styles.historySelect}>
+                    <CustomSelect
+                      value={mesRendimiento}
+                      onChange={raw => {
+                        const val = raw === 'TODOS' ? 'TODOS' : Number(raw);
+                        setMesRendimiento(val);
+                        if (val !== 'TODOS') setAnioRendimiento('TODOS');
+                      }}
+                      options={[{ label: 'Todos los Meses', value: 'TODOS' }, ...CONFIG.MESES_NOMBRES.map((m: string, i: number) => ({ label: m, value: i }))]}
+                      width="150px"
+                    />
+                  </div>
                 )}
-
-                <button className={[styles.uBackgroundtransparent, styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles.uBorderRadius8px, styles.uWidth32px, styles.uHeight32px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles["uColortext-muted"], styles.uCursorpointer].join(' ')}
-                  type="button"
-                  onClick={() => {
-                    if (anioRendimiento === 'TODOS') return;
-                    const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento as number);
-                    const next = aniosDisponiblesRendimiento[idx + 1];
-                    if (next !== undefined) setAnioRendimiento(next);
-                  }}
-                  disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) >= aniosDisponiblesRendimiento.length - 1}
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <CustomSelect
-                  value={anioRendimiento}
-                  onChange={raw => setAnioRendimiento(raw === 'TODOS' ? 'TODOS' : Number(raw))}
-                  options={[
-                    ...(isAdmin ? [{ label: 'Todos los Años', value: 'TODOS' }] : []),
-                    ...aniosDisponiblesRendimiento.map(a => ({ label: String(a), value: a })),
-                  ]}
-                  width="120px"
-                />
-                <button className={[styles.uBackgroundtransparent, styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles.uBorderRadius8px, styles.uWidth32px, styles.uHeight32px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles["uColortext-muted"], styles.uCursorpointer].join(' ')}
-                  type="button"
-                  onClick={() => {
-                    if (anioRendimiento === 'TODOS') return;
-                    const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento as number);
-                    const prev = aniosDisponiblesRendimiento[idx - 1];
-                    if (prev !== undefined) setAnioRendimiento(prev);
-                  }}
-                  disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) <= 0}
-                >
-                  <ChevronRight size={16} />
-                </button>
-                <button className={[styles.uBackgroundtransparent, styles["uBorder1px-solid-rgba-255-255-255-0-1"], styles.uBorderRadius8px, styles.uWidth32px, styles.uHeight32px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles["uColortext-muted"], styles.uCursorpointer, styles.uMarginLeft8px].join(' ')}
+                <div className={styles.historyYearNav}>
+                  <button className={styles.historyIconButton}
+                    type="button"
+                    aria-label="Año siguiente"
+                    onClick={() => {
+                      if (anioRendimiento === 'TODOS') return;
+                      const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento as number);
+                      const next = aniosDisponiblesRendimiento[idx + 1];
+                      if (next !== undefined) setAnioRendimiento(next);
+                    }}
+                    disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) >= aniosDisponiblesRendimiento.length - 1}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div className={styles.historySelect}>
+                    <CustomSelect
+                      value={anioRendimiento}
+                      onChange={raw => setAnioRendimiento(raw === 'TODOS' ? 'TODOS' : Number(raw))}
+                      options={[
+                        ...(isAdmin ? [{ label: 'Todos los Años', value: 'TODOS' }] : []),
+                        ...aniosDisponiblesRendimiento.map(a => ({ label: String(a), value: a })),
+                      ]}
+                      width="120px"
+                    />
+                  </div>
+                  <button className={styles.historyIconButton}
+                    type="button"
+                    aria-label="Año anterior"
+                    onClick={() => {
+                      if (anioRendimiento === 'TODOS') return;
+                      const idx = aniosDisponiblesRendimiento.indexOf(anioRendimiento as number);
+                      const prev = aniosDisponiblesRendimiento[idx - 1];
+                      if (prev !== undefined) setAnioRendimiento(prev);
+                    }}
+                    disabled={anioRendimiento === 'TODOS' || aniosDisponiblesRendimiento.indexOf(anioRendimiento as number) <= 0}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+                <button className={`${styles.historyIconButton} ${styles.historyClose}`}
                   type="button"
                   onClick={() => setRendimiento12MOpen(false)}
+                  aria-label="Cerrar resumen histórico"
                 >
                   <X size={16} />
                 </button>
               </div>
-            </div>
+            </header>
 
+            <div className={styles.historyBody}>
             {anioRendimiento === 'TODOS' && mesRendimiento === 'TODOS' ? (
-              <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uGap32px].join(' ')}>
+              <div className={styles.historyYears}>
                 {aniosDisponiblesRendimiento.slice().sort((a,b) => b - a).map(anio => {
                   const bucketsYear = mesesAnioKQ.filter(b => b.anio === anio);
                   if (bucketsYear.length === 0) return null;
                   return (
-                    <div key={anio}>
-                      <div className={[styles.uFontSize16px, styles.uFontWeight900, styles["uColortext-strong"], styles.uMarginBottom12px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px].join(' ')}>
-                        <div className={[styles.uWidth4px, styles.uHeight16px, styles.uBackgrounda78bfa, styles.uBorderRadius4px].join(' ')} />
-                        AÑO {anio}
-                      </div>
-                      <div className={[styles.uDisplaygrid, styles["uGridTemplateColumns1fr-1fr"], styles.uGap16px].join(' ')}>
+                    <section className={styles.historyYearBlock} key={anio}>
+                      <h3 className={styles.historyYearTitle}>Año {anio}</h3>
+                      <div className={styles.historyGrid}>
                         <Mini12Table
                           label="CAPITAL"
                           total={formatCurrency(bucketsYear.reduce((s, b) => s + b.monto, 0))}
@@ -2318,12 +2329,12 @@ export default function AnalistasPage() {
                           hiddenCols={hiddenCols}
                         />
                       </div>
-                    </div>
+                    </section>
                   );
                 })}
               </div>
             ) : (
-              <div className={[styles.uDisplaygrid, styles["uGridTemplateColumns1fr-1fr"], styles.uGap16px].join(' ')}>
+              <div className={styles.historyGrid}>
                 <Mini12Table
                   label="CAPITAL"
                   total={formatCurrency(mesesAnioKQ.reduce((s, b) => s + b.monto, 0))}
@@ -2344,6 +2355,7 @@ export default function AnalistasPage() {
                 />
               </div>
             )}
+            </div>
           </div>
         </div>
         </ModalPortal>
@@ -2594,18 +2606,28 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
   hiddenCols?: string[];
 }) {
   const fmt = formatValue || ((v: number) => String(v));
-  const dotColor = (pct: number | null) => {
-    if (pct === null) return '#555';
-    if (pct >= 100) return '#4ade80';
-    if (pct >= 75)  return '#fbbf24';
-    return '#f87171';
-  };
+  const totalValue = buckets.reduce((sum, bucket) => sum + accessor(bucket), 0);
+  const totalGoal = metaAccessor ? buckets.reduce((sum, bucket) => sum + metaAccessor(bucket), 0) : 0;
+  const annualPct = totalGoal > 0 ? (totalValue / totalGoal) * 100 : null;
+  const annualTone = annualPct === null || annualPct < 75
+    ? styles.historyComplianceLow
+    : annualPct < 100 ? styles.historyComplianceMid : styles.historyComplianceHigh;
   return (
-    <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius14px, styles["uPadding20px-22px"], styles.uDisplayflex, styles.uFlexDirectioncolumn].join(' ')}>
-      <div className={[styles.uFontSize11px, styles["uColortext-muted"], styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing1-5px"], styles.uMarginBottom6px].join(' ')}>{label}</div>
-      <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"], styles["uLineHeight1-1"], styles.uMarginBottom16px].join(' ')}>{total}</div>
-
-      <table className={[styles.uWidth100, styles.uBorderCollapsecollapse].join(' ')}>
+    <div className={styles.historyTableCard}>
+      <div className={styles.historyTableSummary}>
+        <div>
+          <div className={styles.historyTableLabel}>{label}</div>
+          <div className={styles.historyTableTotal}>{total}</div>
+        </div>
+        <div className={styles.historyAnnual}>
+          <span className={styles.historyAnnualLabel}>Cumplimiento anual</span>
+          <strong className={`${styles.historyAnnualValue} ${annualTone}`}>
+            {annualPct === null ? '—' : `${annualPct.toFixed(2)}%`}
+          </strong>
+        </div>
+      </div>
+      <div className={styles.historyTableScroll}>
+      <table className={styles.historyTable}>
         <thead>
           <tr>
             <th className={styles.miniTableHead}>MES</th>
@@ -2622,8 +2644,12 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
             const pct = meta > 0 ? (v / meta) * 100 : null;
             const prev = i > 0 ? accessor(buckets[i - 1]) : null;
             const variacion = v > 0 && prev !== null && prev > 0 ? ((v - prev) / prev) * 100 : null;
-            const varColor = variacion === null ? '#64748b' : Math.abs(variacion) < 0.5 ? '#8f929d' : variacion > 0 ? '#4ade80' : '#f87171';
-            const varBg = variacion === null ? 'transparent' : Math.abs(variacion) < 0.5 ? 'rgba(255,255,255,0.04)' : variacion > 0 ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)';
+            const variationTone = variacion === null || Math.abs(variacion) < 0.5
+              ? styles.historyNeutral
+              : variacion > 0 ? styles.historyPositive : styles.historyNegative;
+            const complianceTone = pct === null || pct < 75
+              ? styles.historyComplianceLow
+              : pct < 100 ? styles.historyComplianceMid : styles.historyComplianceHigh;
             return (
               <tr key={b.key}>
                 <td className={`${styles.miniTableCell} ${styles.miniTableMuted}`}>{b.label}</td>
@@ -2631,7 +2657,7 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
                 {!hiddenCols.includes('ALCANCE') && <td className={`${styles.miniTableCell} ${styles.miniTableValue} ${styles.textCenter}`}>{fmt(v)}</td>}
                 {!hiddenCols.includes('VAR.') && <td className={`${styles.miniTableCell} ${styles.textCenter}`}>
                   {variacion !== null ? (
-                    <span className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap4px, styles["uPadding3px-8px"], styles.uBorderRadius6px, styles.uFontSize11px, styles.uFontWeight700].join(' ')} style={{ color: varColor, background: varBg }}>
+                    <span className={`${styles.historyVariation} ${variationTone}`}>
                       {Math.abs(variacion) < 0.5 ? '—' : variacion > 0 ? '▲' : '▼'} {variacion >= 0 ? '+' : ''}{variacion.toFixed(1)}%
                     </span>
                   ) : (
@@ -2640,8 +2666,7 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
                 </td>}
                 {!hiddenCols.includes('CUMPL.') && <td className={`${styles.miniTableCell} ${styles.textRight}`}>
                   {pct !== null ? (
-                    <span className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap6px, styles["uPadding4px-10px"], styles.uBorderRadius8px, styles.uFontSize11px, styles.uFontWeight700, styles.uColore5e5e5, styles.uBackground141414, styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                      <span className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50].join(' ')} style={{ background: dotColor(pct), boxShadow: `0 0 6px ${dotColor(pct)}` }} />
+                    <span className={`${styles.historyCompliance} ${complianceTone}`}>
                       {pct.toFixed(2)}%
                     </span>
                   ) : (
@@ -2653,6 +2678,7 @@ function Mini12Table({ label, total, buckets, accessor, metaAccessor, formatValu
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
