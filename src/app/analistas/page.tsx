@@ -2001,14 +2001,12 @@ export default function AnalistasPage() {
                           <button
                             onClick={() => setPeriodoAcuerdos('mensual')}
                             className={[periodoAcuerdos === 'mensual' ? 'is-active' : undefined, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize9px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
-                            style={{ background: periodoAcuerdos === 'mensual' ? '#fb923c' : 'transparent', color: periodoAcuerdos === 'mensual' ? '#000' : '#666' }}
                           >
                             MES
                           </button>
                           <button
                             onClick={() => setPeriodoAcuerdos('total')}
                             className={[periodoAcuerdos === 'total' ? 'is-active' : undefined, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize9px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
-                            style={{ background: periodoAcuerdos === 'total' ? '#fb923c' : 'transparent', color: periodoAcuerdos === 'total' ? '#000' : '#666' }}
                           >
                             TOTAL
                           </button>
@@ -2079,14 +2077,12 @@ export default function AnalistasPage() {
                           <button
                             onClick={() => setPeriodoEmpleo('mensual')}
                             className={[periodoEmpleo === 'mensual' ? 'is-active' : undefined, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize9px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
-                            style={{ background: periodoEmpleo === 'mensual' ? '#fb923c' : 'transparent', color: periodoEmpleo === 'mensual' ? '#000' : '#666' }}
                           >
                             MES
                           </button>
                           <button
                             onClick={() => setPeriodoEmpleo('total')}
                             className={[periodoEmpleo === 'total' ? 'is-active' : undefined, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize9px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
-                            style={{ background: periodoEmpleo === 'total' ? '#fb923c' : 'transparent', color: periodoEmpleo === 'total' ? '#000' : '#666' }}
                           >
                             TOTAL
                           </button>
@@ -2125,7 +2121,7 @@ export default function AnalistasPage() {
           {/* ── SECCIÓN 3: VENTAS POR CATEGORÍA ── */}
           <div className={["data-card", styles["uBackgroundlinear-gradient-180deg-rgba-255-255-255-0-"], styles["uBoxShadowshadow-md"]].join(' ')}>
             <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px, styles.uMarginBottom0].join(' ')}>
-              <div className={[styles.uFlex1].join(' ')}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#fb923c" />)}</div>
+              <div className={[styles.uFlex1].join(' ')}>{sectionHeader(3, '3. Ventas por Categoría', <Tag size={15} color="#315b7d" />)}</div>
               <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap12px, styles.uMarginBottom20px].join(' ')}>
                 <span className={[styles.uFontSize11px, styles["uColortext-muted"], styles.uFontWeight600].join(' ')}>
                   {periodoSec3 === 'mensual'
@@ -2141,7 +2137,6 @@ export default function AnalistasPage() {
                       key={p}
                       onClick={() => setPeriodoSec3(p)}
                       className={[periodoSec3 === p ? 'is-active' : undefined, styles["uPadding4px-14px"], styles.uBorderRadius6px, styles.uBordernone, styles.uCursorpointer, styles.uFontSize10px, styles.uFontWeight800, styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles["uTransitionall-0-2s-ease"]].filter(Boolean).join(' ')}
-                      style={{ background: periodoSec3 === p ? '#fb923c' : 'transparent', color: periodoSec3 === p ? '#000' : '#555' }}
                     >
                       {p === 'mensual' ? 'Mes' : 'Total'}
                     </button>

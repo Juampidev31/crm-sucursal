@@ -1427,8 +1427,8 @@ iframe::-webkit-scrollbar {
 }
 .analistas-report .report-period-toggle { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid #d6e0ea; border-radius: 8px; background: #f1f5f9; box-shadow: inset 0 1px 2px rgba(15,23,42,.035); }
 .analistas-report .report-period-toggle button { min-width: 48px; min-height: 25px; padding: 4px 10px; border: 0; border-radius: 5px; color: #475467; background: transparent; }
-.analistas-report .report-period-toggle button.is-active { color: #111827; box-shadow: 0 2px 5px rgba(180,83,9,.18); }
-.analistas-report .report-period-toggle button:hover { background-color: #e5ebf2; }
+.analistas-report .report-period-toggle button.is-active { color: #fff; background: var(--action-primary); box-shadow: 0 2px 5px rgba(49,91,125,.22); }
+.analistas-report .report-period-toggle button:not(.is-active):hover { background-color: #e5ebf2; }
 .analistas-report .report-chart-legend { width: 100%; margin-top: 4px; gap: 5px 10px; padding: 0 4px; line-height: 1.15; }
 
 /* Registros — interfaz operativa clara inspirada en el diseño de referencia. */

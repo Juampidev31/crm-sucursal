@@ -173,7 +173,7 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
                 style={reportAppearance ? { background: viewMode === p ? '#315b7d' : 'transparent', color: viewMode === p ? '#fff' : '#667085' } : {
                   padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
                   fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px',
-                  background: viewMode === p ? '#fb923c' : 'transparent',
+                  background: viewMode === p ? '#315b7d' : 'transparent',
                   color: viewMode === p ? '#000' : '#555', transition: 'all 0.2s ease',
                 }}
               >
