@@ -802,13 +802,12 @@ const RegistroModal = memo(function RegistroModal({
                 <input className="form-input" value={formatearCuil(form.cuil || '')} onChange={e => set('cuil', sanitizarCuil(e.target.value))} inputMode="numeric" autoFocus />
               </Field>
               <Field label="Nombre *" error={errors.nombre}>
-                <input className="form-input" value={form.nombre || ''} onChange={e => set('nombre', isAdmin ? corregirTildes(e.target.value) : corregirTildes(capitalizarNombre(e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, ''))))} onPaste={e => {
-                  if (isAdmin) return;
-                  e.preventDefault();
-                  const pasted = e.clipboardData.getData('text');
-                  const clean = pasted.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, '');
-                  set('nombre', corregirTildes(capitalizarNombre(clean)));
-                }} />
+                <input
+                  className="form-input"
+                  value={form.nombre || ''}
+                  onChange={e => set('nombre', e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ,.\s-]/g, ''))}
+                  onBlur={e => set('nombre', corregirTildes(isAdmin ? e.target.value : capitalizarNombre(e.target.value)))}
+                />
               </Field>
               <Field label={`Analista${isAdmin ? '' : ' *'}`} error={errors.analista}>
                 <PremiumSelect
@@ -1393,19 +1392,6 @@ export default function RegistrosPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalInitialData, setModalInitialData] = useState<Partial<Registro>>(initialForm);
-
-  // Sync modal data when registros update externally (e.g. bulk empleador assign)
-  // Guarded: skip when modal is closed to avoid unnecessary work on every realtime update
-  const prevRegistrosRef = useRef(registros);
-  useEffect(() => {
-    if (!modalOpen || !editingId) return;
-    if (prevRegistrosRef.current === registros) return;
-    prevRegistrosRef.current = registros;
-    const updated = registros.find(r => r.id === editingId);
-    if (updated) {
-      setModalInitialData({ ...updated, fecha: updated.fecha || '', fecha_score: updated.fecha_score || '' });
-    }
-  }, [registros, modalOpen, editingId]);
 
   const [deleteTarget, setDeleteTarget] = useState<Registro | null>(null);
   const [whatsappTarget, setWhatsappTarget] = useState<Registro | null>(null);

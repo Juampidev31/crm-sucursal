@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useGestionDiaria } from '@/features/gestion-diaria/GestionDiariaProvider';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
 import { GestionDiaria, GESTION_DIARIA_OPCIONES } from '@/types';
-import { formatCurrency, formatDate, formatearCuil, sanitizarCuil } from '@/lib/utils';
+import { formatDate, formatearCuil, sanitizarCuil } from '@/lib/utils';
 import { normalizePersonName } from '@/lib/normalize-person-name';
 import { NameNormalizationAction } from '@/components/NameNormalizationAction';
 import { PremiumSelect } from '@/components/PremiumSelect';
@@ -293,10 +293,6 @@ function DailyPagination({
 }
 
 function incomeRowToForm(row: IncomeSheetRow): Partial<GestionDiaria> {
-  const numberFromText = (value: string) => {
-    const parsed = Number(value.replace(/[^\d,-]/g, '').replace(',', '.'));
-    return Number.isFinite(parsed) ? parsed : undefined;
-  };
   return {
     tipo_cliente: row.tipoCliente,
     fecha: row.fecha,
@@ -305,10 +301,8 @@ function incomeRowToForm(row: IncomeSheetRow): Partial<GestionDiaria> {
     actividad: row.actividad,
     donde_nos_conocio: '',
     estado: row.estado,
-    score: numberFromText(row.score),
+    score: scoreFromText(row.score),
     tipo_operacion: row.tipoOperacion,
-    monto_otorgado: numberFromText(row.montoOtorgado),
-    interes_x_venta: numberFromText(row.interesVenta),
     comentarios: row.comentarios,
   };
 }
@@ -316,7 +310,6 @@ function incomeRowToForm(row: IncomeSheetRow): Partial<GestionDiaria> {
 const initialForm: Partial<GestionDiaria> = {
   tipo_cliente: '', fecha: '', nombre: '', cuil: '', actividad: '',
   donde_nos_conocio: '', estado: '', score: undefined, tipo_operacion: '',
-  monto_otorgado: undefined, capital_x_venta: undefined, interes_x_venta: undefined,
   comentarios: '',
 };
 
@@ -626,8 +619,6 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
         estado: form.estado ?? '',
         score: form.score == null ? '' : String(form.score),
         tipoOperacion: form.tipo_operacion ?? '',
-        montoOtorgado: form.monto_otorgado == null ? '' : formatCurrency(form.monto_otorgado),
-        interesVenta: form.interes_x_venta == null ? '' : formatCurrency(form.interes_x_venta),
         comentarios: form.comentarios ?? '',
       };
       const overrides = { ...sheetOverrides, [editingSheetTarget.id]: updated };
@@ -1372,18 +1363,6 @@ function GestionDiariaModal({ form, setForm, onCancel, onSave, saving, error }: 
           <div>
             <label className="form-label">Apertura/Renovación</label>
             <PremiumSelect value={form.tipo_operacion || ''} onChange={v => set('tipo_operacion', v)} options={[...GESTION_DIARIA_OPCIONES.tipoOperacion]} />
-          </div>
-          <div>
-            <label className="form-label">Capital x venta</label>
-            <input type="number" className="form-input" value={form.capital_x_venta ?? ''} onChange={e => set('capital_x_venta', e.target.value ? Number(e.target.value) : null)} />
-          </div>
-          <div>
-            <label className="form-label">Interés x venta</label>
-            <input type="number" className="form-input" value={form.interes_x_venta ?? ''} onChange={e => set('interes_x_venta', e.target.value ? Number(e.target.value) : null)} />
-          </div>
-          <div>
-            <label className="form-label">Monto otorgado</label>
-            <input type="number" className="form-input" value={form.monto_otorgado ?? ''} onChange={e => set('monto_otorgado', e.target.value ? Number(e.target.value) : 0)} />
           </div>
           <div className="daily-modal__full">
             <label className="form-label">Comentarios</label>
