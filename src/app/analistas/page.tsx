@@ -11,7 +11,7 @@ import { calcularDiasHabilesMes } from '@/lib/dias-habiles';
 import { useObjetivos } from '@/features/objetivos/ObjetivosProvider';
 import { useSettings, useAnalistas } from '@/features/settings/SettingsProvider';
 import { useAuth } from '@/context/AuthContext';
-import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, Calculator, DollarSign, X, Clock, Trash2 } from 'lucide-react';
+import { BarChart3, Users, Activity, Shield, Target, FileText, PieChart, Tag, ChevronLeft, ChevronRight, DollarSign, X, Clock, Trash2 } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
@@ -151,9 +151,6 @@ import { useSearchParams } from 'next/navigation';
 
 const now = new Date();
 
-const cumplColor = (pct: number | null) =>
-  pct === null ? '#64748b' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#f87171';
-
 export default function AnalistasPage() {
   const { registros: allRegistros, loading } = useRegistros();
   const { objetivos } = useObjetivos();
@@ -207,6 +204,7 @@ export default function AnalistasPage() {
   const [periodoEmpleo, setPeriodoEmpleo] = useState<'mensual' | 'total'>('mensual');
   const [rendimiento12MOpen, setRendimiento12MOpen] = useState(false);
   const [incentivosModalOpen, setIncentivosModalOpen] = useState(false);
+  const [incentivoAnalistaActivo, setIncentivoAnalistaActivo] = useState<string | null>(null);
   const [anioRendimiento, setAnioRendimiento] = useState<number | 'TODOS'>(now.getFullYear());
   const [mesRendimiento, setMesRendimiento] = useState<number | 'TODOS'>('TODOS');
   const [hiddenCols, setHiddenCols] = useState<string[]>([]);
@@ -286,15 +284,16 @@ export default function AnalistasPage() {
     return { pctTr90: '', pctTr120: '', pctRefin: '' };
   }, [cobranzasStore]);
 
+  const analistaCobranzasActivo = incentivoAnalistaActivo ?? analista;
   const currentCobranzas = useMemo(() => {
-    return getCobranzasForAnalista(analista, selectedAnio, selectedMes);
-  }, [getCobranzasForAnalista, analista, selectedAnio, selectedMes]);
+    return getCobranzasForAnalista(analistaCobranzasActivo, selectedAnio, selectedMes);
+  }, [getCobranzasForAnalista, analistaCobranzasActivo, selectedAnio, selectedMes]);
 
   const handleManualCobChange = (key: 'pctTr90' | 'pctTr120' | 'pctRefin', val: string) => {
-    const keyWithPeriod = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}_${analista}`;
+    const keyWithPeriod = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}_${analistaCobranzasActivo}`;
 
     setCobranzasStore(prev => {
-      const current = prev[keyWithPeriod] || prev[analista] || { pctTr90: '', pctTr120: '', pctRefin: '' };
+      const current = prev[keyWithPeriod] || prev[analistaCobranzasActivo] || { pctTr90: '', pctTr120: '', pctRefin: '' };
       const updated = { ...current, [key]: val };
 
       const hasAnyValue = (updated.pctTr90 !== undefined && updated.pctTr90 !== '' && Number(updated.pctTr90) !== 0) ||
@@ -305,10 +304,10 @@ export default function AnalistasPage() {
       const nextStore = { ...prev };
       if (!hasAnyValue) {
         delete nextStore[keyWithPeriod];
-        delete nextStore[analista];
+        delete nextStore[analistaCobranzasActivo];
       } else {
         nextStore[keyWithPeriod] = updated;
-        nextStore[analista] = updated;
+        nextStore[analistaCobranzasActivo] = updated;
       }
 
       try {
@@ -322,11 +321,11 @@ export default function AnalistasPage() {
   };
 
   const handleClearManualCob = () => {
-    const keyWithPeriod = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}_${analista}`;
+    const keyWithPeriod = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}_${analistaCobranzasActivo}`;
     setCobranzasStore(prev => {
       const nextStore = { ...prev };
       delete nextStore[keyWithPeriod];
-      delete nextStore[analista];
+      delete nextStore[analistaCobranzasActivo];
       try {
         localStorage.setItem('crm_manual_cobranzas_v1', JSON.stringify(nextStore));
       } catch (err) {
@@ -334,6 +333,11 @@ export default function AnalistasPage() {
       }
       return nextStore;
     });
+  };
+
+  const openIncentivosModal = (nombreAnalista: string) => {
+    setIncentivoAnalistaActivo(nombreAnalista);
+    setIncentivosModalOpen(true);
   };
 
   const tendBadge = (pct: number | null, showLabel = true) => {
@@ -891,10 +895,12 @@ export default function AnalistasPage() {
     [esVistaGlobal, kpiTotal, kpiPorAnalista]
   );
 
-  const analistaIndividualKpi = useMemo(() => {
-    if (analista === 'PDV' || !cobraIncentivo(analista)) return null;
-    return kpiCards.find(k => k.analista === analista) || kpiCards[0] || null;
-  }, [analista, cobraIncentivo, kpiCards]);
+  const kpiComisionModal = useMemo(() => {
+    if (analistaCobranzasActivo === 'PDV') return [kpiTotal];
+    const individual = kpiPorAnalista.find(kpi => kpi.analista === analistaCobranzasActivo);
+    return individual ? [individual] : [];
+  }, [analistaCobranzasActivo, kpiPorAnalista, kpiTotal]);
+  const kpiComisionActual = kpiComisionModal[0] ?? null;
 
   const chartCumplimiento = useMemo(() => {
     const labels = kpiCards.map(k => k.analista);
@@ -1269,36 +1275,6 @@ export default function AnalistasPage() {
     interaction: { mode: 'index' as const, intersect: false }
   };
 
-  const chartAperturas = useMemo(() => {
-    const labels = chartLabels;
-    const isPDV = analista === 'PDV';
-    const actual = isPDV ? [apertVsRenData.total.aperturas] : apertVsRenData.porAnalista.map(d => d.aperturas);
-    const anterior = isPDV ? [apertVsRenData.ant.aperturas] : apertVsRenData.porAnalistaAnt.map(d => d.aperturas);
-
-    return {
-      labels,
-      datasets: [
-        { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(16, 185, 129, 0.05)', 'rgba(16, 185, 129, 0.85)'), borderColor: '#10b981', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(71, 85, 105, 0.12)', 'rgba(71, 85, 105, 0.72)'), borderColor: '#64748b', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
-      ],
-    };
-  }, [chartLabels, apertVsRenData, analista]);
-
-  const chartRenovaciones = useMemo(() => {
-    const labels = chartLabels;
-    const isPDV = analista === 'PDV';
-    const actual = isPDV ? [apertVsRenData.total.renovaciones] : apertVsRenData.porAnalista.map(d => d.renovaciones);
-    const anterior = isPDV ? [apertVsRenData.ant.renovaciones] : apertVsRenData.porAnalistaAnt.map(d => d.renovaciones);
-
-    return {
-      labels,
-      datasets: [
-        { label: `Actual`, data: actual, backgroundColor: (context: any) => getGradient(context, 'rgba(59, 130, 246, 0.05)', 'rgba(59, 130, 246, 0.85)'), borderColor: '#3b82f6', borderWidth: 0, borderRadius: 4, maxBarThickness: 100 },
-        { label: `Anterior`, data: anterior, backgroundColor: (context: any) => getGradient(context, 'rgba(71, 85, 105, 0.12)', 'rgba(71, 85, 105, 0.72)'), borderColor: '#64748b', borderWidth: 1, borderRadius: 4, maxBarThickness: 100 },
-      ],
-    };
-  }, [chartLabels, apertVsRenData, analista]);
-
   // ── Chart 8: % Empleo Público / Privado ──────────────────────────────────
   const empleoPublPrivData = useMemo(() => {
     const PUBLICO = ['municipio', 'municip', 'provincia', 'hospital', 'escuela', 'público', 'gobierno', 'estado', 'policia', 'policía', 'nación', 'nacional', 'ministerio', 'judicial', 'fuerzas'];
@@ -1364,11 +1340,13 @@ export default function AnalistasPage() {
         {value === null ? '—' : `${value >= 0 ? '↑' : '↓'} ${Math.abs(value).toFixed(1)}%`}
       </span>
     );
-    const miniMetric = (label: string, value: React.ReactNode, secondary?: React.ReactNode, tone = 'neutral') => (
-      <div className={`exec-mini ${tone}`}>
+    const miniMetric = (label: string, value: React.ReactNode, secondary?: React.ReactNode, tone = 'neutral', key?: React.Key) => (
+      <div key={key} className={`exec-mini ${tone}`}>
         <span>{label}</span><strong>{value}</strong>{secondary && <small>{secondary}</small>}
       </div>
     );
+    const comisionesPorAnalista = kpiPorAnalista.filter(kpi => cobraIncentivo(kpi.analista));
+    const mostrarComisiones = analista !== 'PDV' && analista !== 'PROYECTADOS' && comisionesPorAnalista.length > 0;
 
     return (
       <div className="executive-dashboard">
@@ -1416,13 +1394,27 @@ export default function AnalistasPage() {
           </section>
         </div>
 
-        <div className="exec-summary-grid">
+        <div className={`exec-summary-grid${mostrarComisiones ? ' has-commissions' : ''}`}>
           <section className="exec-card exec-sale"><span>Venta (I)</span><strong>{formatCurrency(kpiTotal.interesXVenta)}</strong><small>Total del mes</small></section>
           <section className={`exec-card exec-productivity${productividadMetaSuperada ? ' is-over-target' : ''}`}>
             <div><span>Productividad</span><strong>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</strong><small>vs ideal</small></div>
             <div className="exec-product-track"><span style={{ left: `${productividadIdealPosition}%` }}>Ideal 200%</span><div><i className={productividadMetaSuperada ? 'is-target-met' : 'is-below-target'} style={{ width: `${productividadBaseWidth}%` }} />{productividadMetaSuperada && <em style={{ left: `${productividadIdealPosition}%`, width: `${productividadOverflowVisualWidth}%` }}><span>+{(productividadActual - productividadObjetivo).toFixed(2)}%</span></em>}<b style={{ left: `${productividadIdealPosition}%` }} />{productividadMetaSuperada && <strong className="exec-product-end" style={{ left: `${productividadIdealPosition + productividadOverflowVisualWidth}%` }} />}</div></div>
             <div className="exec-product-split"><span>Apertura<strong>{kpiTotal.productividadApertura?.toFixed(2) ?? '—'}%</strong></span><span>Renovación<strong>{kpiTotal.productividadRenov?.toFixed(2) ?? '—'}%</strong></span></div>
           </section>
+          {mostrarComisiones && <section className="exec-card exec-commissions">
+            <header>
+              <div><span>Comisión estimada</span><small>Capital, operaciones y cobranzas</small></div>
+              <button className="exec-commissions-detail" type="button" onClick={() => openIncentivosModal(comisionesPorAnalista[0].analista)}>Ver detalle</button>
+            </header>
+            <div className="exec-commission-summary">
+              <div className="exec-commission-total"><small>Total estimado</small><strong>{formatCurrency(comisionesPorAnalista[0].incentivoTotal)}</strong></div>
+              <div className="exec-commission-breakdown">
+                <span><small>Capital</small><b>{formatCurrency(comisionesPorAnalista[0].incentivoCap)}</b></span>
+                <span><small>Operaciones</small><b>{formatCurrency(comisionesPorAnalista[0].incentivoOps)}</b></span>
+                <span><small>Cobranzas</small><b>{formatCurrency((comisionesPorAnalista[0].incentivoCobTr90 || 0) + (comisionesPorAnalista[0].incentivoCobTr120 || 0) + (comisionesPorAnalista[0].incentivoCobRefin || 0))}</b></span>
+              </div>
+            </div>
+          </section>}
         </div>
 
         <div className="exec-bottom-grid">
@@ -1443,8 +1435,6 @@ export default function AnalistasPage() {
       </div>
     );
   };
-  const showLegacyDashboard = selectedAnio < 0;
-
   if (loading) return <div className={[styles.uDisplayflex, styles.uJustifyContentcenter, styles.uPadding40px].join(' ')}><div className="spinner"></div></div>;
 
   return (
@@ -1567,372 +1557,6 @@ export default function AnalistasPage() {
             {sectionHeader(1, '1. Tablero', null, badgeDiasRestantes)}
               <>
                 <ExecutiveDashboard />
-                {showLegacyDashboard && (
-                <>
-                <div className={["analistas-autogrid", styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-320px-1fr"], styles.uGap16px, styles.uMarginBottom16px].join(' ')}>
-                <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding16px-20px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                  <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>Capital Vendido</div>
-                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom4px].join(' ')}>
-                    <div className={[styles.uFontSize22px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.capital)}</div>
-                    {tendBadge(kpiTotal.tendCapital)}
-                  </div>
-                  <div className={[styles.uFontSize12px, styles["uColortext-muted"], styles.uMarginBottom2px].join(' ')}>
-                    Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
-                  </div>
-                  {kpiTotal.cumplCapital !== null && (
-                    <div className={[styles.uFontSize12px, styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>
-                      <span className={[styles.uMarginRight4px].join(' ')} style={{ color: cumplColor(kpiTotal.cumplCapital) }}>●</span>
-                      {kpiTotal.cumplCapital.toFixed(1)}% Cumpl.
-                    </div>
-                  )}
-                  <div className={[styles.uMarginTop14px, styles.uPaddingTop12px, styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
-                    <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom12px].join(' ')}>
-                      <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>Capital vs Objetivo</div>
-                      <div className={[styles.uDisplayflex, styles.uGap10px].join(' ')}>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
-                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-96-165-250-0-8"]].join(' ')} />
-                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                        </div>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
-                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-30-58-138-0-9"]].join(' ')} />
-                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={[styles.uHeight135px].join(' ')} id="chart-capital-objetivo">
-                      {chartsLoaded ? (
-                        (() => {
-                          const opts = baseChartOpts('$', true, true, false, false, analista !== 'PDV');
-                          return <Bar data={chartCapitalVsObjetivo as any} options={opts} plugins={[labelsPlugin, referenceLinesPlugin]} />;
-                        })()
-                      ) : (
-                        <ChartShimmer />
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding16px-20px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                  <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>Operaciones</div>
-                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom4px].join(' ')}>
-                    <div className={[styles.uFontSize22px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{kpiTotal.ops}</div>
-                    {tendBadge(kpiTotal.tendOps)}
-                  </div>
-                  <div className={[styles.uFontSize12px, styles["uColortext-muted"], styles.uMarginBottom2px].join(' ')}>
-                    Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
-                  </div>
-                  {kpiTotal.cumplOps !== null && (
-                    <div className={[styles.uFontSize12px, styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>
-                      <span className={[styles.uMarginRight4px].join(' ')} style={{ color: cumplColor(kpiTotal.cumplOps) }}>●</span>
-                      {kpiTotal.cumplOps.toFixed(1)}% Cumpl.
-                    </div>
-                  )}
-                  <div className={[styles.uMarginTop14px, styles.uPaddingTop12px, styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
-                    <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom12px].join(' ')}>
-                      <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>Aperturas vs Renovaciones</div>
-                      <div className={[styles.uDisplayflex, styles.uGap10px].join(' ')}>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
-                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles.uBackground60a5fa].join(' ')} />
-                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                        </div>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
-                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-30-58-138-0-9"]].join(' ')} />
-                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={[styles.uDisplaygrid, styles["uGridTemplateColumns1fr-1fr"], styles.uGap16px].join(' ')}>
-                      <div className={[styles.uMinWidth0].join(' ')}>
-                        <div className={[styles.uFontSize9px, styles.uFontWeight800, styles.uColor60a5fa, styles.uTextAligncenter, styles.uMarginBottom6px, styles.uTextTransformuppercase].join(' ')}>Aperturas</div>
-                        <div className={[styles.uHeight135px, styles.uPositionrelative, styles.uWidth100].join(' ')} id="chart-aperturas">
-                          {chartsLoaded ? (
-                            <Bar data={chartAperturas} options={baseChartOpts(' ops', true, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
-                          ) : (
-                            <ChartShimmer />
-                          )}
-                        </div>
-                      </div>
-                      <div className={[styles.uMinWidth0].join(' ')}>
-                        <div className={[styles.uFontSize9px, styles.uFontWeight800, styles.uColora78bfa, styles.uTextAligncenter, styles.uMarginBottom6px, styles.uTextTransformuppercase].join(' ')}>Renov.</div>
-                        <div className={[styles.uHeight135px, styles.uPositionrelative, styles.uWidth100].join(' ')} id="chart-renovaciones">
-                          {chartsLoaded ? (
-                            <Bar data={chartRenovaciones} options={baseChartOpts(' ops', true, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
-                          ) : (
-                            <ChartShimmer />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding16px-20px"], styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                  <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>Ticket Promedio</div>
-                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom4px].join(' ')}>
-                    <div className={[styles.uFontSize22px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.ticket)}</div>
-                    {tendBadge(kpiTotal.tendTicket)}
-                  </div>
-                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginTop6px].join(' ')}>
-                    <div className={[styles.uFontSize12px, styles["uColortext-muted"]].join(' ')} title="Avance del pipeline: (Venta + Aprob. CC) / (Venta + Aprob. CC + Proyección + En seguimiento + Score bajo + Afectaciones + Rechaz. CC)">Conversión total: {kpiTotal.conversionGlobal.toFixed(1)}%</div>
-                    {tendBadge(kpiTotal.tendConversionGlobal, false)}
-                  </div>
-                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginTop6px].join(' ')}>
-                    <div className={[styles.uFontSize12px, styles["uColortext-muted"]].join(' ')} title="Efectividad comercial: (Venta + Aprob. CC) / (Venta + Aprob. CC + Rechaz. CC)">Tasa de cierre (efectividad): {kpiTotal.conversion.toFixed(1)}%</div>
-                    {tendBadge(kpiTotal.tendConversion, false)}
-                  </div>
-                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginTop6px].join(' ')}>
-                    <div className={[styles.uFontSize11px, styles["uColortext-muted"]].join(' ')}>{kpiTotal.clientes} clientes ingresados</div>
-                    {tendBadge(kpiTotal.tendClientes, false)}
-                  </div>
-                  <div className={[styles.uMarginTop14px, styles.uPaddingTop12px, styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
-                    <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom12px].join(' ')}>
-                      <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"]].join(' ')}>Análisis vs {mesAntLabel}</div>
-                      <div className={[styles.uDisplayflex, styles.uGap10px].join(' ')}>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
-                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-52-211-153-0-8"]].join(' ')} />
-                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[selectedMes - 1]}</span>
-                        </div>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px].join(' ')}>
-                          <div className={[styles.uWidth6px, styles.uHeight6px, styles.uBorderRadius50, styles["uBackgroundrgba-6-78-59-0-9"]].join(' ')} />
-                          <span className={[styles.uFontSize9px, styles.uFontWeight700, styles["uColortext-muted"], styles.uTextTransformuppercase].join(' ')}>{CONFIG.MESES_NOMBRES[mesPrev - 1]}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={[styles.uHeight135px].join(' ')} id="chart-ticket-promedio">
-                      {chartsLoaded ? (
-                        <Bar data={chartTicketPromedio as any} options={baseChartOpts('$', true, true, false, false, analista !== 'PDV')} plugins={[labelsPlugin, referenceLinesPlugin]} />
-                      ) : (
-                        <ChartShimmer />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-                {/* ── FILA: (I) x Venta / Productividad / Comisión ── */}
-                <div className={["analistas-summary-row", styles.uDisplaygrid, styles.uGap16px, styles.uMarginBottom16px].join(' ')}>
-                  <div className={[styles["uBackgroundlinear-gradient-135deg-ffffff-0-f8fafc-100"], styles.uBorderRadius12px, styles["uPadding16px-20px"], styles["uBorder1px-solid-cbd7e5"], styles["uBoxShadow0-8px-24px-rgba-15-23-42-0-06"]].join(' ')}>
-                    <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>(I) x Venta</div>
-                    <div className={[styles.uFontSize22px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.interesXVenta)}</div>
-                  </div>
-                  <div className={["analistas-productivity", styles["uBackgroundlinear-gradient-135deg-ffffff-0-f8fafc-100"], styles.uBorderRadius12px, styles["uPadding16px-20px"], styles["uBorder1px-solid-cbd7e5"], styles["uBoxShadow0-8px-24px-rgba-15-23-42-0-06"]].join(' ')}>
-                    <div className="analistas-productivity-main">
-                      <div>
-                        <div className={[styles.uFontSize10px, styles.uFontWeight800, styles.uColor667085, styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom8px].join(' ')}>Productividad</div>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
-                          <div className={[styles.uFontSize28px, styles.uLineHeight1, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.productividad === null ? '#344054' : (kpiTotal.productividad >= 200 ? '#059669' : '#ef4444') }}>{kpiTotal.productividad !== null ? `${kpiTotal.productividad.toFixed(2)}%` : '—'}</div>
-                          <span className={[styles.uFontSize10px, styles.uColor667085, styles.uFontWeight700].join(' ')}>general</span>
-                        </div>
-                      </div>
-                      <div className="analistas-productivity-track" aria-label="Productividad respecto del ideal de 100%">
-                        <span>Ideal 100%</span>
-                        <div><i /><b /></div>
-                      </div>
-                    </div>
-                    {(kpiTotal.productividadApertura !== null || kpiTotal.productividadRenov !== null) && (
-                      <div className={[styles.uMarginTop14px, styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-2-1fr"], styles.uGap8px, styles.uFontFamilyUi].join(' ')}>
-                        <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles["uAlignItemsflex-start"], styles.uJustifyContentcenter, styles.uGap5px, styles.uBackgroundf8fafc, styles["uBorder1px-solid-dbe3ee"], styles["uPadding9px-10px"], styles.uBorderRadius8px, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
-                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles.uColor667085, styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Apertura</span>
-                          <span className={[styles.uFontSize28px, styles.uLineHeight1, styles.uFontWeight900, styles.uColor344054, styles.uFontFamilyUi].join(' ')}>
-                            {kpiTotal.productividadApertura !== null ? `${kpiTotal.productividadApertura.toFixed(2)}%` : '—'}
-                          </span>
-                        </div>
-
-                        <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles["uAlignItemsflex-start"], styles.uJustifyContentcenter, styles.uGap5px, styles.uBackgroundf8fafc, styles["uBorder1px-solid-dbe3ee"], styles["uPadding9px-10px"], styles.uBorderRadius8px, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
-                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles.uColor667085, styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Renovación</span>
-                          <span className={[styles.uFontSize28px, styles.uLineHeight1, styles.uFontWeight900, styles.uColor344054, styles.uFontFamilyUi].join(' ')}>
-                            {kpiTotal.productividadRenov !== null ? `${kpiTotal.productividadRenov.toFixed(2)}%` : '—'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {analistaIndividualKpi && (
-                    <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding16px-20px"], styles["uBorder1px-solid-border-subtle"], styles.uCursorpointer, styles["uTransitionall-0-2s-ease"], styles.uPositionrelative, styles.incentiveCard].join(' ')}
-                      onClick={() => setIncentivosModalOpen(true)}
-                      title="Hacé clic para ver el detalle de incentivos y escalas"
-                    >
-                      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom8px].join(' ')}>
-                        <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px].join(' ')}>
-                          <Calculator className={[styles.uColor10b981].join(' ')} size={13} />
-                          <span>Comisión Estimada</span>
-                        </div>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px].join(' ')}>
-                          {analistaIndividualKpi.topeKQAplicado && (
-                            <span className={[styles.uFontSize9px, styles.uFontWeight800, styles["uPadding2px-5px"], styles.uBorderRadius4px, styles["uBackgroundrgba-251-191-36-0-15"], styles.uColorfbbf24, styles["uBorder1px-solid-rgba-251-191-36-0-3"], styles.uTextTransformuppercase, styles["uLetterSpacing0-5px"]].join(' ')}>
-                              TOPE K+Q
-                            </span>
-                          )}
-                          <button className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap5px, styles["uPadding3px-9px"], styles.uBorderRadius6px, styles.uFontSize10px, styles.uFontWeight800, styles["uBackgroundrgba-16-185-129-0-12"], styles["uBorder1px-solid-rgba-16-185-129-0-35"], styles.uColor10b981, styles.uCursorpointer, styles.uTextTransformuppercase, styles["uLetterSpacing0-5px"], styles["uBoxShadow0-0-10px-rgba-16-185-129-0-15"], styles["uTransitionall-0-15s-ease"], styles.detailButton].join(' ')}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIncentivosModalOpen(true);
-                            }}
-                          >
-                            <span>Ver Detalle</span>
-                            <span className={[styles.uFontSize11px].join(' ')}>↗</span>
-                          </button>
-                        </div>
-                      </div>
-                      <div className={[styles.uFontSize22px, styles.uFontWeight900, styles.uColor10b981].join(' ')}>
-                        {formatCurrency(analistaIndividualKpi.incentivoTotal)}
-                      </div>
-                      <div className={[styles.uMarginTop10px, styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-3-1fr"], styles.uGap8px, styles.uFontFamilyUi].join(' ')}>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uGap6px, styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uPadding5px-6px"], styles.uBorderRadius6px, styles.uTextAligncenter, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
-                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Cap</span>
-                          <span className={[styles["uFontSize11-5px"], styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>{formatCurrency(analistaIndividualKpi.incentivoCap)}</span>
-                        </div>
-
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uGap6px, styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uPadding5px-6px"], styles.uBorderRadius6px, styles.uTextAligncenter, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
-                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Ops</span>
-                          <span className={[styles["uFontSize11-5px"], styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>{formatCurrency(analistaIndividualKpi.incentivoOps)}</span>
-                        </div>
-
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uGap6px, styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uPadding5px-6px"], styles.uBorderRadius6px, styles.uTextAligncenter, styles.uWhiteSpacenowrap, styles.uMinWidth0].join(' ')}>
-                          <span className={[styles["uFontSize9-5px"], styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>Cob</span>
-                          <span className={[styles["uFontSize11-5px"], styles.uFontWeight800, styles["uColortext-strong"]].join(' ')}>
-                            {formatCurrency((analistaIndividualKpi.incentivoCobTr90 || 0) + (analistaIndividualKpi.incentivoCobTr120 || 0) + (analistaIndividualKpi.incentivoCobRefin || 0))}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── BLOQUE DE PROYECCIÓN ── */}
-                <div className={["analistas-autogrid", styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-400px-1fr"], styles.uGap16px, styles.uMarginTop0, styles.uAlignItemsstretch].join(' ')}>
-                  <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-20px"], styles["uBorder1px-solid-border-subtle"], styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uJustifyContentcenter].join(' ')}>
-                    {kpiTotal.esMesActual && !kpiTotal.tieneDiasAdmin ? (
-                      <div className={[styles.uFontSize11px, styles["uColortext-muted"], styles.uFontStyleitalic, styles.uTextAligncenter].join(' ')}>
-                        Cargá días hábiles en Ajustes para ver proyección
-                      </div>
-                    ) : (
-                      <div className={[styles.uDisplayflex, styles.uGap32px, styles.uFlex1].join(' ')}>
-                       <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uGap16px, styles.uFlex2, styles["uJustifyContentspace-between"]].join(' ')}>
-                        <div className={[styles.uDisplayflex, styles.uGap32px].join(' ')}>
-                          <div className={[styles.uFlex1].join(' ')}>
-                            {kpiTotal.metaDiariaCapital !== null && (
-                              <>
-                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Venta / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.metaDiariaCapital)}</div>
-                                {kpiTotal.ventaPorDia !== null && <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uFontWeight700, styles.uMarginTop4px].join(' ')}>RITMO: {formatCurrency(kpiTotal.ventaPorDia)}</div>}
-                              </>
-                            )}
-                          </div>
-                          <div className={[styles.uFlex1].join(' ')}>
-                            {kpiTotal.metaDiariaOps !== null && (
-                              <>
-                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Ops. / día ({kpiTotal.esMesActual ? 'Necesario' : 'Meta'})</div>
-                                <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{Math.round(kpiTotal.metaDiariaOps)}</div>
-                                {kpiTotal.opsPorDia !== null && <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uFontWeight700, styles.uMarginTop4px].join(' ')}>RITMO: {Math.round(kpiTotal.opsPorDia)}</div>}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className={[styles.uHeight1px, styles["uBackgroundsurface-sunken"]].join(' ')} />
-
-                        <div className={[styles.uDisplayflex, styles.uGap32px].join(' ')}>
-                          <div className={[styles.uFlex1].join(' ')}>
-                            {kpiTotal.proyCapital !== null && (
-                              <>
-                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>{kpiTotal.esMesActual ? 'Proy. fin mes (K)' : 'Final mes (K)'}</div>
-                                <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
-                                  <div className={[styles.uFontSize20px, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.proyCapital >= kpiTotal.metaCapital ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.proyCapital)}</div>
-                                  {kpiTotal.cumplProyCapital !== null && (
-                                    <span className={[styles.uFontSize12px, styles.uFontWeight800].join(' ')} style={{ color: kpiTotal.cumplProyCapital >= 100 ? '#10b981' : '#f87171' }}>
-                                      ({kpiTotal.cumplProyCapital.toFixed(2)}%)
-                                    </span>
-                                  )}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                          <div className={[styles.uFlex1].join(' ')}>
-                            {kpiTotal.proyOps !== null && (
-                              <>
-                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>{kpiTotal.esMesActual ? 'Proy. fin mes (Q)' : 'Final mes (Q)'}</div>
-                                <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
-                                  <div className={[styles.uFontSize20px, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.proyOps >= kpiTotal.metaOps ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.proyOps)}</div>
-                                  {kpiTotal.cumplProyOps !== null && (
-                                    <span className={[styles.uFontSize12px, styles.uFontWeight800].join(' ')} style={{ color: kpiTotal.cumplProyOps >= 100 ? '#10b981' : '#f87171' }}>
-                                      ({kpiTotal.cumplProyOps.toFixed(2)}%)
-                                    </span>
-                                  )}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className={[styles.uHeight1px, styles["uBackgroundsurface-sunken"]].join(' ')} />
-
-                        <div className={[styles.uDisplayflex, styles.uGap32px].join(' ')}>
-                          <div className={[styles.uFlex1].join(' ')}>
-                            {kpiTotal.faltaCapital !== null && (
-                              <>
-                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Falta 100% (K)</div>
-                                <div className={[styles.uFontSize20px, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.faltaCapital === 0 ? '#10b981' : '#f87171' }}>{formatCurrency(kpiTotal.faltaCapital)}</div>
-                              </>
-                            )}
-                          </div>
-                          <div className={[styles.uFlex1].join(' ')}>
-                            {kpiTotal.faltaOps !== null && (
-                              <>
-                                <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Falta 100% (Q)</div>
-                                <div className={[styles.uFontSize20px, styles.uFontWeight900].join(' ')} style={{ color: kpiTotal.faltaOps === 0 ? '#10b981' : '#f87171' }}>{Math.round(kpiTotal.faltaOps || 0)}</div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                       </div>
-
-                       <div className={[styles.uWidth1px, styles["uBackgroundrgba-255-255-255-0-06"], styles.uAlignSelfstretch].join(' ')} />
-
-                       <div className={[styles.uFlex1, styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uJustifyContentcenter, styles.uGap20px].join(' ')}>
-                         <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px].join(' ')}>
-                           {CONFIG.MESES_NOMBRES[mesPrev - 1]} al día {kpiTotal.diaCorte}
-                         </div>
-                         <div>
-                           <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Ventas (K)</div>
-                           <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
-                             <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{formatCurrency(kpiTotal.capitalAntFecha)}</div>
-                             {kpiTotal.varCapitalFecha !== null && (
-                               <span className={[styles.uFontSize12px, styles.uFontWeight800].join(' ')} style={{ color: kpiTotal.varCapitalFecha >= 0 ? '#10b981' : '#f87171' }}>
-                                 {kpiTotal.varCapitalFecha >= 0 ? '▲' : '▼'} {Math.abs(kpiTotal.varCapitalFecha).toFixed(2)}%
-                               </span>
-                             )}
-                           </div>
-                         </div>
-                         <div>
-                           <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles.uMarginBottom6px].join(' ')}>Operaciones (Q)</div>
-                           <div className={[styles.uDisplayflex, styles.uAlignItemsbaseline, styles.uGap8px].join(' ')}>
-                             <div className={[styles.uFontSize20px, styles.uFontWeight900, styles["uColortext-strong"]].join(' ')}>{kpiTotal.opsAntFecha}</div>
-                             {kpiTotal.varOpsFecha !== null && (
-                               <span className={[styles.uFontSize12px, styles.uFontWeight800].join(' ')} style={{ color: kpiTotal.varOpsFecha >= 0 ? '#10b981' : '#f87171' }}>
-                                 {kpiTotal.varOpsFecha >= 0 ? '▲' : '▼'} {Math.abs(kpiTotal.varOpsFecha).toFixed(2)}%
-                               </span>
-                             )}
-                           </div>
-                         </div>
-                       </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius10px, styles["uPadding14px-16px"], styles["uBorder1px-solid-border-subtle"], styles.uDisplayflex, styles.uFlexDirectioncolumn].join(' ')}>
-                    <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles.uMarginBottom10px].join(' ')}>Progreso vs Ideal</div>
-                    <div className={[styles.uHeight320px, styles.uPositionrelative, styles.uWidth100].join(' ')}>
-                      {chartsLoaded ? (
-                        <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} />
-                      ) : (
-                        <ChartShimmer />
-                      )}
-                    </div>
-                  </div>
-                </div>
-                </>
-                )}
                 </>
               </div>
 
@@ -2364,228 +1988,72 @@ export default function AnalistasPage() {
       {/* ── MODAL: CÁLCULO DE INCENTIVOS ── */}
       {incentivosModalOpen && (
         <ModalPortal>
-        <div className={[styles.uPositionfixed, styles.uInset0, styles.uZIndex9999, styles["uBackgroundrgba-0-0-0-0-7"], styles["uBackdropFilterblur-6px"], styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uPadding24px].join(' ')}
-          onClick={() => setIncentivosModalOpen(false)}
-        >
-          <div className={[styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius18px, styles.uPadding28px, styles["uWidthmin-1280px-100"], styles.uMaxHeight90vh, styles.uOverflowauto, styles["uBoxShadowshadow-md"], styles.uFontFamilyUi].join(' ')}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header del Modal */}
-            <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom24px, styles.uPaddingBottom14px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
-              <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap12px].join(' ')}>
-                <div className={[styles.uWidth36px, styles.uHeight36px, styles.uBorderRadius10px, styles["uBackgroundrgba-16-185-129-0-12"], styles["uBorder1px-solid-rgba-16-185-129-0-25"], styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles.uColor10b981].join(' ')}>
-                  <Calculator size={18} />
-                </div>
+          <div className={styles.incentiveOverlay} onClick={() => setIncentivosModalOpen(false)}>
+            <section className={styles.incentiveModal} onClick={event => event.stopPropagation()} aria-modal="true" role="dialog" aria-labelledby="incentive-modal-title">
+              <header className={styles.incentiveModalHeader}>
                 <div>
-                  <div className={[styles.uFontSize18px, styles.uFontWeight900, styles["uColortext-strong"], styles["uLetterSpacing0-3px"]].join(' ')}>
-                    Cálculo de Incentivos — {analista}
-                  </div>
-                  <div className={[styles.uFontSize12px, styles["uColortext-muted"], styles.uMarginTop2px].join(' ')}>
-                    Escalas de liquidación e ingreso manual de cobranzas
-                  </div>
+                  <span>Liquidación mensual</span>
+                  <h2 id="incentive-modal-title">Incentivos de {analistaCobranzasActivo}</h2>
+                  <p>Escalas vigentes y cumplimiento de cobranzas del período seleccionado.</p>
                 </div>
-              </div>
+                <button type="button" onClick={() => setIncentivosModalOpen(false)} aria-label="Cerrar detalle de incentivos"><X size={17} /></button>
+              </header>
 
-              <button className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius8px, styles.uWidth32px, styles.uHeight32px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uJustifyContentcenter, styles["uColortext-muted"], styles.uCursorpointer, styles["uTransitionall-0-2s-ease"], styles.closeButton].join(' ')}
-                type="button"
-                onClick={() => setIncentivosModalOpen(false)}
-              >
-                <X size={16} />
-              </button>
-            </div>
+              {kpiComisionActual && <div className={styles.incentiveSummary}>
+                <article><span>Capital</span><strong>{formatCurrency(kpiComisionActual.incentivoCap)}</strong><small>{kpiComisionActual.cumplCapital?.toFixed(1) ?? '—'}% de cumplimiento</small></article>
+                <article><span>Operaciones</span><strong>{formatCurrency(kpiComisionActual.incentivoOps)}</strong><small>{kpiComisionActual.cumplOps?.toFixed(1) ?? '—'}% de cumplimiento</small></article>
+                <article><span>Cobranzas</span><strong>{formatCurrency((kpiComisionActual.incentivoCobTr90 || 0) + (kpiComisionActual.incentivoCobTr120 || 0) + (kpiComisionActual.incentivoCobRefin || 0))}</strong><small>Según porcentajes cargados</small></article>
+                <article className={styles.incentiveTotal}><span>Total estimado</span><strong>{formatCurrency(kpiComisionActual.incentivoTotal)}</strong><small>{kpiComisionActual.topeKQAplicado ? 'Tope K + Q aplicado' : 'Sin ajustes adicionales'}</small></article>
+              </div>}
 
-            {/* Escalas: 3 Columnas */}
-            <div className={["analistas-autogrid", styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-auto-fit-minmax-300px-1fr"], styles.uGap20px, styles.uMarginBottom28px].join(' ')}>
-              {/* Reglas de Capital */}
-              <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius12px, styles.uPadding18px, styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                <div className={[styles.uFontSize11px, styles.uFontWeight800, styles.uColora78bfa, styles.uTextTransformuppercase, styles.uMarginBottom12px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px, styles["uLetterSpacing0-8px"]].join(' ')}>
-                  <Target size={14} /> Escala de Incentivos - Capital
-                </div>
-                <table className={[styles.uWidth100, styles.uFontSize13px, styles.uBorderCollapsecollapse].join(' ')}>
-                  <thead>
-                    <tr className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-1"]].join(' ')}>
-                      <th className={[styles.uTextAlignleft, styles["uPadding10px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>ALCANCE</th>
-                      <th className={[styles.uTextAlignright, styles["uPadding10px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>COEFICIENTE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div className={styles.incentiveContent}>
+                <section className={styles.incentiveRuleCard}>
+                  <header><span><Target size={15} /></span><div><h3>Capital</h3><p>Coeficiente sobre el capital vendido</p></div></header>
+                  <table><thead><tr><th>Alcance</th><th>Coeficiente</th></tr></thead><tbody>
+                    {[{ a: '75% a 89,99%', c: '0,20%' }, { a: '90% a 109,99%', c: '0,30%' }, { a: '110% a 119,99%', c: '0,37%' }, { a: '120% o más', c: '0,45%' }].map(row => <tr key={row.a}><td>{row.a}</td><td>{row.c}</td></tr>)}
+                  </tbody></table>
+                  <p className={styles.incentiveNote}>Tope conjunto de Capital + Operaciones: {formatCurrency(200000)}.</p>
+                </section>
+
+                <section className={styles.incentiveRuleCard}>
+                  <header><span><Activity size={15} /></span><div><h3>Operaciones</h3><p>Adicional sobre el incentivo variable</p></div></header>
+                  <table><thead><tr><th>Alcance</th><th>Adicional</th></tr></thead><tbody>
+                    {[{ a: '80% a 99,99%', c: '20%' }, { a: '100% o más', c: '30%' }].map(row => <tr key={row.a}><td>{row.a}</td><td>{row.c}</td></tr>)}
+                  </tbody></table>
+                  <p className={styles.incentiveNote}>Requiere al menos 75% de cumplimiento en Capital.</p>
+                </section>
+
+                <section className={`${styles.incentiveRuleCard} ${styles.incentiveCollections}`}>
+                  <header><span><DollarSign size={15} /></span><div><h3>Cobranzas</h3><p>Premios fijos por tramo de cumplimiento</p></div></header>
+                  <table><thead><tr><th>Concepto</th><th>Alcance</th><th>Premio</th></tr></thead><tbody>
                     {[
-                      { a: '75% < 90%', c: '0.20%' },
-                      { a: '90% < 110%', c: '0.30%' },
-                      { a: '110% < 120%', c: '0.37%' },
-                      { a: '>= 120%', c: '0.45%' },
-                    ].map((r, i) => (
-                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} key={i}>
-                        <td className={[styles["uPadding10px-4px"], styles["uColortext-muted"]].join(' ')}>{r.a}</td>
-                        <td className={[styles["uPadding10px-4px"], styles.uTextAlignright, styles["uColortext-strong"], styles.uFontWeight800].join(' ')}>{r.c}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className={[styles.uMarginTop12px, styles.uFontSize11px, styles["uColortext-muted"], styles.uFontStyleitalic, styles["uLineHeight1-5"]].join(' ')}>
-                  * El tope máximo para Ventas (K + Q) es de $200,000.<br/>
-                  * El tope máximo para Cobranzas es de $50,000 (Tope total: $250,000).
-                </div>
-              </div>
+                      { n: 'Tramo 90–119', a: '90% a 99,99%', p: '$ 12.643' }, { n: 'Tramo 90–119', a: '100% o más', p: '$ 16.667' },
+                      { n: 'Tramo 120–209', a: '90% a 99,99%', p: '$ 12.643' }, { n: 'Tramo 120–209', a: '100% o más', p: '$ 16.667' },
+                      { n: 'Refinanciación', a: '90% a 109,99%', p: '$ 12.643' }, { n: 'Refinanciación', a: '110% o más', p: '$ 16.667' },
+                    ].map(row => <tr key={`${row.n}-${row.a}`}><td>{row.n}</td><td>{row.a}</td><td>{row.p}</td></tr>)}
+                  </tbody></table>
 
-              {/* Reglas de Operaciones */}
-              <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius12px, styles.uPadding18px, styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                <div className={[styles.uFontSize11px, styles.uFontWeight800, styles.uColor34d399, styles.uTextTransformuppercase, styles.uMarginBottom12px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px, styles["uLetterSpacing0-8px"]].join(' ')}>
-                  <Activity size={14} /> Escala de Incentivos - Operaciones
-                </div>
-                <table className={[styles.uWidth100, styles.uFontSize13px, styles.uBorderCollapsecollapse].join(' ')}>
-                  <thead>
-                    <tr className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-1"]].join(' ')}>
-                      <th className={[styles.uTextAlignleft, styles["uPadding10px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>ALCANCE</th>
-                      <th className={[styles.uTextAlignright, styles["uPadding10px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>COEFICIENTE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { a: '80% y 99.99%', c: '20%' },
-                      { a: '>= 100%', c: '30%' },
-                    ].map((r, i) => (
-                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} key={i}>
-                        <td className={[styles["uPadding10px-4px"], styles["uColortext-muted"]].join(' ')}>{r.a}</td>
-                        <td className={[styles["uPadding10px-4px"], styles.uTextAlignright, styles["uColortext-strong"], styles.uFontWeight800].join(' ')}>{r.c}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className={[styles.uMarginTop12px, styles.uFontSize11px, styles["uColortext-muted"], styles.uFontStyleitalic].join(' ')}>
-                  * Requiere alcance mínimo de 75% en Capital.
-                </div>
-              </div>
-
-              {/* Reglas de Cobranzas */}
-              <div className={[styles["uBackgroundsurface-sunken"], styles.uBorderRadius12px, styles.uPadding18px, styles["uBorder1px-solid-border-subtle"]].join(' ')}>
-                <div className={[styles.uFontSize11px, styles.uFontWeight800, styles.uColorfb923c, styles.uTextTransformuppercase, styles.uMarginBottom12px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap8px, styles["uLetterSpacing0-8px"]].join(' ')}>
-                  <DollarSign size={14} /> Escala de Incentivos - Cobranzas
-                </div>
-                <table className={[styles.uWidth100, styles.uFontSize12px, styles.uBorderCollapsecollapse].join(' ')}>
-                  <thead>
-                    <tr className={[styles["uBorderBottom1px-solid-rgba-255-255-255-0-1"]].join(' ')}>
-                      <th className={[styles.uTextAlignleft, styles["uPadding8px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>CONCEPTO</th>
-                      <th className={[styles.uTextAlignleft, styles["uPadding8px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>ALCANCE</th>
-                      <th className={[styles.uTextAlignright, styles["uPadding8px-4px"], styles["uColortext-muted"], styles.uFontSize11px, styles.uFontWeight800].join(' ')}>PREMIO</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { n: 'TRAMO 90-119', a: '90% - 99.99%', p: '$12.643' },
-                      { n: 'TRAMO 90-119', a: '>= 100%', p: '$16.667' },
-                      { n: 'TRAMO 120-209', a: '90% - 99.99%', p: '$12.643' },
-                      { n: 'TRAMO 120-209', a: '>= 100%', p: '$16.667' },
-                      { n: 'REFINANCIACION', a: '90% - 109.99%', p: '$12.643' },
-                      { n: 'REFINANCIACION', a: '>= 110%', p: '$16.667' },
-                    ].map((r, i) => (
-                      <tr className={[styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} key={i}>
-                        <td className={[styles["uPadding8px-4px"], styles["uColortext-muted"], styles.uFontSize11px].join(' ')}>{r.n}</td>
-                        <td className={[styles["uPadding8px-4px"], styles["uColortext-muted"]].join(' ')}>{r.a}</td>
-                        <td className={[styles["uPadding8px-4px"], styles.uTextAlignright, styles["uColortext-strong"], styles.uFontWeight800].join(' ')}>{r.p}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                <div className={[styles.uMarginTop16px, styles.uPaddingTop16px, styles["uBorderTop1px-solid-border-subtle"]].join(' ')}>
-                  <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom8px].join(' ')}>
-                    <div className={[styles.uFontSize10px, styles.uFontWeight800, styles.uColorfb923c, styles.uTextTransformuppercase, styles["uLetterSpacing0-6px"]].join(' ')}>
-                      Ingreso Manual de Cumplimiento (%)
+                  <div className={styles.incentiveInputs}>
+                    <div className={styles.incentiveInputsHeader}>
+                      <div><span>Cumplimiento de cobranzas</span><small>Los resultados se actualizan automáticamente.</small></div>
+                      {Boolean(
+                        (currentCobranzas.pctTr90 !== undefined && currentCobranzas.pctTr90 !== '') ||
+                        (currentCobranzas.pctTr120 !== undefined && currentCobranzas.pctTr120 !== '') ||
+                        (currentCobranzas.pctRefin !== undefined && currentCobranzas.pctRefin !== '')
+                      ) && <button type="button" onClick={handleClearManualCob}><Trash2 size={12} /> Limpiar</button>}
                     </div>
-                    {Boolean(
-                      (currentCobranzas.pctTr90 !== undefined && currentCobranzas.pctTr90 !== '') ||
-                      (currentCobranzas.pctTr120 !== undefined && currentCobranzas.pctTr120 !== '') ||
-                      (currentCobranzas.pctRefin !== undefined && currentCobranzas.pctRefin !== '')
-                    ) && (
-                      <button className={[styles["uBackgroundrgba-239-68-68-0-1"], styles["uBorder1px-solid-rgba-239-68-68-0-25"], styles.uColorf87171, styles.uFontSize10px, styles.uFontWeight700, styles.uCursorpointer, styles["uPadding2px-8px"], styles.uBorderRadius4px, styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap4px, styles["uTransitionall-0-15s-ease"], styles.clearButton].join(' ')}
-                        type="button"
-                        onClick={handleClearManualCob}
-                        title="Borrar porcentajes guardados de cobranzas"
-                      >
-                        <Trash2 size={11} /> Borrar
-                      </button>
-                    )}
-                  </div>
-                  <div className={[styles.uDisplaygrid, styles["uGridTemplateColumnsrepeat-3-1fr"], styles.uGap8px].join(' ')}>
-                    <div>
-                      <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uMarginBottom4px].join(' ')}>TR 90</div>
-                      <input className={[styles.uWidth100, styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius4px, styles["uPadding6px-10px"], styles.uFontSize13px, styles["uColortext-strong"], styles.uOutlinenone].join(' ')}
-                        type="number" 
-                        value={currentCobranzas.pctTr90 ?? ''} 
-                        onChange={(e) => handleManualCobChange('pctTr90', e.target.value)}
-                        placeholder="0%"
-                      />
-                    </div>
-                    <div>
-                      <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uMarginBottom4px].join(' ')}>TR 120</div>
-                      <input className={[styles.uWidth100, styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius4px, styles["uPadding6px-10px"], styles.uFontSize13px, styles["uColortext-strong"], styles.uOutlinenone].join(' ')}
-                        type="number" 
-                        value={currentCobranzas.pctTr120 ?? ''} 
-                        onChange={(e) => handleManualCobChange('pctTr120', e.target.value)}
-                        placeholder="0%"
-                      />
-                    </div>
-                    <div>
-                      <div className={[styles.uFontSize10px, styles["uColortext-muted"], styles.uMarginBottom4px].join(' ')}>REFIN</div>
-                      <input className={[styles.uWidth100, styles["uBackgroundsurface-card"], styles["uBorder1px-solid-border-subtle"], styles.uBorderRadius4px, styles["uPadding6px-10px"], styles.uFontSize13px, styles["uColortext-strong"], styles.uOutlinenone].join(' ')}
-                        type="number" 
-                        value={currentCobranzas.pctRefin ?? ''} 
-                        onChange={(e) => handleManualCobChange('pctRefin', e.target.value)}
-                        placeholder="0%"
-                      />
+                    <div className={styles.incentiveInputGrid}>
+                      {[
+                        { key: 'pctTr90' as const, label: 'Tramo 90–119', value: currentCobranzas.pctTr90 },
+                        { key: 'pctTr120' as const, label: 'Tramo 120–209', value: currentCobranzas.pctTr120 },
+                        { key: 'pctRefin' as const, label: 'Refinanciación', value: currentCobranzas.pctRefin },
+                      ].map(field => <label key={field.key}><span>{field.label}</span><div><input type="number" min="0" step="0.01" value={field.value ?? ''} onChange={event => handleManualCobChange(field.key, event.target.value)} placeholder="0" /><b>%</b></div></label>)}
                     </div>
                   </div>
-                </div>
+                </section>
               </div>
-            </div>
-
-            {/* Tabla de resultados por Analista */}
-            <div className={[styles.uOverflowXauto, styles["uBackgroundsurface-sunken"], styles.uBorderRadius14px, styles["uBorder1px-solid-border-subtle"], styles.uPadding6px].join(' ')}>
-              <table className={[styles.uWidth100, styles.uBorderCollapseseparate, styles.uBorderSpacing0].join(' ')}>
-                <thead>
-                  <tr>
-                    <th className={[styles.uTextAlignleft, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Analista</th>
-                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Vendido (K)</th>
-                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Cumpl. (K)</th>
-                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Incent. (K)</th>
-                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Cumpl. (Q)</th>
-                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Incent. (Q)</th>
-                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Incent. (Cob)</th>
-                    <th className={[styles.uTextAlignright, styles["uPadding14px-14px"], styles.uFontSize11px, styles.uFontWeight900, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>Total Final</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kpiCards.filter(k => k.analista === 'PDV' || cobraIncentivo(k.analista)).map((k, idx) => (
-                    <tr key={k.analista} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
-                      <td className={[styles["uPadding16px-14px"], styles.uFontSize13px, styles.uFontWeight800, styles["uColortext-strong"], styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
-                        {k.analista === 'PDV' ? 'TOTAL GENERAL' : (analista === 'PDV' ? k.analista.toUpperCase() : 'INDIVIDUAL')}
-                      </td>
-                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles["uColortext-strong"], styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>{formatCurrency(k.capital)}</td>
-                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles.uFontWeight800, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} style={{ color: k.cumplCapital && k.cumplCapital >= 75 ? '#10b981' : '#f87171' }}>{k.cumplCapital?.toFixed(1)}%</td>
-                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles["uColortext-strong"], styles.uFontWeight700, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>{formatCurrency(k.incentivoCap)}</td>
-                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles.uFontWeight800, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')} style={{ color: k.cumplOps && k.cumplOps >= 80 ? '#10b981' : '#f87171' }}>{k.cumplOps?.toFixed(1)}%</td>
-                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles["uColortext-strong"], styles.uFontWeight700, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>{formatCurrency(k.incentivoOps)}</td>
-                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize13px, styles["uColortext-strong"], styles.uFontWeight700, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>{formatCurrency((k.incentivoCobTr90 || 0) + (k.incentivoCobTr120 || 0) + (k.incentivoCobRefin || 0))}</td>
-                      <td className={[styles["uPadding16px-14px"], styles.uTextAlignright, styles.uFontSize15px, styles.uColor10b981, styles.uFontWeight900, styles["uBorderBottom1px-solid-border-subtle"]].join(' ')}>
-                        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentflex-end"], styles.uGap8px].join(' ')}>
-                          {k.topeKQAplicado && (
-                            <span className={[styles["uDisplayinline-flex"], styles.uAlignItemscenter, styles.uGap4px, styles["uPadding3px-8px"], styles.uBorderRadius6px, styles.uFontSize10px, styles.uFontWeight800, styles["uBackgroundrgba-251-191-36-0-15"], styles.uColorfbbf24, styles["uBorder1px-solid-rgba-251-191-36-0-35"], styles.uTextTransformuppercase, styles["uLetterSpacing0-5px"]].join(' ')}
-                              title={`Tope $250.000 aplicado. Excedente sin pagar: ${formatCurrency(k.topeKQExcedente || 0)}`}
-                            >
-                              TOPE
-                            </span>
-                          )}
-                          {formatCurrency(k.incentivoTotal)}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            </section>
           </div>
-        </div>
         </ModalPortal>
       )}
               </>
