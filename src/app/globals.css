@@ -2344,6 +2344,31 @@ textarea:focus {
 }
 .daily-add-button:hover { background: #274b68; }
 
+.admin-name-normalizer {
+  flex: 0 0 auto;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  color: #40536b;
+  background: #f7f9fb;
+  border: 1px solid #d1dce5;
+  border-radius: 8px;
+  font: 750 9px var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.admin-name-normalizer:hover { color: #315b7d; background: #edf3f7; border-color: #aebfcd; }
+.admin-name-normalizer.is-active {
+  color: #ffffff;
+  background: #315b7d;
+  border-color: #315b7d;
+  box-shadow: 0 5px 13px rgba(49, 91, 125, .18);
+}
+
 .daily-management-page .premium-select-trigger {
   color: #263550;
   background: #ffffff;
@@ -2804,7 +2829,7 @@ textarea:focus {
   .daily-toolbar-primary { align-items: stretch; flex-direction: column; }
   .daily-search { min-width: 0; flex-basis: auto; }
   .daily-toolbar-primary .corporate-date-picker { margin-left: 0; }
-  .daily-toolbar-primary .corporate-date-picker, .daily-add-button { width: 100%; }
+  .daily-toolbar-primary .corporate-date-picker, .daily-toolbar-primary .admin-name-normalizer, .daily-add-button { width: 100%; }
   .daily-filter-bar { grid-template-columns: 1fr; }
   .daily-sheet-actions { align-items: stretch; flex-direction: column; }
   .daily-sheet-refresh, .daily-sheet-add { justify-content: center; }
