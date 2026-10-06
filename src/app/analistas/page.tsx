@@ -54,6 +54,7 @@ const lineShadowPlugin: any = {
     chart.ctx.restore();
   }
 };
+const lineShadowPlugins = [lineShadowPlugin];
 
 // ── Plugin inline: data labels on bars ───────────────────────────────────
 const labelsPlugin: any = {
@@ -1246,15 +1247,17 @@ export default function AnalistasPage() {
     ];
   }, [registros, selectedMes, selectedAnio, kpiTotal.metaCapital, kpiPorAnalista, analistasDefault]);
 
-  const chartProgresoSepOptions = {
+  const chartProgresoSepOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: false as const,
     interaction: { mode: 'index' as const, intersect: false },
     plugins: {
       legend: { display: true, position: 'top' as const, labels: { color: '#475467', font: { size: 10, weight: 700 }, usePointStyle: true } },
       tooltip: {
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#fff', bodyColor: '#f1f5f9', padding: 16, cornerRadius: 12, usePointStyle: true,
+        backgroundColor: '#ffffff',
+        titleColor: '#17243b', bodyColor: '#475467', borderColor: '#cbd5e1', borderWidth: 1,
+        padding: 16, cornerRadius: 12, usePointStyle: true,
         callbacks: {
           title: (items: any[]) => `Día ${items[0].label}`,
           label: (ctx: any) => {
@@ -1271,37 +1274,38 @@ export default function AnalistasPage() {
       },
       y: { grid: { color: 'rgba(148,163,184,0.22)' }, ticks: { color: '#64748b', font: { size: 9, weight: 600 }, callback: (v: any) => formatCurrency(v) } },
     },
-  };
+  }), []);
 
-  const chartProgresoOptions = {
+  const chartProgresoOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: false as const,
     plugins: {
       legend: { display: true, position: 'top' as const, labels: { color: '#475467', font: { size: 10, weight: 700 }, usePointStyle: true } },
       tooltip: {
         itemSort: (a: any, b: any) => b.datasetIndex - a.datasetIndex,
-        backgroundColor: 'rgba(10, 10, 15, 0.95)',
-        titleColor: '#ffffff',
+        backgroundColor: '#ffffff',
+        titleColor: '#17243b',
         titleFont: { size: 18, weight: 700, family: UI_FONT_FAMILY },
         titleAlign: 'center' as const,
         titleMarginBottom: 16,
-        bodyColor: '#f1f5f9',
+        bodyColor: '#475467',
         bodyFont: { size: 15, weight: 600, family: UI_FONT_FAMILY },
         bodySpacing: 10,
         footerColor: (ctx: any) => {
           const tooltipItems = ctx.tooltip.dataPoints;
-          if (!tooltipItems || !tooltipItems[0]) return '#34d399';
+          if (!tooltipItems || !tooltipItems[0]) return '#397363';
           const index = tooltipItems[0].dataIndex;
           const vendido = tooltipItems[0].chart.data.datasets[0].data[index];
           const ideal = tooltipItems[0].chart.data.datasets[1].data[index];
-          if (vendido == null || ideal == null || ideal === 0) return '#34d399';
+          if (vendido == null || ideal == null || ideal === 0) return '#397363';
           const pct = ((vendido / ideal) - 1) * 100;
-          return pct < 0 ? '#f87171' : '#34d399';
+          return pct < 0 ? '#9b4f59' : '#397363';
         },
         footerFont: { size: 16, weight: 700, family: UI_FONT_FAMILY },
         footerMarginTop: 16,
-        borderColor: 'rgba(255,255,255,0.15)',
-        borderWidth: 2,
+        borderColor: '#cbd5e1',
+        borderWidth: 1,
         padding: 24,
         cornerRadius: 16,
         boxPadding: 8,
@@ -1345,7 +1349,7 @@ export default function AnalistasPage() {
       y: { grid: { color: 'rgba(148,163,184,0.22)' }, ticks: { color: '#64748b', font: { size: 9, weight: 600 }, callback: (v: any) => formatCurrency(v) } }
     },
     interaction: { mode: 'index' as const, intersect: false }
-  };
+  }), []);
 
   // ── Chart 8: % Empleo Público / Privado ──────────────────────────────────
   const empleoPublPrivData = useMemo(() => {
@@ -1502,7 +1506,7 @@ export default function AnalistasPage() {
             {miniMetric('Ventas (K)', formatCurrency(kpiTotal.capitalAntFecha), kpiTotal.varCapitalFecha !== null ? `▲ ${Math.abs(kpiTotal.varCapitalFecha).toFixed(2)}%` : undefined, 'positive')}
             {miniMetric('Operaciones (Q)', kpiTotal.opsAntFecha, kpiTotal.varOpsFecha !== null ? `▲ ${Math.abs(kpiTotal.varOpsFecha).toFixed(2)}%` : undefined, 'positive')}
           </section>
-          <section className="exec-card exec-progress"><h3>Progreso vs ideal</h3><div>{chartsLoaded ? <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={[lineShadowPlugin]} /> : <ChartShimmer />}</div></section>
+          <section className="exec-card exec-progress"><h3>Progreso vs ideal</h3><div>{chartsLoaded ? <Line data={chartProgreso} options={chartProgresoOptions as any} plugins={lineShadowPlugins} /> : <ChartShimmer />}</div></section>
         </div>
       </div>
     );
@@ -1604,7 +1608,7 @@ export default function AnalistasPage() {
                     <div className={[styles.uFontSize10px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles["uLetterSpacing0-8px"], styles.uMarginBottom10px].join(' ')}>Progreso vs Ideal — {titulo}</div>
                     <div className={[styles.uHeight240px, styles.uPositionrelative, styles.uWidth100].join(' ')}>
                       {chartsLoaded ? (
-                        <Line data={data} options={chartProgresoSepOptions as any} plugins={[lineShadowPlugin]} />
+                        <Line data={data} options={chartProgresoSepOptions as any} plugins={lineShadowPlugins} />
                       ) : (
                         <ChartShimmer />
                       )}
