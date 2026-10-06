@@ -210,8 +210,9 @@
 .locationAddInput { flex:1; height:32px; }
 .locationSaveButton { height:32px; padding:0 10px; }
 .locationCancelButton { display:flex; align-items:center; justify-content:center; width:32px; height:32px; border:1px solid var(--border-subtle); border-radius:6px; background:var(--surface-sunken); }
-.editSupplementalGrid { display:grid; grid-template-columns:2fr 1fr 1fr; align-items:start; gap:10px; height:70px; margin-bottom:6px; }
-.editComments { min-height:100%; height:100%; padding:6px 10px; resize:vertical; font-family:inherit; }
+.editSupplementalGrid { display:grid; grid-template-columns:2fr 1fr 1fr; align-items:start; gap:10px; min-height:70px; margin-bottom:6px; }
+.editSupplementalGrid :global(.form-group) { min-width:0; margin-bottom:0; }
+.editComments { min-height:54px; height:54px; padding:6px 10px; resize:vertical; font-family:inherit; line-height:1.4; }
 .editCheckAction { display:flex; align-items:center; justify-content:center; gap:8px; box-sizing:border-box; width:100%; border:1px solid #cfd8e3; border-radius:6px; color:#475467; background:#f8fafc; font-weight:700; cursor:pointer; transition:color .18s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease; }
 .editCheckAction svg { flex:0 0 auto; color:#7a8799; }
 :global(.modal-content) .editCheckAction.editCheckSuccess { border-color:#3f789f; color:#244f70; background:#e7f1f7; box-shadow:inset 4px 0 0 #315f82,0 0 0 2px rgba(49,95,130,.08); }
