@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './AnalistasPage.module.css';
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useDeferredMount, ChartShimmer } from '@/components/ChartShimmer';
 import { CONFIG } from '@/types';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
@@ -26,6 +26,8 @@ import ModernDoughnut from '@/components/charts/ModernDoughnut';
 import DistBlock from '@/components/charts/DistBlock';
 import ProyeccionCard from './ProyeccionCard';
 import { UI_FONT_FAMILY } from '@/app/fonts';
+import { supabase } from '@/lib/supabase';
+import { useRealtimeBroadcast } from '@/lib/useRealtimeBroadcast';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, ArcElement, Filler);
 ChartJS.defaults.font.family = UI_FONT_FAMILY;
@@ -150,6 +152,21 @@ const referenceLinesPlugin: any = {
 import { useSearchParams } from 'next/navigation';
 
 const now = new Date();
+const COBRANZAS_CONFIG_PREFIX = 'crm_manual_cobranzas_v2:';
+
+type CobranzasManual = {
+  pctTr90?: string | number;
+  pctTr120?: string | number;
+  pctRefin?: string | number;
+};
+
+type CobranzasStore = Record<string, CobranzasManual>;
+
+const cobranzasPeriodKey = (analista: string, anio: number, mes: number) =>
+  `${anio}-${String(mes).padStart(2, '0')}_${analista}`;
+
+const cobranzasConfigKey = (analista: string, anio: number, mes: number) =>
+  `${COBRANZAS_CONFIG_PREFIX}${anio}:${String(mes).padStart(2, '0')}:${analista}`;
 
 export default function AnalistasPage() {
   const { registros: allRegistros, loading } = useRegistros();
@@ -260,28 +277,106 @@ export default function AnalistasPage() {
   }, [registros, objetivos, analista, anioRendimiento, mesRendimiento, aniosDisponiblesRendimiento]);
 
   // ── Persistencia de cobranzas manuales por analista y período ─────────────
-  const [cobranzasStore, setCobranzasStore] = useState<Record<string, { pctTr90?: string | number; pctTr120?: string | number; pctRefin?: string | number }>>({});
+  const [cobranzasStore, setCobranzasStore] = useState<CobranzasStore>({});
+  const persistTimersRef = useRef<Record<string, number>>({});
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('crm_manual_cobranzas_v1');
-      if (saved) {
-        setCobranzasStore(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error('Error cargando cobranzas manuales de localStorage:', e);
+  const fetchCobranzasStore = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('configuracion')
+      .select('valor_json')
+      .like('clave', `${COBRANZAS_CONFIG_PREFIX}%`);
+    if (error) {
+      console.error('Error cargando cobranzas compartidas:', error);
+      return;
     }
+
+    const nextStore: CobranzasStore = {};
+    for (const row of data ?? []) {
+      const raw = row.valor_json;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+      const value = raw as Record<string, unknown>;
+      const nombreAnalista = typeof value.analista === 'string' ? value.analista : '';
+      const anio = typeof value.anio === 'number' ? value.anio : Number(value.anio);
+      const mes = typeof value.mes === 'number' ? value.mes : Number(value.mes);
+      if (!nombreAnalista || !Number.isInteger(anio) || !Number.isInteger(mes)) continue;
+      nextStore[cobranzasPeriodKey(nombreAnalista, anio, mes)] = {
+        pctTr90: typeof value.pctTr90 === 'string' || typeof value.pctTr90 === 'number' ? value.pctTr90 : '',
+        pctTr120: typeof value.pctTr120 === 'string' || typeof value.pctTr120 === 'number' ? value.pctTr120 : '',
+        pctRefin: typeof value.pctRefin === 'string' || typeof value.pctRefin === 'number' ? value.pctRefin : '',
+      };
+    }
+    setCobranzasStore(nextStore);
   }, []);
 
+  const cobranzasBroadcastRef = useRealtimeBroadcast('crm-broadcast', {
+    cobranzas_manual_change: payload => {
+      const action = payload.action;
+      const nombreAnalista = payload.analista;
+      const anio = payload.anio;
+      const mes = payload.mes;
+      if ((action !== 'UPSERT' && action !== 'DELETE') || typeof nombreAnalista !== 'string' || typeof anio !== 'number' || typeof mes !== 'number') return;
+      const periodKey = cobranzasPeriodKey(nombreAnalista, anio, mes);
+      setCobranzasStore(prev => {
+        const next = { ...prev };
+        if (action === 'DELETE') {
+          delete next[periodKey];
+        } else {
+          const values = payload.values;
+          if (!values || typeof values !== 'object' || Array.isArray(values)) return prev;
+          const record = values as Record<string, unknown>;
+          next[periodKey] = {
+            pctTr90: typeof record.pctTr90 === 'string' || typeof record.pctTr90 === 'number' ? record.pctTr90 : '',
+            pctTr120: typeof record.pctTr120 === 'string' || typeof record.pctTr120 === 'number' ? record.pctTr120 : '',
+            pctRefin: typeof record.pctRefin === 'string' || typeof record.pctRefin === 'number' ? record.pctRefin : '',
+          };
+        }
+        return next;
+      });
+    },
+  });
+
+  useEffect(() => { void fetchCobranzasStore(); }, [fetchCobranzasStore]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('analistas-cobranzas-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracion' }, payload => {
+        const row = (payload.new && Object.keys(payload.new).length > 0 ? payload.new : payload.old) as Record<string, unknown>;
+        if (typeof row.clave === 'string' && row.clave.startsWith(COBRANZAS_CONFIG_PREFIX)) void fetchCobranzasStore();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchCobranzasStore]);
+
+  const queueCobranzasPersist = useCallback((nombreAnalista: string, anio: number, mes: number, values: CobranzasManual | null) => {
+    const periodKey = cobranzasPeriodKey(nombreAnalista, anio, mes);
+    const existingTimer = persistTimersRef.current[periodKey];
+    if (existingTimer) window.clearTimeout(existingTimer);
+
+    cobranzasBroadcastRef.current?.send({
+      type: 'broadcast',
+      event: 'cobranzas_manual_change',
+      payload: { action: values ? 'UPSERT' : 'DELETE', analista: nombreAnalista, anio, mes, values },
+    }).catch(() => {});
+
+    persistTimersRef.current[periodKey] = window.setTimeout(async () => {
+      const query = values
+        ? supabase.from('configuracion').upsert({
+            clave: cobranzasConfigKey(nombreAnalista, anio, mes),
+            valor_json: { analista: nombreAnalista, anio, mes, ...values },
+          }, { onConflict: 'clave' })
+        : supabase.from('configuracion').delete().eq('clave', cobranzasConfigKey(nombreAnalista, anio, mes));
+      const { error } = await query;
+      delete persistTimersRef.current[periodKey];
+      if (error) {
+        console.error('Error guardando cobranzas compartidas:', error);
+        void fetchCobranzasStore();
+      }
+    }, 250);
+  }, [cobranzasBroadcastRef, fetchCobranzasStore]);
+
   const getCobranzasForAnalista = useCallback((nombreAnalista: string, anio: number, mes: number) => {
-    const keyWithPeriod = `${anio}-${String(mes).padStart(2, '0')}_${nombreAnalista}`;
-    if (cobranzasStore[keyWithPeriod]) {
-      return cobranzasStore[keyWithPeriod];
-    }
-    if (cobranzasStore[nombreAnalista]) {
-      return cobranzasStore[nombreAnalista];
-    }
-    return { pctTr90: '', pctTr120: '', pctRefin: '' };
+    return cobranzasStore[cobranzasPeriodKey(nombreAnalista, anio, mes)] ?? { pctTr90: '', pctTr120: '', pctRefin: '' };
   }, [cobranzasStore]);
 
   const analistaCobranzasActivo = incentivoAnalistaActivo ?? analista;
@@ -290,49 +385,26 @@ export default function AnalistasPage() {
   }, [getCobranzasForAnalista, analistaCobranzasActivo, selectedAnio, selectedMes]);
 
   const handleManualCobChange = (key: 'pctTr90' | 'pctTr120' | 'pctRefin', val: string) => {
-    const keyWithPeriod = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}_${analistaCobranzasActivo}`;
-
+    const periodKey = cobranzasPeriodKey(analistaCobranzasActivo, selectedAnio, selectedMes);
+    const updated = { ...(cobranzasStore[periodKey] ?? { pctTr90: '', pctTr120: '', pctRefin: '' }), [key]: val };
+    const hasAnyValue = [updated.pctTr90, updated.pctTr120, updated.pctRefin].some(value => value !== undefined && value !== '');
     setCobranzasStore(prev => {
-      const current = prev[keyWithPeriod] || prev[analistaCobranzasActivo] || { pctTr90: '', pctTr120: '', pctRefin: '' };
-      const updated = { ...current, [key]: val };
-
-      const hasAnyValue = (updated.pctTr90 !== undefined && updated.pctTr90 !== '' && Number(updated.pctTr90) !== 0) ||
-                          (updated.pctTr120 !== undefined && updated.pctTr120 !== '' && Number(updated.pctTr120) !== 0) ||
-                          (updated.pctRefin !== undefined && updated.pctRefin !== '' && Number(updated.pctRefin) !== 0) ||
-                          (val !== '' && val !== undefined);
-
-      const nextStore = { ...prev };
-      if (!hasAnyValue) {
-        delete nextStore[keyWithPeriod];
-        delete nextStore[analistaCobranzasActivo];
-      } else {
-        nextStore[keyWithPeriod] = updated;
-        nextStore[analistaCobranzasActivo] = updated;
-      }
-
-      try {
-        localStorage.setItem('crm_manual_cobranzas_v1', JSON.stringify(nextStore));
-      } catch (err) {
-        console.error('Error guardando cobranzas manuales en localStorage:', err);
-      }
-
-      return nextStore;
+      const next = { ...prev };
+      if (hasAnyValue) next[periodKey] = updated;
+      else delete next[periodKey];
+      return next;
     });
+    queueCobranzasPersist(analistaCobranzasActivo, selectedAnio, selectedMes, hasAnyValue ? updated : null);
   };
 
   const handleClearManualCob = () => {
-    const keyWithPeriod = `${selectedAnio}-${String(selectedMes).padStart(2, '0')}_${analistaCobranzasActivo}`;
+    const periodKey = cobranzasPeriodKey(analistaCobranzasActivo, selectedAnio, selectedMes);
     setCobranzasStore(prev => {
-      const nextStore = { ...prev };
-      delete nextStore[keyWithPeriod];
-      delete nextStore[analistaCobranzasActivo];
-      try {
-        localStorage.setItem('crm_manual_cobranzas_v1', JSON.stringify(nextStore));
-      } catch (err) {
-        console.error('Error borrando cobranzas manuales en localStorage:', err);
-      }
-      return nextStore;
+      const next = { ...prev };
+      delete next[periodKey];
+      return next;
     });
+    queueCobranzasPersist(analistaCobranzasActivo, selectedAnio, selectedMes, null);
   };
 
   const openIncentivosModal = (nombreAnalista: string) => {
