@@ -2,17 +2,18 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import { useGestionDiaria } from '@/features/gestion-diaria/GestionDiariaProvider';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
-import { useAdminNameNormalization } from '@/hooks/useAdminNameNormalization';
 import { GestionDiaria, GESTION_DIARIA_OPCIONES } from '@/types';
 import { formatCurrency, formatDate, formatearCuil, sanitizarCuil } from '@/lib/utils';
 import { normalizePersonName } from '@/lib/normalize-person-name';
+import { NameNormalizationAction } from '@/components/NameNormalizationAction';
 import { PremiumSelect } from '@/components/PremiumSelect';
 import { CorporateDatePicker } from '@/components/CorporateDatePicker';
 import { CorporateDateRangePicker } from '@/components/CorporateDateRangePicker';
 import ModalPortal from '@/components/ModalPortal';
-import { CaseUpper, ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, SlidersHorizontal, TableProperties, Trash2, X } from 'lucide-react';
+import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, SlidersHorizontal, TableProperties, Trash2, X } from 'lucide-react';
 import {
   buildIncomeRows,
   databaseRowToIncomeRow,
@@ -416,9 +417,9 @@ function CompactDailyActions({
 }
 
 export default function GestionDiariaClient({ analistaInicial }: { analistaInicial: string }) {
+  const { isAdmin } = useAuth();
   const { registros, applyChange, pushChange } = useGestionDiaria();
   const { nombres: analistaNombres } = useAnalistas();
-  const nameNormalization = useAdminNameNormalization();
   const [analista, setAnalista] = useState(analistaInicial);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -768,17 +769,15 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
               <X size={13} /> Limpiar
             </button>
           )}
-          {nameNormalization.isAdmin && (
-            <button
-              type="button"
-              className={`admin-name-normalizer${nameNormalization.enabled ? ' is-active' : ''}`}
-              onClick={nameNormalization.toggle}
-              aria-pressed={nameNormalization.enabled}
-              title="Normaliza visualmente apellido y nombre. No modifica los datos originales."
-            >
-              <CaseUpper size={15} /> {nameNormalization.enabled ? 'Nombres normalizados' : 'Normalizar nombres'}
-            </button>
-          )}
+          <NameNormalizationAction
+            isAdmin={isAdmin}
+            table="gestion_diaria"
+            rows={registros.filter(row => row.analista === selectedAnalista)}
+            scopeLabel={`Gestión diaria · ${selectedAnalista}`}
+            onApplied={(changed) => {
+              changed.forEach(row => applyChange('UPDATE', row));
+            }}
+          />
           <button onClick={abrirNuevo} className="btn-primary daily-add-button">
             <Plus size={16} /> Agregar registro
           </button>
@@ -851,7 +850,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
                   <td className="daily-client-cell">
                     <div className="records-client">
                       <div className="records-client__identity">
-                        <span className="records-client__name">{nameNormalization.enabled ? normalizePersonName(r.nombre) : r.nombre}</span>
+                        <span className="records-client__name">{r.databaseId ? r.nombre : normalizePersonName(r.nombre)}</span>
                         {r.cuil && (
                           <>
                             <span className="records-client__separator">|</span>

@@ -5,11 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { motion } from 'framer-motion';
 import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, sanitizarCuil, formatearCuil, displayAnalista, STATUS_LABEL, parsePastedNumber } from '@/lib/utils';
 import { Registro, Recordatorio } from '@/types';
-import { CaseUpper, Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, User, ArrowUpDown, List, Grid2X2, Rows3, MoreHorizontal } from 'lucide-react';
+import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, User, ArrowUpDown, List, Grid2X2, Rows3, MoreHorizontal } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
 import { useAuth } from '@/context/AuthContext';
-import { useAdminNameNormalization } from '@/hooks/useAdminNameNormalization';
-import { normalizePersonName } from '@/lib/normalize-person-name';
+import { NameNormalizationAction } from '@/components/NameNormalizationAction';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { useFilter, ESTADOS } from '@/context/FilterContext';
@@ -1358,8 +1357,7 @@ const DeleteModal = memo(function DeleteModal({
 
 export default function RegistrosPage() {
   const { isAdmin, simulatedAnalista, setSimulatedAnalista, user } = useAuth();
-  const nameNormalization = useAdminNameNormalization();
-  const { registros, applyRegistroChange, pushRegistroChange, loading, refresh } = useRegistros();
+  const { registros, applyRegistroChange, mutateRegistros, pushRegistroChange, loading, refresh } = useRegistros();
   const { alertasConfig, hasPermiso } = useSettings();
   const { nombres: ANALISTAS } = useAnalistas();
   const searchParams = useSearchParams();
@@ -1793,7 +1791,7 @@ export default function RegistrosPage() {
         <td className="records-cell records-cell--client">
           <div className="records-client">
             <div className="records-client__identity">
-              <span className="records-client__name">{nameNormalization.enabled ? normalizePersonName(reg.nombre) : reg.nombre}</span>
+              <span className="records-client__name">{reg.nombre}</span>
               {reg.cuil && (
                 <>
                   <span className="records-client__separator">|</span>
@@ -1926,7 +1924,7 @@ export default function RegistrosPage() {
         </td>
       </tr>
     );
-  }, [vencidoOIngresoHoyIds, proximoIds, canPerform, openEdit, openActionMenu, actionMenu, showToast, nameNormalization.enabled]);
+  }, [vencidoOIngresoHoyIds, proximoIds, canPerform, openEdit, openActionMenu, actionMenu, showToast]);
 
   const rangeEnd = Math.min(currentPage * pageSize, filteredRegistros.length);
 
@@ -2201,17 +2199,19 @@ export default function RegistrosPage() {
           >
             <Rows3 size={16} /> {pageSize || 25}
           </button>
-          {nameNormalization.isAdmin && (
-            <button
-              type="button"
-              className={`admin-name-normalizer${nameNormalization.enabled ? ' is-active' : ''}`}
-              onClick={nameNormalization.toggle}
-              aria-pressed={nameNormalization.enabled}
-              title="Normaliza visualmente apellido y nombre. No modifica los datos originales."
-            >
-              <CaseUpper size={15} /> {nameNormalization.enabled ? 'Nombres normalizados' : 'Normalizar nombres'}
-            </button>
-          )}
+          <NameNormalizationAction
+            isAdmin={isAdmin}
+            table="registros"
+            rows={registros}
+            scopeLabel="Tabla de Registros · todos los analistas"
+            onApplied={(changed) => {
+              const namesById = new Map(changed.map(row => [row.id, row.nombre]));
+              mutateRegistros(current => current.map(row => {
+                const nombre = namesById.get(row.id);
+                return nombre ? { ...row, nombre } : row;
+              }));
+            }}
+          />
           {canPerform('crear_registros') && (
             <button
               type="button"
@@ -2387,7 +2387,7 @@ export default function RegistrosPage() {
                   return (
                     <article className="records-grid-card" key={reg.id}>
                       <div className="records-grid-card__head">
-                        <div><strong>{nameNormalization.enabled ? normalizePersonName(reg.nombre) : reg.nombre}</strong><span>{reg.cuil ? formatearCuil(reg.cuil) : 'Sin CUIL'}</span></div>
+                        <div><strong>{reg.nombre}</strong><span>{reg.cuil ? formatearCuil(reg.cuil) : 'Sin CUIL'}</span></div>
                         <button type="button" onClick={() => openEdit(reg)} aria-label={`Editar ${reg.nombre}`}><Edit2 size={15} /></button>
                       </div>
                       <div className="records-grid-card__metrics">
