@@ -411,7 +411,7 @@ function CompactDailyActions({
 
 export default function GestionDiariaClient({ analistaInicial }: { analistaInicial: string }) {
   const { isAdmin } = useAuth();
-  const { registros, applyChange, pushChange } = useGestionDiaria();
+  const { registros, applyChange, pushChange, pushBulkRefresh } = useGestionDiaria();
   const { nombres: analistaNombres } = useAnalistas();
   const [analista, setAnalista] = useState(analistaInicial);
   const [fechaDesde, setFechaDesde] = useState('');
@@ -767,6 +767,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
             scopeLabel={`Gestión diaria · ${selectedAnalista}`}
             onApplied={(changed) => {
               changed.forEach(row => applyChange('UPDATE', row));
+              pushBulkRefresh();
             }}
           />
           <button onClick={abrirNuevo} className="btn-primary daily-add-button">

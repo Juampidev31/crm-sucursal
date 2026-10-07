@@ -15,8 +15,9 @@ interface GestionDiariaCtx {
   registros: GestionDiaria[];
   loading: boolean;
   applyChange: (type: ChangeType, registro: GestionDiaria) => void;
-  refresh: () => void;
+  refresh: (silent?: boolean) => void;
   pushChange: (type: ChangeType, registro: GestionDiaria) => void;
+  pushBulkRefresh: () => void;
 }
 
 const GestionDiariaContext = createContext<GestionDiariaCtx | null>(null);
@@ -32,9 +33,9 @@ export function GestionDiariaProvider({ children }: { children: React.ReactNode 
   const [loading, setLoading] = useState(true);
   const refreshIdRef = useRef(0);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (silent = false) => {
     const myId = ++refreshIdRef.current;
-    setLoading(true);
+    if (!silent) setLoading(true);
     // `.limit(5000)` NO sirve para traer más de 1000 filas: Supabase aplica su
     // tope de filas por respuesta igual (medido: devolvía 1000 de 1957, sin
     // error). Hay que paginar. El orden lleva desempate por `id` porque `fecha`
@@ -53,7 +54,7 @@ export function GestionDiariaProvider({ children }: { children: React.ReactNode 
     if (refreshIdRef.current !== myId) return;
     if (error) {
       reportError('refresh:gestion_diaria', { message: error });
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
     let dropped = 0;
@@ -63,7 +64,7 @@ export function GestionDiariaProvider({ children }: { children: React.ReactNode 
       console.warn(`[GestionDiariaProvider] fila inválida [${i}] id=${rowId}:`, err.issues);
     });
     setRegistros(parsed);
-    setLoading(false);
+    if (!silent) setLoading(false);
     if (dropped > 0) reportError('refresh:gestion_diaria', { message: `${dropped} fila(s) descartada(s) por validación — revisá consola` });
   }, [reportError]);
 
@@ -99,6 +100,10 @@ export function GestionDiariaProvider({ children }: { children: React.ReactNode 
 
   const channelRef = useRealtimeBroadcast('gestion-diaria-updates', {
     update: (payload) => {
+      if (payload.type === 'REFRESH_ALL') {
+        void refresh(true);
+        return;
+      }
       const data = validateBroadcast('update', changeSchema, payload);
       if (data) applyChange(data.type, data.registro);
     },
@@ -108,7 +113,11 @@ export function GestionDiariaProvider({ children }: { children: React.ReactNode 
     channelRef.current?.send({ type: 'broadcast', event: 'update', payload: { type, registro } });
   }, [channelRef]);
 
-  const value = useMemo(() => ({ registros, loading, applyChange, refresh, pushChange }), [registros, loading, applyChange, refresh, pushChange]);
+  const pushBulkRefresh = useCallback(() => {
+    channelRef.current?.send({ type: 'broadcast', event: 'update', payload: { type: 'REFRESH_ALL' } });
+  }, [channelRef]);
+
+  const value = useMemo(() => ({ registros, loading, applyChange, refresh, pushChange, pushBulkRefresh }), [registros, loading, applyChange, refresh, pushChange, pushBulkRefresh]);
 
   return <GestionDiariaContext.Provider value={value}>{children}</GestionDiariaContext.Provider>;
 }
