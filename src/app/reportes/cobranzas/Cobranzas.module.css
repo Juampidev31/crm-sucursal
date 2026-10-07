@@ -24,16 +24,6 @@
   border-bottom: 1px solid #dfe5ec;
 }
 
-.eyebrow {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--report-blue);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.6px;
-  text-transform: uppercase;
-}
-
 .title {
   margin: 0;
   color: var(--report-ink);

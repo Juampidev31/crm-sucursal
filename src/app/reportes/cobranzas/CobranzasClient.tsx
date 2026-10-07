@@ -343,7 +343,6 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
       {/* Header */}
       <div className={styles.reportHeader}>
         <div>
-          <span className={styles.eyebrow}>Inteligencia de recupero</span>
           <h1 className={styles.title}>Reporte de Cobranzas</h1>
           <p className={styles.subtitle}>Evolución mensual de recupero, cumplimiento por tramo y comportamiento de la morosidad.</p>
         </div>
