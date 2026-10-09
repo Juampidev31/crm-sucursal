@@ -7,6 +7,7 @@ import { formatCurrency, formatDate, capitalizarNombre, capitalizarTexto, saniti
 import { Registro, Recordatorio } from '@/types';
 import { Edit2, Trash2, X, Save, AlertCircle, AlertTriangle, Bell, FileText, DollarSign, Hash, SlidersHorizontal, MessageSquare, Search, ChevronDown, CheckCircle2, Plus, Minus, Timer, Pin, User, ArrowUpDown, List, Grid2X2, Rows3, MoreHorizontal } from 'lucide-react';
 import CustomSelect from '@/components/CustomSelect';
+import MultiSelect from '@/components/MultiSelect';
 import { useAuth } from '@/context/AuthContext';
 import { NameNormalizationAction } from '@/components/NameNormalizationAction';
 import { useRegistros } from '@/features/registros/RegistrosProvider';
@@ -1366,6 +1367,7 @@ export default function RegistrosPage() {
     isCreationModalOpen, setIsCreationModalOpen,
     pageSize, setPageSize,
     currentPage, setCurrentPage,
+    showFilters, setShowFilters,
   } = useFilter();
 
   const canPerform = useCallback((permiso: string, recordAnalista?: string) => {
@@ -1375,7 +1377,6 @@ export default function RegistrosPage() {
   }, [isAdmin, simulatedAnalista, user?.username, filters?.analista, hasPermiso]);
 
   const [showInlineFilters, setShowInlineFilters] = useState(false);
-  const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
   const [sortMode, setSortMode] = useState<'fecha-desc' | 'fecha-asc' | 'monto-desc' | 'score-desc' | 'nombre-asc'>('fecha-desc');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
@@ -1470,16 +1471,16 @@ export default function RegistrosPage() {
           setShowInlineFilters(false);
           return;
         }
-        if (hayFiltros) {
+        if (showFilters) {
+          setShowFilters(false);
+        } else if (hayFiltros) {
           limpiarFiltros();
-        } else if (filtersPanelOpen) {
-          setFiltersPanelOpen(false);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [actionMenu, hayFiltros, limpiarFiltros, filtersPanelOpen, modalOpen, showInlineFilters]);
+  }, [actionMenu, hayFiltros, limpiarFiltros, modalOpen, setShowFilters, showFilters, showInlineFilters]);
 
 
 
@@ -1533,6 +1534,11 @@ export default function RegistrosPage() {
     const sPlano = s.replace(/[-.\s]/g, '');
     const hasSearch = s.length > 0;
     const hasEstados = filters.estados.length > 0;
+    const selectedAnalistas = filters.analistas.length > 0
+      ? filters.analistas
+      : filters.analista && filters.analista !== 'todos'
+        ? [filters.analista]
+        : [];
     const hasAcuerdo = filters.acuerdoPrecios.length > 0;
     const montoMin = filters.montoMin ? Number(filters.montoMin) : 0;
     const montoMax = filters.montoMax ? Number(filters.montoMax) : 0;
@@ -1543,7 +1549,7 @@ export default function RegistrosPage() {
       if (r.fijado) return false;
       if (hasSearch && !searchIndex[idx].includes(s) && !(sPlano && searchIndex[idx].includes(sPlano))) return false;
       if (hasEstados && !filters.estados.includes(r.estado)) return false;
-      if (filters.analista && r.analista !== filters.analista) return false;
+      if (selectedAnalistas.length > 0 && !selectedAnalistas.includes(r.analista)) return false;
       if (filters.fechaDesde && (!r.fecha || r.fecha < filters.fechaDesde)) return false;
       if (filters.fechaHasta && (!r.fecha || r.fecha > filters.fechaHasta)) return false;
       if (filters.montoMin && Number(r.monto) < montoMin) return false;
@@ -1592,7 +1598,7 @@ export default function RegistrosPage() {
     // la referencia del resto de propiedades, al cambiar sólo una de ellas
     // NINGUNA dependencia listada cambiaba y el memo devolvía la lista cacheada:
     // el filtro no surtía efecto hasta que se tocaba otro filtro.
-  }, [registros, searchIndex, debouncedSearch, filters.estados, filters.analista, filters.fechaDesde, filters.fechaHasta, filters.montoMin, filters.montoMax, filters.scoreMin, filters.scoreMax, filters.esRe, filters.soloAlertasVencidas, filters.acuerdoPrecios, filters.etiquetas, filters.soloRecontactosHoy, vencidoOIngresoHoyIds, alertasConfig, sortMode]);
+  }, [registros, searchIndex, debouncedSearch, filters.estados, filters.analista, filters.analistas, filters.fechaDesde, filters.fechaHasta, filters.montoMin, filters.montoMax, filters.scoreMin, filters.scoreMax, filters.esRe, filters.soloAlertasVencidas, filters.acuerdoPrecios, filters.etiquetas, filters.soloRecontactosHoy, vencidoOIngresoHoyIds, alertasConfig, sortMode]);
 
   // Modo revisión: solo cuando se entra desde "Clientes en revisión" (no al filtrar la tabla por estado)
   const isRevisionState = filters.revisionMode && filters.estados.length === 1 && (alertasConfig?.some(a => a.estado.toLowerCase() === filters.estados[0].toLowerCase()) ?? false);
@@ -2138,7 +2144,7 @@ export default function RegistrosPage() {
           </div>
         <div className="records-toolbar">
           <label className="records-search"><Search size={18} /><input value={filters.search} onChange={e => setFilter('search', e.target.value)} placeholder="Buscar cliente, CUIL o gestor..." /></label>
-          <button type="button" className={`records-toolbar-btn${hayFiltros || filtersPanelOpen ? ' is-active' : ''}`} onClick={() => setFiltersPanelOpen(open => !open)} aria-expanded={filtersPanelOpen}><SlidersHorizontal size={17} /> Filtros <ChevronDown size={14} /></button>
+          <button type="button" className={`records-toolbar-btn${hayFiltros || showFilters ? ' is-active' : ''}`} onClick={() => setShowFilters(open => !open)} aria-expanded={showFilters} aria-controls="records-filters-sidebar"><SlidersHorizontal size={17} /> Filtros <ChevronDown size={14} /></button>
           <CorporateDateRangePicker
             compact
             fromValue={filters.fechaDesde}
@@ -2209,38 +2215,6 @@ export default function RegistrosPage() {
             </button>
           )}
         </div>
-        {filtersPanelOpen && (
-          <div className="records-filters-panel">
-            <div className="records-filter-field">
-              <span>Analista</span>
-              <CustomSelect width="100%" value={filters.analista} onChange={value => setFilter('analista', String(value))} options={[{ value: '', label: 'Todos los analistas' }, ...ANALISTAS.map(nombre => ({ value: nombre, label: nombre }))]} />
-            </div>
-            <div className="records-filter-field">
-              <span>Estado</span>
-              <CustomSelect width="100%" value={filters.estados[0] || ''} onChange={value => setFilter('estados', value ? [String(value)] : [])} options={[{ value: '', label: 'Todos los estados' }, ...ESTADOS.map(estado => ({ value: estado, label: capitalizarTexto(estado) }))]} />
-            </div>
-            <div className="records-filter-field is-date-range">
-              <span>Período</span>
-              <CorporateDateRangePicker
-                fromValue={filters.fechaDesde}
-                toValue={filters.fechaHasta}
-                onChange={({ from, to }) => {
-                  setFilter('fechaDesde', from);
-                  setFilter('fechaHasta', to);
-                }}
-              />
-            </div>
-            <label className="records-filter-field">
-              <span>Score mínimo</span>
-              <input type="number" min="0" value={filters.scoreMin} onChange={e => setFilter('scoreMin', e.target.value)} placeholder="0" />
-            </label>
-            <label className="records-filter-field">
-              <span>Score máximo</span>
-              <input type="number" min="0" value={filters.scoreMax} onChange={e => setFilter('scoreMax', e.target.value)} placeholder="999" />
-            </label>
-            <button type="button" className="records-clear-filters" onClick={limpiarFiltros} disabled={!hayFiltros}><X size={15} /> Limpiar</button>
-          </div>
-        )}
         {(activeTab === 'fijados' ? registrosFijados.length === 0 : filteredRegistros.length === 0) && !loading ? (
           <div className="records-empty">
             <span className="records-empty__mark">—</span>
@@ -2294,11 +2268,15 @@ export default function RegistrosPage() {
                     </div>
                     <div className={styles.inlineFilterField}>
                       <label className={styles.inlineFilterLabel}>Analista</label>
-                      <PremiumSelect 
-                        value={filters.analista} 
-                        onChange={v => setFilter('analista', v)} 
-                        options={ANALISTAS} 
-                        placeholder="Todos los analistas" 
+                      <MultiSelect
+                        values={filters.analistas.length > 0 ? filters.analistas : filters.analista ? [filters.analista] : []}
+                        onChange={values => {
+                          setFilter('analistas', values);
+                          setFilter('analista', values.length === 1 ? values[0] : '');
+                        }}
+                        options={ANALISTAS}
+                        placeholder="Todos los analistas"
+                        clearLabel="Todos los analistas"
                       />
                     </div>
                     <div className={`${styles.inlineFilterField} ${styles.inlineFilterTags}`}>

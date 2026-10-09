@@ -263,7 +263,7 @@
 .summaryHealthProgress { transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1); }
 .summaryHealthValueWrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .summaryHealthValue { color:#172033; font-size:16px; font-weight:700; line-height:1; }
-.summaryInfo { z-index:1; flex:1; }
+.summaryInfo { z-index:1; min-width:220px; flex:1 1 300px; }
 .summaryHeadingRow { display:flex; align-items:center; gap:12px; margin-bottom:6px; }
 .summaryTitle { margin:0; color:#172033; font-size:20px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
 .summaryTitleLite { color:#1d2d44; }
@@ -272,19 +272,19 @@
 .summaryBadgeDanger { border-color:rgba(239,68,68,.2); color:#f87171; background:rgba(239,68,68,.1); }
 .summaryDescription { margin:0; color:#68778d; font-size:12px; font-weight:500; letter-spacing:.1px; }
 .summaryStrong { color:#172033; }
-.summaryMetrics { z-index:1; display:flex; flex-wrap:wrap; gap:16px; }
-.summaryMetric { display:flex; align-items:center; justify-content:space-between; gap:16px; min-width:180px; padding:12px 16px; border:1px solid; border-radius:10px; }
+.summaryMetrics { z-index:1; min-width:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); flex:2.4 1 760px; gap:12px; }
+.summaryMetric { min-width:0; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px 13px; border:1px solid; border-radius:10px; }
 .summaryMetricLight { border-color:#dfe5ec; background:#fff; box-shadow:0 6px 18px rgba(15,23,42,.06); }
 .summaryMetricDark { border-color:#dfe5ec; background:#f7f9fb; }
 .summaryMetricDanger { border-color:rgba(239,68,68,.2); background:rgba(239,68,68,.08); box-shadow:inset 0 0 20px rgba(239,68,68,.05); }
-.summaryMetricCopy { display:flex; flex-direction:column; gap:4px; }
+.summaryMetricCopy { min-width:0; display:flex; flex-direction:column; gap:4px; }
 .summaryMetricLabel { color:#888; font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; }
-.summaryMetricValue { color:#1d2d44; font-size:24px; font-weight:700; line-height:1; }
+.summaryMetricValue { color:#1d2d44; font-size:clamp(17px,1.05vw,22px); font-weight:700; line-height:1; letter-spacing:-.25px; white-space:nowrap; }
 .summaryMetricValueDark { color:#172033; }
 .summaryMetricDangerText { color:#f87171; }
-.summaryMetricIconLight { color:#cbd5e1; }
-.summaryMetricIconDark { color:#aebdcc; }
-.summaryMetricIconDanger { color:rgba(239,68,68,.4); }
+.summaryMetricIconLight { flex:0 0 auto; color:#cbd5e1; }
+.summaryMetricIconDark { flex:0 0 auto; color:#aebdcc; }
+.summaryMetricIconDanger { flex:0 0 auto; color:rgba(239,68,68,.4); }
 
 @media (max-width:760px) {
   .editModal { width:calc(100vw - 20px); max-height:calc(100dvh - 20px); }

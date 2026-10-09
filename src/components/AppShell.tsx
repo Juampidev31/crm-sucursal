@@ -12,6 +12,7 @@ import { HistoricoProvider } from '@/features/historico/HistoricoProvider';
 import { SettingsProvider } from '@/features/settings/SettingsProvider';
 import { FilterProvider, useFilter } from '@/context/FilterContext';
 import RecordsSidebar from './RecordsSidebar';
+import RecordsFiltersSidebar from './RecordsFiltersSidebar';
 import ZoomWrapper from './ZoomWrapper';
 import { Bell, X, AlertCircle, Columns, CalendarDays, ChartColumnIncreasing, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import SplitLayout from './SplitLayout';
@@ -181,7 +182,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
   const [currentZoom, setCurrentZoom] = useState(1);
   const [declaredZoomScope, setDeclaredZoomScope] = useState<{ pathname: string; scope: string }>({ pathname: '', scope: '' });
   const [isSidebarHidden, setIsSidebarHidden] = useState(true);
-  const { setShowFilters } = useFilter();
+  const { showFilters, setShowFilters } = useFilter();
   const usesRecordsShell =
     pathname === '/registros' ||
     pathname === '/gestion-diaria' ||
@@ -356,6 +357,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
         styles.shell,
         usesRecordsShell ? styles.recordsShell : '',
         pathname === '/registros' ? styles.recordsListShell : '',
+        pathname === '/registros' && showFilters ? styles.recordsFiltersOpen : '',
         isSidebarHidden ? styles.sidebarHidden : '',
         isMinimal ? styles.minimalShell : '',
         isSplitView && !isMinimal ? styles.splitShell : '',
@@ -387,7 +389,7 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
           </div>
 
           <div className={styles.topbarActions}>
-            {usesRecordsShell && !isSplitView && (
+            {usesRecordsShell && !isSplitView && !showFilters && (
               <button
                 type="button"
                 className={styles.sidebarToggle}
@@ -417,7 +419,9 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       )}
 
       <div className={styles.wrapper} data-app-wrapper>
-        {showOwnSidebar && !isSidebarHidden && <RecordsSidebar />}
+        {showOwnSidebar && pathname === '/registros' && showFilters
+          ? <RecordsFiltersSidebar />
+          : showOwnSidebar && !isSidebarHidden && <RecordsSidebar />}
         <main
           className={styles.content}
           data-app-content

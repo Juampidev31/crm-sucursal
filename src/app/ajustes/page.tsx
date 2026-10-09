@@ -19,7 +19,7 @@ import {
   ChevronLeft, ChevronRight, Upload, X, TrendingUp
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import HistoricoObjetivosTab, { type HistoricoObjetivosRow } from './HistoricoObjetivosTab';
+import HistoricoObjetivosTab, { type HistoricoObjetivosRow, type MonthlyObjectiveOverviewRow } from './HistoricoObjetivosTab';
 
 const TabFallback = () => (
   <div className={[styles["uPadding24px"], styles["uColortext-primary"], styles["uFontSize13px"], styles.uFontFamilyUi].join(' ')}>
@@ -52,6 +52,10 @@ type ActividadSubTab = 'auditoria' | 'reasignados' | 'avisos';
 
 const EMPTY_HIST_ROWS = (): HistoricoObjetivosRow[] =>
   Array.from({ length: 12 }, () => ({ capital_real: '', ops_real: '', meta_ventas: '', meta_operaciones: '' }));
+
+const HISTORICO_OBSERVATIONS_PREFIX = 'historico_observaciones_v1:';
+const historicoObservationsKey = (year: number, monthIndex: number) =>
+  `${HISTORICO_OBSERVATIONS_PREFIX}${year}:${monthIndex}`;
 
 // Barra de sub-tabs compartida por las 4 secciones
 function SubTabBar<T extends string>({ tabs, active, onSelect }: {
@@ -219,6 +223,7 @@ export default function AjustesPage() {
   const [histAnalista, setHistAnalista] = useState('PDV');
   const [histAnio, setHistAnio] = useState(() => new Date().getFullYear());
   const [histRows, setHistRows] = useState<HistoricoObjetivosRow[]>(EMPTY_HIST_ROWS());
+  const [histObservations, setHistObservations] = useState<Record<number, Record<string, string>>>({});
   const [savingHist, setSavingHist] = useState(false);
   const { toast, showSuccess, showError } = useToast(3000);
 
@@ -403,6 +408,75 @@ export default function AjustesPage() {
     if (activeTab === 'reportes' && reportesSubTab === 'historico') loadHistorico(histAnalista, histAnio);
   }, [histAnalista, histAnio, loadHistorico, activeTab, reportesSubTab]);
 
+  useEffect(() => {
+    if (activeTab !== 'reportes' || reportesSubTab !== 'historico') return;
+    let cancelled = false;
+
+    void supabase
+      .from('configuracion')
+      .select('clave, valor_json')
+      .like('clave', `${HISTORICO_OBSERVATIONS_PREFIX}${histAnio}:%`)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error('Error cargando observaciones históricas:', error);
+          return;
+        }
+
+        const next: Record<number, Record<string, string>> = {};
+        for (const row of data ?? []) {
+          const monthIndex = Number(String(row.clave).split(':').at(-1));
+          const raw = row.valor_json;
+          if (!Number.isInteger(monthIndex) || monthIndex < 0 || monthIndex > 11 || !raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+          next[monthIndex] = Object.fromEntries(
+            Object.entries(raw as Record<string, unknown>)
+              .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+          );
+        }
+        setHistObservations(next);
+      });
+
+    return () => { cancelled = true; };
+  }, [activeTab, histAnio, reportesSubTab]);
+
+  const histMonthlyOverview = useMemo<MonthlyObjectiveOverviewRow[][]>(() => {
+    const analystNames = ['PDV', ...analistasDefault];
+    const results = new Map(analystNames.map(name => [name, Array.from({ length: 12 }, () => ({ capital: 0, operations: 0 }))]));
+    const analystByKey = new Map(analistasDefault.map(name => [normalizarNombreKey(name), name]));
+
+    ctxRegistros.forEach(registro => {
+      if (registro.fecha?.slice(0, 4) !== String(histAnio) || !isVenta(registro)) return;
+      const monthIndex = Number(registro.fecha.slice(5, 7)) - 1;
+      if (monthIndex < 0 || monthIndex > 11) return;
+      const capital = Number(registro.monto) || 0;
+      const pdvResult = results.get('PDV')![monthIndex];
+      pdvResult.capital += capital;
+      pdvResult.operations += 1;
+      const matchedAnalyst = analystByKey.get(normalizarNombreKey(registro.analista));
+      if (!matchedAnalyst) return;
+      const analystResult = results.get(matchedAnalyst)![monthIndex];
+      analystResult.capital += capital;
+      analystResult.operations += 1;
+    });
+
+    const objectives = new Map(ctxObjetivos
+      .filter(objective => objective.anio === histAnio)
+      .map(objective => [`${normalizarNombreKey(objective.analista)}:${objective.mes}`, objective]));
+
+    return CONFIG.MESES_NOMBRES.map((_, monthIndex) => analystNames.map(analystName => {
+      const objective = objectives.get(`${normalizarNombreKey(analystName)}:${monthIndex}`);
+      const result = results.get(analystName)![monthIndex];
+      return {
+        analyst: analystName,
+        capitalGoal: Number(objective?.meta_ventas) || 0,
+        capitalResult: result.capital,
+        operationsGoal: Number(objective?.meta_operaciones) || 0,
+        operationsResult: result.operations,
+        observations: histObservations[monthIndex]?.[analystName] ?? '',
+      };
+    }));
+  }, [analistasDefault, ctxObjetivos, ctxRegistros, histAnio, histObservations]);
+
   // Fetch datos para Duplicados.
   // Debe paginar: sin `.range()` Supabase devuelve sólo las primeras 1000 filas
   // (content-range 0-999/*) y la detección se calculaba sobre un dataset parcial.
@@ -562,6 +636,34 @@ export default function AjustesPage() {
       showSuccess(`Objetivos guardados para ${histAnalista}`);
     } catch (err: any) { showError(`Error: ${err.message}`); }
     setSavingHist(false);
+  };
+
+  const saveMonthlyObservations = async (monthIndex: number, observations: Record<string, string>) => {
+    setSavingHist(true);
+    try {
+      const cleaned = Object.fromEntries(
+        Object.entries(observations)
+          .map(([analystName, value]) => [analystName, value.trim()])
+          .filter(([, value]) => value.length > 0)
+      );
+      const key = historicoObservationsKey(histAnio, monthIndex);
+      const { error } = Object.keys(cleaned).length > 0
+        ? await supabase.from('configuracion').upsert({ clave: key, valor_json: cleaned }, { onConflict: 'clave' })
+        : await supabase.from('configuracion').delete().eq('clave', key);
+      if (error) throw error;
+
+      setHistObservations(previous => {
+        const next = { ...previous };
+        if (Object.keys(cleaned).length > 0) next[monthIndex] = cleaned;
+        else delete next[monthIndex];
+        return next;
+      });
+      showSuccess(`Observaciones guardadas para ${CONFIG.MESES_NOMBRES[monthIndex]}`);
+    } catch (error: any) {
+      showError(`Error: ${error.message}`);
+    } finally {
+      setSavingHist(false);
+    }
   };
 
   // ========== DUPLICADOS HELPERS ==========
@@ -1041,11 +1143,13 @@ export default function AjustesPage() {
               analyst={histAnalista}
               year={histAnio}
               rows={histRows}
+              monthlyOverview={histMonthlyOverview}
               saving={savingHist}
               onAnalystChange={setHistAnalista}
               onYearChange={setHistAnio}
               setRows={setHistRows}
               onSave={saveHistorico}
+              onSaveObservations={saveMonthlyObservations}
             />
           )}
 

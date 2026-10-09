@@ -12,6 +12,7 @@ interface FilterState {
   estado: string;
   estados: string[];
   analista: string;
+  analistas: string[];
   fechaDesde: string;
   fechaHasta: string;
   montoMin: string;
@@ -31,6 +32,7 @@ const initialState: FilterState = {
   estado: '',
   estados: [],
   analista: '',
+  analistas: [],
   fechaDesde: '',
   fechaHasta: '',
   montoMin: '',
@@ -106,6 +108,7 @@ export function FilterProvider({ children }: { children: React.ReactNode }) {
     return Object.entries(filters).some(([k, v]) => {
       if (k === 'revisionMode') return false;
       if (k === 'estados') return (v as string[]).length > 0;
+      if (k === 'analistas') return (v as string[]).length > 0;
       if (k === 'acuerdoPrecios') return (v as string[]).length > 0;
       if (k === 'etiquetas') return (v as string[]).length > 0;
       if (typeof v === 'boolean') return v === true;

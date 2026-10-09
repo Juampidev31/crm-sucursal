@@ -1,0 +1,4 @@
+.option { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.option > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.check { display: grid; flex: 0 0 17px; width: 17px; height: 17px; place-items: center; color: transparent; border: 1px solid #cbd7e1; border-radius: 5px; background: #fff; }
+.checkSelected { color: #fff; border-color: #315f82; background: #315f82; }

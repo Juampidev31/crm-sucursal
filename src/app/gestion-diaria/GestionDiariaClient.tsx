@@ -10,10 +10,12 @@ import { formatDate, formatearCuil, sanitizarCuil } from '@/lib/utils';
 import { normalizePersonName } from '@/lib/normalize-person-name';
 import { NameNormalizationAction } from '@/components/NameNormalizationAction';
 import { PremiumSelect } from '@/components/PremiumSelect';
+import MultiSelect from '@/components/MultiSelect';
 import { CorporateDatePicker } from '@/components/CorporateDatePicker';
 import { CorporateDateRangePicker } from '@/components/CorporateDateRangePicker';
+import CustomSelect from '@/components/CustomSelect';
 import ModalPortal from '@/components/ModalPortal';
-import { ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, SlidersHorizontal, TableProperties, Trash2, X } from 'lucide-react';
+import { BarChart3, ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, SlidersHorizontal, TableProperties, Trash2, X } from 'lucide-react';
 import {
   buildIncomeRows,
   databaseRowToIncomeRow,
@@ -31,6 +33,52 @@ import {
 } from '@/lib/gestion-diaria-sheets';
 
 type GestionTab = 'ingresos' | 'flyers' | 'emails';
+
+interface MonthlySummaryItem {
+  label: string;
+  count: number;
+  percentage: number;
+  tone?: 'low' | 'medium' | 'high' | 'empty';
+}
+
+function monthKeyFromDate(value: string): string | null {
+  const cleanValue = value.trim();
+  const isoMatch = cleanValue.match(/^(\d{4})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}`;
+  const localMatch = cleanValue.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+  if (!localMatch) return null;
+  return `${localMatch[3]}-${localMatch[2].padStart(2, '0')}`;
+}
+
+function formatMonthKey(value: string): string {
+  const [year, month] = value.split('-').map(Number);
+  if (!year || !month) return value;
+  const label = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function buildMonthlyDistribution(values: string[], total: number): MonthlySummaryItem[] {
+  const grouped = new Map<string, { label: string; count: number }>();
+  values.forEach(value => {
+    const label = value.trim() || 'Sin datos';
+    const key = normalizeLookupValue(label) || 'sin datos';
+    const current = grouped.get(key);
+    grouped.set(key, { label: current?.label ?? label, count: (current?.count ?? 0) + 1 });
+  });
+  return Array.from(grouped.values())
+    .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, 'es'))
+    .map(item => ({ ...item, percentage: total > 0 ? (item.count / total) * 100 : 0 }));
+}
+
+function compactMonthlyDistribution(items: MonthlySummaryItem[], limit = 5): MonthlySummaryItem[] {
+  if (items.length <= limit + 1) return items;
+  const visible = items.slice(0, limit);
+  const remainder = items.slice(limit).reduce(
+    (total, item) => ({ count: total.count + item.count, percentage: total.percentage + item.percentage }),
+    { count: 0, percentage: 0 },
+  );
+  return [...visible, { label: 'Otros', ...remainder }];
+}
 
 function mergeFilterOptions(configured: readonly string[], values: string[]): string[] {
   const unique = new Map<string, string>();
@@ -416,14 +464,16 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
   const [analista, setAnalista] = useState(analistaInicial);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
-  const [tipoCliente, setTipoCliente] = useState('');
-  const [actividad, setActividad] = useState('');
-  const [estado, setEstado] = useState('');
+  const [tiposCliente, setTiposCliente] = useState<string[]>([]);
+  const [actividades, setActividades] = useState<string[]>([]);
+  const [estados, setEstados] = useState<string[]>([]);
   const [scoreMinimo, setScoreMinimo] = useState('');
   const [scoreMaximo, setScoreMaximo] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryMonth, setSummaryMonth] = useState('');
   const [form, setForm] = useState<Partial<GestionDiaria>>(initialForm);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<GestionTab>('ingresos');
@@ -499,9 +549,9 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
     return visibleIncomeRows.filter(r => {
       if (fechaDesde && (!r.fecha || r.fecha < fechaDesde)) return false;
       if (fechaHasta && (!r.fecha || r.fecha > fechaHasta)) return false;
-      if (tipoCliente && r.tipoCliente !== tipoCliente) return false;
-      if (actividad && r.actividad !== actividad) return false;
-      if (estado && r.estado !== estado) return false;
+      if (tiposCliente.length > 0 && !tiposCliente.includes(r.tipoCliente)) return false;
+      if (actividades.length > 0 && !actividades.includes(r.actividad)) return false;
+      if (estados.length > 0 && !estados.includes(r.estado)) return false;
       if (scoreMinimo || scoreMaximo) {
         const score = scoreFromText(r.score);
         if (score === null) return false;
@@ -514,7 +564,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
       }
       return true;
     });
-  }, [visibleIncomeRows, fechaDesde, fechaHasta, tipoCliente, actividad, estado, scoreMinimo, scoreMaximo, busqueda]);
+  }, [visibleIncomeRows, fechaDesde, fechaHasta, tiposCliente, actividades, estados, scoreMinimo, scoreMaximo, busqueda]);
 
   const incomeTotalPages = Math.max(1, Math.ceil(filtrados.length / incomePageSize));
   const safeIncomePage = Math.min(incomePage, incomeTotalPages);
@@ -535,22 +585,59 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
     () => mergeFilterOptions(GESTION_DIARIA_OPCIONES.estado, visibleIncomeRows.map(row => row.estado)),
     [visibleIncomeRows],
   );
-  const hasActiveFilters = Boolean(
-    busqueda || fechaDesde || fechaHasta || tipoCliente || actividad || estado || scoreMinimo || scoreMaximo,
+  const summaryMonths = useMemo(() => Array.from(new Set(
+    visibleIncomeRows.map(row => monthKeyFromDate(row.fecha)).filter((value): value is string => Boolean(value)),
+  )).sort((left, right) => right.localeCompare(left)), [visibleIncomeRows]);
+  const monthlySummaryRows = useMemo(
+    () => visibleIncomeRows.filter(row => monthKeyFromDate(row.fecha) === summaryMonth),
+    [summaryMonth, visibleIncomeRows],
   );
-  const advancedFilterCount = [tipoCliente, actividad, estado, scoreMinimo || scoreMaximo].filter(Boolean).length;
+  const monthlySummary = useMemo(() => {
+    const total = monthlySummaryRows.length;
+    const scores = new Map<string, MonthlySummaryItem>([
+      ['high', { label: 'Premium · 701 o más', count: 0, percentage: 0, tone: 'high' }],
+      ['medium', { label: 'Riesgo medio · 550 a 700', count: 0, percentage: 0, tone: 'medium' }],
+      ['low', { label: 'Score bajo · hasta 549', count: 0, percentage: 0, tone: 'low' }],
+      ['empty', { label: 'Sin datos', count: 0, percentage: 0, tone: 'empty' }],
+    ]);
+    monthlySummaryRows.forEach(row => {
+      const score = scoreFromText(row.score);
+      const key = score === null ? 'empty' : score > 700 ? 'high' : score >= 550 ? 'medium' : 'low';
+      const item = scores.get(key)!;
+      item.count += 1;
+    });
+    const scoreItems = Array.from(scores.values())
+      .filter(item => item.count > 0)
+      .map(item => ({ ...item, percentage: total > 0 ? (item.count / total) * 100 : 0 }));
+    return {
+      total,
+      tipoCliente: buildMonthlyDistribution(monthlySummaryRows.map(row => row.tipoCliente), total),
+      actividad: buildMonthlyDistribution(monthlySummaryRows.map(row => row.actividad), total),
+      estado: buildMonthlyDistribution(monthlySummaryRows.map(row => row.estado), total),
+      score: scoreItems,
+    };
+  }, [monthlySummaryRows]);
+  const hasActiveFilters = Boolean(
+    busqueda || fechaDesde || fechaHasta || tiposCliente.length || actividades.length || estados.length || scoreMinimo || scoreMaximo,
+  );
+  const advancedFilterCount = [tiposCliente.length, actividades.length, estados.length, scoreMinimo || scoreMaximo].filter(Boolean).length;
 
   const clearIncomeFilters = () => {
     setBusqueda('');
     setFechaDesde('');
     setFechaHasta('');
-    setTipoCliente('');
-    setActividad('');
-    setEstado('');
+    setTiposCliente([]);
+    setActividades([]);
+    setEstados([]);
     setScoreMinimo('');
     setScoreMaximo('');
     setIncomePage(1);
     setFiltersExpanded(false);
+  };
+
+  const abrirResumenMensual = () => {
+    setSummaryMonth(current => current && summaryMonths.includes(current) ? current : (summaryMonths[0] ?? ''));
+    setSummaryOpen(true);
   };
 
   const cambiarAnalista = (value: string) => {
@@ -770,6 +857,9 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
               pushBulkRefresh();
             }}
           />
+          <button type="button" className="daily-summary-button" onClick={abrirResumenMensual} disabled={incomeLoading || summaryMonths.length === 0}>
+            <BarChart3 size={15} /> Resumen mensual
+          </button>
           <button onClick={abrirNuevo} className="btn-primary daily-add-button">
             <Plus size={16} /> Agregar registro
           </button>
@@ -777,15 +867,15 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
         {filtersExpanded && <div className="daily-filter-bar" id="daily-advanced-filters">
           <div className="daily-filter-control">
             <span>Tipo de cliente</span>
-            <PremiumSelect value={tipoCliente} onChange={value => { setTipoCliente(value); setIncomePage(1); }} options={tipoClienteOptions} placeholder="Todos" isSearchable />
+            <MultiSelect values={tiposCliente} onChange={values => { setTiposCliente(values); setIncomePage(1); }} options={tipoClienteOptions} placeholder="Todos" clearLabel="Todos" searchable />
           </div>
           <div className="daily-filter-control">
             <span>Actividad</span>
-            <PremiumSelect value={actividad} onChange={value => { setActividad(value); setIncomePage(1); }} options={actividadOptions} placeholder="Todas" isSearchable />
+            <MultiSelect values={actividades} onChange={values => { setActividades(values); setIncomePage(1); }} options={actividadOptions} placeholder="Todas" clearLabel="Todas" searchable />
           </div>
           <div className="daily-filter-control">
             <span>Estado</span>
-            <PremiumSelect value={estado} onChange={value => { setEstado(value); setIncomePage(1); }} options={estadoOptions} placeholder="Todos" />
+            <MultiSelect values={estados} onChange={values => { setEstados(values); setIncomePage(1); }} options={estadoOptions} placeholder="Todos" clearLabel="Todos" />
           </div>
           <div className="daily-filter-control daily-score-control">
             <span>Score</span>
@@ -893,6 +983,16 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
           onSave={guardar}
           saving={saving}
           error={actionError}
+        />
+      )}
+      {summaryOpen && (
+        <MonthlySummaryModal
+          analyst={selectedAnalista}
+          month={summaryMonth}
+          months={summaryMonths}
+          summary={monthlySummary}
+          onMonthChange={setSummaryMonth}
+          onCancel={() => setSummaryOpen(false)}
         />
       )}
       {commentsTarget && (
@@ -1228,6 +1328,88 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
         />
       )}
     </div>
+  );
+}
+
+function MonthlySummaryModal({ analyst, month, months, summary, onMonthChange, onCancel }: {
+  analyst: string;
+  month: string;
+  months: string[];
+  summary: {
+    total: number;
+    tipoCliente: MonthlySummaryItem[];
+    actividad: MonthlySummaryItem[];
+    estado: MonthlySummaryItem[];
+    score: MonthlySummaryItem[];
+  };
+  onMonthChange: (value: string) => void;
+  onCancel: () => void;
+}) {
+  const sections = [
+    { key: 'tipoCliente', title: 'Tipo de cliente', items: compactMonthlyDistribution(summary.tipoCliente) },
+    { key: 'actividad', title: 'Actividad', items: compactMonthlyDistribution(summary.actividad) },
+    { key: 'estado', title: 'Estado', items: compactMonthlyDistribution(summary.estado) },
+    { key: 'score', title: 'Score', items: summary.score },
+  ] as const;
+
+  return (
+    <ModalPortal>
+      <div className="modal-overlay" onClick={onCancel}>
+        <section className="modal-content daily-modal daily-summary-modal" role="dialog" aria-modal="true" aria-labelledby="daily-summary-title" onClick={event => event.stopPropagation()}>
+          <div className="modal-header daily-modal__header daily-summary-header">
+            <div className="daily-summary-heading">
+              <span className="daily-summary-heading__icon"><BarChart3 size={19} /></span>
+              <div>
+                <h3 id="daily-summary-title">Resumen mensual</h3>
+                <p>{analyst} · Ingreso diario de ventas</p>
+              </div>
+            </div>
+            <button type="button" className="btn-icon" onClick={onCancel} aria-label="Cerrar"><X size={17} /></button>
+          </div>
+          <div className="modal-body daily-modal__body daily-summary-body">
+            <div className="daily-summary-overview">
+              <div className="daily-summary-period">
+                <span>Período</span>
+                <CustomSelect
+                  value={month}
+                  onChange={value => onMonthChange(String(value))}
+                  options={months.map(value => ({ value, label: formatMonthKey(value) }))}
+                  width="100%"
+                  menuMaxHeight="280px"
+                />
+              </div>
+              <div className="daily-summary-total">
+                <span>Registros del mes</span>
+                <strong>{summary.total.toLocaleString('es-AR')}</strong>
+              </div>
+            </div>
+
+            {summary.total === 0 ? (
+              <div className="daily-summary-empty"><BarChart3 size={24} /><strong>Sin registros para este período</strong><span>Seleccioná otro mes para consultar su resumen.</span></div>
+            ) : (
+              <div className="daily-summary-grid">
+                {sections.map(section => (
+                  <article className="daily-summary-card" key={section.key}>
+                    <header><h4>{section.title}</h4><span>{section.items.length} categorías</span></header>
+                    <div className="daily-summary-list">
+                      {section.items.map(item => (
+                        <div className={`daily-summary-row${item.tone ? ` is-${item.tone}` : ''}`} key={item.label}>
+                          <div className="daily-summary-row__label"><span>{item.label}</span><strong>{item.count.toLocaleString('es-AR')} <small>{item.percentage.toFixed(1)}%</small></strong></div>
+                          <div className="daily-summary-bar" aria-hidden="true"><span style={{ width: `${item.percentage}%` }} /></div>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="modal-footer daily-modal__footer">
+            <button type="button" className="btn-primary" onClick={onCancel}>Cerrar</button>
+          </div>
+        </section>
+      </div>
+    </ModalPortal>
   );
 }
 

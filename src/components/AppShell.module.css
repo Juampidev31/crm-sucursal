@@ -207,6 +207,11 @@
 .dailyListPageScroll :global(.daily-pagination) { flex: 0 0 auto; }
 .recordsListShell :global(.records-sidebar) { bottom: 76px; }
 .sidebarHidden .recordsPageScroll { padding-left: 12px; }
+.recordsFiltersOpen .recordsPageScroll { padding-left: 344px; }
+
+@media (max-width: 720px) {
+  .recordsFiltersOpen .recordsPageScroll { padding-left: 12px; }
+}
 
 .recordsPageScroll::-webkit-scrollbar { width: 10px; }
 .recordsPageScroll::-webkit-scrollbar-track { margin: 8px 0; border-radius: 8px; background: #e7edf3; }
