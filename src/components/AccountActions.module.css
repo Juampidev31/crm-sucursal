@@ -1,7 +1,7 @@
 .overlay {
   align-items: center;
   backdrop-filter: blur(4px);
-  background: rgb(23 32 51 / 55%);
+  background: light-dark(rgb(23 32 51 / 55%), rgba(0,0,0,0.6));
   display: flex;
   inset: 0;
   justify-content: center;
@@ -12,7 +12,7 @@
 
 .calculatorPanel {
   background: var(--surface-card);
-  border: 1px solid #d5dfe8;
+  border: 1px solid light-dark(#d5dfe8, #2d2d31);
   border-radius: 18px;
   box-shadow: var(--shadow-elevated);
   color: var(--text-strong);
@@ -33,12 +33,12 @@
 }
 
 .calculatorHeading { display: flex; align-items: center; gap: 10px; }
-.calculatorHeadingIcon { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #d5e1e9; border-radius: 10px; color: #315f82; background: #eaf2f7; }
+.calculatorHeadingIcon { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid light-dark(#d5e1e9, #2d2d31); border-radius: 10px; color: light-dark(#315f82, #689dc6); background: light-dark(#eaf2f7, #09090a); }
 .calculatorHeading > div { display: grid; gap: 2px; }
-.calculatorHeading small { color: #8491a3; font-size: 8px; font-weight: 600; }
+.calculatorHeading small { color: light-dark(#8491a3, #858591); font-size: 8px; font-weight: 600; }
 
 .calculatorTitle {
-  color: #1f2d45;
+  color: light-dark(#1f2d45, #e7e7e9);
   font-size: 13px;
   font-weight: 760;
   letter-spacing: .1px;
@@ -49,15 +49,15 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #f4f7f9;
-  border: 1px solid #e0e6ec;
+  background: light-dark(#f4f7f9, #0c0c0d);
+  border: 1px solid light-dark(#e0e6ec, #2a2a2f);
   border-radius: 9px;
-  color: #65758b;
+  color: light-dark(#65758b, #9797a1);
   cursor: pointer;
   display: flex;
 }
 
-.calculatorClose:hover { color: #263750; background: #eaf0f4; }
+.calculatorClose:hover { color: light-dark(#263750, #e2e2e4); background: light-dark(#eaf0f4, #1f1f22); }
 
 .calculatorBody {
   overflow-y: auto;

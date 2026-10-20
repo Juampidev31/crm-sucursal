@@ -202,7 +202,7 @@ const ManualTextarea = ({ label, value, onChange, placeholder, readOnly }: {
   <div className={styles.liveStyle005}>
     <label className={styles.liveStyle006}>{label}</label>
     {readOnly ? (
-      <div className={styles.liveStyle007} style={{ color: value ? '#ccc' : '#333' }}>
+      <div className={styles.liveStyle007} style={{ color: value ? 'light-dark(#ccc, #5f5f6a)' : 'light-dark(#333, #e6e6e8)' }}>
         {value || placeholder || '—'}
       </div>
     ) : (
@@ -305,7 +305,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
         {!readOnly && (
           <button
             onClick={() => toggleSection(id)}
-            className={styles.liveStyle012} style={{ background: isCollapsed ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)', color: isCollapsed ? '#555' : '#fff', boxShadow: isCollapsed ? 'none' : '0 0 15px rgba(255,255,255,0.05)' }}
+            className={styles.liveStyle012} style={{ background: isCollapsed ? 'light-dark(rgba(255,255,255,0.03), rgba(17,17,19,0.03))' : 'light-dark(rgba(255,255,255,0.08), rgba(17,17,19,0.08))', color: isCollapsed ? 'light-dark(#555, #c5c5ca)' : '#fff', boxShadow: isCollapsed ? 'none' : '0 0 15px rgba(255,255,255,0.05)' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
               e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
@@ -485,7 +485,7 @@ export default function ResumenMensualView(props: ResumenMensualViewProps) {
                   <button
                     key={p}
                     onClick={() => setPeriodoSec3(p)}
-                    className={styles.liveStyle087} style={{ background: periodoSec3 === p ? '#fb923c' : 'transparent', color: periodoSec3 === p ? '#000' : '#555' }}
+                    className={styles.liveStyle087} style={{ background: periodoSec3 === p ? '#fb923c' : 'transparent', color: periodoSec3 === p ? 'light-dark(#000, #f4f4f5)' : 'light-dark(#555, #c5c5ca)' }}
                   >
                     {p === 'mensual' ? 'Mes' : 'Total'}
                   </button>

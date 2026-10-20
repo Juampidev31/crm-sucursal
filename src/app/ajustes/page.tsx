@@ -1344,10 +1344,10 @@ export default function AjustesPage() {
             };
 
             const accionColor = (accion: string) => {
-              if (accion === 'Creación') return { bg: '#edf7f3', color: '#356b59', border: '#cde8dd' };
-              if (accion === 'Eliminación') return { bg: '#fbf1f2', color: '#9b4f59', border: '#efcfd3' };
-              if (accion?.includes('Recordatorio')) return { bg: '#f3f0f7', color: '#6d5f86', border: '#ddd4e9' };
-              return { bg: '#f6f3ed', color: '#7e6945', border: '#e5dac8' };
+              if (accion === 'Creación') return { bg: 'light-dark(#edf7f3, #10241d)', color: 'light-dark(#356b59, #6ccfa6)', border: 'light-dark(#cde8dd, #1d3d31)' };
+              if (accion === 'Eliminación') return { bg: 'light-dark(#fbf1f2, #2a1418)', color: 'light-dark(#9b4f59, #e58c98)', border: 'light-dark(#efcfd3, #4a2128)' };
+              if (accion?.includes('Recordatorio')) return { bg: 'light-dark(#f3f0f7, #1e1928)', color: 'light-dark(#6d5f86, #b5a6d6)', border: 'light-dark(#ddd4e9, #352c45)' };
+              return { bg: 'light-dark(#f6f3ed, #241f16)', color: 'light-dark(#7e6945, #d2b583)', border: 'light-dark(#e5dac8, #433826)' };
             };
 
             // — filtering —
@@ -1461,14 +1461,14 @@ export default function AjustesPage() {
                   />
 
                   <div className={[styles["uDisplayflex"], styles["uAlignItemscenter"], styles["uGap6px"]].join(' ')}>
-                    <input className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uColorccc"], styles["uFontSize12px"], styles["uPadding8px-12px"], styles["uOutlinenone"], styles["uCursorpointer"], styles["uColorSchemedark"]].join(' ')}
+                    <input className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uColorccc"], styles["uFontSize12px"], styles["uPadding8px-12px"], styles["uOutlinenone"], styles["uCursorpointer"]].join(' ')}
                       type="date"
                       value={auditFechaDesde}
                       onChange={e => { setAuditFechaDesde(e.target.value); setAuditPage(1); }}
                       title="Fecha desde"
                     />
                     <span className={[styles["uColortext-muted"], styles["uFontSize12px"]].join(' ')}>→</span>
-                    <input className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uColorccc"], styles["uFontSize12px"], styles["uPadding8px-12px"], styles["uOutlinenone"], styles["uCursorpointer"], styles["uColorSchemedark"]].join(' ')}
+                    <input className={[styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-border-subtle"], styles["uBorderRadius6px"], styles["uColorccc"], styles["uFontSize12px"], styles["uPadding8px-12px"], styles["uOutlinenone"], styles["uCursorpointer"]].join(' ')}
                       type="date"
                       value={auditFechaHasta}
                       onChange={e => { setAuditFechaHasta(e.target.value); setAuditPage(1); }}
@@ -1489,7 +1489,7 @@ export default function AjustesPage() {
                     <div className={["loading-container", styles["uMinHeight200px"]].join(' ')}><div className="spinner" /><span>Cargando registros...</span></div>
                   ) : !filtered.length ? (
                     <div className={["empty-state", styles["uMinHeight200px"]].join(' ')}>
-                      <Shield className={[styles["uMarginBottom8px"]].join(' ')} size={36} color="#333" />
+                      <Shield className={[styles["uMarginBottom8px"]].join(' ')} size={36} style={{ color: 'light-dark(#333, #8b8b94)' }} />
                       <p className={[styles["uFontWeight800"], styles["uFontSize13px"], styles["uColortext-muted"]].join(' ')}>{auditSearch || auditFilterAccion !== 'todas' || auditFilterAnalista !== 'todos' || auditFilterPeriodo !== 'todo' ? 'Sin resultados para los filtros aplicados' : 'No hay registros de auditoría'}</p>
                     </div>
                   ) : (

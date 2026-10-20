@@ -272,9 +272,9 @@
   letter-spacing: 0.2px;
   cursor: pointer;
   background: #047857;
-  border: 1px solid rgb(74 222 128 / 40%);
+  border: 1px solid light-dark(rgb(74 222 128 / 40%), rgba(74,222,128,0.54));
   border-radius: 8px;
-  box-shadow: 0 4px 14px rgb(74 222 128 / 25%);
+  box-shadow: 0 4px 14px light-dark(rgb(74 222 128 / 25%), rgba(0,0,0,0.55));
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -305,7 +305,7 @@
   color: #ff3366;
   font-size: 12px;
   background: rgb(239 68 68 / 8%);
-  border: 1px solid rgb(239 68 68 / 20%);
+  border: 1px solid light-dark(rgb(239 68 68 / 20%), rgba(239,68,68,0.27));
   border-radius: 6px;
 }
 
@@ -316,7 +316,7 @@
 }
 
 .successText {
-  color: #047857;
+  color: light-dark(#047857, #1faf86);
   font-size: 16px;
   font-weight: 700;
 }

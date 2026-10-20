@@ -21,7 +21,7 @@ interface CustomSelectProps {
   menuMaxHeight?: string;
 }
 
-export default function CustomSelect({ options, value, onChange, width = '180px', bg = '#ffffff', menuMaxHeight = '300px' }: CustomSelectProps) {
+export default function CustomSelect({ options, value, onChange, width = '180px', bg = 'var(--surface-card)', menuMaxHeight = '300px' }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 

@@ -38,7 +38,7 @@
 
 .headingIcon {
   flex: 0 0 auto;
-  color: #315b7d;
+  color: light-dark(#315b7d, #6d9ec6);
 }
 
 .iconButton,
@@ -47,7 +47,7 @@
   display: inline-grid;
   place-items: center;
   padding: 0;
-  color: #63738a;
+  color: light-dark(#63738a, #9898a2);
   cursor: pointer;
 }
 
@@ -60,8 +60,8 @@
 }
 
 .iconButton:hover {
-  color: #315b7d;
-  background: #eaf0f5;
+  color: light-dark(#315b7d, #6d9ec6);
+  background: light-dark(#eaf0f5, #1e1e21);
 }
 
 .closeButton {
@@ -91,7 +91,7 @@
 .field > label {
   display: block;
   margin-bottom: 8px;
-  color: #596980;
+  color: light-dark(#596980, #a5a5ae);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .8px;
@@ -103,7 +103,7 @@
   box-sizing: border-box;
   height: var(--control-height);
   padding: 0 12px;
-  color: #22324a;
+  color: light-dark(#22324a, #e4e4e7);
   background: var(--control-background);
   border: 1px solid var(--control-border);
   border-radius: var(--control-radius);
@@ -144,9 +144,9 @@
 
 .chip {
   padding: 10px 16px;
-  color: #66758c;
-  background: #f8fafc;
-  border: 1px solid #d8e1ea;
+  color: light-dark(#66758c, #9797a1);
+  background: light-dark(#f8fafc, #0e0e10);
+  border: 1px solid light-dark(#d8e1ea, #2c2c31);
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
@@ -156,32 +156,32 @@
 }
 
 .chip:hover {
-  color: #315b7d;
-  background: #eef3f7;
-  border-color: #aebdcc;
+  color: light-dark(#315b7d, #6d9ec6);
+  background: light-dark(#eef3f7, #1c1c1f);
+  border-color: light-dark(#aebdcc, #38383e);
 }
 
 .chipActive {
-  color: #315b7d;
-  background: #eaf0f5;
-  border-color: #9fb2c2;
+  color: light-dark(#315b7d, #6d9ec6);
+  background: light-dark(#eaf0f5, #1e1e21);
+  border-color: light-dark(#9fb2c2, #344451);
 }
 
 .chipDanger {
-  color: #9b4f59;
-  background: #fbf1f2;
-  border-color: #e7bec3;
+  color: light-dark(#9b4f59, #c1858d);
+  background: light-dark(#fbf1f2, #301215);
+  border-color: light-dark(#e7bec3, #60242c);
 }
 
 .error {
   margin: 0;
-  color: #b42318;
+  color: light-dark(#b42318, #e5746c);
   font-size: 13px;
 }
 
 .emptyPreview {
   padding: 32px 0;
-  color: #66758c;
+  color: light-dark(#66758c, #9797a1);
   font-size: 14px;
   text-align: center;
 }
@@ -189,7 +189,7 @@
 .tableViewport {
   max-height: 60vh;
   overflow: auto;
-  border: 1px solid #dce4ec;
+  border: 1px solid light-dark(#dce4ec, #2b2b2f);
   border-radius: 8px;
 }
 
@@ -203,13 +203,13 @@
   position: sticky;
   z-index: 1;
   top: 0;
-  background: #f6f8fb;
+  background: light-dark(#f6f8fb, #0d0d0f);
 }
 
 .previewTable th {
   padding: 10px 12px;
-  color: #66758c;
-  border-bottom: 1px solid #dce4ec;
+  color: light-dark(#66758c, #9797a1);
+  border-bottom: 1px solid light-dark(#dce4ec, #2b2b2f);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .5px;
@@ -221,19 +221,19 @@
 .previewTable td {
   overflow: hidden;
   padding: 10px 12px;
-  color: #22324a;
-  border-bottom: 1px solid #edf1f5;
+  color: light-dark(#22324a, #e4e4e7);
+  border-bottom: 1px solid light-dark(#edf1f5, #27272b);
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .previewTable tbody tr:nth-child(even) {
-  background: #f9fbfc;
+  background: light-dark(#f9fbfc, #0e0e10);
 }
 
 .previewTable tbody tr:hover {
-  background: #f0f4f7;
+  background: light-dark(#f0f4f7, #1b1b1e);
 }
 
 .colName { width: 180px; }
@@ -287,9 +287,9 @@
 }
 
 .actionDisabled {
-  color: #718096;
-  background: #eef2f6;
-  border-color: #d7e0e8;
+  color: light-dark(#718096, #90909a);
+  background: light-dark(#eef2f6, #0a0a0b);
+  border-color: light-dark(#d7e0e8, #2c2c31);
 }
 
 @media (max-width: 760px) {

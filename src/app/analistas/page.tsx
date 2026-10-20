@@ -1883,14 +1883,12 @@ export default function AnalistasPage() {
                     onChange={val => setSec4Mes(String(val))}
                     options={[{ label: 'Todos', value: '' }, ...CONFIG.MESES_NOMBRES.map((m, i) => ({ label: m, value: String(i + 1).padStart(2, '0') }))]}
                     width="140px"
-                    bg="#ffffff"
                   />
                   <CustomSelect
                     value={sec4Anio}
                     onChange={val => setSec4Anio(Number(val))}
                     options={[2024, 2025, 2026].map(y => ({ label: String(y), value: y }))}
                     width="100px"
-                    bg="#ffffff"
                   />
                 </div>
               </div>

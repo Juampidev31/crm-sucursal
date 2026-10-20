@@ -34,7 +34,7 @@ export default function RecordsSidebar() {
 
   const item = ({ label, icon: Icon, href, active, notification }: RecordsNavItem) => (
     <button key={label} type="button" className={`records-nav-item${active ? ' is-active' : ''}`} onClick={() => router.push(href)}>
-      <span className="records-nav-icon"><Icon size={23} strokeWidth={1.8} />{notification && <i />}</span>
+      <span className="records-nav-icon"><Icon size={20} strokeWidth={1.6} />{notification && <i />}</span>
       <span>{label}</span>
     </button>
   );
@@ -51,7 +51,7 @@ export default function RecordsSidebar() {
             className={`records-nav-item${pathname === '/ajustes' ? ' is-active' : ''}`}
             onClick={() => router.push('/ajustes')}
           >
-            <span className="records-nav-icon"><Settings size={23} strokeWidth={1.8} /></span>
+            <span className="records-nav-icon"><Settings size={20} strokeWidth={1.6} /></span>
             <span>Configuración</span>
           </button>
         )}

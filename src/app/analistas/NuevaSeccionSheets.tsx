@@ -134,15 +134,15 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
       flexDirection: 'column',
       minHeight: reportAppearance ? 0 : 400,
       height: '100%',
-      background: reportAppearance ? '#fff' : 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--surface-card)',
-      boxShadow: reportAppearance ? 'none' : '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+      background: reportAppearance ? 'light-dark(#fff, #111113)' : 'linear-gradient(180deg, light-dark(rgba(255,255,255,0.03), rgba(17,17,19,0.03)) 0%, light-dark(rgba(255,255,255,0), rgba(17,17,19,0)) 100%), var(--surface-card)',
+      boxShadow: reportAppearance ? 'none' : '0 4px 40px light-dark(rgba(0,0,0,0.4), rgba(0,0,0,0.55)), inset 0 1px 0 rgba(255,255,255,0.03)',
       padding: reportAppearance ? 16 : 24,
       borderRadius: reportAppearance ? 12 : 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexShrink: 0 }}>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Tag size={15} color="#315b7d" />
-          <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: reportAppearance ? '#263550' : '#fff', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
+          <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: reportAppearance ? 'light-dark(#263550, #e2e2e4)' : '#fff', margin: 0, whiteSpace: 'normal', lineHeight: 1.2 }}>
             CATEGORÍAS
           </h2>
         </div>
@@ -170,7 +170,7 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
                 key={p}
                 onClick={() => setViewMode(p)}
                 className={viewMode === p ? 'is-active' : undefined}
-                style={reportAppearance ? { background: viewMode === p ? '#315b7d' : 'transparent', color: viewMode === p ? '#fff' : '#667085' } : {
+                style={reportAppearance ? { background: viewMode === p ? '#315b7d' : 'transparent', color: viewMode === p ? '#fff' : 'light-dark(#667085, #8b8b94)' } : {
                   padding: '4px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
                   fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px',
                   background: viewMode === p ? '#315b7d' : 'transparent',
@@ -182,7 +182,7 @@ export default function NuevaSeccionSheets({ analista, active = true, reportAppe
             ))}
           </div>
 
-          <span style={{ fontSize: 11, color: reportAppearance ? '#667085' : '#444', minWidth: 40, textAlign: 'right' }}>{filteredData ? Math.max(filteredData.length - 1, 0) : 0} ops</span>
+          <span style={{ fontSize: 11, color: reportAppearance ? 'light-dark(#667085, #9999a3)' : 'light-dark(#444, #dddde0)', minWidth: 40, textAlign: 'right' }}>{filteredData ? Math.max(filteredData.length - 1, 0) : 0} ops</span>
         </div>
       </div>
 
@@ -232,11 +232,11 @@ function DistBlockSheets({
       {titulo && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10, flexShrink: 0 }}>
           <div style={{ width: 24, height: 24, borderRadius: 6, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: 0.8 }}>{titulo}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'light-dark(#555, #c5c5ca)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{titulo}</span>
         </div>
       )}
       <div className="category-sheet-panel" style={{
-        ...(!reportAppearance ? { background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%), var(--surface-card)', border: '1px solid rgba(255,255,255,0.04)', boxShadow: '0 4px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)', overflowX: 'hidden' as const, overflowY: 'hidden' as const } : {}),
+        ...(!reportAppearance ? { background: 'linear-gradient(180deg, light-dark(rgba(255,255,255,0.03), rgba(17,17,19,0.03)) 0%, light-dark(rgba(255,255,255,0), rgba(17,17,19,0)) 100%), var(--surface-card)', border: '1px solid rgba(255,255,255,0.04)', boxShadow: '0 4px 40px light-dark(rgba(0,0,0,0.4), rgba(0,0,0,0.55)), inset 0 1px 0 rgba(255,255,255,0.03)', overflowX: 'hidden' as const, overflowY: 'hidden' as const } : {}),
         borderRadius: 10, 
         display: 'flex',
         flexDirection: 'column',
@@ -273,14 +273,14 @@ function DistBlockSheets({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: itemColor, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, ...(!reportAppearance ? { color: '#8f929d' } : {}), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
+                    <span style={{ fontSize: 12, ...(!reportAppearance ? { color: 'light-dark(#8f929d, #84848f)' } : {}), fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label?.trim()}</span>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                    <span className="category-sheet-value" style={{ fontSize: 12, fontWeight: 700, ...(!reportAppearance ? { color: '#fff' } : {}), background: 'rgba(255,255,255,0.05)', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
+                    <span className="category-sheet-value" style={{ fontSize: 12, fontWeight: 700, ...(!reportAppearance ? { color: '#fff' } : {}), background: 'light-dark(rgba(255,255,255,0.05), rgba(17,17,19,0.05))', padding: '1px 7px', borderRadius: 4 }}>{d.cantidad}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: itemColor, minWidth: 34, textAlign: 'right' }}>{pct.toFixed(0)}%</span>
                   </div>
                 </div>
-                <div style={{ height: 2, background: reportAppearance ? '#e7edf2' : 'rgba(255,255,255,0.04)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: 2, background: reportAppearance ? 'light-dark(#e7edf2, #080809)' : 'light-dark(rgba(255,255,255,0.04), rgba(17,17,19,0.04))', borderRadius: 2, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: itemColor, opacity: 0.8, borderRadius: 2 }} />
                 </div>
               </div>
@@ -289,8 +289,8 @@ function DistBlockSheets({
         </div>
         
         {noEspData && (
-          <div className="category-sheet-footer" style={{ padding: '12px 14px', ...(!reportAppearance ? { background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.03)' } : {}) }}>
-            <span style={{ fontSize: 10, ...(!reportAppearance ? { color: '#666' } : {}), fontStyle: 'italic' }}>* {noEspData.cantidad} sin especificar</span>
+          <div className="category-sheet-footer" style={{ padding: '12px 14px', ...(!reportAppearance ? { background: 'light-dark(rgba(0,0,0,0.2), rgba(255,255,255,0.26))', borderTop: '1px solid rgba(255,255,255,0.03)' } : {}) }}>
+            <span style={{ fontSize: 10, ...(!reportAppearance ? { color: 'light-dark(#666, #aeaeb5)' } : {}), fontStyle: 'italic' }}>* {noEspData.cantidad} sin especificar</span>
           </div>
         )}
       </div>

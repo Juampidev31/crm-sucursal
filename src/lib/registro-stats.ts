@@ -106,4 +106,4 @@ export const buildDistEmpleador = (fuente: Registro[]) => {
 // Color según % de cumplimiento (versión Tab/View; analistas y la vista pública
 // usan paletas propias intencionalmente distintas)
 export const cumplColor = (pct: number | null) =>
-  pct === null ? '#555' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';
+  pct === null ? 'light-dark(#555, #8b8b94)' : pct >= 100 ? '#34d399' : pct >= 75 ? '#fbbf24' : '#ff3366';

@@ -1,9 +1,9 @@
 .root {
   overflow: visible;
-  border: 1px solid #ccd9e4;
+  border: 1px solid light-dark(#ccd9e4, #2f2f34);
   border-radius: 18px;
-  background: #f4f7f9;
-  box-shadow: 0 18px 48px rgba(18, 35, 52, .11);
+  background: light-dark(#f4f7f9, #0c0c0d);
+  box-shadow: 0 18px 48px light-dark(rgba(18, 35, 52, .11), rgba(0,0,0,0.375));
   font-family: var(--font-sans);
 }
 
@@ -23,8 +23,8 @@
   justify-content: space-between;
   gap: 20px;
   padding: 16px 18px;
-  border-bottom: 1px solid #d8e2ea;
-  background: #fff;
+  border-bottom: 1px solid light-dark(#d8e2ea, #2c2c31);
+  background: light-dark(#fff, #111113);
   border-radius: 18px 18px 0 0;
 }
 
@@ -36,15 +36,15 @@
   place-items: center;
   width: 40px;
   height: 40px;
-  color: #315f82;
-  border: 1px solid #c8d9e5;
+  color: light-dark(#315f82, #689dc6);
+  border: 1px solid light-dark(#c8d9e5, #2f2f34);
   border-radius: 12px;
-  background: #edf4f8;
+  background: light-dark(#edf4f8, #0a0a0b);
 }
 
 .identity p {
   margin: 0 0 2px;
-  color: #718096;
+  color: light-dark(#718096, #90909a);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: .9px;
@@ -53,7 +53,7 @@
 
 .identity h2 {
   margin: 0;
-  color: #192941;
+  color: light-dark(#192941, #e9e9ec);
   font-size: 16px;
   font-weight: 750;
   line-height: 1.2;
@@ -62,7 +62,7 @@
 .identity div > span {
   display: block;
   margin-top: 3px;
-  color: #7b899c;
+  color: light-dark(#7b899c, #8b8b96);
   font-size: 9px;
   font-weight: 600;
 }
@@ -71,16 +71,16 @@
 
 .selectWrap :global(.custom-select__trigger) {
   min-height: 36px;
-  border-color: #d2dde6;
+  border-color: light-dark(#d2dde6, #2e2e32);
   border-radius: 9px;
-  background: #fff;
+  background: light-dark(#fff, #111113);
   box-shadow: none;
 }
 
 .selectWrap :global(.custom-select__trigger:hover),
 .selectWrap :global(.custom-select__trigger[aria-expanded='true']) {
-  border-color: #9eb5c6;
-  background: #f7fafc;
+  border-color: light-dark(#9eb5c6, #314554);
+  background: light-dark(#f7fafc, #161618);
 }
 
 .body { overflow: hidden; padding: 14px; border-radius: 0 0 18px 18px; }
@@ -94,9 +94,9 @@
 .tableCard {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #dbe4eb;
+  border: 1px solid light-dark(#dbe4eb, #2b2b30);
   border-radius: 12px;
-  background: #fff;
+  background: light-dark(#fff, #111113);
 }
 
 .tableSummary {
@@ -104,13 +104,13 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px 10px;
-  border-bottom: 1px solid #e3e9ef;
-  background: linear-gradient(135deg, #f9fbfc, #f1f6f8);
+  border-bottom: 1px solid light-dark(#e3e9ef, #29292e);
+  background: linear-gradient(135deg, light-dark(#f9fbfc, #0e0e10), light-dark(#f1f6f8, #0b0b0c));
 }
 
 .tableLabel {
   display: block;
-  color: #65758a;
+  color: light-dark(#65758a, #9898a2);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: .75px;
@@ -119,10 +119,10 @@
 
 .analystCount {
   padding: 5px 8px;
-  color: #315f82;
-  border: 1px solid #c8d9e5;
+  color: light-dark(#315f82, #689dc6);
+  border: 1px solid light-dark(#c8d9e5, #2f2f34);
   border-radius: 8px;
-  background: #edf4f8;
+  background: light-dark(#edf4f8, #0a0a0b);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: .35px;
@@ -142,8 +142,8 @@
   height: 42px;
   padding: 7px 12px;
   box-sizing: border-box;
-  border-bottom: 1px solid #e8edf1;
-  color: #35465e;
+  border-bottom: 1px solid light-dark(#e8edf1, #28282c);
+  color: light-dark(#35465e, #d5d5d9);
   font-size: 10px;
   text-align: right;
   vertical-align: middle;
@@ -152,9 +152,9 @@
 
 .comparisonTable th {
   height: 34px;
-  color: #68788e;
-  background: #f8fafb;
-  border-color: #dfe7ed;
+  color: light-dark(#68788e, #9595a0);
+  background: light-dark(#f8fafb, #0e0e0f);
+  border-color: light-dark(#dfe7ed, #2a2a2f);
   font-size: 8px;
   font-weight: 800;
   letter-spacing: .55px;
@@ -163,7 +163,7 @@
 
 .comparisonTable th:first-child,
 .comparisonTable td:first-child { text-align: left; }
-.comparisonTable tbody tr:hover td { background: #f8fafb; }
+.comparisonTable tbody tr:hover td { background: light-dark(#f8fafb, #161618); }
 .comparisonTable tbody tr:last-child td { border-bottom: 0; }
 
 .analystDot {
@@ -172,10 +172,10 @@
   height: 6px;
   margin-right: 7px;
   border-radius: 50%;
-  background: #7892a4;
+  background: light-dark(#7892a4, #3a3a40);
 }
 
-.reachedValue { color: #22344b !important; font-weight: 750; }
+.reachedValue { color: light-dark(#22344b, #e4e4e7) !important; font-weight: 750; }
 
 .complianceBadge {
   display: inline-flex;
@@ -190,9 +190,9 @@
   text-align: center;
 }
 
-.complianceHigh { color: #326d5b; border-color: #cfe6dc; background: #edf7f3; }
-.complianceMid { color: #8a6b31; border-color: #eadfbd; background: #fbf7e9; }
-.complianceLow { color: #95505a; border-color: #edcfd4; background: #fff0f1; }
+.complianceHigh { color: light-dark(#326d5b, #4ca58a); border-color: light-dark(#cfe6dc, #2d5745); background: light-dark(#edf7f3, #142e24); }
+.complianceMid { color: light-dark(#8a6b31, #bd9345); border-color: light-dark(#eadfbd, #605224); background: light-dark(#fbf7e9, #302912); }
+.complianceLow { color: light-dark(#95505a, #c08b92); border-color: light-dark(#edcfd4, #60242e); background: light-dark(#fff0f1, #301214); }
 
 @media (max-width: 900px) {
   .tablesGrid { grid-template-columns: minmax(0, 1fr); }

@@ -356,7 +356,6 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       className={[
         styles.shell,
         usesRecordsShell ? styles.recordsShell : '',
-        pathname === '/registros' ? styles.recordsListShell : '',
         pathname === '/registros' && showFilters ? styles.recordsFiltersOpen : '',
         isSidebarHidden ? styles.sidebarHidden : '',
         isMinimal ? styles.minimalShell : '',

@@ -1,7 +1,7 @@
 .page,
 .errorPage {
   min-height: 100vh;
-  background: #eef3f7;
+  background: light-dark(#eef3f7, #0a0a0b);
   font-family: var(--font-sans);
 }
 
@@ -17,10 +17,10 @@
   z-index: 100;
   top: 0;
   padding: 14px 24px;
-  border-bottom: 1px solid #d9e3ea;
+  border-bottom: 1px solid light-dark(#d9e3ea, #2c2c30);
   backdrop-filter: blur(14px);
-  background: rgba(255, 255, 255, .92);
-  box-shadow: 0 8px 24px rgba(28, 49, 72, .055);
+  background: light-dark(rgba(255, 255, 255, .92), rgba(17,17,19,0.92));
+  box-shadow: 0 8px 24px light-dark(rgba(28, 49, 72, .055), rgba(0,0,0,0.238));
 }
 
 .headerInner {
@@ -46,15 +46,15 @@
   height: 42px;
   flex: 0 0 42px;
   place-items: center;
-  color: #315f82;
-  background: #edf4f8;
-  border: 1px solid #d2e0e9;
+  color: light-dark(#315f82, #689dc6);
+  background: light-dark(#edf4f8, #0a0a0b);
+  border: 1px solid light-dark(#d2e0e9, #2d2d32);
   border-radius: 12px;
 }
 
 .brand {
   margin-bottom: 2px;
-  color: #738195;
+  color: light-dark(#738195, #90909a);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -71,9 +71,9 @@
 
 .periodBadge {
   padding: 8px 13px;
-  color: #315f82;
-  background: #f5f8fa;
-  border: 1px solid #d7e2e9;
+  color: light-dark(#315f82, #689dc6);
+  background: light-dark(#f5f8fa, #0d0d0e);
+  border: 1px solid light-dark(#d7e2e9, #2c2c31);
   border-radius: 999px;
   font-size: 11px;
   font-weight: 750;
@@ -112,10 +112,10 @@
   width: 100%;
   max-width: 500px;
   padding: 40px;
-  border: 1px solid #fecdd3;
+  border: 1px solid light-dark(#fecdd3, #60242c);
   border-radius: 16px;
   background: var(--surface-card);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 18px 45px light-dark(rgba(15, 23, 42, 0.1), rgba(0,0,0,0.35));
   text-align: center;
 }
 
@@ -139,7 +139,7 @@
 }
 
 .errorMessage {
-  color: #64748b;
+  color: light-dark(#64748b, #9898a2);
   font-size: 14px;
   line-height: 1.6;
 }

@@ -788,7 +788,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
       <section className="daily-management-card">
       <div className="daily-management-header">
         <div className="daily-management-title">
-          <span className="daily-management-title__icon"><ClipboardList size={18} /></span>
+          <span className="daily-management-title__icon"><ClipboardList size={20} strokeWidth={1.8} /></span>
           <div><h2>Gestión diaria</h2><p>Seguimiento operativo y rendimiento comercial</p></div>
         </div>
         <div className="daily-management-analyst">
@@ -961,14 +961,15 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
             {filtrados.length === 0 && (
               <p className="daily-empty-state">Sin registros para los filtros actuales.</p>
             )}
+            {/* Igual que Registros: la paginación forma parte del scroll y aparece después de la última fila. */}
+            <DailyPagination
+              total={filtrados.length}
+              page={safeIncomePage}
+              pageSize={incomePageSize}
+              onPageChange={setIncomePage}
+              onPageSizeChange={value => { setIncomePageSize(value); setIncomePage(1); }}
+            />
           </div>
-          <DailyPagination
-            total={filtrados.length}
-            page={safeIncomePage}
-            pageSize={incomePageSize}
-            onPageChange={setIncomePage}
-            onPageSizeChange={value => { setIncomePageSize(value); setIncomePage(1); }}
-          />
         </div>
       )}
       </> : (
@@ -1294,15 +1295,15 @@ function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<Gestion
             </tbody>
             </table>
             {visibleRows.length === 0 && <div className="daily-sheet-state"><span>Sin resultados para la búsqueda actual.</span></div>}
+            <DailyPagination
+              total={visibleRows.length}
+              page={safePage}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={value => { setPageSize(value); setPage(1); }}
+              itemLabel={tab === 'flyers' ? 'flyers' : 'emails'}
+            />
           </div>
-          <DailyPagination
-            total={visibleRows.length}
-            page={safePage}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={value => { setPageSize(value); setPage(1); }}
-            itemLabel={tab === 'flyers' ? 'flyers' : 'emails'}
-          />
         </div>
       )}
       {entryError && !entryModalOpen && <div className="daily-action-error">{entryError}</div>}

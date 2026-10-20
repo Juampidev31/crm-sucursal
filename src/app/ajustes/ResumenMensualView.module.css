@@ -814,7 +814,6 @@
   font-size: 12px;
   padding: 7px 10px;
   outline: none;
-  color-scheme: light;
 }
 
 .liveStyle116 {
@@ -823,7 +822,7 @@
 
 .liveStyle117 {
   background: rgba(239,68,68,0.06);
-  border: 1px solid rgba(239,68,68,0.12);
+  border: 1px solid light-dark(rgba(239,68,68,0.12), rgba(239,68,68,0.162));
   border-radius: 8px;
   color: #ff3366;
   cursor: pointer;

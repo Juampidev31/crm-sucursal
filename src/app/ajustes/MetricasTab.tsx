@@ -179,7 +179,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
           return (
             <div key={view.id} className="metricas-state-view" style={{
               ...(!reportAppearance ? {
-                background: 'rgba(255,255,255,0.01)',
+                background: 'light-dark(rgba(255,255,255,0.01), rgba(17,17,19,0.01))',
                 borderRadius: '28px',
                 border: '1px solid rgba(255,255,255,0.03)',
                 padding: isSingle ? '24px' : '32px',
@@ -204,7 +204,7 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                   width={reportAppearance ? "210px" : "280px"}
                   valueSize={view.data.totalMonto >= 100_000_000 ? 12 : 14}
                 />
-                <div style={{ marginTop: '20px', fontSize: '11px', color: '#555', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                <div style={{ marginTop: '20px', fontSize: '11px', color: 'light-dark(#555, #c5c5ca)', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                   {view.data.totalOps} OPERACIONES TOTALES
                 </div>
               </div>
@@ -218,26 +218,26 @@ export default function MetricasTab({ selectedMes: propMes, selectedAnio: propAn
                   
                   return (
                     <div key={s.key} className="metricas-state-row" style={{
-                      ...(!reportAppearance ? { display: 'flex', padding: '14px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.01)' } : {}),
+                      ...(!reportAppearance ? { display: 'flex', padding: '14px 20px', background: 'light-dark(rgba(255,255,255,0.02), rgba(17,17,19,0.02))', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.01)' } : {}),
                       justifyContent: 'space-between', alignItems: 'center',
                     }}>
                       <div className="metricas-state-name" style={{ display: 'flex', ...(!reportAppearance ? { gap: '16px' } : {}), alignItems: 'center' }}>
                         <div style={{ width: '4px', height: '24px', background: s.color, borderRadius: '4px' }} />
                         <div>
                           <div style={{ fontWeight: 700, ...(!reportAppearance ? { fontSize: '13px', color: '#eee' } : {}) }}>{s.label}</div>
-                          <div style={{ ...(!reportAppearance ? { fontSize: '10px', color: '#555' } : {}), fontWeight: 700 }}>{s.ops} OPERACIONES · {pct}%</div>
+                          <div style={{ ...(!reportAppearance ? { fontSize: '10px', color: 'light-dark(#555, #c5c5ca)' } : {}), fontWeight: 700 }}>{s.ops} OPERACIONES · {pct}%</div>
                         </div>
                       </div>
                       <div className="metricas-state-value" style={{ textAlign: 'right' }}>
                         <div style={{ fontWeight: 700, ...(!reportAppearance ? { fontSize: '15px', color: '#fff' } : {}) }}>{formatCurrency(s.monto)}</div>
-                        {isSingle && <div style={{ ...(!reportAppearance ? { fontSize: '9px', color: '#444' } : {}), fontWeight: 700 }}>TICKET: {formatCurrency(tick)}</div>}
+                        {isSingle && <div style={{ ...(!reportAppearance ? { fontSize: '9px', color: 'light-dark(#444, #dddde0)' } : {}), fontWeight: 700 }}>TICKET: {formatCurrency(tick)}</div>}
                       </div>
                     </div>
                   );
                 })}
                 
                 {view.data.totalOps === 0 && (
-                  <div style={{ textAlign: 'center', padding: '60px 20px', color: '#333', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '24px', fontSize: '13px' }}>
+                  <div style={{ textAlign: 'center', padding: '60px 20px', color: 'light-dark(#333, #e6e6e8)', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '24px', fontSize: '13px' }}>
                     No se encontraron registros para este periodo.
                   </div>
                 )}

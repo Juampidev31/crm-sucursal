@@ -128,7 +128,7 @@
   color: #f87171;
   font-size: 13px;
   background: rgb(239 68 68 / 8%);
-  border: 1px solid rgb(239 68 68 / 20%);
+  border: 1px solid light-dark(rgb(239 68 68 / 20%), rgba(239,68,68,0.27));
   border-radius: 8px;
 }
 
@@ -200,7 +200,7 @@
 }
 
 .noIncentiveBadge {
-  color: #a16207;
+  color: light-dark(#a16207, #cb8724);
   background: rgb(251 191 36 / 8%);
 }
 
@@ -225,9 +225,9 @@
 }
 
 .deleteButton:hover {
-  color: #b42318;
-  background: #fff0f1;
-  border-color: rgb(180 35 24 / 30%);
+  color: light-dark(#b42318, #e5746c);
+  background: light-dark(#fff0f1, #301214);
+  border-color: light-dark(rgb(180 35 24 / 30%), rgba(180,35,24,0.405));
 }
 
 @media (max-width: 560px) {

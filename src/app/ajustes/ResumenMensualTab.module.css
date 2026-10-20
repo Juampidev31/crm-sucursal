@@ -165,8 +165,8 @@
 }
 
 .liveStyle035 {
-  background: #fff;
-  border: 1px solid #d8e3ea;
+  background: light-dark(#fff, #111113);
+  border: 1px solid light-dark(#d8e3ea, #2c2c31);
   border-radius: 13px;
   padding: 12px 14px;
   display: flex;
@@ -175,7 +175,7 @@
   gap: 16px;
   animation: fadeInDown .22s ease-out;
   margin-top: -6px;
-  box-shadow: 0 7px 20px rgba(28, 49, 72, .055);
+  box-shadow: 0 7px 20px light-dark(rgba(28, 49, 72, .055), rgba(0,0,0,0.238));
 }
 
 .liveStyle036 {
@@ -190,10 +190,10 @@
   width: 36px;
   height: 36px;
   flex: 0 0 36px;
-  color: #315f82;
+  color: light-dark(#315f82, #689dc6);
   border-radius: 10px;
-  background: #edf4f8;
-  border: 1px solid #d2e0e9;
+  background: light-dark(#edf4f8, #0a0a0b);
+  border: 1px solid light-dark(#d2e0e9, #2d2d32);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -208,7 +208,7 @@
 
 .liveStyle039 {
   font-size: 11px;
-  color: #52647a;
+  color: light-dark(#52647a, #aeaeb5);
   font-weight: 750;
   letter-spacing: .15px;
 }
@@ -217,8 +217,8 @@
   width: fit-content;
   max-width: 100%;
   padding: 3px 7px;
-  color: #27384c;
-  background: #f5f7f9;
+  color: light-dark(#27384c, #e3e3e5);
+  background: light-dark(#f5f7f9, #0c0c0e);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 650;
@@ -246,12 +246,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 5px 13px rgba(49, 95, 130, .18);
+  box-shadow: 0 5px 13px light-dark(rgba(49, 95, 130, .18), rgba(0,0,0,0.55));
   transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
 }
 
-.liveStyle042:hover { background: #284f6d; box-shadow: 0 7px 16px rgba(49, 95, 130, .22); transform: translateY(-1px); }
-.liveStyle042.linkCopied { color: #397363; background: #eaf3f0; border-color: #c9ddd6; box-shadow: none; }
+.liveStyle042:hover { background: #284f6d; box-shadow: 0 7px 16px light-dark(rgba(49, 95, 130, .22), rgba(0,0,0,0.55)); transform: translateY(-1px); }
+.liveStyle042.linkCopied { color: light-dark(#397363, #54aa92); background: light-dark(#eaf3f0, #182a24); border-color: light-dark(#c9ddd6, #335147); box-shadow: none; }
 
 @media (max-width: 720px) {
   .liveStyle035 { align-items: stretch; flex-direction: column; }

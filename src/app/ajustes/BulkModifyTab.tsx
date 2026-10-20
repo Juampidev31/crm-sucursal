@@ -2605,7 +2605,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
           >
             {variantesConDuplicados.length > 0
               ? <AlertTriangle size={18} color="#ff3366" />
-              : <CheckCircle size={18} color="#555" />}
+              : <CheckCircle size={18} style={{ color: 'light-dark(#555, #8b8b94)' }} />}
             <h4 className={`${styles.sectionTitle}${variantesConDuplicados.length > 0 ? ` ${styles.isAlert}` : ''}`}>
               {variantesConDuplicados.length > 0
                 ? `Corrector de Empleador — ${variantesConDuplicados.length} grupos para corregir`
@@ -2924,7 +2924,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             onClick={() => setCorrectorDependenciaExpandido(!correctorDependenciaExpandido)}
             className={`${styles.sectionToggle}${correctorDependenciaExpandido ? ` ${styles.isExpanded}` : ''}`}
           >
-            <CheckCircle size={18} color="#555" />
+            <CheckCircle size={18} style={{ color: 'light-dark(#555, #8b8b94)' }} />
             <h4 className={styles.sectionTitle}>
               Corrector de Dependencia
               {correctorDependenciaExpandido ? <ChevronUp size={14} className={styles.chevron} /> : <ChevronDown size={14} className={styles.chevron} />}
@@ -3009,7 +3009,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
             onClick={() => setReasignadorExpandido(!reasignadorExpandido)}
             className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uCursorPointer"]].join(' ')} style={{ marginBottom: reasignadorExpandido ? 16 : 0 }}
           >
-            <Filter size={18} color="#555" />
+            <Filter size={18} style={{ color: 'light-dark(#555, #8b8b94)' }} />
             <h4 className={[styles["uFontSize14px"], styles["uFontWeight800"], styles["uColorText-muted"], styles["uTextTransformUppercase"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap8px"]].join(' ')}>
               Reasignar Empleador / Dependencia
               {reasignadorExpandido ? <ChevronUp size={14} className={[styles["uOpacity0-5"]].join(' ')} /> : <ChevronDown size={14} className={[styles["uOpacity0-5"]].join(' ')} />}
@@ -3085,9 +3085,9 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                               key={dep}
                               onClick={() => setReasignarDepOrigen(sel ? '' : dep)}
                               title={`Empleador actual: ${parentEmp}`}
-                              className={[styles["uPadding4px-10px"], styles["uBorderRadius4px"], styles["uFontSize11px"], styles["uFontWeight600"], styles["uCursorPointer"]].join(' ')} style={{ background: sel ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.04)', border: sel ? '1px solid #a78bfa' : '1px solid rgba(255,255,255,0.06)', color: sel ? '#a78bfa' : '#888' }}
+                              className={[styles["uPadding4px-10px"], styles["uBorderRadius4px"], styles["uFontSize11px"], styles["uFontWeight600"], styles["uCursorPointer"]].join(' ')} style={{ background: sel ? 'rgba(167,139,250,0.2)' : 'light-dark(rgba(255,255,255,0.04), rgba(17,17,19,0.04))', border: sel ? '1px solid light-dark(#a78bfa, #342460)' : '1px solid rgba(255,255,255,0.06)', color: sel ? '#a78bfa' : 'light-dark(#888, #8d8d98)' }}
                             >
-                              {dep} <span style={{ color: sel ? '#a78bfa' : '#555' }}>({count})</span>
+                              {dep} <span style={{ color: sel ? '#a78bfa' : 'light-dark(#555, #c5c5ca)' }}>({count})</span>
                             </span>
                           );
                         })}
@@ -3259,7 +3259,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                 <h4 className={[styles["uFlex1"], styles["uFontSize13px"], styles["uFontWeight800"], styles["uColorText-strong"], styles["uTextTransformUppercase"], styles["uLetterSpacing1px"], styles["uOpacity0-9"]].join(' ')}>
                   Reasignar Registros entre Analistas
                 </h4>
-                {raExpandido ? <ChevronUp size={16} color="#888" /> : <ChevronDown size={16} color="#888" />}
+                {raExpandido ? <ChevronUp size={16} style={{ color: 'light-dark(#888, #8b8b94)' }} /> : <ChevronDown size={16} style={{ color: 'light-dark(#888, #8b8b94)' }} />}
               </div>
 
               {raExpandido && (
@@ -3273,7 +3273,6 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     <h5 className={styles.stepTitle}>{stepBadge(1)} Analista origen</h5>
                     <CustomSelect
                       width="100%"
-                      bg="var(--surface-card)"
                       value={raOrigen}
                       onChange={v => { setRaOrigen(String(v)); setRaAsignaciones(new Map()); }}
                       options={[{ label: '— Elegir analista —', value: '' }, ...ANALISTAS.map(a => ({ label: a, value: a }))]}
@@ -3291,7 +3290,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             <button
                               key={e}
                               onClick={() => { setRaEstados(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e]); setRaAsignaciones(new Map()); }}
-                              className={[styles["uBorderRadius10px"], styles["uPadding8px-14px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"]].join(' ')} style={{ background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`, color: sel ? '#34d399' : '#888' }}
+                              className={[styles["uBorderRadius10px"], styles["uPadding8px-14px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"]].join(' ')} style={{ background: sel ? 'rgba(52,211,153,0.15)' : 'light-dark(rgba(255,255,255,0.02), rgba(17,17,19,0.02))', border: `1px solid ${sel ? 'light-dark(rgba(52,211,153,0.5), rgba(52,211,153,0.675))' : 'rgba(255,255,255,0.06)'}`, color: sel ? '#34d399' : 'light-dark(#888, #8d8d98)' }}
                             >
                               {STATUS_LABEL[e] ?? e}
                             </button>
@@ -3331,7 +3330,6 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                           <label className={styles.label}>Analista destino</label>
                           <CustomSelect
                             width="100%"
-                            bg="var(--surface-card)"
                             value={raNuevoDestino}
                             onChange={v => setRaNuevoDestino(String(v))}
                             options={[{ label: '— Elegir —', value: '' }, ...ANALISTAS.filter(a => a !== raOrigen && !raDestinos.some(d => d.analista === a)).map(a => ({ label: a, value: a }))]}
@@ -3365,7 +3363,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                       if (a in next) delete next[a]; else next[a] = '';
                                       return next;
                                     })}
-                                    className={[styles["uBorderRadius10px"], styles["uPadding8px-14px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"]].join(' ')} style={{ background: sel ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${sel ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.06)'}`, color: sel ? '#34d399' : '#888' }}
+                                    className={[styles["uBorderRadius10px"], styles["uPadding8px-14px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"]].join(' ')} style={{ background: sel ? 'rgba(52,211,153,0.15)' : 'light-dark(rgba(255,255,255,0.02), rgba(17,17,19,0.02))', border: `1px solid ${sel ? 'light-dark(rgba(52,211,153,0.5), rgba(52,211,153,0.675))' : 'rgba(255,255,255,0.06)'}`, color: sel ? '#34d399' : 'light-dark(#888, #8d8d98)' }}
                                   >
                                     {sel ? '✓ ' : ''}{a}
                                   </button>
@@ -3387,13 +3385,13 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                                   </div>
                                 ))}
                                 <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uMarginTop6px"]].join(' ')}>
-                                  <span className={[styles["uFontSize11px"], styles["uFontWeight700"]].join(' ')} style={{ color: excede ? '#f87171' : '#888' }}>
+                                  <span className={[styles["uFontSize11px"], styles["uFontWeight700"]].join(' ')} style={{ color: excede ? '#f87171' : 'light-dark(#888, #8d8d98)' }}>
                                     Suma: {sumaSel}{excede ? ` · supera ${raTotalDisponible}` : ` / ${raTotalDisponible}`}
                                   </span>
                                   <button
                                     onClick={raAgregarMulti}
                                     disabled={excede}
-                                    className={[styles["uHeight38px"], styles["uPadding0-18px"], styles["uBorderRadius10px"], styles["uFontWeight800"], styles["uFontSize12px"], styles["uWhiteSpaceNowrap"]].join(' ')} style={{ border: `1px solid ${excede ? 'rgba(255,255,255,0.06)' : 'rgba(52,211,153,0.4)'}`, background: excede ? 'rgba(255,255,255,0.02)' : 'rgba(52,211,153,0.12)', color: excede ? '#555' : '#34d399', cursor: excede ? 'not-allowed' : 'pointer' }}
+                                    className={[styles["uHeight38px"], styles["uPadding0-18px"], styles["uBorderRadius10px"], styles["uFontWeight800"], styles["uFontSize12px"], styles["uWhiteSpaceNowrap"]].join(' ')} style={{ border: `1px solid ${excede ? 'rgba(255,255,255,0.06)' : 'light-dark(rgba(52,211,153,0.4), rgba(52,211,153,0.54))'}`, background: excede ? 'light-dark(rgba(255,255,255,0.02), rgba(17,17,19,0.02))' : 'rgba(52,211,153,0.12)', color: excede ? 'light-dark(#555, #c5c5ca)' : '#34d399', cursor: excede ? 'not-allowed' : 'pointer' }}
                                   >
                                     + Agregar {seleccionados.length}
                                   </button>
@@ -3413,10 +3411,10 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                             <div
                               key={d.analista}
                               onClick={() => setRaDestinoActivo(d.analista)}
-                              className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"], styles["uBorderRadius12px"], styles["uPadding8px-14px"]].join(' ')} style={{ background: activo ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.02)', border: `1px solid ${completo ? 'rgba(52,211,153,0.6)' : activo ? 'rgba(52,211,153,0.5)' : 'rgba(255,255,255,0.08)'}` }}
+                              className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uGap10px"], styles["uCursorPointer"], styles["uTransitionAll-0-15s"], styles["uBorderRadius12px"], styles["uPadding8px-14px"]].join(' ')} style={{ background: activo ? 'rgba(52,211,153,0.15)' : 'light-dark(rgba(255,255,255,0.02), rgba(17,17,19,0.02))', border: `1px solid ${completo ? 'light-dark(rgba(52,211,153,0.6), rgba(52,211,153,0.81))' : activo ? 'light-dark(rgba(52,211,153,0.5), rgba(52,211,153,0.675))' : 'rgba(255,255,255,0.08)'}` }}
                             >
-                              <span className={[styles["uFontSize13px"], styles["uFontWeight800"]].join(' ')} style={{ color: completo ? '#34d399' : '#ddd' }}>{d.analista}</span>
-                              <span className={[styles["uFontSize12px"], styles["uFontWeight700"]].join(' ')} style={{ color: completo ? '#34d399' : '#888' }}>{hechos}/{d.cuota}</span>
+                              <span className={[styles["uFontSize13px"], styles["uFontWeight800"]].join(' ')} style={{ color: completo ? '#34d399' : 'light-dark(#ddd, #5c5c66)' }}>{d.analista}</span>
+                              <span className={[styles["uFontSize12px"], styles["uFontWeight700"]].join(' ')} style={{ color: completo ? '#34d399' : 'light-dark(#888, #8d8d98)' }}>{hechos}/{d.cuota}</span>
                               <button onClick={(ev) => { ev.stopPropagation(); raQuitarDestino(d.analista); }} className={[styles["uBackgroundNone"], styles["uBorderNone"], styles["uColorText-muted"], styles["uCursorPointer"], styles["uFontSize16px"], styles["uLineHeight1"], styles["uPadding0"]].join(' ')}>×</button>
                             </div>
                           );
@@ -3430,7 +3428,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     <div className={[styles["uMarginBottom28px"]].join(' ')}>
                       <div className={[styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentSpace-between"], styles["uMarginBottom12px"]].join(' ')}>
                         <h5 className={`${styles.stepTitle} ${styles.noMargin}`}>{stepBadge(4)} Tildar para <span className={styles.stepProgress}>{raDestinoActivo || '—'}</span></h5>
-                        <button onClick={raTildarPrimerosN} disabled={!raDestinoActivo} className={[styles["uPadding8px-14px"], styles["uBorderRadius10px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uWhiteSpaceNowrap"]].join(' ')} style={{ border: `1px solid ${raDestinoActivo ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.06)'}`, background: raDestinoActivo ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.02)', color: raDestinoActivo ? '#34d399' : '#555', cursor: raDestinoActivo ? 'pointer' : 'not-allowed' }}>
+                        <button onClick={raTildarPrimerosN} disabled={!raDestinoActivo} className={[styles["uPadding8px-14px"], styles["uBorderRadius10px"], styles["uFontSize11px"], styles["uFontWeight800"], styles["uWhiteSpaceNowrap"]].join(' ')} style={{ border: `1px solid ${raDestinoActivo ? 'light-dark(rgba(52,211,153,0.4), rgba(52,211,153,0.54))' : 'rgba(255,255,255,0.06)'}`, background: raDestinoActivo ? 'rgba(52,211,153,0.12)' : 'light-dark(rgba(255,255,255,0.02), rgba(17,17,19,0.02))', color: raDestinoActivo ? '#34d399' : 'light-dark(#555, #c5c5ca)', cursor: raDestinoActivo ? 'pointer' : 'not-allowed' }}>
                           Tildar primeros N
                         </button>
                       </div>
@@ -3459,7 +3457,7 @@ const variantesLocalidadConDuplicados = useMemo(() => {
                     <button
                       onClick={raGuardar}
                       disabled={updating || raAsignaciones.size === 0}
-                      className={[styles["uWidth100"], styles["uPadding16px"], styles["uBorderRadius30px"], styles["uBorderNone"], styles["uFontWeight900"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uGap10px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (updating || raAsignaciones.size === 0) ? '#222' : '#34d399', color: (updating || raAsignaciones.size === 0) ? '#555' : '#000', cursor: (updating || raAsignaciones.size === 0) ? 'not-allowed' : 'pointer', boxShadow: (updating || raAsignaciones.size === 0) ? 'none' : '0 4px 14px rgba(52, 211, 153, 0.2)' }}
+                      className={[styles["uWidth100"], styles["uPadding16px"], styles["uBorderRadius30px"], styles["uBorderNone"], styles["uFontWeight900"], styles["uFontSize12px"], styles["uLetterSpacing0-5px"], styles["uDisplayFlex"], styles["uAlignItemsCenter"], styles["uJustifyContentCenter"], styles["uGap10px"], styles["uTransitionAll-0-3s-cubic-bezier-0-4-0-0-2-1"]].join(' ')} style={{ background: (updating || raAsignaciones.size === 0) ? '#222' : '#34d399', color: (updating || raAsignaciones.size === 0) ? 'light-dark(#555, #c5c5ca)' : 'light-dark(#000, #f4f4f5)', cursor: (updating || raAsignaciones.size === 0) ? 'not-allowed' : 'pointer', boxShadow: (updating || raAsignaciones.size === 0) ? 'none' : '0 4px 14px light-dark(rgba(52, 211, 153, 0.2), rgba(0,0,0,0.55))' }}
                     >
                       {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                       {updating ? 'REASIGNANDO...' : `REASIGNAR ${raAsignaciones.size} REGISTRO(S)`}

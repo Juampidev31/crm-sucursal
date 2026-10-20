@@ -2045,7 +2045,7 @@ export default function RegistrosPage() {
             {/* Health Ring */}
             <div className={styles.summaryHealthRing}>
               <svg width="68" height="68" className={styles.summaryHealthSvg}>
-                <circle cx="34" cy="34" r={r} fill="transparent" stroke="#e8edf3" strokeWidth="6" />
+                <circle cx="34" cy="34" r={r} fill="transparent" strokeWidth="6" style={{ stroke: 'light-dark(#e8edf3, #232327)' }} />
                 <circle className={styles.summaryHealthProgress} cx="34" cy="34" r={r} fill="transparent" stroke="currentColor" strokeWidth="6" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
               </svg>
               <div className={styles.summaryHealthValueWrap}>

@@ -3,15 +3,15 @@
   height: max-content;
   flex-shrink: 0;
   padding: 28px clamp(20px, 3vw, 44px) 48px;
-  color: #172033;
+  color: light-dark(#172033, #eeeef0);
   background:
     radial-gradient(circle at 92% 0%, rgba(37, 99, 235, 0.08), transparent 28%),
-    linear-gradient(180deg, #f8fafc 0%, #f2f5f9 100%);
+    linear-gradient(180deg, light-dark(#f8fafc, #0e0e10) 0%, light-dark(#f2f5f9, #0c0c0d) 100%);
   border-radius: 18px 18px 0 0;
-  --report-blue: #2457d6;
-  --report-ink: #172033;
-  --report-muted: #667085;
-  --report-border: #dfe5ec;
+  --report-blue: light-dark(#2457d6, #7998e7);
+  --report-ink: light-dark(#172033, #eeeef0);
+  --report-muted: light-dark(#667085, #9999a3);
+  --report-border: light-dark(#dfe5ec, #2a2a2f);
 }
 
 .reportHeader {
@@ -21,7 +21,7 @@
   gap: 24px;
   margin-bottom: 28px;
   padding-bottom: 24px;
-  border-bottom: 1px solid #dfe5ec;
+  border-bottom: 1px solid light-dark(#dfe5ec, #2a2a2f);
 }
 
 .title {
@@ -55,7 +55,7 @@
   align-items: center;
   gap: 10px;
   margin: 4px 0 -2px;
-  color: #344054;
+  color: light-dark(#344054, #dddde0);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.25px;
@@ -71,44 +71,44 @@
 }
 
 .panel {
-  background: rgba(255, 255, 255, 0.96);
+  background: light-dark(rgba(255, 255, 255, 0.96), rgba(17,17,19,0.96));
   border: 1px solid var(--report-border);
   border-radius: var(--card-radius);
   box-shadow: var(--shadow-surface);
 }
 
 .panelHeader {
-  background: #fbfcfe;
+  background: light-dark(#fbfcfe, #101011);
   border-color: var(--report-border);
 }
 
 .panelHeader span {
-  color: #475467;
+  color: light-dark(#475467, #c2c2c8);
 }
 
 .panel table thead tr {
-  background: #f8fafc;
+  background: light-dark(#f8fafc, #0e0e10);
 }
 
 .panel table th {
-  color: #667085;
-  border-color: #e8edf3;
+  color: light-dark(#667085, #9999a3);
+  border-color: light-dark(#e8edf3, #28282c);
 }
 
 .panel table tbody tr {
-  border-color: #edf1f5;
+  border-color: light-dark(#edf1f5, #27272b);
 }
 
 .panel table tbody tr:hover {
-  background: #f8fbff;
+  background: light-dark(#f8fbff, #141416);
 }
 
 .panel table td {
-  color: #344054;
+  color: light-dark(#344054, #dddde0);
 }
 
 .panel table td > span:not(.statusBadge):not(.statusDot) {
-  color: #475467;
+  color: light-dark(#475467, #c2c2c8);
 }
 
 .statusBadge {
@@ -116,9 +116,9 @@
   align-items: center;
   gap: 4px;
   padding: 2px 7px;
-  color: #25324a;
-  background: #f4f7fb;
-  border: 1px solid #dfe6ee;
+  color: light-dark(#25324a, #e4e4e6);
+  background: light-dark(#f4f7fb, #0d0d0e);
+  border: 1px solid light-dark(#dfe6ee, #2a2a2e);
   border-radius: 6px;
   font-size: 11px;
   font-weight: 700;
@@ -130,7 +130,7 @@
 
 .chartTitle {
   margin-bottom: 20px;
-  color: #475467;
+  color: light-dark(#475467, #c2c2c8);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -140,9 +140,9 @@
 .editInput {
   width: var(--edit-width);
   padding: 5px 8px;
-  color: #172033;
-  background: #ffffff;
-  border: 1px solid #cfd8e3;
+  color: light-dark(#172033, #eeeef0);
+  background: light-dark(#ffffff, #111113);
+  border: 1px solid light-dark(#cfd8e3, #2f2f33);
   border-radius: 6px;
   outline: none;
   font: 600 12px inherit;
@@ -153,8 +153,8 @@
 .editInput[data-align='center'] { text-align: center; }
 
 .editInput:focus {
-  border-color: #7aa2ef;
-  box-shadow: 0 0 0 3px rgba(36, 87, 214, 0.11);
+  border-color: light-dark(#7aa2ef, #243960);
+  box-shadow: 0 0 0 3px light-dark(rgba(36, 87, 214, 0.11), rgba(0,0,0,0.375));
 }
 
 .editButton {
@@ -163,11 +163,11 @@
   gap: 8px;
   height: var(--button-height);
   padding: 0 16px;
-  color: #344054;
-  background: #ffffff;
-  border: 1px solid #d5dce5;
+  color: light-dark(#344054, #dddde0);
+  background: light-dark(#ffffff, #111113);
+  border: 1px solid light-dark(#d5dce5, #2d2d32);
   border-radius: var(--button-radius);
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+  box-shadow: 0 1px 2px light-dark(rgba(16, 24, 40, 0.05), rgba(0,0,0,0.225));
   cursor: pointer;
   font-size: var(--type-control);
   font-weight: 700;
@@ -176,8 +176,8 @@
 
 .editButton:hover {
   color: var(--report-blue);
-  background: #f6f8fc;
-  border-color: #b8c8e8;
+  background: light-dark(#f6f8fc, #161618);
+  border-color: light-dark(#b8c8e8, #323237);
 }
 
 .cancelButton {
@@ -186,9 +186,9 @@
   gap: 6px;
   height: var(--button-height);
   padding: 0 16px;
-  color: #475467;
+  color: light-dark(#475467, #c2c2c8);
   background: transparent;
-  border: 1px solid #d5dce5;
+  border: 1px solid light-dark(#d5dce5, #2d2d32);
   border-radius: var(--button-radius);
   cursor: pointer;
   font-size: var(--type-control);
@@ -202,9 +202,9 @@
   gap: 10px;
   margin-bottom: 24px;
   padding: 14px 20px;
-  color: #067647;
-  background: #ecfdf3;
-  border: 1px solid #abefc6;
+  color: light-dark(#067647, #1faf72);
+  background: light-dark(#ecfdf3, #12301f);
+  border: 1px solid light-dark(#abefc6, #24603c);
   border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
@@ -220,8 +220,8 @@
   font-size: 13px;
   font-weight: 600;
 }
-.toast.isSuccess { color: #067647; background: #ecfdf3; border: 1px solid #abefc6; }
-.toast.isError { color: #b42318; background: #fef3f2; border: 1px solid #fecdca; }
+.toast.isSuccess { color: light-dark(#067647, #1faf72); background: light-dark(#ecfdf3, #12301f); border: 1px solid light-dark(#abefc6, #24603c); }
+.toast.isError { color: light-dark(#b42318, #e5746c); background: light-dark(#fef3f2, #301512); border: 1px solid light-dark(#fecdca, #602824); }
 
 .editActions { display: flex; align-items: center; gap: 12px; }
 .saveButton {
@@ -234,7 +234,7 @@
   background: var(--button-primary);
   border: 1px solid var(--button-primary);
   border-radius: var(--button-radius);
-  box-shadow: 0 5px 13px rgba(49,91,125,.18);
+  box-shadow: 0 5px 13px light-dark(rgba(49,91,125,.18), rgba(0,0,0,0.55));
   cursor: pointer;
   font-size: var(--type-control);
   font-weight: 700;
@@ -268,11 +268,11 @@
 }
 .tramoHeader { gap: 8px; }
 .tramoAccent { width: 3px; height: 14px; background: var(--status-color); border-radius: 4px; }
-.panelTitle { color: #475467; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.panelTitle { color: light-dark(#475467, #c2c2c8); font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
 .tramoTable { width: 100%; border-collapse: collapse; font-size: 12px; }
 .tramoTable th {
   padding: 12px 14px;
-  border-bottom: 1px solid #e8edf3;
+  border-bottom: 1px solid light-dark(#e8edf3, #28282c);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .5px;
@@ -280,11 +280,11 @@
 }
 .alignLeft { text-align: left; }
 .alignRight { text-align: right; }
-.dataRow { border-bottom: 1px solid #edf1f5; cursor: default; transition: background .1s ease; }
-.monthCell { padding: 10px 14px; color: #344054; font-weight: 700; }
+.dataRow { border-bottom: 1px solid light-dark(#edf1f5, #27272b); cursor: default; transition: background .1s ease; }
+.monthCell { padding: 10px 14px; color: light-dark(#344054, #dddde0); font-weight: 700; }
 .numericCell { padding: 8px 10px; text-align: right; }
-.secondaryValue { color: #667085; font-weight: 600; }
-.primaryValue { color: #344054; font-weight: 700; }
+.secondaryValue { color: light-dark(#667085, #9999a3); font-weight: 600; }
+.primaryValue { color: light-dark(#344054, #dddde0); font-weight: 700; }
 .largeBadge { padding: 3px 9px; font-size: 12px; }
 
 .chartPanel { flex: 1; min-width: 320px; margin-bottom: 0; border-radius: 16px; }
@@ -293,13 +293,13 @@
 .detailPanel { flex: 1; overflow: hidden; border-radius: 16px; }
 .detailHeader { justify-content: space-between; }
 .yearFields { display: flex; align-items: center; gap: 12px; }
-.yearField { display: flex; align-items: center; gap: 6px; color: #667085; font-size: 10px; font-weight: 700; }
+.yearField { display: flex; align-items: center; gap: 6px; color: light-dark(#667085, #9999a3); font-size: 10px; font-weight: 700; }
 .yearInput {
   width: 60px;
   padding: 3px 6px;
-  color: #172033;
-  background: #fff;
-  border: 1px solid #cfd8e3;
+  color: light-dark(#172033, #eeeef0);
+  background: light-dark(#fff, #111113);
+  border: 1px solid light-dark(#cfd8e3, #2f2f33);
   border-radius: 4px;
   outline: none;
   font-size: 11px;
@@ -308,14 +308,14 @@
 .detailTable { width: 100%; border-collapse: collapse; font-size: 14px; }
 .detailTable th {
   padding: 14px 16px;
-  border-bottom: 1px solid #e8edf3;
+  border-bottom: 1px solid light-dark(#e8edf3, #28282c);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .5px;
   text-align: center;
   text-transform: uppercase;
 }
-.detailMonthCell { padding: 12px 14px; color: #344054; font-weight: 700; text-align: center; }
+.detailMonthCell { padding: 12px 14px; color: light-dark(#344054, #dddde0); font-weight: 700; text-align: center; }
 .detailValueCell { padding: 8px 10px; text-align: center; }
 
 @media (max-width: 760px) {

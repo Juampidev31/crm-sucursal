@@ -540,11 +540,11 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   };
 
   const tendBadge = (pct: number | null, showLabel = false) => {
-    if (pct === null) return <span data-snapshot-fragment style={{ color: '#333' }}>—</span>;
+    if (pct === null) return <span data-snapshot-fragment style={{ color: 'light-dark(#333, #e6e6e8)' }}>—</span>;
     return (
       <div data-snapshot-fragment title="Variación vs mes anterior" style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-        {showLabel && <span style={{ fontSize: 9, fontWeight: 700, color: '#444', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#263550', background: '#f4f7fa', border: '1px solid #d9e2ea', padding: '2px 6px', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
+        {showLabel && <span style={{ fontSize: 9, fontWeight: 700, color: 'light-dark(#444, #dddde0)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>vs mes anterior</span>}
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'light-dark(#263550, #e2e2e4)', background: 'light-dark(#f4f7fa, #0c0c0e)', border: '1px solid light-dark(#d9e2ea, #2c2c30)', padding: '2px 6px', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 3, minWidth: '60px', justifyContent: 'center' }}>
           <span className={`report-trend-direction ${pct >= 0 ? 'is-positive' : 'is-negative'}`}>{pct >= 0 ? '▲' : '▼'}</span> {Math.abs(pct).toFixed(2)}%
         </span>
       </div>
@@ -554,15 +554,15 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
   const sectionHeader = (id: number, title: string, icon: React.ReactNode, extra?: React.ReactNode) => {
     const isCollapsed = !!collapsedSections[id];
     return (
-      <div data-snapshot-fragment style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isCollapsed ? 0 : 16, paddingBottom: isCollapsed ? 0 : 10, borderBottom: isCollapsed ? 'none' : '1px solid #dde5ee', gap: 12 }}>
+      <div data-snapshot-fragment style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isCollapsed ? 0 : 16, paddingBottom: isCollapsed ? 0 : 10, borderBottom: isCollapsed ? 'none' : '1px solid light-dark(#dde5ee, #2a2a2f)', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {icon}
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#314158', textTransform: 'uppercase' as const, letterSpacing: '0.65px' }}>{title}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'light-dark(#314158, #dcdce0)', textTransform: 'uppercase' as const, letterSpacing: '0.65px' }}>{title}</span>
           {extra}
         </div>
         <button 
           onClick={() => toggleSection(id)}
-          style={{ background: isCollapsed ? '#ffffff' : '#edf3f8', border: '1px solid #d7e0e9', borderRadius: '8px', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#315b7d', transition: 'background 0.18s ease' }}
+          style={{ background: isCollapsed ? 'light-dark(#ffffff, #111113)' : 'light-dark(#edf3f8, #0a0a0b)', border: '1px solid light-dark(#d7e0e9, #2c2c31)', borderRadius: '8px', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'light-dark(#315b7d, #6d9ec6)', transition: 'background 0.18s ease' }}
         >
           <ChevronDown size={14} style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
         </button>
@@ -735,7 +735,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
     return (
       <div
         data-snapshot-fragment
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 8, background: 'rgba(96, 165, 250, 0.08)', border: '1px solid rgba(96, 165, 250, 0.22)', color: '#93c5fd', fontSize: 11, fontWeight: 700, letterSpacing: '0.4px', fontFamily: UI_FONT_FAMILY, boxShadow: '0 0 14px rgba(59, 130, 246, 0.08)', textTransform: 'none' }}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 8, background: 'rgba(96, 165, 250, 0.08)', border: '1px solid light-dark(rgba(96, 165, 250, 0.22), rgba(96,165,250,0.297))', color: '#93c5fd', fontSize: 11, fontWeight: 700, letterSpacing: '0.4px', fontFamily: UI_FONT_FAMILY, boxShadow: '0 0 14px light-dark(rgba(59, 130, 246, 0.08), rgba(0,0,0,0.3))', textTransform: 'none' }}
         title={`Días hábiles restantes: ${texto}`}
       >
         <Clock size={12} strokeWidth={2.5} style={{ color: '#60a5fa' }} />
@@ -1599,18 +1599,18 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
         // actualizar antes el pipeline de snapshot. Guardado por tests/snapshot-boundary.test.mjs.
         <div id="resumen-reporte-body" className="snapshot-producer" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── SECCIÓN 1: TABLERO ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(1, '1. Tablero', <BarChart3 size={15} color="#315b7d" />, badgeDiasRestantes)}
             {!collapsedSections[1] && (
               <>
               <div className="monthly-kpi-grid">
                 <div className="monthly-kpi-card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'light-dark(#444, #dddde0)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Capital Vendido</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div className="monthly-kpi-value">{formatCurrency(kpiTotal.capital)}</div>
                     {tendBadge(kpiTotal.tendCapital)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, color: 'light-dark(#555, #c5c5ca)', marginBottom: 2 }}>
                     Meta: {kpiTotal.metaCapital > 0 ? formatCurrency(kpiTotal.metaCapital) : '—'}
                   </div>
                   {kpiTotal.cumplCapital !== null && (
@@ -1626,12 +1626,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   </div>
                 </div>
                 <div className="monthly-kpi-card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'light-dark(#444, #dddde0)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Operaciones</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div className="monthly-kpi-value">{kpiTotal.ops}</div>
                     {tendBadge(kpiTotal.tendOps)}
                   </div>
-                  <div style={{ fontSize: 12, color: '#555', marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, color: 'light-dark(#555, #c5c5ca)', marginBottom: 2 }}>
                     Meta: {kpiTotal.metaOps > 0 ? kpiTotal.metaOps : '—'}
                   </div>
                   {kpiTotal.cumplOps !== null && (
@@ -1648,7 +1648,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   </div>
                 </div>
                 <div className="monthly-kpi-card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'light-dark(#444, #dddde0)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Ticket Promedio</div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <div className="monthly-kpi-value">{formatCurrency(kpiTotal.ticket)}</div>
                     {tendBadge(kpiTotal.tendTicket)}
@@ -1676,12 +1676,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 2: VENTAS POR CATEGORÍA ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 0 }}>
               <div style={{ flex: 1 }}>{sectionHeader(2, '2. Ventas por Categoría', <Tag size={15} color="#315b7d" />)}</div>
               {!collapsedSections[2] && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <span style={{ fontSize: 11, color: '#444', fontWeight: 600 }}>
+                  <span style={{ fontSize: 11, color: 'light-dark(#444, #dddde0)', fontWeight: 600 }}>
                     {periodoSec3 === 'mensual'
                       ? (() => {
                           const v = ventasMesVendidas;
@@ -1704,7 +1704,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                           textTransform: 'uppercase',
                           letterSpacing: '0.8px',
                           background: periodoSec3 === p ? '#315b7d' : 'transparent',
-                          color: periodoSec3 === p ? '#fff' : '#667085',
+                          color: periodoSec3 === p ? '#fff' : 'light-dark(#667085, #9999a3)',
                           transition: 'all 0.2s ease',
                         }}
                       >
@@ -1743,7 +1743,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 3: DISTRIBUCIÓN POR ESTADO Y CATEGORÍAS ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(3, '3. Distribución por estado y categorías', <PieChart size={15} color="#315b7d" />)}
             {!collapsedSections[3] && (
               <div className="monthly-analysis-grid analistas-report">
@@ -1754,7 +1754,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 4: ANÁLISIS COMERCIAL ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(4, '4. Análisis Comercial', <TrendingUp size={15} color="#315b7d" />)}
             {!collapsedSections[4] && (
               <ManualTextarea
@@ -1767,7 +1767,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 5: OPERACIÓN Y PROCESOS ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(5, '5. Operación y Procesos', <Shield size={15} color="#315b7d" />)}
             {!collapsedSections[5] && (
               <ManualTextarea
@@ -1780,7 +1780,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 6: GESTIÓN COMERCIAL ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(6, '6. Gestión Comercial', <Briefcase size={15} color="#315b7d" />)}
             {!collapsedSections[6] && (
               <>
@@ -1799,7 +1799,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 7: EXPERIENCIA DEL CLIENTE ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(7, '7. Experiencia del Cliente', <FileText size={15} color="#315b7d" />)}
             {!collapsedSections[7] && (
               <ManualTextarea
@@ -1812,13 +1812,13 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 8: GESTIÓN DEL EQUIPO ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(8, '8. Gestión del Equipo', <Activity size={15} color="#315b7d" />)}
             {!collapsedSections[8] && (
               <>
                 {auditoriaData.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'light-dark(#444, #dddde0)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 10 }}>Actividad en Sistema</div>
                     <div className="monthly-team-activity">
                       {nombres.map(analista => {
                         const count = auditoriaData.filter(a => a.analista === analista).length;
@@ -1844,7 +1844,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 9: PLAN DE ACCIÓN ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(9, '9. Plan de Acción', <Target size={15} color="#315b7d" />)}
             {!collapsedSections[9] && (
               <>
@@ -1908,7 +1908,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
           </div>
 
           {/* ── SECCIÓN 10: VENTA DIARIA PURA ── */}
-          <div className="data-card" style={{ background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+          <div className="data-card" style={{ background: 'light-dark(#ffffff, #111113)', display: 'flex', flexDirection: 'column' }}>
             {sectionHeader(10, '10. Venta Diaria y Actividad', <BarChart3 size={15} color="#315b7d" />)}
 
             {!collapsedSections[10] && (
@@ -1929,7 +1929,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         textTransform: 'uppercase',
                         letterSpacing: '0.8px',
                         background: filtroActividad === f ? '#315b7d' : 'transparent',
-                        color: filtroActividad === f ? '#fff' : '#667085',
+                        color: filtroActividad === f ? '#fff' : 'light-dark(#667085, #9999a3)',
                         transition: 'all 0.2s ease',
                         fontFamily: UI_FONT_FAMILY
                       }}
@@ -1944,7 +1944,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   
                   {/* Gráfico de Líneas */}
                   <div className="monthly-activity-card monthly-activity-card--chart">
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#444', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'light-dark(#444, #dddde0)', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 16 }}>
                     Venta Diaria {filtroActividad === 'PDV' ? 'Pura (Total PDV)' : `— ${filtroActividad}`}
                   </div>
                   <div className="monthly-daily-chart">
@@ -1959,8 +1959,8 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
                     <div style={{ width: 3, height: 16, background: '#10b981', marginRight: 8, borderRadius: 2 }} />
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#263550', textTransform: 'uppercase', letterSpacing: 0.5 }}>Mapa de actividad</div>
-                      <div style={{ fontSize: 11, color: '#667085', marginTop: 2 }}>Ventas por día — mes actual</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'light-dark(#263550, #e2e2e4)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Mapa de actividad</div>
+                      <div style={{ fontSize: 11, color: 'light-dark(#667085, #9999a3)', marginTop: 2 }}>Ventas por día — mes actual</div>
                     </div>
                   </div>
 
@@ -1970,16 +1970,16 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                     <div style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6, marginBottom: 4 }}>
                       <div />
                       {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
-                        <div key={d} style={{ fontSize: 10, color: '#667085', textAlign: 'center', fontWeight: 700 }}>{d}</div>
+                        <div key={d} style={{ fontSize: 10, color: 'light-dark(#667085, #9999a3)', textAlign: 'center', fontWeight: 700 }}>{d}</div>
                       ))}
-                      <div style={{ fontSize: 10, color: '#667085', textAlign: 'right', fontWeight: 700 }}>TOTAL</div>
+                      <div style={{ fontSize: 10, color: 'light-dark(#667085, #9999a3)', textAlign: 'right', fontWeight: 700 }}>TOTAL</div>
                     </div>
 
                     {/* Semanas */}
                     {heatmapData.weeks.map((week, wIdx) => (
                       <div key={wIdx} style={{ display: 'grid', gridTemplateColumns: '24px repeat(6, 1fr) 80px', gap: 6 }}>
                         {/* Label de semana */}
-                        <div style={{ fontSize: 10, color: '#667085', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontSize: 10, color: 'light-dark(#667085, #9999a3)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           S{wIdx + 1}
                         </div>
                         
@@ -2014,7 +2014,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                                 fontSize: 11,
                                 fontWeight: 700,
                                 color: textColor,
-                                boxShadow: val > 0 ? `inset 0 0 0 1px rgba(49,91,125,.08)` : 'none',
+                                boxShadow: val > 0 ? `inset 0 0 0 1px light-dark(rgba(49,91,125,.08), rgba(0,0,0,0.3))` : 'none',
                                 transition: 'transform 0.2s',
                                 cursor: 'pointer'
                               }}
@@ -2027,7 +2027,7 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                         })}
 
                         {/* Total de la Semana */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 12, fontWeight: 700, color: '#263550' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontSize: 12, fontWeight: 700, color: 'light-dark(#263550, #e2e2e4)' }}>
                           {formatK(heatmapData.weekTotals[wIdx]) || '$0K'}
                         </div>
                       </div>
@@ -2037,12 +2037,12 @@ export default function ResumenMensualTab({ registros, objetivos, diasConfig, on
                   {/* Stats Footer */}
                   <div className="monthly-activity-stats">
                     <div>
-                      <div style={{ fontSize: 10, color: '#667085', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>DÍA MÁS ACTIVO</div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#263550' }}>{heatmapData.diaMasActivo}</div>
+                      <div style={{ fontSize: 10, color: 'light-dark(#667085, #9999a3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>DÍA MÁS ACTIVO</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: 'light-dark(#263550, #e2e2e4)' }}>{heatmapData.diaMasActivo}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: '#667085', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>TOTAL PERÍODO</div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#263550' }}>{formatCurrency(heatmapData.totalPeriodo)}</div>
+                      <div style={{ fontSize: 10, color: 'light-dark(#667085, #9999a3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>TOTAL PERÍODO</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: 'light-dark(#263550, #e2e2e4)' }}>{formatCurrency(heatmapData.totalPeriodo)}</div>
                     </div>
                   </div>
                 </div>

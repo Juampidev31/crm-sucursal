@@ -19,7 +19,7 @@
 
 .message {
   max-width: 400px;
-  color: #888;
+  color: light-dark(#888, #8d8d98);
   font-size: 14px;
   text-align: center;
 }
@@ -29,15 +29,15 @@
   padding: 10px 24px;
   border: 0;
   border-radius: var(--radius-md);
-  background: #fff;
-  color: #000;
+  background: light-dark(#fff, #111113);
+  color: light-dark(#000, #f4f4f5);
   cursor: pointer;
   font: 700 14px var(--font-sans);
   transition: background-color 160ms ease, transform 160ms ease;
 }
 
 .retry:hover {
-  background: #e9eef5;
+  background: light-dark(#e9eef5, #1f1f22);
 }
 
 .retry:focus-visible {

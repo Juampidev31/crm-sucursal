@@ -10,7 +10,7 @@
   align-items: center;
   gap: 9px;
   padding: 0 4px;
-  color: #26374f;
+  color: light-dark(#26374f, #e2e2e5);
   font-size: 12px;
   font-weight: 750;
   letter-spacing: .7px;
@@ -23,7 +23,7 @@
   height: 16px;
   border-radius: 99px;
   background: #315f82;
-  box-shadow: 0 3px 8px rgba(49, 95, 130, .2);
+  box-shadow: 0 3px 8px light-dark(rgba(49, 95, 130, .2), rgba(0,0,0,0.55));
 }
 
 .panel {
@@ -32,10 +32,10 @@
   gap: 15px;
   min-width: 0;
   padding: 20px;
-  background: linear-gradient(180deg, #fff 0%, #fbfcfd 100%);
-  border: 1px solid #dbe4ec;
+  background: linear-gradient(180deg, light-dark(#fff, #111113) 0%, light-dark(#fbfcfd, #0f0f11) 100%);
+  border: 1px solid light-dark(#dbe4ec, #2b2b30);
   border-radius: 15px;
-  box-shadow: 0 8px 22px rgba(28, 49, 72, .055);
+  box-shadow: 0 8px 22px light-dark(rgba(28, 49, 72, .055), rgba(0,0,0,0.238));
 }
 
 .emptyPanel {
@@ -58,7 +58,7 @@
 
 .label {
   margin-bottom: 6px;
-  color: #718096;
+  color: light-dark(#718096, #90909a);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: .65px;
@@ -66,7 +66,7 @@
 }
 
 .value {
-  color: #17243b;
+  color: light-dark(#17243b, #ececee);
   font-size: 19px;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
@@ -75,12 +75,12 @@
 
 .ritmo {
   margin-top: 4px;
-  color: #8290a3;
+  color: light-dark(#8290a3, #868691);
   font-size: 9px;
   font-weight: 650;
 }
 
-.divider { height: 1px; background: #e7ecf1; }
+.divider { height: 1px; background: light-dark(#e7ecf1, #080809); }
 .idealBlock { min-height: 52px; }
 
 .valueRow {
@@ -96,14 +96,14 @@
   font-weight: 700;
 }
 
-.positive { color: #397363; }
-.negative { color: #9b4f59; }
+.positive { color: light-dark(#397363, #54aa92); }
+.negative { color: light-dark(#9b4f59, #c1858d); }
 
 .sectionTitle {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #315f82;
+  color: light-dark(#315f82, #689dc6);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .8px;

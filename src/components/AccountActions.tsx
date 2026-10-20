@@ -2,18 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calculator, FileSpreadsheet, LogOut, X } from 'lucide-react';
+import { Calculator, FileSpreadsheet, LogOut, Moon, Sun, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useFilter } from '@/context/FilterContext';
 import { useSettings } from '@/features/settings/SettingsProvider';
 import { ExportXlsxModal } from '@/components/ExportXlsxModal';
 import ModalPortal from '@/components/ModalPortal';
 import CalculadoraContent from '@/components/CalculadoraContent';
+import { setTheme, useTheme } from '@/lib/theme';
 import styles from './AccountActions.module.css';
 
 /**
  * Acciones auxiliares del sidebar: exportar XLSX, calculadora de incentivos
- * (admin) y salir del modo administrador.
+ * (admin), tema claro/oscuro y salir del modo administrador.
  *
  * Vivían dentro del `Sidebar` grande. Al pasar las rutas internas a
  * `RecordsSidebar`, ese componente dejó de montarse y quedaron inalcanzables
@@ -32,6 +33,7 @@ export default function AccountActions() {
   const { hasPermiso } = useSettings();
   const [showXlsxModal, setShowXlsxModal] = useState(false);
   const [showCalculadora, setShowCalculadora] = useState(false);
+  const theme = useTheme();
 
   // Mismo criterio de permiso que aplicaba el Sidebar original.
   const currentAnalista =
@@ -66,7 +68,7 @@ export default function AccountActions() {
           onClick={() => setShowXlsxModal(true)}
           title="Descargar XLSX"
         >
-          <span className="records-nav-icon"><FileSpreadsheet size={23} strokeWidth={1.8} /></span>
+          <span className="records-nav-icon"><FileSpreadsheet size={20} strokeWidth={1.6} /></span>
           <span>Exportar</span>
         </button>
       )}
@@ -78,10 +80,22 @@ export default function AccountActions() {
           onClick={() => setShowCalculadora(true)}
           title="Simulador de sueldo e incentivos"
         >
-          <span className="records-nav-icon"><Calculator size={23} strokeWidth={1.8} /></span>
+          <span className="records-nav-icon"><Calculator size={20} strokeWidth={1.6} /></span>
           <span>Calculadora</span>
         </button>
       )}
+
+      <button
+        type="button"
+        className="records-nav-item"
+        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      >
+        <span className="records-nav-icon">
+          {theme === 'dark' ? <Sun size={20} strokeWidth={1.6} /> : <Moon size={20} strokeWidth={1.6} />}
+        </span>
+        <span>{theme === 'dark' ? 'Claro' : 'Oscuro'}</span>
+      </button>
 
       {realIsAdmin && (
         <button
@@ -90,7 +104,7 @@ export default function AccountActions() {
           onClick={logout}
           title="Salir del modo administrador"
         >
-          <span className="records-nav-icon"><LogOut size={23} strokeWidth={1.8} /></span>
+          <span className="records-nav-icon"><LogOut size={20} strokeWidth={1.6} /></span>
           <span>Salir</span>
         </button>
       )}

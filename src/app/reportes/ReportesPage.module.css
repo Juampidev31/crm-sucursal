@@ -39,7 +39,7 @@
 }
 
 .reportLink:focus-visible {
-  outline: 3px solid rgba(49, 91, 125, .24);
+  outline: 3px solid light-dark(rgba(49, 91, 125, .24), rgba(49,91,125,0.324));
   outline-offset: 4px;
 }
 
@@ -51,7 +51,7 @@
   min-height: 268px;
   padding: 32px;
   background: var(--surface-card);
-  border: 1px solid #dce4ed;
+  border: 1px solid light-dark(#dce4ed, #2b2b2f);
   border-radius: var(--card-radius);
   box-shadow: var(--shadow-surface);
   cursor: pointer;
@@ -60,8 +60,8 @@
 
 .reportLink:hover .reportCard,
 .reportLink:focus-visible .reportCard {
-  border-color: #b7c7d8;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, .09);
+  border-color: light-dark(#b7c7d8, #34343a);
+  box-shadow: 0 12px 30px light-dark(rgba(15, 23, 42, .09), rgba(0,0,0,0.325));
   transform: translateY(-3px);
 }
 
@@ -79,17 +79,17 @@
 
 .reportCard[data-accent="blue"] .reportIcon {
   color: var(--action-primary);
-  background: #edf3f7;
+  background: light-dark(#edf3f7, #0a0a0b);
 }
 
 .reportCard[data-accent="blue"] .reportAction { color: var(--action-primary); }
 
 .reportCard[data-accent="slate"] .reportIcon {
-  color: #526b7e;
-  background: #eef2f5;
+  color: light-dark(#526b7e, #8099ac);
+  background: light-dark(#eef2f5, #09090a);
 }
 
-.reportCard[data-accent="slate"] .reportAction { color: #526b7e; }
+.reportCard[data-accent="slate"] .reportAction { color: light-dark(#526b7e, #8099ac); }
 
 .reportTitle {
   margin: 0 0 12px;

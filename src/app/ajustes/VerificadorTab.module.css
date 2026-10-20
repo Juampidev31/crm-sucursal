@@ -213,14 +213,14 @@
   gap: 12px;
   padding: 10px 16px;
   background: rgb(248 113 113 / 8%);
-  border: 1px solid rgb(248 113 113 / 25%);
+  border: 1px solid light-dark(rgb(248 113 113 / 25%), rgba(248,113,113,0.338));
   border-radius: 8px;
   transition: all 0.15s;
 }
 
 .duplicateBanner.isConfirming {
   background: rgb(248 113 113 / 13%);
-  border-color: rgb(248 113 113 / 40%);
+  border-color: light-dark(rgb(248 113 113 / 40%), rgba(248,113,113,0.54));
 }
 
 .duplicateSummary {
@@ -242,7 +242,7 @@
 .deleteSelectionButton {
   color: #ff3366;
   background: rgb(248 113 113 / 15%);
-  border: 1px solid rgb(248 113 113 / 30%);
+  border: 1px solid light-dark(rgb(248 113 113 / 30%), rgba(248,113,113,0.405));
 }
 
 .deleteSelectionButton:disabled {
@@ -255,7 +255,7 @@
 .confirmDeleteButton {
   color: #fff;
   background: rgb(248 113 113 / 30%);
-  border: 1px solid rgb(248 113 113 / 50%);
+  border: 1px solid light-dark(rgb(248 113 113 / 50%), rgba(248,113,113,0.675));
 }
 
 .confirmDeleteButton:disabled {
@@ -279,15 +279,15 @@
 }
 
 .successBanner {
-  color: #047857;
+  color: light-dark(#047857, #1faf86);
   background: rgb(74 222 128 / 8%);
-  border: 1px solid rgb(74 222 128 / 20%);
+  border: 1px solid light-dark(rgb(74 222 128 / 20%), rgba(74,222,128,0.27));
 }
 
 .errorBanner {
   color: #ff3366;
   background: rgb(248 113 113 / 8%);
-  border: 1px solid rgb(248 113 113 / 25%);
+  border: 1px solid light-dark(rgb(248 113 113 / 25%), rgba(248,113,113,0.338));
 }
 
 .activeFilters {
