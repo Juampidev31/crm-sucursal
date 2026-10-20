@@ -2832,9 +2832,11 @@ textarea:focus {
 .daily-modal__full { grid-column: 1 / -1; }
 .daily-modal__grid .corporate-date-trigger { height: 38px; }
 .daily-modal__footer { display: flex; justify-content: flex-end; gap: 10px; }
-.daily-summary-modal { width: 960px; max-height: none; }
-.daily-summary-modal .daily-modal__body { overflow: visible; }
-.daily-summary-header { flex: 0 0 auto; }
+/* Entra siempre en la ventana: header y footer fijos, el contenido scrollea. */
+.daily-summary-modal { width: 960px; max-height: calc(100vh - 40px); }
+.daily-summary-modal .daily-modal__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.daily-summary-header,
+.daily-summary-modal .daily-modal__footer { flex: 0 0 auto; }
 .daily-summary-heading { min-width: 0; display: flex; align-items: center; gap: 11px; }
 .daily-summary-heading__icon { width: 38px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; color: light-dark(#315b7d, #6d9ec6); background: light-dark(#eaf1f6, #080809); border: 1px solid light-dark(#cbd9e3, #2f2f34); border-radius: 10px; }
 .daily-summary-overview { display: flex; align-items: stretch; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
