@@ -1458,6 +1458,10 @@ iframe::-webkit-scrollbar {
 
 .records-reference-page { width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden; padding: 0; color: #14213d; }
 .records-reference-page .records-table-card { width: 100%; max-width: 100%; min-width: 0; overflow: visible; border: 1px solid #dce4ed; border-radius: 14px; background: #fff; box-shadow: 0 7px 24px rgba(15,23,42,.055); }
+.records-sticky-header { position: relative; z-index: 40; flex: 0 0 auto; padding: 12px 14px; background: #fff; border-radius: 14px; }
+.records-sticky-surface { background: #f7f9fb; border: 1px solid #dce4ed; border-radius: 10px; box-shadow: 0 2px 8px rgba(15,23,42,.035); }
+.records-sticky-surface .records-tabs { background: transparent; border-radius: 10px 10px 0 0; }
+.records-sticky-surface .records-toolbar { background: transparent; border-radius: 0 0 10px 10px; }
 .records-tabs { display: flex; gap: 4px; min-height: 46px; padding: 0 14px; border-bottom: 1px solid #dfe6ee; background: #fff; }
 .records-tabs button { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 135px; margin-bottom: -1px; padding: 14px 18px 12px; color: #526079; background: transparent; border: 0; border-bottom: 2px solid transparent; cursor: pointer; font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
 .records-tabs button:first-child, .records-tabs button.is-active { color: #315b7d; }
@@ -1523,11 +1527,16 @@ iframe::-webkit-scrollbar {
 .records-empty__mark { color: #64748b; font-size: 40px; }
 .records-empty p { color: var(--text-primary); font-size: 16px; font-weight: 600; }
 .records-empty button { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 20px; color: var(--text-primary); background: transparent; border: 1px solid var(--border-subtle); border-radius: 10px; font-size: 13px; cursor: pointer; }
-.records-pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: transparent; border-top: 1px solid var(--border-subtle); }
+.records-pagination { display: flex; align-items: center; justify-content: space-between; margin: 12px 14px 14px; padding: 12px 14px; background: #f7f9fb; border: 1px solid #dce4ed; border-radius: 10px; box-shadow: 0 2px 8px rgba(15,23,42,.035); }
 .records-pagination__text, .records-pagination__page { color: var(--text-primary); font-size: 13px; font-weight: 600; }
 .records-pagination__controls, .records-pagination__page { display: flex; align-items: center; gap: 10px; }
 .records-pagination__page { gap: 8px; }
-.records-table-card > .records-table-scroll { width: 100%; max-width: 100%; min-width: 0; display: flex; flex-direction: column; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #aebaca #edf1f5; }
+.records-table-card > .records-table-scroll { width: 100%; max-width: 100%; min-width: 0; display: flex; flex-direction: column; overflow-x: auto; container-type: inline-size; scrollbar-width: thin; scrollbar-color: #aebaca #edf1f5; }
+@container (max-width: 720px) {
+  .records-pagination { align-items: stretch; flex-direction: column; gap: 10px; }
+  .records-pagination__text { width: 100%; }
+  .records-pagination__controls { width: 100%; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+}
 .records-data-table { width: 100%; min-width: 1040px; border-collapse: separate; border-spacing: 0; table-layout: auto; }
 .records-data-table thead tr { background: #f5f7f9; }
 .records-data-table th { height: 43px; padding: 9px 11px; border-bottom: 1px solid #dfe5ec; color: #56647d; font-size: 9px; font-weight: 700; letter-spacing: .45px; text-align: center; text-transform: uppercase; white-space: nowrap; }

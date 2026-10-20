@@ -255,6 +255,11 @@
 .summaryPanel { position:relative; display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:96px; margin:14px 14px 12px; padding:16px 20px; border:1px solid #dce4ed; border-radius:12px; color:#22324a; background:#fff; box-shadow:0 7px 20px rgba(15,23,42,.06); }
 .summaryPanelFull { border-left:4px solid currentColor; }
 .summaryPanelLite { border-left:4px solid #315b7d; }
+.summaryPanelLite .summaryInfo { flex:0 1 460px; }
+.summaryPanelLite .summaryHeadingRow { flex-wrap:nowrap; }
+.summaryPanelLite .summaryTitle { white-space:nowrap; }
+.summaryPanelLite .summaryMetrics { grid-template-columns:repeat(2,minmax(220px,1fr)); flex:1 1 760px; }
+.summaryPanelLite .summaryMetric { min-height:64px; padding-inline:18px; }
 .summaryHealthGood { color:#059669; }
 .summaryHealthWarning { color:#d97706; }
 .summaryHealthDanger { color:#dc2626; }
@@ -293,6 +298,12 @@
   .summaryPanel { align-items:stretch; flex-direction:column; }
   .summaryMetrics { display:grid; grid-template-columns:1fr 1fr; width:100%; }
   .summaryMetric { min-width:0; }
+}
+
+@media (max-width:1050px) {
+  .summaryPanelLite { align-items:stretch; flex-direction:column; }
+  .summaryPanelLite .summaryInfo { flex:0 0 auto; }
+  .summaryPanelLite .summaryMetrics { width:100%; flex:0 0 auto; }
 }
 
 @media (max-width:520px) {

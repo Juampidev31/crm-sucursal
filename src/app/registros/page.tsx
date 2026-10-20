@@ -24,7 +24,6 @@ import { TagBadge } from '@/components/EtiquetasSelector';
 import { getLocalidadesByCP, getCPByLocalidad, addCustomMapping } from '@/lib/codigos-postales';
 import { useSearchParams } from 'next/navigation';
 import { PremiumSelect } from '@/components/PremiumSelect';
-import { CorporateDateRangePicker } from '@/components/CorporateDateRangePicker';
 import styles from './RegistrosPage.module.css';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -1522,6 +1521,31 @@ export default function RegistrosPage() {
   // Debounced search term to avoid re-filtering on every keystroke
   const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const keepTableAtBottomRef = useRef(false);
+
+  useEffect(() => {
+    const element = tableScrollRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+
+    const updateBottomState = () => {
+      keepTableAtBottomRef.current = element.scrollHeight - element.scrollTop - element.clientHeight <= 4;
+    };
+    const observer = new ResizeObserver(() => {
+      if (!keepTableAtBottomRef.current) return;
+      requestAnimationFrame(() => {
+        element.scrollTop = element.scrollHeight - element.clientHeight;
+      });
+    });
+
+    element.addEventListener('scroll', updateBottomState, { passive: true });
+    observer.observe(element);
+    return () => {
+      element.removeEventListener('scroll', updateBottomState);
+      observer.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => setDebouncedSearch(filters.search), 200);
@@ -2126,8 +2150,10 @@ export default function RegistrosPage() {
 
       {/* Table */}
       <div className="records-table-card">
-        {/* Pestañas: Registros / Fijados (solo si hay alguno fijado) */}
-        <div className="records-tabs">
+        <div className="records-sticky-header">
+          <div className="records-sticky-surface">
+            {/* Pestañas: Registros / Fijados (solo si hay alguno fijado) */}
+            <div className="records-tabs">
             {([['registros', 'Registros'], ['fijados', `Fijados (${registrosFijados.length})`]] as const).map(([key, label]) => {
               const active = activeTab === key;
               return (
@@ -2141,19 +2167,10 @@ export default function RegistrosPage() {
                 </button>
               );
             })}
-          </div>
-        <div className="records-toolbar">
+            </div>
+            <div className="records-toolbar">
           <label className="records-search"><Search size={18} /><input value={filters.search} onChange={e => setFilter('search', e.target.value)} placeholder="Buscar cliente, CUIL o gestor..." /></label>
           <button type="button" className={`records-toolbar-btn${hayFiltros || showFilters ? ' is-active' : ''}`} onClick={() => setShowFilters(open => !open)} aria-expanded={showFilters} aria-controls="records-filters-sidebar"><SlidersHorizontal size={17} /> Filtros <ChevronDown size={14} /></button>
-          <CorporateDateRangePicker
-            compact
-            fromValue={filters.fechaDesde}
-            toValue={filters.fechaHasta}
-            onChange={({ from, to }) => {
-              setFilter('fechaDesde', from);
-              setFilter('fechaHasta', to);
-            }}
-          />
           <span className="records-toolbar-spacer" />
           <span className="records-count">{activeTab === 'fijados' ? registrosFijados.length : filteredRegistros.length} registros</span>
           <i className="records-toolbar-divider" />
@@ -2214,6 +2231,8 @@ export default function RegistrosPage() {
               <Plus size={16} /> Nuevo registro
             </button>
           )}
+            </div>
+          </div>
         </div>
         {(activeTab === 'fijados' ? registrosFijados.length === 0 : filteredRegistros.length === 0) && !loading ? (
           <div className="records-empty">
@@ -2227,7 +2246,7 @@ export default function RegistrosPage() {
           </div>
         ) : (
           <>
-          <div className="records-table-scroll">
+          <div ref={tableScrollRef} className="records-table-scroll">
             {hayFiltros && isRevisionState && (
               <div className={styles.revisionFilters}>
                 <div className={styles.revisionFiltersHeader}>
@@ -2369,9 +2388,7 @@ export default function RegistrosPage() {
                 })}
               </div>
             )}
-          </div>
-
-            {/* Footer fijo de la tabla: no participa del scroll de las filas. */}
+            {/* La paginación forma parte del scroll y aparece después de la última fila. */}
             {activeTab === 'registros' && filteredRegistros.length > pageSize && (
               <div className="records-pagination">
                 {/* Info de registros */}
@@ -2433,6 +2450,7 @@ export default function RegistrosPage() {
                 </div>
               </div>
             )}
+          </div>
           </>
         )}
       </div>

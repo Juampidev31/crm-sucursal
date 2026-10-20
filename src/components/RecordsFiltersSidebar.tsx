@@ -1,7 +1,6 @@
 'use client';
 
 import { SlidersHorizontal, X } from 'lucide-react';
-import MultiSelect from '@/components/MultiSelect';
 import { CorporateDateRangePicker } from '@/components/CorporateDateRangePicker';
 import { ESTADOS, useFilter } from '@/context/FilterContext';
 import { useAnalistas } from '@/features/settings/SettingsProvider';
@@ -17,6 +16,16 @@ export default function RecordsFiltersSidebar() {
     hayFiltros,
     setShowFilters,
   } = useFilter();
+  const selectedAnalistas = filters.analistas.length > 0
+    ? filters.analistas
+    : filters.analista
+      ? [filters.analista]
+      : [];
+
+  const setAnalistas = (values: string[]) => {
+    setFilter('analistas', values);
+    setFilter('analista', values.length === 1 ? values[0] : '');
+  };
 
   return (
     <aside id="records-filters-sidebar" className={styles.sidebar} aria-label="Filtros de registros">
@@ -36,28 +45,67 @@ export default function RecordsFiltersSidebar() {
       <div className={styles.body}>
         <div className={styles.field}>
           <span>Analista</span>
-          <MultiSelect
-            values={filters.analistas.length > 0 ? filters.analistas : filters.analista ? [filters.analista] : []}
-            onChange={values => {
-              setFilter('analistas', values);
-              setFilter('analista', values.length === 1 ? values[0] : '');
-            }}
-            options={analistas}
-            placeholder="Todos los analistas"
-            clearLabel="Todos los analistas"
-            searchable
-          />
+          <div className={styles.stateGrid} role="group" aria-label="Filtrar por analista">
+            <button
+              type="button"
+              className={`${styles.stateCard} ${selectedAnalistas.length === 0 ? styles.stateCardActive : ''}`}
+              aria-pressed={selectedAnalistas.length === 0}
+              onClick={() => setAnalistas([])}
+            >
+              Todos
+            </button>
+            {analistas.map((analista, index) => {
+              const selected = selectedAnalistas.includes(analista);
+              return (
+                <button
+                  key={analista}
+                  type="button"
+                  className={`${styles.stateCard} ${styles[`tone${(index % 6) + 1}`]} ${selected ? styles.stateCardActive : ''}`}
+                  aria-pressed={selected}
+                  onClick={() => setAnalistas(
+                    selected
+                      ? selectedAnalistas.filter(value => value !== analista)
+                      : [...selectedAnalistas, analista],
+                  )}
+                >
+                  {analista}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className={styles.field}>
           <span>Estado</span>
-          <MultiSelect
-            values={filters.estados}
-            onChange={values => setFilter('estados', values)}
-            options={ESTADOS.map(estado => ({ value: estado, label: capitalizarTexto(estado) }))}
-            placeholder="Todos los estados"
-            clearLabel="Todos los estados"
-          />
+          <div className={styles.stateGrid} role="group" aria-label="Filtrar por estado">
+            <button
+              type="button"
+              className={`${styles.stateCard} ${filters.estados.length === 0 ? styles.stateCardActive : ''}`}
+              aria-pressed={filters.estados.length === 0}
+              onClick={() => setFilter('estados', [])}
+            >
+              Todos
+            </button>
+            {ESTADOS.map((estado, index) => {
+              const selected = filters.estados.includes(estado);
+              return (
+                <button
+                  key={estado}
+                  type="button"
+                  className={`${styles.stateCard} ${styles[`tone${(index % 7) + 1}`]} ${selected ? styles.stateCardActive : ''}`}
+                  aria-pressed={selected}
+                  onClick={() => setFilter(
+                    'estados',
+                    selected
+                      ? filters.estados.filter(value => value !== estado)
+                      : [...filters.estados, estado],
+                  )}
+                >
+                  {capitalizarTexto(estado)}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className={styles.field}>
