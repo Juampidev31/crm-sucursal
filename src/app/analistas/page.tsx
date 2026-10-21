@@ -426,15 +426,21 @@ export default function AnalistasPage() {
     );
   };
 
-  const sectionHeader = (id: number, title: string, icon: React.ReactNode, extra?: React.ReactNode) => {
+  const sectionHeader = (
+    id: number,
+    title: string,
+    icon: React.ReactNode,
+    extra?: React.ReactNode,
+    action?: React.ReactNode,
+  ) => {
     return (
-      <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles["uJustifyContentspace-between"], styles.uMarginBottom16px, styles.uPaddingBottom10px, styles["uBorderBottom1px-solid-border-subtle"], styles.uGap12px, styles.uUserSelectnone].join(' ')}
-      >
-        <div className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap10px].join(' ')}>
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionHeaderMain}>
           {icon}
           <span className={[styles.uFontSize13px, styles.uFontWeight800, styles["uColortext-muted"], styles.uTextTransformuppercase, styles.uLetterSpacing1px].join(' ')}>{title}</span>
           {extra}
         </div>
+        {action && <div className={styles.sectionHeaderAction}>{action}</div>}
       </div>
     );
   };
@@ -1622,15 +1628,14 @@ export default function AnalistasPage() {
       <div className={[styles.uDisplayflex, styles.uFlexDirectioncolumn, styles.uGap16px].join(' ')}>
           {/* ── SECCIÓN 1: TABLERO ── */}
           <div className={["data-card", styles["uBackgroundlinear-gradient-180deg-rgba-255-255-255-0-"], styles["uBoxShadowshadow-md"], styles.uPositionrelative].join(' ')}>
-            <div className={[styles.uPositionabsolute, styles.uTop16px, styles.uRight16px, styles.uZIndex2].join(' ')}>
-              <button className={[styles.uDisplayflex, styles.uAlignItemscenter, styles.uGap6px, styles["uPadding6px-12px"], styles.uBorderRadius8px, styles["uBackgroundsurface-sunken"], styles["uBorder1px-solid-rgba-255-255-255-0-2"], styles["uColortext-strong"], styles["uBoxShadow0-0-10px-rgba-255-255-255-0-1"], styles.uFontSize11px, styles.uFontWeight800, styles["uLetterSpacing0-6px"], styles.uTextTransformuppercase, styles.uCursorpointer, styles.uFontFamilyUi].join(' ')}
+            {sectionHeader(1, '1. Tablero', null, badgeDiasRestantes,
+              <button className={styles.historyLauncher}
                 type="button"
                 onClick={() => setRendimiento12MOpen(true)}
               >
                 Rendimiento Histórico
               </button>
-            </div>
-            {sectionHeader(1, '1. Tablero', null, badgeDiasRestantes)}
+            )}
               <>
                 <ExecutiveDashboard />
                 </>
