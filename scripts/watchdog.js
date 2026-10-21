@@ -86,7 +86,7 @@ function startServer() {
 
   log(`Starting Next.js dev server... (restart #${restartCount})`);
 
-  child = spawn('npx', ['next', 'dev', '--hostname', '0.0.0.0'], {
+  child = spawn('npx', ['next', 'dev', '--webpack', '--hostname', '0.0.0.0'], {
     cwd: PROJECT_DIR,
     stdio: 'inherit',
     shell: true,
