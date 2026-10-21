@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calculator, FileSpreadsheet, LogOut, Moon, Sun, X } from 'lucide-react';
+import { Calculator, FileSpreadsheet, LogIn, LogOut, Moon, Sun, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useFilter } from '@/context/FilterContext';
 import { useSettings } from '@/features/settings/SettingsProvider';
@@ -44,9 +44,8 @@ export default function AccountActions() {
   // cerrado para evitar mostrar y retirar la acción durante la hidratación.
   const canExport = isAdmin || hasPermiso('exportar_excel', currentAnalista, false);
 
-  // El `Sidebar` legacy abría el login en un modal propio; al retirarlo no quedó
-  // ninguna forma de volver a entrar desde la interfaz. En lugar de un botón
-  // visible para todos, el acceso queda detrás de un atajo: Ctrl + Shift + L.
+  // Conservamos el atajo como acceso rápido, además del botón visible para
+  // que el ingreso también esté disponible en dispositivos táctiles.
   useEffect(() => {
     if (realIsAdmin) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -61,6 +60,20 @@ export default function AccountActions() {
 
   return (
     <>
+      {!realIsAdmin && (
+        <button
+          type="button"
+          className="records-nav-item"
+          onClick={() => router.push('/login')}
+          title="Ingresar como administrador"
+        >
+          <span className="records-nav-icon">
+            <LogIn size={20} strokeWidth={2.2} />
+          </span>
+          <span>Ingresar</span>
+        </button>
+      )}
+
       {canExport && (
         <button
           type="button"
