@@ -3,6 +3,7 @@
   flex-direction: column;
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   min-width: 0;
   overflow: hidden;
 }
@@ -68,6 +69,10 @@
 .topbarBrand { color: var(--text-strong); font-size: 15px; font-weight: 750; letter-spacing: .55px; }
 .topbarConjunction { color: light-dark(#8a96a7, #82828e); font-size: 11px; font-weight: 600; }
 .topbarDate { min-height: 34px; display: inline-flex; align-items: center; gap: 7px; padding: 0 11px; border: 1px solid light-dark(#e0e7ee, #2a2a2e); border-radius: 11px; color: light-dark(#5f6e83, #9f9fa8); background: light-dark(#f7f9fb, #0e0e0f); font-size: 9px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; white-space: nowrap; }
+
+/* Los reportes conservan su cabecera propia en escritorio. En móvil se muestra
+   esta barra compacta porque contiene el único acceso estable a la navegación. */
+.reportTopbar { display: none; }
 
 .splitToggle {
   display: flex;
@@ -368,32 +373,58 @@
 }
 
 @media (max-width: 600px) {
-  .topbar { height: 64px; padding: 0 18px; }
+  .topbar { height: 64px; padding: 0 12px; }
+  .reportTopbar { display: flex; }
   .topbar::before { inset: 6px; border-radius: 15px; }
   .topbarSpacer,
-  .topbarActions,
   .topbarEyebrow,
   .topbarConjunction { display: none; }
-  .topbarTitle { justify-content: flex-start; gap: 8px; }
+  .topbarTitle { flex: 1 1 auto; justify-content: flex-start; gap: 8px; }
+  .topbarActions { display: flex; flex: 0 0 auto; gap: 6px; }
+  .topbarActions .topbarDate,
+  .topbarActions .splitToggle { display: none; }
+  .sidebarToggle {
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 10px;
+  }
   .topbarMark { width: 32px; height: 32px; flex-basis: 32px; border-radius: 10px; }
   .topbarBrand { font-size: 12px; letter-spacing: .3px; }
   .topbarWordmark { gap: 0; }
-  .recordsShell .topbar { padding: 0 18px; }
+  .recordsShell .topbar { padding: 0 12px; }
 }
 
 @media (max-width: 560px) {
   .recordsShell .content { width: 100%; margin-left: 0; }
-  .recordsPageScroll { padding-right: 12px; padding-bottom: 86px; padding-left: 12px; }
+  .recordsPageScroll { padding: 8px 8px calc(86px + env(safe-area-inset-bottom)) 8px; }
+
+  /* En teléfonos el documento vuelve a ser el único eje vertical. El layout de
+     escritorio reparte alturas entre varios scrollers internos; con el teclado
+     virtual o una barra del navegador dinámica eso podía dejar toolbars, tablas
+     y paginación fuera de un contenedor con overflow:hidden. */
+  .recordsListPageScroll,
+  .dailyListPageScroll { overflow-x: hidden; overflow-y: auto; }
+  .recordsListPageScroll > *,
+  .dailyListPageScroll > * { height: auto; min-height: 100%; flex: 0 0 auto; }
+  .recordsListPageScroll :global(.records-reference-page),
+  .dailyListPageScroll :global(.daily-management-page) { height: auto; min-height: 100%; overflow: visible; }
+  .recordsListPageScroll :global(.records-table-card),
+  .dailyListPageScroll :global(.daily-management-card),
+  .dailyListPageScroll :global(.daily-table-shell),
+  .dailyListPageScroll :global(.daily-sheet-section) { height: auto; min-height: 0; overflow: visible; }
+  .recordsListPageScroll :global(.records-table-scroll),
+  .dailyListPageScroll :global(.daily-table-wrap) { flex: none; min-height: 0; overflow-x: auto; overflow-y: visible; }
 
   .recordsShell :global(.records-sidebar) {
     inset: auto 0 0;
     flex-direction: row;
     width: 100%;
-    height: 72px;
+    height: calc(72px + env(safe-area-inset-bottom));
     gap: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
     background: light-dark(#fff, #111113);
     border: 0;
     border-radius: 0;

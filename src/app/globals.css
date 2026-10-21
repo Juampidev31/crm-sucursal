@@ -1635,6 +1635,78 @@ iframe::-webkit-scrollbar {
 .records-reference-page .form-label .form-label__required,
 .records-reference-page .form-label .form-label__error { color: light-dark(#9b4f59, #c1858d); }
 @media (max-width: 1050px) { .records-toolbar { flex-wrap: wrap; }.records-toolbar-spacer { display: none; }.records-search { max-width: none; }.records-count { margin-left: auto; } }
+
+/* Registros en teléfono: prioriza la información operativa y deja las acciones
+   siempre a la vista. El resto sigue disponible en Editar / Más acciones. */
+@media (max-width: 720px) {
+  .records-reference-page .records-table-card { border-radius: 11px; }
+  .records-sticky-header { padding: 7px; border-radius: 11px; }
+  .records-sticky-surface { border-radius: 8px; }
+  .records-tabs {
+    min-height: 42px;
+    padding: 0 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .records-tabs::-webkit-scrollbar { display: none; }
+  .records-tabs button { min-width: max-content; flex: 1 0 auto; padding: 11px 10px 9px; font-size: 10px; }
+  .records-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; padding: 8px; }
+  .records-search { grid-column: 1 / -1; min-width: 0; max-width: none; width: 100%; }
+  .records-toolbar > .records-toolbar-btn,
+  .records-new-btn,
+  .records-sort-control,
+  .records-view-toggle { min-width: 0; width: 100%; }
+  .records-toolbar > .records-toolbar-btn { padding-inline: 8px; }
+  .records-toolbar > .records-toolbar-btn:first-of-type { grid-column: span 2; }
+  .records-new-btn { grid-column: span 2; }
+  .records-count { grid-column: span 2; margin: 0; padding-left: 2px; align-self: center; }
+  .records-toolbar-divider { display: none; }
+  .records-sort-control { grid-column: span 2; }
+  .records-sort-control > div { min-width: 0; flex: 1; }
+  .records-view-toggle { grid-column: span 1; }
+  .records-view-toggle button { width: auto; flex: 1; }
+  .records-toolbar > .admin-name-normalizer {
+    grid-column: span 2;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .records-table-card > .records-table-scroll { overflow-x: hidden; overflow-y: visible; }
+  .records-data-table { width: 100%; min-width: 0; table-layout: fixed; }
+  .records-data-table th,
+  .records-data-table td { padding-right: 7px; padding-left: 7px; }
+  .records-data-table th:nth-child(2),
+  .records-data-table td:nth-child(2),
+  .records-data-table th:nth-child(3),
+  .records-data-table td:nth-child(3),
+  .records-data-table th:nth-child(4),
+  .records-data-table td:nth-child(4),
+  .records-data-table th:nth-child(6),
+  .records-data-table td:nth-child(6),
+  .records-data-table th:nth-child(7),
+  .records-data-table td:nth-child(7) { display: none; }
+  .records-data-table th:first-child,
+  .records-data-table td:first-child { width: 52%; min-width: 0; }
+  .records-data-table th:nth-child(5),
+  .records-data-table td:nth-child(5) { width: 23%; }
+  .records-data-table th:last-child,
+  .records-data-table td:last-child { width: 25%; min-width: 0; }
+  .records-data-table td:first-child span:first-child,
+  .records-data-table .cuil-text { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .records-actions { gap: 5px; }
+  .records-action-edit { width: 34px; min-width: 34px; padding: 0; }
+  .records-action-edit span { display: none; }
+
+  .records-grid { grid-template-columns: minmax(0, 1fr); padding: 8px; }
+  .records-pagination { margin: 8px; padding: 10px; }
+  .records-pagination__controls > .btn-pagination:first-child,
+  .records-pagination__controls > .btn-pagination:last-child { display: none; }
+  .records-pagination__controls .btn-pagination { min-height: 38px; padding-inline: 9px; }
+  .records-pagination__page { gap: 5px; font-size: 11px; }
+  .pagination-input { width: 44px; }
+  .records-action-menu { width: min(196px, calc(100vw - 16px)); }
+}
 /* Compatibilidad acotada a productores legacy aún no migrados. */
 :is(.snapshot-producer, .legacy-snapshot, .report-snapshot) [style*="border: 1px solid rgba(255, 255, 255, 0.04)"] {
   background: linear-gradient(180deg, light-dark(#ffffff, #111113) 0%, light-dark(#f8fafc, #0e0e10) 100%) !important;

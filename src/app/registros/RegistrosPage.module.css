@@ -308,8 +308,17 @@
 
 @media (max-width:520px) {
   .canonicalModalHeader { min-height:64px; padding:12px 14px; }
+  .editSubtitle { display:none; }
+  .modalZoomControls { display:none; }
+  .editBody { padding:14px; }
   .editGrid { grid-template-columns:1fr; }
-  .editFooter { flex-wrap:wrap; }
-  .editFooterInfo { flex-basis:100%; }
+  .editFooter { flex-wrap:wrap; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  .editFooterInfo,.editFooterError { flex-basis:100%; }
+  .editCancel,.editSave { min-height:44px; flex:1 1 0; justify-content:center; }
   .summaryMetrics { grid-template-columns:1fr; }
+  .summaryPanel { gap:14px; margin:8px; padding:14px; }
+  .summaryInfo { min-width:0; }
+  .summaryHeadingRow { align-items:flex-start; flex-direction:column; gap:7px; }
+  .summaryPanelLite .summaryHeadingRow { flex-wrap:wrap; }
+  .summaryPanelLite .summaryTitle { white-space:normal; }
 }

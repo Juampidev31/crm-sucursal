@@ -365,8 +365,11 @@ function AppShellInner({ children, pathname }: { children: React.ReactNode, path
       data-minimal-mode={isMinimal ? 'true' : undefined}
     >
       {/* Top Banner — Full Width — Hidden in Reports/Analysts or Minimal Mode */}
-      {!isMinimal && !pathname.startsWith('/reportes/') && (
-        <header className={styles.topbar} data-app-topbar>
+      {!isMinimal && (
+        <header
+          className={`${styles.topbar}${pathname.startsWith('/reportes/') ? ` ${styles.reportTopbar}` : ''}`}
+          data-app-topbar
+        >
           {/* Difuminado sutil y ligero hacia abajo */}
           <div className={styles.topbarFade} />
           <div className={styles.topbarSpacer}>

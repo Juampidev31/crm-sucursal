@@ -221,5 +221,12 @@
 .clear:disabled { opacity: .45; cursor: default; }
 
 @media (max-width: 720px) {
-  .sidebar { inset: 70px auto 8px 8px; width: min(324px, calc(100vw - 16px)); }
+  .sidebar {
+    inset: 70px auto max(8px, env(safe-area-inset-bottom)) 8px;
+    width: min(324px, calc(100vw - 16px));
+    max-height: calc(100dvh - 78px - env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+  .body { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+  .footer { position: relative; z-index: 1; }
 }
