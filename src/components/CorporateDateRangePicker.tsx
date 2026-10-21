@@ -1,6 +1,6 @@
 'use client';
 
-import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CalendarRange, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
@@ -24,8 +24,10 @@ export const CorporateDateRangePicker = memo(({
   placeholder = 'Desde — Hasta',
 }: CorporateDateRangePickerProps) => {
   const [open, setOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const [selectingEnd, setSelectingEnd] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   const parseDate = useCallback((iso: string) => {
     const [year, month, day] = iso.split('-').map(Number);
@@ -45,6 +47,29 @@ export const CorporateDateRangePicker = memo(({
     };
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const updatePlacement = () => {
+      const triggerRect = ref.current?.getBoundingClientRect();
+      const calendarHeight = calendarRef.current?.getBoundingClientRect().height;
+      if (!triggerRect || !calendarHeight) return;
+
+      const viewportMargin = 12;
+      const spaceBelow = window.innerHeight - triggerRect.bottom - viewportMargin;
+      const spaceAbove = triggerRect.top - viewportMargin;
+      setOpenUpward(calendarHeight > spaceBelow && spaceAbove > spaceBelow);
+    };
+
+    updatePlacement();
+    window.addEventListener('resize', updatePlacement);
+    window.addEventListener('scroll', updatePlacement, true);
+    return () => {
+      window.removeEventListener('resize', updatePlacement);
+      window.removeEventListener('scroll', updatePlacement, true);
+    };
   }, [open]);
 
   const year = visibleMonth.getFullYear();
@@ -118,7 +143,12 @@ export const CorporateDateRangePicker = memo(({
         </button>
       )}
       {open && (
-        <div className="corporate-calendar corporate-range-calendar" role="dialog" aria-label="Seleccionar rango de fechas">
+        <div
+          ref={calendarRef}
+          className={`corporate-calendar corporate-range-calendar${openUpward ? ' opens-upward' : ''}`}
+          role="dialog"
+          aria-label="Seleccionar rango de fechas"
+        >
           <div className="corporate-range-calendar__selection" aria-live="polite">
             <span className={!selectingEnd ? 'is-active' : undefined}>
               <small>Desde</small>
