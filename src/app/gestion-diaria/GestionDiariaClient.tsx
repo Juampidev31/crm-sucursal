@@ -15,7 +15,7 @@ import { CorporateDatePicker } from '@/components/CorporateDatePicker';
 import { CorporateDateRangePicker } from '@/components/CorporateDateRangePicker';
 import CustomSelect from '@/components/CustomSelect';
 import ModalPortal from '@/components/ModalPortal';
-import { BarChart3, ClipboardList, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, SlidersHorizontal, TableProperties, Trash2, X } from 'lucide-react';
+import { BarChart3, ChevronDown, ClipboardList, ExternalLink, FileSpreadsheet, Mail, Megaphone, MessageSquare, MoreHorizontal, Pencil, Plus, RefreshCw, Rows3, Search, SlidersHorizontal, TableProperties, Trash2, X } from 'lucide-react';
 import {
   buildIncomeRows,
   databaseRowToIncomeRow,
@@ -33,6 +33,33 @@ import {
 } from '@/lib/gestion-diaria-sheets';
 
 type GestionTab = 'ingresos' | 'flyers' | 'emails';
+type CommercialTab = 'flyers' | 'emails';
+
+const GESTION_LISTADO_URL = 'https://docs.google.com/spreadsheets/d/1kcpyf2wjzdeNwWNVYQCtQobULTJCZhZj9_A_r7gX3f4/edit?gid=64640389#gid=64640389';
+const GESTION_LISTS_CONFIG_KEY = 'gestion_diaria_listados';
+
+interface GestionListLink {
+  id: string;
+  nombre: string;
+  url: string;
+  analista?: string;
+}
+
+const DEFAULT_GESTION_LISTS: GestionListLink[] = [{
+  id: 'listado-gestion-principal',
+  nombre: 'Listado para gestión',
+  url: GESTION_LISTADO_URL,
+}];
+
+function parseGestionLists(value: unknown): GestionListLink[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap(item => {
+    if (!item || typeof item !== 'object') return [];
+    const candidate = item as Partial<GestionListLink>;
+    if (typeof candidate.id !== 'string' || typeof candidate.nombre !== 'string' || typeof candidate.url !== 'string') return [];
+    return [{ id: candidate.id, nombre: candidate.nombre, url: candidate.url, analista: typeof candidate.analista === 'string' ? candidate.analista : '' }];
+  });
+}
 
 interface MonthlySummaryItem {
   label: string;
@@ -127,15 +154,15 @@ interface CommercialEntryForm {
   email: string;
 }
 
-function commercialEntriesKey(analyst: string, tab: Exclude<GestionTab, 'ingresos'>): string {
+function commercialEntriesKey(analyst: string, tab: CommercialTab): string {
   return `gestion_comercial_${normalizeLookupValue(analyst)}_${tab}`;
 }
 
-function commercialEntriesLocalKey(analyst: string, tab: Exclude<GestionTab, 'ingresos'>): string {
+function commercialEntriesLocalKey(analyst: string, tab: CommercialTab): string {
   return `gestion-comercial-entries:${normalizeLookupValue(analyst)}:${tab}`;
 }
 
-function readLocalCommercialEntries(analyst: string, tab: Exclude<GestionTab, 'ingresos'>): CommercialEntriesState {
+function readLocalCommercialEntries(analyst: string, tab: CommercialTab): CommercialEntriesState {
   try {
     const raw = window.localStorage.getItem(commercialEntriesLocalKey(analyst, tab));
     if (!raw) return { entries: [], sheetOverrides: {}, deletedSheetRows: [] };
@@ -164,7 +191,7 @@ function createCommercialForm(): CommercialEntryForm {
   };
 }
 
-function commercialEntryRow(entry: CommercialEntry, columns: string[], tab: Exclude<GestionTab, 'ingresos'>): string[] {
+function commercialEntryRow(entry: CommercialEntry, columns: string[], tab: CommercialTab): string[] {
   const numericValue = (key: keyof CommercialEntryForm) => Number(entry.values[key] || 0);
   const total = tab === 'flyers'
     ? numericValue('enMano') + numericValue('casasEdificios') + numericValue('autos') + numericValue('comerciosEntidades') + numericValue('bancosCajeros')
@@ -457,10 +484,197 @@ function CompactDailyActions({
   );
 }
 
+function GestionListsMenu({ isAdmin, analyst, analystOptions }: { isAdmin: boolean; analyst: string; analystOptions: string[] }) {
+  const [lists, setLists] = useState<GestionListLink[]>(DEFAULT_GESTION_LISTS);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [managerOpen, setManagerOpen] = useState(false);
+  const [nombre, setNombre] = useState('');
+  const [url, setUrl] = useState('');
+  const [listAnalyst, setListAnalyst] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [editingListName, setEditingListName] = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
+  const assignmentOptions = useMemo(() => {
+    const configured = Object.keys(SHEETS);
+    return Array.from(new Set([...configured, ...analystOptions])).filter(Boolean);
+  }, [analystOptions]);
+
+  const applyStoredLists = (value: unknown) => {
+    if (Array.isArray(value)) setLists(parseGestionLists(value));
+  };
+
+  useEffect(() => {
+    let active = true;
+    supabase.from('configuracion').select('valor_json').eq('clave', GESTION_LISTS_CONFIG_KEY).maybeSingle()
+      .then(({ data }) => { if (active && data?.valor_json) applyStoredLists(data.valor_json); });
+    const channel = supabase.channel('gestion-diaria-listados')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracion', filter: `clave=eq.${GESTION_LISTS_CONFIG_KEY}` }, payload => {
+        const next = payload.new as { valor_json?: unknown } | null;
+        if (next?.valor_json) applyStoredLists(next.valor_json);
+      })
+      .subscribe();
+    return () => { active = false; void supabase.removeChannel(channel); };
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeMenu = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', closeMenu);
+    return () => document.removeEventListener('mousedown', closeMenu);
+  }, [menuOpen]);
+
+  const persistLists = async (nextLists: GestionListLink[]) => {
+    const { error: persistError } = await supabase.from('configuracion')
+      .upsert({ clave: GESTION_LISTS_CONFIG_KEY, valor_json: nextLists }, { onConflict: 'clave' });
+    if (persistError) throw new Error(persistError.message);
+    setLists(nextLists);
+  };
+
+  const addList = async () => {
+    setError('');
+    const cleanName = nombre.trim();
+    const cleanUrl = url.trim();
+    if (!cleanName) { setError('Ingresá un nombre para el listado.'); return; }
+    try {
+      const parsedUrl = new URL(cleanUrl);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error();
+    } catch {
+      setError('Ingresá un enlace válido que comience con http:// o https://.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await persistLists([...lists, { id: window.crypto.randomUUID(), nombre: cleanName, url: cleanUrl, analista: listAnalyst }]);
+      setNombre('');
+      setUrl('');
+      setListAnalyst('');
+    } catch {
+      setError('No se pudo guardar el listado.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeList = async (target: GestionListLink) => {
+    if (!window.confirm(`¿Eliminar "${target.nombre}" de los listados disponibles?`)) return;
+    setError('');
+    setSaving(true);
+    try {
+      await persistLists(lists.filter(item => item.id !== target.id));
+    } catch {
+      setError('No se pudo eliminar el listado.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveListName = async () => {
+    const cleanName = editingListName.trim();
+    if (!editingListId || !cleanName) {
+      setError('Ingresá un nombre para el listado.');
+      return;
+    }
+    setError('');
+    setSaving(true);
+    try {
+      await persistLists(lists.map(item => item.id === editingListId ? { ...item, nombre: cleanName } : item));
+      setEditingListId(null);
+      setEditingListName('');
+    } catch {
+      setError('No se pudo actualizar el nombre del listado.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const visibleLists = lists.filter(list => !list.analista || normalizeLookupValue(list.analista) === normalizeLookupValue(analyst));
+
+  return (
+    <>
+      <div className="daily-list-menu" ref={menuRef}>
+        <button type="button" className="daily-list-shortcut" onClick={() => setMenuOpen(open => !open)} aria-haspopup="menu" aria-expanded={menuOpen}>
+          <FileSpreadsheet size={16} /><span>Listados</span><ChevronDown size={12} aria-hidden="true" />
+        </button>
+        {menuOpen && (
+          <div className="daily-list-menu__popover" role="menu">
+            <div className="daily-list-menu__heading">Seleccionar listado</div>
+            {visibleLists.length === 0 ? <div className="daily-list-menu__empty">No hay listados disponibles para {analyst}.</div> : visibleLists.map(list => (
+              <a key={list.id} href={list.url} target="_blank" rel="noopener noreferrer" role="menuitem" onClick={() => setMenuOpen(false)}>
+                <span>{list.nombre}</span><ExternalLink size={12} />
+              </a>
+            ))}
+            {isAdmin && (
+              <button type="button" className="daily-list-menu__manage" onClick={() => { setMenuOpen(false); setManagerOpen(true); }}>
+                <Plus size={13} /> Administrar listados
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {isAdmin && managerOpen && (
+        <ModalPortal>
+          <div className="modal-overlay" onClick={() => setManagerOpen(false)}>
+            <section className="modal-content daily-modal daily-list-manager-modal" role="dialog" aria-modal="true" aria-labelledby="list-manager-title" onClick={event => event.stopPropagation()}>
+              <div className="modal-header daily-modal__header">
+                <div><h3 id="list-manager-title">Administrar listados</h3><p>Asigná cada enlace a un analista o dejalo disponible para todos.</p></div>
+                <button type="button" className="btn-icon" onClick={() => setManagerOpen(false)} aria-label="Cerrar"><X size={17} /></button>
+              </div>
+              <div className="modal-body daily-modal__body daily-list-manager-body">
+                <div className="daily-list-manager-form">
+                  <label><span>Nombre</span><input value={nombre} onChange={event => setNombre(event.target.value)} placeholder="Ej. Listado octubre" /></label>
+                  <label><span>Asignar a</span><CustomSelect value={listAnalyst} onChange={value => setListAnalyst(String(value))} options={[{ value: '', label: 'Todos' }, ...assignmentOptions.map(value => ({ value, label: value }))]} width="100%" menuMaxHeight="220px" /></label>
+                  <label><span>Enlace</span><input value={url} onChange={event => setUrl(event.target.value)} placeholder="https://docs.google.com/..." /></label>
+                  <button type="button" className="btn-primary" onClick={addList} disabled={saving}><Plus size={14} /> Agregar</button>
+                </div>
+                {error && <p className="daily-action-error" role="alert">{error}</p>}
+                <div className="daily-list-manager-items">
+                  {lists.length === 0 ? <p>No hay listados cargados.</p> : lists.map(list => (
+                    <div className="daily-list-manager-item" key={list.id}>
+                      <div className="daily-list-manager-item__copy">
+                        {editingListId === list.id ? (
+                          <input value={editingListName} onChange={event => setEditingListName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') void saveListName(); }} autoFocus />
+                        ) : <strong>{list.nombre}</strong>}
+                        <span>{list.analista || 'Todos'} · {list.url}</span>
+                      </div>
+                      <div className="daily-list-manager-item__actions">
+                        {editingListId === list.id ? (
+                          <>
+                            <button type="button" className="is-save" onClick={() => void saveListName()} disabled={saving}>Guardar</button>
+                            <button type="button" className="is-cancel" onClick={() => { setEditingListId(null); setEditingListName(''); }} disabled={saving} aria-label="Cancelar edición"><X size={14} /></button>
+                          </>
+                        ) : (
+                          <>
+                            <button type="button" className="is-edit" onClick={() => { setEditingListId(list.id); setEditingListName(list.nombre); setError(''); }} disabled={saving} aria-label={`Editar nombre de ${list.nombre}`}><Pencil size={14} /></button>
+                            <button type="button" className="is-delete" onClick={() => void removeList(list)} disabled={saving} aria-label={`Eliminar ${list.nombre}`}><Trash2 size={14} /></button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="modal-footer daily-modal__footer"><button type="button" className="btn-primary" onClick={() => setManagerOpen(false)}>Cerrar</button></div>
+            </section>
+          </div>
+        </ModalPortal>
+      )}
+    </>
+  );
+}
+
 export default function GestionDiariaClient({ analistaInicial }: { analistaInicial: string }) {
   const { isAdmin } = useAuth();
-  const { registros, applyChange, pushChange, pushBulkRefresh } = useGestionDiaria();
-  const { nombres: analistaNombres } = useAnalistas();
+  const { registros, loading: databaseLoading, applyChange, pushChange, pushBulkRefresh } = useGestionDiaria();
+  const { nombres: configuredAnalystNames } = useAnalistas();
+  const analistaNombres = useMemo(
+    () => Array.from(new Set([...Object.keys(SHEETS), ...configuredAnalystNames])).filter(Boolean),
+    [configuredAnalystNames],
+  );
   const [analista, setAnalista] = useState(analistaInicial);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -508,9 +722,21 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
   useEffect(() => {
     let active = true;
     const sheetId = SHEETS[selectedAnalista as SheetAnalyst];
-    if (!sheetId) return () => { active = false; };
+    if (!sheetId) {
+      queueMicrotask(() => {
+        if (!active) return;
+        setIncomeRows([]);
+        setIncomeError('');
+        setIncomeLoading(false);
+      });
+      return () => { active = false; };
+    }
     loadGoogleSheet(sheetId, SHEET_TABS.ingresos.gid)
-      .then(data => { if (active) setIncomeRows(buildIncomeRows(data)); })
+      .then(data => {
+        if (!active) return;
+        setIncomeRows(buildIncomeRows(data));
+        setIncomeError('');
+      })
       .catch(reason => {
         if (!active) return;
         setIncomeRows([]);
@@ -538,12 +764,12 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
     });
 
     const applicationRows = analystRows
-      .filter(row => !row.created_at || (createdAtCounts.get(row.created_at) ?? 0) < 10)
+      .filter(row => incomeError || !row.created_at || (createdAtCounts.get(row.created_at) ?? 0) < 10)
       .map(databaseRowToIncomeRow)
       .filter(row => !sheetIdentities.has(incomeRowIdentity(row)));
 
     return [...applicationRows, ...effectiveSheetRows].sort((left, right) => right.fecha.localeCompare(left.fecha));
-  }, [deletedSheetIds, incomeRows, registros, selectedAnalista, sheetOverrides]);
+  }, [deletedSheetIds, incomeError, incomeRows, registros, selectedAnalista, sheetOverrides]);
 
   const filtrados = useMemo(() => {
     return visibleIncomeRows.filter(r => {
@@ -791,9 +1017,12 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
           <span className="daily-management-title__icon"><ClipboardList size={20} strokeWidth={1.8} /></span>
           <div><h2>Gestión diaria</h2><p>Seguimiento operativo y rendimiento comercial</p></div>
         </div>
-        <div className="daily-management-analyst">
-          <span>Analista</span>
-          <PremiumSelect value={selectedAnalista} onChange={cambiarAnalista} options={analistaNombres} placeholder="Analista" />
+        <div className="daily-management-header-tools">
+          <div className="daily-management-analyst">
+            <span>Analista</span>
+            <PremiumSelect value={selectedAnalista} onChange={cambiarAnalista} options={analistaNombres} placeholder="Analista" />
+          </div>
+          <GestionListsMenu isAdmin={isAdmin} analyst={selectedAnalista} analystOptions={analistaNombres} />
         </div>
       </div>
 
@@ -906,10 +1135,13 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
         </div>}
       </div>
 
-      {incomeLoading ? <DailyLoadingState kind="ingresos" label="Ingreso diario de ventas" /> : incomeError ? (
-        <div className="daily-sheet-state is-error"><strong>No pudimos cargar la hoja.</strong><span>{incomeError}</span></div>
-      ) : (
+      {incomeLoading || databaseLoading ? <DailyLoadingState kind="ingresos" label="Ingreso diario de ventas" /> : (
         <div className="daily-table-shell">
+          {incomeError && (
+            <div className="daily-sheet-warning" role="status">
+              No se pudo sincronizar la hoja de Google Sheets. Se muestran los registros guardados en la aplicación.
+            </div>
+          )}
           <div className="daily-table-wrap">
             <table className="daily-table">
             <thead>
@@ -1021,7 +1253,7 @@ export default function GestionDiariaClient({ analistaInicial }: { analistaInici
   );
 }
 
-function SheetTabTable({ analyst, tab }: { analyst: string; tab: Exclude<GestionTab, 'ingresos'> }) {
+function SheetTabTable({ analyst, tab }: { analyst: string; tab: CommercialTab }) {
   const [data, setData] = useState<SheetTableData | null>(null);
   const [entries, setEntries] = useState<CommercialEntry[]>([]);
   const [sheetOverrides, setSheetOverrides] = useState<Record<string, CommercialEntryForm>>({});
@@ -1415,7 +1647,7 @@ function MonthlySummaryModal({ analyst, month, months, summary, onMonthChange, o
 }
 
 function CommercialEntryModal({ tab, editing, form, setForm, onCancel, onSave, saving, error }: {
-  tab: Exclude<GestionTab, 'ingresos'>;
+  tab: CommercialTab;
   editing: boolean;
   form: CommercialEntryForm;
   setForm: React.Dispatch<React.SetStateAction<CommercialEntryForm>>;
