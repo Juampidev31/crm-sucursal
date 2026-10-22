@@ -61,6 +61,14 @@ function parseGestionLists(value: unknown): GestionListLink[] {
   });
 }
 
+function isValidListUrl(value: string): boolean {
+  try {
+    return ['http:', 'https:'].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
+
 interface MonthlySummaryItem {
   label: string;
   count: number;
@@ -495,6 +503,7 @@ function GestionListsMenu({ isAdmin, analyst, analystOptions }: { isAdmin: boole
   const [error, setError] = useState('');
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editingListName, setEditingListName] = useState('');
+  const [editingListUrl, setEditingListUrl] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
   const assignmentOptions = useMemo(() => {
     const configured = Object.keys(SHEETS);
@@ -539,10 +548,7 @@ function GestionListsMenu({ isAdmin, analyst, analystOptions }: { isAdmin: boole
     const cleanName = nombre.trim();
     const cleanUrl = url.trim();
     if (!cleanName) { setError('Ingresá un nombre para el listado.'); return; }
-    try {
-      const parsedUrl = new URL(cleanUrl);
-      if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error();
-    } catch {
+    if (!isValidListUrl(cleanUrl)) {
       setError('Ingresá un enlace válido que comience con http:// o https://.');
       return;
     }
@@ -572,20 +578,26 @@ function GestionListsMenu({ isAdmin, analyst, analystOptions }: { isAdmin: boole
     }
   };
 
-  const saveListName = async () => {
+  const saveListEdits = async () => {
     const cleanName = editingListName.trim();
+    const cleanUrl = editingListUrl.trim();
     if (!editingListId || !cleanName) {
       setError('Ingresá un nombre para el listado.');
+      return;
+    }
+    if (!isValidListUrl(cleanUrl)) {
+      setError('Ingresá un enlace válido que comience con http:// o https://.');
       return;
     }
     setError('');
     setSaving(true);
     try {
-      await persistLists(lists.map(item => item.id === editingListId ? { ...item, nombre: cleanName } : item));
+      await persistLists(lists.map(item => item.id === editingListId ? { ...item, nombre: cleanName, url: cleanUrl } : item));
       setEditingListId(null);
       setEditingListName('');
+      setEditingListUrl('');
     } catch {
-      setError('No se pudo actualizar el nombre del listado.');
+      setError('No se pudo actualizar el listado.');
     } finally {
       setSaving(false);
     }
@@ -634,22 +646,26 @@ function GestionListsMenu({ isAdmin, analyst, analystOptions }: { isAdmin: boole
                 {error && <p className="daily-action-error" role="alert">{error}</p>}
                 <div className="daily-list-manager-items">
                   {lists.length === 0 ? <p>No hay listados cargados.</p> : lists.map(list => (
-                    <div className="daily-list-manager-item" key={list.id}>
+                    <div className={`daily-list-manager-item${editingListId === list.id ? ' is-editing' : ''}`} key={list.id}>
                       <div className="daily-list-manager-item__copy">
                         {editingListId === list.id ? (
-                          <input value={editingListName} onChange={event => setEditingListName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') void saveListName(); }} autoFocus />
+                          <>
+                            <input aria-label={`Nombre de ${list.nombre}`} value={editingListName} onChange={event => setEditingListName(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') void saveListEdits(); }} autoFocus />
+                            <input type="url" aria-label={`Enlace de ${list.nombre}`} value={editingListUrl} onChange={event => setEditingListUrl(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') void saveListEdits(); }} placeholder="https://docs.google.com/..." />
+                            <span>Asignado a {list.analista || 'Todos'}</span>
+                          </>
                         ) : <strong>{list.nombre}</strong>}
-                        <span>{list.analista || 'Todos'} · {list.url}</span>
+                        {editingListId !== list.id && <span>{list.analista || 'Todos'} · {list.url}</span>}
                       </div>
                       <div className="daily-list-manager-item__actions">
                         {editingListId === list.id ? (
                           <>
-                            <button type="button" className="is-save" onClick={() => void saveListName()} disabled={saving}>Guardar</button>
-                            <button type="button" className="is-cancel" onClick={() => { setEditingListId(null); setEditingListName(''); }} disabled={saving} aria-label="Cancelar edición"><X size={14} /></button>
+                            <button type="button" className="is-save" onClick={() => void saveListEdits()} disabled={saving}>Guardar</button>
+                            <button type="button" className="is-cancel" onClick={() => { setEditingListId(null); setEditingListName(''); setEditingListUrl(''); setError(''); }} disabled={saving} aria-label="Cancelar edición"><X size={14} /></button>
                           </>
                         ) : (
                           <>
-                            <button type="button" className="is-edit" onClick={() => { setEditingListId(list.id); setEditingListName(list.nombre); setError(''); }} disabled={saving} aria-label={`Editar nombre de ${list.nombre}`}><Pencil size={14} /></button>
+                            <button type="button" className="is-edit" onClick={() => { setEditingListId(list.id); setEditingListName(list.nombre); setEditingListUrl(list.url); setError(''); }} disabled={saving} aria-label={`Editar nombre y enlace de ${list.nombre}`}><Pencil size={14} /></button>
                             <button type="button" className="is-delete" onClick={() => void removeList(list)} disabled={saving} aria-label={`Eliminar ${list.nombre}`}><Trash2 size={14} /></button>
                           </>
                         )}
