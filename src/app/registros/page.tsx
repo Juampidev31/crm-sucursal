@@ -1998,10 +1998,14 @@ export default function RegistrosPage() {
 
       {/* Toast */}
       {toast && (
-        <div className={styles.toastRegion}>
-          <div className={`${styles.toast} ${toast.type === 'success' ? styles.toastSuccess : toast.type === 'error' ? styles.toastError : styles.toastWarning}`}>
-            <AlertCircle size={15} />
-            {toast.message}
+        <div className={styles.toastRegion} aria-live="polite">
+          <div role="status" className={`${styles.toast} ${toast.type === 'success' ? styles.toastSuccess : toast.type === 'error' ? styles.toastError : styles.toastWarning}`}>
+            {toast.type === 'success'
+              ? <CheckCircle2 size={16} />
+              : toast.type === 'warning'
+                ? <AlertTriangle size={16} />
+                : <AlertCircle size={16} />}
+            <span>{toast.message}</span>
           </div>
         </div>
       )}
