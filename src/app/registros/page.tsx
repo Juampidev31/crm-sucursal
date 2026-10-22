@@ -1759,7 +1759,6 @@ export default function RegistrosPage() {
     applyRegistroChange('UPDATE', { ...reg, fijado: nuevo });
     pushRegistroChange('UPDATE', { ...reg, fijado: nuevo });
     refresh(true);
-    showToast(nuevo ? 'Registro fijado' : 'Registro desfijado', 'success');
   }, [applyRegistroChange, pushRegistroChange, refresh, showToast]);
 
   const handleSaveEtiquetas = useCallback(async (registroId: string, nuevasEtiquetas: string[]) => {
