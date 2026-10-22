@@ -2154,19 +2154,22 @@ export default function RegistrosPage() {
           <div className="records-sticky-surface">
             {/* Pestañas: Registros / Fijados (solo si hay alguno fijado) */}
             <div className="records-tabs">
-            {([['registros', 'Registros'], ['fijados', `Fijados (${registrosFijados.length})`]] as const).map(([key, label]) => {
-              const active = activeTab === key;
-              return (
+              <button
+                onClick={() => setActiveTab('registros')}
+                className={activeTab === 'registros' ? 'is-active' : undefined}
+              >
+                <FileText size={14} />
+                Registros
+              </button>
+              {registrosFijados.length > 0 && (
                 <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  className={active ? 'is-active' : undefined}
+                  onClick={() => setActiveTab('fijados')}
+                  className={activeTab === 'fijados' ? 'is-active' : undefined}
                 >
-                  {key === 'registros' ? <FileText size={14} /> : <Pin size={13} fill={active ? 'currentColor' : 'none'} />}
-                  {label}
+                  <Pin size={13} fill={activeTab === 'fijados' ? 'currentColor' : 'none'} />
+                  Fijados ({registrosFijados.length})
                 </button>
-              );
-            })}
+              )}
             </div>
             <div className="records-toolbar">
           <label className="records-search"><Search size={18} /><input value={filters.search} onChange={e => setFilter('search', e.target.value)} placeholder="Buscar cliente, CUIL o gestor..." /></label>
