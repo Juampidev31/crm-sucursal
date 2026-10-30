@@ -788,7 +788,7 @@ iframe::-webkit-scrollbar {
 .report-select__menu.is-dark .report-select__option.is-selected { color: #fff; background: light-dark(rgba(255,255,255,.06), rgba(17,17,19,0.06)); }
 .report-select__dot { width: 4px; height: 4px; flex: 0 0 auto; background: currentColor; border-radius: 50%; }
 
-.tag-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; color: var(--tag-color); background: var(--tag-bg); border: 1px solid var(--tag-border); border-radius: var(--radius-full); font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+.tag-badge { display: inline-flex; align-items: center; gap: 4px; min-height: 20px; padding: 0 7px; color: var(--tag-color); background: var(--tag-bg); border: 1px solid var(--tag-border); border-radius: 5px; font: 700 9px/1 var(--font-sans); letter-spacing: .15px; white-space: nowrap; }
 .tag-badge__remove { display: flex; align-items: center; margin-left: 2px; padding: 0; color: inherit; background: none; border: 0; cursor: pointer; line-height: 0; opacity: .6; }
 .tag-badge__remove:hover { opacity: 1; }
 .tag-badge__icon { width: 10px; height: 10px; }

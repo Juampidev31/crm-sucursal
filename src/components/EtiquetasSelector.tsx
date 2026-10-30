@@ -16,7 +16,12 @@ export const TAG_CONFIGS: Record<string, TagColorConfig> = {
   Urgente:        { label: 'Urgente',        bg: 'rgba(239,68,68,0.15)',   color: '#fca5a5', border: 'rgba(239,68,68,0.35)' },
   'Sin Respuesta':{ label: 'Sin Respuesta',  bg: 'rgba(100,116,139,0.15)', color: '#94a3b8', border: 'rgba(100,116,139,0.35)' },
   Caliente:       { label: 'Caliente',       bg: 'rgba(249,115,22,0.15)',  color: '#fdba74', border: 'rgba(249,115,22,0.35)' },
-  Presupuestado:  { label: 'Presupuestado',  bg: 'rgba(16,185,129,0.15)', color: '#6ee7b7', border: 'rgba(16,185,129,0.35)' },
+  Presupuestado:  {
+    label: 'Presupuestado',
+    bg: 'light-dark(#edf5f1, #111917)',
+    color: 'light-dark(#2f6b57, #75a993)',
+    border: 'light-dark(#cfe2d8, #2a3a34)',
+  },
 };
 
 function hexToRgba(hex: string, alpha: number): string {
