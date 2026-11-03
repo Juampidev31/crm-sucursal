@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { CircleDollarSign, RotateCcw, TrendingUp, Wallet } from 'lucide-react';
+import { DEFAULT_FIXED_SALARY, loadFixedSalary, resetFixedSalary, saveFixedSalary } from '@/lib/calculadora-sueldo';
 import styles from './CalculadoraContent.module.css';
-
-const DEFAULT_FIXED_SALARY = '1641799.18';
 
 const INCENTIVES = {
   capital: { c1: 62055, c2: 93703, c3: 141492 },
@@ -40,7 +39,9 @@ function tierLabel(value: string): string {
 
 export default function CalculadoraContent() {
   const [pacts, setPacts] = useState<Pacts>(EMPTY_PACTS);
-  const [fixedSalary, setFixedSalary] = useState(DEFAULT_FIXED_SALARY);
+  const [fixedSalary, setFixedSalary] = useState(() =>
+    loadFixedSalary(typeof window === 'undefined' ? null : window.localStorage)
+  );
 
   const results = useMemo(() => ({
     capital: calculate('capital', pacts.capital),
@@ -58,6 +59,12 @@ export default function CalculadoraContent() {
   const resetCalculator = () => {
     setPacts(EMPTY_PACTS);
     setFixedSalary(DEFAULT_FIXED_SALARY);
+    resetFixedSalary(window.localStorage);
+  };
+
+  const updateFixedSalary = (value: string) => {
+    setFixedSalary(value);
+    saveFixedSalary(window.localStorage, value);
   };
 
   const inputCard = (label: string, key: PactKey) => {
@@ -138,7 +145,7 @@ export default function CalculadoraContent() {
                   step="1000"
                   inputMode="decimal"
                   value={fixedSalary}
-                  onChange={event => setFixedSalary(event.target.value)}
+                  onChange={event => updateFixedSalary(event.target.value)}
                   aria-label="Modificar sueldo fijo"
                 />
               </div>
