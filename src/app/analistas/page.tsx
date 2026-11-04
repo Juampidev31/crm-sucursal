@@ -1503,7 +1503,7 @@ export default function AnalistasPage() {
           <section className="exec-card exec-operations"><h3>Métricas operativas</h3><div>
             {miniMetric('Venta / día (necesario)', formatCurrency(kpiTotal.metaDiariaCapital ?? 0), <>Ritmo: {formatCurrency(kpiTotal.ventaPorDia ?? 0)}</>)}
             {miniMetric('Ops. / día (necesario)', Math.round(kpiTotal.metaDiariaOps ?? 0), <>Ritmo: {Math.round(kpiTotal.opsPorDia ?? 0)}</>)}
-            {miniMetric('Proy. fin mes (K)', formatCurrency(kpiTotal.proyCapital ?? 0), kpiTotal.cumplProyCapital !== null ? `▲ ${kpiTotal.cumplProyCapital.toFixed(2)}%` : undefined, 'positive')}
+            {miniMetric('Proy. fin mes (K)', formatCurrency(kpiTotal.proyCapital ?? 0), kpiTotal.cumplProyCapital !== null ? `${kpiTotal.cumplProyCapital >= 100 ? '▲' : '▼'} ${kpiTotal.cumplProyCapital.toFixed(2)}%` : undefined, kpiTotal.cumplProyCapital === null ? 'neutral' : kpiTotal.cumplProyCapital >= 100 ? 'positive' : 'negative')}
             {miniMetric('Proy. fin mes (Q)', Math.round(kpiTotal.proyOps ?? 0), kpiTotal.cumplProyOps !== null ? `${kpiTotal.cumplProyOps >= 100 ? '▲' : '▼'} ${kpiTotal.cumplProyOps.toFixed(2)}%` : undefined, kpiTotal.cumplProyOps !== null && kpiTotal.cumplProyOps >= 100 ? 'positive' : 'negative')}
             {miniMetric('Falta 100% (K)', formatCurrency(kpiTotal.faltaCapital ?? 0), undefined, kpiTotal.faltaCapital === 0 ? 'positive' : 'negative')}
             {miniMetric('Falta 100% (Q)', Math.round(kpiTotal.faltaOps ?? 0), undefined, kpiTotal.faltaOps === 0 ? 'positive' : 'negative')}
