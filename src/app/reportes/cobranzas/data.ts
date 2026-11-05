@@ -5,6 +5,7 @@ const SHEET_ID = '1RcjEoiOM4PN92fNQv0ZUy-soh7Qa98vdvys0rr9_JlM';
 const SHEETS: Record<string, string> = {
   '2025': '1325602277',
   '2026': '666232440',
+  '2027': process.env.COBRANZAS_SHEET_GID_2027 || '',
 };
 
 const SNAPSHOTS: Record<string, string> = {
@@ -68,6 +69,36 @@ Septiembre,"14,43%","8,65%","14,42%"
 Octubre,,,
 Noviembre,,,
 Diciembre,,,`,
+  '2027': `TRAMO 90-119,Objetivo,Recupero,Cumplimiento,,TRAMO 120-209,Objetivo,Recupero,Cumplimiento,,REFINANCIACIONES,Objetivo,Recupero,Cumplimiento
+Enero,,,,,Enero,,,,,Enero,,,
+Febrero,,,,,Febrero,,,,,Febrero,,,
+Marzo,,,,,Marzo,,,,,Marzo,,,
+Abril,,,,,Abril,,,,,Abril,,,
+Mayo,,,,,Mayo,,,,,Mayo,,,
+Junio,,,,,Junio,,,,,Junio,,,
+Julio,,,,,Julio,,,,,Julio,,,
+Agosto,,,,,Agosto,,,,,Agosto,,,
+Septiembre,,,,,Septiembre,,,,,Septiembre,,,
+Octubre,,,,,Octubre,,,,,Octubre,,,
+Noviembre,,,,,Noviembre,,,,,Noviembre,,,
+Diciembre,,,,,Diciembre,,,,,Diciembre,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+,,,,,,,,,,,,,
+MOROSIDAD,2027,2026,MEDIA EMP.,,,,,,,,,,
+,,,
+Enero,,,
+Febrero,,,
+Marzo,,,
+Abril,,,
+Mayo,,,
+Junio,,,
+Julio,,,
+Agosto,,,
+Septiembre,,,
+Octubre,,,
+Noviembre,,,
+Diciembre,,,`,
 };
 
 export interface TramoRow { mes: string; objetivo: string; recupero: string; cumplimiento: string; pct: number | null; }
@@ -125,10 +156,12 @@ function completedValueCount(data: CobranzasData): number {
 }
 
 export async function getCobranzasData(year: string): Promise<CobranzasData | null> {
+  const snapshot = SNAPSHOTS[year] ? parseCobranzasData(SNAPSHOTS[year]) : null;
   const gid = SHEETS[year];
-  if (!gid) return null;
 
-  const snapshot = parseCobranzasData(SNAPSHOTS[year]);
+  if (!gid) {
+    return snapshot ? normalizeCobranzasData(snapshot) : null;
+  }
 
   let text: string;
   try {
@@ -136,13 +169,14 @@ export async function getCobranzasData(year: string): Promise<CobranzasData | nu
       `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`,
       { next: { revalidate: 300 } },
     );
-    if (!res.ok) return snapshot;
+    if (!res.ok) return snapshot ? normalizeCobranzasData(snapshot) : null;
     text = await res.text();
   } catch {
-    return snapshot;
+    return snapshot ? normalizeCobranzasData(snapshot) : null;
   }
 
   const live = parseCobranzasData(text);
+  if (!snapshot) return normalizeCobranzasData(live);
   const result = completedValueCount(live) >= completedValueCount(snapshot) ? live : snapshot;
   return normalizeCobranzasData(result);
 }
