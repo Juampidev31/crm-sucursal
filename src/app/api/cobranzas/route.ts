@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getCobranzasData } from '@/app/reportes/cobranzas/data';
+import { normalizeCobranzasData } from '@/lib/csv-utils';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -19,17 +20,17 @@ export async function GET(request: Request) {
       .single();
 
     if (dbRow?.payload) {
-      return NextResponse.json({ ...dbRow.payload, source: 'supabase' });
+      return NextResponse.json({ ...normalizeCobranzasData(dbRow.payload), source: 'supabase' });
     }
 
     // 2. Fall back to Google Sheets
     const data = await getCobranzasData(year);
-    return NextResponse.json({ ...data, source: 'sheets' });
+    return NextResponse.json({ ...(data ? normalizeCobranzasData(data) : data), source: 'sheets' });
   } catch {
     // If Supabase table doesn't exist yet, fall back to Sheets
     try {
       const data = await getCobranzasData(year);
-      return NextResponse.json({ ...data, source: 'sheets' });
+      return NextResponse.json({ ...(data ? normalizeCobranzasData(data) : data), source: 'sheets' });
     } catch {
       return NextResponse.json({ error: 'Failed to fetch cobranzas data' }, { status: 500 });
     }
@@ -45,9 +46,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing year or data' }, { status: 400 });
     }
 
-    // Remove source field before saving
+    // Remove source field before saving, and ensure normalized format
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { source, ...payload } = data;
+    const { source, ...payload } = normalizeCobranzasData(data);
 
     const { error } = await supabase
       .from('cobranzas_data')

@@ -15,7 +15,7 @@ import SelectReporte from '@/components/SelectReporte';
 import type { CobranzasData, TramoRow, MorosidadRow } from './data';
 import { Edit2, Save, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { parseNumberRobust, parsePct } from '@/lib/csv-utils';
+import { parseNumberRobust, parsePct, formatMontoCobranza, normalizeCobranzasData } from '@/lib/csv-utils';
 import styles from './Cobranzas.module.css';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend, BarController, LineController, Filler);
@@ -51,10 +51,11 @@ function EditCell({
 // ── Tramo Table (read/edit) ──────────────────────────────────────────────────
 
 function TramoTable({
-  titulo, rows, color, editing, onRowChange
+  titulo, rows, color, editing, onRowChange, onRowBlur
 }: {
   titulo: string; rows: TramoRow[]; color: string; editing: boolean;
   onRowChange: (idx: number, field: keyof TramoRow, value: string) => void;
+  onRowBlur?: (idx: number, field: 'objetivo' | 'recupero') => void;
 }) {
   return (
     <div className={`${styles.panel} ${styles.tramoPanel}`}>
@@ -83,16 +84,28 @@ function TramoTable({
                 </td>
                 <td className={styles.numericCell}>
                   {editing ? (
-                    <EditCell value={r.objetivo} onChange={v => onRowChange(i, 'objetivo', v)} placeholder="0" />
+                    <EditCell
+                      value={r.objetivo}
+                      onChange={v => onRowChange(i, 'objetivo', v)}
+                      onBlur={() => onRowBlur?.(i, 'objetivo')}
+                      placeholder="-"
+                      width="96px"
+                    />
                   ) : (
-                    <span className={styles.secondaryValue}>{r.objetivo}</span>
+                    <span className={styles.secondaryValue}>{formatMontoCobranza(r.objetivo)}</span>
                   )}
                 </td>
                 <td className={styles.numericCell}>
                   {editing ? (
-                    <EditCell value={r.recupero} onChange={v => onRowChange(i, 'recupero', v)} placeholder="0" />
+                    <EditCell
+                      value={r.recupero}
+                      onChange={v => onRowChange(i, 'recupero', v)}
+                      onBlur={() => onRowBlur?.(i, 'recupero')}
+                      placeholder="-"
+                      width="96px"
+                    />
                   ) : (
-                    <span className={styles.primaryValue}>{r.recupero}</span>
+                    <span className={styles.primaryValue}>{formatMontoCobranza(r.recupero)}</span>
                   )}
                 </td>
                 <td className={styles.numericCell}>
@@ -148,7 +161,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   // Deep-clone data for editing
-  const [data, setData] = useState<CobranzasData>(initialData);
+  const [data, setData] = useState<CobranzasData>(() => normalizeCobranzasData(initialData));
   const chartsLoaded = useDeferredMount();
 
   // Ensure 12 rows always exist for editing
@@ -169,20 +182,38 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
   }, []);
 
   const startEditing = () => {
-    setData(prev => ({
-      ...prev,
-      tramo90: ensureRows(prev.tramo90),
-      tramo120: ensureRows(prev.tramo120),
-      refin: ensureRows(prev.refin),
-      morosidad: ensureMorosidadRows(prev.morosidad),
-    }));
+    setData(prev => {
+      const normalized = normalizeCobranzasData(prev);
+      return {
+        ...normalized,
+        tramo90: ensureRows(normalized.tramo90),
+        tramo120: ensureRows(normalized.tramo120),
+        refin: ensureRows(normalized.refin),
+        morosidad: ensureMorosidadRows(normalized.morosidad),
+      };
+    });
     setEditing(true);
   };
 
   const cancelEditing = () => {
-    setData(initialData);
+    setData(normalizeCobranzasData(initialData));
     setEditing(false);
   };
+
+  const formatTramoMonto = useCallback((
+    tramo: 'tramo90' | 'tramo120' | 'refin',
+    idx: number,
+    field: 'objetivo' | 'recupero'
+  ) => {
+    setData(prev => {
+      const rows = [...prev[tramo]];
+      const val = rows[idx][field];
+      if (val && val !== '-') {
+        rows[idx] = { ...rows[idx], [field]: formatMontoCobranza(val) };
+      }
+      return { ...prev, [tramo]: rows };
+    });
+  }, []);
 
   const updateTramo = useCallback((
     tramo: 'tramo90' | 'tramo120' | 'refin',
@@ -256,13 +287,15 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
 
   const saveData = async () => {
     setSaving(true);
+    const cleanData = normalizeCobranzasData(data);
     try {
       const res = await fetch('/api/cobranzas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ year, data }),
+        body: JSON.stringify({ year, data: cleanData }),
       });
       if (!res.ok) throw new Error('Error al guardar');
+      setData(cleanData);
       setToast({ msg: 'Datos guardados correctamente', type: 'success' });
       setEditing(false);
       // Refresh to get server-rendered data
@@ -403,6 +436,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           color="#60a5fa"
           editing={editing}
           onRowChange={(idx, field, value) => updateTramo('tramo90', idx, field, value)}
+          onRowBlur={(idx, field) => formatTramoMonto('tramo90', idx, field)}
         />
         <TramoTable
           titulo="Tramo 120-209"
@@ -410,6 +444,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           color="#a78bfa"
           editing={editing}
           onRowChange={(idx, field, value) => updateTramo('tramo120', idx, field, value)}
+          onRowBlur={(idx, field) => formatTramoMonto('tramo120', idx, field)}
         />
         <TramoTable
           titulo="Refinanciaciones"
@@ -417,6 +452,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           color="#fbbf24"
           editing={editing}
           onRowChange={(idx, field, value) => updateTramo('refin', idx, field, value)}
+          onRowBlur={(idx, field) => formatTramoMonto('refin', idx, field)}
         />
       </div>
 

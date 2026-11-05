@@ -1,5 +1,5 @@
 import 'server-only';
-import { parseCSV, parsePct } from '@/lib/csv-utils';
+import { parseCSV, parsePct, formatMontoCobranza, normalizeCobranzasData } from '@/lib/csv-utils';
 
 const SHEET_ID = '1RcjEoiOM4PN92fNQv0ZUy-soh7Qa98vdvys0rr9_JlM';
 const SHEETS: Record<string, string> = {
@@ -91,9 +91,9 @@ function parseCobranzasData(text: string): CobranzasData {
   for (let i = 1; i <= 12; i++) {
     const r = rows[i];
     if (!r?.[0]) continue;
-    tramo90.push({ mes: r[0], objetivo: r[1] || '-', recupero: r[2] || '-', cumplimiento: r[3] || '-', pct: parsePct(r[3]) });
-    tramo120.push({ mes: r[5], objetivo: r[6] || '-', recupero: r[7] || '-', cumplimiento: r[8] || '-', pct: parsePct(r[8]) });
-    refin.push({ mes: r[10], objetivo: r[11] || '-', recupero: r[12] || '-', cumplimiento: r[13] || '-', pct: parsePct(r[13]) });
+    tramo90.push({ mes: r[0], objetivo: formatMontoCobranza(r[1]), recupero: formatMontoCobranza(r[2]), cumplimiento: r[3] || '-', pct: parsePct(r[3]) });
+    tramo120.push({ mes: r[5], objetivo: formatMontoCobranza(r[6]), recupero: formatMontoCobranza(r[7]), cumplimiento: r[8] || '-', pct: parsePct(r[8]) });
+    refin.push({ mes: r[10], objetivo: formatMontoCobranza(r[11]), recupero: formatMontoCobranza(r[12]), cumplimiento: r[13] || '-', pct: parsePct(r[13]) });
   }
 
   const morosidadStart = rows.findIndex(row => row[0] === 'MOROSIDAD');
@@ -143,5 +143,6 @@ export async function getCobranzasData(year: string): Promise<CobranzasData | nu
   }
 
   const live = parseCobranzasData(text);
-  return completedValueCount(live) >= completedValueCount(snapshot) ? live : snapshot;
+  const result = completedValueCount(live) >= completedValueCount(snapshot) ? live : snapshot;
+  return normalizeCobranzasData(result);
 }

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getCobranzasData, COBRANZAS_YEARS } from './data';
 import CobranzasClient from './CobranzasClient';
 import { createClient } from '@supabase/supabase-js';
+import { normalizeCobranzasData } from '@/lib/csv-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,5 +36,7 @@ export default async function ReporteCobranzasPage({ searchParams }: { searchPar
 
   if (!data) notFound();
 
-  return <CobranzasClient key={year} data={data} year={year} years={COBRANZAS_YEARS} />;
+  const normalized = normalizeCobranzasData(data);
+
+  return <CobranzasClient key={year} data={normalized} year={year} years={COBRANZAS_YEARS} />;
 }

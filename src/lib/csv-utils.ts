@@ -92,3 +92,31 @@ export function parsePct(v: string): number | null {
   const n = parseNumberRobust(v);
   return isNaN(n) ? null : n;
 }
+
+export function formatMontoCobranza(v: string | number | null | undefined): string {
+  if (v === null || v === undefined) return '-';
+  const str = String(v).trim();
+  if (!str || str === '-' || str === '—') return '-';
+  const num = parseNumberRobust(v);
+  if (isNaN(num)) return str;
+  const rounded = Math.round(num);
+  const parts = Math.abs(rounded).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return rounded < 0 ? `-$ ${parts}` : `$ ${parts}`;
+}
+
+export function normalizeCobranzasData<T extends { tramo90?: any[]; tramo120?: any[]; refin?: any[] }>(data: T): T {
+  if (!data) return data;
+  const normalizeRows = (rows?: any[]) =>
+    (rows || []).map(r => ({
+      ...r,
+      objetivo: formatMontoCobranza(r.objetivo),
+      recupero: formatMontoCobranza(r.recupero),
+    }));
+
+  return {
+    ...data,
+    tramo90: normalizeRows(data.tramo90),
+    tramo120: normalizeRows(data.tramo120),
+    refin: normalizeRows(data.refin),
+  };
+}
