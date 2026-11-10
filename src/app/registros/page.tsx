@@ -36,6 +36,8 @@ const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
 
 const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
+const CUOTAS_OPCIONES = ['9', '12', '15', '18', '24'] as const;
+
 const initialForm: Partial<Registro> = {
   cuil: '', nombre: '', puntaje: 0, es_re: false,
   analista: '', fecha: '', fecha_score: '', monto: undefined, interes: undefined,
@@ -883,7 +885,17 @@ const RegistroModal = memo(function RegistroModal({
                 />
               </Field>
               <Field label={`Cuotas${esVentaOAprobado ? ' *' : ''}`} error={errors.cuotas}>
-                <input className="form-input" value={form.cuotas || ''} onChange={e => set('cuotas', e.target.value)} placeholder="Ej: 12, 24, 36" />
+                <PremiumSelect
+                  value={form.cuotas || ''}
+                  onChange={val => set('cuotas', val)}
+                  options={
+                    form.cuotas && !CUOTAS_OPCIONES.includes(form.cuotas as typeof CUOTAS_OPCIONES[number])
+                      ? [form.cuotas, ...CUOTAS_OPCIONES]
+                      : [...CUOTAS_OPCIONES]
+                  }
+                  placeholder="— Sin especificar —"
+                  error={errors.cuotas}
+                />
               </Field>
               <Field label={`Rango etario${esVentaOAprobado ? ' *' : ''}`} error={errors.rango_etario}>
                 <PremiumSelect

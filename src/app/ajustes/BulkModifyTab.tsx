@@ -286,6 +286,8 @@ const EMPTY_FILTROS: Filtros = {
 
 const SIN_ESPECIFICAR = '__sin_especificar__';
 
+const CUOTAS_OPCIONES = ['9', '12', '15', '18', '24'] as const;
+
 // Aplica filtro de chips con soporte para "Sin especificar" (null o vacío en la DB)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyChipFilter(query: any, column: string, values: string[]): any {
@@ -3540,7 +3542,15 @@ const variantesLocalidadConDuplicados = useMemo(() => {
 
                         <div>
                           <label className={styles.label}>Cuotas</label>
-                          <input className={["form-input", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')} placeholder="Ej: 12, 24, 36" value={campos.cuotas} onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))}  />
+                          <select
+                            className={["form-select", styles["uBackgroundSurface-sunken"], styles["uFontSize12px"], styles["uPadding10px"]].filter(Boolean).join(' ')}
+                            value={campos.cuotas}
+                            onChange={e => setCampos(p => ({ ...p, cuotas: e.target.value }))}
+                          >
+                            <option value="">— No modificar —</option>
+                            <option value={SIN_ESPECIFICAR}>Sin especificar (borrar)</option>
+                            {CUOTAS_OPCIONES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
                         </div>
 
                         <div className={[styles["uGridColumn1-1"]].join(' ')}>
