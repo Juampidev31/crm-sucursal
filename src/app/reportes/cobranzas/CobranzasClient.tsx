@@ -250,10 +250,7 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
   const [data, setData] = useState<CobranzasData>(() => normalizeCobranzasData(initialData));
   const chartsLoaded = useDeferredMount();
 
-  // Promedios anuales calculados reactivamente
-  const avg90 = useMemo(() => calcTramoAverage(data.tramo90), [data.tramo90]);
-  const avg120 = useMemo(() => calcTramoAverage(data.tramo120), [data.tramo120]);
-  const avgRefin = useMemo(() => calcTramoAverage(data.refin), [data.refin]);
+  // Promedio anual de morosidad
   const avgMoro = useMemo(() => calcMorosidadAverage(data.morosidad), [data.morosidad]);
 
   // Ensure 12 rows always exist for editing
@@ -518,114 +515,6 @@ export default function CobranzasClient({ data: initialData, year, years }: Prop
           Modo edición — Modificá los valores directamente en las tablas y hacé clic en GUARDAR.
         </div>
       )}
-
-      {/* Promedios Anuales Cards */}
-      <div className={styles.sectionLabel}>Promedios anuales {year}</div>
-      <div className={styles.kpiGrid}>
-        <div className={styles.kpiCard} style={{ '--card-accent': '#60a5fa' } as CSSProperties}>
-          <div className={styles.kpiHeader}>
-            <span className={styles.kpiTitle}>Tramo 90-119</span>
-            {avg90.avgCumpl !== null && (
-              <span className={styles.statusBadge}>
-                <span className={styles.statusDot} style={{ '--status-color': avg90.avgColor } as CSSProperties}>●</span>
-                {avg90.avgCumplStr}
-              </span>
-            )}
-          </div>
-          <div className={styles.kpiValueRow}>
-            <span className={styles.kpiMainValue}>{avg90.n > 0 ? formatMontoCobranza(Math.round(avg90.avgRec)) : '—'}</span>
-            <small style={{ color: 'var(--report-muted)', fontSize: '11px', fontWeight: 600 }}>Recupero prom.</small>
-          </div>
-          <div className={styles.kpiSubDetails}>
-            <div className={styles.kpiSubRow}>
-              <span>Objetivo promedio</span>
-              <strong>{avg90.n > 0 ? formatMontoCobranza(Math.round(avg90.avgObj)) : '—'}</strong>
-            </div>
-            <div className={styles.kpiSubRow}>
-              <span>Meses computados</span>
-              <strong>{avg90.n} de 12</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.kpiCard} style={{ '--card-accent': '#a78bfa' } as CSSProperties}>
-          <div className={styles.kpiHeader}>
-            <span className={styles.kpiTitle}>Tramo 120-209</span>
-            {avg120.avgCumpl !== null && (
-              <span className={styles.statusBadge}>
-                <span className={styles.statusDot} style={{ '--status-color': avg120.avgColor } as CSSProperties}>●</span>
-                {avg120.avgCumplStr}
-              </span>
-            )}
-          </div>
-          <div className={styles.kpiValueRow}>
-            <span className={styles.kpiMainValue}>{avg120.n > 0 ? formatMontoCobranza(Math.round(avg120.avgRec)) : '—'}</span>
-            <small style={{ color: 'var(--report-muted)', fontSize: '11px', fontWeight: 600 }}>Recupero prom.</small>
-          </div>
-          <div className={styles.kpiSubDetails}>
-            <div className={styles.kpiSubRow}>
-              <span>Objetivo promedio</span>
-              <strong>{avg120.n > 0 ? formatMontoCobranza(Math.round(avg120.avgObj)) : '—'}</strong>
-            </div>
-            <div className={styles.kpiSubRow}>
-              <span>Meses computados</span>
-              <strong>{avg120.n} de 12</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.kpiCard} style={{ '--card-accent': '#fbbf24' } as CSSProperties}>
-          <div className={styles.kpiHeader}>
-            <span className={styles.kpiTitle}>Refinanciaciones</span>
-            {avgRefin.avgCumpl !== null && (
-              <span className={styles.statusBadge}>
-                <span className={styles.statusDot} style={{ '--status-color': avgRefin.avgColor } as CSSProperties}>●</span>
-                {avgRefin.avgCumplStr}
-              </span>
-            )}
-          </div>
-          <div className={styles.kpiValueRow}>
-            <span className={styles.kpiMainValue}>{avgRefin.n > 0 ? formatMontoCobranza(Math.round(avgRefin.avgRec)) : '—'}</span>
-            <small style={{ color: 'var(--report-muted)', fontSize: '11px', fontWeight: 600 }}>Recupero prom.</small>
-          </div>
-          <div className={styles.kpiSubDetails}>
-            <div className={styles.kpiSubRow}>
-              <span>Objetivo promedio</span>
-              <strong>{avgRefin.n > 0 ? formatMontoCobranza(Math.round(avgRefin.avgObj)) : '—'}</strong>
-            </div>
-            <div className={styles.kpiSubRow}>
-              <span>Meses computados</span>
-              <strong>{avgRefin.n} de 12</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.kpiCard} style={{ '--card-accent': '#f87171' } as CSSProperties}>
-          <div className={styles.kpiHeader}>
-            <span className={styles.kpiTitle}>Morosidad Anual</span>
-            {avgMoro.avgCur !== null && (
-              <span className={styles.statusBadge}>
-                <span className={styles.statusDot} style={{ '--status-color': avgMoro.avgColor } as CSSProperties}>●</span>
-                {avgMoro.avgCurStr}
-              </span>
-            )}
-          </div>
-          <div className={styles.kpiValueRow}>
-            <span className={styles.kpiMainValue}>{avgMoro.avgCurStr}</span>
-            <small style={{ color: 'var(--report-muted)', fontSize: '11px', fontWeight: 600 }}>Promedio {data.anioCurrent || year}</small>
-          </div>
-          <div className={styles.kpiSubDetails}>
-            <div className={styles.kpiSubRow}>
-              <span>Año anterior ({data.anioAnterior || 'Ant.'})</span>
-              <strong>{avgMoro.avgAntStr}</strong>
-            </div>
-            <div className={styles.kpiSubRow}>
-              <span>Media empresa</span>
-              <strong>{avgMoro.avgMedStr}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Tramo Tables */}
       <div className={styles.sectionLabel}>Cumplimiento por tramo</div>
