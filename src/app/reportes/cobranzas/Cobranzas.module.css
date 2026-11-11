@@ -318,6 +318,130 @@
 .detailMonthCell { padding: 12px 14px; color: light-dark(#344054, #dddde0); font-weight: 700; text-align: center; }
 .detailValueCell { padding: 8px 10px; text-align: center; }
 
+/* Totales y Promedios */
+.totalRow {
+  background: light-dark(#f8fafc, #131316);
+  border-top: 2px solid light-dark(#dbe3ed, #2f2f35);
+}
+.totalRow:hover {
+  background: light-dark(#f1f5f9, #18181c) !important;
+}
+.totalLabelCell {
+  padding: 11px 14px;
+  color: light-dark(#1e293b, #f1f5f9);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.totalNumericCell {
+  padding: 11px 10px;
+  text-align: right;
+  font-weight: 800;
+}
+.totalPrimaryValue {
+  color: light-dark(#0f172a, #f8fafc);
+  font-weight: 800;
+}
+.totalSecondaryValue {
+  color: light-dark(#475467, #cbd5e1);
+  font-weight: 700;
+}
+
+.detailTotalRow {
+  background: light-dark(#f8fafc, #131316);
+  border-top: 2px solid light-dark(#dbe3ed, #2f2f35);
+}
+.detailTotalRow:hover {
+  background: light-dark(#f1f5f9, #18181c) !important;
+}
+.detailTotalMonthCell {
+  padding: 13px 14px;
+  color: light-dark(#1e293b, #f1f5f9);
+  font-weight: 800;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.detailTotalValueCell {
+  padding: 11px 10px;
+  text-align: center;
+  font-weight: 800;
+}
+
+/* KPI Summary Cards */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.kpiCard {
+  background: light-dark(rgba(255, 255, 255, 0.96), rgba(17, 17, 19, 0.96));
+  border: 1px solid var(--report-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-surface);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.kpiCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--card-accent, var(--report-blue));
+}
+.kpiHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kpiTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: light-dark(#475467, #c2c2c8);
+}
+.kpiValueRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kpiMainValue {
+  font-size: 20px;
+  font-weight: 800;
+  color: light-dark(#0f172a, #f8fafc);
+  letter-spacing: -0.5px;
+}
+.kpiSubDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed light-dark(#e2e8f0, #28282e);
+  font-size: 11px;
+}
+.kpiSubRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: light-dark(#64748b, #94a3b8);
+}
+.kpiSubRow strong {
+  color: light-dark(#1e293b, #e2e8f0);
+  font-weight: 700;
+}
+
 @media (max-width: 760px) {
   .reportPage {
     padding: 22px 14px 36px;
