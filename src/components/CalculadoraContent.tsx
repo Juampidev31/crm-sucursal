@@ -6,11 +6,11 @@ import { DEFAULT_FIXED_SALARY, loadFixedSalary, resetFixedSalary, saveFixedSalar
 import styles from './CalculadoraContent.module.css';
 
 const INCENTIVES = {
-  capital: { c1: 62055, c2: 93703, c3: 141492 },
-  operacion: { c1: 42836, c2: 64682, c3: 97671 },
+  capital: { c1: 79288, c2: 119725, c3: 180785 },
+  operacion: { c1: 47120, c2: 71151, c3: 107438 },
   recupero90: { c1: 40801, c2: 52633, c3: 67897 },
   recupero120: { c1: 40801, c2: 52633, c3: 67897 },
-  refi: { c1: 20400, c2: 26521, c3: 37129 },
+  refi: { c1: 40801, c2: 52633, c3: 67897 },
 } as const;
 
 type PactKey = keyof typeof INCENTIVES;

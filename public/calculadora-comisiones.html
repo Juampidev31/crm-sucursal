@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Calculadora de comisiones</title>
+  <style>
+    :root {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #203149;
+      background: #f2f5f8;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 280px; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .page { width: min(100% - 32px, 1040px); margin: 40px auto 64px; }
+    .hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+    .eyebrow { margin: 0 0 7px; color: #517390; font-size: 11px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    h1 { margin: 0; color: #1d2d44; font-size: clamp(27px, 4vw, 38px); letter-spacing: -.035em; }
+    .intro { margin: 9px 0 0; color: #697b8f; font-size: 14px; line-height: 1.5; }
+    .reset { flex: 0 0 auto; min-height: 38px; padding: 0 15px; border: 1px solid #cddbe6; border-radius: 9px; color: #365c79; background: #fff; font-size: 13px; font-weight: 700; }
+    .reset:hover { background: #eaf2f7; }
+    .reset:focus-visible, input:focus-visible { outline: 3px solid #9dc6de; outline-offset: 2px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 288px; align-items: start; gap: 20px; }
+    .groups { display: grid; gap: 18px; }
+    .group { padding: 21px; border: 1px solid #dbe5ed; border-radius: 16px; background: #fff; box-shadow: 0 4px 18px rgba(24, 47, 68, .04); }
+    .group-heading { margin-bottom: 16px; }
+    h2 { margin: 0; color: #263a52; font-size: 17px; }
+    .group-heading p { margin: 5px 0 0; color: #7c8a9a; font-size: 12px; }
+    .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .metrics.collections { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .metric { min-width: 0; padding: 15px; border: 1px solid #e0e8ee; border-radius: 11px; background: #f8fafc; }
+    .metric.active { border-color: #bad6c8; background: #f4faf6; }
+    .metric label { display: block; min-height: 32px; color: #435970; font-size: 12px; font-weight: 800; line-height: 1.25; }
+    .entry { display: flex; align-items: center; gap: 6px; width: 100%; height: 42px; padding: 0 11px; border: 1px solid #cbd9e4; border-radius: 9px; background: #fff; }
+    .entry:focus-within { border-color: #638da9; box-shadow: 0 0 0 3px rgba(64, 113, 146, .12); }
+    .entry input { width: 100%; min-width: 0; height: 100%; border: 0; outline: 0; color: #233852; background: transparent; font-size: 17px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .entry span { color: #73889c; font-size: 14px; font-weight: 700; }
+    .tier { display: block; min-height: 30px; margin-top: 9px; color: #7a8b9b; font-size: 11px; line-height: 1.3; }
+    .amount-label { display: block; margin: 4px 0 3px; color: #788a9c; font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .amount { display: block; color: #2b7759; font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .summary { position: sticky; top: 20px; padding: 23px; border-radius: 16px; color: #fff; background: linear-gradient(145deg, #203d57, #315f82 65%, #3e6f8f); box-shadow: 0 12px 30px rgba(27, 59, 84, .19); }
+    .summary .eyebrow { color: #c7dbe9; }
+    .summary h2 { color: #fff; font-size: 19px; }
+    .summary dl { display: grid; gap: 12px; margin: 23px 0; padding-bottom: 19px; border-bottom: 1px solid rgba(255, 255, 255, .22); }
+    .summary dl div { display: flex; justify-content: space-between; gap: 12px; }
+    .summary dt { color: #d5e4ee; font-size: 12px; }
+    .summary dd { margin: 0; font-size: 12px; font-weight: 750; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .total-label { display: block; color: #c8d9e5; font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .total { display: block; margin-top: 5px; font-size: clamp(25px, 3vw, 33px); font-weight: 800; letter-spacing: -.03em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .note { margin: 15px 0 0; color: #d2e0e9; font-size: 11px; line-height: 1.5; }
+    .footnote { margin: 20px 2px 0; color: #78889a; font-size: 11px; line-height: 1.5; }
+    @media (max-width: 830px) {
+      .layout { grid-template-columns: 1fr; }
+      .summary { position: static; }
+    }
+    @media (max-width: 590px) {
+      .page { width: min(100% - 24px, 500px); margin-top: 25px; }
+      .hero { flex-wrap: wrap; }
+      .reset { width: 100%; }
+      .group { padding: 17px; }
+      .metrics, .metrics.collections { grid-template-columns: 1fr; }
+      .metric label { min-height: 0; margin-bottom: 10px; }
+      .tier { min-height: 0; }
+    }
+    @media print {
+      :root { background: #fff; }
+      .page { width: 100%; margin: 0; }
+      .reset { display: none; }
+      .summary { position: static; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Simulador independiente</p>
+        <h1>Calculadora de comisiones</h1>
+        <p class="intro">Ingresá el porcentaje de cumplimiento de cada indicador. El resultado se actualiza al instante.</p>
+      </div>
+      <button class="reset" id="reset" type="button">Reiniciar cálculo</button>
+    </header>
+
+    <div class="layout">
+      <div class="groups">
+        <section class="group" aria-labelledby="venta-title">
+          <div class="group-heading"><h2 id="venta-title">Venta</h2><p>Capital colocado y operaciones concretadas</p></div>
+          <div class="metrics">
+            <article class="metric" data-key="capital"><label for="capital">Capital</label><div class="entry"><input id="capital" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" aria-describedby="capital-tier"><span>%</span></div><small class="tier" id="capital-tier">Ingresá el cumplimiento</small><small class="amount-label">Comisión</small><output class="amount" for="capital">$ 0</output></article>
+            <article class="metric" data-key="operacion"><label for="operacion">Operación</label><div class="entry"><input id="operacion" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" aria-describedby="operacion-tier"><span>%</span></div><small class="tier" id="operacion-tier">Ingresá el cumplimiento</small><small class="amount-label">Comisión</small><output class="amount" for="operacion">$ 0</output></article>
+          </div>
+        </section>
+
+        <section class="group" aria-labelledby="cobranzas-title">
+          <div class="group-heading"><h2 id="cobranzas-title">Cobranzas</h2><p>Recuperos y refinanciaciones del período</p></div>
+          <div class="metrics collections">
+            <article class="metric" data-key="recupero90"><label for="recupero90">Recupero 90–119</label><div class="entry"><input id="recupero90" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" aria-describedby="recupero90-tier"><span>%</span></div><small class="tier" id="recupero90-tier">Ingresá el cumplimiento</small><small class="amount-label">Comisión</small><output class="amount" for="recupero90">$ 0</output></article>
+            <article class="metric" data-key="recupero120"><label for="recupero120">Recupero 120–209</label><div class="entry"><input id="recupero120" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" aria-describedby="recupero120-tier"><span>%</span></div><small class="tier" id="recupero120-tier">Ingresá el cumplimiento</small><small class="amount-label">Comisión</small><output class="amount" for="recupero120">$ 0</output></article>
+            <article class="metric" data-key="refi"><label for="refi">REFI</label><div class="entry"><input id="refi" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" aria-describedby="refi-tier"><span>%</span></div><small class="tier" id="refi-tier">Ingresá el cumplimiento</small><small class="amount-label">Comisión</small><output class="amount" for="refi">$ 0</output></article>
+          </div>
+        </section>
+      </div>
+
+      <aside class="summary" aria-labelledby="summary-title">
+        <p class="eyebrow">Resultado estimado</p>
+        <h2 id="summary-title">Tus comisiones</h2>
+        <dl>
+          <div><dt>Venta</dt><dd id="venta-total">$ 0</dd></div>
+          <div><dt>Cobranzas</dt><dd id="cobranzas-total">$ 0</dd></div>
+        </dl>
+        <span class="total-label">Total de comisiones</span>
+        <strong class="total" id="total" aria-live="polite">$ 0</strong>
+        <p class="note">Estimación orientativa. No incluye sueldo fijo ni otros conceptos de la liquidación.</p>
+      </aside>
+    </div>
+    <p class="footnote">El cálculo usa los mismos tramos y montos que la calculadora de incentivos del sistema al momento de generar este archivo. Funciona sin internet y no envía los porcentajes ingresados.</p>
+  </main>
+
+  <script>
+    (() => {
+      const amounts = {
+        capital: [79288, 119725, 180785],
+        operacion: [47120, 71151, 107438],
+        recupero90: [40801, 52633, 67897],
+        recupero120: [40801, 52633, 67897],
+        refi: [40801, 52633, 67897]
+      };
+      const formatMoney = value => '$ ' + new Intl.NumberFormat('es-AR').format(value);
+      const cards = Array.from(document.querySelectorAll('.metric'));
+
+      function tier(percentage) {
+        if (!Number.isFinite(percentage) || percentage < 80) return -1;
+        if (percentage < 100) return 0;
+        if (percentage < 110) return 1;
+        return 2;
+      }
+
+      function update() {
+        let venta = 0;
+        let cobranzas = 0;
+        for (const card of cards) {
+          const key = card.dataset.key;
+          const input = card.querySelector('input');
+          const percentage = input.value === '' ? NaN : Number(input.value);
+          const level = tier(percentage);
+          const amount = level < 0 ? 0 : amounts[key][level];
+          card.classList.toggle('active', amount > 0);
+          card.querySelector('.tier').textContent = input.value === '' ? 'Ingresá el cumplimiento' : level < 0 ? 'Activa desde 80%' : ['Tramo 80–99%', 'Tramo 100–109%', 'Tramo 110% o más'][level];
+          card.querySelector('output').textContent = formatMoney(amount);
+          if (key === 'capital' || key === 'operacion') venta += amount;
+          else cobranzas += amount;
+        }
+        document.getElementById('venta-total').textContent = formatMoney(venta);
+        document.getElementById('cobranzas-total').textContent = formatMoney(cobranzas);
+        document.getElementById('total').textContent = formatMoney(venta + cobranzas);
+      }
+
+      for (const card of cards) card.querySelector('input').addEventListener('input', update);
+      document.getElementById('reset').addEventListener('click', () => {
+        for (const card of cards) card.querySelector('input').value = '';
+        update();
+      });
+    })();
+  </script>
+</body>
+</html>
