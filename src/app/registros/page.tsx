@@ -36,7 +36,7 @@ const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
 
 const ESTADOS_PERMITIDOS_DUPLICADO = ['venta', 'derivado / aprobado cc'];
 
-const CUOTAS_OPCIONES = ['9', '12', '15', '18', '24'] as const;
+const CUOTAS_OPCIONES = ['6', '9', '12', '15', '18', '24'] as const;
 
 const initialForm: Partial<Registro> = {
   cuil: '', nombre: '', puntaje: 0, es_re: false,

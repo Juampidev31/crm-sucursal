@@ -286,7 +286,7 @@ const EMPTY_FILTROS: Filtros = {
 
 const SIN_ESPECIFICAR = '__sin_especificar__';
 
-const CUOTAS_OPCIONES = ['9', '12', '15', '18', '24'] as const;
+const CUOTAS_OPCIONES = ['6', '9', '12', '15', '18', '24'] as const;
 
 // Aplica filtro de chips con soporte para "Sin especificar" (null o vacío en la DB)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
